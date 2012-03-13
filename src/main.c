@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <unistd.h>
 
 #include <libusb.h>
@@ -39,6 +40,8 @@
 /* Terratec NOXON DAB/DAB+ USB-Stick */
 #define NOXON_VID	0x0ccd
 #define NOXON_PID	0x00b3
+
+#define CRYSTAL_FREQ	28800000
 
 static struct libusb_device_handle *devh = NULL;
 static int do_exit = 0;
@@ -214,12 +217,20 @@ void demod_write_reg(uint8_t page, uint16_t addr, uint16_t val, uint8_t len)
 	demod_read_reg(0x0a, 0x01, 1);
 }
 
-void set_resampler(uint32_t rsamp_ratio)
+void set_samp_rate(uint32_t samp_rate)
 {
 	uint16_t tmp;
-	rsamp_ratio <<= 2;
+	uint32_t rsamp_ratio;
 
-	tmp = (rsamp_ratio >> 16) & 0xffff;
+	/* check for the maximum rate the resampler supports */
+	if (samp_rate > 3200000)
+		samp_rate = 3200000;
+
+	printf("Setting sample rate: %i Hz\n", samp_rate);
+	rsamp_ratio = (CRYSTAL_FREQ * pow(2, 22)) / samp_rate;
+
+	rsamp_ratio &= ~3;
+	tmp = (rsamp_ratio >> 16);
 	demod_write_reg(1, 0x9f, tmp, 2);
 	tmp = rsamp_ratio & 0xffff;
 	demod_write_reg(1, 0xa1, tmp, 2);
@@ -265,10 +276,6 @@ void rtl_init(void)
 	for (i = 0; i < sizeof (fir_coeff); i++)
 		demod_write_reg(1, 0x1c + i, fir_coeff[i], 1);
 
-	/* TODO setting resampler test value, max value is 0xC99999,
-	 * value for DAB/FM is 0xE10000*/
-	set_resampler(1 << 24);
-
 	demod_write_reg(0, 0x19, 0x25, 1);
 
 	/* init FSM state-holding register */
@@ -295,7 +302,7 @@ void tuner_init(int frequency)
 	switch (tuner_type) {
 	case TUNER_E4000:
 		e4000_Initialize(1);
-		e4000_SetBandwidthHz(1, 80000);
+		e4000_SetBandwidthHz(1, 8000000);
 		e4000_SetRfFreqHz(1, frequency);
 		break;
 	case TUNER_FC0013:
@@ -314,7 +321,8 @@ void tuner_init(int frequency)
 void usage(void)
 {
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t-f frequency to tune to [Hz]\n"
+		"Usage:\t -f frequency to tune to [Hz]\n"
+		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\toutput filename\n");
 	exit(1);
 }
@@ -329,15 +337,18 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	int r, opt;
 	char *filename;
-	unsigned int frequency = 0;
+	uint32_t frequency = 0, samp_rate = 2048000;
 	uint8_t buffer[READLEN];
 	int n_read;
 	FILE *file;
 
-	while ((opt = getopt(argc, argv, "f:")) != -1) {
+	while ((opt = getopt(argc, argv, "f:s:")) != -1) {
 		switch (opt) {
 		case 'f':
 			frequency = atoi(optarg);
+			break;
+		case 's':
+			samp_rate = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -378,6 +389,7 @@ int main(int argc, char **argv)
 
 	/* Initialize the RTL2832 */
 	rtl_init();
+	set_samp_rate(samp_rate);
 
 	/* Initialize tuner & set frequency */
 	tuner_init(frequency);
