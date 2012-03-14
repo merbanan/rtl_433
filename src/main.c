@@ -221,15 +221,18 @@ void set_samp_rate(uint32_t samp_rate)
 {
 	uint16_t tmp;
 	uint32_t rsamp_ratio;
+	double real_rate;
 
 	/* check for the maximum rate the resampler supports */
 	if (samp_rate > 3200000)
 		samp_rate = 3200000;
 
-	printf("Setting sample rate: %i Hz\n", samp_rate);
 	rsamp_ratio = (CRYSTAL_FREQ * pow(2, 22)) / samp_rate;
-
 	rsamp_ratio &= ~3;
+
+	real_rate = (CRYSTAL_FREQ * pow(2, 22)) / rsamp_ratio;
+	printf("Setting sample rate: %.3f Hz\n", real_rate);
+
 	tmp = (rsamp_ratio >> 16);
 	demod_write_reg(1, 0x9f, tmp, 2);
 	tmp = rsamp_ratio & 0xffff;
