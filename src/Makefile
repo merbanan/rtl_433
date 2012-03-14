@@ -7,4 +7,4 @@ rtl-sdr: main.o tuner_e4000.o tuner_fc0013.c
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	@rm -f rtl.sdr *.o
+	@rm -f rtl-sdr *.o
