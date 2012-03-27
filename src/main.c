@@ -32,7 +32,7 @@ static int do_exit = 0;
 
 void usage(void)
 {
-	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
+	printf("rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency to tune to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\toutput filename\n");
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 {
 	struct sigaction sigact;
 	int r, opt;
-	char *filename;
+	char *filename = NULL;
 	uint32_t frequency = 0, samp_rate = 2048000;
 	uint8_t buffer[READLEN];
     uint32_t n_read;

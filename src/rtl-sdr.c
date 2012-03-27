@@ -399,7 +399,7 @@ uint32_t rtlsdr_get_device_count(void)
 {
     int i, j;
 	libusb_device **list;
-    uint32_t device_count;
+    uint32_t device_count = 0;
     struct libusb_device_descriptor dd;
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
@@ -424,7 +424,7 @@ const char *rtlsdr_get_device_name(uint32_t index)
 	libusb_device **list;
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
-	
+
 	if (index > cnt - 1)
 		return NULL;
 
@@ -451,7 +451,7 @@ rtlsdr_dev_t *rtlsdr_open(int index)
     memset(dev, 0, sizeof(rtlsdr_dev_t));
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
-	
+
     for (i = 0; i < cnt; i++) {
         device = list[i];
 
@@ -483,7 +483,7 @@ rtlsdr_dev_t *rtlsdr_open(int index)
     }
 
     libusb_free_device_list(list, 0);
-	
+
     unsigned char buffer[256];
 
     libusb_get_string_descriptor_ascii(dev->devh, 0, buffer, sizeof(buffer) );

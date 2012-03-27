@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: RTL-SDR Library
+Description: C Utility Library
+Version: @VERSION@
+Libs: -L${libdir} -lrtlsdr -lusb-1.0
+Cflags: -I${includedir}/

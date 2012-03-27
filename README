@@ -1,5 +1,5 @@
 rtl-sdr
-Software to turn the Realtek RTL2832U into a SDR
+Software to turn Realtek RTL2832U based DVB-T receivers into SDR
 ======================================================================
 
 For more information see:
