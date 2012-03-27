@@ -25,7 +25,7 @@
 /* glue functions to rtl-sdr code */
 int
 I2CReadByte(
-	int pTuner,
+    void *pTuner,
 	unsigned char NoUse,
 	unsigned char RegAddr,
 	unsigned char *pReadingByte
@@ -33,10 +33,10 @@ I2CReadByte(
 {
 	uint8_t data = RegAddr;
 
-	if (rtl_i2c_write(E4K_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, &data, 1) < 0)
 		return E4000_I2C_FAIL;
 
-	if (rtl_i2c_read(E4K_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, &data, 1) < 0)
 		return E4000_I2C_FAIL;
 
 	*pReadingByte = data;
@@ -45,19 +45,18 @@ I2CReadByte(
 }
 
 int
-I2CWriteByte(
-	int pTuner,
-	unsigned char NoUse,
-	unsigned char RegAddr,
-	unsigned char WritingByte
-	)
+I2CWriteByte(void *pTuner,
+    unsigned char NoUse,
+    unsigned char RegAddr,
+    unsigned char WritingByte
+    )
 {
 	uint8_t data[2];
 
 	data[0] = RegAddr;
 	data[1] = WritingByte;
 
-	if (rtl_i2c_write(E4K_I2C_ADDR, data, 2) < 0)
+    if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, data, 2) < 0)
 		return E4000_I2C_FAIL;
 
 	return E4000_I2C_SUCCESS;
@@ -65,7 +64,7 @@ I2CWriteByte(
 
 int
 I2CWriteArray(
-	int pTuner,
+    void *pTuner,
 	unsigned char NoUse,
 	unsigned char RegStartAddr,
 	unsigned char ByteNum,
@@ -80,7 +79,7 @@ I2CWriteArray(
 	for(i = 0; i < ByteNum; i++)
 		WritingBuffer[1 + i] = pWritingBytes[i];
 
-	if (rtl_i2c_write(E4K_I2C_ADDR, WritingBuffer, ByteNum + 1) < 0)
+	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, WritingBuffer, ByteNum + 1) < 0)
 		return E4000_I2C_FAIL;
 
 	return E4000_I2C_SUCCESS;
@@ -92,9 +91,8 @@ I2CWriteArray(
 
 */
 int
-e4000_Initialize(
-	int pTuner
-	)
+e4000_Initialize(void *pTuner
+    )
 {
 
 	// Initialize tuner.
@@ -129,7 +127,7 @@ error_status_execute_function:
 */
 int
 e4000_SetRfFreqHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long RfFreqHz
 	)
 {
@@ -182,7 +180,7 @@ error_status_execute_function:
 */
 int
 e4000_SetBandwidthHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long BandwidthHz
 	)
 {
@@ -285,7 +283,7 @@ int GainControlinit();
 *
 \****************************************************************************/
 
-int tunerreset(int pTuner)
+int tunerreset(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -332,7 +330,7 @@ int tunerreset(int pTuner)
 *  Function disables the clock - values can be modified to enable if required.
 \****************************************************************************/
 
-int Tunerclock(int pTuner)
+int Tunerclock(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -364,7 +362,7 @@ int Tunerclock(int pTuner)
 *
 \****************************************************************************/
 /*
-int filtercal(int pTuner)
+int filtercal(void *pTuner)
 {
   //writearray[0] = 1;
  //I2CWriteByte (pTuner, 200,123,writearray[0]);
@@ -382,7 +380,7 @@ int filtercal(int pTuner)
 *
 \****************************************************************************/
 
-int Qpeak(int pTuner)
+int Qpeak(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -431,7 +429,7 @@ int Qpeak(int pTuner)
 *  0xa3 to 0xa7. Also 0x24.
 *
 \****************************************************************************/
-int E4000_gain_freq(int pTuner, int Freq)
+int E4000_gain_freq(void *pTuner, int Freq)
 {
 	unsigned char writearray[5];
 	int status;
@@ -512,7 +510,7 @@ int E4000_gain_freq(int pTuner, int Freq)
 *  Populates DC offset LUT. (Registers 0x2d, 0x70, 0x71).
 *  Turns on DC offset LUT and time varying DC offset.
 \****************************************************************************/
-int DCoffloop(int pTuner)
+int DCoffloop(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -548,7 +546,7 @@ int DCoffloop(int pTuner)
 *
 \****************************************************************************/
 /*
-int commonmode(int pTuner)
+int commonmode(void *pTuner)
 {
      //writearray[0] = 0;
      //I2CWriteByte(Device_address,47,writearray[0]);
@@ -571,7 +569,7 @@ int commonmode(int pTuner)
 *  Sensitivity / Linearity mode: manual switch
 *
 \****************************************************************************/
-int GainControlinit(int pTuner)
+int GainControlinit(void *pTuner)
 {
 	unsigned char writearray[5];
 	unsigned char read1[1];
@@ -808,7 +806,7 @@ int GainControlauto();
 *  Sets Gain control to serial interface control.
 *
 \****************************************************************************/
-int Gainmanual(int pTuner)
+int Gainmanual(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -845,7 +843,7 @@ int Gainmanual(int pTuner)
 *  Configures E4000 PLL divider & sigma delta. 0x0d,0x09, 0x0a, 0x0b).
 *
 \****************************************************************************/
-int PLL(int pTuner, int Ref_clk, int Freq)
+int PLL(void *pTuner, int Ref_clk, int Freq)
 {
 	int VCO_freq;
 	unsigned char writearray[5];
@@ -1185,7 +1183,7 @@ int PLL(int pTuner, int Ref_clk, int Freq)
 *
 \****************************************************************************/
 
-int LNAfilter(int pTuner, int Freq)
+int LNAfilter(void *pTuner, int Freq)
 {
 	unsigned char writearray[5];
 	int status;
@@ -1334,7 +1332,7 @@ int LNAfilter(int pTuner, int Freq)
 *  The function configures the E4000 IF filter. (Register 0x11,0x12).
 *
 \****************************************************************************/
-int IFfilter(int pTuner, int bandwidth, int Ref_clk)
+int IFfilter(void *pTuner, int bandwidth, int Ref_clk)
 {
 	unsigned char writearray[5];
 	int status;
@@ -1524,7 +1522,7 @@ int IFfilter(int pTuner, int bandwidth, int Ref_clk)
 *  Configures the E4000 frequency band. (Registers 0x07, 0x78).
 *
 \****************************************************************************/
-int freqband(int pTuner, int Freq)
+int freqband(void *pTuner, int Freq)
 {
 	unsigned char writearray[5];
 	int status;
@@ -1582,7 +1580,7 @@ int freqband(int pTuner, int Freq)
 *  Populates DC offset LUT. (Registers 0x50 - 0x53, 0x60 - 0x63).
 *
 \****************************************************************************/
-int DCoffLUT(int pTuner)
+int DCoffLUT(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -1856,7 +1854,7 @@ int DCoffLUT(int pTuner)
 *  Configures gain control mode. (Registers 0x1a)
 *
 \****************************************************************************/
-int GainControlauto(int pTuner)
+int GainControlauto(void *pTuner)
 {
 	unsigned char writearray[5];
 	int status;
@@ -1902,7 +1900,7 @@ int main()
 *
 \****************************************************************************/
 
-int E4000_sensitivity(int pTuner, int Freq, int bandwidth)
+int E4000_sensitivity(void *pTuner, int Freq, int bandwidth)
 {
 	unsigned char writearray[2];
 	int status;
@@ -1960,7 +1958,7 @@ int E4000_sensitivity(int pTuner, int Freq, int bandwidth)
 *  The function configures the E4000 for linearity mode.
 *
 \****************************************************************************/
-int E4000_linearity(int pTuner, int Freq, int bandwidth)
+int E4000_linearity(void *pTuner, int Freq, int bandwidth)
 {
 
 	unsigned char writearray[2];
@@ -2019,7 +2017,7 @@ int E4000_linearity(int pTuner, int Freq, int bandwidth)
 *  The function configures the E4000 for nominal
 *
 \****************************************************************************/
-int E4000_nominal(int pTuner, int Freq, int bandwidth)
+int E4000_nominal(void *pTuner, int Freq, int bandwidth)
 {
 	unsigned char writearray[2];
 	int status;

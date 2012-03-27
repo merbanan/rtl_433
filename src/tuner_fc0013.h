@@ -39,12 +39,12 @@ enum FC0013_FUNCTION_STATUS
 
 
 // Functions
-int FC0013_Read(int pTuner, unsigned char RegAddr, unsigned char *pByte);
-int FC0013_Write(int pTuner, unsigned char RegAddr, unsigned char Byte);
+int FC0013_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte);
+int FC0013_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte);
 
 int
 fc0013_SetRegMaskBits(
-	int pTuner,
+    void *pTuner,
 	unsigned char RegAddr,
 	unsigned char Msb,
 	unsigned char Lsb,
@@ -53,18 +53,18 @@ fc0013_SetRegMaskBits(
 
 int
 fc0013_GetRegMaskBits(
-	int pTuner,
+    void *pTuner,
 	unsigned char RegAddr,
 	unsigned char Msb,
 	unsigned char Lsb,
 	unsigned char *pReadingValue
 	);
 
-int FC0013_Open();
-int FC0013_SetFrequency(unsigned long Frequency, unsigned short Bandwidth);
+int FC0013_Open(void *pTuner);
+int FC0013_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Bandwidth);
 
 // Set VHF Track depends on input frequency
-int FC0013_SetVhfTrack(int pTuner, unsigned long Frequency);
+int FC0013_SetVhfTrack(void *pTuner, unsigned long Frequency);
 
 
 // The following context is FC0013 tuner API source code
@@ -98,54 +98,54 @@ enum FC0013_LNA_GAIN_VALUE
 // Manipulaing functions
 void
 fc0013_GetTunerType(
-	int pTuner,
+    void *pTuner,
 	int *pTunerType
 	);
 
 void
 fc0013_GetDeviceAddr(
-	int pTuner,
+    void *pTuner,
 	unsigned char *pDeviceAddr
 	);
 
 int
 fc0013_Initialize(
-	int pTuner
+    void *pTuner
 	);
 
 int
 fc0013_SetRfFreqHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long RfFreqHz
 	);
 
 int
 fc0013_GetRfFreqHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long *pRfFreqHz
 	);
 
 // Extra manipulaing functions
 int
 fc0013_SetBandwidthMode(
-	int pTuner,
+    void *pTuner,
 	int BandwidthMode
 	);
 
 int
 fc0013_GetBandwidthMode(
-	int pTuner,
+    void *pTuner,
 	int *pBandwidthMode
 	);
 
 int
 fc0013_RcCalReset(
-	int pTuner
+    void *pTuner
 	);
 
 int
 fc0013_RcCalAdd(
-	int pTuner,
+    void *pTuner,
 	int RcValue
 	);
 

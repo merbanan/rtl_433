@@ -118,52 +118,50 @@ int main(void)
 
 // Function (implemeted for E4000)
 int
-I2CReadByte(
-	int pTuner,
-	unsigned char NoUse,
-	unsigned char RegAddr,
-	unsigned char *pReadingByte
-	);
+I2CReadByte(void *pTuner,
+    unsigned char NoUse,
+    unsigned char RegAddr,
+    unsigned char *pReadingByte
+    );
 
 int
 I2CWriteByte(
-	int pTuner,
+    void *pTuner,
 	unsigned char NoUse,
 	unsigned char RegAddr,
 	unsigned char WritingByte
 	);
 
 int
-I2CWriteArray(
-	int pTuner,
-	unsigned char NoUse,
-	unsigned char RegStartAddr,
-	unsigned char ByteNum,
-	unsigned char *pWritingBytes
-	);
+I2CWriteArray(void *pTuner,
+    unsigned char NoUse,
+    unsigned char RegStartAddr,
+    unsigned char ByteNum,
+    unsigned char *pWritingBytes
+    );
 
 
 
 // Functions (from E4000 source code)
-int tunerreset (int pTuner);
-int Tunerclock(int pTuner);
-int Qpeak(int pTuner);
-int DCoffloop(int pTuner);
-int GainControlinit(int pTuner);
+int tunerreset (void *pTuner);
+int Tunerclock(void *pTuner);
+int Qpeak(void *pTuner);
+int DCoffloop(void *pTuner);
+int GainControlinit(void *pTuner);
 
-int Gainmanual(int pTuner);
-int E4000_gain_freq(int pTuner, int frequency);
-int PLL(int pTuner, int Ref_clk, int Freq);
-int LNAfilter(int pTuner, int Freq);
-int IFfilter(int pTuner, int bandwidth, int Ref_clk);
-int freqband(int pTuner, int Freq);
-int DCoffLUT(int pTuner);
-int GainControlauto(int pTuner);
+int Gainmanual(void *pTuner);
+int E4000_gain_freq(void *pTuner, int frequency);
+int PLL(void *pTuner, int Ref_clk, int Freq);
+int LNAfilter(void *pTuner, int Freq);
+int IFfilter(void *pTuner, int bandwidth, int Ref_clk);
+int freqband(void *pTuner, int Freq);
+int DCoffLUT(void *pTuner);
+int GainControlauto(void *pTuner);
 
-int E4000_sensitivity(int pTuner, int Freq, int bandwidth);
-int E4000_linearity(int pTuner, int Freq, int bandwidth);
-int E4000_high_linearity(int pTuner);
-int E4000_nominal(int pTuner, int Freq, int bandwidth);
+int E4000_sensitivity(void *pTuner, int Freq, int bandwidth);
+int E4000_linearity(void *pTuner, int Freq, int bandwidth);
+int E4000_high_linearity(void *pTuner);
+int E4000_nominal(void *pTuner, int Freq, int bandwidth);
 
 
 // The following context is E4000 tuner API source code
@@ -182,30 +180,30 @@ enum E4000_BANDWIDTH_HZ
 // Manipulaing functions
 void
 e4000_GetTunerType(
-	int pTuner,
+    void *pTuner,
 	int *pTunerType
 	);
 
 void
 e4000_GetDeviceAddr(
-	int pTuner,
+    void *pTuner,
 	unsigned char *pDeviceAddr
 	);
 
 int
 e4000_Initialize(
-	int pTuner
+    void *pTuner
 	);
 
 int
 e4000_SetRfFreqHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long RfFreqHz
 	);
 
 int
 e4000_GetRfFreqHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long *pRfFreqHz
 	);
 
@@ -216,20 +214,20 @@ e4000_GetRfFreqHz(
 // Extra manipulaing functions
 int
 e4000_GetRegByte(
-	int pTuner,
+    void *pTuner,
 	unsigned char RegAddr,
 	unsigned char *pReadingByte
 	);
 
 int
 e4000_SetBandwidthHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long BandwidthHz
 	);
 
 int
 e4000_GetBandwidthHz(
-	int pTuner,
+    void *pTuner,
 	unsigned long *pBandwidthHz
 	);
 

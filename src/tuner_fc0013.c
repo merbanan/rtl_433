@@ -7,33 +7,34 @@
  */
 
 #include <stdint.h>
+#include "i2c.h"
 #include "tuner_fc0013.h"
 
 #define CRYSTAL_FREQ		28800000
 #define FC0013_I2C_ADDR		0xc6
 
 /* glue functions to rtl-sdr code */
-int FC0013_Write(int pTuner, unsigned char RegAddr, unsigned char Byte)
+int FC0013_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte)
 {
 	uint8_t data[2];
 
 	data[0] = RegAddr;
 	data[1] = Byte;
 
-	if (rtl_i2c_write(FC0013_I2C_ADDR, data, 2) < 0)
+	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, data, 2) < 0)
 		return FC0013_I2C_ERROR;
 
 	return FC0013_I2C_SUCCESS;
 }
 
-int FC0013_Read(int pTuner, unsigned char RegAddr, unsigned char *pByte)
+int FC0013_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte)
 {
 	uint8_t data = RegAddr;
 
-	if (rtl_i2c_write(FC0013_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
 		return FC0013_I2C_ERROR;
 
-	if (rtl_i2c_read(FC0013_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
 		return FC0013_I2C_ERROR;
 
 	*pByte = data;
@@ -41,7 +42,7 @@ int FC0013_Read(int pTuner, unsigned char RegAddr, unsigned char *pByte)
 	return FC0013_I2C_SUCCESS;
 }
 
-int FC0013_SetVhfTrack(int pTuner, unsigned long FrequencyKHz)
+int FC0013_SetVhfTrack(void *pTuner, unsigned long FrequencyKHz)
 {
 	unsigned char read_byte;
 
@@ -120,9 +121,8 @@ error_status:
 
 // FC0013 Open Function, includes enable/reset pin control and registers initialization.
 //void FC0013_Open()
-int FC0013_Open()
+int FC0013_Open(void *pTuner)
 {
-	int pTuner = 1;
 	// Enable FC0013 Power
 	// (...)
 	// FC0013 Enable = High
@@ -171,7 +171,7 @@ error_status:
 }
 
 
-int FC0013_SetFrequency(unsigned long Frequency, unsigned short Bandwidth)
+int FC0013_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Bandwidth)
 {
 //    bool VCO1 = false;
 //    unsigned int doubleVCO;
@@ -185,8 +185,6 @@ int FC0013_SetFrequency(unsigned long Frequency, unsigned short Bandwidth)
 	unsigned char read_byte;
 
 	unsigned long CrystalFreqKhz;
-
-	int pTuner =1;
 
 	int CrystalFreqHz = CRYSTAL_FREQ;
 
