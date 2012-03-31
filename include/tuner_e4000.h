@@ -1,120 +1,15 @@
 #ifndef __TUNER_E4000_H
 #define __TUNER_E4000_H
 
-/**
-
-@file
-
-@brief   E4000 tuner module declaration
-
-One can manipulate E4000 tuner through E4000 module.
-E4000 module is derived from tuner module.
-
-
-
-@par Example:
-@code
-
-// The example is the same as the tuner example in tuner_base.h except the listed lines.
-
-
-
-#include "tuner_e4000.h"
-
-
-...
-
-
-
-int main(void)
-{
-	TUNER_MODULE        *pTuner;
-	E4000_EXTRA_MODULE *pTunerExtra;
-
-	TUNER_MODULE          TunerModuleMemory;
-	BASE_INTERFACE_MODULE BaseInterfaceModuleMemory;
-//	I2C_BRIDGE_MODULE     I2cBridgeModuleMemory;
-
-	unsigned long BandwidthMode;
-
-
-	...
-
-
-
-	// Build E4000 tuner module.
-	BuildE4000Module(
-		&pTuner,
-		&TunerModuleMemory,
-		&BaseInterfaceModuleMemory,
-		&I2cBridgeModuleMemory,
-		0xac,								// I2C device address is 0xac in 8-bit format.
-		CRYSTAL_FREQ_16384000HZ,			// Crystal frequency is 16.384 MHz.
-		E4000_AGC_INTERNAL					// The E4000 AGC mode is internal AGC mode.
-		);
-
-
-
-
-
-	// Get E4000 tuner extra module.
-	pTunerExtra = (T2266_EXTRA_MODULE *)(pTuner->pExtra);
-
-
-
-
-
-	// ==== Initialize tuner and set its parameters =====
-
-	...
-
-	// Set E4000 bandwidth.
-	pTunerExtra->SetBandwidthMode(pTuner, E4000_BANDWIDTH_6MHZ);
-
-
-
-
-
-	// ==== Get tuner information =====
-
-	...
-
-	// Get E4000 bandwidth.
-	pTunerExtra->GetBandwidthMode(pTuner, &BandwidthMode);
-
-
-
-	// See the example for other tuner functions in tuner_base.h
-
-
-	return 0;
-}
-
-
-@endcode
-
-*/
-
-
-
-
-
-//#include "tuner_base.h"
-
-
-
-
-
-// The following context is implemented for E4000 source code.
-
-
 // Definition (implemeted for E4000)
 #define E4000_1_SUCCESS			1
 #define E4000_1_FAIL			0
 #define E4000_I2C_SUCCESS		1
 #define E4000_I2C_FAIL			0
 
-
+#define E4K_I2C_ADDR		0xc8
+#define E4K_CHECK_ADDR		0x02
+#define E4K_CHECK_VAL		0x40
 
 // Function (implemeted for E4000)
 int

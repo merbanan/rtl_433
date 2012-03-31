@@ -11,7 +11,6 @@
 #include "tuner_fc0013.h"
 
 #define CRYSTAL_FREQ		28800000
-#define FC0013_I2C_ADDR		0xc6
 
 /* glue functions to rtl-sdr code */
 int FC0013_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte)

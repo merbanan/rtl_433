@@ -18,9 +18,7 @@
 #define I2C_BUFFER_LEN		128
 #define YES			1
 #define NO			0
-
 #define CRYSTAL_FREQ		28800000
-#define E4K_I2C_ADDR		0xc8
 
 /* glue functions to rtl-sdr code */
 int

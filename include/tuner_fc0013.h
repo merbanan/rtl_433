@@ -15,6 +15,10 @@ FC0013 module is derived from tuner module.
 
 **/
 
+#define FC0013_I2C_ADDR		0xc6
+#define FC0013_CHECK_ADDR	0x00
+#define FC0013_CHECK_VAL	0xa3
+
 // Definitions
 enum FC0013_TRUE_FALSE_STATUS
 {

@@ -5,7 +5,7 @@
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 2 of the License, or
- *(at your option) any later version.
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -44,7 +44,7 @@ int fc0013_init(void *dev) { return FC0013_Open(dev); }
 int fc0013_exit(void *dev) { return 0; }
 int fc0013_tune(void *dev, int freq) {
 	/* read bandwidth mode to reapply it */
-	int bw = 0;
+	unsigned int bw = 6;
 	//fc0013_GetBandwidthMode(dev, &bw); // FIXME: missing
 	return FC0013_SetFrequency(dev, freq/1000, bw & 0xff);
 }
@@ -57,10 +57,9 @@ int fc0013_set_bw(void *dev, int bw) {
 }
 
 enum rtlsdr_tuners {
-	RTLSDR_TUNER_UNDEF,
 	RTLSDR_TUNER_E4000,
 	RTLSDR_TUNER_FC0012,
-	RTLSDR_TUNER_FC0013
+	RTLSDR_TUNER_FC0013,
 };
 
 typedef struct rtlsdr_tuner {
@@ -161,6 +160,23 @@ int rtlsdr_write_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t 
 	return r;
 }
 
+int rtlsdr_i2c_write_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t data)
+{
+	uint16_t addr = i2c_addr;
+	return rtlsdr_write_array(dev, IICB, addr, &data, 1);
+}
+
+uint8_t rtlsdr_i2c_read_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t reg)
+{
+	uint16_t addr = i2c_addr;
+	uint8_t data;
+
+	rtlsdr_write_array(dev, IICB, addr, &reg, 1);
+	rtlsdr_read_array(dev, IICB, addr, &data, 1);
+
+	return data;
+}
+
 int rtlsdr_i2c_write(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t *buffer, int len)
 {
 	uint16_t addr = i2c_addr;
@@ -249,6 +265,27 @@ void rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint
 		printf("%s failed\n", __FUNCTION__);
 
 	rtlsdr_demod_read_reg(dev, 0x0a, 0x01, 1);
+}
+
+void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val)
+{
+	uint8_t r;
+
+	gpio = 1 << gpio;
+	r = rtlsdr_read_reg(dev, SYSB, GPO, 1);
+	r = val ? (r | gpio) : (r & ~gpio);
+	rtlsdr_write_reg(dev, SYSB, GPO, r, 1);
+}
+
+void rtlsdr_set_gpio_output(rtlsdr_dev_t *dev, uint8_t gpio)
+{
+	int r;
+	gpio = 1 << gpio;
+
+	r = rtlsdr_read_reg(dev, SYSB, GPD, 1);
+	rtlsdr_write_reg(dev, SYSB, GPO, r & ~gpio, 1);
+	r = rtlsdr_read_reg(dev, SYSB, GPOE, 1);
+	rtlsdr_write_reg(dev, SYSB, GPOE, r | gpio, 1);
 }
 
 void rtlsdr_set_i2c_repeater(rtlsdr_dev_t *dev, int on)
@@ -464,6 +501,15 @@ const char *rtlsdr_get_device_name(uint32_t index)
 		return "";
 }
 
+/* TODO: put those defines in the tuner header once the drivers are added */
+#define FC0012_I2C_ADDR		0xc6
+#define FC0012_CHECK_ADDR	0x00
+#define FC0012_CHECK_VAL	0xa1
+
+#define FC2580_I2C_ADDR		0xac
+#define FC2580_CHECK_ADDR	0x01
+#define FC2580_CHECK_VAL	0x56
+
 rtlsdr_dev_t *rtlsdr_open(int index)
 {
 	int r;
@@ -473,6 +519,7 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 	libusb_device *device = NULL;
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
+	uint8_t reg;
 
 	dev = malloc(sizeof(rtlsdr_dev_t));
 	memset(dev, 0, sizeof(rtlsdr_dev_t));
@@ -514,10 +561,49 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 
 	rtlsdr_init_baseband(dev);
 
-	// TODO: probe the tuner and set dev->tuner member to appropriate tuner object
-	// dev->tuner = &tuners[...];
+	/* Probe tuners */
+	rtlsdr_set_i2c_repeater(dev, 1);
 
+	reg = rtlsdr_i2c_read_reg(dev, E4K_I2C_ADDR, E4K_CHECK_ADDR);
+	if (reg == E4K_CHECK_VAL) {
+		printf("Found Elonics E4000 tuner\n");
+		dev->tuner = &tuners[RTLSDR_TUNER_E4000];
+		goto found;
+	}
+
+	reg = rtlsdr_i2c_read_reg(dev, FC0013_I2C_ADDR, FC0013_CHECK_ADDR);
+	if (reg == FC0013_CHECK_VAL) {
+		printf("Found Fitipower FC0013 tuner\n");
+		dev->tuner = &tuners[RTLSDR_TUNER_FC0013];
+		goto found;
+	}
+
+	reg = rtlsdr_i2c_read_reg(dev, FC2580_I2C_ADDR, FC2580_CHECK_ADDR);
+	if ((reg & 0x7f) == FC2580_CHECK_VAL) {
+		printf("Found FCI 2580 tuner\n");
+		//dev->tuner = &tuners[RTLSDR_TUNER_FC2580];
+		// TODO: set GPIO5 low
+		goto found;
+	}
+
+	/* initialise GPIOs (only needed for the FC0012 so far */
+	rtlsdr_set_gpio_output(dev, 5);
+
+	/* reset FC0012 before probing */
+	rtlsdr_set_gpio_bit(dev, 5, 1);
+	rtlsdr_set_gpio_bit(dev, 5, 0);
+
+	reg = rtlsdr_i2c_read_reg(dev, FC0012_I2C_ADDR, FC0012_CHECK_ADDR);
+	if (reg == FC0012_CHECK_VAL) {
+		printf("Found Fitipower FC0012 tuner\n");
+		dev->tuner = &tuners[RTLSDR_TUNER_FC0012];
+		goto found;
+	}
+
+found:
+	rtlsdr_set_i2c_repeater(dev, 0);
 	return dev;
+
 err:
 	return NULL;
 }
