@@ -85,9 +85,10 @@ struct rtlsdr_device {
 } devices[] = {
 	{ 0x0bda, 0x2832 }, /* default RTL2832U vid/pid (eg. hama nano) */
 	{ 0x0bda, 0x2838 }, /* ezcap USB 2.0 DVB-T/DAB/FM stick */
-	{ 0x0ccd, 0x00b3 }, /* Terratec NOXON DAB/DAB+ USB-Stick */
+	{ 0x0ccd, 0x00b3 }, /* Terratec NOXON DAB/DAB+ USB-Stick rev 1 */
 	{ 0x1f4d, 0xb803 }, /* GTek T803 */
 	{ 0x1b80, 0xd3a4 }, /* Twintech UT-40 */
+	{ 0x1d19, 0x1101 }, /* Dexatek DK DVB-T Dongle (Logilink VG0002A) */
 };
 
 typedef struct {

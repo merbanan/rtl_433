@@ -21,7 +21,7 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832", MODE:="066
 # ezcap EzTV668
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838", MODE:="0666"
 
-# Terratec NOXON
+# Terratec NOXON rev 1
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3", MODE:="0666"
 
 # GTek T803
@@ -29,3 +29,6 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="b803", MODE:="066
 
 # Twintech UT-40
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a4", MODE:="0666"
+
+# Dexatek DK DVB-T Dongle (Logilink VG0002A)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1101", MODE:="0666"
