@@ -113,6 +113,8 @@ int main(int argc, char **argv)
 	r = rtlsdr_set_center_freq(dev, frequency);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");
+	else
+		fprintf(stderr, "Tuned to %i Hz.\n", frequency);
 
 	file = fopen(filename, "wb");
 
