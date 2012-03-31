@@ -129,6 +129,9 @@ int FC0013_Open(void *pTuner)
 	// FC0013 Reset = High -> Low
 	// (...)
 
+	/* FIXME added to fix replug-bug with rtl-sdr */
+	if(FC0013_Write(pTuner, 0x0C, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
+
     //================================ update base on new FC0013 register bank
 	if(FC0013_Write(pTuner, 0x01, 0x09) != FC0013_I2C_SUCCESS) goto error_status;
 	if(FC0013_Write(pTuner, 0x02, 0x16) != FC0013_I2C_SUCCESS) goto error_status;

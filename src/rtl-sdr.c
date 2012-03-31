@@ -160,10 +160,14 @@ int rtlsdr_write_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t 
 	return r;
 }
 
-int rtlsdr_i2c_write_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t data)
+int rtlsdr_i2c_write_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t reg, uint8_t val)
 {
 	uint16_t addr = i2c_addr;
-	return rtlsdr_write_array(dev, IICB, addr, &data, 1);
+	uint8_t data[2];
+
+	data[0] = reg;
+	data[1] = val;
+	return rtlsdr_write_array(dev, IICB, addr, &data, 2);
 }
 
 uint8_t rtlsdr_i2c_read_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t reg)
@@ -601,6 +605,9 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 	}
 
 found:
+	if (dev->tuner)
+		dev->tuner->init(dev);
+
 	rtlsdr_set_i2c_repeater(dev, 0);
 	return dev;
 
