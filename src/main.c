@@ -54,9 +54,13 @@ int main(int argc, char **argv)
 	uint32_t n_read;
 	FILE *file;
 	rtlsdr_dev_t *dev = NULL;
+	uint32_t dev_index = 0;
 
-	while ((opt = getopt(argc, argv, "f:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:s:")) != -1) {
 		switch (opt) {
+		case 'd':
+			dev_index = atoi(optarg);
+			break;
 		case 'f':
 			frequency = atoi(optarg);
 			break;
@@ -85,11 +89,13 @@ int main(int argc, char **argv)
 
 	printf("Found %d device(s).\n", device_count);
 
-	dev = rtlsdr_open(0); /* open the first device */
+	dev = rtlsdr_open(dev_index);
 	if (NULL == dev) {
-	fprintf(stderr, "Failed to open rtlsdr device.\n");
+	fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
 	}
+
+	printf("Using %s\n", rtlsdr_get_device_name(dev_index));
 
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
@@ -115,11 +121,10 @@ int main(int argc, char **argv)
 		goto out;
 	}
 
-	/* Reset endpoint before we start reading from it */
+	/* Reset endpoint before we start reading from it (mandatory) */
 	r = rtlsdr_reset_buffer(dev);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
-
 
 	printf("Reading samples...\n");
 	while (!do_exit) {
@@ -136,6 +141,8 @@ int main(int argc, char **argv)
 	}
 
 	fclose(file);
+
+	rtlsdr_close(dev);
 
 	rtlsdr_exit();
 out:

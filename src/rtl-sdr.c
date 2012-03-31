@@ -79,16 +79,19 @@ rtlsdr_tuner_t tuners[] = {
 	{ RTLSDR_TUNER_FC0013, fc0013_init, fc0013_exit, fc0013_tune, fc0013_set_bw, 0, 0 },
 };
 
-struct rtlsdr_device {
+typedef struct rtlsdr_device {
 	uint16_t vid;
 	uint16_t pid;
-} devices[] = {
-	{ 0x0bda, 0x2832 }, /* default RTL2832U vid/pid (eg. hama nano) */
-	{ 0x0bda, 0x2838 }, /* ezcap USB 2.0 DVB-T/DAB/FM stick */
-	{ 0x0ccd, 0x00b3 }, /* Terratec NOXON DAB/DAB+ USB-Stick rev 1 */
-	{ 0x1f4d, 0xb803 }, /* GTek T803 */
-	{ 0x1b80, 0xd3a4 }, /* Twintech UT-40 */
-	{ 0x1d19, 0x1101 }, /* Dexatek DK DVB-T Dongle (Logilink VG0002A) */
+	const char *name;
+} rtlsdr_device_t;
+
+rtlsdr_device_t devices[] = {
+	{ 0x0bda, 0x2832, "Generic RTL2832U (e.g. hama nano)" },
+	{ 0x0bda, 0x2838, "ezcap USB 2.0 DVB-T/DAB/FM dongle" },
+	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
+	{ 0x1f4d, 0xb803, "GTek T803" },
+	{ 0x1b80, 0xd3a4, "Twintech UT-40" },
+	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
 };
 
 typedef struct {
@@ -309,15 +312,16 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 
 int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 {
+	if (!dev->tuner)
+		return -1;
+
 	rtlsdr_set_i2c_repeater(dev, 1);
 
-	if (dev->tuner) {
-		dev->tuner->freq = freq;
-		double f = (double) freq;
-		f *= 1.0 + dev->tuner->corr / 1e6;
-		dev->tuner->tune((void *)dev, (int) f);
-		printf("Tuned to %i Hz\n", freq);
-	}
+	dev->tuner->freq = freq;
+	double f = (double) freq;
+	f *= 1.0 + dev->tuner->corr / 1e6;
+	dev->tuner->tune((void *)dev, (int) f);
+	printf("Tuned to %i Hz\n", freq);
 
 	rtlsdr_set_i2c_repeater(dev, 0);
 
@@ -331,25 +335,26 @@ int rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
 
 int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int32_t ppm)
 {
-	if (dev->tuner) {
-		if (dev->tuner->corr == ppm)
-			return -1;
+	if (!dev->tuner)
+		return -1;
 
-		dev->tuner->corr = ppm;
+	if (dev->tuner->corr == ppm)
+		return -1;
 
-		/* retune to apply new correction value */
-		rtlsdr_set_center_freq(dev, dev->tuner->freq);
-	}
+	dev->tuner->corr = ppm;
+
+	/* retune to apply new correction value */
+	rtlsdr_set_center_freq(dev, dev->tuner->freq);
 
 	return 0;
 }
 
 int32_t rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
 {
-	if (dev->tuner)
-		return dev->tuner->corr;
-	else
-		return 0;
+	if (!dev->tuner)
+		return -1;
+
+	return dev->tuner->corr;
 }
 
 void rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
@@ -392,9 +397,24 @@ void rtlsdr_exit(void)
 	libusb_exit(NULL);
 }
 
+rtlsdr_device_t *find_known_device(uint16_t vid, uint16_t pid)
+{
+	int i;
+	rtlsdr_device_t *device = NULL;
+
+	for (i = 0; i < sizeof(devices)/sizeof(rtlsdr_device_t); i++ ) {
+		if (devices[i].vid == vid && devices[i].pid == pid) {
+			device = &devices[i];
+			break;
+		}
+	}
+
+	return device;
+}
+
 uint32_t rtlsdr_get_device_count(void)
 {
-	int i, j;
+	int i;
 	libusb_device **list;
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
@@ -404,10 +424,8 @@ uint32_t rtlsdr_get_device_count(void)
 	for (i = 0; i < cnt; i++) {
 		libusb_get_device_descriptor(list[i], &dd);
 
-		for (j = 0; j < sizeof(devices)/sizeof(struct rtlsdr_device); j++ ) {
-			if (devices[j].vid == dd.idVendor && devices[j].pid == dd.idProduct)
-				device_count++;
-		}
+		if (find_known_device(dd.idVendor, dd.idProduct))
+			device_count++;
 	}
 
 	libusb_free_device_list(list, 0);
@@ -417,26 +435,39 @@ uint32_t rtlsdr_get_device_count(void)
 
 const char *rtlsdr_get_device_name(uint32_t index)
 {
+	int i;
 	libusb_device **list;
+	struct libusb_device_descriptor dd;
+	rtlsdr_device_t *device = NULL;
+	uint32_t device_count = 0;
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
 
-	if (index > cnt - 1)
-		return NULL;
+	for (i = 0; i < cnt; i++) {
+		libusb_get_device_descriptor(list[i], &dd);
 
-	/*libusb_device *device = list[index];*/
+		device = find_known_device(dd.idVendor, dd.idProduct);
 
+		if (device) {
+			device_count++;
 
+			if (index == device_count - 1)
+				break;
+		}
+	}
 
 	libusb_free_device_list(list, 0);
 
-	return "TODO: implement";
+	if (device)
+		return device->name;
+	else
+		return "";
 }
 
 rtlsdr_dev_t *rtlsdr_open(int index)
 {
 	int r;
-	int i, j;
+	int i;
 	libusb_device **list;
 	rtlsdr_dev_t * dev = NULL;
 	libusb_device *device = NULL;
@@ -453,48 +484,33 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 
 		libusb_get_device_descriptor(list[i], &dd);
 
-		for (j = 0; j < sizeof(devices)/sizeof(struct rtlsdr_device); j++ ) {
-			if ( devices[j].vid == dd.idVendor && devices[j].pid == dd.idProduct ) {
-				device_count++;
-				if (index == device_count - 1)
-					break;
-			}
+		if (find_known_device(dd.idVendor, dd.idProduct)) {
+			device_count++;
 		}
 
 		if (index == device_count - 1)
 			break;
 
 		device = NULL;
-		}
+	}
 
-		if (!device)
-			goto err;
+	if (!device)
+		goto err;
 
-		r = libusb_open(device, &dev->devh);
-		if (r < 0) {
-			libusb_free_device_list(list, 0);
-			fprintf(stderr, "usb_open error %d\n", r);
-			goto err;
-		}
-
+	r = libusb_open(device, &dev->devh);
+	if (r < 0) {
 		libusb_free_device_list(list, 0);
+		fprintf(stderr, "usb_open error %d\n", r);
+		goto err;
+	}
 
-		unsigned char buffer[256];
+	libusb_free_device_list(list, 0);
 
-		libusb_get_string_descriptor_ascii(dev->devh, 0, buffer, sizeof(buffer));
-		printf("sn#: %s\n", buffer);
-
-		libusb_get_string_descriptor_ascii(dev->devh, 1, buffer, sizeof(buffer));
-		printf("manufacturer: %s\n", buffer);
-
-		libusb_get_string_descriptor_ascii(dev->devh, 2, buffer, sizeof(buffer));
-		printf("product: %s\n", buffer);
-
-		r = libusb_claim_interface(dev->devh, 0);
-		if (r < 0) {
-			fprintf(stderr, "usb_claim_interface error %d\n", r);
-			goto err;
-		}
+	r = libusb_claim_interface(dev->devh, 0);
+	if (r < 0) {
+		fprintf(stderr, "usb_claim_interface error %d\n", r);
+		goto err;
+	}
 
 	rtlsdr_init_baseband(dev);
 
@@ -517,7 +533,10 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 
 int rtlsdr_reset_buffer(rtlsdr_dev_t *dev)
 {
-	return 0; // TODO: implement
+	rtlsdr_write_reg(dev, USBB, USB_EPA_CTL, 0x1002, 2);
+	rtlsdr_write_reg(dev, USBB, USB_EPA_CTL, 0x0000, 2);
+
+	return 0;
 }
 
 int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read)
