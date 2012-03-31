@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	uint32_t frequency = 0, samp_rate = 2048000;
 	uint8_t buffer[READLEN];
-    uint32_t n_read;
+	uint32_t n_read;
 	FILE *file;
 	rtlsdr_dev_t *dev = NULL;
 
@@ -75,19 +75,19 @@ int main(int argc, char **argv)
 		filename = argv[optind];
 	}
 
-    rtlsdr_init();
+	rtlsdr_init();
 
-    int device_count = rtlsdr_get_device_count();
-    if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
-        exit(1);
-    }
+	int device_count = rtlsdr_get_device_count();
+	if (!device_count) {
+		fprintf(stderr, "No supported devices found.\n");
+		exit(1);
+	}
 
-    printf("Found %d device(s).\n", device_count);
+	printf("Found %d device(s).\n", device_count);
 
-    dev = rtlsdr_open(0); /* open the first device */
+	dev = rtlsdr_open(0); /* open the first device */
 	if (NULL == dev) {
-        fprintf(stderr, "Failed to open rtlsdr device.\n");
+	fprintf(stderr, "Failed to open rtlsdr device.\n");
 		exit(1);
 	}
 
@@ -99,16 +99,14 @@ int main(int argc, char **argv)
 	sigaction(SIGQUIT, &sigact, NULL);
 
 	/* Set the sample rate */
-    r = rtlsdr_set_sample_rate(dev, samp_rate);
-	if (r < 0) {
-        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-	}
+	r = rtlsdr_set_sample_rate(dev, samp_rate);
+	if (r < 0)
+		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
 
 	/* Set the frequency */
 	r = rtlsdr_set_center_freq(dev, frequency);
-    if (r < 0) {
-        fprintf(stderr, "WARNING: Failed to set center freq.\n");
-    }
+	if (r < 0)
+		fprintf(stderr, "WARNING: Failed to set center freq.\n");
 
 	file = fopen(filename, "wb");
 
@@ -119,16 +117,15 @@ int main(int argc, char **argv)
 
 	/* Reset endpoint before we start reading from it */
 	r = rtlsdr_reset_buffer(dev);
-    if (r < 0) {
-        fprintf(stderr, "WARNING: Failed to reset buffers.\n");
-    }
+	if (r < 0)
+		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+
 
 	printf("Reading samples...\n");
 	while (!do_exit) {
 		r = rtlsdr_read_sync(dev, buffer, READLEN, &n_read);
-        if (r < 0) {
-                fprintf(stderr, "WARNING: sync read failed.\n");
-        }
+		if (r < 0)
+			fprintf(stderr, "WARNING: sync read failed.\n");
 
 		fwrite(buffer, n_read, 1, file);
 
@@ -140,7 +137,7 @@ int main(int argc, char **argv)
 
 	fclose(file);
 
-    rtlsdr_exit();
+	rtlsdr_exit();
 out:
 	return r >= 0 ? r : -r;
 }
