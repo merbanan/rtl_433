@@ -35,6 +35,8 @@ void usage(void)
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency to tune to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
+	        "\t[-d device index (default: 0)]\n"
+	        "\t[-g tuner gain (default: 0 dB)]\n"
 		"\toutput filename\n");
 	exit(1);
 }
@@ -54,15 +56,18 @@ int main(int argc, char **argv)
 	uint32_t n_read;
 	FILE *file;
 	rtlsdr_dev_t *dev = NULL;
-	uint32_t dev_index = 0;
+	uint32_t dev_index = 0, gain = 0;
 
-	while ((opt = getopt(argc, argv, "d:f:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
 			frequency = atoi(optarg);
+			break;
+		case 'g':
+			gain = atoi(optarg);
 			break;
 		case 's':
 			samp_rate = atoi(optarg);
@@ -115,6 +120,12 @@ int main(int argc, char **argv)
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");
 	else
 		fprintf(stderr, "Tuned to %i Hz.\n", frequency);
+
+	r = rtlsdr_set_tuner_gain(dev, gain);
+	if (r < 0)
+		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+	else
+		fprintf(stderr, "Tuner gain set to %i dB.\n", gain);
 
 	file = fopen(filename, "wb");
 

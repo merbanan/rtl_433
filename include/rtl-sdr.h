@@ -47,9 +47,13 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
 int rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
 
-int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int32_t ppm);
+int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
-int32_t rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
+int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
+
+int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
+
+int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
 /* this will select the baseband filters according to the requested sample rate */
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);

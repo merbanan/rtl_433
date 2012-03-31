@@ -29,32 +29,41 @@
 #include "tuner_e4000.h"
 #include "tuner_fc0013.h"
 
+typedef struct rtlsdr_tuner {
+	int(*init)(void *);
+	int(*exit)(void *);
+	int(*tune)(void *, int freq /* Hz */);
+	int(*set_bw)(void *, int bw /* Hz */);
+	int(*set_gain)(void *, int gain /* dB */);
+	int freq; /* Hz */
+	int corr; /* ppm */
+	int gain; /* dB */
+} rtlsdr_tuner_t;
+
 /* generic tuner interface functions, shall be moved to the tuner implementations */
 int e4k_init(void *dev) { return e4000_Initialize(dev); }
 int e4k_exit(void *dev) { return 0; }
 int e4k_tune(void *dev, int freq) { return e4000_SetRfFreqHz(dev, freq); }
 int e4k_set_bw(void *dev, int bw) { return e4000_SetBandwidthHz(dev, 8000000); }
+int e4k_set_gain(void *dev, int gain) { return 0; }
 
 int fc0012_init(void *dev) { return 0; }
 int fc0012_exit(void *dev) { return 0; }
 int fc0012_tune(void *dev, int freq) { return 0; }
 int fc0012_set_bw(void *dev, int bw) { return 0; }
+int fc0012_set_gain(void *dev, int gain) { return 0; }
 
 int fc0013_init(void *dev) { return FC0013_Open(dev); }
 int fc0013_exit(void *dev) { return 0; }
 int fc0013_tune(void *dev, int freq) {
-	/* read bandwidth mode to reapply it */
 	unsigned int bw = 6;
-	//fc0013_GetBandwidthMode(dev, &bw); // FIXME: missing
 	return FC0013_SetFrequency(dev, freq/1000, bw & 0xff);
 }
-
 int fc0013_set_bw(void *dev, int bw) {
-	/* read frequency to reapply it */
-	unsigned long freq = 0;
-	//fc0013_GetRfFreqHz(dev, &freq); // FIXME: missing
-	return FC0013_SetFrequency(dev, freq/1000, 8);
+	unsigned long freq = ((rtlsdr_tuner_t *)dev)->freq;
+	return FC0013_SetFrequency(dev, freq/1000, bw/1000000);
 }
+int fc0013_set_gain(void *dev, int gain) { return 0; }
 
 enum rtlsdr_tuners {
 	RTLSDR_TUNER_E4000,
@@ -62,20 +71,12 @@ enum rtlsdr_tuners {
 	RTLSDR_TUNER_FC0013,
 };
 
-typedef struct rtlsdr_tuner {
-	enum rtlsdr_tuners tuner;
-	int(*init)(void *);
-	int(*exit)(void *);
-	int(*tune)(void *, int freq /* Hz */);
-	int(*set_bw)(void *, int bw /* Hz */);
-	int freq; /* Hz */
-	int corr; /* ppm */
-} rtlsdr_tuner_t;
 
-rtlsdr_tuner_t tuners[] = {
-	{ RTLSDR_TUNER_E4000, e4k_init, e4k_exit, e4k_tune, e4k_set_bw, 0, 0 },
-	{ RTLSDR_TUNER_FC0012, fc0012_init, fc0012_exit, fc0012_tune, fc0012_set_bw, 0, 0 },
-	{ RTLSDR_TUNER_FC0013, fc0013_init, fc0013_exit, fc0013_tune, fc0013_set_bw, 0, 0 },
+
+static rtlsdr_tuner_t tuners[] = {
+	{ e4k_init, e4k_exit, e4k_tune, e4k_set_bw, e4k_set_gain, 0, 0, 0 },
+	{ fc0012_init, fc0012_exit, fc0012_tune, fc0012_set_bw, fc0012_set_gain, 0, 0, 0 },
+	{ fc0013_init, fc0013_exit, fc0013_tune, fc0013_set_bw, fc0013_set_gain, 0, 0, 0 },
 };
 
 typedef struct rtlsdr_device {
@@ -84,7 +85,7 @@ typedef struct rtlsdr_device {
 	const char *name;
 } rtlsdr_device_t;
 
-rtlsdr_device_t devices[] = {
+static rtlsdr_device_t devices[] = {
 	{ 0x0bda, 0x2832, "Generic RTL2832U (e.g. hama nano)" },
 	{ 0x0bda, 0x2838, "ezcap USB 2.0 DVB-T/DAB/FM dongle" },
 	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
@@ -370,12 +371,15 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 
 	rtlsdr_set_i2c_repeater(dev, 1);
 
-	dev->tuner->freq = freq;
+
 	double f = (double) freq;
 	f *= 1.0 + dev->tuner->corr / 1e6;
 	r = dev->tuner->tune((void *)dev, (int) f);
 
 	rtlsdr_set_i2c_repeater(dev, 0);
+
+	if (!r)
+		dev->tuner->freq = freq;
 
 	return r;
 }
@@ -388,7 +392,7 @@ int rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
 	return dev->tuner->freq;
 }
 
-int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int32_t ppm)
+int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm)
 {
 	int r;
 
@@ -406,12 +410,35 @@ int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int32_t ppm)
 	return r;
 }
 
-int32_t rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
+int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
 {
 	if (!dev || !dev->tuner)
 		return -1;
 
 	return dev->tuner->corr;
+}
+
+int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain)
+{
+	int r;
+
+	if (!dev || !dev->tuner)
+		return -1;
+
+	r = dev->tuner->set_gain((void *)dev, gain);
+
+	if (!r)
+		dev->tuner->gain = gain;
+
+	return r;
+}
+
+int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev)
+{
+	if (!dev || !dev->tuner)
+		return -1;
+
+	return dev->tuner->gain;
 }
 
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
