@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include "i2c.h"
+#include "rtlsdr_i2c.h"
 #include "tuner_e4000.h"
 
 #define FUNCTION_ERROR		1

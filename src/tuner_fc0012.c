@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "rtlsdr_i2c.h"
 #include "tuner_fc0012.h"
-#include "i2c.h"
 
 #define CRYSTAL_FREQ		28800000
 
