@@ -58,7 +58,7 @@ int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 
 int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
-int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, uint32_t len, uint32_t *n_read);
+int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
 #ifdef __cplusplus
 }

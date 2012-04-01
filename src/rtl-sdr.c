@@ -30,6 +30,7 @@
 #include "tuner_fc0012.h"
 #include "tuner_fc0013.h"
 #include "tuner_fc2580.h"
+#include "rtl-sdr.h"
 
 typedef struct rtlsdr_tuner {
 	int(*init)(void *);
@@ -579,7 +580,7 @@ const char *rtlsdr_get_device_name(uint32_t index)
 		return "";
 }
 
-rtlsdr_dev_t *rtlsdr_open(int index)
+rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 {
 	int r;
 	int i;
