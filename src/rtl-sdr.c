@@ -109,6 +109,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x1f4d, 0xb803, "GTek T803" },
 	{ 0x1b80, 0xd3a4, "Twintech UT-40" },
 	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
+	{ 0x0458, 0x707f, "Genius TVGo DVB-T03 USB dongle (Ver. B)" },
 };
 
 typedef struct rtlsdr_dev {
