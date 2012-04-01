@@ -27,12 +27,6 @@ extern "C" {
 
 typedef int rtlsdr_dev_t;
 
-/* must be called once before using any other library functions */
-int rtlsdr_init(void);
-
-/* must be called once at application shutdown */
-void rtlsdr_exit(void);
-
 uint32_t rtlsdr_get_device_count(void);
 
 const char *rtlsdr_get_device_name(uint32_t index);
@@ -65,10 +59,6 @@ int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
 int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, uint32_t len, uint32_t *n_read);
-
-typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *ctx);
-
-int rtlsdr_async_loop(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx);
 
 #ifdef __cplusplus
 }

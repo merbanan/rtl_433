@@ -64,13 +64,13 @@ int main(int argc, char **argv)
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
-			frequency = atoi(optarg);
+			frequency = (int)atof(optarg);
 			break;
 		case 'g':
 			gain = atoi(optarg);
 			break;
 		case 's':
-			samp_rate = atoi(optarg);
+			samp_rate = (int)atof(optarg);
 			break;
 		default:
 			usage();
@@ -83,8 +83,6 @@ int main(int argc, char **argv)
 	} else {
 		filename = argv[optind];
 	}
-
-	rtlsdr_init();
 
 	int device_count = rtlsdr_get_device_count();
 	if (!device_count) {
@@ -153,11 +151,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (do_exit)
+		printf("\nUser cancel, exiting...\n");
+
 	fclose(file);
 
 	rtlsdr_close(dev);
-
-	rtlsdr_exit();
 out:
 	return r >= 0 ? r : -r;
 }

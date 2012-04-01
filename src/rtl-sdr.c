@@ -79,8 +79,6 @@ enum rtlsdr_tuners {
 	RTLSDR_TUNER_FC0013,
 };
 
-
-
 static rtlsdr_tuner_t tuners[] = {
 	{ e4k_init, e4k_exit, e4k_tune, e4k_set_bw, e4k_set_gain, 0, 0, 0 },
 	{ fc0012_init, fc0012_exit, fc0012_tune, fc0012_set_bw, fc0012_set_gain, 0, 0, 0 },
@@ -107,6 +105,9 @@ typedef struct {
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */
 } rtlsdr_dev_t;
+
+static int opened_devices = 0;
+static int libusb_inited = 0;
 
 #define CRYSTAL_FREQ	28800000
 #define MAX_SAMP_RATE	3200000
@@ -489,16 +490,6 @@ int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev)
 	return dev->rate;
 }
 
-int rtlsdr_init(void)
-{
-	return libusb_init(NULL);
-}
-
-void rtlsdr_exit(void)
-{
-	libusb_exit(NULL);
-}
-
 rtlsdr_device_t *find_known_device(uint16_t vid, uint16_t pid)
 {
 	int i;
@@ -521,6 +512,9 @@ uint32_t rtlsdr_get_device_count(void)
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
 
+	if (!libusb_inited)
+		libusb_init(NULL);
+
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
 
 	for (i = 0; i < cnt; i++) {
@@ -532,6 +526,9 @@ uint32_t rtlsdr_get_device_count(void)
 
 	libusb_free_device_list(list, 0);
 
+	if (!libusb_inited)
+		libusb_exit(NULL);
+
 	return device_count;
 }
 
@@ -542,6 +539,9 @@ const char *rtlsdr_get_device_name(uint32_t index)
 	struct libusb_device_descriptor dd;
 	rtlsdr_device_t *device = NULL;
 	uint32_t device_count = 0;
+
+	if (!libusb_inited)
+		libusb_init(NULL);
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
 
@@ -559,6 +559,9 @@ const char *rtlsdr_get_device_name(uint32_t index)
 	}
 
 	libusb_free_device_list(list, 0);
+
+	if (!libusb_inited)
+		libusb_exit(NULL);
 
 	if (device)
 		return device->name;
@@ -585,6 +588,13 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 
 	dev = malloc(sizeof(rtlsdr_dev_t));
 	memset(dev, 0, sizeof(rtlsdr_dev_t));
+
+	if (1 == ++opened_devices) {
+		if (!libusb_inited) {
+			libusb_init(NULL);
+			libusb_inited = 1;
+		}
+	}
 
 	ssize_t cnt = libusb_get_device_list(NULL, &list);
 
@@ -681,6 +691,13 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 	libusb_close(dev->devh);
 	free(dev);
 
+	if (0 == --opened_devices) {
+		if (libusb_inited) {
+			libusb_exit(NULL);
+			libusb_inited = 0;
+		}
+	}
+
 	return 0;
 }
 
@@ -703,6 +720,8 @@ int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read)
 	return libusb_bulk_transfer(dev->devh, 0x81, buf, len, n_read, 3000);
 }
 #if 0
+typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *ctx);
+
 int rtlsdr_async_loop(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx)
 {
 	return 0;
