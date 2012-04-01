@@ -29,6 +29,7 @@
 #include "tuner_e4000.h"
 #include "tuner_fc0012.h"
 #include "tuner_fc0013.h"
+#include "tuner_fc2580.h"
 
 typedef struct rtlsdr_tuner {
 	int(*init)(void *);
@@ -73,16 +74,24 @@ int fc0013_set_bw(void *dev, int bw) {
 }
 int fc0013_set_gain(void *dev, int gain) { return 0; }
 
+int fc2580_init(void *dev) { return fc2580_Initialize(dev); }
+int fc2580_exit(void *dev) { return 0; }
+int fc2580_tune(void *dev, int freq) { return fc2580_SetRfFreqHz(dev, freq); }
+int fc2580_set_bw(void *dev, int bw) { return fc2580_SetBandwidthMode(dev, 1); }
+int fc2580_set_gain(void *dev, int gain) { return 0; }
+
 enum rtlsdr_tuners {
 	RTLSDR_TUNER_E4000,
 	RTLSDR_TUNER_FC0012,
 	RTLSDR_TUNER_FC0013,
+	RTLSDR_TUNER_FC2580
 };
 
 static rtlsdr_tuner_t tuners[] = {
 	{ e4k_init, e4k_exit, e4k_tune, e4k_set_bw, e4k_set_gain, 0, 0, 0 },
 	{ fc0012_init, fc0012_exit, fc0012_tune, fc0012_set_bw, fc0012_set_gain, 0, 0, 0 },
 	{ fc0013_init, fc0013_exit, fc0013_tune, fc0013_set_bw, fc0013_set_gain, 0, 0, 0 },
+	{ fc2580_init, fc2580_exit, fc2580_tune, fc2580_set_bw, fc2580_set_gain, 0, 0, 0 },
 };
 
 typedef struct rtlsdr_device {
@@ -570,12 +579,6 @@ const char *rtlsdr_get_device_name(uint32_t index)
 		return "";
 }
 
-/* TODO: put those defines in the tuner header once the drivers are added */
-
-#define FC2580_I2C_ADDR		0xac
-#define FC2580_CHECK_ADDR	0x01
-#define FC2580_CHECK_VAL	0x56
-
 rtlsdr_dev_t *rtlsdr_open(int index)
 {
 	int r;
@@ -651,20 +654,19 @@ rtlsdr_dev_t *rtlsdr_open(int index)
 		goto found;
 	}
 
+	/* initialise GPIOs */
+	rtlsdr_set_gpio_output(dev, 5);
+
+	/* reset tuner before probing */
+	rtlsdr_set_gpio_bit(dev, 5, 1);
+	rtlsdr_set_gpio_bit(dev, 5, 0);
+
 	reg = rtlsdr_i2c_read_reg(dev, FC2580_I2C_ADDR, FC2580_CHECK_ADDR);
 	if ((reg & 0x7f) == FC2580_CHECK_VAL) {
 		fprintf(stderr, "Found FCI 2580 tuner\n");
-		//dev->tuner = &tuners[RTLSDR_TUNER_FC2580];
-		// TODO: set GPIO5 low
+		dev->tuner = &tuners[RTLSDR_TUNER_FC2580];
 		goto found;
 	}
-
-	/* initialise GPIOs (only needed for the FC0012 so far */
-	rtlsdr_set_gpio_output(dev, 5);
-
-	/* reset FC0012 before probing */
-	rtlsdr_set_gpio_bit(dev, 5, 1);
-	rtlsdr_set_gpio_bit(dev, 5, 0);
 
 	reg = rtlsdr_i2c_read_reg(dev, FC0012_I2C_ADDR, FC0012_CHECK_ADDR);
 	if (reg == FC0012_CHECK_VAL) {

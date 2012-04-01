@@ -25,6 +25,7 @@ add_library(rtlsdr SHARED
     tuner_e4000.c
     tuner_fc0012.c
     tuner_fc0013.c
+    tuner_fc2580.c
 )
 
 target_link_libraries(rtlsdr
