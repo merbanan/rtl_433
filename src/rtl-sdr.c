@@ -110,7 +110,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
 };
 
-typedef struct {
+typedef struct rtlsdr_dev {
 	struct libusb_device_handle *devh;
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */

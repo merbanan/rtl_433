@@ -25,7 +25,7 @@ extern "C" {
 
 #include <stdint.h>
 
-typedef int rtlsdr_dev_t;
+typedef struct rtlsdr_dev rtlsdr_dev_t;
 
 uint32_t rtlsdr_get_device_count(void);
 
