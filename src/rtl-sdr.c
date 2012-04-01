@@ -95,6 +95,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x0bda, 0x2832, "Generic RTL2832U (e.g. hama nano)" },
 	{ 0x0bda, 0x2838, "ezcap USB 2.0 DVB-T/DAB/FM dongle" },
 	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
+	{ 0x0ccd, 0x00e0, "Terratec NOXON DAB/DAB+ USB dongle (rev 2)" },
 	{ 0x1f4d, 0xb803, "GTek T803" },
 	{ 0x1b80, 0xd3a4, "Twintech UT-40" },
 	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
