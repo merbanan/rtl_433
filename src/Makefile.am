@@ -7,7 +7,7 @@ AM_CFLAGS = -fPIC -Wall
 
 lib_LTLIBRARIES = librtlsdr.la
 
-librtlsdr_la_SOURCES = rtl-sdr.c tuner_e4000.c tuner_fc0013.c
+librtlsdr_la_SOURCES = rtl-sdr.c tuner_e4000.c tuner_fc0012.c tuner_fc0013.c
 librtlsdr_la_LDFALGS = -version-info $(LIBVERSION)
 
 bin_PROGRAMS         = rtl_sdr

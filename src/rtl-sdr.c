@@ -27,6 +27,7 @@
 #include <libusb.h>
 
 #include "tuner_e4000.h"
+#include "tuner_fc0012.h"
 #include "tuner_fc0013.h"
 
 typedef struct rtlsdr_tuner {
@@ -47,10 +48,17 @@ int e4k_tune(void *dev, int freq) { return e4000_SetRfFreqHz(dev, freq); }
 int e4k_set_bw(void *dev, int bw) { return e4000_SetBandwidthHz(dev, 8000000); }
 int e4k_set_gain(void *dev, int gain) { return 0; }
 
-int fc0012_init(void *dev) { return 0; }
+int fc0012_init(void *dev) { return FC0012_Open(dev); }
 int fc0012_exit(void *dev) { return 0; }
-int fc0012_tune(void *dev, int freq) { return 0; }
-int fc0012_set_bw(void *dev, int bw) { return 0; }
+int fc0012_tune(void *dev, int freq) {
+	/* TODO set GPIO6 accordingly */
+	unsigned int bw = 6;
+	return FC0012_SetFrequency(dev, freq/1000, bw & 0xff);
+}
+int fc0012_set_bw(void *dev, int bw) {
+	unsigned long freq = ((rtlsdr_tuner_t *)dev)->freq;
+	return FC0013_SetFrequency(dev, freq/1000, bw/1000000);
+}
 int fc0012_set_gain(void *dev, int gain) { return 0; }
 
 int fc0013_init(void *dev) { return FC0013_Open(dev); }
@@ -559,9 +567,6 @@ const char *rtlsdr_get_device_name(uint32_t index)
 }
 
 /* TODO: put those defines in the tuner header once the drivers are added */
-#define FC0012_I2C_ADDR		0xc6
-#define FC0012_CHECK_ADDR	0x00
-#define FC0012_CHECK_VAL	0xa1
 
 #define FC2580_I2C_ADDR		0xac
 #define FC2580_CHECK_ADDR	0x01
