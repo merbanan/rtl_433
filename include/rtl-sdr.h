@@ -61,6 +61,12 @@ RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
 RTLSDR_API int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
+typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *context);
+
+RTLSDR_API int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *context);
+
+RTLSDR_API int rtlsdr_cancel_async(rtlsdr_dev_t *dev);
+
 #ifdef __cplusplus
 }
 #endif

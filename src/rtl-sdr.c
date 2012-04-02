@@ -118,8 +118,16 @@ static rtlsdr_device_t devices[] = {
 	{ 0x0458, 0x707f, "Genius TVGo DVB-T03 USB dongle (Ver. B)" },
 };
 
+#define BUF_COUNT	32
+#define BUF_LENGTH	(16 * 16384)
+
 typedef struct rtlsdr_dev {
 	struct libusb_device_handle *devh;
+	struct libusb_transfer *xfer[BUF_COUNT];
+	unsigned char *xfer_buf[BUF_COUNT];
+	rtlsdr_async_read_cb_t cb;
+	void *context;
+	int run_async;
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */
 } rtlsdr_dev_t;
@@ -698,11 +706,21 @@ err:
 
 int rtlsdr_close(rtlsdr_dev_t *dev)
 {
+	int i;
+
 	if (!dev)
 		return -1;
 
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
+
+	for(i = 0; i < BUF_COUNT; ++i) {
+		if (dev->xfer[i])
+			libusb_free_transfer(dev->xfer[i]);
+		if (dev->xfer_buf[i])
+			free(dev->xfer_buf[i]);
+	}
+
 	free(dev);
 
 	if (0 == --opened_devices) {
@@ -733,11 +751,78 @@ int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read)
 
 	return libusb_bulk_transfer(dev->devh, 0x81, buf, len, n_read, 3000);
 }
-#if 0
-typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *ctx);
 
-int rtlsdr_async_loop(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx)
+static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *transfer)
 {
-	return 0;
+	if (LIBUSB_TRANSFER_COMPLETED == transfer->status) {
+		rtlsdr_dev_t *dev = (rtlsdr_dev_t *)transfer->user_data;
+
+		dev->cb(transfer->buffer, transfer->actual_length, dev->context);
+
+		libusb_submit_transfer(transfer); /* resubmit transfer */
+	} else {
+		/*fprintf(stderr, "transfer %d\n", transfer->status);*/
+	}
 }
-#endif
+
+int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *context)
+{
+	int i, r;
+
+	if (!dev)
+		return -1;
+
+	dev->cb = cb;
+	dev->context = context;
+
+	for(i = 0; i < BUF_COUNT; ++i) {
+		if (dev->xfer[i])
+			continue;
+
+		dev->xfer[i] = libusb_alloc_transfer(0);
+	}
+
+	for(i = 0; i < BUF_COUNT; ++i) {
+		if (dev->xfer_buf[i])
+			continue;
+
+		dev->xfer_buf[i] = (unsigned char *)malloc(BUF_LENGTH);
+	}
+
+	for(i = 0; i < BUF_COUNT; ++i) {
+		libusb_fill_bulk_transfer(dev->xfer[i],
+					  dev->devh,
+					  0x81,
+					  dev->xfer_buf[i], BUF_LENGTH,
+					  _libusb_callback,
+					  (void *)dev, 0);
+
+		libusb_submit_transfer(dev->xfer[i]);
+	}
+
+	dev->run_async = 1;
+
+	while (dev->run_async) {
+		struct timeval tv = { 1, 0 };
+		r = libusb_handle_events_timeout(NULL, &tv);
+		if (r < 0) {
+			/*fprintf(stderr, "handle_events %d\n", r);*/
+			break;
+		}
+	}
+
+	return r;
+}
+
+int rtlsdr_cancel_async(rtlsdr_dev_t *dev)
+{
+	if (!dev)
+		return -1;
+
+	if (dev->run_async) {
+		dev->run_async = 0;
+		return 0;
+	}
+
+	return -2;
+}

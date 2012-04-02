@@ -24,11 +24,12 @@
 #include <math.h>
 #include <unistd.h>
 
-#include "rtl-sdr.h"
+#include <rtl-sdr.h>
 
 #define READLEN		(16 * 16384)
 
 static int do_exit = 0;
+static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
 {
@@ -44,6 +45,12 @@ void usage(void)
 static void sighandler(int signum)
 {
 	do_exit = 1;
+	rtlsdr_cancel_async(dev);
+}
+
+void rtlsdr_callback(const char *buf, uint32_t len, void *ctx)
+{
+	fwrite(buf, len, 1, (FILE*)ctx);
 }
 
 int main(int argc, char **argv)
@@ -53,9 +60,8 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	uint32_t frequency = 0, samp_rate = 2048000;
 	uint8_t buffer[READLEN];
-	uint32_t n_read;
+	int n_read;
 	FILE *file;
-	rtlsdr_dev_t *dev = NULL;
 	uint32_t dev_index = 0, gain = 0;
 
 	while ((opt = getopt(argc, argv, "d:f:g:s:")) != -1) {
@@ -138,6 +144,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
 	printf("Reading samples...\n");
+#if 0
 	while (!do_exit) {
 		r = rtlsdr_read_sync(dev, buffer, READLEN, &n_read);
 		if (r < 0)
@@ -150,7 +157,9 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-
+#else
+	rtlsdr_wait_async(dev, rtlsdr_callback, (void *)file);
+#endif
 	if (do_exit)
 		printf("\nUser cancel, exiting...\n");
 
