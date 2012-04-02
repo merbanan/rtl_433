@@ -46,17 +46,22 @@ endif()
 ########################################################################
 find_package(PkgConfig)
 find_package(LibUSB)
+set(THREADS_USE_PTHREADS_WIN32 true)
+find_package(Threads)
 
 if(NOT LIBUSB_FOUND)
     message(FATAL_ERROR "LibUSB 1.0 required to compile rtl-sdr")
 endif()
-
+if(NOT THREADS_FOUND)
+    message(FATAL_ERROR "pthreads(-win32) required to compile osmosdrtlnw")
+endif()
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
     ${LIBUSB_INCLUDE_DIR}
+    ${THREADS_PTHREADS_INCLUDE_DIR}
 )
 
 #link_directories(

@@ -24,41 +24,42 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include "rtl-sdr_export.h"
 
 typedef struct rtlsdr_dev rtlsdr_dev_t;
 
-uint32_t rtlsdr_get_device_count(void);
+uint32_t RTLSDR_API rtlsdr_get_device_count(void);
 
-const char *rtlsdr_get_device_name(uint32_t index);
+RTLSDR_API const char*  rtlsdr_get_device_name(uint32_t index);
 
-rtlsdr_dev_t *rtlsdr_open(uint32_t index);
+RTLSDR_API rtlsdr_dev_t*  rtlsdr_open(uint32_t index);
 
-int rtlsdr_close(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_close(rtlsdr_dev_t *dev);
 
 /* configuration functions */
 
-int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
+int RTLSDR_API rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
-int rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
 
-int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
+int RTLSDR_API rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
-int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
 
-int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
+int RTLSDR_API rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 
-int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
 /* this will select the baseband filters according to the requested sample rate */
-int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
+int RTLSDR_API rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
 
-int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 
 /* streaming functions */
 
-int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
+int RTLSDR_API rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
-int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
+int RTLSDR_API rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
 #ifdef __cplusplus
 }

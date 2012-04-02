@@ -30,10 +30,22 @@ add_library(rtlsdr SHARED
 
 target_link_libraries(rtlsdr
     ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 set_target_properties(rtlsdr PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
 
+add_library(rtlsdrs STATIC
+    rtl-sdr.c
+    tuner_e4000.c
+    tuner_fc0012.c
+    tuner_fc0013.c
+)
+target_link_libraries(rtlsdrs
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+set_target_properties(rtlsdrs PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
 ########################################################################
 # Install built library files
 ########################################################################

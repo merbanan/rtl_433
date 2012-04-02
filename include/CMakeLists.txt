@@ -22,5 +22,6 @@
 ########################################################################
 install(FILES
     rtl-sdr.h
+	rtl-sdr_export.h
     DESTINATION include
 )
