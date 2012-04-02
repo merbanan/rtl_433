@@ -26,11 +26,11 @@
 
 #include <libusb.h>
 
+#include <rtl-sdr.h>
 #include "tuner_e4000.h"
 #include "tuner_fc0012.h"
 #include "tuner_fc0013.h"
 #include "tuner_fc2580.h"
-#include "rtl-sdr.h"
 
 typedef struct rtlsdr_tuner {
 	int(*init)(void *);
@@ -386,14 +386,13 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 {
 	int r;
+	double f = (double) freq;
 
 	if (!dev || !dev->tuner)
 		return -1;
 
 	rtlsdr_set_i2c_repeater(dev, 1);
 
-
-	double f = (double) freq;
 	f *= 1.0 + dev->tuner->corr / 1e6;
 	r = dev->tuner->tune((void *)dev, (int) f);
 
@@ -523,11 +522,12 @@ uint32_t rtlsdr_get_device_count(void)
 	libusb_device **list;
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
+	ssize_t cnt;
 
 	if (!libusb_inited)
 		libusb_init(NULL);
 
-	ssize_t cnt = libusb_get_device_list(NULL, &list);
+	cnt = libusb_get_device_list(NULL, &list);
 
 	for (i = 0; i < cnt; i++) {
 		libusb_get_device_descriptor(list[i], &dd);
@@ -551,11 +551,12 @@ const char *rtlsdr_get_device_name(uint32_t index)
 	struct libusb_device_descriptor dd;
 	rtlsdr_device_t *device = NULL;
 	uint32_t device_count = 0;
+	ssize_t cnt;
 
 	if (!libusb_inited)
 		libusb_init(NULL);
 
-	ssize_t cnt = libusb_get_device_list(NULL, &list);
+	cnt = libusb_get_device_list(NULL, &list);
 
 	for (i = 0; i < cnt; i++) {
 		libusb_get_device_descriptor(list[i], &dd);
@@ -591,6 +592,7 @@ rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
 	uint8_t reg;
+	ssize_t cnt;
 
 	dev = malloc(sizeof(rtlsdr_dev_t));
 	memset(dev, 0, sizeof(rtlsdr_dev_t));
@@ -602,7 +604,7 @@ rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 		}
 	}
 
-	ssize_t cnt = libusb_get_device_list(NULL, &list);
+	cnt = libusb_get_device_list(NULL, &list);
 
 	for (i = 0; i < cnt; i++) {
 		device = list[i];
