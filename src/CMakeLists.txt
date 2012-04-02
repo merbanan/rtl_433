@@ -20,7 +20,7 @@
 ########################################################################
 # Setup library
 ########################################################################
-add_library(rtlsdr SHARED
+add_library(rtlsdr_shared SHARED
     rtl-sdr.c
     tuner_e4000.c
     tuner_fc0012.c
@@ -28,11 +28,12 @@ add_library(rtlsdr SHARED
     tuner_fc2580.c
 )
 
-target_link_libraries(rtlsdr
+target_link_libraries(rtlsdr_shared
     ${LIBUSB_LIBRARIES}
 )
 
-set_target_properties(rtlsdr PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
+set_target_properties(rtlsdr_shared PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
+set_target_properties(rtlsdr_shared PROPERTIES OUTPUT_NAME rtlsdr)
 
 add_library(rtlsdr_static STATIC
     rtl-sdr.c
@@ -47,12 +48,15 @@ target_link_libraries(rtlsdr_static
 )
 
 set_target_properties(rtlsdr_static PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
+
+if(NOT WIN32)
 # Force same library filename for static and shared variants of the library
-#set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
+set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
+endif()
 ########################################################################
 # Install built library files
 ########################################################################
-install(TARGETS rtlsdr rtlsdr_static
+install(TARGETS rtlsdr_shared rtlsdr_static
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
