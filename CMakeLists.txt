@@ -53,7 +53,7 @@ if(NOT LIBUSB_FOUND)
     message(FATAL_ERROR "LibUSB 1.0 required to compile rtl-sdr")
 endif()
 if(NOT THREADS_FOUND)
-    message(FATAL_ERROR "pthreads(-win32) required to compile osmosdrtlnw")
+    message(FATAL_ERROR "pthreads(-win32) required to compile rtl-sdr")
 endif()
 ########################################################################
 # Setup the include and linker paths

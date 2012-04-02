@@ -30,26 +30,28 @@ add_library(rtlsdr SHARED
 
 target_link_libraries(rtlsdr
     ${LIBUSB_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 set_target_properties(rtlsdr PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
 
-add_library(rtlsdrs STATIC
+add_library(rtlsdr_static STATIC
     rtl-sdr.c
     tuner_e4000.c
     tuner_fc0012.c
     tuner_fc0013.c
+    tuner_fc2580.c
 )
-target_link_libraries(rtlsdrs
+
+target_link_libraries(rtlsdr_static
     ${LIBUSB_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
 )
-set_target_properties(rtlsdrs PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
+
+set_target_properties(rtlsdr_static PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
+set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
 ########################################################################
 # Install built library files
 ########################################################################
-install(TARGETS rtlsdr
+install(TARGETS rtlsdr rtlsdr_static
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
@@ -59,4 +61,7 @@ install(TARGETS rtlsdr
 # Build utility
 ########################################################################
 add_executable(rtl_sdr main.c)
-target_link_libraries(rtl_sdr rtlsdr ${LIBUSB_LIBRARIES})
+target_link_libraries(rtl_sdr rtlsdr_static
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)

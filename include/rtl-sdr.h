@@ -24,42 +24,42 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "rtl-sdr_export.h"
+#include <rtl-sdr_export.h>
 
 typedef struct rtlsdr_dev rtlsdr_dev_t;
 
-uint32_t RTLSDR_API rtlsdr_get_device_count(void);
+RTLSDR_API uint32_t rtlsdr_get_device_count(void);
 
-RTLSDR_API const char*  rtlsdr_get_device_name(uint32_t index);
+RTLSDR_API const char* rtlsdr_get_device_name(uint32_t index);
 
-RTLSDR_API rtlsdr_dev_t*  rtlsdr_open(uint32_t index);
+RTLSDR_API rtlsdr_dev_t* rtlsdr_open(uint32_t index);
 
-int RTLSDR_API rtlsdr_close(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
 
 /* configuration functions */
 
-int RTLSDR_API rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
+RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
-int RTLSDR_API rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
 
-int RTLSDR_API rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
+RTLSDR_API int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
-int RTLSDR_API rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
 
-int RTLSDR_API rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
+RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 
-int RTLSDR_API rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
 /* this will select the baseband filters according to the requested sample rate */
-int RTLSDR_API rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
+RTLSDR_API int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
 
-int RTLSDR_API rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 
 /* streaming functions */
 
-int RTLSDR_API rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
+RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
-int RTLSDR_API rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
+RTLSDR_API int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
 #ifdef __cplusplus
 }
