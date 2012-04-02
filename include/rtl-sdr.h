@@ -32,7 +32,7 @@ RTLSDR_API uint32_t rtlsdr_get_device_count(void);
 
 RTLSDR_API const char* rtlsdr_get_device_name(uint32_t index);
 
-RTLSDR_API rtlsdr_dev_t* rtlsdr_open(uint32_t index);
+RTLSDR_API int rtlsdr_open(rtlsdr_dev_t **dev, uint32_t index);
 
 RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
 
@@ -61,9 +61,9 @@ RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
 RTLSDR_API int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
-typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *context);
+typedef void(*rtlsdr_async_read_cb_t)(const char *buf, uint32_t len, void *ctx);
 
-RTLSDR_API int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *context);
+RTLSDR_API int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx);
 
 RTLSDR_API int rtlsdr_cancel_async(rtlsdr_dev_t *dev);
 

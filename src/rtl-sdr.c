@@ -122,18 +122,16 @@ static rtlsdr_device_t devices[] = {
 #define BUF_LENGTH	(16 * 16384)
 
 typedef struct rtlsdr_dev {
+	libusb_context *ctx;
 	struct libusb_device_handle *devh;
 	struct libusb_transfer *xfer[BUF_COUNT];
 	unsigned char *xfer_buf[BUF_COUNT];
 	rtlsdr_async_read_cb_t cb;
-	void *context;
+	void *cb_ctx;
 	int run_async;
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */
 } rtlsdr_dev_t;
-
-static int opened_devices = 0;
-static int libusb_inited = 0;
 
 #define CRYSTAL_FREQ	28800000
 #define MAX_SAMP_RATE	3200000
@@ -538,8 +536,7 @@ uint32_t rtlsdr_get_device_count(void)
 	struct libusb_device_descriptor dd;
 	ssize_t cnt;
 
-	if (!libusb_inited)
-		libusb_init(NULL);
+	libusb_init(NULL);
 
 	cnt = libusb_get_device_list(NULL, &list);
 
@@ -552,8 +549,7 @@ uint32_t rtlsdr_get_device_count(void)
 
 	libusb_free_device_list(list, 0);
 
-	if (!libusb_inited)
-		libusb_exit(NULL);
+	libusb_exit(NULL);
 
 	return device_count;
 }
@@ -567,8 +563,7 @@ const char *rtlsdr_get_device_name(uint32_t index)
 	uint32_t device_count = 0;
 	ssize_t cnt;
 
-	if (!libusb_inited)
-		libusb_init(NULL);
+	libusb_init(NULL);
 
 	cnt = libusb_get_device_list(NULL, &list);
 
@@ -587,8 +582,7 @@ const char *rtlsdr_get_device_name(uint32_t index)
 
 	libusb_free_device_list(list, 0);
 
-	if (!libusb_inited)
-		libusb_exit(NULL);
+	libusb_exit(NULL);
 
 	if (device)
 		return device->name;
@@ -596,12 +590,12 @@ const char *rtlsdr_get_device_name(uint32_t index)
 		return "";
 }
 
-rtlsdr_dev_t *rtlsdr_open(uint32_t index)
+int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 {
 	int r;
 	int i;
 	libusb_device **list;
-	rtlsdr_dev_t * dev = NULL;
+	rtlsdr_dev_t *dev = NULL;
 	libusb_device *device = NULL;
 	uint32_t device_count = 0;
 	struct libusb_device_descriptor dd;
@@ -611,14 +605,9 @@ rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 	dev = malloc(sizeof(rtlsdr_dev_t));
 	memset(dev, 0, sizeof(rtlsdr_dev_t));
 
-	if (1 == ++opened_devices) {
-		if (!libusb_inited) {
-			libusb_init(NULL);
-			libusb_inited = 1;
-		}
-	}
+	libusb_init(&dev->ctx);
 
-	cnt = libusb_get_device_list(NULL, &list);
+	cnt = libusb_get_device_list(dev->ctx, &list);
 
 	for (i = 0; i < cnt; i++) {
 		device = list[i];
@@ -635,8 +624,10 @@ rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 		device = NULL;
 	}
 
-	if (!device)
+	if (!device) {
+		r = -1;
 		goto err;
+	}
 
 	r = libusb_open(device, &dev->devh);
 	if (r < 0) {
@@ -699,9 +690,19 @@ found:
 		r =dev->tuner->init(dev);
 
 	rtlsdr_set_i2c_repeater(dev, 0);
-	return dev;
+
+	*out_dev = dev;
+
+	return 0;
 err:
-	return NULL;
+	if (dev) {
+		if (dev->ctx)
+			libusb_exit(dev->ctx);
+
+		free(dev);
+	}
+
+	return r;
 }
 
 int rtlsdr_close(rtlsdr_dev_t *dev)
@@ -721,14 +722,9 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 			free(dev->xfer_buf[i]);
 	}
 
-	free(dev);
+	libusb_exit(dev->ctx);
 
-	if (0 == --opened_devices) {
-		if (libusb_inited) {
-			libusb_exit(NULL);
-			libusb_inited = 0;
-		}
-	}
+	free(dev);
 
 	return 0;
 }
@@ -757,7 +753,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *transfer)
 	if (LIBUSB_TRANSFER_COMPLETED == transfer->status) {
 		rtlsdr_dev_t *dev = (rtlsdr_dev_t *)transfer->user_data;
 
-		dev->cb(transfer->buffer, transfer->actual_length, dev->context);
+		dev->cb(transfer->buffer, transfer->actual_length, dev->cb_ctx);
 
 		libusb_submit_transfer(transfer); /* resubmit transfer */
 	} else {
@@ -765,7 +761,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *transfer)
 	}
 }
 
-int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *context)
+int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx)
 {
 	int i, r;
 
@@ -773,7 +769,7 @@ int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *contex
 		return -1;
 
 	dev->cb = cb;
-	dev->context = context;
+	dev->cb_ctx = ctx;
 
 	for(i = 0; i < BUF_COUNT; ++i) {
 		if (dev->xfer[i])
@@ -804,7 +800,7 @@ int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *contex
 
 	while (dev->run_async) {
 		struct timeval tv = { 1, 0 };
-		r = libusb_handle_events_timeout(NULL, &tv);
+		r = libusb_handle_events_timeout(dev->ctx, &tv);
 		if (r < 0) {
 			/*fprintf(stderr, "handle_events %d\n", r);*/
 			break;

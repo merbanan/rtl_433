@@ -98,9 +98,9 @@ int main(int argc, char **argv)
 
 	printf("Found %d device(s).\n", device_count);
 
-	dev = rtlsdr_open(dev_index);
-	if (NULL == dev) {
-	fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+	r = rtlsdr_open(&dev, dev_index);
+	if (r < 0) {
+		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
 	}
 
