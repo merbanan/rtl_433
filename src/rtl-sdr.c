@@ -43,6 +43,8 @@ typedef struct rtlsdr_tuner {
 	int gain; /* dB */
 } rtlsdr_tuner_t;
 
+void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val);
+
 /* generic tuner interface functions, shall be moved to the tuner implementations */
 int e4k_init(void *dev) { return e4000_Initialize(dev); }
 int e4k_exit(void *dev) { return 0; }
@@ -53,8 +55,9 @@ int e4k_set_gain(void *dev, int gain) { return 0; }
 int fc0012_init(void *dev) { return FC0012_Open(dev); }
 int fc0012_exit(void *dev) { return 0; }
 int fc0012_tune(void *dev, int freq) {
-	/* TODO set GPIO6 accordingly */
 	unsigned int bw = 6;
+	/* select V-band/U-band filter */
+	rtlsdr_set_gpio_bit(dev, 6, (freq > 300000000) ? 1 : 0);
 	return FC0012_SetFrequency(dev, freq/1000, bw & 0xff);
 }
 int fc0012_set_bw(void *dev, int bw) {
@@ -675,6 +678,7 @@ rtlsdr_dev_t *rtlsdr_open(uint32_t index)
 	reg = rtlsdr_i2c_read_reg(dev, FC0012_I2C_ADDR, FC0012_CHECK_ADDR);
 	if (reg == FC0012_CHECK_VAL) {
 		fprintf(stderr, "Found Fitipower FC0012 tuner\n");
+		rtlsdr_set_gpio_output(dev, 6);
 		dev->tuner = &tuners[RTLSDR_TUNER_FC0012];
 		goto found;
 	}
