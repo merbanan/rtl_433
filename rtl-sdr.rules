@@ -21,6 +21,9 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832", MODE:="066
 # ezcap EzTV668
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838", MODE:="0666"
 
+# Terratec Cinergy T Stick Black (rev 1)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00a9", MODE:="0666"
+
 # Terratec NOXON rev 1
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3", MODE:="0666"
 
