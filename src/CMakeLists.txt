@@ -47,7 +47,8 @@ target_link_libraries(rtlsdr_static
 )
 
 set_target_properties(rtlsdr_static PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
-set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
+# Force same library filename for static and shared variants of the library
+#set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
 ########################################################################
 # Install built library files
 ########################################################################
