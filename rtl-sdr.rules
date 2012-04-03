@@ -18,26 +18,42 @@
 # original RTL2832U vid/pid (hama nano, for example)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2832", MODE:="0666"
 
-# ezcap EzTV668
+# ezcap EzTV668 (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="2838", MODE:="0666"
 
-# Terratec Cinergy T Stick Black (rev 1)
+# Terratec Cinergy T Stick Black (rev 1) (FC0012)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00a9", MODE:="0666"
 
-# Terratec NOXON rev 1
+# Terratec NOXON rev 1 (FC0013)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3", MODE:="0666"
 
-# Terratec NOXON rev 2
+# Terratec NOXON rev 2 (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00e0", MODE:="0666"
 
-# GTek T803
+# GTek T803 (FC0012)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="b803", MODE:="0666"
 
-# Twintech UT-40
+# Lifeview LV5TDeluxe (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="c803", MODE:="0666"
+
+# Twintech UT-40 (FC0013)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a4", MODE:="0666"
 
-# Dexatek DK DVB-T Dongle (Logilink VG0002A)
+# Dexatek DK DVB-T Dongle (Logilink VG0002A) (FC2580)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1101", MODE:="0666"
+
+# Dexatek DK DVB-T Dongle (MSI DigiVox mini II V3.0)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1d19", ATTRS{idProduct}=="1102", MODE:="0666"
 
 # Genius TVGo DVB-T03 USB dongle (Ver. B)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0458", ATTRS{idProduct}=="707f", MODE:="0666"
+
+# GIGABYTE GT-U7300 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d393", MODE:="0666"
+
+# Peak 102569AGPK (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d395", MODE:="0666"
+
+# SVEON STV20 DVB-T USB & FM (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d39d", MODE:="0666"
+

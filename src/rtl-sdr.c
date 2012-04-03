@@ -113,9 +113,14 @@ static rtlsdr_device_t devices[] = {
 	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
 	{ 0x0ccd, 0x00e0, "Terratec NOXON DAB/DAB+ USB dongle (rev 2)" },
 	{ 0x1f4d, 0xb803, "GTek T803" },
+	{ 0x1f4d, 0xc803, "Lifeview LV5TDeluxe" },
 	{ 0x1b80, 0xd3a4, "Twintech UT-40" },
 	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
+	{ 0x1d19, 0x1102, "Dexatek DK DVB-T Dongle (MSI DigiVox mini II V3.0)" },
 	{ 0x0458, 0x707f, "Genius TVGo DVB-T03 USB dongle (Ver. B)" },
+	{ 0x1b80, 0xd393, "GIGABYTE GT-U7300" },
+	{ 0x1b80, 0xd395, "Peak 102569AGPK" },
+	{ 0x1b80, 0xd39d, "SVEON STV20 DVB-T USB & FM" },
 };
 
 #define BUF_COUNT	32
