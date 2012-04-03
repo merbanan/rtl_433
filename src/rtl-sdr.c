@@ -1,6 +1,7 @@
 /*
  * rtl-sdr, a poor man's SDR using a Realtek RTL2832 based DVB-stick
  * Copyright (C) 2012 by Steve Markgraf <steve@steve-m.de>
+ * Copyright (C) 2012 by Dimitri Stolnikov <horiz0n@gmx.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
