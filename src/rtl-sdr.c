@@ -29,6 +29,16 @@
 
 #include <libusb.h>
 
+/*
+ * All libusb callback functions should be marked with the LIBUSB_CALL macro
+ * to ensure that they are compiled with the same calling convention as libusb.
+ *
+ * If the macro isn't available in older libusb versions, we simply define it.
+ */
+#ifndef LIBUSB_CALL
+#define LIBUSB_CALL
+#endif
+
 #include <rtl-sdr.h>
 #include "tuner_e4000.h"
 #include "tuner_fc0012.h"
