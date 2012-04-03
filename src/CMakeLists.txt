@@ -53,14 +53,6 @@ if(NOT WIN32)
 # Force same library filename for static and shared variants of the library
 set_target_properties(rtlsdr_static PROPERTIES OUTPUT_NAME rtlsdr)
 endif()
-########################################################################
-# Install built library files
-########################################################################
-install(TARGETS rtlsdr_shared rtlsdr_static
-    LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
-    ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
-    RUNTIME DESTINATION bin              # .dll file
-)
 
 ########################################################################
 # Build utility
@@ -69,4 +61,13 @@ add_executable(rtl_sdr main.c)
 target_link_libraries(rtl_sdr rtlsdr_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
+)
+
+########################################################################
+# Install built library files & utilities
+########################################################################
+install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr
+    LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
+    ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
+    RUNTIME DESTINATION bin              # .dll file
 )
