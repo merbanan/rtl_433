@@ -400,6 +400,17 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 	rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1b, 1);
 }
 
+void rtlsdr_deinit_baseband(rtlsdr_dev_t *dev)
+{
+	/* deinitialize tuner */
+	rtlsdr_set_i2c_repeater(dev, 1);
+	dev->tuner->exit(dev);
+	rtlsdr_set_i2c_repeater(dev, 0);
+
+	/* poweroff demodulator and ADCs */
+	rtlsdr_write_reg(dev, SYSB, DEMOD_CTL, 0x20, 1);
+}
+
 int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 {
 	int r;
@@ -716,6 +727,8 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 
 	if (!dev)
 		return -1;
+
+	rtlsdr_deinit_baseband(dev);
 
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
