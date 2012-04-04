@@ -291,7 +291,7 @@ void rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t 
 		fprintf(stderr, "%s failed\n", __FUNCTION__);
 }
 
-uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint8_t addr, uint8_t len)
+uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint8_t len)
 {
 	int r;
 	unsigned char data[2];
