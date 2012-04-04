@@ -154,6 +154,7 @@ typedef struct rtlsdr_dev {
 
 #define CTRL_IN		(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN)
 #define CTRL_OUT	(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT)
+#define CTRL_TIMEOUT	300
 
 enum usb_reg {
 	USB_SYSCTL		= 0x2000,
@@ -197,7 +198,7 @@ int rtlsdr_read_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t *
 	int r;
 	uint16_t index = (block << 8);
 
-	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, array, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, array, len, CTRL_TIMEOUT);
 
 	return r;
 }
@@ -207,7 +208,7 @@ int rtlsdr_write_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t 
 	int r;
 	uint16_t index = (block << 8) | 0x10;
 
-	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, array, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, array, len, CTRL_TIMEOUT);
 
 	return r;
 }
@@ -260,7 +261,7 @@ uint16_t rtlsdr_read_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_
 	uint16_t index = (block << 8);
 	uint16_t reg;
 
-	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
 		fprintf(stderr, "%s failed\n", __FUNCTION__);
@@ -284,7 +285,7 @@ void rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t 
 
 	data[1] = val & 0xff;
 
-	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
 		fprintf(stderr, "%s failed\n", __FUNCTION__);
@@ -299,7 +300,7 @@ uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint8_t addr, ui
 	uint16_t reg;
 	addr = (addr << 8) | 0x20;
 
-	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
 		fprintf(stderr, "%s failed\n", __FUNCTION__);
@@ -323,7 +324,7 @@ void rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint
 
 	data[1] = val & 0xff;
 
-	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, 0);
+	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
 		fprintf(stderr, "%s failed\n", __FUNCTION__);
