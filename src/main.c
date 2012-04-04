@@ -97,14 +97,13 @@ int main(int argc, char **argv)
 	}
 
 	printf("Found %d device(s).\n", device_count);
+	printf("Using %s\n", rtlsdr_get_device_name(dev_index));
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {
 		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
 	}
-
-	printf("Using %s\n", rtlsdr_get_device_name(dev_index));
 
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
