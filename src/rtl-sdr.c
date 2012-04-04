@@ -137,7 +137,7 @@ static rtlsdr_device_t devices[] = {
 #define BUF_COUNT	32
 #define BUF_LENGTH	(16 * 16384)
 
-typedef struct rtlsdr_dev {
+struct rtlsdr_dev {
 	libusb_context *ctx;
 	struct libusb_device_handle *devh;
 	struct libusb_transfer *xfer[BUF_COUNT];
@@ -147,7 +147,7 @@ typedef struct rtlsdr_dev {
 	int run_async;
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */
-} rtlsdr_dev_t;
+};
 
 #define CRYSTAL_FREQ	28800000
 #define MAX_SAMP_RATE	3200000
