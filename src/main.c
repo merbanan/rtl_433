@@ -36,8 +36,8 @@ void usage(void)
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency to tune to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
-	        "\t[-d device index (default: 0)]\n"
-	        "\t[-g tuner gain (default: 0 dB)]\n"
+		"\t[-d device index (default: 0)]\n"
+		"\t[-g tuner gain (default: 0 dB)]\n"
 		"\toutput filename\n");
 	exit(1);
 }
@@ -48,7 +48,7 @@ static void sighandler(int signum)
 	rtlsdr_cancel_async(dev);
 }
 
-void rtlsdr_callback(const char *buf, uint32_t len, void *ctx)
+void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	fwrite(buf, len, 1, (FILE*)ctx);
 }
