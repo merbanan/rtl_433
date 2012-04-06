@@ -519,7 +519,9 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	rsamp_ratio &= ~3;
 
 	real_rate = (CRYSTAL_FREQ * pow(2, 22)) / rsamp_ratio;
-	fprintf(stderr, "Setting sample rate: %.3f Hz\n", real_rate);
+
+	if ( ((double)samp_rate) != real_rate )
+		fprintf(stderr, "Exact sample rate: %f Hz\n", real_rate);
 
 	if (dev->tuner)
 		dev->tuner->set_bw((void *)dev, real_rate);
