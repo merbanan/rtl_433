@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
-			frequency = (int)atof(optarg);
+			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
 			gain = atoi(optarg);
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");
 	else
-		fprintf(stderr, "Tuned to %i Hz.\n", frequency);
+		fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
 	r = rtlsdr_set_tuner_gain(dev, gain);
 	if (r < 0)

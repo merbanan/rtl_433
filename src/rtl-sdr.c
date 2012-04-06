@@ -48,10 +48,10 @@
 typedef struct rtlsdr_tuner {
 	int(*init)(void *);
 	int(*exit)(void *);
-	int(*tune)(void *, int freq /* Hz */);
+	int(*tune)(void *, uint32_t freq /* Hz */);
 	int(*set_bw)(void *, int bw /* Hz */);
 	int(*set_gain)(void *, int gain /* dB */);
-	int freq; /* Hz */
+	uint32_t freq; /* Hz */
 	int corr; /* ppm */
 	int gain; /* dB */
 } rtlsdr_tuner_t;
@@ -61,13 +61,13 @@ void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val);
 /* generic tuner interface functions, shall be moved to the tuner implementations */
 int e4k_init(void *dev) { return e4000_Initialize(dev); }
 int e4k_exit(void *dev) { return 0; }
-int e4k_tune(void *dev, int freq) { return e4000_SetRfFreqHz(dev, freq); }
+int e4k_tune(void *dev, uint32_t freq) { return e4000_SetRfFreqHz(dev, freq); }
 int e4k_set_bw(void *dev, int bw) { return e4000_SetBandwidthHz(dev, 8000000); }
 int e4k_set_gain(void *dev, int gain) { return 0; }
 
 int fc0012_init(void *dev) { return FC0012_Open(dev); }
 int fc0012_exit(void *dev) { return 0; }
-int fc0012_tune(void *dev, int freq) {
+int fc0012_tune(void *dev, uint32_t freq) {
 	unsigned int bw = 6;
 	/* select V-band/U-band filter */
 	rtlsdr_set_gpio_bit(dev, 6, (freq > 300000000) ? 1 : 0);
@@ -81,7 +81,7 @@ int fc0012_set_gain(void *dev, int gain) { return 0; }
 
 int fc0013_init(void *dev) { return FC0013_Open(dev); }
 int fc0013_exit(void *dev) { return 0; }
-int fc0013_tune(void *dev, int freq) {
+int fc0013_tune(void *dev, uint32_t freq) {
 	unsigned int bw = 6;
 	return FC0013_SetFrequency(dev, freq/1000, bw & 0xff);
 }
@@ -93,7 +93,7 @@ int fc0013_set_gain(void *dev, int gain) { return 0; }
 
 int fc2580_init(void *dev) { return fc2580_Initialize(dev); }
 int fc2580_exit(void *dev) { return 0; }
-int fc2580_tune(void *dev, int freq) { return fc2580_SetRfFreqHz(dev, freq); }
+int fc2580_tune(void *dev, uint32_t freq) { return fc2580_SetRfFreqHz(dev, freq); }
 int fc2580_set_bw(void *dev, int bw) { return fc2580_SetBandwidthMode(dev, 1); }
 int fc2580_set_gain(void *dev, int gain) { return 0; }
 
@@ -435,7 +435,7 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 	rtlsdr_set_i2c_repeater(dev, 1);
 
 	f *= 1.0 + dev->tuner->corr / 1e6;
-	r = dev->tuner->tune((void *)dev, (int) f);
+	r = dev->tuner->tune((void *)dev, (uint32_t) f);
 
 	rtlsdr_set_i2c_repeater(dev, 0);
 
