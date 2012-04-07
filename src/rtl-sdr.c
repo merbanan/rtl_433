@@ -131,6 +131,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x1d19, 0x1103, "Dexatek Technology Ltd. DK 5217 DVB-T Dongle" },
 	{ 0x0458, 0x707f, "Genius TVGo DVB-T03 USB dongle (Ver. B)" },
 	{ 0x1b80, 0xd393, "GIGABYTE GT-U7300" },
+	{ 0x1b80, 0xd394, "DIKOM USB-DVBT HD" },
 	{ 0x1b80, 0xd395, "Peak 102569AGPK" },
 	{ 0x1b80, 0xd39d, "SVEON STV20 DVB-T USB & FM" },
 };
