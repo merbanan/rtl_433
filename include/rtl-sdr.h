@@ -62,10 +62,46 @@ RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
 
 RTLSDR_API int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read);
 
-typedef void(*rtlsdr_async_read_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
+typedef void(*rtlsdr_read_async_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
 
-RTLSDR_API int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_async_read_cb_t cb, void *ctx);
+/*!
+ * Read samples from the device asynchronously. This function will block until
+ * it is being canceled using rtlsdr_cancel_async()
+ *
+ * NOTE: This function is deprecated and is subject for removal.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param cb callback function to return received samples
+ * \param ctx user specific context to pass via the callback function
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx);
 
+/*!
+ * Read samples from the device asynchronously. This function will block until
+ * it is being canceled using rtlsdr_cancel_async()
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param cb callback function to return received samples
+ * \param ctx user specific context to pass via the callback function
+ * \param buf_num optional buffer count, buf_num * buf_len = overall buffer size
+ *		  set to 0 for default buffer count (32)
+ * \param buf_len optional buffer length, must be multiple of 2,
+ *		  set to 0 for default buffer length (16 * 16384)
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_read_async(rtlsdr_dev_t *dev,
+				 rtlsdr_read_async_cb_t cb,
+				 void *ctx,
+				 uint32_t buf_num,
+				 uint32_t buf_len);
+
+/*!
+ * Cancel all pending asynchronous operations on the device.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return 0 on success
+ */
 RTLSDR_API int rtlsdr_cancel_async(rtlsdr_dev_t *dev);
 
 #ifdef __cplusplus

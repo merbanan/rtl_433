@@ -24,7 +24,7 @@
 #include <math.h>
 #include <unistd.h>
 
-#include <rtl-sdr.h>
+#include "rtl-sdr.h"
 
 #define READLEN		(16 * 16384)
 
@@ -33,7 +33,8 @@ static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
 {
-	printf("rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
+	fprintf(stderr,
+		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency to tune to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device index (default: 0)]\n"
@@ -48,9 +49,10 @@ static void sighandler(int signum)
 	rtlsdr_cancel_async(dev);
 }
 
-void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
+static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-	fwrite(buf, len, 1, (FILE*)ctx);
+	if (ctx)
+		fwrite(buf, len, 1, (FILE*)ctx);
 }
 
 int main(int argc, char **argv)
@@ -62,7 +64,8 @@ int main(int argc, char **argv)
 	uint8_t buffer[READLEN];
 	int n_read;
 	FILE *file;
-	uint32_t dev_index = 0, gain = 0;
+	uint32_t dev_index = 0;
+	int i, gain = 0;
 
 	while ((opt = getopt(argc, argv, "d:f:g:s:")) != -1) {
 		switch (opt) {
@@ -96,8 +99,14 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	printf("Found %d device(s).\n", device_count);
-	printf("Using %s\n", rtlsdr_get_device_name(dev_index));
+	fprintf(stderr, "Found %d device(s):\n", device_count);
+	for (i = 0; i < device_count; i++)
+		fprintf(stderr, "  %d:  %s\n", i, rtlsdr_get_device_name(i));
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "Using device %d: %s\n",
+		dev_index,
+		rtlsdr_get_device_name(dev_index));
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {
@@ -124,6 +133,7 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
+	/* Set the tuner gain */
 	r = rtlsdr_set_tuner_gain(dev, gain);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
@@ -142,7 +152,7 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-	printf("Reading samples...\n");
+	fprintf(stderr, "Reading samples...\n");
 #if 0
 	while (!do_exit) {
 		r = rtlsdr_read_sync(dev, buffer, READLEN, &n_read);
@@ -157,10 +167,10 @@ int main(int argc, char **argv)
 		}
 	}
 #else
-	rtlsdr_wait_async(dev, rtlsdr_callback, (void *)file);
+	rtlsdr_read_async(dev, rtlsdr_callback, (void *)file, 0, 0);
 #endif
 	if (do_exit)
-		printf("\nUser cancel, exiting...\n");
+		fprintf(stderr, "\nUser cancel, exiting...\n");
 
 	fclose(file);
 
