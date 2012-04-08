@@ -1,6 +1,6 @@
 AC_INIT([librtlsdr],
         m4_esyscmd([./git-version-gen .tarball-version]),
-        [osmosdr@lists.osmocom.org])
+        [osmocom-sdr@lists.osmocom.org])
 
 AM_INIT_AUTOMAKE([dist-bzip2])
 
