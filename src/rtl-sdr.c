@@ -159,6 +159,7 @@ struct rtlsdr_dev {
 #define CTRL_IN		(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_IN)
 #define CTRL_OUT	(LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_ENDPOINT_OUT)
 #define CTRL_TIMEOUT	300
+#define BULK_TIMEOUT	0
 
 enum usb_reg {
 	USB_SYSCTL		= 0x2000,
@@ -836,7 +837,7 @@ int rtlsdr_read_sync(rtlsdr_dev_t *dev, void *buf, int len, int *n_read)
 	if (!dev)
 		return -1;
 
-	return libusb_bulk_transfer(dev->devh, 0x81, buf, len, n_read, 3000);
+	return libusb_bulk_transfer(dev->devh, 0x81, buf, len, n_read, BULK_TIMEOUT);
 }
 
 static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
@@ -857,7 +858,7 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 
 int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx)
 {
-	rtlsdr_read_async(dev, cb, ctx, 0, 0);
+	return rtlsdr_read_async(dev, cb, ctx, 0, 0);
 }
 
 int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
@@ -894,7 +895,7 @@ int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
 					  dev->xfer_buf_len,
 					  _libusb_callback,
 					  (void *)dev,
-					  3000);
+					  BULK_TIMEOUT);
 
 		libusb_submit_transfer(dev->xfer[i]);
 	}

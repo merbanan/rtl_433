@@ -171,6 +171,8 @@ int main(int argc, char **argv)
 #endif
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
+	else
+		fprintf(stderr, "\nSystem cancel, exiting...\n");
 
 	fclose(file);
 
