@@ -57,8 +57,12 @@ static void sighandler(int signum)
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-	if (ctx)
-		fwrite(buf, len, 1, (FILE*)ctx);
+	if (ctx) {
+		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
+			fprintf(stderr, "Short write, samples lost, exiting!\n");
+			rtlsdr_cancel_async(dev);
+		}
+	}
 }
 
 int main(int argc, char **argv)
@@ -148,6 +152,7 @@ int main(int argc, char **argv)
 	sigaction(SIGINT, &sigact, NULL);
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGQUIT, &sigact, NULL);
+	sigaction(SIGPIPE, &sigact, NULL);
 
 	/* Set the sample rate */
 	r = rtlsdr_set_sample_rate(dev, samp_rate);
@@ -168,14 +173,14 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuner gain set to %i dB.\n", gain);
 
-	if(strcmp(filename, "-") != 0) {
+	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
+		file = stdout;
+	} else {
 		file = fopen(filename, "wb");
 		if (!file) {
 			fprintf(stderr, "Failed to open %s\n", filename);
 			goto out;
 		}
-	} else {
-		file = stdout;
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
@@ -187,10 +192,15 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Reading samples in sync mode...\n");
 		while (!do_exit) {
 			r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
-			if (r < 0)
+			if (r < 0) {
 				fprintf(stderr, "WARNING: sync read failed.\n");
+				break;
+			}
 
-			fwrite(buffer, n_read, 1, file);
+			if (fwrite(buffer, 1, n_read, file) != n_read) {
+				fprintf(stderr, "Short write, samples lost, exiting!\n");
+				break;
+			}
 
 			if (n_read < out_block_size) {
 				fprintf(stderr, "Short read, samples lost, exiting!\n");
@@ -198,15 +208,15 @@ int main(int argc, char **argv)
 			}
 		}
 	} else {
-		fprintf(stderr, "Reading samples...\n");
-		rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
-				  DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+		fprintf(stderr, "Reading samples in async mode...\n");
+		r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
+				      DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 	}
 
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
 	else
-		fprintf(stderr, "\nSystem cancel, exiting...\n");
+		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
 	if (file != stdout)
 		fclose(file);
