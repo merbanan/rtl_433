@@ -22,7 +22,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+#ifndef _WIN32
 #include <unistd.h>
+#else
+#include <Windows.h>
+#endif
 
 #include "rtl-sdr.h"
 
@@ -37,6 +42,11 @@ static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
 {
+	#ifdef _WIN32
+	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
+		"Usage:\t rtl-sdr-win.exe [device_index] [samplerate in kHz] "
+		"[gain] [frequency in hz] [filename]\n");
+	#else
 	fprintf(stderr,
 		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
@@ -46,11 +56,18 @@ void usage(void)
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\toutput_filename (a '-' dumps samples to stdout)\n\n");
+#endif
 	exit(1);
 }
 
-static void sighandler(int signum)
+#ifdef _WIN32
+BOOL WINAPI
+#else
+static void
+#endif
+	sighandler(int signum)
 {
+	fprintf(stderr, "Signal caught, exiting!\n");
 	do_exit = 1;
 	rtlsdr_cancel_async(dev);
 }
@@ -67,7 +84,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
 int main(int argc, char **argv)
 {
+#ifndef _WIN32
 	struct sigaction sigact;
+#endif
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
@@ -79,7 +98,8 @@ int main(int argc, char **argv)
 	uint32_t frequency = 0;
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
-
+	int device_count;
+#ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
 		switch (opt) {
 		case 'd':
@@ -111,7 +131,15 @@ int main(int argc, char **argv)
 	} else {
 		filename = argv[optind];
 	}
-	
+#else
+	if(argc <5)
+		usage();
+	dev_index = atoi(argv[1]);
+	samp_rate = atoi(argv[2])*1000;
+	gain=atoi(argv[3]);
+	frequency = atoi(argv[4]);
+	filename = argv[5];
+#endif
 	if(out_block_size < MINIMAL_BUF_LENGTH ||
 	   out_block_size > MAXIMAL_BUF_LENGTH ){
 		fprintf(stderr,
@@ -125,7 +153,7 @@ int main(int argc, char **argv)
 	
 	buffer = malloc(out_block_size * sizeof(uint8_t));
 
-	int device_count = rtlsdr_get_device_count();
+	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
 		fprintf(stderr, "No supported devices found.\n");
 		exit(1);
@@ -145,7 +173,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
 		exit(1);
 	}
-
+#ifndef _WIN32
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;
@@ -153,7 +181,9 @@ int main(int argc, char **argv)
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGQUIT, &sigact, NULL);
 	sigaction(SIGPIPE, &sigact, NULL);
-
+#else
+	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
+#endif
 	/* Set the sample rate */
 	r = rtlsdr_set_sample_rate(dev, samp_rate);
 	if (r < 0)

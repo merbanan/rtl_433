@@ -47,7 +47,7 @@ target_link_libraries(rtlsdr_static
     ${LIBUSB_LIBRARIES}
 )
 
-set_target_properties(rtlsdr_static PROPERTIES DEFINE_SYMBOL "rtlsdr_STATIC")
+set_property(TARGET rtlsdr_static APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 
 if(NOT WIN32)
 # Force same library filename for static and shared variants of the library
@@ -63,6 +63,9 @@ target_link_libraries(rtl_sdr rtlsdr_static
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
+if(WIN32)
+set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
+endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
