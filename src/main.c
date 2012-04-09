@@ -29,7 +29,7 @@
 #define DEFAULT_SAMPLE_RATE		2048000
 #define DEFAULT_ASYNC_BUF_NUMBER	32
 #define DEFAULT_BUF_LENGTH		(16 * 16384)
-#define MINIMAL_BUF_LENGTH		32
+#define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
@@ -45,7 +45,7 @@ void usage(void)
 		"\t[-g tuner_gain (default: 0 dB)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
-		"\toutput filename\n");
+		"\toutput_filename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
 }
 
@@ -168,11 +168,14 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuner gain set to %i dB.\n", gain);
 
-	file = fopen(filename, "wb");
-
-	if (!file) {
-		fprintf(stderr, "Failed to open %s\n", filename);
-		goto out;
+	if(strcmp(filename, "-") != 0) {
+		file = fopen(filename, "wb");
+		if (!file) {
+			fprintf(stderr, "Failed to open %s\n", filename);
+			goto out;
+		}
+	} else {
+		file = stdout;
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
@@ -180,9 +183,8 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-	fprintf(stderr, "Reading samples...\n");
-
 	if (sync_mode) {
+		fprintf(stderr, "Reading samples in sync mode...\n");
 		while (!do_exit) {
 			r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
 			if (r < 0)
@@ -196,6 +198,7 @@ int main(int argc, char **argv)
 			}
 		}
 	} else {
+		fprintf(stderr, "Reading samples...\n");
 		rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
 				  DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 	}
@@ -205,7 +208,9 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "\nSystem cancel, exiting...\n");
 
-	fclose(file);
+	if (file != stdout)
+		fclose(file);
+
 	rtlsdr_close(dev);
 	free (buffer);
 out:
