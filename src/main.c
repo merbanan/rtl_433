@@ -26,7 +26,11 @@
 
 #include "rtl-sdr.h"
 
-#define READLEN		(16 * 16384)
+#define DEFAULT_SAMPLE_RATE		2048000
+#define DEFAULT_ASYNC_BUF_NUMBER	32
+#define DEFAULT_BUF_LENGTH		(16 * 16384)
+#define MINIMAL_BUF_LENGTH		32
+#define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
 static rtlsdr_dev_t *dev = NULL;
@@ -35,10 +39,11 @@ void usage(void)
 {
 	fprintf(stderr,
 		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t -f frequency to tune to [Hz]\n"
+		"Usage:\t -f frequency_to_tune_to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
-		"\t[-d device index (default: 0)]\n"
-		"\t[-g tuner gain (default: 0 dB)]\n"
+		"\t[-d device_index (default: 0)]\n"
+		"\t[-g tuner_gain (default: 0 dB)]\n"
+		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\toutput filename\n");
 	exit(1);
 }
@@ -58,16 +63,19 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 int main(int argc, char **argv)
 {
 	struct sigaction sigact;
-	int r, opt;
 	char *filename = NULL;
-	uint32_t frequency = 0, samp_rate = 2048000;
-	uint8_t buffer[READLEN];
 	int n_read;
-	FILE *file;
-	uint32_t dev_index = 0;
+	int r, opt;
 	int i, gain = 0;
+	FILE *file;
+	uint8_t *buffer;
+	uint32_t dev_index = 0;
+	uint32_t frequency = 0;
+	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
+	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:")) != -1) {
+
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -81,6 +89,9 @@ int main(int argc, char **argv)
 		case 's':
 			samp_rate = (int)atof(optarg);
 			break;
+		case 'b':
+			out_block_size = (uint32_t)atof(optarg);
+			break;
 		default:
 			usage();
 			break;
@@ -92,6 +103,19 @@ int main(int argc, char **argv)
 	} else {
 		filename = argv[optind];
 	}
+	
+	if(out_block_size < MINIMAL_BUF_LENGTH ||
+	   out_block_size > MAXIMAL_BUF_LENGTH ){
+		fprintf(stderr,
+			"Output block size wrong value, falling back to default\n");
+		fprintf(stderr,
+			"Minimal length: %u\n", MINIMAL_BUF_LENGTH);
+		fprintf(stderr,
+			"Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
+		out_block_size = DEFAULT_BUF_LENGTH;
+	}
+	
+	buffer = malloc(out_block_size * sizeof(uint8_t));
 
 	int device_count = rtlsdr_get_device_count();
 	if (!device_count) {
@@ -155,19 +179,20 @@ int main(int argc, char **argv)
 	fprintf(stderr, "Reading samples...\n");
 #if 0
 	while (!do_exit) {
-		r = rtlsdr_read_sync(dev, buffer, READLEN, &n_read);
+		r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
 		if (r < 0)
 			fprintf(stderr, "WARNING: sync read failed.\n");
 
 		fwrite(buffer, n_read, 1, file);
 
-		if (n_read < READLEN) {
+		if (n_read < out_block_size) {
 			fprintf(stderr, "Short read, samples lost, exiting!\n");
 			break;
 		}
 	}
 #else
-	rtlsdr_read_async(dev, rtlsdr_callback, (void *)file, 0, 0);
+	rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
+					DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 #endif
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
@@ -175,8 +200,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "\nSystem cancel, exiting...\n");
 
 	fclose(file);
-
 	rtlsdr_close(dev);
+	free (buffer);
 out:
 	return r >= 0 ? r : -r;
 }
