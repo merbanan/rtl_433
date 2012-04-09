@@ -44,6 +44,7 @@ void usage(void)
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: 0 dB)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
+		"\t[-S force sync output (default: async)]\n"
 		"\toutput filename\n");
 	exit(1);
 }
@@ -67,6 +68,7 @@ int main(int argc, char **argv)
 	int n_read;
 	int r, opt;
 	int i, gain = 0;
+	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
@@ -74,8 +76,7 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 
-
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -91,6 +92,9 @@ int main(int argc, char **argv)
 			break;
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
+			break;
+		case 'S':
+			sync_mode = 1;
 			break;
 		default:
 			usage();
@@ -177,23 +181,25 @@ int main(int argc, char **argv)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
 	fprintf(stderr, "Reading samples...\n");
-#if 0
-	while (!do_exit) {
-		r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
-		if (r < 0)
-			fprintf(stderr, "WARNING: sync read failed.\n");
 
-		fwrite(buffer, n_read, 1, file);
+	if (sync_mode) {
+		while (!do_exit) {
+			r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
+			if (r < 0)
+				fprintf(stderr, "WARNING: sync read failed.\n");
 
-		if (n_read < out_block_size) {
-			fprintf(stderr, "Short read, samples lost, exiting!\n");
-			break;
+			fwrite(buffer, n_read, 1, file);
+
+			if (n_read < out_block_size) {
+				fprintf(stderr, "Short read, samples lost, exiting!\n");
+				break;
+			}
 		}
+	} else {
+		rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
+				  DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 	}
-#else
-	rtlsdr_read_async(dev, rtlsdr_callback, (void *)file,
-					DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
-#endif
+
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
 	else
