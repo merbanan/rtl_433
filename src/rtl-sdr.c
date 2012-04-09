@@ -537,6 +537,10 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	tmp = rsamp_ratio & 0xffff;
 	rtlsdr_demod_write_reg(dev, 1, 0xa1, tmp, 2);
 
+	/* reset demod (bit 3, soft_rst) */
+	rtlsdr_demod_write_reg(dev, 1, 0x01, 0x14, 1);
+	rtlsdr_demod_write_reg(dev, 1, 0x01, 0x10, 1);
+
 	return 0;
 }
 
