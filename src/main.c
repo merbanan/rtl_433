@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	file = fopen(filename, "wb");
 
 	if (!file) {
-		printf("Failed to open %s\n", filename);
+		fprintf(stderr, "Failed to open %s\n", filename);
 		goto out;
 	}
 
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
 		fwrite(buffer, n_read, 1, file);
 
 		if (n_read < READLEN) {
-			printf("Short read, samples lost, exiting!\n");
+			fprintf(stderr, "Short read, samples lost, exiting!\n");
 			break;
 		}
 	}
