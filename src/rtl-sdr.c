@@ -139,6 +139,12 @@ static rtlsdr_device_t devices[] = {
 #define DEFAULT_BUF_NUMBER	32
 #define DEFAULT_BUF_LENGTH	(16 * 16384)
 
+enum rtlsdr_async_status {
+	RTLSDR_INACTIVE = 0,
+	RTLSDR_CANCELING,
+	RTLSDR_RUNNING
+};
+
 struct rtlsdr_dev {
 	libusb_context *ctx;
 	struct libusb_device_handle *devh;
@@ -148,7 +154,7 @@ struct rtlsdr_dev {
 	unsigned char **xfer_buf;
 	rtlsdr_read_async_cb_t cb;
 	void *cb_ctx;
-	int run_async;
+	enum rtlsdr_async_status async_status;
 	rtlsdr_tuner_t *tuner;
 	int rate; /* Hz */
 };
@@ -269,7 +275,7 @@ uint16_t rtlsdr_read_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_
 	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
-		fprintf(stderr, "%s failed\n", __FUNCTION__);
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 
 	reg = (data[1] << 8) | data[0];
 
@@ -293,7 +299,7 @@ void rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t 
 	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
-		fprintf(stderr, "%s failed\n", __FUNCTION__);
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 }
 
 uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint8_t len)
@@ -308,7 +314,7 @@ uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, u
 	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
-		fprintf(stderr, "%s failed\n", __FUNCTION__);
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 
 	reg = (data[1] << 8) | data[0];
 
@@ -332,7 +338,7 @@ void rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint
 	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, data, len, CTRL_TIMEOUT);
 
 	if (r < 0)
-		fprintf(stderr, "%s failed\n", __FUNCTION__);
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 
 	rtlsdr_demod_read_reg(dev, 0x0a, 0x01, 1);
 }
@@ -567,61 +573,6 @@ rtlsdr_device_t *find_known_device(uint16_t vid, uint16_t pid)
 	return device;
 }
 
-static int _rtlsdr_alloc_async_buffers(rtlsdr_dev_t *dev)
-{
-	int i;
-
-	if (!dev)
-		return -1;
-
-	if (!dev->xfer) {
-		dev->xfer = malloc(dev->xfer_buf_num *
-				   sizeof(struct libusb_transfer *));
-
-		for(i = 0; i < dev->xfer_buf_num; ++i)
-			dev->xfer[i] = libusb_alloc_transfer(0);
-	}
-
-	if (!dev->xfer_buf) {
-		dev->xfer_buf = malloc(dev->xfer_buf_num *
-				       sizeof(unsigned char *));
-
-		for(i = 0; i < dev->xfer_buf_num; ++i)
-			dev->xfer_buf[i] = malloc(dev->xfer_buf_len);
-	}
-
-	return 0;
-}
-
-static int _rtlsdr_free_async_buffers(rtlsdr_dev_t *dev)
-{
-	int i;
-
-	if (!dev)
-		return -1;
-
-	for(i = 0; i < dev->xfer_buf_num; ++i) {
-		if (dev->xfer[i]) {
-			libusb_cancel_transfer(dev->xfer[i]);
-			libusb_free_transfer(dev->xfer[i]);
-		}
-		if (dev->xfer_buf[i])
-			free(dev->xfer_buf[i]);
-	}
-
-	if (dev->xfer) {
-		free(dev->xfer);
-		dev->xfer = NULL;
-	}
-
-	if (dev->xfer_buf) {
-		free(dev->xfer_buf);
-		dev->xfer_buf = NULL;
-	}
-
-	return 0;
-}
-
 uint32_t rtlsdr_get_device_count(void)
 {
 	int i;
@@ -811,9 +762,7 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 	if (!dev)
 		return -1;
 
-	rtlsdr_deinit_baseband(dev);
-
-	_rtlsdr_free_async_buffers(dev);
+	rtlsdr_deinit_baseband(dev);	
 
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
@@ -855,14 +804,70 @@ static void LIBUSB_CALL _libusb_callback(struct libusb_transfer *xfer)
 		libusb_submit_transfer(xfer); /* resubmit transfer */
 	} else {
 		/*fprintf(stderr, "transfer status: %d\n", xfer->status);*/
-		if (dev->run_async)
-			dev->run_async = 0; /* abort async loop */
+		rtlsdr_cancel_async(dev); /* abort async loop */
 	}
 }
 
 int rtlsdr_wait_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx)
 {
 	return rtlsdr_read_async(dev, cb, ctx, 0, 0);
+}
+
+static int _rtlsdr_alloc_async_buffers(rtlsdr_dev_t *dev)
+{
+	int i;
+
+	if (!dev)
+		return -1;
+
+	if (!dev->xfer) {
+		dev->xfer = malloc(dev->xfer_buf_num *
+				   sizeof(struct libusb_transfer *));
+
+		for(i = 0; i < dev->xfer_buf_num; ++i)
+			dev->xfer[i] = libusb_alloc_transfer(0);
+	}
+
+	if (!dev->xfer_buf) {
+		dev->xfer_buf = malloc(dev->xfer_buf_num *
+				       sizeof(unsigned char *));
+
+		for(i = 0; i < dev->xfer_buf_num; ++i)
+			dev->xfer_buf[i] = malloc(dev->xfer_buf_len);
+	}
+
+	return 0;
+}
+
+static int _rtlsdr_free_async_buffers(rtlsdr_dev_t *dev)
+{
+	int i;
+
+	if (!dev)
+		return -1;
+
+	if (dev->xfer) {
+		for(i = 0; i < dev->xfer_buf_num; ++i) {
+			if (dev->xfer[i]) {
+				libusb_free_transfer(dev->xfer[i]);
+			}
+		}
+
+		free(dev->xfer);
+		dev->xfer = NULL;
+	}
+
+	if (dev->xfer_buf) {
+		for(i = 0; i < dev->xfer_buf_num; ++i) {
+			if (dev->xfer_buf[i])
+				free(dev->xfer_buf[i]);
+		}
+
+		free(dev->xfer_buf);
+		dev->xfer_buf = NULL;
+	}
+
+	return 0;
 }
 
 int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
@@ -876,8 +881,6 @@ int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
 
 	dev->cb = cb;
 	dev->cb_ctx = ctx;
-
-	_rtlsdr_free_async_buffers(dev);
 
 	if (buf_num > 0)
 		dev->xfer_buf_num = buf_num;
@@ -904,21 +907,39 @@ int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
 		libusb_submit_transfer(dev->xfer[i]);
 	}
 
-	dev->run_async = 1;
+	dev->async_status = RTLSDR_RUNNING;
 
-	while (dev->run_async) {
+	while (RTLSDR_INACTIVE != dev->async_status) {
 		r = libusb_handle_events_timeout(dev->ctx, &tv);
 		if (r < 0) {
 			/*fprintf(stderr, "handle_events returned: %d\n", r);*/
+			if (r == LIBUSB_ERROR_INTERRUPTED) /* stray signal */
+				continue;
 			break;
+		}
+
+		if (RTLSDR_CANCELING == dev->async_status) {
+			dev->async_status = RTLSDR_INACTIVE;
+
+			if (!dev->xfer)
+				break;
+
+			for(i = 0; i < dev->xfer_buf_num; ++i) {
+				if (!dev->xfer[i])
+					continue;
+
+				if (dev->xfer[i]->status == LIBUSB_TRANSFER_COMPLETED) {
+					libusb_cancel_transfer(dev->xfer[i]);
+					dev->async_status = RTLSDR_CANCELING;
+				}
+			}
+
+			if (RTLSDR_INACTIVE == dev->async_status)
+				break;
 		}
 	}
 
-	for(i = 0; i < dev->xfer_buf_num; ++i) {
-		if (dev->xfer[i]) {
-			libusb_cancel_transfer(dev->xfer[i]);
-		}
-	}
+	_rtlsdr_free_async_buffers(dev);
 
 	return r;
 }
@@ -928,8 +949,8 @@ int rtlsdr_cancel_async(rtlsdr_dev_t *dev)
 	if (!dev)
 		return -1;
 
-	if (dev->run_async) {
-		dev->run_async = 0;
+	if (RTLSDR_RUNNING == dev->async_status) {
+		dev->async_status = RTLSDR_CANCELING;
 		return 0;
 	}
 
