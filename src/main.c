@@ -62,15 +62,24 @@ void usage(void)
 
 #ifdef _WIN32
 BOOL WINAPI
+sighandler(int signum)
+{
+	if (CTRL_C_EVENT == signum) {
+		fprintf(stderr, "Signal caught, exiting!\n");
+		do_exit = 1;
+		rtlsdr_cancel_async(dev);
+		return TRUE;
+	}
+	return FALSE;
+}
 #else
-static void
-#endif
-	sighandler(int signum)
+static void sighandler(int signum)
 {
 	fprintf(stderr, "Signal caught, exiting!\n");
 	do_exit = 1;
 	rtlsdr_cancel_async(dev);
 }
+#endif
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
