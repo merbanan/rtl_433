@@ -813,10 +813,10 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 
 	rtlsdr_deinit_baseband(dev);
 
+	_rtlsdr_free_async_buffers(dev);
+
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
-
-	_rtlsdr_free_async_buffers(dev);
 
 	libusb_exit(dev->ctx);
 
