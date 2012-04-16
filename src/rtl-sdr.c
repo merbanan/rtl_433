@@ -122,6 +122,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x0bda, 0x2838, "ezcap USB 2.0 DVB-T/DAB/FM dongle" },
 	{ 0x0ccd, 0x00a9, "Terratec Cinergy T Stick Black (rev 1)" },
 	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
+	{ 0x0ccd, 0x00d3, "Terratec Cinergy T Stick RC (Rev.3)" },
 	{ 0x0ccd, 0x00e0, "Terratec NOXON DAB/DAB+ USB dongle (rev 2)" },
 	{ 0x185b, 0x0620, "Compro Videomate U620F"},
 	{ 0x1f4d, 0xb803, "GTek T803" },
