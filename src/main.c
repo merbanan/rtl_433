@@ -141,7 +141,7 @@ int main(int argc, char **argv)
 		filename = argv[optind];
 	}
 #else
-	if(argc <5)
+	if(argc <6)
 		usage();
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 			"Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
 		out_block_size = DEFAULT_BUF_LENGTH;
 	}
-	
+
 	buffer = malloc(out_block_size * sizeof(uint8_t));
 
 	device_count = rtlsdr_get_device_count();
