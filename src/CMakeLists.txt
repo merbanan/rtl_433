@@ -58,18 +58,24 @@ endif()
 # Build utility
 ########################################################################
 add_executable(rtl_sdr main.c)
+add_executable(rtl_tcp rtl_tcp.c)
 target_link_libraries(rtl_sdr rtlsdr_static
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+target_link_libraries(rtl_tcp rtlsdr_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
 if(WIN32)
 set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
+set_property(TARGET rtl_tcp APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr
+install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file

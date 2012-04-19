@@ -10,6 +10,9 @@ lib_LTLIBRARIES = librtlsdr.la
 librtlsdr_la_SOURCES = rtl-sdr.c tuner_e4000.c tuner_fc0012.c tuner_fc0013.c tuner_fc2580.c
 librtlsdr_la_LDFALGS = -version-info $(LIBVERSION)
 
-bin_PROGRAMS         = rtl_sdr
+bin_PROGRAMS         = rtl_sdr rtl_tcp
 rtl_sdr_SOURCES      = main.c
 rtl_sdr_LDADD        = librtlsdr.la
+
+rtl_tcp_SOURCES      = rtl_tcp.c
+rtl_tcp_LDADD        = librtlsdr.la
