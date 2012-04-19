@@ -68,26 +68,24 @@ int e4k_set_gain(void *dev, int gain) { return 0; }
 int fc0012_init(void *dev) { return FC0012_Open(dev); }
 int fc0012_exit(void *dev) { return 0; }
 int fc0012_tune(void *dev, uint32_t freq) {
-	unsigned int bw = 6;
 	/* select V-band/U-band filter */
 	rtlsdr_set_gpio_bit(dev, 6, (freq > 300000000) ? 1 : 0);
-	return FC0012_SetFrequency(dev, freq/1000, bw & 0xff);
+	return FC0012_SetFrequency(dev, freq/1000, 6);
 }
 int fc0012_set_bw(void *dev, int bw) {
 	unsigned long freq = ((rtlsdr_tuner_t *)dev)->freq;
-	return FC0013_SetFrequency(dev, freq/1000, bw/1000000);
+	return FC0012_SetFrequency(dev, freq/1000, 6);
 }
 int fc0012_set_gain(void *dev, int gain) { return 0; }
 
 int fc0013_init(void *dev) { return FC0013_Open(dev); }
 int fc0013_exit(void *dev) { return 0; }
 int fc0013_tune(void *dev, uint32_t freq) {
-	unsigned int bw = 6;
-	return FC0013_SetFrequency(dev, freq/1000, bw & 0xff);
+	return FC0013_SetFrequency(dev, freq/1000, 6);
 }
 int fc0013_set_bw(void *dev, int bw) {
 	unsigned long freq = ((rtlsdr_tuner_t *)dev)->freq;
-	return FC0013_SetFrequency(dev, freq/1000, bw/1000000);
+	return FC0013_SetFrequency(dev, freq/1000, 6);
 }
 int fc0013_set_gain(void *dev, int gain) { return 0; }
 
