@@ -103,10 +103,10 @@ e4000_Initialize(void *pTuner
 
 	if(Qpeak(pTuner) != E4000_1_SUCCESS)
 		goto error_status_execute_function;
-
+#if 0
 	if(DCoffloop(pTuner) != E4000_1_SUCCESS)
 		goto error_status_execute_function;
-
+#endif
 	if(GainControlinit(pTuner) != E4000_1_SUCCESS)
 		goto error_status_execute_function;
 
