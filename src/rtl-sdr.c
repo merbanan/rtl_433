@@ -115,6 +115,9 @@ typedef struct rtlsdr_device {
 	const char *name;
 } rtlsdr_device_t;
 
+/*
+ * Please add your device here and send a patch to osmocom-sdr@lists.osmocom.org
+ */
 static rtlsdr_device_t devices[] = {
 	{ 0x0bda, 0x2832, "Generic RTL2832U (e.g. hama nano)" },
 	{ 0x0bda, 0x2838, "ezcap USB 2.0 DVB-T/DAB/FM dongle" },
