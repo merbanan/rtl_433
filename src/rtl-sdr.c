@@ -141,7 +141,7 @@ static rtlsdr_device_t devices[] = {
 };
 
 #define DEFAULT_BUF_NUMBER	32
-#define DEFAULT_BUF_LENGTH	(16 * 16384)
+#define DEFAULT_BUF_LENGTH	(16 * 32 * 512)
 
 enum rtlsdr_async_status {
 	RTLSDR_INACTIVE = 0,
@@ -891,7 +891,7 @@ int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
 	else
 		dev->xfer_buf_num = DEFAULT_BUF_NUMBER;
 
-	if (buf_len > 0 && buf_len % 2 == 0) /* len must be multiple of 2 */
+	if (buf_len > 0 && buf_len % 512 == 0) /* len must be multiple of 512 */
 		dev->xfer_buf_len = buf_len;
 	else
 		dev->xfer_buf_len = DEFAULT_BUF_LENGTH;
