@@ -77,13 +77,14 @@ void usage(void)
 	#ifdef _WIN32
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
 		"Usage:\t rtl-sdr-win.exe [listen addr] [listen port] "
-		"[samplerate in kHz] [frequency in hz]\n");
+		"[samplerate in kHz] [frequency in hz] [device index]\n");
 	#else
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
 		"Usage:\t -a listen address\n"
 		"\t[-p listen port (default: 1234)\n"
 		"\t -f frequency to tune to [Hz]\n"
 		"\t[-s samplerate in kHz (default: 2048 kHz)]\n"
+		"\t[-d device index (default: 0)]\n"
 		"\toutput filename\n");
 	#endif
 	exit(1);
@@ -200,7 +201,9 @@ static void *tcp_worker(void *arg)
 			while(bytesleft > 0) {
 				FD_ZERO(&writefds);
 				FD_SET(s, &writefds);
-				r = select(0+1, NULL, &writefds, NULL, &tv);
+				tv.tv_sec = 1;
+				tv.tv_usec = 0;
+				r = select(s+1, NULL, &writefds, NULL, &tv);
 				if(r) {
 					bytessent = send(s,  &curelem->data[index], bytesleft, 0);
 					if (bytessent == SOCKET_ERROR || do_exit) {
@@ -250,7 +253,9 @@ static void *command_worker(void *arg)
 		while(left >0) {
 			FD_ZERO(&readfds);
 			FD_SET(s, &readfds);
-			r = select(0+1, &readfds, NULL, NULL, &tv);
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			r = select(s+1, &readfds, NULL, NULL, &tv);
 			if(r) {
 				received = recv(s, (char*)&cmd+(sizeof(cmd)-left), left, 0);
 				if(received == SOCKET_ERROR || do_exit){
@@ -283,7 +288,7 @@ static void *command_worker(void *arg)
 int main(int argc, char **argv)
 {
 	int r, opt, i;
-	char* addr;
+	char* addr = "127.0.0.1";
 	int port = 1234;
 	uint32_t frequency = 0, samp_rate = 2048000;
 	struct sockaddr_in local, remote;
@@ -303,13 +308,13 @@ int main(int argc, char **argv)
 #endif
 #ifndef _WIN32
 	struct sigaction sigact;
-	while ((opt = getopt(argc, argv, "a:p:f:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "a:p:f:s:d:")) != -1) {
 		switch (opt) {
 		case 'f':
 			frequency = atoi(optarg);
 			break;
 		case 's':
-			samp_rate = atoi(optarg);
+			samp_rate = atoi(optarg)*1000;
 			break;
 		case 'a':
 			addr = optarg;
@@ -317,13 +322,16 @@ int main(int argc, char **argv)
 		case 'p':
 			port = atoi(optarg);
 			break;
+		case 'd':
+			dev_index = atoi(optarg);
+			break;
 		default:
 			usage();
 			break;
 		}
 	}
 
-	if (argc <= optind)
+	if (argc < optind)
 		usage();
 
 #else
@@ -407,7 +415,7 @@ int main(int argc, char **argv)
 	ioctlsocket(listensocket, FIONBIO, &blockmode);
 	#else
 	r = fcntl(listensocket, F_GETFL, 0);
-	fcntl(listensocket, F_SETFL, r | O_NONBLOCK);
+	r = fcntl(listensocket, F_SETFL, r | O_NONBLOCK);
 	#endif
 
 	while(1) {
@@ -417,7 +425,9 @@ int main(int argc, char **argv)
 		while(1) {
 			FD_ZERO(&readfds);
 			FD_SET(listensocket, &readfds);
-			r = select(0+1, &readfds, NULL, NULL, &tv);
+			tv.tv_sec = 1;
+			tv.tv_usec = 0;
+			r = select(listensocket+1, &readfds, NULL, NULL, &tv);
 			if(do_exit) {
 				goto out;
 			} else if(r) {
@@ -430,7 +440,7 @@ int main(int argc, char **argv)
 		setsockopt(s, SOL_SOCKET, SO_LINGER, (char *)&ling, sizeof(ling));
 
 		printf("client accepted!\n");
-		
+
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 		r = pthread_create(&tcp_worker_thread, &attr, tcp_worker, NULL);
@@ -440,22 +450,21 @@ int main(int argc, char **argv)
 		rtlsdr_wait_async(dev, rtlsdr_callback, (void *)0);
 
 		closesocket(s);
-		if(!dead[0]){
-		pthread_join(tcp_worker_thread, &status);
-		}
-		if(!dead[1]){
-		pthread_join(command_thread, &status);
-		}
+		if(!dead[0])
+			pthread_join(tcp_worker_thread, &status);
+
+		if(!dead[1])
+			pthread_join(command_thread, &status);
 
 		printf("all threads dead..\n");
 		curelem = ll_buffers;
 		ll_buffers = 0;
+
 		while(curelem != 0) {
 			prev = curelem;
 			curelem = curelem->next;
 			free(prev->data);
 			free(prev);
-			
 		}
 
 		do_exit = 0;
