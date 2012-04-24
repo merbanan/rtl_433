@@ -459,10 +459,10 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 	return r;
 }
 
-int rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
+uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
 {
 	if (!dev || !dev->tuner)
-		return -1;
+		return 0;
 
 	return dev->tuner->freq;
 }
@@ -554,10 +554,10 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	return 0;
 }
 
-int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev)
+uint32_t rtlsdr_get_sample_rate(rtlsdr_dev_t *dev)
 {
 	if (!dev)
-		return -1;
+		return 0;
 
 	return dev->rate;
 }

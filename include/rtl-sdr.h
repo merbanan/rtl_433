@@ -41,7 +41,13 @@ RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
 
 RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
-RTLSDR_API int rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
+/*!
+ * Get actual frequency the device is tuned to.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return 0 on error, frequency in Hz otherwise
+ */
+RTLSDR_API uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
 
 RTLSDR_API int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
@@ -54,7 +60,13 @@ RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 /* this will select the baseband filters according to the requested sample rate */
 RTLSDR_API int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
 
-RTLSDR_API int rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
+/*!
+ * Get actual sample rate the device is configured to.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return 0 on error, sample rate in Hz otherwise
+ */
+RTLSDR_API uint32_t rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 
 /* streaming functions */
 
