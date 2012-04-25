@@ -371,7 +371,7 @@ fc2580_fci_result_type fc2580_set_freq( void *pTuner, unsigned int f_lo, unsigne
 ==============================================================================*/
 fc2580_fci_result_type fc2580_set_filter( void *pTuner, unsigned char filter_bw, unsigned int freq_xtal )
 {
-	unsigned char	cal_mon, i;
+	unsigned char	cal_mon = 0, i;
 	fc2580_fci_result_type result = FC2580_FCI_SUCCESS;
 
 	if(filter_bw == 1)
