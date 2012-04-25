@@ -236,12 +236,12 @@ int main(int argc, char **argv)
 				break;
 			}
 
-			if (fwrite(buffer, 1, n_read, file) != n_read) {
+			if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
 				fprintf(stderr, "Short write, samples lost, exiting!\n");
 				break;
 			}
 
-			if (n_read < out_block_size) {
+			if ((uint32_t)n_read < out_block_size) {
 				fprintf(stderr, "Short read, samples lost, exiting!\n");
 				break;
 			}

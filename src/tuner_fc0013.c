@@ -21,7 +21,7 @@ int FC0013_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte)
 	data[0] = RegAddr;
 	data[1] = Byte;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, data, 2) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC0013_I2C_ADDR, data, 2) < 0)
 		return FC0013_I2C_ERROR;
 
 	return FC0013_I2C_SUCCESS;
@@ -31,10 +31,10 @@ int FC0013_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte)
 {
 	uint8_t data = RegAddr;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
 		return FC0013_I2C_ERROR;
 
-	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read_fn(pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
 		return FC0013_I2C_ERROR;
 
 	*pByte = data;
@@ -189,7 +189,7 @@ int FC0013_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 
 	unsigned long CrystalFreqKhz;
 
-	int CrystalFreqHz = CRYSTAL_FREQ;
+	int CrystalFreqHz = rtlsdr_get_tuner_clock(pTuner);
 
 	// Get tuner crystal frequency in KHz.
 	// Note: CrystalFreqKhz = round(CrystalFreqHz / 1000)

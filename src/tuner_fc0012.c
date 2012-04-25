@@ -45,7 +45,7 @@ int FC0012_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte)
 	data[0] = RegAddr;
 	data[1] = Byte;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0012_I2C_ADDR, data, 2) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC0012_I2C_ADDR, data, 2) < 0)
 		return FC0012_ERROR;
 
 	return FC0012_OK;
@@ -55,10 +55,10 @@ int FC0012_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte)
 {
 	uint8_t data = RegAddr;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC0012_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC0012_I2C_ADDR, &data, 1) < 0)
 		return FC0012_ERROR;
 
-	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, FC0012_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read_fn(pTuner, FC0012_I2C_ADDR, &data, 1) < 0)
 		return FC0012_ERROR;
 
 	*pByte = data;
@@ -183,7 +183,7 @@ int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 
 //	DEBUGF("FC0012_SetFrequency start");
 
-	CrystalFreqKhz = (CRYSTAL_FREQ + 500) / 1000;
+	CrystalFreqKhz = (rtlsdr_get_tuner_clock(pTuner) + 500) / 1000;
 
 	//===================================== Select frequency divider and the frequency of VCO
 	if (Frequency * 96 < 3560000)

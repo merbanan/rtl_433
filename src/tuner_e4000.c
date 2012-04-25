@@ -22,8 +22,7 @@
 
 /* glue functions to rtl-sdr code */
 int
-I2CReadByte(
-    void *pTuner,
+I2CReadByte(void *pTuner,
 	unsigned char NoUse,
 	unsigned char RegAddr,
 	unsigned char *pReadingByte
@@ -31,10 +30,10 @@ I2CReadByte(
 {
 	uint8_t data = RegAddr;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, E4K_I2C_ADDR, &data, 1) < 0)
 		return E4000_I2C_FAIL;
 
-	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read_fn(pTuner, E4K_I2C_ADDR, &data, 1) < 0)
 		return E4000_I2C_FAIL;
 
 	*pReadingByte = data;
@@ -54,15 +53,14 @@ I2CWriteByte(void *pTuner,
 	data[0] = RegAddr;
 	data[1] = WritingByte;
 
-    if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, data, 2) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, E4K_I2C_ADDR, data, 2) < 0)
 		return E4000_I2C_FAIL;
 
 	return E4000_I2C_SUCCESS;
 }
 
 int
-I2CWriteArray(
-    void *pTuner,
+I2CWriteArray(void *pTuner,
 	unsigned char NoUse,
 	unsigned char RegStartAddr,
 	unsigned char ByteNum,
@@ -77,7 +75,7 @@ I2CWriteArray(
 	for(i = 0; i < ByteNum; i++)
 		WritingBuffer[1 + i] = pWritingBytes[i];
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, E4K_I2C_ADDR, WritingBuffer, ByteNum + 1) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, E4K_I2C_ADDR, WritingBuffer, ByteNum + 1) < 0)
 		return E4000_I2C_FAIL;
 
 	return E4000_I2C_SUCCESS;
@@ -134,7 +132,7 @@ e4000_SetRfFreqHz(
 	int RfFreqKhz;
 	int CrystalFreqKhz;
 
-	int CrystalFreqHz = CRYSTAL_FREQ;
+	int CrystalFreqHz = rtlsdr_get_tuner_clock(pTuner);
 
 	// Set tuner RF frequency in KHz.
 	// Note: 1. RfFreqKhz = round(RfFreqHz / 1000)
@@ -187,7 +185,7 @@ e4000_SetBandwidthHz(
 	int BandwidthKhz;
 	int CrystalFreqKhz;
 
-	int CrystalFreqHz = CRYSTAL_FREQ;
+	int CrystalFreqHz = rtlsdr_get_tuner_clock(pTuner);
 
 
 	// Get tuner extra module.

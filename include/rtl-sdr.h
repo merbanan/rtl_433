@@ -39,6 +39,36 @@ RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
 
 /* configuration functions */
 
+/*!
+ * Set crystal oscillator frequencies used for the RTL2832 and the tuner IC.
+ *
+ * Usually both ICs use the same clock. Changing the clock may make sense if
+ * you are applying an external clock to the tuner or to compensate the
+ * frequency (and samplerate) error caused by the original cheap crystal.
+ *
+ * NOTE: Call this function only if you know what you are doing.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param rtl_freq frequency value used to clock the RTL2832 in Hz
+ * \param tuner_freq frequency value used to clock the tuner IC in Hz
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq,
+				    uint32_t tuner_freq);
+
+/*!
+ * Get crystal oscillator frequencies used for the RTL2832 and the tuner IC.
+ *
+ * Usually both ICs use the same clock.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param rtl_freq frequency value used to clock the RTL2832 in Hz
+ * \param tuner_freq frequency value used to clock the tuner IC in Hz
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_get_xtal_freq(rtlsdr_dev_t *dev, uint32_t *rtl_freq,
+				    uint32_t *tuner_freq);
+
 RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
 /*!

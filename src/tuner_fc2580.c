@@ -23,7 +23,7 @@ fc2580_fci_result_type fc2580_i2c_write(void *pTuner, unsigned char reg, unsigne
 	data[0] = reg;
 	data[1] = val;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC2580_I2C_ADDR, data, 2) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC2580_I2C_ADDR, data, 2) < 0)
 		return FC2580_FCI_FAIL;
 
 	return FC2580_FCI_SUCCESS;
@@ -33,10 +33,10 @@ fc2580_fci_result_type fc2580_i2c_read(void *pTuner, unsigned char reg, unsigned
 {
 	uint8_t data = reg;
 
-	if (rtlsdr_i2c_write((rtlsdr_dev_t *)pTuner, FC2580_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_write_fn(pTuner, FC2580_I2C_ADDR, &data, 1) < 0)
 		return FC2580_FCI_FAIL;
 
-	if (rtlsdr_i2c_read((rtlsdr_dev_t *)pTuner, FC2580_I2C_ADDR, &data, 1) < 0)
+	if (rtlsdr_i2c_read_fn(pTuner, FC2580_I2C_ADDR, &data, 1) < 0)
 		return FC2580_FCI_FAIL;
 
 	*read_data = data;
