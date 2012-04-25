@@ -124,6 +124,7 @@ static rtlsdr_device_t devices[] = {
 	{ 0x0ccd, 0x00a9, "Terratec Cinergy T Stick Black (rev 1)" },
 	{ 0x0ccd, 0x00b3, "Terratec NOXON DAB/DAB+ USB dongle (rev 1)" },
 	{ 0x0ccd, 0x00d3, "Terratec Cinergy T Stick RC (Rev.3)" },
+	{ 0x0ccd, 0x00d7, "Terratec T Stick PLUS" },
 	{ 0x0ccd, 0x00e0, "Terratec NOXON DAB/DAB+ USB dongle (rev 2)" },
 	{ 0x185b, 0x0620, "Compro Videomate U620F"},
 	{ 0x185b, 0x0650, "Compro Videomate U650F"},

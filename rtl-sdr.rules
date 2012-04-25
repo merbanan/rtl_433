@@ -30,6 +30,9 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3", MODE:="066
 # Terratec Cinergy T Stick RC (Rev.3) (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00d3", MODE:="0666"
 
+# Terratec T Stick PLUS (E4000)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00d7", MODE:="0666"
+
 # Terratec NOXON rev 2 (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00e0", MODE:="0666"
 
