@@ -484,14 +484,15 @@ int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_fr
 	if (!dev)
 		return -1;
 
-	if (rtl_freq < MIN_RTL_XTAL_FREQ || rtl_freq > MAX_RTL_XTAL_FREQ)
+	if (rtl_freq > 0 &&
+	    (rtl_freq < MIN_RTL_XTAL_FREQ || rtl_freq > MAX_RTL_XTAL_FREQ))
 		return -2;
 
 	if (dev->rtl_xtal != rtl_freq) {
-		dev->rtl_xtal = rtl_freq;
+		if (0 == rtl_freq)
+			rtl_freq = DEF_RTL_XTAL_FREQ;
 
-		if (0 == dev->rtl_xtal)
-			dev->rtl_xtal = DEF_RTL_XTAL_FREQ;
+		dev->rtl_xtal = rtl_freq;
 
 		/* update xtal-dependent settings */
 		if (dev->rate)
@@ -499,11 +500,10 @@ int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_fr
 	}
 
 	if (dev->tun_xtal != tuner_freq) {
+		if (0 == tuner_freq)
+			tuner_freq = dev->rtl_xtal;
 
 		dev->tun_xtal = tuner_freq;
-
-		if (0 == dev->tun_xtal)
-			dev->tun_xtal = dev->rtl_xtal;
 
 		/* update xtal-dependent settings */
 		if (dev->freq)
