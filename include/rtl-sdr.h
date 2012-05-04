@@ -87,6 +87,8 @@ RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 
 RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
+RTLSDR_API int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int manual);
+
 /* this will select the baseband filters according to the requested sample rate */
 RTLSDR_API int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
 

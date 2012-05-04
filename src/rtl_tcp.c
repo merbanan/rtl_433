@@ -32,6 +32,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#else
+#include <WinSock2.h>
 #endif
 
 #include <pthread.h>
@@ -278,6 +280,9 @@ static void *command_worker(void *arg)
 			printf("set freq %d\n", cmd.param);
 			rtlsdr_set_center_freq(dev, cmd.param);
 			break;
+		case 0x04:
+			 rtlsdr_set_tuner_gain(dev, cmd.param);
+			 break;
 		default:
 			break;
 		}
@@ -293,7 +298,7 @@ int main(int argc, char **argv)
 	uint32_t frequency = 0, samp_rate = 2048000;
 	struct sockaddr_in local, remote;
 	int device_count;
-	uint32_t dev_index = 0, gain = 5;
+	uint32_t dev_index = 0, gain = -10;
 	struct llist *curelem,*prev;
 	pthread_attr_t attr;
 	void *status;
