@@ -83,10 +83,36 @@ RTLSDR_API int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
 RTLSDR_API int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
 
+/*!
+ * Set the gain for the device.
+ * Manual gain mode must be enabled for this to work.
+ *
+ * Valid gain values (in tenths of a dB) for the E4000 tuner:
+ * -10, 15, 40, 65, 90, 115, 140, 165, 190,
+ * 215, 240, 290, 340, 420, 430, 450, 470, 490
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param gain in tenths of a dB, 115 means 11.5 dB.
+ * \return 0 on success
+ */
 RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 
+/*!
+ * Get actual gain the device is configured to.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return < 0 on error, gain in tenths of a dB, 115 means 11.5 dB.
+ */
 RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
+/*!
+ * Set the gain mode (automatic/manual) for the device.
+ * Manual gain mode must be enabled for the gain setter function to work.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param manual gain mode, 1 means manual gain mode shall be enabled.
+ * \return 0 on success
+ */
 RTLSDR_API int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int manual);
 
 /* this will select the baseband filters according to the requested sample rate */
