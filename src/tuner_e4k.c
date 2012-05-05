@@ -570,7 +570,7 @@ int e4k_tune_freq(struct e4k_state *e4k, uint32_t freq)
 	/* check PLL lock */
 	rc = e4k_reg_read(e4k, E4K_REG_SYNTH1);
 	if (!(rc & 0x01)) {
-		printf("[E4K] PLL not locked!\n");
+		fprintf(stderr, "[E4K] PLL not locked!\n");
 		return -1;
 	}
 
@@ -853,7 +853,7 @@ int e4k_dc_offset_gen_table(struct e4k_state *e4k)
 		range_i = range & 0x3;
 		range_q = (range >> 4) & 0x3;
 
-		printf("Table %u I=%u/%u, Q=%u/%u\n",
+		fprintf(stderr, "Table %u I=%u/%u, Q=%u/%u\n",
 			i, range_i, offs_i, range_q, offs_q);
 
 		/* write into the table */
