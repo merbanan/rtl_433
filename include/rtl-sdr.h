@@ -101,7 +101,7 @@ RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
  * Get actual gain the device is configured to.
  *
  * \param dev the device handle given by rtlsdr_open()
- * \return < 0 on error, gain in tenths of a dB, 115 means 11.5 dB.
+ * \return 0 on error, gain in tenths of a dB, 115 means 11.5 dB.
  */
 RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 

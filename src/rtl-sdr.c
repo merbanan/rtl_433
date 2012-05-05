@@ -593,6 +593,8 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 
 		if (!r)
 			dev->freq = freq;
+		else
+			dev->freq = 0;
 
 		rtlsdr_set_i2c_repeater(dev, 0);
 	}
@@ -629,7 +631,7 @@ int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm)
 int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
 {
 	if (!dev || !dev->tuner)
-		return -1;
+		return 0;
 
 	return dev->corr;
 }
@@ -649,6 +651,8 @@ int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain)
 
 	if (!r)
 		dev->gain = gain;
+	else
+		dev->gain = 0;
 
 	return r;
 }
@@ -656,7 +660,7 @@ int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain)
 int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev)
 {
 	if (!dev || !dev->tuner)
-		return -1;
+		return 0;
 
 	return dev->gain;
 }
@@ -1129,7 +1133,8 @@ int rtlsdr_cancel_async(rtlsdr_dev_t *dev)
 	return -2;
 }
 
-uint32_t rtlsdr_get_tuner_clock(void *dev) {
+uint32_t rtlsdr_get_tuner_clock(void *dev)
+{
 	if (!dev)
 		return 0;
 
