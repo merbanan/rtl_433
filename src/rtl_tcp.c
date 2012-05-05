@@ -79,15 +79,14 @@ void usage(void)
 	#ifdef _WIN32
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
 		"Usage:\t rtl-sdr-win.exe [listen addr] [listen port] "
-		"[samplerate in kHz] [frequency in hz] [device index]\n");
+		"[samplerate in kHz] [frequency in Hz] [device index]\n");
 	#else
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
 		"Usage:\t -a listen address\n"
 		"\t[-p listen port (default: 1234)\n"
 		"\t -f frequency to tune to [Hz]\n"
-		"\t[-s samplerate in kHz (default: 2048 kHz)]\n"
-		"\t[-d device index (default: 0)]\n"
-		"\toutput filename\n");
+		"\t[-s samplerate in Hz (default: 2048000 Hz)]\n"
+		"\t[-d device index (default: 0)]\n");
 	#endif
 	exit(1);
 }
@@ -277,12 +276,13 @@ static void *command_worker(void *arg)
 		}
 		switch(cmd.cmd) {
 		case 0x01:
-			printf("set freq %d\n", cmd.param);
-			rtlsdr_set_center_freq(dev, cmd.param);
-			break;
+            printf("set freq %d\n", cmd.param);
+            rtlsdr_set_center_freq(dev, cmd.param);
+            break;
 		case 0x04:
-			 rtlsdr_set_tuner_gain(dev, cmd.param);
-			 break;
+            printf("set gain %d\n", cmd.param);
+            rtlsdr_set_tuner_gain(dev, cmd.param);
+            break;
 		default:
 			break;
 		}
@@ -315,20 +315,20 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	while ((opt = getopt(argc, argv, "a:p:f:s:d:")) != -1) {
 		switch (opt) {
+		case 'd':
+			dev_index = atoi(optarg);
+			break;
 		case 'f':
-			frequency = atoi(optarg);
+			frequency = (uint32_t)atof(optarg);
 			break;
 		case 's':
-			samp_rate = atoi(optarg)*1000;
+			samp_rate = (uint32_t)atof(optarg);
 			break;
 		case 'a':
 			addr = optarg;
 			break;
 		case 'p':
 			port = atoi(optarg);
-			break;
-		case 'd':
-			dev_index = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -397,7 +397,6 @@ int main(int argc, char **argv)
 	r = rtlsdr_reset_buffer(dev);
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
-
 
 	pthread_mutex_init(&exit_cond_lock, NULL);
 	pthread_mutex_init(&ll_mutex, NULL);

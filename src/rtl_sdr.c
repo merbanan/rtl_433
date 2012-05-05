@@ -45,7 +45,7 @@ void usage(void)
 	#ifdef _WIN32
 	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
 		"Usage:\t rtl-sdr-win.exe [device_index] [samplerate in kHz] "
-		"[gain] [frequency in hz] [filename]\n");
+		"[gain] [frequency in Hz] [filename]\n");
 	#else
 	fprintf(stderr,
 		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
@@ -55,7 +55,7 @@ void usage(void)
 		"\t[-g tuner_gain (default: 0 dB)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
-		"\toutput_filename (a '-' dumps samples to stdout)\n\n");
+		"\tfilename (a '-' dumps samples to stdout)\n\n");
 #endif
 	exit(1);
 }
@@ -118,10 +118,10 @@ int main(int argc, char **argv)
 			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
-			gain = atoi(optarg);
+			gain = (int)atof(optarg) * 10;
 			break;
 		case 's':
-			samp_rate = (int)atof(optarg);
+			samp_rate = (uint32_t)atof(optarg);
 			break;
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 		usage();
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
-	gain=atoi(argv[3]);
+	gain=(int)atof(argv[3]) * 10;
 	frequency = atoi(argv[4]);
 	filename = argv[5];
 #endif

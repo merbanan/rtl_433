@@ -57,7 +57,7 @@ endif()
 ########################################################################
 # Build utility
 ########################################################################
-add_executable(rtl_sdr main.c)
+add_executable(rtl_sdr rtl_sdr.c)
 add_executable(rtl_tcp rtl_tcp.c)
 target_link_libraries(rtl_sdr rtlsdr_static
     ${LIBUSB_LIBRARIES}
