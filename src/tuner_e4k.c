@@ -167,20 +167,29 @@ static int closest_arr_idx(const uint32_t *arr, unsigned int arr_size, uint32_t 
 }
 
 /* return 4-bit index as to which RF filter to select */
-static int choose_rf_filter(uint32_t freq)
+static int choose_rf_filter(enum e4k_band band, uint32_t freq)
 {
 	int rc;
 
-	if (freq < MHZ(350))
-		rc = 0;
-	else if (freq < MHZ(1000))
-		rc = closest_arr_idx(rf_filt_center_uhf,
-				     ARRAY_SIZE(rf_filt_center_uhf),
-				     freq);
-	else
-		rc = closest_arr_idx(rf_filt_center_l,
-				     ARRAY_SIZE(rf_filt_center_l),
-				     freq);
+	switch (band) {
+		case E4K_BAND_VHF2:
+		case E4K_BAND_VHF3:
+			rc = 0;
+			break;
+		case E4K_BAND_UHF:
+			rc = closest_arr_idx(rf_filt_center_uhf,
+						 ARRAY_SIZE(rf_filt_center_uhf),
+						 freq);
+			break;
+		case E4K_BAND_L:
+			rc = closest_arr_idx(rf_filt_center_l,
+						 ARRAY_SIZE(rf_filt_center_l),
+						 freq);
+			break;
+		default:
+			rc -EINVAL;
+			break;
+	}
 
 	return rc;
 }
@@ -190,7 +199,7 @@ int e4k_rf_filter_set(struct e4k_state *e4k)
 {
 	int rc;
 
-	rc = choose_rf_filter(e4k->vco.flo);
+	rc = choose_rf_filter(e4k->band, e4k->vco.flo);
 	if (rc < 0)
 		return rc;
 
@@ -525,7 +534,7 @@ int e4k_tune_params(struct e4k_state *e4k, struct e4k_pll_params *p)
 		e4k_band_set(e4k, E4K_BAND_VHF2);
 	else if (e4k->vco.flo < MHZ(350))
 		e4k_band_set(e4k, E4K_BAND_VHF3);
-	else if (e4k->vco.flo < MHZ(1000))
+	else if (e4k->vco.flo < MHZ(1135))
 		e4k_band_set(e4k, E4K_BAND_UHF);
 	else
 		e4k_band_set(e4k, E4K_BAND_L);
