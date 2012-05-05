@@ -187,7 +187,7 @@ static int choose_rf_filter(enum e4k_band band, uint32_t freq)
 						 freq);
 			break;
 		default:
-			rc -EINVAL;
+			rc = -EINVAL;
 			break;
 	}
 
