@@ -276,13 +276,21 @@ static void *command_worker(void *arg)
 		}
 		switch(cmd.cmd) {
 		case 0x01:
-            printf("set freq %d\n", cmd.param);
-            rtlsdr_set_center_freq(dev, cmd.param);
-            break;
+			printf("set freq %d\n", cmd.param);
+			rtlsdr_set_center_freq(dev, cmd.param);
+			break;
+        case 0x02:
+			printf("set sample rate %d\n", cmd.param);
+			rtlsdr_set_sample_rate(dev, cmd.param);
+			break;
+        case 0x03:
+			printf("set gain mode %d\n", cmd.param);
+			rtlsdr_set_tuner_gain_mode(dev, cmd.param);
+			break;
 		case 0x04:
-            printf("set gain %d\n", cmd.param);
-            rtlsdr_set_tuner_gain(dev, cmd.param);
-            break;
+			printf("set gain %d\n", cmd.param);
+			rtlsdr_set_tuner_gain(dev, cmd.param);
+			break;
 		default:
 			break;
 		}
