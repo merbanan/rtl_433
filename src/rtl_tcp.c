@@ -82,9 +82,10 @@ void usage(void)
 		"[samplerate in kHz] [frequency in Hz] [device index]\n");
 	#else
 	printf("rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t -a listen address\n"
-		"\t[-p listen port (default: 1234)\n"
-		"\t -f frequency to tune to [Hz]\n"
+		"Usage:\t[-a listen address]\n"
+		"\t[-p listen port (default: 1234)]\n"
+		"\t[-f frequency to tune to [Hz]]\n"
+		"\t[-g tuner_gain (default: -1dB)]\n"
 		"\t[-s samplerate in Hz (default: 2048000 Hz)]\n"
 		"\t[-d device index (default: 0)]\n");
 	#endif
@@ -307,10 +308,11 @@ int main(int argc, char **argv)
 	int r, opt, i;
 	char* addr = "127.0.0.1";
 	int port = 1234;
-	uint32_t frequency = 0, samp_rate = 2048000;
+	uint32_t frequency = 100000000, samp_rate = 2048000;
 	struct sockaddr_in local, remote;
 	int device_count;
-	uint32_t dev_index = 0, gain = -10;
+	uint32_t dev_index = 0;
+	int gain = -10; // tenths of a dB
 	struct llist *curelem,*prev;
 	pthread_attr_t attr;
 	void *status;
@@ -325,13 +327,16 @@ int main(int argc, char **argv)
 #endif
 #ifndef _WIN32
 	struct sigaction sigact;
-	while ((opt = getopt(argc, argv, "a:p:f:s:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "a:p:f:g:s:d:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
 			frequency = (uint32_t)atof(optarg);
+			break;
+		case 'g':
+			gain = (int)(atof(optarg) * 10);
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
@@ -403,7 +408,7 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
 	else
-		fprintf(stderr, "Tuner gain set to %i dB.\n", gain);
+		fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
 
 	/* Reset endpoint before we start reading from it (mandatory) */
 	r = rtlsdr_reset_buffer(dev);

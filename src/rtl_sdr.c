@@ -52,7 +52,7 @@ void usage(void)
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-g tuner_gain (default: 0 dB)]\n"
+		"\t[-g tuner_gain (default: -1dB)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
@@ -99,12 +99,12 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = 0;
+	int i, gain = -10; // tenths of a dB
 	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
-	uint32_t frequency = 0;
+	uint32_t frequency = 100000000;
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
-			gain = (int)atof(optarg) * 10;
+			gain = (int)(atof(optarg) * 10);
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 		usage();
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
-	gain=(int)atof(argv[3]) * 10;
+	gain=(int)(atof(argv[3]) * 10);
 	frequency = atoi(argv[4]);
 	filename = argv[5];
 #endif
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
 	else
-		fprintf(stderr, "Tuner gain set to %i dB.\n", gain);
+		fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
