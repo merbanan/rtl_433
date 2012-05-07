@@ -509,13 +509,9 @@ int rtlsdr_deinit_baseband(rtlsdr_dev_t *dev)
 	if (!dev)
 		return -1;
 
-	if (dev->tuner) {
-		/* deinitialize tuner */
+	if (dev->tuner && dev->tuner->exit) {
 		rtlsdr_set_i2c_repeater(dev, 1);
-
-		if (dev->tuner->exit)
-			r = dev->tuner->exit(dev);
-
+		r = dev->tuner->exit(dev); /* deinitialize tuner */
 		rtlsdr_set_i2c_repeater(dev, 0);
 	}
 
@@ -533,7 +529,7 @@ int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_fr
 		return -1;
 
 	if (rtl_freq > 0 &&
-	    (rtl_freq < MIN_RTL_XTAL_FREQ || rtl_freq > MAX_RTL_XTAL_FREQ))
+		(rtl_freq < MIN_RTL_XTAL_FREQ || rtl_freq > MAX_RTL_XTAL_FREQ))
 		return -2;
 
 	if (dev->rtl_xtal != rtl_freq) {
@@ -585,18 +581,16 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 		return -1;
 
 	if (dev->tuner->set_freq) {
-		rtlsdr_set_i2c_repeater(dev, 1);
-
 		f *= 1.0 + dev->corr / 1e6;
 
+		rtlsdr_set_i2c_repeater(dev, 1);
 		r = dev->tuner->set_freq(dev, (uint32_t) f);
+		rtlsdr_set_i2c_repeater(dev, 0);
 
 		if (!r)
 			dev->freq = freq;
 		else
 			dev->freq = 0;
-
-		rtlsdr_set_i2c_repeater(dev, 0);
 	}
 
 	return r;
@@ -681,8 +675,6 @@ int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int mode)
 	return r;
 }
 
-
-
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 {
 	uint16_t tmp;
@@ -704,8 +696,11 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	if ( ((double)samp_rate) != real_rate )
 		fprintf(stderr, "Exact sample rate is: %f Hz\n", real_rate);
 
-	if (dev->tuner && dev->tuner->set_bw)
+	if (dev->tuner && dev->tuner->set_bw) {
+		rtlsdr_set_i2c_repeater(dev, 1);
 		dev->tuner->set_bw(dev, real_rate);
+		rtlsdr_set_i2c_repeater(dev, 0);
+	}
 
 	dev->rate = samp_rate;
 
@@ -1005,7 +1000,7 @@ static int _rtlsdr_alloc_async_buffers(rtlsdr_dev_t *dev)
 
 	if (!dev->xfer_buf) {
 		dev->xfer_buf = malloc(dev->xfer_buf_num *
-				       sizeof(unsigned char *));
+					   sizeof(unsigned char *));
 
 		for(i = 0; i < dev->xfer_buf_num; ++i)
 			dev->xfer_buf[i] = malloc(dev->xfer_buf_len);
@@ -1046,7 +1041,7 @@ static int _rtlsdr_free_async_buffers(rtlsdr_dev_t *dev)
 }
 
 int rtlsdr_read_async(rtlsdr_dev_t *dev, rtlsdr_read_async_cb_t cb, void *ctx,
-		      uint32_t buf_num, uint32_t buf_len)
+			  uint32_t buf_num, uint32_t buf_len)
 {
 	unsigned int i;
 	int r;
