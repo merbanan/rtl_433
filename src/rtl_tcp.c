@@ -287,9 +287,13 @@ static void *command_worker(void *arg)
 			printf("set gain mode %d\n", cmd.param);
 			rtlsdr_set_tuner_gain_mode(dev, cmd.param);
 			break;
-		case 0x04:
+        case 0x04:
 			printf("set gain %d\n", cmd.param);
 			rtlsdr_set_tuner_gain(dev, cmd.param);
+			break;
+		case 0x05:
+			printf("set freq correction %d\n", cmd.param);
+			rtlsdr_set_freq_correction(dev, cmd.param);
 			break;
 		default:
 			break;
