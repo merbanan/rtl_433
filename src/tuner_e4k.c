@@ -423,7 +423,7 @@ static uint64_t compute_fvco(uint32_t f_osc, uint8_t z, uint16_t x)
 	return fvco;
 }
 
-static int compute_flo(uint32_t f_osc, uint8_t z, uint16_t x, uint8_t r)
+static uint32_t compute_flo(uint32_t f_osc, uint8_t z, uint16_t x, uint8_t r)
 {
 	uint64_t fvco = compute_fvco(f_osc, z, x);
 	if (fvco == 0)
@@ -459,9 +459,9 @@ static int e4k_band_set(struct e4k_state *e4k, enum e4k_band band)
  *  \param[in] fosc Clock input frequency applied to the chip (Hz)
  *  \param[in] intended_flo target tuning frequency (Hz)
  *  \returns actual PLL frequency, as close as possible to intended_flo,
- *	     negative in case of error
+ *	     0 in case of error
  */
-int e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo)
+uint32_t e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo)
 {
 	uint32_t i;
 	uint8_t r = 2;
@@ -473,7 +473,7 @@ int e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t 
 	oscp->r_idx = 0;
 
 	if (!is_fosc_valid(fosc))
-		return -EINVAL;
+		return 0;
 
 	for(i = 0; i < ARRAY_SIZE(pll_vars); ++i) {
 		if(intended_flo < pll_vars[i].freq) {
@@ -556,13 +556,13 @@ int e4k_tune_params(struct e4k_state *e4k, struct e4k_pll_params *p)
  */
 int e4k_tune_freq(struct e4k_state *e4k, uint32_t freq)
 {
-	int rc, i;
+	uint32_t rc;
 	struct e4k_pll_params p;
 
 	/* determine PLL parameters */
 	rc = e4k_compute_pll_params(&p, e4k->vco.fosc, freq);
-	if (rc < 0)
-		return rc;
+	if (!rc)
+		return -EINVAL;
 
 	/* actually tune to those parameters */
 	rc = e4k_tune_params(e4k, &p);

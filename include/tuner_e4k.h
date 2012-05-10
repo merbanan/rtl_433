@@ -199,7 +199,7 @@ int e4k_mixer_gain_set(struct e4k_state *e4k, int8_t value);
 int e4k_commonmode_set(struct e4k_state *e4k, int8_t value);
 int e4k_tune_freq(struct e4k_state *e4k, uint32_t freq);
 int e4k_tune_params(struct e4k_state *e4k, struct e4k_pll_params *p);
-int e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo);
+uint32_t e4k_compute_pll_params(struct e4k_pll_params *oscp, uint32_t fosc, uint32_t intended_flo);
 int e4k_if_filter_bw_get(struct e4k_state *e4k, enum e4k_if_filter filter);
 int e4k_if_filter_bw_set(struct e4k_state *e4k, enum e4k_if_filter filter,
 		         uint32_t bandwidth);
