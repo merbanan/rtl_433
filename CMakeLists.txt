@@ -92,3 +92,39 @@ add_custom_target(uninstall
 ########################################################################
 add_subdirectory(include)
 add_subdirectory(src)
+
+########################################################################
+# Create Pkg Config File
+########################################################################
+FOREACH(inc ${LIBUSB_INCLUDE_DIR})
+    LIST(APPEND RTLSDR_PC_CFLAGS "-I${inc}")
+ENDFOREACH(inc)
+
+FOREACH(lib ${LIBUSB_LIBRARY_DIRS})
+    LIST(APPEND RTLSDR_PC_LIBS "-L${lib}")
+ENDFOREACH(lib)
+
+# use space-separation format for the pc file
+STRING(REPLACE ";" " " RTLSDR_PC_CFLAGS "${RTLSDR_PC_CFLAGS}")
+STRING(REPLACE ";" " " RTLSDR_PC_LIBS "${RTLSDR_PC_LIBS}")
+
+# unset these vars to avoid hard-coded paths to cross environment
+IF(CMAKE_CROSSCOMPILING)
+    UNSET(RTLSDR_PC_CFLAGS)
+    UNSET(RTLSDR_PC_LIBS)
+ENDIF(CMAKE_CROSSCOMPILING)
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix \${prefix})
+set(libdir \${exec_prefix}/lib)
+set(includedir \${prefix}/include)
+
+CONFIGURE_FILE(
+    ${CMAKE_CURRENT_SOURCE_DIR}/librtlsdr.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/librtlsdr.pc
+@ONLY)
+
+INSTALL(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/librtlsdr.pc
+    DESTINATION lib/pkgconfig
+)
