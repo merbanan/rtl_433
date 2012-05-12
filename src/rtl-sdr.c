@@ -759,7 +759,7 @@ uint32_t rtlsdr_get_device_count(void)
 			device_count++;
 	}
 
-	libusb_free_device_list(list, 0);
+	libusb_free_device_list(list, 1);
 
 	libusb_exit(ctx);
 
@@ -793,7 +793,7 @@ const char *rtlsdr_get_device_name(uint32_t index)
 		}
 	}
 
-	libusb_free_device_list(list, 0);
+	libusb_free_device_list(list, 1);
 
 	libusb_exit(ctx);
 
@@ -847,12 +847,12 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 
 	r = libusb_open(device, &dev->devh);
 	if (r < 0) {
-		libusb_free_device_list(list, 0);
+		libusb_free_device_list(list, 1);
 		fprintf(stderr, "usb_open error %d\n", r);
 		goto err;
 	}
 
-	libusb_free_device_list(list, 0);
+	libusb_free_device_list(list, 1);
 
 	r = libusb_claim_interface(dev->devh, 0);
 	if (r < 0) {
