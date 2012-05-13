@@ -277,24 +277,24 @@ static void *command_worker(void *arg)
 		}
 		switch(cmd.cmd) {
 		case 0x01:
-			printf("set freq %d\n", cmd.param);
-			rtlsdr_set_center_freq(dev, cmd.param);
+			printf("set freq %d\n", ntohl(cmd.param));
+			rtlsdr_set_center_freq(dev,ntohl(cmd.param));
 			break;
-        case 0x02:
-			printf("set sample rate %d\n", cmd.param);
-			rtlsdr_set_sample_rate(dev, cmd.param);
+		case 0x02:
+			printf("set sample rate %d\n", ntohl(cmd.param));
+			rtlsdr_set_sample_rate(dev, ntohl(cmd.param));
 			break;
-        case 0x03:
-			printf("set gain mode %d\n", cmd.param);
-			rtlsdr_set_tuner_gain_mode(dev, cmd.param);
+		case 0x03:
+			printf("set gain mode %d\n", ntohl(cmd.param));
+			rtlsdr_set_tuner_gain_mode(dev, ntohl(cmd.param));
 			break;
-        case 0x04:
-			printf("set gain %d\n", cmd.param);
-			rtlsdr_set_tuner_gain(dev, cmd.param);
+		case 0x04:
+			printf("set gain %d\n", ntohl(cmd.param));
+			rtlsdr_set_tuner_gain(dev, ntohl(cmd.param));
 			break;
 		case 0x05:
-			printf("set freq correction %d\n", cmd.param);
-			rtlsdr_set_freq_correction(dev, cmd.param);
+			printf("set freq correction %d\n", ntohl(cmd.param));
+			rtlsdr_set_freq_correction(dev, ntohl(cmd.param));
 			break;
 		default:
 			break;
