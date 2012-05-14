@@ -617,6 +617,7 @@ static const uint8_t if_stage_gain_len[] = {
 };
 
 static const struct reg_field if_stage_gain_regs[] = {
+	{ 0, 0, 0 },
 	{ E4K_REG_GAIN3, 0, 1 },
 	{ E4K_REG_GAIN3, 1, 2 },
 	{ E4K_REG_GAIN3, 3, 2 },
@@ -724,7 +725,7 @@ int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
 		return rc;
 
 	/* compute the bit-mask for the given gain field */
-	field = &if_stage_gain_regs[stage-1];
+	field = &if_stage_gain_regs[stage];
 	mask = width2mask[field->width] << field->shift;
 
 	return e4k_reg_set_mask(e4k, field->reg, mask, rc << field->shift);
