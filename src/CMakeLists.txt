@@ -34,6 +34,7 @@ target_link_libraries(rtlsdr_shared
 
 set_target_properties(rtlsdr_shared PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
 set_target_properties(rtlsdr_shared PROPERTIES OUTPUT_NAME rtlsdr)
+set_target_properties(rtlsdr_shared PROPERTIES SOVERSION 0 VERSION 0.0.0)
 
 add_library(rtlsdr_static STATIC
     rtl-sdr.c
