@@ -126,6 +126,16 @@ RTLSDR_API int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t rate);
  */
 RTLSDR_API uint32_t rtlsdr_get_sample_rate(rtlsdr_dev_t *dev);
 
+/*!
+ * Enable test mode that returns an 8 bit counter instead of the samples.
+ * The counter is generated inside the RTL2832.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param test mode, 1 means enabled, 0 disabled
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on);
+
 /* streaming functions */
 
 RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);

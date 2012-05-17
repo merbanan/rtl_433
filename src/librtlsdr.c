@@ -726,6 +726,16 @@ uint32_t rtlsdr_get_sample_rate(rtlsdr_dev_t *dev)
 	return dev->rate;
 }
 
+int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on)
+{
+	if (!dev)
+		return -1;
+
+	rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x23 : 0x25 , 1);
+
+	return 0;
+}
+
 rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
 {
 	unsigned int i;

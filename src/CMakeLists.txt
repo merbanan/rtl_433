@@ -60,11 +60,16 @@ endif()
 ########################################################################
 add_executable(rtl_sdr rtl_sdr.c)
 add_executable(rtl_tcp rtl_tcp.c)
+add_executable(rtl_test rtl_test.c)
 target_link_libraries(rtl_sdr rtlsdr_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 target_link_libraries(rtl_tcp rtlsdr_static
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
+target_link_libraries(rtl_test rtlsdr_static
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
@@ -76,7 +81,7 @@ endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp
+install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
