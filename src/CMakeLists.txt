@@ -21,7 +21,7 @@
 # Setup library
 ########################################################################
 add_library(rtlsdr_shared SHARED
-    rtl-sdr.c
+    librtlsdr.c
     tuner_e4k.c
     tuner_fc0012.c
     tuner_fc0013.c
@@ -37,7 +37,7 @@ set_target_properties(rtlsdr_shared PROPERTIES OUTPUT_NAME rtlsdr)
 set_target_properties(rtlsdr_shared PROPERTIES SOVERSION 0 VERSION 0.0.0)
 
 add_library(rtlsdr_static STATIC
-    rtl-sdr.c
+    librtlsdr.c
     tuner_e4k.c
     tuner_fc0012.c
     tuner_fc0013.c
