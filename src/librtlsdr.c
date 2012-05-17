@@ -675,6 +675,9 @@ int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int mode)
 	return r;
 }
 
+/* two raised to the power of n */
+#define TWO_POW(n)		((double)(1ULL<<(n)))
+
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 {
 	uint16_t tmp;
@@ -688,10 +691,10 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	if (samp_rate > MAX_SAMP_RATE)
 		samp_rate = MAX_SAMP_RATE;
 
-	rsamp_ratio = (dev->rtl_xtal * pow(2, 22)) / samp_rate;
+	rsamp_ratio = (dev->rtl_xtal * TWO_POW(22)) / samp_rate;
 	rsamp_ratio &= ~3;
 
-	real_rate = (dev->rtl_xtal * pow(2, 22)) / rsamp_ratio;
+	real_rate = (dev->rtl_xtal * TWO_POW(22)) / rsamp_ratio;
 
 	if ( ((double)samp_rate) != real_rate )
 		fprintf(stderr, "Exact sample rate is: %f Hz\n", real_rate);
