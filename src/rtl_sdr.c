@@ -107,6 +107,7 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
+	char vendor[256], product[256], serial[256];
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
 		switch (opt) {
@@ -168,13 +169,14 @@ int main(int argc, char **argv)
 	}
 
 	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++)
-		fprintf(stderr, "  %d:  %s\n", i, rtlsdr_get_device_name(i));
+	for (i = 0; i < device_count; i++) {
+		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+	}
 	fprintf(stderr, "\n");
 
 	fprintf(stderr, "Using device %d: %s\n",
-		dev_index,
-		rtlsdr_get_device_name(dev_index));
+		dev_index, rtlsdr_get_device_name(dev_index));
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {

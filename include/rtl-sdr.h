@@ -33,6 +33,22 @@ RTLSDR_API uint32_t rtlsdr_get_device_count(void);
 
 RTLSDR_API const char* rtlsdr_get_device_name(uint32_t index);
 
+/*!
+ * Get USB device strings.
+ *
+ * NOTE: The string arguments must provide space for up to 256 bytes.
+ *
+ * \param index the device index
+ * \param manufact manufacturer name, may be NULL
+ * \param product product name, may be NULL
+ * \param serial serial number, may be NULL
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_get_device_usb_strings(uint32_t index,
+					     char *manufact,
+					     char *product,
+					     char *serial);
+
 RTLSDR_API int rtlsdr_open(rtlsdr_dev_t **dev, uint32_t index);
 
 RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
@@ -68,6 +84,20 @@ RTLSDR_API int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq,
  */
 RTLSDR_API int rtlsdr_get_xtal_freq(rtlsdr_dev_t *dev, uint32_t *rtl_freq,
 				    uint32_t *tuner_freq);
+
+/*!
+ * Get USB device strings.
+ *
+ * NOTE: The string arguments must provide space for up to 256 bytes.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param manufact manufacturer name, may be NULL
+ * \param product product name, may be NULL
+ * \param serial serial number, may be NULL
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_get_usb_strings(rtlsdr_dev_t *dev, char *manufact,
+				      char *product, char *serial);
 
 RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
