@@ -18,5 +18,5 @@ rtl_sdr_LDADD        = librtlsdr.la
 rtl_tcp_SOURCES      = rtl_tcp.c
 rtl_tcp_LDADD        = librtlsdr.la
 
-rtl_test_SOURCES      = rtl_tcp.c
+rtl_test_SOURCES      = rtl_test.c
 rtl_test_LDADD        = librtlsdr.la
