@@ -45,8 +45,8 @@ void usage(void)
 {
 	#ifdef _WIN32
 	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t rtl-sdr-win.exe [device_index] [samplerate in kHz] "
-		"[gain] [frequency in Hz] [filename]\n");
+		"Usage:\t rtl-test-win.exe [device_index] [samplerate in kHz] [e4k test mode]\n"
+		"\ti.e. rtl-test-win.exe 0 2048 1\n");
 	#else
 	fprintf(stderr,
 		"rtl_test, librtlsdr test tool\n\n"
@@ -192,10 +192,12 @@ int main(int argc, char **argv)
 
 #else
 /* TODO fix win usage */
-	if (argc < 2)
+	if (argc < 3)
 		usage();
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
+	if (argc >3 && argv[3][0] == '1')
+		tuner_benchmark = 1;
 #endif
 	if(out_block_size < MINIMAL_BUF_LENGTH ||
 	   out_block_size > MAXIMAL_BUF_LENGTH ){

@@ -77,6 +77,7 @@ target_link_libraries(rtl_test rtlsdr_static
 if(WIN32)
 set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_tcp APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
+set_property(TARGET rtl_test APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 endif()
 ########################################################################
 # Install built library files & utilities
