@@ -668,7 +668,12 @@ int e4k_set_enh_gain(struct e4k_state *e4k, int32_t gain)
 		}
 	}
 	e4k_reg_set_mask(e4k, E4K_REG_AGC11, 0x7, 0);
-	return 0;
+
+	/* special case: 0 = off*/
+	if(0 == gain)
+		return 0;
+	else
+		return -EINVAL;
 }
 
 int e4k_enable_manual_gain(struct e4k_state *e4k, uint8_t manual)
