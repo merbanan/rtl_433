@@ -210,6 +210,7 @@ static rtlsdr_dongle_t known_devices[] = {
 	{ 0x185b, 0x0680, "Compro Videomate U680F"},
 	{ 0x1f4d, 0xb803, "GTek T803" },
 	{ 0x1f4d, 0xc803, "Lifeview LV5TDeluxe" },
+	{ 0x1f4d, 0xd803, "PROlectrix DV107669" },
 	{ 0x1b80, 0xd3a4, "Twintech UT-40" },
 	{ 0x1d19, 0x1101, "Dexatek DK DVB-T Dongle (Logilink VG0002A)" },
 	{ 0x1d19, 0x1102, "Dexatek DK DVB-T Dongle (MSI DigiVox mini II V3.0)" },

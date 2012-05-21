@@ -51,6 +51,9 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="b803", MODE:="066
 # Lifeview LV5TDeluxe (FC0012)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="c803", MODE:="0666"
 
+# PROlectrix DV107669 (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="d803", MODE:="0666"
+
 # Twintech UT-40 (FC0013)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1b80", ATTRS{idProduct}=="d3a4", MODE:="0666"
 
