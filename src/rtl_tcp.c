@@ -354,7 +354,6 @@ int main(int argc, char **argv)
 
 	if (argc < optind)
 		usage();
-
 #else
 	if(argc < 6)
 		usage();
@@ -364,8 +363,6 @@ int main(int argc, char **argv)
 	port = atoi(argv[2]);
 	addr = argv[1];
 #endif
-
-	printf("listen addr %s:%d\n", addr, port);
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
 		fprintf(stderr, "No supported devices found.\n");
@@ -440,6 +437,11 @@ int main(int argc, char **argv)
 
 	while(1) {
 		printf("listening...\n");
+		printf("Use the device argument 'rtl_tcp=%s:%d' in OsmoSDR "
+		       "(gr-osmosdr) source\n"
+		       "to receive samples in GRC and control "
+		       "rtl_tcp parameters (frequency, gain, ...).\n",
+		       addr, port);
 		listen(listensocket,1);
 
 		while(1) {
