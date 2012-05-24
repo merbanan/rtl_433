@@ -20,21 +20,35 @@
 /* Incomplete list of register settings:
  *
  * Name			Reg	Bits	Desc
+ * CHIP_ID		0x00	0-7	Chip ID (constant 0xA1)
+ * RF_A			0x01	0-3	Number of count-to-9 cycles in RF
+ *					divider (suggested: 2..9)
+ * RF_M			0x02	0-7	Total number of cycles (to-8 and to-9)
+ *					in RF divider
+ * RF_K_HIGH		0x03	0-6	Bits 8..14 of fractional divider
+ * RF_K_LOW		0x04	0-7	Bits 0..7 of fractional RF divider
+ * RF_OUTDIV_A		0x05	3-7	Power of two required?
  * LNA_POWER_DOWN	0x06	0	Set to 1 to switch off low noise amp
- * VCO_SPEED		0x06	3	Set the speed of the VCO. example
- *					driver hardcodes to 1 for some reason
+ * RF_OUTDIV_B		0x06	1	Set to select 3 instead of 2 for the
+ *                                      RF output divider
+ * VCO_SPEED		0x06	3	Select tuning range of VCO:
+ *					 0 = Low range, (ca. 1.1 - 1.5GHz)
+ *					 1 = High range (ca. 1.4 - 1.8GHz)
  * BANDWIDTH		0x06	6-7	Set bandwidth. 6MHz = 0x80, 7MHz=0x40
  *					8MHz=0x00
  * XTAL_SPEED		0x07	5	Set to 1 for 28.8MHz Crystal input
  *					or 0 for 36MHz
+ * <agc params>		0x08	0-7
  * EN_CAL_RSSI		0x09	4 	Enable calibrate RSSI
  *					(Receive Signal Strength Indicator)
  * LNA_FORCE		0x0d	0
  * AGC_FORCE		0x0d	?
- * LNA_GAIN		0x13	0-4	Low noise amp gain
+ * LNA_GAIN		0x13	3-4	Low noise amp gain
  * LNA_COMPS		0x15	3	?
  * VCO_CALIB		0x0e	7	Set high then low to calibrate VCO
- *
+ *					 (fast lock?)
+ * VCO_VOLTAGE		0x0e	0-6	Read Control voltage of VCO
+ *					 (big value -> low freq)
  */
 
 /* glue functions to rtl-sdr code */
@@ -99,12 +113,11 @@ void FC0012_Dump_Registers()
 	DEBUGF("LNA Force:\t%s\n", (regBuf & 0x1) ? "Forced" : "Not Forced");
 	FC0012_Read(pTuner, 0x13, &regBuf);
 	DEBUGF("LNA Gain:\t");
-	switch (regBuf) {
-		case (0x10): DEBUGF("19.7dB\n"); break;
-		case (0x17): DEBUGF("17.9dB\n"); break;
-		case (0x08): DEBUGF("7.1dB\n"); break;
-		case (0x02): DEBUGF("-9.9dB\n"); break;
-		default: DEBUGF("unknown gain value 0x02x\n");
+	switch (regBuf & 0x18) {
+		case (0x00): DEBUGF("Low\n"); break;
+		case (0x08): DEBUGF("Middle\n"); break;
+		case (0x10): DEBUGF("High\n"); break;
+		default: DEBUGF("unknown gain value 0x18\n");
 	}
 #endif
 }
@@ -173,7 +186,7 @@ void FC0012_Frequency_Control(unsigned int Frequency, unsigned short Bandwidth)
 
 int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Bandwidth)
 {
-	int VCO1 = 0;
+	int VCO_band = 0;
 	unsigned long doubleVCO;
 	unsigned short xin, xdiv;
 	unsigned char reg[21], am, pm, multi;
@@ -230,7 +243,7 @@ int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 	doubleVCO = Frequency * multi;
 
 	reg[6] = reg[6] | 0x08;
-	VCO1 = 1;
+	VCO_band = 1;
 	xdiv = (unsigned short)(doubleVCO / (CrystalFreqKhz / 2));
 	if( (doubleVCO - xdiv * (CrystalFreqKhz / 2)) >= (CrystalFreqKhz / 4) )
 		xdiv = xdiv + 1;
@@ -269,7 +282,6 @@ int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 	if (FC0012_Write(pTuner, 0x03, reg[3])) return -1;
 	if (FC0012_Write(pTuner, 0x04, reg[4])) return -1;
 	//reg[5] = reg[5] | 0x07; // This is really not cool. Why is it there?
-	// Same with hardcoding VCO=1
 	if (FC0012_Write(pTuner, 0x05, reg[5])) return -1;
 	if (FC0012_Write(pTuner, 0x06, reg[6])) return -1;
 
@@ -277,16 +289,19 @@ int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 	if (FC0012_Write(pTuner, 0x0E, 0x80)) return -1;
 	if (FC0012_Write(pTuner, 0x0E, 0x00)) return -1;
 
-	// VCO Re-Calibration if needed
+	// Read resulting VCO control voltage
 	if (FC0012_Write(pTuner, 0x0E, 0x00)) return -1;
 	if (FC0012_Read(pTuner, 0x0E, &read_byte)) return -1;
 	reg[14] = 0x3F & read_byte;
 
-	if (VCO1)
+	// Adjust VCO range if control voltage is at the limit
+	if (VCO_band)
 	{
+		// high-band VCO hitting low frequency bound
 		if (reg[14] > 0x3C)
 		{
-			reg[6] = 0x08 | reg[6];
+			// select low-band VCO
+			reg[6] = ~0x08 & reg[6];
 
 			if (FC0012_Write(pTuner, 0x06, reg[6])) return -1;
 			if (FC0012_Write(pTuner, 0x0E, 0x80)) return -1;
@@ -295,7 +310,9 @@ int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Ba
 	}
 	else
 	{
+		// low-band VCO hitting high frequency bound
 		if (reg[14] < 0x02) {
+			// select high-band VCO
 			reg[6] = 0x08 | reg[6];
 
 			if (FC0012_Write(pTuner, 0x06, reg[6])) return -1;
