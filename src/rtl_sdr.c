@@ -42,16 +42,16 @@ static rtlsdr_dev_t *dev = NULL;
 void usage(void)
 {
 	#ifdef _WIN32
-	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t rtl-sdr-win.exe [device_index] [samplerate in kHz] "
-		"[gain] [frequency in Hz] [filename]\n");
+	fprintf(stderr,"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
+		"Usage:\t rtl_sdr.exe [device_index] [samplerate in kHz] "
+		"[gain (0 for auto)] [frequency in Hz] [filename]\n");
 	#else
 	fprintf(stderr,
-		"rtl-sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
+		"rtl_sdr, an I/Q recorder for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-g tuner_gain (default: -1dB)]\n"
+		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = -10; // tenths of a dB
+	int i, gain = 0;
 	int sync_mode = 0;
 	FILE *file;
 	uint8_t *buffer;
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 			frequency = (uint32_t)atof(optarg);
 			break;
 		case 'g':
-			gain = (int)(atof(optarg) * 10);
+			gain = (int)(atof(optarg) * 10); /* tenths of a dB */
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
@@ -141,11 +141,11 @@ int main(int argc, char **argv)
 		filename = argv[optind];
 	}
 #else
-	if(argc <6)
+	if(argc < 6)
 		usage();
 	dev_index = atoi(argv[1]);
-	samp_rate = atoi(argv[2])*1000;
-	gain=(int)(atof(argv[3]) * 10);
+	samp_rate = atoi(argv[2])*1000; /* kHz */
+	gain = (int)(atof(argv[3]) * 10); /* tenths of a dB */
 	frequency = atoi(argv[4]);
 	filename = argv[5];
 #endif
@@ -206,12 +206,24 @@ int main(int argc, char **argv)
 	else
 		fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
-	/* Set the tuner gain */
-	r = rtlsdr_set_tuner_gain(dev, gain);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-	else
-		fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	if (0 == gain) {
+		 /* Enable automatic gain */
+		r = rtlsdr_set_tuner_gain_mode(dev, 0);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+	} else {
+		/* Enable manual gain */
+		r = rtlsdr_set_tuner_gain_mode(dev, 1);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+
+		/* Set the tuner gain */
+		r = rtlsdr_set_tuner_gain(dev, gain);
+		if (r < 0)
+			fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+		else
+			fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
+	}
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;

@@ -44,12 +44,12 @@ static rtlsdr_dev_t *dev = NULL;
 void usage(void)
 {
 	#ifdef _WIN32
-	fprintf(stderr,"rtl-sdr, an I/Q recorder for RTL2832 based USB-sticks\n\n"
-		"Usage:\t rtl-test-win.exe [device_index] [samplerate in kHz] [e4k test mode]\n"
-		"\ti.e. rtl-test-win.exe 0 2048 1\n");
+	fprintf(stderr,"rtl_test, a benchmark tool for RTL2832 based DVB-T receivers\n\n"
+		"Usage:\t rtl_test.exe [device_index] [samplerate in kHz] [e4k test mode]\n"
+		"\ti.e. rtl_test.exe 0 2048 1\n");
 	#else
 	fprintf(stderr,
-		"rtl_test, librtlsdr test tool\n\n"
+		"rtl_test, a benchmark tool for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\n"
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
