@@ -26,6 +26,11 @@ AC_CONFIG_MACRO_DIR([m4])
 dnl checks for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/types.h)
+AC_CHECK_HEADERS(pthread.h,, [AC_MSG_ERROR([pthread.h required])])
+
+dnl checks for required libraries
+dnl pthreads
+AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
 
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
