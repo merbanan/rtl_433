@@ -42,6 +42,9 @@
 
 #ifdef _WIN32
 #pragma comment(lib, "ws2_32.lib")
+
+typedef int socklen_t;
+
 #else
 #define closesocket close
 #define SOCKADDR struct sockaddr
@@ -318,6 +321,7 @@ int main(int argc, char **argv)
 	struct timeval tv = {1,0};
 	struct linger ling = {1,0};
 	SOCKET listensocket;
+	socklen_t rlen;
 	fd_set readfds;
 	u_long blockmode = 1;
 #ifdef _WIN32
@@ -466,8 +470,8 @@ int main(int argc, char **argv)
 			if(do_exit) {
 				goto out;
 			} else if(r) {
-				r=sizeof(remote);
-				s = accept(listensocket,(struct sockaddr *)&remote, &r);
+				rlen = sizeof(remote);
+				s = accept(listensocket,(struct sockaddr *)&remote, &rlen);
 				break;
 			}
 		}
