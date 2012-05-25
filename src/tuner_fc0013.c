@@ -1,8 +1,26 @@
 /*
- * Fitipower FC0013 tuner driver, taken from the kernel driver that can be found
- * on http://linux.terratec.de/tv_en.html
+ * Fitipower FC0013 tuner driver
  *
- * This driver is a mess, and should be cleaned up/rewritten.
+ * Copyright (C) 2012 Hans-Frieder Vogt <hfvogt@gmx.net>
+ * partially based on driver code from Fitipower
+ * Copyright (C) 2010 Fitipower Integrated Technology Inc
+ *
+ * modified for use in librtlsdr
+ * Copyright (C) 2012 Steve Markgraf <steve@steve-m.de>
+ *
+ *    This program is free software; you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation; either version 2 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program; if not, write to the Free Software
+ *    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  */
 
@@ -11,424 +29,443 @@
 #include "rtlsdr_i2c.h"
 #include "tuner_fc0013.h"
 
-#define CRYSTAL_FREQ		28800000
-
-/* glue functions to rtl-sdr code */
-int FC0013_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte)
+static int fc0013_writereg(void *dev, uint8_t reg, uint8_t val)
 {
 	uint8_t data[2];
+	data[0] = reg;
+	data[1] = val;
 
-	data[0] = RegAddr;
-	data[1] = Byte;
+	if (rtlsdr_i2c_write_fn(dev, FC0013_I2C_ADDR, data, 2) < 0)
+		return -1;
 
-	if (rtlsdr_i2c_write_fn(pTuner, FC0013_I2C_ADDR, data, 2) < 0)
-		return FC0013_I2C_ERROR;
-
-	return FC0013_I2C_SUCCESS;
-}
-
-int FC0013_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte)
-{
-	uint8_t data = RegAddr;
-
-	if (rtlsdr_i2c_write_fn(pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
-		return FC0013_I2C_ERROR;
-
-	if (rtlsdr_i2c_read_fn(pTuner, FC0013_I2C_ADDR, &data, 1) < 0)
-		return FC0013_I2C_ERROR;
-
-	*pByte = data;
-
-	return FC0013_I2C_SUCCESS;
-}
-
-int FC0013_SetVhfTrack(void *pTuner, unsigned long FrequencyKHz)
-{
-	unsigned char read_byte;
-
-    if (FrequencyKHz <= 177500)	// VHF Track: 7
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x1C) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 184500)	// VHF Track: 6
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x18) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 191500)	// VHF Track: 5
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x14) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 198500)	// VHF Track: 4
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x10) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 205500)	// VHF Track: 3
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x0C) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 212500)	// VHF Track: 2
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x08) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 219500)	// VHF Track: 2
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x08) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-    else if (FrequencyKHz <= 226500)	// VHF Track: 1
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x04) != FC0013_I2C_SUCCESS) goto error_status;
-    }
-    else	// VHF Track: 1
-    {
-		if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x04) != FC0013_I2C_SUCCESS) goto error_status;
-
-    }
-
-	//------------------------------------------------ arios modify 2010-12-24
-	// " | 0x10" ==> " | 0x30"   (make sure reg[0x07] bit5 = 1)
-
-	// Enable VHF filter.
-	if(FC0013_Read(pTuner, 0x07, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x07, read_byte | 0x10) != FC0013_I2C_SUCCESS) goto error_status;
-
-	// Disable UHF & GPS.
-	if(FC0013_Read(pTuner, 0x14, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x14, read_byte & 0x1F) != FC0013_I2C_SUCCESS) goto error_status;
-
-
-	return FC0013_FUNCTION_SUCCESS;
-
-error_status:
-	return FC0013_FUNCTION_ERROR;
-}
-
-
-// FC0013 Open Function, includes enable/reset pin control and registers initialization.
-//void FC0013_Open()
-int FC0013_Open(void *pTuner)
-{
-	// Enable FC0013 Power
-	// (...)
-	// FC0013 Enable = High
-	// (...)
-	// FC0013 Reset = High -> Low
-	// (...)
-
-	/* FIXME added to fix replug-bug with rtl-sdr */
-	if(FC0013_Write(pTuner, 0x0C, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-
-    //================================ update base on new FC0013 register bank
-	if(FC0013_Write(pTuner, 0x01, 0x09) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x02, 0x16) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x03, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x04, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x05, 0x17) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x06, 0x02) != FC0013_I2C_SUCCESS) goto error_status;
-//	if(FC0013_Write(pTuner, 0x07, 0x27) != FC0013_I2C_SUCCESS) goto error_status;		// 28.8MHz, GainShift: 15
-	if(FC0013_Write(pTuner, 0x07, 0x2A) != FC0013_I2C_SUCCESS) goto error_status;		// 28.8MHz, modified by Realtek
-	if(FC0013_Write(pTuner, 0x08, 0xFF) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x09, 0x6F) != FC0013_I2C_SUCCESS) goto error_status;		// Enable Loop Through
-	if(FC0013_Write(pTuner, 0x0A, 0xB8) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x0B, 0x82) != FC0013_I2C_SUCCESS) goto error_status;
-
-	if(FC0013_Write(pTuner, 0x0C, 0xFE) != FC0013_I2C_SUCCESS) goto error_status;   // Modified for up-dowm AGC by Realtek(for master, and for 2836BU dongle).
-//	if(FC0013_Write(pTuner, 0x0C, 0xFC) != FC0013_I2C_SUCCESS) goto error_status;   // Modified for up-dowm AGC by Realtek(for slave, and for 2832 mini dongle).
-
-//	if(FC0013_Write(pTuner, 0x0D, 0x09) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x0D, 0x01) != FC0013_I2C_SUCCESS) goto error_status;   // Modified for AGC non-forcing by Realtek.
-
-	if(FC0013_Write(pTuner, 0x0E, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x0F, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x10, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x11, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x12, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x13, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-
-	if(FC0013_Write(pTuner, 0x14, 0x50) != FC0013_I2C_SUCCESS) goto error_status;		// DVB-T, High Gain
-//	if(FC0013_Write(pTuner, 0x14, 0x48) != FC0013_I2C_SUCCESS) goto error_status;		// DVB-T, Middle Gain
-//	if(FC0013_Write(pTuner, 0x14, 0x40) != FC0013_I2C_SUCCESS) goto error_status;		// DVB-T, Low Gain
-
-	if(FC0013_Write(pTuner, 0x15, 0x01) != FC0013_I2C_SUCCESS) goto error_status;
-
-
-	return FC0013_FUNCTION_SUCCESS;
-
-error_status:
-	return FC0013_FUNCTION_ERROR;
-}
-
-
-int FC0013_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Bandwidth)
-{
-//    bool VCO1 = false;
-//    unsigned int doubleVCO;
-//    unsigned short xin, xdiv;
-//	unsigned char reg[21], am, pm, multi;
-    int VCO1 = FC0013_FALSE;
-    unsigned long doubleVCO;
-    unsigned short xin, xdiv;
-	unsigned char reg[21], am, pm, multi;
-
-	unsigned char read_byte;
-
-	unsigned long CrystalFreqKhz;
-
-	int CrystalFreqHz = rtlsdr_get_tuner_clock(pTuner);
-
-	// Get tuner crystal frequency in KHz.
-	// Note: CrystalFreqKhz = round(CrystalFreqHz / 1000)
-	CrystalFreqKhz = (CrystalFreqHz + 500) / 1000;
-
-	// modified 2011-02-09: for D-Book test
-	// set VHF_Track = 7
-	if(FC0013_Read(pTuner, 0x1D, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-
-	// VHF Track: 7
-    if(FC0013_Write(pTuner, 0x1D, (read_byte & 0xE3) | 0x1C) != FC0013_I2C_SUCCESS) goto error_status;
-
-
-	if( Frequency < 300000 )
-	{
-		// Set VHF Track.
-		if(FC0013_SetVhfTrack(pTuner, Frequency) != FC0013_I2C_SUCCESS) goto error_status;
-
-		// Enable VHF filter.
-		if(FC0013_Read(pTuner, 0x07, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x07, read_byte | 0x10) != FC0013_I2C_SUCCESS) goto error_status;
-
-		// Disable UHF & disable GPS.
-		if(FC0013_Read(pTuner, 0x14, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x14, read_byte & 0x1F) != FC0013_I2C_SUCCESS) goto error_status;
-	}
-	else if ( (Frequency >= 300000) && (Frequency <= 862000) )
-	{
-		// Disable VHF filter.
-		if(FC0013_Read(pTuner, 0x07, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x07, read_byte & 0xEF) != FC0013_I2C_SUCCESS) goto error_status;
-
-		// enable UHF & disable GPS.
-		if(FC0013_Read(pTuner, 0x14, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x14, (read_byte & 0x1F) | 0x40) != FC0013_I2C_SUCCESS) goto error_status;
-	}
-	else if (Frequency > 862000)
-	{
-		// Disable VHF filter
-		if(FC0013_Read(pTuner, 0x07, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x07, read_byte & 0xEF) != FC0013_I2C_SUCCESS) goto error_status;
-
-		// Disable UHF & enable GPS
-		if(FC0013_Read(pTuner, 0x14, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x14, (read_byte & 0x1F) | 0x20) != FC0013_I2C_SUCCESS) goto error_status;
-	}
-
-	if (Frequency * 96 < 3560000)
-    {
-        multi = 96;
-        reg[5] = 0x82;
-        reg[6] = 0x00;
-    }
-    else if (Frequency * 64 < 3560000)
-    {
-        multi = 64;
-        reg[5] = 0x02;
-        reg[6] = 0x02;
-    }
-    else if (Frequency * 48 < 3560000)
-    {
-        multi = 48;
-        reg[5] = 0x42;
-        reg[6] = 0x00;
-    }
-    else if (Frequency * 32 < 3560000)
-    {
-        multi = 32;
-        reg[5] = 0x82;
-        reg[6] = 0x02;
-    }
-    else if (Frequency * 24 < 3560000)
-    {
-        multi = 24;
-        reg[5] = 0x22;
-        reg[6] = 0x00;
-    }
-    else if (Frequency * 16 < 3560000)
-    {
-        multi = 16;
-        reg[5] = 0x42;
-        reg[6] = 0x02;
-    }
-    else if (Frequency * 12 < 3560000)
-    {
-        multi = 12;
-        reg[5] = 0x12;
-        reg[6] = 0x00;
-    }
-    else if (Frequency * 8 < 3560000)
-    {
-        multi = 8;
-        reg[5] = 0x22;
-        reg[6] = 0x02;
-    }
-    else if (Frequency * 6 < 3560000)
-    {
-        multi = 6;
-        reg[5] = 0x0A;
-        reg[6] = 0x00;
-    }
-    else if (Frequency * 4 < 3800000)
-    {
-        multi = 4;
-        reg[5] = 0x12;
-        reg[6] = 0x02;
-    }
-	else
-	{
-        Frequency = Frequency / 2;
-		multi = 4;
-        reg[5] = 0x0A;
-        reg[6] = 0x02;
-	}
-
-    doubleVCO = Frequency * multi;
-
-    reg[6] = reg[6] | 0x08;
-//	VCO1 = true;
-	VCO1 = FC0013_TRUE;
-
-	// Calculate VCO parameters: ap & pm & xin.
-//	xdiv = (unsigned short)(doubleVCO / (Crystal_Frequency/2));
-	xdiv = (unsigned short)(doubleVCO / (CrystalFreqKhz/2));
-//	if( (doubleVCO - xdiv * (Crystal_Frequency/2)) >= (Crystal_Frequency/4) )
-	if( (doubleVCO - xdiv * (CrystalFreqKhz/2)) >= (CrystalFreqKhz/4) )
-	{
-		xdiv = xdiv + 1;
-	}
-
-	pm = (unsigned char)( xdiv / 8 );
-    am = (unsigned char)( xdiv - (8 * pm));
-
-    if (am < 2)
-    {
-        reg[1] = am + 8;
-        reg[2] = pm - 1;
-    }
-    else
-    {
-        reg[1] = am;
-        reg[2] = pm;
-    }
-
-//	xin = (unsigned short)(doubleVCO - ((unsigned short)(doubleVCO / (Crystal_Frequency/2))) * (Crystal_Frequency/2));
-	xin = (unsigned short)(doubleVCO - ((unsigned short)(doubleVCO / (CrystalFreqKhz/2))) * (CrystalFreqKhz/2));
-//	xin = ((xin << 15)/(Crystal_Frequency/2));
-	xin = (unsigned short)((xin << 15)/(CrystalFreqKhz/2));
-
-//	if( xin >= (unsigned short) pow( (double)2, (double)14) )
-//	{
-//		xin = xin + (unsigned short) pow( (double)2, (double)15);
-//	}
-	if( xin >= (unsigned short) 16384 )
-		xin = xin + (unsigned short) 32768;
-
-	reg[3] = (unsigned char)(xin >> 8);
-	reg[4] = (unsigned char)(xin & 0x00FF);
-
-
-	//===================================== Only for testing
-//	printf("Frequency: %d, Fa: %d, Fp: %d, Xin:%d \n", Frequency, am, pm, xin);
-
-
-	// Set Low-Pass Filter Bandwidth.
-    switch(Bandwidth)
-    {
-        case 6:
-			reg[6] = 0x80 | reg[6];
-            break;
-        case 7:
-			reg[6] = ~0x80 & reg[6];
-            reg[6] = 0x40 | reg[6];
-            break;
-        case 8:
-        default:
-			reg[6] = ~0xC0 & reg[6];
-            break;
-    }
-
-	reg[5] = reg[5] | 0x07;
-
-	if(FC0013_Write(pTuner, 0x01, reg[1]) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x02, reg[2]) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x03, reg[3]) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x04, reg[4]) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x05, reg[5]) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x06, reg[6]) != FC0013_I2C_SUCCESS) goto error_status;
-
-	if (multi == 64)
-	{
-//		FC0013_Write(0x11, FC0013_Read(0x11) | 0x04);
-		if(FC0013_Read(pTuner, 0x11, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x11, read_byte | 0x04) != FC0013_I2C_SUCCESS) goto error_status;
-	}
-	else
-	{
-//		FC0013_Write(0x11, FC0013_Read(0x11) & 0xFB);
-		if(FC0013_Read(pTuner, 0x11, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-		if(FC0013_Write(pTuner, 0x11, read_byte & 0xFB) != FC0013_I2C_SUCCESS) goto error_status;
-	}
-
-	if(FC0013_Write(pTuner, 0x0E, 0x80) != FC0013_I2C_SUCCESS) goto error_status;
-	if(FC0013_Write(pTuner, 0x0E, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-
-	if(FC0013_Write(pTuner, 0x0E, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-//	reg[14] = 0x3F & FC0013_Read(0x0E);
-	if(FC0013_Read(pTuner, 0x0E, &read_byte) != FC0013_I2C_SUCCESS) goto error_status;
-	reg[14] = 0x3F & read_byte;
-
-	if (VCO1)
-    {
-        if (reg[14] > 0x3C)
-        {
-            reg[6] = ~0x08 & reg[6];
-
-			if(FC0013_Write(pTuner, 0x06, reg[6]) != FC0013_I2C_SUCCESS) goto error_status;
-
-			if(FC0013_Write(pTuner, 0x0E, 0x80) != FC0013_I2C_SUCCESS) goto error_status;
-			if(FC0013_Write(pTuner, 0x0E, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-        }
-    }
-	else
-    {
-        if (reg[14] < 0x02)
-        {
-            reg[6] = 0x08 | reg[6];
-
-			if(FC0013_Write(pTuner, 0x06, reg[6]) != FC0013_I2C_SUCCESS) goto error_status;
-
-			if(FC0013_Write(pTuner, 0x0E, 0x80) != FC0013_I2C_SUCCESS) goto error_status;
-			if(FC0013_Write(pTuner, 0x0E, 0x00) != FC0013_I2C_SUCCESS) goto error_status;
-        }
-    }
-
-
-	return 1;
-
-error_status:
 	return 0;
 }
 
+static int fc0013_readreg(void *dev, uint8_t reg, uint8_t *val)
+{
+	uint8_t data = reg;
+
+	if (rtlsdr_i2c_write_fn(dev, FC0013_I2C_ADDR, &data, 1) < 0)
+		return -1;
+
+	if (rtlsdr_i2c_read_fn(dev, FC0013_I2C_ADDR, &data, 1) < 0)
+		return -1;
+
+	*val = data;
+
+	return 0;
+}
+
+int fc0013_init(void *dev)
+{
+	int ret = 0;
+	unsigned int i;
+	uint8_t reg[] = {
+		0x00,	/* reg. 0x00: dummy */
+		0x09,	/* reg. 0x01 */
+		0x16,	/* reg. 0x02 */
+		0x00,	/* reg. 0x03 */
+		0x00,	/* reg. 0x04 */
+		0x17,	/* reg. 0x05 */
+		0x02,	/* reg. 0x06: LPF bandwidth */
+		0x0a,	/* reg. 0x07: CHECK */
+		0xff,	/* reg. 0x08: AGC Clock divide by 256, AGC gain 1/256,
+			   Loop Bw 1/8 */
+		0x6f,	/* reg. 0x09: enable LoopThrough */
+		0xb8,	/* reg. 0x0a: Disable LO Test Buffer */
+		0x82,	/* reg. 0x0b: CHECK */
+		0xfc,	/* reg. 0x0c: depending on AGC Up-Down mode, may need 0xf8 */
+		0x01,	/* reg. 0x0d: AGC Not Forcing & LNA Forcing, may need 0x02 */
+		0x00,	/* reg. 0x0e */
+		0x00,	/* reg. 0x0f */
+		0x00,	/* reg. 0x10 */
+		0x00,	/* reg. 0x11 */
+		0x00,	/* reg. 0x12 */
+		0x00,	/* reg. 0x13 */
+		0x50,	/* reg. 0x14: DVB-t High Gain, UHF.
+			   Middle Gain: 0x48, Low Gain: 0x40 */
+		0x01,	/* reg. 0x15 */
+	};
+#if 0
+	switch (rtlsdr_get_tuner_clock(dev)) {
+	case FC_XTAL_27_MHZ:
+	case FC_XTAL_28_8_MHZ:
+		reg[0x07] |= 0x20;
+		break;
+	case FC_XTAL_36_MHZ:
+	default:
+		break;
+	}
+#endif
+	reg[0x07] |= 0x20;
+
+//	if (dev->dual_master)
+	reg[0x0c] |= 0x02;
+
+	for (i = 1; i < sizeof(reg); i++) {
+		ret = fc0013_writereg(dev, i, reg[i]);
+		if (ret < 0)
+			break;
+	}
+
+	return ret;
+}
+
+int fc0013_rc_cal_add(void *dev, int rc_val)
+{
+	int ret;
+	uint8_t rc_cal;
+	int val;
+
+	/* push rc_cal value, get rc_cal value */
+	ret = fc0013_writereg(dev, 0x10, 0x00);
+	if (ret)
+		goto error_out;
+
+	/* get rc_cal value */
+	ret = fc0013_readreg(dev, 0x10, &rc_cal);
+	if (ret)
+		goto error_out;
+
+	rc_cal &= 0x0f;
+
+	val = (int)rc_cal + rc_val;
+
+	/* forcing rc_cal */
+	ret = fc0013_writereg(dev, 0x0d, 0x11);
+	if (ret)
+		goto error_out;
+
+	/* modify rc_cal value */
+	if (val > 15)
+		ret = fc0013_writereg(dev, 0x10, 0x0f);
+	else if (val < 0)
+		ret = fc0013_writereg(dev, 0x10, 0x00);
+	else
+		ret = fc0013_writereg(dev, 0x10, (uint8_t)val);
+
+error_out:
+	return ret;
+}
+
+int fc0013_rc_cal_reset(void *dev)
+{
+	int ret;
+
+	ret = fc0013_writereg(dev, 0x0d, 0x01);
+	if (!ret)
+		ret = fc0013_writereg(dev, 0x10, 0x00);
+
+	return ret;
+}
+
+static int fc0013_set_vhf_track(void *dev, uint32_t freq)
+{
+	int ret;
+	uint8_t tmp;
+
+	ret = fc0013_readreg(dev, 0x1d, &tmp);
+	if (ret)
+		goto error_out;
+	tmp &= 0xe3;
+	if (freq <= 177500) {		/* VHF Track: 7 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x1c);
+	} else if (freq <= 184500) {	/* VHF Track: 6 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x18);
+	} else if (freq <= 191500) {	/* VHF Track: 5 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x14);
+	} else if (freq <= 198500) {	/* VHF Track: 4 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x10);
+	} else if (freq <= 205500) {	/* VHF Track: 3 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x0c);
+	} else if (freq <= 219500) {	/* VHF Track: 2 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x08);
+	} else if (freq < 300000) {	/* VHF Track: 1 */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x04);
+	} else {			/* UHF and GPS */
+		ret = fc0013_writereg(dev, 0x1d, tmp | 0x1c);
+	}
+
+error_out:
+	return ret;
+}
+
+int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
+{
+	int i, ret = 0;
+	uint32_t freq = frequency / 1000;
+	uint8_t reg[7], am, pm, multi, tmp;
+	unsigned long f_vco;
+	uint16_t xtal_freq_khz_2, xin, xdiv;
+	int vco_select = 0;
+
+	xtal_freq_khz_2 = rtlsdr_get_tuner_clock(dev) / 1000 / 2;
+
+	/* set VHF track */
+	ret = fc0013_set_vhf_track(dev, freq);
+	if (ret)
+		goto exit;
+
+	if (freq < 300000) {
+		/* enable VHF filter */
+		ret = fc0013_readreg(dev, 0x07, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x07, tmp | 0x10);
+		if (ret)
+			goto exit;
+
+		/* disable UHF & disable GPS */
+		ret = fc0013_readreg(dev, 0x14, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x14, tmp & 0x1f);
+		if (ret)
+			goto exit;
+	} else if (freq <= 862000) {
+		/* disable VHF filter */
+		ret = fc0013_readreg(dev, 0x07, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x07, tmp & 0xef);
+		if (ret)
+			goto exit;
+
+		/* enable UHF & disable GPS */
+		ret = fc0013_readreg(dev, 0x14, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x14, (tmp & 0x1f) | 0x40);
+		if (ret)
+			goto exit;
+	} else {
+		/* disable VHF filter */
+		ret = fc0013_readreg(dev, 0x07, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x07, tmp & 0xef);
+		if (ret)
+			goto exit;
+
+		/* disable UHF & enable GPS */
+		ret = fc0013_readreg(dev, 0x14, &tmp);
+		if (ret)
+			goto exit;
+		ret = fc0013_writereg(dev, 0x14, (tmp & 0x1f) | 0x20);
+		if (ret)
+			goto exit;
+	}
+
+	/* select frequency divider and the frequency of VCO */
+	if (freq < 37084) {		/* freq * 96 < 3560000 */
+		multi = 96;
+		reg[5] = 0x82;
+		reg[6] = 0x00;
+	} else if (freq < 55625) {	/* freq * 64 < 3560000 */
+		multi = 64;
+		reg[5] = 0x02;
+		reg[6] = 0x02;
+	} else if (freq < 74167) {	/* freq * 48 < 3560000 */
+		multi = 48;
+		reg[5] = 0x42;
+		reg[6] = 0x00;
+	} else if (freq < 111250) {	/* freq * 32 < 3560000 */
+		multi = 32;
+		reg[5] = 0x82;
+		reg[6] = 0x02;
+	} else if (freq < 148334) {	/* freq * 24 < 3560000 */
+		multi = 24;
+		reg[5] = 0x22;
+		reg[6] = 0x00;
+	} else if (freq < 222500) {	/* freq * 16 < 3560000 */
+		multi = 16;
+		reg[5] = 0x42;
+		reg[6] = 0x02;
+	} else if (freq < 296667) {	/* freq * 12 < 3560000 */
+		multi = 12;
+		reg[5] = 0x12;
+		reg[6] = 0x00;
+	} else if (freq < 445000) {	/* freq * 8 < 3560000 */
+		multi = 8;
+		reg[5] = 0x22;
+		reg[6] = 0x02;
+	} else if (freq < 593334) {	/* freq * 6 < 3560000 */
+		multi = 6;
+		reg[5] = 0x0a;
+		reg[6] = 0x00;
+	} else if (freq < 950000) {	/* freq * 4 < 3800000 */
+		multi = 4;
+		reg[5] = 0x12;
+		reg[6] = 0x02;
+	} else {
+		multi = 2;
+		reg[5] = 0x0a;
+		reg[6] = 0x02;
+	}
+
+	f_vco = freq * multi;
+
+	if (f_vco >= 3060000) {
+		reg[6] |= 0x08;
+		vco_select = 1;
+	}
+
+	if (freq >= 45000) {
+		/* From divided value (XDIV) determined the FA and FP value */
+		xdiv = (uint16_t)(f_vco / xtal_freq_khz_2);
+		if ((f_vco - xdiv * xtal_freq_khz_2) >= (xtal_freq_khz_2 / 2))
+			xdiv++;
+
+		pm = (uint8_t)(xdiv / 8);
+		am = (uint8_t)(xdiv - (8 * pm));
+
+		if (am < 2) {
+			reg[1] = am + 8;
+			reg[2] = pm - 1;
+		} else {
+			reg[1] = am;
+			reg[2] = pm;
+		}
+	} else {
+		/* fix for frequency less than 45 MHz */
+		reg[1] = 0x06;
+		reg[2] = 0x11;
+	}
+
+	/* fix clock out */
+	reg[6] |= 0x20;
+
+	/* From VCO frequency determines the XIN ( fractional part of Delta
+	   Sigma PLL) and divided value (XDIV) */
+	xin = (uint16_t)(f_vco - (f_vco / xtal_freq_khz_2) * xtal_freq_khz_2);
+	xin = (xin << 15) / xtal_freq_khz_2;
+	if (xin >= 16384)
+		xin += 32768;
+
+	reg[3] = xin >> 8;
+	reg[4] = xin & 0xff;
+
+	reg[6] &= 0x3f; /* bits 6 and 7 describe the bandwidth */
+	switch (bandwidth) {
+	case 6000000:
+		reg[6] |= 0x80;
+		break;
+	case 7000000:
+		reg[6] |= 0x40;
+		break;
+	case 8000000:
+	default:
+		break;
+	}
+
+	/* modified for Realtek demod */
+	reg[5] |= 0x07;
+
+	for (i = 1; i <= 6; i++) {
+		ret = fc0013_writereg(dev, i, reg[i]);
+		if (ret)
+			goto exit;
+	}
+
+	ret = fc0013_readreg(dev, 0x11, &tmp);
+	if (ret)
+		goto exit;
+	if (multi == 64)
+		ret = fc0013_writereg(dev, 0x11, tmp | 0x04);
+	else
+		ret = fc0013_writereg(dev, 0x11, tmp & 0xfb);
+	if (ret)
+		goto exit;
+
+	/* VCO Calibration */
+	ret = fc0013_writereg(dev, 0x0e, 0x80);
+	if (!ret)
+		ret = fc0013_writereg(dev, 0x0e, 0x00);
+
+	/* VCO Re-Calibration if needed */
+	if (!ret)
+		ret = fc0013_writereg(dev, 0x0e, 0x00);
+
+	if (!ret) {
+//		msleep(10);
+		ret = fc0013_readreg(dev, 0x0e, &tmp);
+	}
+	if (ret)
+		goto exit;
+
+	/* vco selection */
+	tmp &= 0x3f;
+
+	if (vco_select) {
+		if (tmp > 0x3c) {
+			reg[6] &= ~0x08;
+			ret = fc0013_writereg(dev, 0x06, reg[6]);
+			if (!ret)
+				ret = fc0013_writereg(dev, 0x0e, 0x80);
+			if (!ret)
+				ret = fc0013_writereg(dev, 0x0e, 0x00);
+		}
+	} else {
+		if (tmp < 0x02) {
+			reg[6] |= 0x08;
+			ret = fc0013_writereg(dev, 0x06, reg[6]);
+			if (!ret)
+				ret = fc0013_writereg(dev, 0x0e, 0x80);
+			if (!ret)
+				ret = fc0013_writereg(dev, 0x0e, 0x00);
+		}
+	}
+
+exit:
+	return ret;
+}
+
+int fc0013_set_gain(void *dev, int gain)
+{
+	int ret, gainshift = 0, en_in_chg = 0;
+	uint8_t tmp = 0;
+
+	ret = fc0013_readreg(dev, 0x14, &tmp);
+
+	/* mask bits off */
+	tmp &= 0xe0;
+
+	switch (gain) {
+	case -63:		/* -6.3 dB */
+		break;
+	case 71:
+		tmp |= 0x08;	/* 7.1 dB */
+		break;
+	case 191:
+		gainshift = 1;
+		tmp |= 0x11;	/* 19.1 dB */
+		break;
+	case 197:
+	default:
+		en_in_chg = 1;
+		gainshift = 1;
+		tmp |= 0x10;	/* 19.7 dB */
+		break;
+	}
+
+	/* set gain */
+	ret = fc0013_writereg(dev, 0x14, tmp);
+
+	/* set en_in_chg */
+	ret = fc0013_readreg(dev, 0x0a, &tmp);
+
+	if (en_in_chg)
+		tmp |= 0x20;
+	else
+		tmp &= ~0x20;
+
+	ret = fc0013_writereg(dev, 0x0a, tmp);
+
+	/* set gain shift */
+	ret = fc0013_readreg(dev, 0x07, &tmp);
+	tmp &= 0xf0;
+	tmp |= gainshift ? 0x0a : 0x07;
+	ret = fc0013_writereg(dev, 0x07, tmp);
+
+	return ret;
+}

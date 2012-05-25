@@ -136,15 +136,17 @@ int fc0012_set_bw(void *dev, int bw) {
 int fc0012_set_gain(void *dev, int gain) { return 0; }
 int fc0012_set_gain_mode(void *dev, int manual) { return 0; }
 
-int fc0013_init(void *dev) { return FC0013_Open(dev); }
+int _fc0013_init(void *dev) { return fc0013_init(dev); }
 int fc0013_exit(void *dev) { return 0; }
 int fc0013_set_freq(void *dev, uint32_t freq) {
-	return FC0013_SetFrequency(dev, freq/1000, 6);
+	/* select V-band/U-band filter */
+	rtlsdr_set_gpio_bit(dev, 6, (freq > 300000000) ? 1 : 0);
+	return fc0013_set_params(dev, freq, 6000000);
 }
-int fc0013_set_bw(void *dev, int bw) {
-	return FC0013_SetFrequency(dev, ((rtlsdr_dev_t *) dev)->freq/1000, 6);
+int fc0013_set_bw(void *dev, int bw) { return 0; }
+int _fc0013_set_gain(void *dev, int gain) {
+	return fc0013_set_gain(dev, gain);
 }
-int fc0013_set_gain(void *dev, int gain) { return 0; }
 int fc0013_set_gain_mode(void *dev, int manual) { return 0; }
 
 int fc2580_init(void *dev) { return fc2580_Initialize(dev); }
@@ -177,8 +179,8 @@ static rtlsdr_tuner_t tuners[] = {
 		fc0012_set_gain_mode
 	},
 	{
-		fc0013_init, fc0013_exit,
-		fc0013_set_freq, fc0013_set_bw, fc0013_set_gain,
+		_fc0013_init, fc0013_exit,
+		fc0013_set_freq, fc0013_set_bw, _fc0013_set_gain,
 		fc0013_set_gain_mode
 	},
 	{
@@ -977,6 +979,7 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 	reg = rtlsdr_i2c_read_reg(dev, FC0013_I2C_ADDR, FC0013_CHECK_ADDR);
 	if (reg == FC0013_CHECK_VAL) {
 		fprintf(stderr, "Found Fitipower FC0013 tuner\n");
+		rtlsdr_set_gpio_output(dev, 6);
 		dev->tuner = &tuners[RTLSDR_TUNER_FC0013];
 		goto found;
 	}
