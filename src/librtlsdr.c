@@ -102,7 +102,6 @@ int e4000_set_bw(void *dev, int bw) {
 	return 0;
 }
 int e4000_set_gain(void *dev, int gain) {
-	int rc;
 	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
 	int mixgain = (gain > 340) ? 12 : 4;
 	int enhgain = (gain - 420);
@@ -744,11 +743,11 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 
 	if (dev->tuner && dev->tuner->set_bw) {
 		rtlsdr_set_i2c_repeater(dev, 1);
-		dev->tuner->set_bw(dev, real_rate);
+		dev->tuner->set_bw(dev, (int)real_rate);
 		rtlsdr_set_i2c_repeater(dev, 0);
 	}
 
-	dev->rate = samp_rate;
+	dev->rate = (uint32_t)real_rate;
 
 	tmp = (rsamp_ratio >> 16);
 	rtlsdr_demod_write_reg(dev, 1, 0x9f, tmp, 2);
