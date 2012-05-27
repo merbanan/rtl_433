@@ -447,6 +447,9 @@ static int e4k_band_set(struct e4k_state *e4k, enum e4k_band band)
 		break;
 	}
 
+	/* workaround: if we don't reset this register before writing to it,
+	 * we get a gap between 325-350 MHz */
+	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x06, 0);
 	rc = e4k_reg_set_mask(e4k, E4K_REG_SYNTH1, 0x06, band << 1);
 	if (rc >= 0)
 		e4k->band = band;
