@@ -168,21 +168,21 @@ static int fc0013_set_vhf_track(void *dev, uint32_t freq)
 	if (ret)
 		goto error_out;
 	tmp &= 0xe3;
-	if (freq <= 177500) {		/* VHF Track: 7 */
+	if (freq <= 177500000) {		/* VHF Track: 7 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x1c);
-	} else if (freq <= 184500) {	/* VHF Track: 6 */
+	} else if (freq <= 184500000) {	/* VHF Track: 6 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x18);
-	} else if (freq <= 191500) {	/* VHF Track: 5 */
+	} else if (freq <= 191500000) {	/* VHF Track: 5 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x14);
-	} else if (freq <= 198500) {	/* VHF Track: 4 */
+	} else if (freq <= 198500000) {	/* VHF Track: 4 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x10);
-	} else if (freq <= 205500) {	/* VHF Track: 3 */
+	} else if (freq <= 205500000) {	/* VHF Track: 3 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x0c);
-	} else if (freq <= 219500) {	/* VHF Track: 2 */
+	} else if (freq <= 219500000) {	/* VHF Track: 2 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x08);
-	} else if (freq < 300000) {	/* VHF Track: 1 */
+	} else if (freq < 300000000) {		/* VHF Track: 1 */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x04);
-	} else {			/* UHF and GPS */
+	} else {				/* UHF and GPS */
 		ret = fc0013_writereg(dev, 0x1d, tmp | 0x1c);
 	}
 
@@ -190,23 +190,23 @@ error_out:
 	return ret;
 }
 
-int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
+int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth)
 {
 	int i, ret = 0;
-	uint32_t freq = frequency / 1000;
 	uint8_t reg[7], am, pm, multi, tmp;
-	unsigned long f_vco;
-	uint16_t xtal_freq_khz_2, xin, xdiv;
+	uint64_t f_vco;
+	uint32_t xtal_freq_div_2;
+	uint16_t xin, xdiv;
 	int vco_select = 0;
 
-	xtal_freq_khz_2 = rtlsdr_get_tuner_clock(dev) / 1000 / 2;
+	xtal_freq_div_2 = rtlsdr_get_tuner_clock(dev) / 2;
 
 	/* set VHF track */
 	ret = fc0013_set_vhf_track(dev, freq);
 	if (ret)
 		goto exit;
 
-	if (freq < 300000) {
+	if (freq < 300000000) {
 		/* enable VHF filter */
 		ret = fc0013_readreg(dev, 0x07, &tmp);
 		if (ret)
@@ -222,7 +222,7 @@ int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
 		ret = fc0013_writereg(dev, 0x14, tmp & 0x1f);
 		if (ret)
 			goto exit;
-	} else if (freq <= 862000) {
+	} else if (freq <= 862000000) {
 		/* disable VHF filter */
 		ret = fc0013_readreg(dev, 0x07, &tmp);
 		if (ret)
@@ -257,43 +257,43 @@ int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
 	}
 
 	/* select frequency divider and the frequency of VCO */
-	if (freq < 37084) {		/* freq * 96 < 3560000 */
+	if (freq < 37084000) {		/* freq * 96 < 3560000000 */
 		multi = 96;
 		reg[5] = 0x82;
 		reg[6] = 0x00;
-	} else if (freq < 55625) {	/* freq * 64 < 3560000 */
+	} else if (freq < 55625000) {	/* freq * 64 < 3560000000 */
 		multi = 64;
 		reg[5] = 0x02;
 		reg[6] = 0x02;
-	} else if (freq < 74167) {	/* freq * 48 < 3560000 */
+	} else if (freq < 74167000) {	/* freq * 48 < 3560000000 */
 		multi = 48;
 		reg[5] = 0x42;
 		reg[6] = 0x00;
-	} else if (freq < 111250) {	/* freq * 32 < 3560000 */
+	} else if (freq < 111250000) {	/* freq * 32 < 3560000000 */
 		multi = 32;
 		reg[5] = 0x82;
 		reg[6] = 0x02;
-	} else if (freq < 148334) {	/* freq * 24 < 3560000 */
+	} else if (freq < 148334000) {	/* freq * 24 < 3560000000 */
 		multi = 24;
 		reg[5] = 0x22;
 		reg[6] = 0x00;
-	} else if (freq < 222500) {	/* freq * 16 < 3560000 */
+	} else if (freq < 222500000) {	/* freq * 16 < 3560000000 */
 		multi = 16;
 		reg[5] = 0x42;
 		reg[6] = 0x02;
-	} else if (freq < 296667) {	/* freq * 12 < 3560000 */
+	} else if (freq < 296667000) {	/* freq * 12 < 3560000000 */
 		multi = 12;
 		reg[5] = 0x12;
 		reg[6] = 0x00;
-	} else if (freq < 445000) {	/* freq * 8 < 3560000 */
+	} else if (freq < 445000000) {	/* freq * 8 < 3560000000 */
 		multi = 8;
 		reg[5] = 0x22;
 		reg[6] = 0x02;
-	} else if (freq < 593334) {	/* freq * 6 < 3560000 */
+	} else if (freq < 593334000) {	/* freq * 6 < 3560000000 */
 		multi = 6;
 		reg[5] = 0x0a;
 		reg[6] = 0x00;
-	} else if (freq < 950000) {	/* freq * 4 < 3800000 */
+	} else if (freq < 950000000) {	/* freq * 4 < 3800000000 */
 		multi = 4;
 		reg[5] = 0x12;
 		reg[6] = 0x02;
@@ -305,15 +305,15 @@ int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
 
 	f_vco = freq * multi;
 
-	if (f_vco >= 3060000) {
+	if (f_vco >= 3060000000) {
 		reg[6] |= 0x08;
 		vco_select = 1;
 	}
 
-	if (freq >= 45000) {
+	if (freq >= 45000000) {
 		/* From divided value (XDIV) determined the FA and FP value */
-		xdiv = (uint16_t)(f_vco / xtal_freq_khz_2);
-		if ((f_vco - xdiv * xtal_freq_khz_2) >= (xtal_freq_khz_2 / 2))
+		xdiv = (uint16_t)(f_vco / xtal_freq_div_2);
+		if ((f_vco - xdiv * xtal_freq_div_2) >= (xtal_freq_div_2 / 2))
 			xdiv++;
 
 		pm = (uint8_t)(xdiv / 8);
@@ -337,8 +337,8 @@ int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bandwidth)
 
 	/* From VCO frequency determines the XIN ( fractional part of Delta
 	   Sigma PLL) and divided value (XDIV) */
-	xin = (uint16_t)(f_vco - (f_vco / xtal_freq_khz_2) * xtal_freq_khz_2);
-	xin = (xin << 15) / xtal_freq_khz_2;
+	xin = (uint16_t)((f_vco - (f_vco / xtal_freq_div_2) * xtal_freq_div_2) / 1000);
+	xin = (xin << 15) / (xtal_freq_div_2 / 1000);
 	if (xin >= 16384)
 		xin += 32768;
 

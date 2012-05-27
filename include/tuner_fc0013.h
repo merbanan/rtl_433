@@ -30,7 +30,7 @@
 #define FC0013_CHECK_VAL	0xa3
 
 int fc0013_init(void *dev);
-int fc0013_set_params(void *dev, uint32_t frequency, uint32_t bw);
+int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth);
 int fc0013_set_gain(void *dev, int gain);
 
 #endif
