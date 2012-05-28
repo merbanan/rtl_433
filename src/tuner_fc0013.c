@@ -305,7 +305,7 @@ int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth)
 
 	f_vco = freq * multi;
 
-	if (f_vco >= 3060000000) {
+	if (f_vco >= 3060000000U) {
 		reg[6] |= 0x08;
 		vco_select = 1;
 	}
