@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
 #include <fcntl.h>
 #else
@@ -36,7 +37,6 @@
 #endif
 
 #include <pthread.h>
-#include <libusb.h>
 
 #include "rtl-sdr.h"
 
