@@ -26,6 +26,7 @@
 #include <unistd.h>
 #else
 #include <Windows.h>
+#include "getopt/getopt.h"
 #endif
 
 #include "rtl-sdr.h"
@@ -43,11 +44,6 @@ static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
 {
-	#ifdef _WIN32
-	fprintf(stderr,"rtl_test, a benchmark tool for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t rtl_test.exe [device_index] [samplerate in kHz] [e4k test mode]\n"
-		"\ti.e. rtl_test.exe 0 2048 1\n");
-	#else
 	fprintf(stderr,
 		"rtl_test, a benchmark tool for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\n"
@@ -56,7 +52,6 @@ void usage(void)
 		"\t[-t enable Elonics E4000 tuner benchmark]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n");
-	#endif
 	exit(1);
 }
 
@@ -166,7 +161,6 @@ int main(int argc, char **argv)
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
 
-#ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:s:b:tS::")) != -1) {
 		switch (opt) {
 		case 'd':
@@ -190,15 +184,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-#else
-/* TODO fix win usage */
-	if (argc < 3)
-		usage();
-	dev_index = atoi(argv[1]);
-	samp_rate = atoi(argv[2])*1000;
-	if (argc >3 && argv[3][0] == '1')
-		tuner_benchmark = 1;
-#endif
 	if(out_block_size < MINIMAL_BUF_LENGTH ||
 	   out_block_size > MAXIMAL_BUF_LENGTH ){
 		fprintf(stderr,

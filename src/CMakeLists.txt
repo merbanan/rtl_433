@@ -44,6 +44,12 @@ add_library(rtlsdr_static STATIC
     tuner_fc2580.c
 )
 
+if(WIN32)
+add_library(libgetopt_static STATIC
+    getopt/getopt.c
+)
+endif()
+
 target_link_libraries(rtlsdr_static
     ${LIBUSB_LIBRARIES}
 )
@@ -75,6 +81,9 @@ target_link_libraries(rtl_test rtlsdr_static
 )
 
 if(WIN32)
+target_link_libraries(rtl_sdr libgetopt_static)
+target_link_libraries(rtl_tcp libgetopt_static)
+target_link_libraries(rtl_test libgetopt_static)
 set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_tcp APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_test APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )

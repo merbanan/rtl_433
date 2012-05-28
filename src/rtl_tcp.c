@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #else
 #include <WinSock2.h>
+#include "getopt/getopt.h"
 #endif
 
 #include <pthread.h>
@@ -78,11 +79,6 @@ static int do_exit = 0;
 
 void usage(void)
 {
-	#ifdef _WIN32
-	printf("rtl_tcp, an I/Q spectrum server for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t rtl_tcp.exe [listen addr] [listen port] "
-		"[samplerate in kHz] [frequency in Hz] [device index]\n");
-	#else
 	printf("rtl_tcp, an I/Q spectrum server for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t[-a listen address]\n"
 		"\t[-p listen port (default: 1234)]\n"
@@ -90,7 +86,6 @@ void usage(void)
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-s samplerate in Hz (default: 2048000 Hz)]\n"
 		"\t[-d device index (default: 0)]\n");
-	#endif
 	exit(1);
 }
 
@@ -327,9 +322,10 @@ int main(int argc, char **argv)
 #ifdef _WIN32
 	WSADATA wsd;
 	i = WSAStartup(MAKEWORD(2,2), &wsd);
-#endif
-#ifndef _WIN32
+#else
 	struct sigaction sigact;
+#endif
+
 	while ((opt = getopt(argc, argv, "a:p:f:g:s:d:")) != -1) {
 		switch (opt) {
 		case 'd':
@@ -358,15 +354,7 @@ int main(int argc, char **argv)
 
 	if (argc < optind)
 		usage();
-#else
-	if(argc < 6)
-		usage();
-	dev_index = atoi(argv[5]);
-	frequency = atoi(argv[4]);
-	samp_rate = atoi(argv[3])*1000; /* kHz */
-	port = atoi(argv[2]);
-	addr = argv[1];
-#endif
+
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
 		fprintf(stderr, "No supported devices found.\n");
