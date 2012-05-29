@@ -85,6 +85,7 @@ void usage(void)
 		"\t[-f frequency to tune to [Hz]]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-s samplerate in Hz (default: 2048000 Hz)]\n"
+		"\t[-b number of buffers (default: 32, set by library)]\n"
 		"\t[-d device index (default: 0)]\n");
 	exit(1);
 }
@@ -308,7 +309,7 @@ int main(int argc, char **argv)
 	uint32_t frequency = 100000000, samp_rate = 2048000;
 	struct sockaddr_in local, remote;
 	int device_count;
-	uint32_t dev_index = 0;
+	uint32_t dev_index = 0, buf_num = 0;
 	int gain = 0;
 	struct llist *curelem,*prev;
 	pthread_attr_t attr;
@@ -326,7 +327,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 #endif
 
-	while ((opt = getopt(argc, argv, "a:p:f:g:s:d:")) != -1) {
+	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:d:")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -345,6 +346,9 @@ int main(int argc, char **argv)
 			break;
 		case 'p':
 			port = atoi(optarg);
+			break;
+		case 'b':
+			buf_num = atoi(optarg);
 			break;
 		default:
 			usage();
@@ -474,7 +478,8 @@ int main(int argc, char **argv)
 		r = pthread_create(&command_thread, &attr, command_worker, NULL);
 		pthread_attr_destroy(&attr);
 
-		rtlsdr_wait_async(dev, rtlsdr_callback, (void *)0);
+		r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)0,
+				      buf_num, 0);
 
 		closesocket(s);
 		if(!dead[0])
