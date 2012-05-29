@@ -26,8 +26,7 @@
  *       replace atan2 with a fast approximation
  *       in-place array operations
  *       wide band support
- *       squelch
- *       better threading
+ *       refactor to look like rtl_tcp
  */
 
 #include <errno.h>
@@ -63,6 +62,7 @@ struct fm_state
 	int     prev_index;
 	int     downsample;    /* min 4, max 256 */
 	int     output_scale;
+	int     squelch_level;
 	int     signal[2048];  /* 16 bit signed i/q pairs */
 	int16_t signal2[2048]; /* signal has lowpass, signal2 has demod */
 	int     signal_len;
@@ -82,6 +82,7 @@ void usage(void)
 		"\t[-s samplerate (default: 24000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: -1dB)]\n"
+		"\t[-l squelch_level (default: 150)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Produces signed 16 bit ints, use sox to hear them.\n"
 		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -\n\n");
@@ -116,9 +117,8 @@ void rotate_90(unsigned char *buf, uint32_t len)
 {
 	uint32_t i;
 	unsigned char tmp;
-	for (i=0; i<len; i+=8)
-	{
-		/* uint_8 negation = 255 - x */
+	for (i=0; i<len; i+=8) {
+		/* uint8_t negation = 255 - x */
 		tmp = 255 - buf[i+3];
 		buf[i+3] = buf[i+2];
 		buf[i+2] = tmp;
@@ -168,9 +168,6 @@ int polar_discriminant(int ar, int aj, int br, int bj)
 	int cr, cj;
 	double angle;
 	multiply(ar, aj, br, -bj, &cr, &cj);
-	/* fake squelch */
-	//if (abs(cr) + abs(cj) < 50000)
-	//	{return 0;}
 	angle = atan2((double)cj, (double)cr);
 	return (int)(angle / 3.14159 * (1<<14));
 }
@@ -190,16 +187,49 @@ void fm_demod(struct fm_state *fm)
 	fm->pre_j = fm->signal[fm->signal_len - 1];
 }
 
+int mad(int *samples, int len, int step)
+/* mean average deviation */
+{
+	int i=0, sum=0, ave=0;
+	for (i=0; i<len; i+=step) {
+		sum += samples[i];
+	}
+	ave = sum / (len * step);
+	sum = 0;
+	for (i=0; i<len; i+=step) {
+		sum += abs(samples[i] - ave);
+	}
+	return sum / (len * step);
+}
+
+void post_squelch(struct fm_state *fm)
+{
+	int i, i2, dev_r, dev_j, len, sq_l;
+	/* only for small samples, big samples need chunk processing */
+	len = fm->signal_len;
+	sq_l = fm->squelch_level;
+	dev_r = mad(&(fm->signal[0]), len, 2);
+	dev_j = mad(&(fm->signal[1]), len, 2);
+	if ((dev_r > sq_l) || (dev_j > sq_l)) {
+		return;
+	}
+	/* weak signal, kill it entirely */
+	for (i=0; i<len; i++) {
+		fm->signal2[i/2] = 0;
+	}
+}
+
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	struct fm_state *fm2;
 	if (!ctx) {
 		return;
 	}
-	fm2 = (struct fm_struct*)(ctx);  // bad conversion?
+	fm2 = (struct fm_struct*)(ctx);  // warning?
 	rotate_90(buf, len);
 	low_pass(fm2, buf, len);
 	fm_demod(fm2);
+	post_squelch(fm2);
 	/* ignore under runs for now */
 	fwrite(fm2->signal2, 2, fm2->signal_len/2, fm2->file);
 }
@@ -246,8 +276,9 @@ int main(int argc, char **argv)
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
 	char vendor[256], product[256], serial[256];
+	fm.squelch_level = 150;
 #ifndef _WIN32
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:S::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -257,6 +288,9 @@ int main(int argc, char **argv)
 			break;
 		case 'g':
 			gain = (int)(atof(optarg) * 10);
+			break;
+		case 'l':
+			fm.squelch_level = (int)atof(optarg);
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
