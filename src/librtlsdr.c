@@ -122,17 +122,17 @@ int e4000_set_gain_mode(void *dev, int manual) {
 	return 0;
 }
 
-int fc0012_init(void *dev) { return FC0012_Open(dev); }
+int _fc0012_init(void *dev) { return fc0012_init(dev); }
 int fc0012_exit(void *dev) { return 0; }
 int fc0012_set_freq(void *dev, uint32_t freq) {
 	/* select V-band/U-band filter */
 	rtlsdr_set_gpio_bit(dev, 6, (freq > 300000000) ? 1 : 0);
-	return FC0012_SetFrequency(dev, freq/1000, 6);
+	return fc0012_set_params(dev, freq, 6000000);
 }
-int fc0012_set_bw(void *dev, int bw) {
-	return FC0012_SetFrequency(dev, ((rtlsdr_dev_t *) dev)->freq/1000, 6);
+int fc0012_set_bw(void *dev, int bw) { return 0; }
+int _fc0012_set_gain(void *dev, int gain) {
+	return fc0012_set_gain(dev, gain);
 }
-int fc0012_set_gain(void *dev, int gain) { return 0; }
 int fc0012_set_gain_mode(void *dev, int manual) { return 0; }
 
 int _fc0013_init(void *dev) { return fc0013_init(dev); }
@@ -173,8 +173,8 @@ static rtlsdr_tuner_t tuners[] = {
 		e4000_set_gain_mode
 	},
 	{
-		fc0012_init, fc0012_exit,
-		fc0012_set_freq, fc0012_set_bw, fc0012_set_gain,
+		_fc0012_init, fc0012_exit,
+		fc0012_set_freq, fc0012_set_bw, _fc0012_set_gain,
 		fc0012_set_gain_mode
 	},
 	{

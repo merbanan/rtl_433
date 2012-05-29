@@ -1,25 +1,36 @@
-#ifndef __TUNER_FC0012_H
-#define __TUNER_FC0012_H
+/*
+ * Fitipower FC0012 tuner driver
+ *
+ * Copyright (C) 2012 Hans-Frieder Vogt <hfvogt@gmx.net>
+ *
+ * modified for use in librtlsdr
+ * Copyright (C) 2012 Steve Markgraf <steve@steve-m.de>
+ *
+ *    This program is free software; you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation; either version 2 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program; if not, write to the Free Software
+ *    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ */
 
-#define FC0012_OK	0
-#define FC0012_ERROR	1
+#ifndef _FC0012_H_
+#define _FC0012_H_
 
 #define FC0012_I2C_ADDR		0xc6
 #define FC0012_CHECK_ADDR	0x00
 #define FC0012_CHECK_VAL	0xa1
 
-#define FC0012_BANDWIDTH_6MHZ	6
-#define FC0012_BANDWIDTH_7MHZ	7
-#define FC0012_BANDWIDTH_8MHZ	8
-
-#define FC0012_LNA_GAIN_LOW	0x00
-#define FC0012_LNA_GAIN_MID	0x08
-#define FC0012_LNA_GAIN_HI	0x17
-#define FC0012_LNA_GAIN_MAX	0x10
-
-int FC0012_Open(void *pTuner);
-int FC0012_Read(void *pTuner, unsigned char RegAddr, unsigned char *pByte);
-int FC0012_Write(void *pTuner, unsigned char RegAddr, unsigned char Byte);
-int FC0012_SetFrequency(void *pTuner, unsigned long Frequency, unsigned short Bandwidth);
+int fc0012_init(void *dev);
+int fc0012_set_params(void *dev, uint32_t freq, uint32_t bandwidth);
+int fc0012_set_gain(void *dev, int gain);
 
 #endif
