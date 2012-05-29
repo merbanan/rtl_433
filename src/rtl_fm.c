@@ -83,6 +83,7 @@ void usage(void)
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: -1dB)]\n"
 		"\t[-l squelch_level (default: 150)]\n"
+		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Produces signed 16 bit ints, use sox to hear them.\n"
 		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -\n\n");
@@ -234,13 +235,13 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	fwrite(fm2->signal2, 2, fm2->signal_len/2, fm2->file);
 }
 
-static void optimal_settings(struct fm_state *fm, int freq, int rate)
+static void optimal_settings(struct fm_state *fm, int freq, int rate, int edge)
 {
 	int r, capture_freq, capture_rate;
 	fm->downsample = (1000000 / rate) + 1;
 	fprintf(stderr, "Oversampling by: %ix.\n", fm->downsample);
 	capture_rate = fm->downsample * rate;
-	capture_freq = freq + capture_rate/4;
+	capture_freq = (freq + (edge*rate/2)) + capture_rate/4;
 	fm->output_scale = (1<<15) / (128 * fm->downsample);
 	if (fm->output_scale < 1) {
 		fm->output_scale = 1;
@@ -268,7 +269,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = -10; // tenths of a dB
+	int i, edge = 0, gain = -10; // tenths of a dB
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
 	uint32_t frequency = 100000000;
@@ -278,7 +279,7 @@ int main(int argc, char **argv)
 	char vendor[256], product[256], serial[256];
 	fm.squelch_level = 150;
 #ifndef _WIN32
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:S::")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:E::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -294,6 +295,9 @@ int main(int argc, char **argv)
 			break;
 		case 's':
 			samp_rate = (uint32_t)atof(optarg);
+			break;
+		case 'E':
+			edge = 1;
 			break;
 		default:
 			usage();
@@ -352,7 +356,7 @@ int main(int argc, char **argv)
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
 
-	optimal_settings(&fm, frequency, samp_rate);
+	optimal_settings(&fm, frequency, samp_rate, edge);
 
 	/* Set the tuner gain */
 	r = rtlsdr_set_tuner_gain(dev, gain);
