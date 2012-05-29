@@ -67,15 +67,15 @@ endif()
 add_executable(rtl_sdr rtl_sdr.c)
 add_executable(rtl_tcp rtl_tcp.c)
 add_executable(rtl_test rtl_test.c)
-target_link_libraries(rtl_sdr rtlsdr_static
+target_link_libraries(rtl_sdr rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
-target_link_libraries(rtl_tcp rtlsdr_static
+target_link_libraries(rtl_tcp rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
-target_link_libraries(rtl_test rtlsdr_static
+target_link_libraries(rtl_test rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
