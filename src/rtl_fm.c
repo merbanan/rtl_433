@@ -27,6 +27,7 @@
  *       in-place array operations
  *       wide band support
  *       refactor to look like rtl_tcp
+ *       multiple frequency scanning
  */
 
 #include <errno.h>
@@ -55,18 +56,23 @@ static rtlsdr_dev_t *dev = NULL;
 
 struct fm_state
 {
-	int     now_r;
-	int     now_j;
-	int     pre_r;
-	int     pre_j;
-	int     prev_index;
-	int     downsample;    /* min 4, max 256 */
-	int     output_scale;
-	int     squelch_level;
-	int     signal[2048];  /* 16 bit signed i/q pairs */
-	int16_t signal2[2048]; /* signal has lowpass, signal2 has demod */
-	int     signal_len;
-	FILE    *file;
+	int      now_r;
+	int      now_j;
+	int      pre_r;
+	int      pre_j;
+	int      prev_index;
+	int      downsample;    /* min 4, max 256 */
+	int      output_scale;
+	int      squelch_level;
+	int      signal[2048];  /* 16 bit signed i/q pairs */
+	int16_t  signal2[2048]; /* signal has lowpass, signal2 has demod */
+	int      signal_len;
+	FILE     *file;
+	int      edge;
+	uint32_t freqs[32];
+	int      freq_len;
+	int      freq_now;
+	uint32_t sample_rate;
 };
 
 void usage(void)
@@ -79,6 +85,7 @@ void usage(void)
 	fprintf(stderr,
 		"rtl_fm, a simple narrow band FM demodulator for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
+		"\t (use multiple -f for scanning !!BROKEN!!)\n"
 		"\t[-s samplerate (default: 24000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: -1dB)]\n"
@@ -203,7 +210,8 @@ int mad(int *samples, int len, int step)
 	return sum / (len * step);
 }
 
-void post_squelch(struct fm_state *fm)
+int post_squelch(struct fm_state *fm)
+/* returns 1 for active signal, 0 for no signal */
 {
 	int i, i2, dev_r, dev_j, len, sq_l;
 	/* only for small samples, big samples need chunk processing */
@@ -212,17 +220,48 @@ void post_squelch(struct fm_state *fm)
 	dev_r = mad(&(fm->signal[0]), len, 2);
 	dev_j = mad(&(fm->signal[1]), len, 2);
 	if ((dev_r > sq_l) || (dev_j > sq_l)) {
-		return;
+		return 1;
 	}
 	/* weak signal, kill it entirely */
 	for (i=0; i<len; i++) {
 		fm->signal2[i/2] = 0;
 	}
+	return 0;
+}
+
+static void optimal_settings(struct fm_state *fm, int freq, int hopping)
+{
+	int r, capture_freq, capture_rate;
+	fm->downsample = (1000000 / fm->sample_rate) + 1;
+	fm->freq_now = freq;
+	capture_rate = fm->downsample * fm->sample_rate;
+	capture_freq = fm->freqs[freq] + capture_rate/4;
+	capture_freq += fm->edge * fm->sample_rate / 2;
+	fm->output_scale = (1<<15) / (128 * fm->downsample);
+	if (fm->output_scale < 1) {
+		fm->output_scale = 1;}
+	fm->output_scale = 1;
+	/* Set the frequency */
+	r = rtlsdr_set_center_freq(dev, capture_freq);
+	if (hopping) {
+		return;}
+	fprintf(stderr, "Oversampling by: %ix.\n", fm->downsample);
+	if (r < 0) {
+		fprintf(stderr, "WARNING: Failed to set center freq.\n");}
+	else {
+		fprintf(stderr, "Tuned to %u Hz.\n", capture_freq);}
+    
+	/* Set the sample rate */
+	r = rtlsdr_set_sample_rate(dev, capture_rate);
+	if (r < 0) {
+		fprintf(stderr, "WARNING: Failed to set sample rate.\n");}
+
 }
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	struct fm_state *fm2;
+	int sr, freq_next;
 	if (!ctx) {
 		return;
 	}
@@ -230,34 +269,18 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	rotate_90(buf, len);
 	low_pass(fm2, buf, len);
 	fm_demod(fm2);
-	post_squelch(fm2);
+	sr = post_squelch(fm2);
 	/* ignore under runs for now */
 	fwrite(fm2->signal2, 2, fm2->signal_len/2, fm2->file);
-}
-
-static void optimal_settings(struct fm_state *fm, int freq, int rate, int edge)
-{
-	int r, capture_freq, capture_rate;
-	fm->downsample = (1000000 / rate) + 1;
-	fprintf(stderr, "Oversampling by: %ix.\n", fm->downsample);
-	capture_rate = fm->downsample * rate;
-	capture_freq = (freq + (edge*rate/2)) + capture_rate/4;
-	fm->output_scale = (1<<15) / (128 * fm->downsample);
-	if (fm->output_scale < 1) {
-		fm->output_scale = 1;
+	if (fm2->freq_len > 1 && !sr) {
+		freq_next = (fm2->freq_now + 1) % fm2->freq_len;
+		optimal_settings(fm2, freq_next, 1);
+		rtlsdr_reset_buffer(dev);
+		//rtlsdr_read_async(dev, rtlsdr_callback, ctx,
+		//	      DEFAULT_ASYNC_BUF_NUMBER, DEFAULT_BUF_LENGTH);
+		//rtlsdr_wait_async(dev, rtlsdr_callback, (void *)0);
+		//rtlsdr_wait_async(dev, rtlsdr_callback, ctx);
 	}
-	fm->output_scale = 1;
-	/* Set the sample rate */
-	r = rtlsdr_set_sample_rate(dev, capture_rate);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-
-	/* Set the frequency */
-	r = rtlsdr_set_center_freq(dev, capture_freq);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to set center freq.\n");
-	else
-		fprintf(stderr, "Tuned to %u Hz.\n", capture_freq);
 }
 
 int main(int argc, char **argv)
@@ -269,15 +292,16 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, edge = 0, gain = -10; // tenths of a dB
+	int i, gain = -10; // tenths of a dB
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
-	uint32_t frequency = 100000000;
-	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
 	char vendor[256], product[256], serial[256];
+	fm.freqs[0] = 100000000;
+	fm.sample_rate = DEFAULT_SAMPLE_RATE;
 	fm.squelch_level = 150;
+	fm.freq_len = 0;
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:E::")) != -1) {
 		switch (opt) {
@@ -285,7 +309,8 @@ int main(int argc, char **argv)
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
-			frequency = (uint32_t)atof(optarg);
+			fm.freqs[fm.freq_len] = (uint32_t)atof(optarg);
+			fm.freq_len++;
 			break;
 		case 'g':
 			gain = (int)(atof(optarg) * 10);
@@ -294,10 +319,10 @@ int main(int argc, char **argv)
 			fm.squelch_level = (int)atof(optarg);
 			break;
 		case 's':
-			samp_rate = (uint32_t)atof(optarg);
+			fm.sample_rate = (uint32_t)atof(optarg);
 			break;
 		case 'E':
-			edge = 1;
+			fm.edge = 1;
 			break;
 		default:
 			usage();
@@ -316,7 +341,8 @@ int main(int argc, char **argv)
 	dev_index = atoi(argv[1]);
 	samp_rate = atoi(argv[2])*1000;
 	gain=(int)(atof(argv[3]) * 10);
-	frequency = atoi(argv[4]);
+	fm.freqs[0] = atoi(argv[4]);
+	fm.freq_len = 1;
 	filename = argv[5];
 #endif
 	out_block_size = DEFAULT_BUF_LENGTH;
@@ -356,7 +382,7 @@ int main(int argc, char **argv)
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
 
-	optimal_settings(&fm, frequency, samp_rate, edge);
+	optimal_settings(&fm, 0, 0);
 
 	/* Set the tuner gain */
 	r = rtlsdr_set_tuner_gain(dev, gain);
