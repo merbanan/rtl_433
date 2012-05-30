@@ -28,6 +28,7 @@
  *       replace atan2 with a fast approximation
  *       in-place array operations
  *       wide band support
+ *       sanity checks
  */
 
 #include <errno.h>
@@ -254,7 +255,7 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 		fm->output_scale = 1;}
 	fm->output_scale = 1;
 	/* Set the frequency */
-	r = rtlsdr_set_center_freq(dev, capture_freq);
+	r = rtlsdr_set_center_freq(dev, (uint32_t)capture_freq);
 	if (hopping) {
 		return;}
 	fprintf(stderr, "Oversampling by: %ix.\n", fm->downsample);
@@ -264,7 +265,7 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 		fprintf(stderr, "Tuned to %u Hz.\n", capture_freq);}
     
 	/* Set the sample rate */
-	r = rtlsdr_set_sample_rate(dev, capture_rate);
+	r = rtlsdr_set_sample_rate(dev, (uint32_t)capture_rate);
 	if (r < 0) {
 		fprintf(stderr, "WARNING: Failed to set sample rate.\n");}
 
@@ -337,6 +338,7 @@ int main(int argc, char **argv)
 	fm.sample_rate = DEFAULT_SAMPLE_RATE;
 	fm.squelch_level = 150;
 	fm.freq_len = 0;
+	fm.edge = 0;
 	sem_init(&data_ready, 0, 0);
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:E::")) != -1) {
