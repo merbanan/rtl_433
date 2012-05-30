@@ -1,6 +1,8 @@
 /*
  * rtl-sdr, turns your Realtek RTL2832 based DVB dongle into a SDR receiver
  * Copyright (C) 2012 by Steve Markgraf <steve@steve-m.de>
+ * Copyright (C) 2012 by Hoernchen <la@tfc-server.de>
+ * Copyright (C) 2012 by Kyle Keen <keenerd@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,14 +22,12 @@
 /*
  * written because people could not do real time
  * FM demod on Atom hardware with GNU radio
- * based on rtl_sdr.c
+ * based on rtl_sdr.c and rtl_tcp.c
  * todo: realtime ARMv5
  *       remove float math (disqualifies complex.h)
  *       replace atan2 with a fast approximation
  *       in-place array operations
  *       wide band support
- *       refactor to look like rtl_tcp
- *       multiple frequency scanning
  */
 
 #include <errno.h>
@@ -43,6 +43,10 @@
 #include <Windows.h>
 #endif
 
+#include <semaphore.h>
+#include <pthread.h>
+#include <libusb.h>
+
 #include "rtl-sdr.h"
 
 #define DEFAULT_SAMPLE_RATE		24000
@@ -51,6 +55,8 @@
 #define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
+static pthread_t demod_thread;
+static sem_t data_ready;
 static int do_exit = 0;
 static rtlsdr_dev_t *dev = NULL;
 
@@ -64,6 +70,8 @@ struct fm_state
 	int      downsample;    /* min 4, max 256 */
 	int      output_scale;
 	int      squelch_level;
+	uint8_t  buf[DEFAULT_BUF_LENGTH];
+	uint32_t buf_len;
 	int      signal[2048];  /* 16 bit signed i/q pairs */
 	int16_t  signal2[2048]; /* signal has lowpass, signal2 has demod */
 	int      signal_len;
@@ -92,7 +100,7 @@ void usage(void)
 		"\t[-l squelch_level (default: 150)]\n"
 		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
-		"Produces signed 16 bit ints, use sox to hear them.\n"
+		"Produces signed 16 bit ints, use Sox to hear them.\n"
 		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -\n\n");
 #endif
 	exit(1);
@@ -258,14 +266,9 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 
 }
 
-static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
+void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm2)
 {
-	struct fm_state *fm2;
 	int sr, freq_next;
-	if (!ctx) {
-		return;
-	}
-	fm2 = (struct fm_struct*)(ctx);  // warning?
 	rotate_90(buf, len);
 	low_pass(fm2, buf, len);
 	fm_demod(fm2);
@@ -275,12 +278,39 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	if (fm2->freq_len > 1 && !sr) {
 		freq_next = (fm2->freq_now + 1) % fm2->freq_len;
 		optimal_settings(fm2, freq_next, 1);
-		rtlsdr_reset_buffer(dev);
-		//rtlsdr_read_async(dev, rtlsdr_callback, ctx,
-		//	      DEFAULT_ASYNC_BUF_NUMBER, DEFAULT_BUF_LENGTH);
-		//rtlsdr_wait_async(dev, rtlsdr_callback, (void *)0);
-		//rtlsdr_wait_async(dev, rtlsdr_callback, ctx);
+		// wait for settling and dump buffer
+		usleep(5000);
+		rtlsdr_read_sync(dev, NULL, 4096, NULL);
 	}
+}
+
+static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
+{
+	struct fm_state *fm2;
+	int dr_val;
+	if (do_exit) {
+		return;}
+	if (!ctx) {
+		return;}
+	fm2 = (struct fm_struct*)(ctx);  // warning?
+	//full_demod(buf, len, fm2);	
+	memcpy(fm2->buf, buf, len);
+	fm2->buf_len = len;
+	sem_getvalue(&data_ready, &dr_val);
+	if (!dr_val) {
+		sem_post(&data_ready);}
+}
+
+static void *demod_thread_fn(void *arg)
+{
+	struct fm_state *fm2;
+	int r = 0;
+	fm2 = (struct fm_struct*)(arg);  // warning?
+	while (!do_exit) {
+		sem_wait(&data_ready);
+		full_demod(fm2->buf, fm2->buf_len, fm2);
+	}
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -295,13 +325,13 @@ int main(int argc, char **argv)
 	int i, gain = -10; // tenths of a dB
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
-	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
 	char vendor[256], product[256], serial[256];
 	fm.freqs[0] = 100000000;
 	fm.sample_rate = DEFAULT_SAMPLE_RATE;
 	fm.squelch_level = 150;
 	fm.freq_len = 0;
+	sem_init(&data_ready, 0, 0);
 #ifndef _WIN32
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:E::")) != -1) {
 		switch (opt) {
@@ -345,9 +375,9 @@ int main(int argc, char **argv)
 	fm.freq_len = 1;
 	filename = argv[5];
 #endif
-	out_block_size = DEFAULT_BUF_LENGTH;
 
-	buffer = malloc(out_block_size * sizeof(uint8_t));
+	buffer = malloc(DEFAULT_BUF_LENGTH * sizeof(uint8_t));
+	//buffer = fm.buf;
 
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
@@ -406,9 +436,9 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-	fprintf(stderr, "Reading samples in async mode...\n");
-	r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)(&fm),
-			      DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+	pthread_create(&demod_thread, NULL, demod_thread_fn, (void *)(&fm));
+	rtlsdr_read_async(dev, rtlsdr_callback, (void *)(&fm),
+			      DEFAULT_ASYNC_BUF_NUMBER, DEFAULT_BUF_LENGTH);
 
 	if (do_exit)
 		fprintf(stderr, "\nUser cancel, exiting...\n");
