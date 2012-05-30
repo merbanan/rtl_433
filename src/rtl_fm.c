@@ -51,9 +51,10 @@
 
 #define DEFAULT_SAMPLE_RATE		24000
 #define DEFAULT_ASYNC_BUF_NUMBER	32
-#define DEFAULT_BUF_LENGTH		1024
+#define DEFAULT_BUF_LENGTH		(1 * 16384)
 #define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
+#define CONSEQ_SQUELCH                  4
 
 static pthread_t demod_thread;
 static sem_t data_ready;
@@ -70,10 +71,11 @@ struct fm_state
 	int      downsample;    /* min 4, max 256 */
 	int      output_scale;
 	int      squelch_level;
+	int      squelch_hits;
 	uint8_t  buf[DEFAULT_BUF_LENGTH];
 	uint32_t buf_len;
-	int      signal[2048];  /* 16 bit signed i/q pairs */
-	int16_t  signal2[2048]; /* signal has lowpass, signal2 has demod */
+	int      signal[DEFAULT_BUF_LENGTH];  /* 16 bit signed i/q pairs */
+	int16_t  signal2[DEFAULT_BUF_LENGTH]; /* signal has lowpass, signal2 has demod */
 	int      signal_len;
 	FILE     *file;
 	int      edge;
@@ -101,7 +103,7 @@ void usage(void)
 		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Produces signed 16 bit ints, use Sox to hear them.\n"
-		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -\n\n");
+		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
 #endif
 	exit(1);
 }
@@ -228,12 +230,14 @@ int post_squelch(struct fm_state *fm)
 	dev_r = mad(&(fm->signal[0]), len, 2);
 	dev_j = mad(&(fm->signal[1]), len, 2);
 	if ((dev_r > sq_l) || (dev_j > sq_l)) {
+		fm->squelch_hits = 0;
 		return 1;
 	}
 	/* weak signal, kill it entirely */
 	for (i=0; i<len; i++) {
 		fm->signal2[i/2] = 0;
 	}
+	fm->squelch_hits++;
 	return 0;
 }
 
@@ -266,19 +270,20 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 
 }
 
-void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm2)
+void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm)
 {
 	int sr, freq_next;
 	rotate_90(buf, len);
-	low_pass(fm2, buf, len);
-	fm_demod(fm2);
-	sr = post_squelch(fm2);
+	low_pass(fm, buf, len);
+	fm_demod(fm);
+	sr = post_squelch(fm);
 	/* ignore under runs for now */
-	fwrite(fm2->signal2, 2, fm2->signal_len/2, fm2->file);
-	if (fm2->freq_len > 1 && !sr) {
-		freq_next = (fm2->freq_now + 1) % fm2->freq_len;
-		optimal_settings(fm2, freq_next, 1);
-		// wait for settling and dump buffer
+	fwrite(fm->signal2, 2, fm->signal_len/2, fm->file);
+	if (fm->freq_len > 1 && !sr && fm->squelch_hits > CONSEQ_SQUELCH) {
+		freq_next = (fm->freq_now + 1) % fm->freq_len;
+		optimal_settings(fm, freq_next, 1);
+		fm->squelch_hits = CONSEQ_SQUELCH + 1;  /* hair trigger */
+		/* wait for settling and dump buffer */
 		usleep(5000);
 		rtlsdr_read_sync(dev, NULL, 4096, NULL);
 	}
@@ -293,7 +298,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	if (!ctx) {
 		return;}
 	fm2 = (struct fm_struct*)(ctx);  // warning?
-	//full_demod(buf, len, fm2);	
+	/* single threaded uses 25% less CPU? */
+	/* full_demod(buf, len, fm2); */
 	memcpy(fm2->buf, buf, len);
 	fm2->buf_len = len;
 	sem_getvalue(&data_ready, &dr_val);
@@ -377,7 +383,6 @@ int main(int argc, char **argv)
 #endif
 
 	buffer = malloc(DEFAULT_BUF_LENGTH * sizeof(uint8_t));
-	//buffer = fm.buf;
 
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
