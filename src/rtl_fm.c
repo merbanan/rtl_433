@@ -182,13 +182,36 @@ void multiply(int ar, int aj, int br, int bj, int *cr, int *cj)
 	*cj = aj*br + ar*bj;
 }
 
+int fast_atan2(int y, int x)
+/* pre scaled for int16 */
+{
+	int yabs, angle, pi4=(1<<12);  // note pi = 1<<14
+	if (x==0 && y==0) {
+		return 0;
+	}
+	yabs = y;
+	if (yabs < 0) {
+		yabs = -yabs;
+	}
+	if (x >= 0) {
+		angle =   pi4 - pi4 * (x-yabs) / (x+yabs);
+	} else {
+		angle = 3*pi4 - pi4 * (x+yabs) / (yabs-x);
+	}
+	if (y < 0) {
+		return -angle;
+	}
+	return angle;
+}
+
 int polar_discriminant(int ar, int aj, int br, int bj)
 {
 	int cr, cj;
 	double angle;
 	multiply(ar, aj, br, -bj, &cr, &cj);
-	angle = atan2((double)cj, (double)cr);
-	return (int)(angle / 3.14159 * (1<<14));
+	//angle = atan2((double)cj, (double)cr);
+	//return (int)(angle / 3.14159 * (1<<14));
+	return fast_atan2(cj, cr);
 }
 
 void fm_demod(struct fm_state *fm)
