@@ -209,9 +209,9 @@ int polar_discriminant(int ar, int aj, int br, int bj)
 	int cr, cj;
 	double angle;
 	multiply(ar, aj, br, -bj, &cr, &cj);
-	//angle = atan2((double)cj, (double)cr);
-	//return (int)(angle / 3.14159 * (1<<14));
-	return fast_atan2(cj, cr);
+	angle = atan2((double)cj, (double)cr);
+	return (int)(angle / 3.14159 * (1<<14));
+	//return fast_atan2(cj, cr);
 }
 
 void fm_demod(struct fm_state *fm)
