@@ -29,6 +29,9 @@
  *       in-place array operations
  *       wide band support
  *       sanity checks
+ *       nicer FIR than square
+ *       (tried this, was twice as slow and did not sound much better)
+ *       scale squelch to other input parameters
  */
 
 #include <errno.h>
@@ -69,7 +72,8 @@ struct fm_state
 	int      pre_r;
 	int      pre_j;
 	int      prev_index;
-	int      downsample;    /* min 4, max 256 */
+	int      downsample;    /* min 1, max 256 */
+	int      post_downsample;
 	int      output_scale;
 	int      squelch_level;
 	int      squelch_hits;
@@ -84,6 +88,10 @@ struct fm_state
 	int      freq_len;
 	int      freq_now;
 	uint32_t sample_rate;
+	int      fir_enable;
+	int      fir[256];  /* fir_len == downsample */
+	int      fir_sum;
+	int      custom_atan;
 };
 
 void usage(void)
@@ -96,13 +104,17 @@ void usage(void)
 	fprintf(stderr,
 		"rtl_fm, a simple narrow band FM demodulator for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
-		"\t (use multiple -f for scanning !!BROKEN!!)\n"
+		"\t (use multiple -f for scanning)\n"
 		"\t[-s samplerate (default: 24000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: -1dB)]\n"
 		"\t[-l squelch_level (default: 150)]\n"
 		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
+		"Experimental quality/cpu options:\n"
+		"\t[-o oversampling (default: 1) !!BROKEN!!]\n"
+		"\t[-F enables high quality FIR (default: off/square)]\n"
+		"\t[-A enables high speed arctan (default: off)]\n\n"
 		"Produces signed 16 bit ints, use Sox to hear them.\n"
 		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
 #endif
@@ -152,8 +164,8 @@ void rotate_90(unsigned char *buf, uint32_t len)
 }
 
 void low_pass(struct fm_state *fm, unsigned char *buf, uint32_t len)
+/* simple square window FIR */
 {
-	/* simple square window FIR */
 	int i=0, i2=0;
 	while (i < (int)len) {
 		fm->now_r += ((int)buf[i]   - 128);
@@ -173,6 +185,63 @@ void low_pass(struct fm_state *fm, unsigned char *buf, uint32_t len)
 	fm->signal_len = i2;
 }
 
+void build_fir(struct fm_state *fm)
+/* for now, a simple triangle 
+ * fancy FIRs are equally expensive, so use one */
+/* point = sum(sample[i] * fir[i] * fir_len / fir_sum) */
+{
+	int i, len;
+	len = fm->downsample;
+	for(i = 0; i < len; i++) {
+		fm->fir[i] = i;
+	}
+	for(i = len-1; i <= 0; i--) {
+		fm->fir[i] = len - i;
+	}
+	fm->fir_sum = 0;
+	for(i = 0; i < len; i++) {
+		fm->fir_sum += fm->fir[i];
+	}
+}
+
+void low_pass_fir(struct fm_state *fm, unsigned char *buf, uint32_t len)
+/* perform an arbitrary FIR, doubles CPU use */
+// possibly bugged, or overflowing
+{
+	int i=0, i2=0, i3=0;
+	while (i < (int)len) {
+		fm->prev_index++;
+		i3 = fm->prev_index;
+		fm->now_r += ((int)buf[i]   - 128) * fm->fir[i3] * fm->downsample / fm->fir_sum;
+		fm->now_j += ((int)buf[i+1] - 128) * fm->fir[i3] * fm->downsample / fm->fir_sum;
+		i += 2;
+		if (fm->prev_index < (fm->downsample)) {
+			continue;
+		}
+		fm->signal[i2]   = fm->now_r * fm->output_scale;
+		fm->signal[i2+1] = fm->now_j * fm->output_scale;
+		fm->prev_index = -1;
+		fm->now_r = 0;
+		fm->now_j = 0;
+		i2 += 2;
+	}
+	fm->signal_len = i2;
+}
+
+int low_pass_simple(int16_t *signal2, int len, int step)
+// no wrap around, length must be multiple of step
+{
+	int i, i2, sum;
+	for(i=0; i < len; i+=step) {
+		sum = 0;
+		for(i2=0; i2<step; i2++) {
+			sum += (int)signal2[i + i2];
+		}
+		signal2[i] = (int16_t)(sum / step);
+	}
+	return len / step;
+}
+
 /* define our own complex math ops
    because ARMv5 has no hardware float */
 
@@ -182,10 +251,22 @@ void multiply(int ar, int aj, int br, int bj, int *cr, int *cj)
 	*cj = aj*br + ar*bj;
 }
 
+int polar_discriminant(int ar, int aj, int br, int bj)
+{
+	int cr, cj;
+	double angle;
+	multiply(ar, aj, br, -bj, &cr, &cj);
+	angle = atan2((double)cj, (double)cr);
+	//if (angle > (3.14159) || angle < (-3.14159))
+	//	{fprintf(stderr, "overflow %f\n", angle);}
+	return (int)(angle / 3.14159 * (1<<14));
+}
+
 int fast_atan2(int y, int x)
 /* pre scaled for int16 */
 {
-	int yabs, angle, pi4=(1<<12);  // note pi = 1<<14
+	int yabs, angle;
+	int pi4=(1<<12), pi34=3*(1<<12);  // note pi = 1<<14
 	if (x==0 && y==0) {
 		return 0;
 	}
@@ -194,9 +275,9 @@ int fast_atan2(int y, int x)
 		yabs = -yabs;
 	}
 	if (x >= 0) {
-		angle =   pi4 - pi4 * (x-yabs) / (x+yabs);
+		angle = pi4  - pi4 * (x-yabs) / (x+yabs);
 	} else {
-		angle = 3*pi4 - pi4 * (x+yabs) / (yabs-x);
+		angle = pi34 - pi4 * (x+yabs) / (yabs-x);
 	}
 	if (y < 0) {
 		return -angle;
@@ -204,14 +285,11 @@ int fast_atan2(int y, int x)
 	return angle;
 }
 
-int polar_discriminant(int ar, int aj, int br, int bj)
+int polar_disc_fast(int ar, int aj, int br, int bj)
 {
 	int cr, cj;
-	double angle;
 	multiply(ar, aj, br, -bj, &cr, &cj);
-	angle = atan2((double)cj, (double)cr);
-	return (int)(angle / 3.14159 * (1<<14));
-	//return fast_atan2(cj, cr);
+	return fast_atan2(cj, cr);
 }
 
 void fm_demod(struct fm_state *fm)
@@ -221,8 +299,13 @@ void fm_demod(struct fm_state *fm)
 		fm->pre_r, fm->pre_j);
 	fm->signal2[0] = (int16_t)pcm;
 	for (i = 2; i < (fm->signal_len); i += 2) {
-		pcm = polar_discriminant(fm->signal[i], fm->signal[i+1],
-			fm->signal[i-2], fm->signal[i-1]);
+		if (fm->custom_atan) {
+			pcm = polar_disc_fast(fm->signal[i], fm->signal[i+1],
+				fm->signal[i-2], fm->signal[i-1]);
+		} else {
+			pcm = polar_discriminant(fm->signal[i], fm->signal[i+1],
+				fm->signal[i-2], fm->signal[i-1]);
+		}
 		fm->signal2[i/2] = (int16_t)pcm;
 	}
 	fm->pre_r = fm->signal[fm->signal_len - 2];
@@ -281,13 +364,17 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 	r = rtlsdr_set_center_freq(dev, (uint32_t)capture_freq);
 	if (hopping) {
 		return;}
-	fprintf(stderr, "Oversampling by: %ix.\n", fm->downsample);
+	fprintf(stderr, "Oversampling input by: %ix.\n", fm->downsample);
+	fprintf(stderr, "Oversampling output by: %ix.\n", fm->post_downsample);
+	fprintf(stderr, "Buffer size: %0.2fms\n",
+		1000 * 0.5 * (float)DEFAULT_BUF_LENGTH / (float)capture_rate);
 	if (r < 0) {
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");}
 	else {
 		fprintf(stderr, "Tuned to %u Hz.\n", capture_freq);}
     
 	/* Set the sample rate */
+	fprintf(stderr, "Sampling at %u Hz.\n", capture_rate);
 	r = rtlsdr_set_sample_rate(dev, (uint32_t)capture_rate);
 	if (r < 0) {
 		fprintf(stderr, "WARNING: Failed to set sample rate.\n");}
@@ -298,9 +385,15 @@ void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm)
 {
 	int sr, freq_next;
 	rotate_90(buf, len);
-	low_pass(fm, buf, len);
+	if (fm->fir_enable) {
+		low_pass_fir(fm, buf, len);
+	} else {
+		low_pass(fm, buf, len);
+	}
 	fm_demod(fm);
 	sr = post_squelch(fm);
+	if (fm->post_downsample > 1) {
+		fm->signal_len = low_pass_simple(fm->signal2, fm->signal_len, fm->post_downsample);}
 	/* ignore under runs for now */
 	fwrite(fm->signal2, 2, fm->signal_len/2, fm->file);
 	if (fm->freq_len > 1 && !sr && fm->squelch_hits > CONSEQ_SQUELCH) {
@@ -362,9 +455,13 @@ int main(int argc, char **argv)
 	fm.squelch_level = 150;
 	fm.freq_len = 0;
 	fm.edge = 0;
+	fm.fir_enable = 0;
+	fm.prev_index = -1;
+	fm.post_downsample = 1;
+	fm.custom_atan = 0;
 	sem_init(&data_ready, 0, 0);
 #ifndef _WIN32
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:E::")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:EFA")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -382,14 +479,25 @@ int main(int argc, char **argv)
 		case 's':
 			fm.sample_rate = (uint32_t)atof(optarg);
 			break;
+		case 'o':
+			fm.post_downsample = (int)atof(optarg);
+			break;
 		case 'E':
 			fm.edge = 1;
+			break;
+		case 'F':
+			fm.fir_enable = 1;
+			break;
+		case 'A':
+			fm.custom_atan = 1;
 			break;
 		default:
 			usage();
 			break;
 		}
 	}
+	/* double sample_rate to limit to Δθ to ±π */
+	fm.sample_rate *= fm.post_downsample;
 
 	if (argc <= optind) {
 		usage();
@@ -443,6 +551,7 @@ int main(int argc, char **argv)
 #endif
 
 	optimal_settings(&fm, 0, 0);
+	build_fir(&fm);
 
 	/* Set the tuner gain */
 	r = rtlsdr_set_tuner_gain(dev, gain);
