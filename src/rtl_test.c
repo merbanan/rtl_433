@@ -160,6 +160,8 @@ int main(int argc, char **argv)
 	uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 	uint32_t out_block_size = DEFAULT_BUF_LENGTH;
 	int device_count;
+	int count;
+	int gains[100];
 
 	while ((opt = getopt(argc, argv, "d:s:b:tS::")) != -1) {
 		switch (opt) {
@@ -228,6 +230,14 @@ int main(int argc, char **argv)
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
+	count = rtlsdr_get_tuner_gains(dev, NULL);
+	fprintf(stderr, "Supported gain values (%d): ", count);
+
+	count = rtlsdr_get_tuner_gains(dev, gains);
+	for (i = 0; i < count; i++)
+		fprintf(stderr, "%.1f ", gains[i] / 10.0);
+	fprintf(stderr, "\n");
+
 	/* Set the sample rate */
 	r = rtlsdr_set_sample_rate(dev, samp_rate);
 	if (r < 0)

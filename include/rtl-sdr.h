@@ -113,6 +113,34 @@ RTLSDR_API int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
 RTLSDR_API int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
 
+enum rtlsdr_tuner {
+	RTLSDR_TUNER_UNKNOWN = 0,
+	RTLSDR_TUNER_E4000,
+	RTLSDR_TUNER_FC0012,
+	RTLSDR_TUNER_FC0013,
+	RTLSDR_TUNER_FC2580
+};
+
+/*!
+ * Get the tuner type.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return <= 0 on error, tuner type otherwise
+ */
+RTLSDR_API enum rtlsdr_tuner rtlsdr_get_tuner_type(rtlsdr_dev_t *dev);
+
+/*!
+ * Get a list of gains supported by the tuner.
+ *
+ * NOTE: The gains argument must be preallocated by the caller. If NULL is
+ * being given instead, the number of available gain values will be returned.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param gains array of gain values. In tenths of a dB, 115 means 11.5 dB.
+ * \return <= 0 on error, number of available (returned) gain values otherwise
+ */
+RTLSDR_API int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains);
+
 /*!
  * Set the gain for the device.
  * Manual gain mode must be enabled for this to work.
@@ -120,6 +148,8 @@ RTLSDR_API int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
  * Valid gain values (in tenths of a dB) for the E4000 tuner:
  * -10, 15, 40, 65, 90, 115, 140, 165, 190,
  * 215, 240, 290, 340, 420, 430, 450, 470, 490
+ *
+ * Valid gain values may be queried with \ref rtlsdr_get_tuner_gains function.
  *
  * \param dev the device handle given by rtlsdr_open()
  * \param gain in tenths of a dB, 115 means 11.5 dB.
