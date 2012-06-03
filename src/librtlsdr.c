@@ -470,8 +470,9 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 	rtlsdr_demod_write_reg(dev, 1, 0x15, 0x00, 1);
 	rtlsdr_demod_write_reg(dev, 1, 0x16, 0x0000, 2);
 
-	/* set IF-frequency to 0 Hz */
-	rtlsdr_demod_write_reg(dev, 1, 0x19, 0x0000, 2);
+	/* clear both DDC shift and IF frequency registers  */
+	for (i = 0; i < 6; i++)
+		rtlsdr_demod_write_reg(dev, 1, 0x16 + i, 0x00, 1);
 
 	/* set FIR coefficients */
 	for (i = 0; i < sizeof (fir_coeff); i++)
