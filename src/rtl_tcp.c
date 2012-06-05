@@ -324,7 +324,7 @@ int main(int argc, char **argv)
 	WSADATA wsd;
 	i = WSAStartup(MAKEWORD(2,2), &wsd);
 #else
-	struct sigaction sigact;
+	struct sigaction sigact, sigign;
 #endif
 
 	while ((opt = getopt(argc, argv, "a:p:f:g:s:b:d:")) != -1) {
@@ -378,9 +378,11 @@ int main(int argc, char **argv)
 	sigact.sa_handler = sighandler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = 0;
+	sigign.sa_handler = SIG_IGN;
 	sigaction(SIGINT, &sigact, NULL);
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGQUIT, &sigact, NULL);
+	sigaction(SIGPIPE, &sigign, NULL);
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
