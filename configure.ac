@@ -28,6 +28,10 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/types.h)
 AC_CHECK_HEADERS(pthread.h,, [AC_MSG_ERROR([pthread.h required])])
 
+# pc variables
+AC_SUBST(RTLSDR_PC_LIBS,["$LIBS"])
+AC_SUBST(RTLSDR_PC_CFLAGS,["$CFLAGS"])
+
 dnl checks for required libraries
 dnl pthreads
 AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
