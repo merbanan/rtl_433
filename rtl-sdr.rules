@@ -26,6 +26,7 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00a9", MODE:="066
 
 # Terratec NOXON rev 1 (FC0013)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00b3", MODE:="0666"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00c6", MODE:="0666"
 
 # Terratec Cinergy T Stick RC (Rev.3) (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="0ccd", ATTRS{idProduct}=="00d3", MODE:="0666"
