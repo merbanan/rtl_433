@@ -679,7 +679,7 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 {
 	const int e4k_gains[] = { -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
 				  240, 290, 340, 420, 430, 450, 470, 490 };
-	const int fc0012_gains[] = { 0 /* no gain values */ };
+	const int fc0012_gains[] = { -99, -40, 71, 179, 192 };
 	const int fc0013_gains[] = { -63, 71, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
 

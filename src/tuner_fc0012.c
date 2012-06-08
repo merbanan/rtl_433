@@ -307,6 +307,33 @@ exit:
 
 int fc0012_set_gain(void *dev, int gain)
 {
-	/* TODO add gain regulation */
-	return 0;
+	int ret;
+	uint8_t tmp = 0;
+
+	ret = fc0012_readreg(dev, 0x13, &tmp);
+
+	/* mask bits off */
+	tmp &= 0xe0;
+
+	switch (gain) {
+	case -99:		/* -9.9 dB */
+		tmp |= 0x02;
+		break;
+	case -40:		/* -4 dB */
+		break;
+	case 71:
+		tmp |= 0x08;	/* 7.1 dB */
+		break;
+	case 179:
+		tmp |= 0x17;	/* 17.9 dB */
+		break;
+	case 192:
+	default:
+		tmp |= 0x10;	/* 19.2 dB */
+		break;
+	}
+
+	ret = fc0012_writereg(dev, 0x13, tmp);
+
+	return ret;
 }
