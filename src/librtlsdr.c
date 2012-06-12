@@ -824,7 +824,7 @@ int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on)
 	return 0;
 }
 
-rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
+static rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
 {
 	unsigned int i;
 	rtlsdr_dongle_t *device = NULL;
