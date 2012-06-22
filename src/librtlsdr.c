@@ -496,6 +496,9 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 	/* Enable Zero-IF mode (en_bbin bit), DC cancellation (en_dc_est),
 	 * IQ estimation/compensation (en_iq_comp, en_iq_est) */
 	rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1b, 1);
+
+	/* disable 4.096 MHz clock output on pin TP_CK0 */
+	rtlsdr_demod_write_reg(dev, 0, 0x0d, 0x83, 1);
 }
 
 int rtlsdr_deinit_baseband(rtlsdr_dev_t *dev)
