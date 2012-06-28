@@ -244,7 +244,11 @@ int main(int argc, char **argv)
 		fprintf(stderr, "WARNING: Failed to set sample rate.\n");
 
 	if (tuner_benchmark) {
-		e4k_benchmark();
+		if (rtlsdr_get_tuner_type(dev) == RTLSDR_TUNER_E4000)
+			e4k_benchmark();
+		else
+			fprintf(stderr, "No E4000 tuner found, aborting.\n");
+
 		goto exit;
 	}
 
