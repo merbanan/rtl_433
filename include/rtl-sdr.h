@@ -166,6 +166,16 @@ RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 RTLSDR_API int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev);
 
 /*!
+ * Set the intermediate frequency gain for the device.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param stage intermediate frequency gain stage number (1 to 6 for E4000)
+ * \param gain in tenths of a dB, -30 means -3.0 dB.
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_tuner_if_gain(rtlsdr_dev_t *dev, int stage, int gain);
+
+/*!
  * Set the gain mode (automatic/manual) for the device.
  * Manual gain mode must be enabled for the gain setter function to work.
  *

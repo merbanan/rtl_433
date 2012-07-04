@@ -51,7 +51,8 @@ typedef struct rtlsdr_tuner_iface {
 	int (*exit)(void *);
 	int (*set_freq)(void *, uint32_t freq /* Hz */);
 	int (*set_bw)(void *, int bw /* Hz */);
-	int (*set_gain)(void *, int gain /* dB */);
+	int (*set_gain)(void *, int gain /* tenth dB */);
+	int (*set_if_gain)(void *, int stage, int gain /* tenth dB */);
 	int (*set_gain_mode)(void *, int manual);
 } rtlsdr_tuner_iface_t;
 
@@ -80,7 +81,7 @@ struct rtlsdr_dev {
 	uint32_t tun_xtal; /* Hz */
 	uint32_t freq; /* Hz */
 	int corr; /* ppm */
-	int gain; /* dB */
+	int gain; /* tenth dB */
 	struct e4k_state e4k_s;
 };
 
@@ -113,14 +114,15 @@ int e4000_set_gain(void *dev, int gain) {
 	if(enhgain >= 0)
 		if(e4k_set_enh_gain(&devt->e4k_s, enhgain) == -EINVAL)
 			return -1;
-
 	return 0;
 }
-
+int e4000_set_if_gain(void *dev, int stage, int gain) {
+	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
+	return e4k_if_gain_set(&devt->e4k_s, (uint8_t)stage, (int8_t)(gain / 10));
+}
 int e4000_set_gain_mode(void *dev, int manual) {
 	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
-	e4k_enable_manual_gain(&devt->e4k_s, manual);
-	return 0;
+	return e4k_enable_manual_gain(&devt->e4k_s, manual);
 }
 
 int _fc0012_init(void *dev) { return fc0012_init(dev); }
@@ -157,26 +159,26 @@ int fc2580_set_gain_mode(void *dev, int manual) { return 0; }
 /* definition order must match enum rtlsdr_tuner */
 static rtlsdr_tuner_iface_t tuners[] = {
 	{
-		NULL, NULL, NULL, NULL, NULL, NULL /* dummy for unknown tuners */
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL /* dummy for unknown tuners */
 	},
 	{
 		e4000_init, e4000_exit,
-		e4000_set_freq, e4000_set_bw, e4000_set_gain,
+		e4000_set_freq, e4000_set_bw, e4000_set_gain, e4000_set_if_gain,
 		e4000_set_gain_mode
 	},
 	{
 		_fc0012_init, fc0012_exit,
-		fc0012_set_freq, fc0012_set_bw, _fc0012_set_gain,
+		fc0012_set_freq, fc0012_set_bw, _fc0012_set_gain, NULL,
 		fc0012_set_gain_mode
 	},
 	{
 		_fc0013_init, fc0013_exit,
-		fc0013_set_freq, fc0013_set_bw, _fc0013_set_gain,
+		fc0013_set_freq, fc0013_set_bw, _fc0013_set_gain, NULL,
 		fc0013_set_gain_mode
 	},
 	{
 		fc2580_init, fc2580_exit,
-		_fc2580_set_freq, fc2580_set_bw, fc2580_set_gain,
+		_fc2580_set_freq, fc2580_set_bw, fc2580_set_gain, NULL,
 		fc2580_set_gain_mode
 	},
 };
@@ -747,6 +749,20 @@ int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev)
 		return 0;
 
 	return dev->gain;
+}
+
+int rtlsdr_set_tuner_if_gain(rtlsdr_dev_t *dev, int stage, int gain)
+{
+	int r = 0;
+
+	if (!dev || !dev->tuner)
+		return -1;
+
+	if (dev->tuner->set_if_gain) {
+		r = dev->tuner->set_if_gain(dev, stage, gain);
+	}
+
+	return r;
 }
 
 int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int mode)

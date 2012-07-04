@@ -723,8 +723,8 @@ static int find_stage_gain(uint8_t stage, int8_t val)
 
 /*! \brief Set the gain of one of the IF gain stages
  *  \param [e4k] handle to the tuner chip
- *  \param [stage] numbere of the stage (1..6)
- *  \param [value] gain value in dBm
+ *  \param [stage] number of the stage (1..6)
+ *  \param [value] gain value in dB
  *  \returns 0 on success, negative in case of error
  */
 int e4k_if_gain_set(struct e4k_state *e4k, uint8_t stage, int8_t value)
