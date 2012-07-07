@@ -358,7 +358,7 @@ uint16_t rtlsdr_read_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_
 	return reg;
 }
 
-void rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t val, uint8_t len)
+int rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t val, uint8_t len)
 {
 	int r;
 	unsigned char data[2];
@@ -376,6 +376,8 @@ void rtlsdr_write_reg(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint16_t 
 
 	if (r < 0)
 		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
+
+	return r;
 }
 
 uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint8_t len)
@@ -397,7 +399,7 @@ uint16_t rtlsdr_demod_read_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, u
 	return reg;
 }
 
-void rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint16_t val, uint8_t len)
+int rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint16_t val, uint8_t len)
 {
 	int r;
 	unsigned char data[2];
@@ -417,6 +419,8 @@ void rtlsdr_demod_write_reg(rtlsdr_dev_t *dev, uint8_t page, uint16_t addr, uint
 		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 
 	rtlsdr_demod_read_reg(dev, 0x0a, 0x01, 1);
+
+	return r;
 }
 
 void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val)
@@ -838,9 +842,7 @@ int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on)
 	if (!dev)
 		return -1;
 
-	rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x23 : 0x25 , 1);
-
-	return 0;
+	return rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x23 : 0x25 , 1);
 }
 
 static rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
