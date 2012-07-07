@@ -485,12 +485,13 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 	for (i = 0; i < sizeof (fir_coeff); i++)
 		rtlsdr_demod_write_reg(dev, 1, 0x1c + i, fir_coeff[i], 1);
 
-	rtlsdr_demod_write_reg(dev, 0, 0x19, 0x25, 1);
+	/* enable SDR mode, disable DAGC (bit 5) */
+	rtlsdr_demod_write_reg(dev, 0, 0x19, 0x05, 1);
 
 	/* init FSM state-holding register */
 	rtlsdr_demod_write_reg(dev, 1, 0x93, 0xf0, 1);
 
-	/* disable AGC (en_dagc, bit 0) */
+	/* disable AGC (en_dagc, bit 0) (this seems to have no effect) */
 	rtlsdr_demod_write_reg(dev, 1, 0x11, 0x00, 1);
 
 	/* disable PID filter (enable_PID = 0) */
@@ -842,7 +843,15 @@ int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on)
 	if (!dev)
 		return -1;
 
-	return rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x23 : 0x25 , 1);
+	return rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x03 : 0x05, 1);
+}
+
+int rtlsdr_set_agc_mode(rtlsdr_dev_t *dev, int on)
+{
+	if (!dev)
+		return -1;
+
+	return rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x25 : 0x05, 1);
 }
 
 static rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
