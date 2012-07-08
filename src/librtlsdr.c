@@ -772,7 +772,9 @@ int rtlsdr_set_tuner_if_gain(rtlsdr_dev_t *dev, int stage, int gain)
 		return -1;
 
 	if (dev->tuner->set_if_gain) {
+		rtlsdr_set_i2c_repeater(dev, 1);
 		r = dev->tuner->set_if_gain(dev, stage, gain);
+		rtlsdr_set_i2c_repeater(dev, 0);
 	}
 
 	return r;
