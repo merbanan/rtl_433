@@ -91,7 +91,7 @@ void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val);
 int e4000_init(void *dev) {
 	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
 	devt->e4k_s.i2c_addr = E4K_I2C_ADDR;
-	devt->e4k_s.vco.fosc = devt->tun_xtal;
+	devt->e4k_s.vco.fosc = devt->tun_xtal; /* no need to correct it here */
 	devt->e4k_s.rtl_dev = dev;
 	return e4k_init(&devt->e4k_s);
 }
@@ -540,10 +540,7 @@ int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_fr
 		(rtl_freq < MIN_RTL_XTAL_FREQ || rtl_freq > MAX_RTL_XTAL_FREQ))
 		return -2;
 
-	if (dev->rtl_xtal != rtl_freq) {
-		if (0 == rtl_freq)
-			rtl_freq = DEF_RTL_XTAL_FREQ;
-
+	if (rtl_freq > 0 && dev->rtl_xtal != rtl_freq) {
 		dev->rtl_xtal = rtl_freq;
 
 		/* update xtal-dependent settings */
@@ -553,9 +550,13 @@ int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_fr
 
 	if (dev->tun_xtal != tuner_freq) {
 		if (0 == tuner_freq)
-			tuner_freq = dev->rtl_xtal;
+			dev->tun_xtal = dev->rtl_xtal;
+		else
+			dev->tun_xtal = tuner_freq;
 
-		dev->tun_xtal = tuner_freq;
+		/* read corrected clock value into e4k structure */
+		if (rtlsdr_get_xtal_freq(dev, NULL, &dev->e4k_s.vco.fosc))
+			return -3;
 
 		/* update xtal-dependent settings */
 		if (dev->freq)
@@ -570,12 +571,13 @@ int rtlsdr_get_xtal_freq(rtlsdr_dev_t *dev, uint32_t *rtl_freq, uint32_t *tuner_
 	if (!dev)
 		return -1;
 
-	*rtl_freq = dev->rtl_xtal;
+	#define APPLY_PPM_CORR(val,ppm) (((val) * (1.0 + (ppm) / 1e6)))
 
-	if (!dev->tuner)
-		return -2;
+	if (rtl_freq)
+		*rtl_freq = (uint32_t) APPLY_PPM_CORR(dev->rtl_xtal, dev->corr);
 
-	*tuner_freq = dev->tun_xtal;
+	if (tuner_freq)
+		*tuner_freq = (uint32_t) APPLY_PPM_CORR(dev->tun_xtal, dev->corr);
 
 	return 0;
 }
@@ -624,16 +626,13 @@ int rtlsdr_get_usb_strings(rtlsdr_dev_t *dev, char *manufact, char *product,
 int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 {
 	int r = -1;
-	double f = (double) freq;
 
 	if (!dev || !dev->tuner)
 		return -1;
 
 	if (dev->tuner->set_freq) {
-		f *= 1.0 + dev->corr / 1e6;
-
 		rtlsdr_set_i2c_repeater(dev, 1);
-		r = dev->tuner->set_freq(dev, (uint32_t) f);
+		r = dev->tuner->set_freq(dev, freq);
 		rtlsdr_set_i2c_repeater(dev, 0);
 
 		if (!r)
@@ -647,7 +646,7 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 
 uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
 {
-	if (!dev || !dev->tuner)
+	if (!dev)
 		return 0;
 
 	return dev->freq;
@@ -655,25 +654,32 @@ uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t *dev)
 
 int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm)
 {
-	int r;
+	int r = 0;
 
-	if (!dev || !dev->tuner)
+	if (!dev)
 		return -1;
 
 	if (dev->corr == ppm)
-		return -1;
+		return -2;
 
 	dev->corr = ppm;
 
-	/* retune to apply new correction value */
-	r = rtlsdr_set_center_freq(dev, dev->freq);
+	/* read corrected clock value into e4k structure */
+	if (rtlsdr_get_xtal_freq(dev, NULL, &dev->e4k_s.vco.fosc))
+		return -3;
+
+	if (dev->rate) /* reset sample rate to apply new correction value */
+		r |= rtlsdr_set_sample_rate(dev, dev->rate);
+
+	if (dev->freq) /* retune to apply new correction value */
+		r |= rtlsdr_set_center_freq(dev, dev->freq);
 
 	return r;
 }
 
 int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
 {
-	if (!dev || !dev->tuner)
+	if (!dev)
 		return 0;
 
 	return dev->corr;
@@ -752,7 +758,7 @@ int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain)
 
 int rtlsdr_get_tuner_gain(rtlsdr_dev_t *dev)
 {
-	if (!dev || !dev->tuner)
+	if (!dev)
 		return 0;
 
 	return dev->gain;
@@ -796,6 +802,7 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	uint16_t tmp;
 	uint32_t rsamp_ratio;
 	double real_rate;
+	uint32_t rtl_freq;
 
 	if (!dev)
 		return -1;
@@ -804,10 +811,14 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	if (samp_rate > MAX_SAMP_RATE)
 		samp_rate = MAX_SAMP_RATE;
 
-	rsamp_ratio = (dev->rtl_xtal * TWO_POW(22)) / samp_rate;
+	/* read corrected clock value */
+	if (rtlsdr_get_xtal_freq(dev, &rtl_freq, NULL))
+		return -2;
+
+	rsamp_ratio = (rtl_freq * TWO_POW(22)) / samp_rate;
 	rsamp_ratio &= ~3;
 
-	real_rate = (dev->rtl_xtal * TWO_POW(22)) / rsamp_ratio;
+	real_rate = (rtl_freq * TWO_POW(22)) / rsamp_ratio;
 
 	if ( ((double)samp_rate) != real_rate )
 		fprintf(stderr, "Exact sample rate is: %f Hz\n", real_rate);
@@ -1089,7 +1100,7 @@ found:
 	}
 
 	dev->tuner = &tuners[dev->tuner_type];
-	dev->tun_xtal = dev->rtl_xtal;
+	dev->tun_xtal = dev->rtl_xtal; /* use the rtl clock value by default */
 
 	if (dev->tuner->init)
 		r = dev->tuner->init(dev);
@@ -1313,10 +1324,16 @@ int rtlsdr_cancel_async(rtlsdr_dev_t *dev)
 
 uint32_t rtlsdr_get_tuner_clock(void *dev)
 {
+	uint32_t tuner_freq;
+
 	if (!dev)
 		return 0;
 
-	return ((rtlsdr_dev_t *)dev)->tun_xtal;
+	/* read corrected clock value */
+	if (rtlsdr_get_xtal_freq((rtlsdr_dev_t *)dev, NULL, &tuner_freq))
+		return 0;
+
+	return tuner_freq;
 }
 
 int rtlsdr_i2c_write_fn(void *dev, uint8_t addr, uint8_t *buf, int len)

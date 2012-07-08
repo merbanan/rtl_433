@@ -60,9 +60,9 @@ RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
  *
  * Usually both ICs use the same clock. Changing the clock may make sense if
  * you are applying an external clock to the tuner or to compensate the
- * frequency (and samplerate) error caused by the original cheap crystal.
+ * frequency (and samplerate) error caused by the original (cheap) crystal.
  *
- * NOTE: Call this function only if you know what you are doing.
+ * NOTE: Call this function only if you fully understand the implications.
  *
  * \param dev the device handle given by rtlsdr_open()
  * \param rtl_freq frequency value used to clock the RTL2832 in Hz
@@ -109,8 +109,21 @@ RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
  */
 RTLSDR_API uint32_t rtlsdr_get_center_freq(rtlsdr_dev_t *dev);
 
+/*!
+ * Set the frequency correction value for the device.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param ppm correction value in parts per million (ppm)
+ * \return 0 on success
+ */
 RTLSDR_API int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm);
 
+/*!
+ * Get actual frequency correction value of the device.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \return correction value in parts per million (ppm)
+ */
 RTLSDR_API int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev);
 
 enum rtlsdr_tuner {
