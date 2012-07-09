@@ -667,10 +667,10 @@ int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm)
 	/* read corrected clock value into e4k structure */
 	if (rtlsdr_get_xtal_freq(dev, NULL, &dev->e4k_s.vco.fosc))
 		return -3;
-
+#if 0
 	if (dev->rate) /* reset sample rate to apply new correction value */
 		r |= rtlsdr_set_sample_rate(dev, dev->rate);
-
+#endif
 	if (dev->freq) /* retune to apply new correction value */
 		r |= rtlsdr_set_center_freq(dev, dev->freq);
 
@@ -804,7 +804,7 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	uint16_t tmp;
 	uint32_t rsamp_ratio;
 	double real_rate;
-	uint32_t rtl_freq;
+	uint32_t rtl_freq = dev->rtl_xtal;
 
 	if (!dev)
 		return -1;
@@ -812,11 +812,14 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	/* check for the maximum rate the resampler supports */
 	if (samp_rate > MAX_SAMP_RATE)
 		samp_rate = MAX_SAMP_RATE;
-
+#if 0
 	/* read corrected clock value */
 	if (rtlsdr_get_xtal_freq(dev, &rtl_freq, NULL))
 		return -2;
 
+	if (samp_rate == MAX_SAMP_RATE && rtl_freq != DEF_RTL_XTAL_FREQ)
+		rtl_freq = DEF_RTL_XTAL_FREQ;
+#endif
 	rsamp_ratio = (rtl_freq * TWO_POW(22)) / samp_rate;
 	rsamp_ratio &= ~3;
 
