@@ -279,6 +279,9 @@ int rtlsdr_read_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t *
 
 	r = libusb_control_transfer(dev->devh, CTRL_IN, 0, addr, index, array, len, CTRL_TIMEOUT);
 
+	if (r < 0)
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
+
 	return r;
 }
 
@@ -288,6 +291,9 @@ int rtlsdr_write_array(rtlsdr_dev_t *dev, uint8_t block, uint16_t addr, uint8_t 
 	uint16_t index = (block << 8) | 0x10;
 
 	r = libusb_control_transfer(dev->devh, CTRL_OUT, 0, addr, index, array, len, CTRL_TIMEOUT);
+
+	if (r < 0)
+		fprintf(stderr, "%s failed with %d\n", __FUNCTION__, r);
 
 	return r;
 }
