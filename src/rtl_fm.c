@@ -45,6 +45,7 @@
 #include <unistd.h>
 #else
 #include <Windows.h>
+#include "getopt/getopt.h"
 #endif
 
 #include <semaphore.h>
@@ -96,11 +97,6 @@ struct fm_state
 
 void usage(void)
 {
-	#ifdef _WIN32
-	fprintf(stderr,"rtl_fm, a simple FM demodulator for RTL2832 based USB-sticks\n\n"
-		"Usage:\t rtl_fm-win.exe [device_index] [samplerate in kHz] "
-		"[gain] [frequency in Hz] [filename]\n");
-	#else
 	fprintf(stderr,
 		"rtl_fm, a simple narrow band FM demodulator for RTL2832 based DVB-T receivers\n\n"
 		"Usage:\t -f frequency_to_tune_to [Hz]\n"
@@ -117,7 +113,6 @@ void usage(void)
 		"\t[-A enables high speed arctan (default: off)]\n\n"
 		"Produces signed 16 bit ints, use Sox to hear them.\n"
 		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
-#endif
 	exit(1);
 }
 
@@ -460,7 +455,7 @@ int main(int argc, char **argv)
 	fm.post_downsample = 1;
 	fm.custom_atan = 0;
 	sem_init(&data_ready, 0, 0);
-#ifndef _WIN32
+
 	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:EFA")) != -1) {
 		switch (opt) {
 		case 'd':
@@ -504,16 +499,6 @@ int main(int argc, char **argv)
 	} else {
 		filename = argv[optind];
 	}
-#else
-	if(argc <6)
-		usage();
-	dev_index = atoi(argv[1]);
-	samp_rate = atoi(argv[2])*1000;
-	gain=(int)(atof(argv[3]) * 10);
-	fm.freqs[0] = atoi(argv[4]);
-	fm.freq_len = 1;
-	filename = argv[5];
-#endif
 
 	buffer = malloc(DEFAULT_BUF_LENGTH * sizeof(uint8_t));
 
