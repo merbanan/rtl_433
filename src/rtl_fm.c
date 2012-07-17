@@ -403,13 +403,12 @@ void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm)
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
-	struct fm_state *fm2;
+	struct fm_state *fm2 = ctx;
 	int dr_val;
 	if (do_exit) {
 		return;}
 	if (!ctx) {
 		return;}
-	fm2 = (struct fm_struct*)(ctx);  // warning?
 	/* single threaded uses 25% less CPU? */
 	/* full_demod(buf, len, fm2); */
 	memcpy(fm2->buf, buf, len);
@@ -421,9 +420,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
 static void *demod_thread_fn(void *arg)
 {
-	struct fm_state *fm2;
-	int r = 0;
-	fm2 = (struct fm_struct*)(arg);  // warning?
+	struct fm_state *fm2 = arg;
 	while (!do_exit) {
 		sem_wait(&data_ready);
 		full_demod(fm2->buf, fm2->buf_len, fm2);
