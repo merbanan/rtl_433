@@ -36,6 +36,9 @@ dnl checks for required libraries
 dnl pthreads
 AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
 
+dnl libmath (for rtl_fm)
+AC_CHECK_LIB(m, atan2, [LIBS="$LIBS -lm"])
+
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden "
