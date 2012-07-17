@@ -67,7 +67,10 @@ endif()
 add_executable(rtl_sdr rtl_sdr.c)
 add_executable(rtl_tcp rtl_tcp.c)
 add_executable(rtl_test rtl_test.c)
+set(INSTALL_TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test)
+
 if(UNIX)
+LIST(APPEND INSTALL_TARGETS rtl_fm)
 add_executable(rtl_fm rtl_fm.c)
 endif()
 
@@ -102,7 +105,7 @@ endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm
+install(TARGETS ${INSTALL_TARGETS}
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
