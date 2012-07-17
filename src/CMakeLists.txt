@@ -36,10 +36,6 @@ set_target_properties(rtlsdr_shared PROPERTIES DEFINE_SYMBOL "rtlsdr_EXPORTS")
 set_target_properties(rtlsdr_shared PROPERTIES OUTPUT_NAME rtlsdr)
 set_target_properties(rtlsdr_shared PROPERTIES SOVERSION 0 VERSION 0.0.0)
 
-if(UNIX)
-    link_libraries(m)
-endif(UNIX)
-
 add_library(rtlsdr_static STATIC
     librtlsdr.c
     tuner_e4k.c
@@ -71,7 +67,9 @@ endif()
 add_executable(rtl_sdr rtl_sdr.c)
 add_executable(rtl_tcp rtl_tcp.c)
 add_executable(rtl_test rtl_test.c)
+if(UNIX)
 add_executable(rtl_fm rtl_fm.c)
+endif()
 
 target_link_libraries(rtl_sdr rtlsdr_shared
     ${LIBUSB_LIBRARIES}
@@ -85,25 +83,26 @@ target_link_libraries(rtl_test rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
+if(UNIX)
 target_link_libraries(rtl_fm rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
+    m
 )
+endif()
 
 if(WIN32)
 target_link_libraries(rtl_sdr libgetopt_static)
 target_link_libraries(rtl_tcp libgetopt_static)
 target_link_libraries(rtl_test libgetopt_static)
-target_link_libraries(rtl_fm libgetopt_static)
 set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_tcp APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_test APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
-set_property(TARGET rtl_fm APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 endif()
 ########################################################################
 # Install built library files & utilities
 ########################################################################
-install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test
+install(TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm
     LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
     ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
     RUNTIME DESTINATION bin              # .dll file
