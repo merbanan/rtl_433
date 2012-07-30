@@ -1,13 +1,18 @@
 #ifndef _E4K_TUNER_H
 #define _E4K_TUNER_H
 
-/* (C) 2011-2012 by Harald Welte <laforge@gnumonks.org>
+/*
+ * Elonics E4000 tuner driver
+ *
+ * (C) 2011-2012 by Harald Welte <laforge@gnumonks.org>
+ * (C) 2012 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2012 by Hoernchen <la@tfc-server.de>
  *
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
