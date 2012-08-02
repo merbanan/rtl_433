@@ -138,7 +138,7 @@ enum rtlsdr_tuner {
  * Get the tuner type.
  *
  * \param dev the device handle given by rtlsdr_open()
- * \return <= 0 on error, tuner type otherwise
+ * \return RTLSDR_TUNER_UNKNOWN on error, tuner type otherwise
  */
 RTLSDR_API enum rtlsdr_tuner rtlsdr_get_tuner_type(rtlsdr_dev_t *dev);
 

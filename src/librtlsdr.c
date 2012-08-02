@@ -695,7 +695,7 @@ int rtlsdr_get_freq_correction(rtlsdr_dev_t *dev)
 enum rtlsdr_tuner rtlsdr_get_tuner_type(rtlsdr_dev_t *dev)
 {
 	if (!dev)
-		return -1;
+		return RTLSDR_TUNER_UNKNOWN;
 
 	return dev->tuner_type;
 }
