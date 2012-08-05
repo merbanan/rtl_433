@@ -106,14 +106,18 @@ int e4000_set_bw(void *dev, int bw) {
 int e4000_set_gain(void *dev, int gain) {
 	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
 	int mixgain = (gain > 340) ? 12 : 4;
+#if 0
 	int enhgain = (gain - 420);
-	if(e4k_set_lna_gain(&devt->e4k_s, min(300, gain - 40)) == -EINVAL)
+#endif
+	if(e4k_set_lna_gain(&devt->e4k_s, min(300, gain - mixgain * 10)) == -EINVAL)
 		return -1;
 	if(e4k_mixer_gain_set(&devt->e4k_s, mixgain) == -EINVAL)
 		return -1;
+#if 0 /* enhanced mixer gain seems to have no effect */
 	if(enhgain >= 0)
 		if(e4k_set_enh_gain(&devt->e4k_s, enhgain) == -EINVAL)
 			return -1;
+#endif
 	return 0;
 }
 int e4000_set_if_gain(void *dev, int stage, int gain) {
@@ -702,8 +706,9 @@ enum rtlsdr_tuner rtlsdr_get_tuner_type(rtlsdr_dev_t *dev)
 
 int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 {
+	/* all gain values are expressed in tenths of a dB */
 	const int e4k_gains[] = { -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
-				  240, 290, 340, 420, 430, 450, 470, 490 };
+				  240, 290, 340, 420 };
 	const int fc0012_gains[] = { -99, -40, 71, 179, 192 };
 	const int fc0013_gains[] = { -63, 71, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
