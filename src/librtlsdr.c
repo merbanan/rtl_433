@@ -316,7 +316,7 @@ int rtlsdr_i2c_write_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t reg, uint8
 uint8_t rtlsdr_i2c_read_reg(rtlsdr_dev_t *dev, uint8_t i2c_addr, uint8_t reg)
 {
 	uint16_t addr = i2c_addr;
-	uint8_t data;
+	uint8_t data = 0;
 
 	rtlsdr_write_array(dev, IICB, addr, &reg, 1);
 	rtlsdr_read_array(dev, IICB, addr, &data, 1);
