@@ -7,13 +7,16 @@ SUBDIRS = include src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librtlsdr.pc
 
+udevrulesdir=/etc/udev/rules.d
+udevrules_DATA = rtl-sdr.rules
+
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
-EXTRA_DIST = git-version-gen
+EXTRA_DIST = git-version-gen $(udevrules_DATA)
 
 if HAVE_DOXYGEN
 
