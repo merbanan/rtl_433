@@ -30,7 +30,6 @@
  *       wide band support
  *       sanity checks
  *       nicer FIR than square
- *       (tried this, was twice as slow and did not sound much better)
  *       scale squelch to other input parameters
  */
 
@@ -59,7 +58,7 @@
 #define DEFAULT_BUF_LENGTH		(1 * 16384)
 #define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
-#define CONSEQ_SQUELCH			4
+#define CONSEQ_SQUELCH			20
 #define AUTO_GAIN			-100
 
 static pthread_t demod_thread;
@@ -79,6 +78,7 @@ struct fm_state
 	int      output_scale;
 	int      squelch_level;
 	int      squelch_hits;
+	int      term_squelch_hits;
 	uint8_t  buf[DEFAULT_BUF_LENGTH];
 	uint32_t buf_len;
 	int      signal[DEFAULT_BUF_LENGTH];  /* 16 bit signed i/q pairs */
@@ -100,7 +100,8 @@ void usage(void)
 {
 	fprintf(stderr,
 		"rtl_fm, a simple narrow band FM demodulator for RTL2832 based DVB-T receivers\n\n"
-		"Usage:\t -f frequency_to_tune_to [Hz]\n"
+		"Use:\trtl_fm -f freq [-options] filename\n"
+                "\t-f frequency_to_tune_to [Hz]\n"
 		"\t (use multiple -f for scanning)\n"
 		"\t[-s samplerate (default: 24000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
@@ -108,12 +109,14 @@ void usage(void)
 		"\t[-l squelch_level (default: 150)]\n"
 		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
-		"Experimental quality/cpu options:\n"
+		"Experimental options:\n"
+		"\t[-t terminate_hits (default: 0/off)]\n"
+		"\t (requires squelch on and scanning off)\n"
 		"\t[-o oversampling (default: 1) !!BROKEN!!]\n"
 		"\t[-F enables high quality FIR (default: off/square)]\n"
 		"\t[-A enables high speed arctan (default: off)]\n\n"
 		"Produces signed 16 bit ints, use Sox to hear them.\n"
-		"\trtl_fm ... | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
+		"\trtl_fm ... - | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
 	exit(1);
 }
 
@@ -338,11 +341,13 @@ int post_squelch(struct fm_state *fm)
 		fm->squelch_hits = 0;
 		return 1;
 	}
+	fm->squelch_hits++;
+	if (fm->term_squelch_hits) {
+		return 0;}
 	/* weak signal, kill it entirely */
 	for (i=0; i<len; i++) {
 		fm->signal2[i/2] = 0;
 	}
-	fm->squelch_hits++;
 	return 0;
 }
 
@@ -427,6 +432,11 @@ static void *demod_thread_fn(void *arg)
 	while (!do_exit) {
 		sem_wait(&data_ready);
 		full_demod(fm2->buf, fm2->buf_len, fm2);
+		if (!fm2->term_squelch_hits) {
+			continue;}
+		if (fm2->squelch_hits > fm2->term_squelch_hits) {
+			do_exit = 1;
+			rtlsdr_cancel_async(dev);}
 	}
 	return 0;
 }
@@ -448,6 +458,7 @@ int main(int argc, char **argv)
 	fm.freqs[0] = 100000000;
 	fm.sample_rate = DEFAULT_SAMPLE_RATE;
 	fm.squelch_level = 150;
+	fm.term_squelch_hits = 0;
 	fm.freq_len = 0;
 	fm.edge = 0;
 	fm.fir_enable = 0;
@@ -456,7 +467,7 @@ int main(int argc, char **argv)
 	fm.custom_atan = 0;
 	sem_init(&data_ready, 0, 0);
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:EFA")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:t:EFA")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -476,6 +487,9 @@ int main(int argc, char **argv)
 			break;
 		case 'o':
 			fm.post_downsample = (int)atof(optarg);
+			break;
+		case 't':
+			fm.term_squelch_hits = (int)atof(optarg);
 			break;
 		case 'E':
 			fm.edge = 1;
@@ -553,35 +567,35 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Tuner gain set to %0.2f dB.\n", gain/10.0);
 	}
 
-	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
+	if (strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		fm.file = stdout;
 	} else {
 		fm.file = fopen(filename, "wb");
 		if (!fm.file) {
 			fprintf(stderr, "Failed to open %s\n", filename);
-			goto out;
+			exit(1);
 		}
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
 	r = rtlsdr_reset_buffer(dev);
-	if (r < 0)
-		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+	if (r < 0) {
+		fprintf(stderr, "WARNING: Failed to reset buffers.\n");}
 
 	pthread_create(&demod_thread, NULL, demod_thread_fn, (void *)(&fm));
 	rtlsdr_read_async(dev, rtlsdr_callback, (void *)(&fm),
 			      DEFAULT_ASYNC_BUF_NUMBER, DEFAULT_BUF_LENGTH);
 
-	if (do_exit)
-		fprintf(stderr, "\nUser cancel, exiting...\n");
-	else
-		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
+	if (do_exit) {
+		fprintf(stderr, "\nUser cancel, exiting...\n");}
+	else {
+		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);}
+	rtlsdr_cancel_async(dev);
 
 	if (fm.file != stdout)
 		fclose(fm.file);
 
 	rtlsdr_close(dev);
 	free (buffer);
-out:
 	return r >= 0 ? r : -r;
 }
