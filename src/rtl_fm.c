@@ -59,7 +59,8 @@
 #define DEFAULT_BUF_LENGTH		(1 * 16384)
 #define MINIMAL_BUF_LENGTH		512
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
-#define CONSEQ_SQUELCH                  4
+#define CONSEQ_SQUELCH			4
+#define AUTO_GAIN			-100
 
 static pthread_t demod_thread;
 static sem_t data_ready;
@@ -103,7 +104,7 @@ void usage(void)
 		"\t (use multiple -f for scanning)\n"
 		"\t[-s samplerate (default: 24000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-g tuner_gain (default: -1dB)]\n"
+		"\t[-g tuner_gain (default: automatic)]\n"
 		"\t[-l squelch_level (default: 150)]\n"
 		"\t[-E freq sets lower edge (default: center)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
@@ -311,8 +312,8 @@ int mad(int *samples, int len, int step)
 /* mean average deviation */
 {
 	int i=0, sum=0, ave=0;
-        if (len == 0)
-            {return 0;}
+	if (len == 0)
+		{return 0;}
 	for (i=0; i<len; i+=step) {
 		sum += samples[i];
 	}
@@ -369,7 +370,7 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");}
 	else {
 		fprintf(stderr, "Tuned to %u Hz.\n", capture_freq);}
-    
+
 	/* Set the sample rate */
 	fprintf(stderr, "Sampling at %u Hz.\n", capture_rate);
 	r = rtlsdr_set_sample_rate(dev, (uint32_t)capture_rate);
@@ -439,7 +440,7 @@ int main(int argc, char **argv)
 	char *filename = NULL;
 	int n_read;
 	int r, opt;
-	int i, gain = -10; // tenths of a dB
+	int i, gain = AUTO_GAIN; // tenths of a dB
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
 	int device_count;
@@ -538,11 +539,19 @@ int main(int argc, char **argv)
 	build_fir(&fm);
 
 	/* Set the tuner gain */
-	r = rtlsdr_set_tuner_gain(dev, gain);
-	if (r < 0)
+	if (gain == AUTO_GAIN) {
+		r = rtlsdr_set_tuner_gain_mode(dev, 0);
+	} else {
+		r = rtlsdr_set_tuner_gain_mode(dev, 1);
+		r = rtlsdr_set_tuner_gain(dev, gain);
+	}
+	if (r != 0) {
 		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-	else
+	} else if (gain == AUTO_GAIN) {
+		fprintf(stderr, "Tuner gain set to automatic.\n");
+	} else {
 		fprintf(stderr, "Tuner gain set to %0.2f dB.\n", gain/10.0);
+	}
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		fm.file = stdout;
