@@ -187,10 +187,10 @@ void build_fir(struct fm_state *fm)
 {
 	int i, len;
 	len = fm->downsample;
-	for(i = 0; i < len; i++) {
+	for(i = 0; i < (len/2); i++) {
 		fm->fir[i] = i;
 	}
-	for(i = len-1; i <= 0; i--) {
+	for(i = len-1; i >= (len/2); i--) {
 		fm->fir[i] = len - i;
 	}
 	fm->fir_sum = 0;
@@ -311,6 +311,8 @@ int mad(int *samples, int len, int step)
 /* mean average deviation */
 {
 	int i=0, sum=0, ave=0;
+        if (len == 0)
+            {return 0;}
 	for (i=0; i<len; i+=step) {
 		sum += samples[i];
 	}
@@ -319,7 +321,7 @@ int mad(int *samples, int len, int step)
 	for (i=0; i<len; i+=step) {
 		sum += abs(samples[i] - ave);
 	}
-	return sum / (len * step);
+	return sum / (len / step);
 }
 
 int post_squelch(struct fm_state *fm)
