@@ -86,7 +86,7 @@ struct fm_state
 	int      signal_len;
 	FILE     *file;
 	int      edge;
-	uint32_t freqs[32];
+	uint32_t freqs[100];
 	int      freq_len;
 	int      freq_now;
 	uint32_t sample_rate;
@@ -236,8 +236,9 @@ int low_pass_simple(int16_t *signal2, int len, int step)
 		for(i2=0; i2<step; i2++) {
 			sum += (int)signal2[i + i2];
 		}
-		signal2[i] = (int16_t)(sum / step);
+		signal2[i/step] = (int16_t)(sum / step);
 	}
+	signal2[i/step + 1] = signal2[i/step];
 	return len / step;
 }
 
@@ -346,7 +347,7 @@ int post_squelch(struct fm_state *fm)
 		return 0;}
 	/* weak signal, kill it entirely */
 	for (i=0; i<len; i++) {
-		fm->signal2[i/2] = 0;
+		fm->signal2[i] = 0;
 	}
 	return 0;
 }
@@ -396,7 +397,7 @@ void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm)
 	fm_demod(fm);
 	sr = post_squelch(fm);
 	if (fm->post_downsample > 1) {
-		fm->signal_len = low_pass_simple(fm->signal2, fm->signal_len, fm->post_downsample);}
+		fm->signal_len = low_pass_simple(fm->signal2, fm->signal_len/2, fm->post_downsample)*2;}
 	/* ignore under runs for now */
 	fwrite(fm->signal2, 2, fm->signal_len/2, fm->file);
 	if (fm->freq_len > 1 && !sr && fm->squelch_hits > CONSEQ_SQUELCH) {
@@ -463,7 +464,7 @@ int main(int argc, char **argv)
 	fm.edge = 0;
 	fm.fir_enable = 0;
 	fm.prev_index = -1;
-	fm.post_downsample = 1;
+	fm.post_downsample = 1;  // once this works, default = 4
 	fm.custom_atan = 0;
 	sem_init(&data_ready, 0, 0);
 
@@ -505,7 +506,7 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	/* double sample_rate to limit to Δθ to ±π */
+	/* quadruple sample_rate to limit to Δθ to ±π/2 */
 	fm.sample_rate *= fm.post_downsample;
 
 	if (argc <= optind) {
