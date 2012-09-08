@@ -39,11 +39,15 @@
 #define LIBUSB_CALL
 #endif
 
+/* two raised to the power of n */
+#define TWO_POW(n)		((double)(1ULL<<(n)))
+
 #include "rtl-sdr.h"
 #include "tuner_e4k.h"
 #include "tuner_fc0012.h"
 #include "tuner_fc0013.h"
 #include "tuner_fc2580.h"
+#include "tuner_r820t.h"
 
 typedef struct rtlsdr_tuner_iface {
 	/* tuner interface */
@@ -160,6 +164,17 @@ int fc2580_set_bw(void *dev, int bw) { return fc2580_SetBandwidthMode(dev, 1); }
 int fc2580_set_gain(void *dev, int gain) { return 0; }
 int fc2580_set_gain_mode(void *dev, int manual) { return 0; }
 
+int r820t_init(void *dev) {
+	int r = R828_Init(dev);
+	r820t_SetStandardMode(dev, DVB_T_6M);
+	return r;
+}
+int r820t_exit(void *dev) { return 0; }
+int r820t_set_freq(void *dev, uint32_t freq) { return r820t_SetRfFreqHz(dev, freq); }
+int r820t_set_bw(void *dev, int bw) { return 0; }
+int r820t_set_gain(void *dev, int gain) { return 0; }
+int r820t_set_gain_mode(void *dev, int manual) { return 0; }
+
 /* definition order must match enum rtlsdr_tuner */
 static rtlsdr_tuner_iface_t tuners[] = {
 	{
@@ -184,6 +199,11 @@ static rtlsdr_tuner_iface_t tuners[] = {
 		fc2580_init, fc2580_exit,
 		_fc2580_set_freq, fc2580_set_bw, fc2580_set_gain, NULL,
 		fc2580_set_gain_mode
+	},
+	{
+		r820t_init, r820t_exit,
+		r820t_set_freq, r820t_set_bw, r820t_set_gain, NULL,
+		r820t_set_gain_mode
 	},
 };
 
@@ -540,6 +560,24 @@ int rtlsdr_deinit_baseband(rtlsdr_dev_t *dev)
 	return r;
 }
 
+int rtlsdr_set_if_freq(rtlsdr_dev_t *dev, uint32_t freq)
+{
+	int32_t if_freq;
+	uint8_t tmp;
+	int r;
+
+	if_freq = ((freq * TWO_POW(22)) / dev->rtl_xtal) * (-1);
+
+	tmp = (if_freq >> 16) & 0x3f;
+	r = rtlsdr_demod_write_reg(dev, 1, 0x19, tmp, 1);
+	tmp = (if_freq >> 8) & 0xff;
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x1a, tmp, 1);
+	tmp = if_freq & 0xff;
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x1b, tmp, 1);
+
+	return r;
+}
+
 int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_freq)
 {
 	int r = 0;
@@ -712,6 +750,7 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 	const int fc0012_gains[] = { -99, -40, 71, 179, 192 };
 	const int fc0013_gains[] = { -63, 71, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
+	const int r820t_gains[] = { 0 /* no gain values */ };
 
 	int *ptr = NULL;
 	int len = 0;
@@ -731,6 +770,9 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 		break;
 	case RTLSDR_TUNER_FC2580:
 		ptr = (int *)fc2580_gains; len = sizeof(fc2580_gains);
+		break;
+	case RTLSDR_TUNER_R820T:
+		ptr = (int *)r820t_gains; len = sizeof(r820t_gains);
 		break;
 	default:
 		fprintf(stderr, "Invalid tuner type %d\n", dev->tuner_type);
@@ -807,9 +849,6 @@ int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int mode)
 
 	return r;
 }
-
-/* two raised to the power of n */
-#define TWO_POW(n)		((double)(1ULL<<(n)))
 
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 {
@@ -1085,6 +1124,24 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 		fprintf(stderr, "Found Fitipower FC0013 tuner\n");
 		rtlsdr_set_gpio_output(dev, 6);
 		dev->tuner_type = RTLSDR_TUNER_FC0013;
+		goto found;
+	}
+
+	reg = rtlsdr_i2c_read_reg(dev, R820T_I2C_ADDR, R820T_CHECK_ADDR);
+	if (reg == R820T_CHECK_VAL) {
+		fprintf(stderr, "Found Rafael Micro R820T tuner\n");
+		dev->tuner_type = RTLSDR_TUNER_R820T;
+
+		/* disable Zero-IF mode */
+		rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1a, 1);
+
+		/* the R820T uses 3.57 MHz IF for the DVB-T 6 MHz mode, and
+		 * 4.57 MHz for the 8 MHz mode */
+		rtlsdr_set_if_freq(dev, 3570000);
+
+		/* enable spectrum inversion */
+		rtlsdr_demod_write_reg(dev, 1, 0x15, 0x01, 1);
+
 		goto found;
 	}
 
