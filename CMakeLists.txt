@@ -90,7 +90,7 @@ add_custom_target(uninstall
 ########################################################################
 # Install udev rules
 ########################################################################
-option(INSTALL_UDEV_RULES "Install udev rules for RTL-SDR" ON)
+option(INSTALL_UDEV_RULES "Install udev rules for RTL-SDR" OFF)
 if (INSTALL_UDEV_RULES)
     install (
         FILES rtl-sdr.rules

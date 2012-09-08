@@ -7,16 +7,19 @@ SUBDIRS = include src
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = librtlsdr.pc
 
-udevrulesdir=/etc/udev/rules.d
-udevrules_DATA = rtl-sdr.rules
-
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 
-EXTRA_DIST = git-version-gen $(udevrules_DATA)
+install-udev-rules:
+	$(INSTALL_DATA) rtl-sdr.rules /etc/udev/rules.d
+
+uninstall-udev-rules:
+	rm -rf /etc/udev/rules.d/rtl-sdr.rules
+
+EXTRA_DIST = git-version-gen
 
 if HAVE_DOXYGEN
 
