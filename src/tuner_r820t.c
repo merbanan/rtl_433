@@ -981,11 +981,11 @@ R828_ErrCode R828_Init(void *pTuner)
 
 	if(R828_IMR_done_flag==FALSE)
 	{
-
+#if 0
 	  //write initial reg
 	  if(R828_InitReg(pTuner) != RT_Success)        
 		  return RT_Fail;
-
+#endif
 	  //Do Xtal check
 	  if((Rafael_Chip==R820T) || (Rafael_Chip==R828S) || (Rafael_Chip==R820C))
 	  {
@@ -1022,7 +1022,7 @@ R828_ErrCode R828_Init(void *pTuner)
 		  R828_Fil_Cal_flag[i] = FALSE;
 		  R828_Fil_Cal_code[i] = 0;
 	  }
-
+#if 0
 	  //start imr cal.
 	  if(R828_InitReg(pTuner) != RT_Success)        //write initial reg before doing cal
 	      return RT_Fail;
@@ -1046,6 +1046,7 @@ R828_ErrCode R828_Init(void *pTuner)
 		return RT_Fail;
 
 	  R828_IMR_done_flag = TRUE;
+#endif
 	}
 
 	//write initial reg
