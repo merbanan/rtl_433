@@ -1259,8 +1259,13 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 		return -1;
 
 	/* block until all async operations have been completed (if any) */
-	while (RTLSDR_INACTIVE != dev->async_status)
-		usleep(10);
+	while (RTLSDR_INACTIVE != dev->async_status) {
+#ifdef _WIN32
+		Sleep(1);
+#else
+		usleep(1000);
+#endif
+	}
 
 	rtlsdr_deinit_baseband(dev);
 
