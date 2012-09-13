@@ -229,6 +229,18 @@ RTLSDR_API int rtlsdr_set_testmode(rtlsdr_dev_t *dev, int on);
  */
 RTLSDR_API int rtlsdr_set_agc_mode(rtlsdr_dev_t *dev, int on);
 
+/*!
+ * Enable or disable the direct sampling mode. When enabled, the IF mode
+ * of the RTL2832 is activated, and rtlsdr_set_center_freq() will control
+ * the IF-frequency of the DDC, which can be used to tune from 0 to 28.8 MHz
+ * (xtal frequency of the RTL2832).
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param direct sampling mode, 1 means enabled, 0 disabled
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on);
+
 /* streaming functions */
 
 RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);

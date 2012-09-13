@@ -79,6 +79,7 @@ struct rtlsdr_dev {
 	/* rtl demod context */
 	uint32_t rate; /* Hz */
 	uint32_t rtl_xtal; /* Hz */
+	int direct_sampling;
 	/* tuner context */
 	enum rtlsdr_tuner tuner_type;
 	rtlsdr_tuner_iface_t *tuner;
@@ -562,11 +563,19 @@ int rtlsdr_deinit_baseband(rtlsdr_dev_t *dev)
 
 int rtlsdr_set_if_freq(rtlsdr_dev_t *dev, uint32_t freq)
 {
+	uint32_t rtl_xtal;
 	int32_t if_freq;
 	uint8_t tmp;
 	int r;
 
-	if_freq = ((freq * TWO_POW(22)) / dev->rtl_xtal) * (-1);
+	if (!dev)
+		return -1;
+
+	/* read corrected clock value */
+	if (rtlsdr_get_xtal_freq(dev, &rtl_xtal, NULL))
+		return -2;
+
+	if_freq = ((freq * TWO_POW(22)) / rtl_xtal) * (-1);
 
 	tmp = (if_freq >> 16) & 0x3f;
 	r = rtlsdr_demod_write_reg(dev, 1, 0x19, tmp, 1);
@@ -679,16 +688,18 @@ int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
 	if (!dev || !dev->tuner)
 		return -1;
 
-	if (dev->tuner->set_freq) {
+	if (dev->direct_sampling) {
+		r = rtlsdr_set_if_freq(dev, freq);
+	} else if (dev->tuner && dev->tuner->set_freq) {
 		rtlsdr_set_i2c_repeater(dev, 1);
 		r = dev->tuner->set_freq(dev, freq);
 		rtlsdr_set_i2c_repeater(dev, 0);
-
-		if (!r)
-			dev->freq = freq;
-		else
-			dev->freq = 0;
 	}
+
+	if (!r)
+		dev->freq = freq;
+	else
+		dev->freq = 0;
 
 	return r;
 }
@@ -751,6 +762,7 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 	const int fc0013_gains[] = { -63, 71, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
 	const int r820t_gains[] = { 0 /* no gain values */ };
+	const int unknown_gains[] = { 0 /* no gain values */ };
 
 	int *ptr = NULL;
 	int len = 0;
@@ -775,7 +787,7 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 		ptr = (int *)r820t_gains; len = sizeof(r820t_gains);
 		break;
 	default:
-		fprintf(stderr, "Invalid tuner type %d\n", dev->tuner_type);
+		ptr = (int *)unknown_gains; len = sizeof(unknown_gains);
 		break;
 	}
 
@@ -921,6 +933,52 @@ int rtlsdr_set_agc_mode(rtlsdr_dev_t *dev, int on)
 		return -1;
 
 	return rtlsdr_demod_write_reg(dev, 0, 0x19, on ? 0x25 : 0x05, 1);
+}
+
+int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
+{
+	int r = 0;
+
+	if (!dev)
+		return -1;
+
+	if (on) {
+		if (dev->tuner && dev->tuner->exit) {
+			rtlsdr_set_i2c_repeater(dev, 1);
+			r = dev->tuner->exit(dev);
+			rtlsdr_set_i2c_repeater(dev, 0);
+		}
+
+		/* disable Zero-IF mode */
+		r |= rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1a, 1);
+
+		/* disable spectrum inversion */
+		r |= rtlsdr_demod_write_reg(dev, 1, 0x15, 0x00, 1);
+
+		fprintf(stderr, "Enabled direct sampling mode\n");
+		dev->direct_sampling = 1;
+	} else {
+		if (dev->tuner && dev->tuner->init) {
+			rtlsdr_set_i2c_repeater(dev, 1);
+			r |= dev->tuner->init(dev);
+			rtlsdr_set_i2c_repeater(dev, 0);
+		}
+
+		if (dev->tuner_type == RTLSDR_TUNER_R820T) {
+			r |= rtlsdr_set_if_freq(dev, R820T_IF_FREQ);
+
+			/* enable spectrum inversion */
+			r |= rtlsdr_demod_write_reg(dev, 1, 0x15, 0x01, 1);
+		} else {
+			/* Enable Zero-IF mode */
+			rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1b, 1);
+		}
+
+		fprintf(stderr, "Disabled direct sampling mode\n");
+		dev->direct_sampling = 0;
+	}
+
+	return r;
 }
 
 static rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
@@ -1137,7 +1195,7 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 
 		/* the R820T uses 3.57 MHz IF for the DVB-T 6 MHz mode, and
 		 * 4.57 MHz for the 8 MHz mode */
-		rtlsdr_set_if_freq(dev, 3570000);
+		rtlsdr_set_if_freq(dev, R820T_IF_FREQ);
 
 		/* enable spectrum inversion */
 		rtlsdr_demod_write_reg(dev, 1, 0x15, 0x01, 1);
@@ -1169,8 +1227,8 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 
 found:
 	if (dev->tuner_type == RTLSDR_TUNER_UNKNOWN) {
-		r = -1;
-		goto err;
+		fprintf(stderr, "No supported tuner found\n");
+		rtlsdr_set_direct_sampling(dev, 1);
 	}
 
 	dev->tuner = &tuners[dev->tuner_type];
@@ -1204,7 +1262,7 @@ int rtlsdr_close(rtlsdr_dev_t *dev)
 	while (RTLSDR_INACTIVE != dev->async_status)
 		usleep(10);
 
-	rtlsdr_deinit_baseband(dev);	
+	rtlsdr_deinit_baseband(dev);
 
 	libusb_release_interface(dev->devh, 0);
 	libusb_close(dev->devh);
