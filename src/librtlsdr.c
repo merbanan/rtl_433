@@ -955,6 +955,13 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 		/* disable spectrum inversion */
 		r |= rtlsdr_demod_write_reg(dev, 1, 0x15, 0x00, 1);
 
+		/* only enable In-phase ADC input */
+		r |= rtlsdr_demod_write_reg(dev, 0, 0x08, 0x4d, 1);
+
+		/* swap I and Q ADC, this allows to select between two inputs */
+		if (on > 1)
+			r |= rtlsdr_demod_write_reg(dev, 0, 0x06, 0x90, 1);
+
 		fprintf(stderr, "Enabled direct sampling mode\n");
 		dev->direct_sampling = 1;
 	} else {
@@ -970,9 +977,15 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 			/* enable spectrum inversion */
 			r |= rtlsdr_demod_write_reg(dev, 1, 0x15, 0x01, 1);
 		} else {
+			/* enable In-phase + Quadrature ADC input */
+			r |= rtlsdr_demod_write_reg(dev, 0, 0x08, 0xcd, 1);
+
 			/* Enable Zero-IF mode */
-			rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1b, 1);
+			r |= rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1b, 1);
 		}
+
+		/* opt_adc_iq = 0, default ADC_I/ADC_Q datapath */
+		r |= rtlsdr_demod_write_reg(dev, 0, 0x06, 0x80, 1);
 
 		fprintf(stderr, "Disabled direct sampling mode\n");
 		dev->direct_sampling = 0;
@@ -1192,6 +1205,9 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 
 		/* disable Zero-IF mode */
 		rtlsdr_demod_write_reg(dev, 1, 0xb1, 0x1a, 1);
+
+		/* only enable In-phase ADC input */
+		rtlsdr_demod_write_reg(dev, 0, 0x08, 0x4d, 1);
 
 		/* the R820T uses 3.57 MHz IF for the DVB-T 6 MHz mode, and
 		 * 4.57 MHz for the 8 MHz mode */

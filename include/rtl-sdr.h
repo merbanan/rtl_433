@@ -236,7 +236,7 @@ RTLSDR_API int rtlsdr_set_agc_mode(rtlsdr_dev_t *dev, int on);
  * (xtal frequency of the RTL2832).
  *
  * \param dev the device handle given by rtlsdr_open()
- * \param direct sampling mode, 1 means enabled, 0 disabled
+ * \param on 0 means disabled, 1 I-ADC input enabled, 2 Q-ADC input enabled
  * \return 0 on success
  */
 RTLSDR_API int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on);
