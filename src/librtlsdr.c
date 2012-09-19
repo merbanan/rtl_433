@@ -151,8 +151,7 @@ int fc0013_set_freq(void *dev, uint32_t freq) {
 	return fc0013_set_params(dev, freq, 6000000);
 }
 int fc0013_set_bw(void *dev, int bw) { return 0; }
-int _fc0013_set_gain(void *dev, int gain) { return fc0013_set_gain(dev, gain); }
-int fc0013_set_gain_mode(void *dev, int manual) { return 0; }
+int _fc0013_set_gain(void *dev, int gain) { return fc0013_set_lna_gain(dev, gain); }
 
 int fc2580_init(void *dev) { return fc2580_Initialize(dev); }
 int fc2580_exit(void *dev) { return 0; }
@@ -757,7 +756,9 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 	const int e4k_gains[] = { -10, 15, 40, 65, 90, 115, 140, 165, 190, 215,
 				  240, 290, 340, 420 };
 	const int fc0012_gains[] = { -99, -40, 71, 179, 192 };
-	const int fc0013_gains[] = { -63, 71, 191, 197 };
+	const int fc0013_gains[] = { -99, -73, -65, -63, -60, -58, -54, 58, 61,
+				       63, 65, 67, 68, 70, 71, 179, 181, 182,
+				       184, 186, 188, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
 	const int r820t_gains[] = { 0 /* no gain values */ };
 	const int unknown_gains[] = { 0 /* no gain values */ };

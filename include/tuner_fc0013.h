@@ -31,6 +31,7 @@
 
 int fc0013_init(void *dev);
 int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth);
-int fc0013_set_gain(void *dev, int gain);
+int fc0013_set_gain_mode(void *dev, int manual);
+int fc0013_set_lna_gain(void *dev, int gain);
 
 #endif

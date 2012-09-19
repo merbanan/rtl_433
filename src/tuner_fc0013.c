@@ -432,52 +432,75 @@ exit:
 	return ret;
 }
 
-int fc0013_set_gain(void *dev, int gain)
+int fc0013_set_gain_mode(void *dev, int manual)
 {
-	int ret, gainshift = 0, en_in_chg = 0;
+	int ret = 0;
 	uint8_t tmp = 0;
 
-	ret = fc0013_readreg(dev, 0x14, &tmp);
+	ret |= fc0013_readreg(dev, 0x0d, &tmp);
+
+	if (manual)
+		tmp |= (1 << 3);
+	else
+		tmp &= ~(1 << 3);
+
+	ret |= fc0013_writereg(dev, 0x0d, tmp);
+
+	/* set a fixed IF-gain for now */
+	ret |= fc0013_writereg(dev, 0x13, 0x0a);
+
+	return ret;
+}
+
+int fc0013_lna_gains[] ={
+	-99,	0x02,
+	-73,	0x03,
+	-65,	0x05,
+	-63,	0x04,
+	-63,	0x00,
+	-60,	0x07,
+	-58,	0x01,
+	-54,	0x06,
+	58,	0x0f,
+	61,	0x0e,
+	63,	0x0d,
+	65,	0x0c,
+	67,	0x0b,
+	68,	0x0a,
+	70,	0x09,
+	71,	0x08,
+	179,	0x17,
+	181,	0x16,
+	182,	0x15,
+	184,	0x14,
+	186,	0x13,
+	188,	0x12,
+	191,	0x11,
+	197,	0x10
+};
+
+#define GAIN_CNT	(sizeof(fc0013_lna_gains) / sizeof(int) / 2)
+
+int fc0013_set_lna_gain(void *dev, int gain)
+{
+	int ret = 0;
+	unsigned int i;
+	uint8_t tmp = 0;
+
+	ret |= fc0013_readreg(dev, 0x14, &tmp);
 
 	/* mask bits off */
 	tmp &= 0xe0;
 
-	switch (gain) {
-	case -63:		/* -6.3 dB */
-		break;
-	case 71:
-		tmp |= 0x08;	/* 7.1 dB */
-		break;
-	case 191:
-		gainshift = 1;
-		tmp |= 0x11;	/* 19.1 dB */
-		break;
-	case 197:
-	default:
-		en_in_chg = 1;
-		gainshift = 1;
-		tmp |= 0x10;	/* 19.7 dB */
-		break;
+	for (i = 0; i < GAIN_CNT; i++) {
+		if ((fc0013_lna_gains[i*2] >= gain) || (i+1 == GAIN_CNT)) {
+			tmp |= fc0013_lna_gains[i*2 + 1];
+			break;
+		}
 	}
 
 	/* set gain */
-	ret = fc0013_writereg(dev, 0x14, tmp);
-
-	/* set en_in_chg */
-	ret = fc0013_readreg(dev, 0x0a, &tmp);
-
-	if (en_in_chg)
-		tmp |= 0x20;
-	else
-		tmp &= ~0x20;
-
-	ret = fc0013_writereg(dev, 0x0a, tmp);
-
-	/* set gain shift */
-	ret = fc0013_readreg(dev, 0x07, &tmp);
-	tmp &= 0xf0;
-	tmp |= gainshift ? 0x0a : 0x07;
-	ret = fc0013_writereg(dev, 0x07, tmp);
+	ret |= fc0013_writereg(dev, 0x14, tmp);
 
 	return ret;
 }
