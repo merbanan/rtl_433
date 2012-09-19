@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "rtlsdr_i2c.h"
 #include "tuner_fc0013.h"
@@ -320,11 +321,22 @@ int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth)
 		am = (uint8_t)(xdiv - (8 * pm));
 
 		if (am < 2) {
-			reg[1] = am + 8;
-			reg[2] = pm - 1;
+			am += 8;
+			pm--;
+		}
+
+		if (pm > 31) {
+			reg[1] = am + (8 * (pm - 31));
+			reg[2] = 31;
 		} else {
 			reg[1] = am;
 			reg[2] = pm;
+		}
+
+		if (reg[1] > 15) {
+			fprintf(stderr, "[FC0013] no valid PLL combination "
+					"found for %u Hz!\n", freq);
+			return -1;
 		}
 	} else {
 		/* fix for frequency less than 45 MHz */
