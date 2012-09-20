@@ -976,6 +976,8 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 			/* enable spectrum inversion */
 			r |= rtlsdr_demod_write_reg(dev, 1, 0x15, 0x01, 1);
 		} else {
+			r |= rtlsdr_set_if_freq(dev, 0);
+
 			/* enable In-phase + Quadrature ADC input */
 			r |= rtlsdr_demod_write_reg(dev, 0, 0x08, 0xcd, 1);
 
