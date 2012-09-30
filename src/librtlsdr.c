@@ -584,6 +584,20 @@ int rtlsdr_set_if_freq(rtlsdr_dev_t *dev, uint32_t freq)
 	return r;
 }
 
+int rtlsdr_set_sample_freq_correction(rtlsdr_dev_t *dev, int ppm)
+{
+	int r = 0;
+	uint8_t tmp;
+	int16_t offs = ppm * (-1) * TWO_POW(24) / 1000000;
+
+	tmp = offs & 0xff;
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x3f, tmp, 1);
+	tmp = (offs >> 8) & 0x3f;
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x3e, tmp, 1);
+
+	return r;
+}
+
 int rtlsdr_set_xtal_freq(rtlsdr_dev_t *dev, uint32_t rtl_freq, uint32_t tuner_freq)
 {
 	int r = 0;
@@ -721,13 +735,12 @@ int rtlsdr_set_freq_correction(rtlsdr_dev_t *dev, int ppm)
 
 	dev->corr = ppm;
 
+	r |= rtlsdr_set_sample_freq_correction(dev, ppm);
+
 	/* read corrected clock value into e4k structure */
 	if (rtlsdr_get_xtal_freq(dev, NULL, &dev->e4k_s.vco.fosc))
 		return -3;
-#if 0
-	if (dev->rate) /* reset sample rate to apply new correction value */
-		r |= rtlsdr_set_sample_rate(dev, dev->rate);
-#endif
+
 	if (dev->freq) /* retune to apply new correction value */
 		r |= rtlsdr_set_center_freq(dev, dev->freq);
 
@@ -863,6 +876,7 @@ int rtlsdr_set_tuner_gain_mode(rtlsdr_dev_t *dev, int mode)
 
 int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 {
+	int r = 0;
 	uint16_t tmp;
 	uint32_t rsamp_ratio;
 	double real_rate;
@@ -874,14 +888,7 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	/* check for the maximum rate the resampler supports */
 	if (samp_rate > MAX_SAMP_RATE)
 		samp_rate = MAX_SAMP_RATE;
-#if 0
-	/* read corrected clock value */
-	if (rtlsdr_get_xtal_freq(dev, &rtl_freq, NULL))
-		return -2;
 
-	if (samp_rate == MAX_SAMP_RATE && rtl_freq != DEF_RTL_XTAL_FREQ)
-		rtl_freq = DEF_RTL_XTAL_FREQ;
-#endif
 	rsamp_ratio = (rtl_freq * TWO_POW(22)) / samp_rate;
 	rsamp_ratio &= ~3;
 
@@ -899,15 +906,17 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	dev->rate = (uint32_t)real_rate;
 
 	tmp = (rsamp_ratio >> 16);
-	rtlsdr_demod_write_reg(dev, 1, 0x9f, tmp, 2);
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x9f, tmp, 2);
 	tmp = rsamp_ratio & 0xffff;
-	rtlsdr_demod_write_reg(dev, 1, 0xa1, tmp, 2);
+	r |= rtlsdr_demod_write_reg(dev, 1, 0xa1, tmp, 2);
+
+	r |= rtlsdr_set_sample_freq_correction(dev, dev->corr);
 
 	/* reset demod (bit 3, soft_rst) */
-	rtlsdr_demod_write_reg(dev, 1, 0x01, 0x14, 1);
-	rtlsdr_demod_write_reg(dev, 1, 0x01, 0x10, 1);
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x01, 0x14, 1);
+	r |= rtlsdr_demod_write_reg(dev, 1, 0x01, 0x10, 1);
 
-	return 0;
+	return r;
 }
 
 uint32_t rtlsdr_get_sample_rate(rtlsdr_dev_t *dev)
