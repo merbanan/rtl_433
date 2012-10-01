@@ -521,9 +521,13 @@ void rtlsdr_init_baseband(rtlsdr_dev_t *dev)
 
 	/* init FSM state-holding register */
 	rtlsdr_demod_write_reg(dev, 1, 0x93, 0xf0, 1);
+	rtlsdr_demod_write_reg(dev, 1, 0x94, 0x0f, 1);
 
 	/* disable AGC (en_dagc, bit 0) (this seems to have no effect) */
 	rtlsdr_demod_write_reg(dev, 1, 0x11, 0x00, 1);
+
+	/* disable RF and IF AGC loop */
+	rtlsdr_demod_write_reg(dev, 1, 0x04, 0x00, 1);
 
 	/* disable PID filter (enable_PID = 0) */
 	rtlsdr_demod_write_reg(dev, 0, 0x61, 0x60, 1);
