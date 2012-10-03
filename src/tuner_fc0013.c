@@ -311,37 +311,31 @@ int fc0013_set_params(void *dev, uint32_t freq, uint32_t bandwidth)
 		vco_select = 1;
 	}
 
-	if (freq >= 45000000) {
-		/* From divided value (XDIV) determined the FA and FP value */
-		xdiv = (uint16_t)(f_vco / xtal_freq_div_2);
-		if ((f_vco - xdiv * xtal_freq_div_2) >= (xtal_freq_div_2 / 2))
-			xdiv++;
+	/* From divided value (XDIV) determined the FA and FP value */
+	xdiv = (uint16_t)(f_vco / xtal_freq_div_2);
+	if ((f_vco - xdiv * xtal_freq_div_2) >= (xtal_freq_div_2 / 2))
+		xdiv++;
 
-		pm = (uint8_t)(xdiv / 8);
-		am = (uint8_t)(xdiv - (8 * pm));
+	pm = (uint8_t)(xdiv / 8);
+	am = (uint8_t)(xdiv - (8 * pm));
 
-		if (am < 2) {
-			am += 8;
-			pm--;
-		}
+	if (am < 2) {
+		am += 8;
+		pm--;
+	}
 
-		if (pm > 31) {
-			reg[1] = am + (8 * (pm - 31));
-			reg[2] = 31;
-		} else {
-			reg[1] = am;
-			reg[2] = pm;
-		}
-
-		if (reg[1] > 15) {
-			fprintf(stderr, "[FC0013] no valid PLL combination "
-					"found for %u Hz!\n", freq);
-			return -1;
-		}
+	if (pm > 31) {
+		reg[1] = am + (8 * (pm - 31));
+		reg[2] = 31;
 	} else {
-		/* fix for frequency less than 45 MHz */
-		reg[1] = 0x06;
-		reg[2] = 0x11;
+		reg[1] = am;
+		reg[2] = pm;
+	}
+
+	if ((reg[1] > 15) || (reg[2] < 0x0b)) {
+		fprintf(stderr, "[FC0013] no valid PLL combination "
+				"found for %u Hz!\n", freq);
+		return -1;
 	}
 
 	/* fix clock out */
