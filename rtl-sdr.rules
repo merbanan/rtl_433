@@ -48,6 +48,9 @@ SUBSYSTEMS=="usb", ATTRS{idVendor}=="185b", ATTRS{idProduct}=="0650", MODE:="066
 # Compro Videomate U680F (E4000)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="185b", ATTRS{idProduct}=="0680", MODE:="0666"
 
+# Sweex DVB-T USB (FC0012)
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="a803", MODE:="0666"
+
 # GTek T803 (FC0012)
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1f4d", ATTRS{idProduct}=="b803", MODE:="0666"
 

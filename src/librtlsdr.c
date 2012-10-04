@@ -228,6 +228,7 @@ static rtlsdr_dongle_t known_devices[] = {
 	{ 0x185b, 0x0620, "Compro Videomate U620F"},
 	{ 0x185b, 0x0650, "Compro Videomate U650F"},
 	{ 0x185b, 0x0680, "Compro Videomate U680F"},
+	{ 0x1f4d, 0xa803, "Sweex DVB-T USB" },
 	{ 0x1f4d, 0xb803, "GTek T803" },
 	{ 0x1f4d, 0xc803, "Lifeview LV5TDeluxe" },
 	{ 0x1f4d, 0xd286, "MyGica TD312" },
