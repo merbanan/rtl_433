@@ -241,6 +241,16 @@ RTLSDR_API int rtlsdr_set_agc_mode(rtlsdr_dev_t *dev, int on);
  */
 RTLSDR_API int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on);
 
+/*!
+ * Enable or disable offset tuning for zero-IF tuners, which allows to avoid
+ * problems caused by the DC offset of the ADCs and 1/f noise.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param on 0 means disabled, 1 enabled
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_offset_tuning(rtlsdr_dev_t *dev, int on);
+
 /* streaming functions */
 
 RTLSDR_API int rtlsdr_reset_buffer(rtlsdr_dev_t *dev);
