@@ -247,7 +247,9 @@ static void *command_worker(void *arg)
 	fd_set readfds;
 	struct command cmd={0, 0};
 	struct timeval tv= {1, 0};
-	int r =0;
+	int r = 0;
+	uint32_t tmp;
+
 	while(1) {
 		left=sizeof(cmd);
 		while(left >0) {
@@ -293,6 +295,27 @@ static void *command_worker(void *arg)
 		case 0x05:
 			printf("set freq correction %d\n", ntohl(cmd.param));
 			rtlsdr_set_freq_correction(dev, ntohl(cmd.param));
+			break;
+		case 0x06:
+			tmp = ntohl(cmd.param);
+			printf("set if stage %d, gain %d\n", tmp >> 16, tmp & 0xffff);
+			rtlsdr_set_tuner_if_gain(dev, tmp >> 16, tmp & 0xffff);
+			break;
+		case 0x07:
+			printf("set test mode %d\n", ntohl(cmd.param));
+			rtlsdr_set_testmode(dev, ntohl(cmd.param));
+			break;
+		case 0x08:
+			printf("set agc mode %d\n", ntohl(cmd.param));
+			rtlsdr_set_agc_mode(dev, ntohl(cmd.param));
+			break;
+		case 0x09:
+			printf("set direct sampling %d\n", ntohl(cmd.param));
+			rtlsdr_set_direct_sampling(dev, ntohl(cmd.param));
+			break;
+		case 0x0a:
+			printf("set offset tuning %d\n", ntohl(cmd.param));
+			rtlsdr_set_offset_tuning(dev, ntohl(cmd.param));
 			break;
 		default:
 			break;
