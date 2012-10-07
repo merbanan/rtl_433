@@ -1020,6 +1020,14 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 	return r;
 }
 
+int rtlsdr_get_direct_sampling(rtlsdr_dev_t *dev)
+{
+	if (!dev)
+		return -1;
+
+	return dev->direct_sampling;
+}
+
 int rtlsdr_set_offset_tuning(rtlsdr_dev_t *dev, int on)
 {
 	int r = 0;
@@ -1029,6 +1037,9 @@ int rtlsdr_set_offset_tuning(rtlsdr_dev_t *dev, int on)
 
 	if (dev->tuner_type == RTLSDR_TUNER_R820T)
 		return -2;
+
+	if (dev->direct_sampling)
+		return -3;
 
 	/* based on keenerds 1/f noise measurements */
 	dev->offs_freq = on ? ((dev->rate / 2) * 170 / 100) : 0;
@@ -1043,6 +1054,14 @@ int rtlsdr_set_offset_tuning(rtlsdr_dev_t *dev, int on)
 	r |= rtlsdr_set_center_freq(dev, dev->freq);
 
 	return r;
+}
+
+int rtlsdr_get_offset_tuning(rtlsdr_dev_t *dev)
+{
+	if (!dev)
+		return -1;
+
+	return (dev->offs_freq) ? 1 : 0;
 }
 
 static rtlsdr_dongle_t *find_known_device(uint16_t vid, uint16_t pid)
