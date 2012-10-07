@@ -982,11 +982,10 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 		r |= rtlsdr_demod_write_reg(dev, 0, 0x08, 0x4d, 1);
 
 		/* swap I and Q ADC, this allows to select between two inputs */
-		if (on > 1)
-			r |= rtlsdr_demod_write_reg(dev, 0, 0x06, 0x90, 1);
+		r |= rtlsdr_demod_write_reg(dev, 0, 0x06, (on > 1) ? 0x90 : 0x80, 1);
 
-		fprintf(stderr, "Enabled direct sampling mode\n");
-		dev->direct_sampling = 1;
+		fprintf(stderr, "Enabled direct sampling mode, input %i\n", on);
+		dev->direct_sampling = on;
 	} else {
 		if (dev->tuner && dev->tuner->init) {
 			rtlsdr_set_i2c_repeater(dev, 1);
@@ -1015,6 +1014,8 @@ int rtlsdr_set_direct_sampling(rtlsdr_dev_t *dev, int on)
 		fprintf(stderr, "Disabled direct sampling mode\n");
 		dev->direct_sampling = 0;
 	}
+
+	r |= rtlsdr_set_center_freq(dev, dev->freq);
 
 	return r;
 }
