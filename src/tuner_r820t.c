@@ -20,7 +20,8 @@ int r820t_SetRfFreqHz(void *pTuner, unsigned long RfFreqHz)
 		
 //	R828Info.R828_Standard = (R828_Standard_Type)pExtra->StandardMode;
 	R828Info.R828_Standard = (R828_Standard_Type)DVB_T_6M;
-	R828Info.RF_KHz = (UINT32)(RfFreqHz /1000);
+	R828Info.RF_Hz = (UINT32)(RfFreqHz);
+	R828Info.RF_KHz = (UINT32)(RfFreqHz/1000);
 
 	if(R828_SetFrequency(pTuner, R828Info, NORMAL_MODE) != RT_Success)
 		return FUNCTION_ERROR;
@@ -981,11 +982,11 @@ R828_ErrCode R828_Init(void *pTuner)
 
 	if(R828_IMR_done_flag==FALSE)
 	{
-#if 0
+
 	  //write initial reg
-	  if(R828_InitReg(pTuner) != RT_Success)        
-		  return RT_Fail;
-#endif
+//	  if(R828_InitReg(pTuner) != RT_Success)        
+//		  return RT_Fail;
+
 	  //Do Xtal check
 	  if((Rafael_Chip==R820T) || (Rafael_Chip==R828S) || (Rafael_Chip==R820C))
 	  {
@@ -1022,6 +1023,7 @@ R828_ErrCode R828_Init(void *pTuner)
 		  R828_Fil_Cal_flag[i] = FALSE;
 		  R828_Fil_Cal_code[i] = 0;
 	  }
+
 #if 0
 	  //start imr cal.
 	  if(R828_InitReg(pTuner) != RT_Success)        //write initial reg before doing cal
@@ -1266,7 +1268,7 @@ R828_ErrCode R828_IMR(void *pTuner, UINT8 IMR_MEM, int IM_Flag)
 	if(R828_MUX(pTuner, RingFreq - 5300) != RT_Success)				//MUX input freq ~ RF_in Freq
 		return RT_Fail;
 
-	if(R828_PLL(pTuner, (RingFreq - 5300), STD_SIZE) != RT_Success)                //set pll freq = ring freq - 6M
+	if(R828_PLL(pTuner, (RingFreq - 5300) * 1000, STD_SIZE) != RT_Success)                //set pll freq = ring freq - 6M
 	    return RT_Fail;
 
 	if(IM_Flag == TRUE)
@@ -1331,9 +1333,9 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	UINT8  Si;
 	UINT8  DivNum;
 	UINT8  Nint;
-	UINT32 VCO_Min;
-	UINT32 VCO_Max;
-	UINT32 VCO_Freq;
+	UINT32 VCO_Min_kHz;
+	UINT32 VCO_Max_kHz;
+	uint64_t VCO_Freq;
 	UINT32 PLL_Ref;		//Max 24000 (kHz)
 	UINT32 VCO_Fra;		//VCO contribution by SDM (kHz)
 	UINT16 Nsdm;
@@ -1349,8 +1351,8 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	Si       = 0;
 	DivNum   = 0;
 	Nint     = 0;
-	VCO_Min  = 1770000;
-	VCO_Max  = VCO_Min*2;
+	VCO_Min_kHz  = 1770000;
+	VCO_Max_kHz  = VCO_Min_kHz*2;
 	VCO_Freq = 0;
 	PLL_Ref	= 0;		//Max 24000 (kHz)
 	VCO_Fra	= 0;		//VCO contribution by SDM (kHz)
@@ -1361,6 +1363,7 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	//UINT8  Judge    = 0;
 	VCO_fine_tune = 0;
 
+#if 0
 	if ((Rafael_Chip==R620D) || (Rafael_Chip==R828D) || (Rafael_Chip==R828))  //X'tal can't not exceed 20MHz for ATV
 	{
 		if(R828_Standard <= SECAM_L1)	  //ref set refdiv2, reffreq = Xtal/2 on ATV application
@@ -1387,6 +1390,10 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 			PLL_Ref = R828_Xtal;
 		}
 	}
+#endif
+	//FIXME hack
+	R828_Arry[11] &= 0xEF;
+	PLL_Ref = rtlsdr_get_tuner_clock(pTuner);
 
 	R828_I2C.RegAddr = 0x10;
 	R828_I2C.Data = R828_Arry[11];
@@ -1410,14 +1417,14 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	//Divider
 	while(MixDiv <= 64)
 	{
-		if(((LO_Freq * MixDiv) >= VCO_Min) && ((LO_Freq * MixDiv) < VCO_Max))
+		if((((LO_Freq/1000) * MixDiv) >= VCO_Min_kHz) && (((LO_Freq/1000) * MixDiv) < VCO_Max_kHz))
 		{
 			DivBuf = MixDiv;
 			while(DivBuf > 2)
 			{
 				DivBuf = DivBuf >> 1;
 				DivNum ++;
-			}			
+			}
 			break;
 		}
 		MixDiv = MixDiv << 1;
@@ -1442,9 +1449,14 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
 		return RT_Fail;
 
-	VCO_Freq = LO_Freq * MixDiv;
+	VCO_Freq = (uint64_t)(LO_Freq * (uint64_t)MixDiv);
 	Nint     = (UINT8) (VCO_Freq / 2 / PLL_Ref);
-	VCO_Fra  = (UINT16) (VCO_Freq - 2 * PLL_Ref * Nint);
+	VCO_Fra  = (UINT16) ((VCO_Freq - 2 * PLL_Ref * Nint) / 1000);
+
+	//FIXME hack
+	PLL_Ref /= 1000;
+
+//	printf("VCO_Freq = %lu, Nint= %u, VCO_Fra= %lu, LO_Freq= %u, MixDiv= %u\n", VCO_Freq, Nint, VCO_Fra, LO_Freq, MixDiv);
 
 	//boundary spur prevention
 	if (VCO_Fra < PLL_Ref/64)           //2*PLL_Ref/128
@@ -1530,12 +1542,14 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 
 	if( (R828_I2C_Len.Data[2] & 0x40) == 0x00 )
 	{
-		fprintf(stderr, "[R820T] PLL not locked!");
+		fprintf(stderr, "[R820T] PLL not locked for %u Hz!\n", LO_Freq);
 		R828_I2C.RegAddr = 0x12;
 		R828_Arry[13]    = (R828_Arry[13] & 0x1F) | 0x60;  //increase VCO current
 		R828_I2C.Data    = R828_Arry[13];
 		if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
 			return RT_Fail;
+
+		return RT_Fail;
 	}
 
 	//set pll autotune = 8kHz
@@ -2518,7 +2532,7 @@ R828_ErrCode R828_Filt_Cal(void *pTuner, UINT32 Cal_Freq,BW_Type R828_BW)
 		return RT_Fail;
 
 	//Set PLL Freq = Filter Cali Freq
-	if(R828_PLL(pTuner, Cal_Freq, STD_SIZE) != RT_Success)
+	if(R828_PLL(pTuner, Cal_Freq * 1000, STD_SIZE) != RT_Success)
 		return RT_Fail;
 
 	//Start Trigger
@@ -2552,7 +2566,7 @@ R828_ErrCode R828_Filt_Cal(void *pTuner, UINT32 Cal_Freq,BW_Type R828_BW)
 
 R828_ErrCode R828_SetFrequency(void *pTuner, R828_Set_Info R828_INFO, R828_SetFreq_Type R828_SetFreqMode)
 {
-	UINT32	LO_KHz;
+	UINT32	LO_Hz;
 
 #if 0
      // Check Input Frequency Range
@@ -2563,16 +2577,16 @@ R828_ErrCode R828_SetFrequency(void *pTuner, R828_Set_Info R828_INFO, R828_SetFr
 #endif
 
 	 if(R828_INFO.R828_Standard==SECAM_L1)
-		LO_KHz = R828_INFO.RF_KHz - Sys_Info1.IF_KHz;
+		LO_Hz = R828_INFO.RF_Hz - (Sys_Info1.IF_KHz * 1000);
 	 else
-	    LO_KHz = R828_INFO.RF_KHz + Sys_Info1.IF_KHz;
+		LO_Hz = R828_INFO.RF_Hz + (Sys_Info1.IF_KHz * 1000);
 
 	 //Set MUX dependent var. Must do before PLL( ) 
-     if(R828_MUX(pTuner, LO_KHz) != RT_Success)
+     if(R828_MUX(pTuner, LO_Hz/1000) != RT_Success)
         return RT_Fail;
 
      //Set PLL
-     if(R828_PLL(pTuner, LO_KHz, R828_INFO.R828_Standard) != RT_Success)
+     if(R828_PLL(pTuner, LO_Hz, R828_INFO.R828_Standard) != RT_Success)
         return RT_Fail;
 
      R828_IMR_point_num = Freq_Info1.IMR_MEM;

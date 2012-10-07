@@ -130,6 +130,7 @@ typedef enum _R828_GPIO_Type
 
 typedef struct _R828_Set_Info
 {
+	UINT32        RF_Hz;
 	UINT32        RF_KHz;
 	R828_Standard_Type R828_Standard;
 	R828_LoopThrough_Type RT_Input;
