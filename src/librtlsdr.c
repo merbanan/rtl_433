@@ -97,7 +97,7 @@ void rtlsdr_set_gpio_bit(rtlsdr_dev_t *dev, uint8_t gpio, int val);
 int e4000_init(void *dev) {
 	rtlsdr_dev_t* devt = (rtlsdr_dev_t*)dev;
 	devt->e4k_s.i2c_addr = E4K_I2C_ADDR;
-	devt->e4k_s.vco.fosc = devt->tun_xtal; /* no need to correct it here */
+	rtlsdr_get_xtal_freq(devt, NULL, &devt->e4k_s.vco.fosc);
 	devt->e4k_s.rtl_dev = dev;
 	return e4k_init(&devt->e4k_s);
 }
