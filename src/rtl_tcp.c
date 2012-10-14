@@ -317,6 +317,14 @@ static void *command_worker(void *arg)
 			printf("set offset tuning %d\n", ntohl(cmd.param));
 			rtlsdr_set_offset_tuning(dev, ntohl(cmd.param));
 			break;
+		case 0x0b:
+			printf("set rtl xtal %d\n", ntohl(cmd.param));
+			rtlsdr_set_xtal_freq(dev, ntohl(cmd.param), 0);
+			break;
+		case 0x0c:
+			printf("set tuner xtal %d\n", ntohl(cmd.param));
+			rtlsdr_set_xtal_freq(dev, 0, ntohl(cmd.param));
+			break;
 		default:
 			break;
 		}
