@@ -179,7 +179,7 @@ static void *tcp_worker(void *arg)
 
 		pthread_mutex_lock(&ll_mutex);
 		gettimeofday(&tp, NULL);
-		ts.tv_sec  = tp.tv_sec+1;
+		ts.tv_sec  = tp.tv_sec+5;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		r = pthread_cond_timedwait(&cond, &ll_mutex, &ts);
 		if(r == ETIMEDOUT) {
