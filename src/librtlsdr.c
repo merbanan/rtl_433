@@ -180,8 +180,8 @@ int r820t_init(void *dev) {
 int r820t_exit(void *dev) { return 0; }
 int r820t_set_freq(void *dev, uint32_t freq) { return r820t_SetRfFreqHz(dev, freq); }
 int r820t_set_bw(void *dev, int bw) { return 0; }
-int r820t_set_gain(void *dev, int gain) { return 0; }
-int r820t_set_gain_mode(void *dev, int manual) { return 0; }
+int r820t_set_gain(void *dev, int gain) { return R828_SetRfGain(dev, gain); }
+int r820t_set_gain_mode(void *dev, int manual) { return R828_RfGainMode(dev, manual); }
 
 /* definition order must match enum rtlsdr_tuner */
 static rtlsdr_tuner_iface_t tuners[] = {
@@ -788,7 +788,10 @@ int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains)
 				       63, 65, 67, 68, 70, 71, 179, 181, 182,
 				       184, 186, 188, 191, 197 };
 	const int fc2580_gains[] = { 0 /* no gain values */ };
-	const int r820t_gains[] = { 0 /* no gain values */ };
+	const int r820t_gains[] = { 0, 9, 14, 27, 37, 77, 87, 125, 144, 157,
+				     166, 197, 207, 229, 254, 280, 297, 328,
+				     338, 364, 372, 386, 402, 421, 434, 439,
+				     445, 480, 496 };
 	const int unknown_gains[] = { 0 /* no gain values */ };
 
 	int *ptr = NULL;

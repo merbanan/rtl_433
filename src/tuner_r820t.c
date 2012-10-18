@@ -2929,7 +2929,60 @@ R828_ErrCode R828_GetRfGain(void *pTuner, R828_RF_Gain_Info *pR828_rf_gain)
     return RT_Success;
 }
 
-R828_ErrCode R828_RfGainMode(void *pTuner, R828_RF_Gain_TYPE R828_RfGainType)
+
+/* measured with a Racal 6103E GSM test set at 928 MHz with -60 dBm
+ * input power, for raw results see:
+ * http://steve-m.de/projects/rtl-sdr/gain_measurement/r820t/
+ */
+
+#define VGA_BASE_GAIN	-47
+static const int r820t_vga_gain_steps[]  = {
+	0, 26, 26, 30, 42, 35, 24, 13, 14, 32, 36, 34, 35, 37, 35, 36
+};
+
+static const int r820t_lna_gain_steps[]  = {
+	0, 9, 13, 40, 38, 13, 31, 22, 26, 31, 26, 14, 19, 5, 35, 13
+};
+
+static const int r820t_mixer_gain_steps[]  = {
+	0, 5, 10, 10, 19, 9, 10, 25, 17, 10, 8, 16, 13, 6, 3, -8
+};
+
+R828_ErrCode R828_SetRfGain(void *pTuner, int gain)
+{
+	int i, total_gain = 0;
+	uint8_t mix_index = 0, lna_index = 0;
+
+	for (i = 0; i < 15; i++) {
+		if (total_gain >= gain)
+			break;
+
+		total_gain += r820t_lna_gain_steps[++lna_index];
+
+		if (total_gain >= gain)
+			break;
+
+		total_gain += r820t_mixer_gain_steps[++mix_index];
+	}
+
+	/* set LNA gain */
+	R828_I2C.RegAddr = 0x05;
+	R828_Arry[0] = (R828_Arry[0] & 0xF0) | lna_index;
+	R828_I2C.Data = R828_Arry[0];
+	if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
+		return RT_Fail;
+
+	/* set Mixer gain */
+	R828_I2C.RegAddr = 0x07;
+	R828_Arry[2] = (R828_Arry[2] & 0xF0) | mix_index;
+	R828_I2C.Data = R828_Arry[2];
+	if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
+		return RT_Fail;
+
+	return RT_Success;
+}
+
+R828_ErrCode R828_RfGainMode(void *pTuner, int manual)
 {
 	UINT8 MixerGain;
 	UINT8 LnaGain;
@@ -2937,8 +2990,7 @@ R828_ErrCode R828_RfGainMode(void *pTuner, R828_RF_Gain_TYPE R828_RfGainType)
 	MixerGain = 0;
 	LnaGain = 0;
 
-	if(R828_RfGainType==RF_MANUAL)
-	{
+	if (manual) {
 		//LNA auto off
 	     R828_I2C.RegAddr = 0x05;
 	     R828_Arry[0] = R828_Arry[0] | 0x10;
@@ -2958,25 +3010,15 @@ R828_ErrCode R828_RfGainMode(void *pTuner, R828_RF_Gain_TYPE R828_RfGainType)
 		if(I2C_Read_Len(pTuner, &R828_I2C_Len) != RT_Success)
 			return RT_Fail;
 
-		MixerGain = (R828_I2C_Len.Data[3] & 0xF0) >> 4;
-		LnaGain = R828_I2C_Len.Data[3] & 0x0F;
+		/* set fixed VGA gain for now (16.3 dB) */
+		R828_I2C.RegAddr = 0x0C;
+		R828_Arry[7]    = (R828_Arry[7] & 0x60) | 0x08;
+		R828_I2C.Data    = R828_Arry[7];
+		if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
+			return RT_Fail;
 
-		//set LNA gain
-	     R828_I2C.RegAddr = 0x05;
-	     R828_Arry[0] = (R828_Arry[0] & 0xF0) | LnaGain;
-		 R828_I2C.Data = R828_Arry[0];
-	     if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
-		       return RT_Fail;
 
-		 //set Mixer gain
-	     R828_I2C.RegAddr = 0x07;
-	     R828_Arry[2] = (R828_Arry[2] & 0xF0) | MixerGain;
-		 R828_I2C.Data = R828_Arry[2];
-	     if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
-		       return RT_Fail;
-	}
-	else
-	{
+	} else {
 	    //LNA
 	     R828_I2C.RegAddr = 0x05;
 	     R828_Arry[0] = R828_Arry[0] & 0xEF;
@@ -2990,6 +3032,13 @@ R828_ErrCode R828_RfGainMode(void *pTuner, R828_RF_Gain_TYPE R828_RfGainType)
 		 R828_I2C.Data = R828_Arry[2];
 	     if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
 		       return RT_Fail;
+
+		/* set fixed VGA gain for now (26.5 dB) */
+		R828_I2C.RegAddr = 0x0C;
+		R828_Arry[7]    = (R828_Arry[7] & 0x60) | 0x0B;
+		R828_I2C.Data    = R828_Arry[7];
+		if(I2C_Write(pTuner, &R828_I2C) != RT_Success)
+			return RT_Fail;
 	}
 
     return RT_Success;

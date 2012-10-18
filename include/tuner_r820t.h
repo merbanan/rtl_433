@@ -172,7 +172,8 @@ R828_ErrCode R828_GPIO(void *pTuner, R828_GPIO_Type R828_GPIO_Conrl);
 R828_ErrCode R828_SetStandard(void *pTuner, R828_Standard_Type RT_Standard);
 R828_ErrCode R828_SetFrequency(void *pTuner, R828_Set_Info R828_INFO, R828_SetFreq_Type R828_SetFreqMode);
 R828_ErrCode R828_GetRfGain(void *pTuner, R828_RF_Gain_Info *pR828_rf_gain);
-R828_ErrCode R828_RfGainMode(void *pTuner, R828_RF_Gain_TYPE R828_RfGainType);
+R828_ErrCode R828_SetRfGain(void *pTuner, int gain);
+R828_ErrCode R828_RfGainMode(void *pTuner, int manual);
 
 int
 r820t_SetRfFreqHz(
