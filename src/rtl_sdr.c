@@ -38,6 +38,7 @@
 #define MAXIMAL_BUF_LENGTH		(256 * 16384)
 
 static int do_exit = 0;
+static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 
 void usage(void)
@@ -49,6 +50,7 @@ void usage(void)
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g gain (default: 0 for auto)]\n"
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
+		"\t[-n number of samples to read (default: 0, infinite)]\n"
 		"\t[-S force sync output (default: async)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n");
 	exit(1);
@@ -78,10 +80,22 @@ static void sighandler(int signum)
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	if (ctx) {
+		if (do_exit)
+			return;
+
+		if ((bytes_to_read > 0) && (bytes_to_read < len)) {
+			len = bytes_to_read;
+			do_exit = 1;
+			rtlsdr_cancel_async(dev);
+		}
+
 		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
 			fprintf(stderr, "Short write, samples lost, exiting!\n");
 			rtlsdr_cancel_async(dev);
 		}
+
+		if (bytes_to_read > 0)
+			bytes_to_read -= len;
 	}
 }
 
@@ -104,7 +118,7 @@ int main(int argc, char **argv)
 	int device_count;
 	char vendor[256], product[256], serial[256];
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:S::")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:n:S::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -120,6 +134,9 @@ int main(int argc, char **argv)
 			break;
 		case 'b':
 			out_block_size = (uint32_t)atof(optarg);
+			break;
+		case 'n':
+			bytes_to_read = (uint32_t)atof(optarg) * 2;
 			break;
 		case 'S':
 			sync_mode = 1;
@@ -236,6 +253,11 @@ int main(int argc, char **argv)
 				break;
 			}
 
+			if ((bytes_to_read > 0) && (bytes_to_read < (uint32_t)n_read)) {
+				n_read = bytes_to_read;
+				do_exit = 1;
+			}
+
 			if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
 				fprintf(stderr, "Short write, samples lost, exiting!\n");
 				break;
@@ -245,6 +267,9 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Short read, samples lost, exiting!\n");
 				break;
 			}
+
+			if (bytes_to_read > 0)
+				bytes_to_read -= n_read;
 		}
 	} else {
 		fprintf(stderr, "Reading samples in async mode...\n");
