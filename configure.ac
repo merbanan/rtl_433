@@ -39,6 +39,9 @@ AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
 dnl libmath (for rtl_fm)
 AC_CHECK_LIB(m, atan2, [LIBS="$LIBS -lm"])
 
+dnl librealtime (for rtl_test)
+AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS"])
+
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -fvisibility=hidden "

@@ -94,6 +94,11 @@ target_link_libraries(rtl_fm rtlsdr_shared
     ${CMAKE_THREAD_LIBS_INIT}
     m
 )
+if(APPLE)
+    target_link_libraries(rtl_test m)
+else()
+    target_link_libraries(rtl_test m rt)
+endif()
 endif()
 
 if(WIN32)

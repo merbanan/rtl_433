@@ -19,7 +19,7 @@ rtl_tcp_SOURCES      = rtl_tcp.c
 rtl_tcp_LDADD        = librtlsdr.la
 
 rtl_test_SOURCES      = rtl_test.c
-rtl_test_LDADD        = librtlsdr.la
+rtl_test_LDADD        = librtlsdr.la $(LIBM)
 
 rtl_fm_SOURCES      = rtl_fm.c
 rtl_fm_LDADD        = librtlsdr.la $(LIBM)

@@ -21,6 +21,13 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+
+#ifdef __APPLE__
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -39,8 +46,24 @@
 
 #define MHZ(x)	((x)*1000*1000)
 
+#define PPM_DURATION			10
+
 static int do_exit = 0;
 static rtlsdr_dev_t *dev = NULL;
+
+static int ppm_benchmark = 0;
+static int64_t ppm_count = 0L;
+static int64_t ppm_total = 0L;
+
+#ifndef _WIN32
+static struct timespec ppm_start;
+static struct timespec ppm_recent;
+static struct timespec ppm_now;
+#endif
+
+#ifdef __APPLE__
+static struct timeval tv;
+#endif
 
 void usage(void)
 {
@@ -50,6 +73,9 @@ void usage(void)
 		"\t[-s samplerate (default: 2048000 Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-t enable Elonics E4000 tuner benchmark]\n"
+		#ifndef _WIN32
+		"\t[-p enable PPM error measurement]\n"
+		#endif
 		"\t[-b output_block_size (default: 16 * 16384)]\n"
 		"\t[-S force sync output (default: async)]\n");
 	exit(1);
@@ -81,6 +107,8 @@ uint8_t bcnt, uninit = 1;
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	uint32_t i, lost = 0;
+	int64_t ns;
+	double perf_sec;
 
 	if (uninit) {
 		bcnt = buf[0];
@@ -98,6 +126,35 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
 	if (lost)
 		printf("lost at least %d bytes\n", lost);
+
+	if (!ppm_benchmark) {
+		return;
+	}
+	ppm_count += (int64_t)len;
+#ifndef _WIN32
+	#ifndef __APPLE__
+	clock_gettime(CLOCK_REALTIME, &ppm_now);
+	#else
+	gettimeofday(&tv, NULL);
+	ppm_now.tv_sec = tv.tv_sec;
+	ppm_now.tv_nsec = tv.tv_usec*1000;
+	#endif
+	if (ppm_now.tv_sec - ppm_recent.tv_sec > PPM_DURATION) {
+		ns = 1000000000L * (int64_t)(ppm_now.tv_sec - ppm_recent.tv_sec);
+		ns += (int64_t)(ppm_now.tv_nsec - ppm_recent.tv_nsec);
+		printf("real sample rate: %i\n",
+		(int)((1000000000L * ppm_count / 2L) / ns));
+		#ifndef __APPLE__
+		clock_gettime(CLOCK_REALTIME, &ppm_recent);
+		#else
+		gettimeofday(&tv, NULL);
+		ppm_recent.tv_sec = tv.tv_sec;
+		ppm_recent.tv_nsec = tv.tv_usec*1000;
+		#endif
+		ppm_total += ppm_count / 2L;
+		ppm_count = 0L;
+	}
+#endif
 }
 
 void e4k_benchmark(void)
@@ -162,8 +219,11 @@ int main(int argc, char **argv)
 	int device_count;
 	int count;
 	int gains[100];
+	int real_rate;
+	int64_t ns;
+	double perf_sec;
 
-	while ((opt = getopt(argc, argv, "d:s:b:tS::")) != -1) {
+	while ((opt = getopt(argc, argv, "d:s:b:tpS::")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -176,6 +236,9 @@ int main(int argc, char **argv)
 			break;
 		case 't':
 			tuner_benchmark = 1;
+			break;
+		case 'p':
+			ppm_benchmark = PPM_DURATION;
 			break;
 		case 'S':
 			sync_mode = 1;
@@ -260,6 +323,21 @@ int main(int argc, char **argv)
 	if (r < 0)
 		fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
+	if (ppm_benchmark && !sync_mode) {
+		fprintf(stderr, "Reporting PPM error measurement every %i seconds...\n", ppm_benchmark);
+		fprintf(stderr, "Press ^C after a few minutes.\n");
+#ifdef __APPLE__
+		gettimeofday(&tv, NULL);
+		ppm_recent.tv_sec = tv.tv_sec;
+		ppm_recent.tv_nsec = tv.tv_usec*1000;
+		ppm_start.tv_sec = tv.tv_sec;
+		ppm_start.tv_nsec = tv.tv_usec*1000;
+#elif __unix__
+		clock_gettime(CLOCK_REALTIME, &ppm_recent);
+		clock_gettime(CLOCK_REALTIME, &ppm_start);
+#endif
+	}
+
 	if (sync_mode) {
 		fprintf(stderr, "Reading samples in sync mode...\n");
 		while (!do_exit) {
@@ -280,8 +358,18 @@ int main(int argc, char **argv)
 				      DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
 	}
 
-	if (do_exit)
+	if (do_exit) {
 		fprintf(stderr, "\nUser cancel, exiting...\n");
+		if (ppm_benchmark) {
+#ifndef _WIN32
+			ns = 1000000000L * (int64_t)(ppm_recent.tv_sec - ppm_start.tv_sec);
+			ns += (int64_t)(ppm_recent.tv_nsec - ppm_start.tv_nsec);
+			real_rate = (int)(ppm_total * 1000000000L / ns);
+			printf("Cumulative PPM error: %i\n",
+			(int)round((double)(1000000 * (real_rate - (int)samp_rate)) / (double)samp_rate));
+#endif
+		}
+	}
 	else
 		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
