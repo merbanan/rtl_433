@@ -27,10 +27,11 @@
  *       remove float math (disqualifies complex.h)
  *       replace atan2 with a fast approximation
  *       in-place array operations
- *       wide band support
+ *       better wide band support
  *       sanity checks
  *       nicer FIR than square
  *       scale squelch to other input parameters
+ *       test all the demodulations
  */
 
 #include <errno.h>
@@ -56,8 +57,8 @@
 #define DEFAULT_SAMPLE_RATE		24000
 #define DEFAULT_ASYNC_BUF_NUMBER	32
 #define DEFAULT_BUF_LENGTH		(1 * 16384)
-#define MINIMAL_BUF_LENGTH		512
-#define MAXIMAL_BUF_LENGTH		(256 * 16384)
+#define MAXIMUM_OVERSAMPLE		16
+#define MAXIMUM_BUF_LENGTH		(MAXIMUM_OVERSAMPLE * DEFAULT_BUF_LENGTH)
 #define CONSEQ_SQUELCH			20
 #define AUTO_GAIN			-100
 
@@ -65,6 +66,7 @@ static pthread_t demod_thread;
 static sem_t data_ready;
 static int do_exit = 0;
 static rtlsdr_dev_t *dev = NULL;
+static int lcm_post[17] = {1,1,1,3,1,5,3,7,1,9,5,11,3,13,7,15,1};
 
 struct fm_state
 {
@@ -79,21 +81,28 @@ struct fm_state
 	int      squelch_level;
 	int      squelch_hits;
 	int      term_squelch_hits;
-	uint8_t  buf[DEFAULT_BUF_LENGTH];
+	uint8_t  buf[MAXIMUM_BUF_LENGTH];
 	uint32_t buf_len;
-	int      signal[DEFAULT_BUF_LENGTH];  /* 16 bit signed i/q pairs */
-	int16_t  signal2[DEFAULT_BUF_LENGTH]; /* signal has lowpass, signal2 has demod */
+	int      signal[MAXIMUM_BUF_LENGTH];  /* 16 bit signed i/q pairs */
+	int16_t  signal2[MAXIMUM_BUF_LENGTH]; /* signal has lowpass, signal2 has demod */
 	int      signal_len;
+	int      signal2_len;
 	FILE     *file;
 	int      edge;
 	uint32_t freqs[100];
 	int      freq_len;
 	int      freq_now;
 	uint32_t sample_rate;
+	int      output_rate;
 	int      fir_enable;
 	int      fir[256];  /* fir_len == downsample */
 	int      fir_sum;
 	int      custom_atan;
+	int      deemph;
+	int      deemph_a;
+	int      now_lpr;
+	int      prev_lpr_index;
+	void     (*mode_demod)(struct fm_state*);
 };
 
 void usage(void)
@@ -107,13 +116,23 @@ void usage(void)
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: automatic)]\n"
 		"\t[-l squelch_level (default: 150)]\n"
-		"\t[-E freq sets lower edge (default: center)]\n"
+		"\t[-o oversampling (default: 1)]\n"
+		"\t[-E sets lower edge tuning (default: center)]\n"
+		"\t[-N enables NBFM mode (default: on)]\n"
+		"\t[-W enables WBFM mode (default: off)]\n"
+		"\t (-N -s 170e3 -o 4 -A -r 16e3 -l 0 -D)\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Experimental options:\n"
+		"\t[-r output rate (default: same as -s)]\n"
 		"\t[-t terminate_hits (default: 0/off)]\n"
 		"\t (requires squelch on and scanning off)\n"
-		"\t[-o oversampling (default: 1) !!BROKEN!!]\n"
+		"\t[-M enables AM mode (default: off)]\n"
+		"\t[-L enables LSB mode (default: off)]\n"
+		"\t[-U enables USB mode (default: off)]\n"
+		//"\t[-D enables DSB mode (default: off)]\n"
+		"\t[-R enables raw mode (default: off, 2x16 bit output)]\n"
 		"\t[-F enables high quality FIR (default: off/square)]\n"
+		"\t[-D enables de-emphasis (default: off)]\n"
 		"\t[-A enables high speed arctan (default: off)]\n\n"
 		"Produces signed 16 bit ints, use Sox to hear them.\n"
 		"\trtl_fm ... - | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
@@ -171,12 +190,12 @@ void low_pass(struct fm_state *fm, unsigned char *buf, uint32_t len)
 		fm->now_j += ((int)buf[i+1] - 128);
 		i += 2;
 		fm->prev_index++;
-		if (fm->prev_index < (fm->downsample)) {
+		if (fm->prev_index < fm->downsample) {
 			continue;
 		}
 		fm->signal[i2]   = fm->now_r * fm->output_scale;
 		fm->signal[i2+1] = fm->now_j * fm->output_scale;
-		fm->prev_index = -1;
+		fm->prev_index = 0;
 		fm->now_r = 0;
 		fm->now_j = 0;
 		i2 += 2;
@@ -209,17 +228,17 @@ void low_pass_fir(struct fm_state *fm, unsigned char *buf, uint32_t len)
 {
 	int i=0, i2=0, i3=0;
 	while (i < (int)len) {
-		fm->prev_index++;
 		i3 = fm->prev_index;
 		fm->now_r += ((int)buf[i]   - 128) * fm->fir[i3] * fm->downsample / fm->fir_sum;
 		fm->now_j += ((int)buf[i+1] - 128) * fm->fir[i3] * fm->downsample / fm->fir_sum;
 		i += 2;
-		if (fm->prev_index < (fm->downsample)) {
+		fm->prev_index++;
+		if (fm->prev_index < fm->downsample) {
 			continue;
 		}
 		fm->signal[i2]   = fm->now_r * fm->output_scale;
 		fm->signal[i2+1] = fm->now_j * fm->output_scale;
-		fm->prev_index = -1;
+		fm->prev_index = 0;
 		fm->now_r = 0;
 		fm->now_j = 0;
 		i2 += 2;
@@ -236,10 +255,33 @@ int low_pass_simple(int16_t *signal2, int len, int step)
 		for(i2=0; i2<step; i2++) {
 			sum += (int)signal2[i + i2];
 		}
-		signal2[i/step] = (int16_t)(sum / step);
+		//signal2[i/step] = (int16_t)(sum / step);
+		signal2[i/step] = (int16_t)(sum);
 	}
 	signal2[i/step + 1] = signal2[i/step];
 	return len / step;
+}
+
+void low_pass_real(struct fm_state *fm)
+/* simple square window FIR */
+// add support for upsampling?
+{
+	int i=0, i2=0;
+	int fast = (int)fm->sample_rate / fm->post_downsample;
+	int slow = fm->output_rate;
+	while (i < fm->signal2_len) {
+		fm->now_lpr += fm->signal2[i];
+		i++;
+		fm->prev_lpr_index += slow;
+		if (fm->prev_lpr_index < fast) {
+			continue;
+		}
+		fm->signal2[i2] = (int16_t)(fm->now_lpr / (fast/slow));
+		fm->prev_lpr_index -= fast;
+		fm->now_lpr = 0;
+		i2 += 1;
+	}
+	fm->signal2_len = i2;
 }
 
 /* define our own complex math ops
@@ -257,8 +299,6 @@ int polar_discriminant(int ar, int aj, int br, int bj)
 	double angle;
 	multiply(ar, aj, br, -bj, &cr, &cj);
 	angle = atan2((double)cj, (double)cr);
-	//if (angle > (3.14159) || angle < (-3.14159))
-	//	{fprintf(stderr, "overflow %f\n", angle);}
 	return (int)(angle / 3.14159 * (1<<14));
 }
 
@@ -310,6 +350,69 @@ void fm_demod(struct fm_state *fm)
 	}
 	fm->pre_r = fm->signal[fm->signal_len - 2];
 	fm->pre_j = fm->signal[fm->signal_len - 1];
+	fm->signal2_len = fm->signal_len/2;
+}
+
+void am_demod(struct fm_state *fm)
+// todo, fix this extreme laziness
+{
+	int i, pcm;
+	for (i = 0; i < (fm->signal_len); i += 2) {
+		// hypot uses floats but won't overflow
+		//pcm = (int)hypot(fm->signal[i], fm->signal[i+1]);
+		pcm = fm->signal[i] * fm->signal[i];
+		pcm += fm->signal[i+1] * fm->signal[i+1];
+		fm->signal2[i/2] = (int16_t)sqrt(pcm); // * fm->output_scale;
+	}
+	fm->signal2_len = fm->signal_len/2;
+	// lowpass? (3khz)  highpass?  (dc)
+}
+
+void usb_demod(struct fm_state *fm)
+{
+	int i, pcm;
+	for (i = 0; i < (fm->signal_len); i += 2) {
+		pcm = fm->signal[i] + fm->signal[i+1];
+		fm->signal2[i/2] = (int16_t)pcm; // * fm->output_scale;
+	}
+	fm->signal2_len = fm->signal_len/2;
+}
+
+void lsb_demod(struct fm_state *fm)
+{
+	int i, pcm;
+	for (i = 0; i < (fm->signal_len); i += 2) {
+		pcm = fm->signal[i] - fm->signal[i+1];
+		fm->signal2[i/2] = (int16_t)pcm; // * fm->output_scale;
+	}
+	fm->signal2_len = fm->signal_len/2;
+}
+
+void raw_demod(struct fm_state *fm)
+{
+	/* hacky and pointless code */
+	int i;
+	for (i = 0; i < (fm->signal_len); i++) {
+		fm->signal2[i] = (int16_t)fm->signal[i];
+	}
+	fm->signal2_len = fm->signal_len;
+}
+
+void deemph_filter(struct fm_state *fm)
+{
+	static int avg;  // cheating...
+	int i, d;
+	// de-emph IIR
+	// avg = avg * (1 - alpha) + sample * alpha;
+	for (i = 0; i < fm->signal2_len; i++) {
+		d = fm->signal2[i] - avg;
+		if (d > 0) {
+			avg += (d + fm->deemph_a/2) / fm->deemph_a;
+		} else {
+			avg += (d - fm->deemph_a/2) / fm->deemph_a;
+		}
+		fm->signal2[i] = (int16_t)avg;
+	}
 }
 
 int mad(int *samples, int len, int step)
@@ -371,7 +474,7 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 	fprintf(stderr, "Oversampling input by: %ix.\n", fm->downsample);
 	fprintf(stderr, "Oversampling output by: %ix.\n", fm->post_downsample);
 	fprintf(stderr, "Buffer size: %0.2fms\n",
-		1000 * 0.5 * (float)DEFAULT_BUF_LENGTH / (float)capture_rate);
+		1000 * 0.5 * lcm_post[fm->post_downsample] * (float)DEFAULT_BUF_LENGTH / (float)capture_rate);
 	if (r < 0) {
 		fprintf(stderr, "WARNING: Failed to set center freq.\n");}
 	else {
@@ -379,27 +482,40 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 
 	/* Set the sample rate */
 	fprintf(stderr, "Sampling at %u Hz.\n", capture_rate);
+	if (fm->output_rate > 0) {
+		fprintf(stderr, "Output at %u Hz.\n", fm->output_rate);
+	} else {
+		fprintf(stderr, "Output at %u Hz.\n", fm->sample_rate/fm->post_downsample);}
 	r = rtlsdr_set_sample_rate(dev, (uint32_t)capture_rate);
 	if (r < 0) {
 		fprintf(stderr, "WARNING: Failed to set sample rate.\n");}
 
 }
 
-void full_demod(unsigned char *buf, uint32_t len, struct fm_state *fm)
+void full_demod(struct fm_state *fm)
 {
 	int sr, freq_next;
-	rotate_90(buf, len);
+	rotate_90(fm->buf, fm->buf_len);
 	if (fm->fir_enable) {
-		low_pass_fir(fm, buf, len);
+		low_pass_fir(fm, fm->buf, fm->buf_len);
 	} else {
-		low_pass(fm, buf, len);
+		low_pass(fm, fm->buf, fm->buf_len);
 	}
-	fm_demod(fm);
+	fm->mode_demod(fm);
+        if (fm->mode_demod == &raw_demod) {
+		fwrite(fm->signal2, 2, fm->signal2_len, fm->file);
+		return;
+	}
 	sr = post_squelch(fm);
 	if (fm->post_downsample > 1) {
-		fm->signal_len = low_pass_simple(fm->signal2, fm->signal_len/2, fm->post_downsample)*2;}
+		fm->signal2_len = low_pass_simple(fm->signal2, fm->signal2_len, fm->post_downsample);}
+	if (fm->output_rate > 0) {
+		low_pass_real(fm);
+	}
+	if (fm->deemph) {
+		deemph_filter(fm);}
 	/* ignore under runs for now */
-	fwrite(fm->signal2, 2, fm->signal_len/2, fm->file);
+	fwrite(fm->signal2, 2, fm->signal2_len, fm->file);
 	if (fm->freq_len > 1 && !sr && fm->squelch_hits > CONSEQ_SQUELCH) {
 		freq_next = (fm->freq_now + 1) % fm->freq_len;
 		optimal_settings(fm, freq_next, 1);
@@ -418,10 +534,10 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 		return;}
 	if (!ctx) {
 		return;}
-	/* single threaded uses 25% less CPU? */
-	/* full_demod(buf, len, fm2); */
 	memcpy(fm2->buf, buf, len);
 	fm2->buf_len = len;
+	/* single threaded uses 25% less CPU? */
+	/* full_demod(fm2); */
 	sem_getvalue(&data_ready, &dr_val);
 	if (!dr_val) {
 		sem_post(&data_ready);}
@@ -432,7 +548,7 @@ static void *demod_thread_fn(void *arg)
 	struct fm_state *fm2 = arg;
 	while (!do_exit) {
 		sem_wait(&data_ready);
-		full_demod(fm2->buf, fm2->buf_len, fm2);
+		full_demod(fm2);
 		if (!fm2->term_squelch_hits) {
 			continue;}
 		if (fm2->squelch_hits > fm2->term_squelch_hits) {
@@ -449,8 +565,7 @@ int main(int argc, char **argv)
 #endif
 	struct fm_state fm; 
 	char *filename = NULL;
-	int n_read;
-	int r, opt;
+	int n_read, r, opt, wb_mode = 0;
 	int i, gain = AUTO_GAIN; // tenths of a dB
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
@@ -463,12 +578,15 @@ int main(int argc, char **argv)
 	fm.freq_len = 0;
 	fm.edge = 0;
 	fm.fir_enable = 0;
-	fm.prev_index = -1;
+	fm.prev_index = 0;
 	fm.post_downsample = 1;  // once this works, default = 4
 	fm.custom_atan = 0;
+	fm.deemph = 0;
+	fm.output_rate = -1;  // flag for disabled
+	fm.mode_demod = &fm_demod;
 	sem_init(&data_ready, 0, 0);
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:t:EFA")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:t:r:EFANWMULRD")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -486,8 +604,13 @@ int main(int argc, char **argv)
 		case 's':
 			fm.sample_rate = (uint32_t)atof(optarg);
 			break;
+		case 'r':
+			fm.output_rate = (int)atof(optarg);
+			break;
 		case 'o':
 			fm.post_downsample = (int)atof(optarg);
+			if (fm.post_downsample < 1 || fm.post_downsample > MAXIMUM_OVERSAMPLE) {
+				fprintf(stderr, "Oversample must be between 1 and %i\n", MAXIMUM_OVERSAMPLE);}
 			break;
 		case 't':
 			fm.term_squelch_hits = (int)atof(optarg);
@@ -500,6 +623,34 @@ int main(int argc, char **argv)
 			break;
 		case 'A':
 			fm.custom_atan = 1;
+			break;
+		case 'D':
+			fm.deemph = 1;
+			break;
+		case 'N':
+			fm.mode_demod = &fm_demod;
+			break;
+		case 'W':
+			wb_mode = 1;
+			fm.mode_demod = &fm_demod;
+			fm.sample_rate = 170000;
+			fm.output_rate = 16000;
+			fm.custom_atan = 1;
+			fm.post_downsample = 4;
+			fm.deemph = 1;
+			fm.squelch_level = 0;
+			break;
+		case 'M':
+			fm.mode_demod = &am_demod;
+			break;
+		case 'U':
+			fm.mode_demod = &usb_demod;
+			break;
+		case 'L':
+			fm.mode_demod = &lsb_demod;
+			break;
+		case 'R':
+			fm.mode_demod = &raw_demod;
 			break;
 		default:
 			usage();
@@ -515,7 +666,7 @@ int main(int argc, char **argv)
 		filename = argv[optind];
 	}
 
-	buffer = malloc(DEFAULT_BUF_LENGTH * sizeof(uint8_t));
+	buffer = malloc(lcm_post[fm.post_downsample] * DEFAULT_BUF_LENGTH * sizeof(uint8_t));
 
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
@@ -549,6 +700,15 @@ int main(int argc, char **argv)
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
+
+	/* WBFM is special */
+	if (wb_mode) {
+		fm.freqs[0] += 15000;
+	}
+
+	if (fm.deemph) {
+		fm.deemph_a = (int)round(1.0/((1.0-exp(-1.0/(fm.output_rate * 75e-6)))));
+	}
 
 	optimal_settings(&fm, 0, 0);
 	build_fir(&fm);
@@ -585,7 +745,8 @@ int main(int argc, char **argv)
 
 	pthread_create(&demod_thread, NULL, demod_thread_fn, (void *)(&fm));
 	rtlsdr_read_async(dev, rtlsdr_callback, (void *)(&fm),
-			      DEFAULT_ASYNC_BUF_NUMBER, DEFAULT_BUF_LENGTH);
+			      DEFAULT_ASYNC_BUF_NUMBER,
+			      lcm_post[fm.post_downsample] * DEFAULT_BUF_LENGTH);
 
 	if (do_exit) {
 		fprintf(stderr, "\nUser cancel, exiting...\n");}
