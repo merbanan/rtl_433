@@ -1473,6 +1473,11 @@ R828_ErrCode R828_PLL(void *pTuner, UINT32 LO_Freq, R828_Standard_Type R828_Stan
 	else
 		VCO_Fra = VCO_Fra;
 
+	if (Nint > 63) {
+		fprintf(stderr, "[R820T] No valid PLL values for %u Hz!\n", LO_Freq);
+		return RT_Fail;
+	}
+
 	//N & S
 	Ni       = (Nint - 13) / 4;
 	Si       = Nint - 4 *Ni - 13;
