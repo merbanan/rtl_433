@@ -32,6 +32,9 @@
  *       nicer FIR than square
  *       scale squelch to other input parameters
  *       test all the demodulations
+ *       sci notation parsing
+ *       pad output on hop
+ *       nearest gain approx
  */
 
 #include <errno.h>
@@ -45,7 +48,11 @@
 #include <unistd.h>
 #else
 #include <Windows.h>
+#include <fcntl.h>
+#include <io.h>
 #include "getopt/getopt.h"
+#define usleep(x) Sleep(x/1000)
+#define round(x) (x > 0.0 ? floor(x + 0.5): ceil(x - 0.5))
 #endif
 
 #include <semaphore.h>
@@ -120,7 +127,7 @@ void usage(void)
 		"\t[-E sets lower edge tuning (default: center)]\n"
 		"\t[-N enables NBFM mode (default: on)]\n"
 		"\t[-W enables WBFM mode (default: off)]\n"
-		"\t (-N -s 170e3 -o 4 -A -r 16e3 -l 0 -D)\n"
+		"\t (-N -s 170e3 -o 4 -A -r 32e3 -l 0 -D)\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Experimental options:\n"
 		"\t[-r output rate (default: same as -s)]\n"
@@ -134,8 +141,10 @@ void usage(void)
 		"\t[-F enables high quality FIR (default: off/square)]\n"
 		"\t[-D enables de-emphasis (default: off)]\n"
 		"\t[-A enables high speed arctan (default: off)]\n\n"
-		"Produces signed 16 bit ints, use Sox to hear them.\n"
-		"\trtl_fm ... - | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n\n");
+		"Produces signed 16 bit ints, use Sox or aplay to hear them.\n"
+		"\trtl_fm ... - | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n"
+		"\t             | aplay -r 24k -f S16_LE -t raw -c 1\n"
+		"\t  -s 22050 - | multimon -t raw /dev/stdin\n\n");
 	exit(1);
 }
 
@@ -539,7 +548,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 	/* single threaded uses 25% less CPU? */
 	/* full_demod(fm2); */
 	sem_getvalue(&data_ready, &dr_val);
-	if (!dr_val) {
+	if (dr_val <= 0) {
 		sem_post(&data_ready);}
 }
 
@@ -634,7 +643,7 @@ int main(int argc, char **argv)
 			wb_mode = 1;
 			fm.mode_demod = &fm_demod;
 			fm.sample_rate = 170000;
-			fm.output_rate = 16000;
+			fm.output_rate = 32000;
 			fm.custom_atan = 1;
 			fm.post_downsample = 4;
 			fm.deemph = 1;
@@ -730,6 +739,9 @@ int main(int argc, char **argv)
 
 	if (strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		fm.file = stdout;
+#ifdef _WIN32
+		_setmode(_fileno(fm.file), _O_BINARY);
+#endif
 	} else {
 		fm.file = fopen(filename, "wb");
 		if (!fm.file) {
@@ -754,8 +766,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "\nLibrary error %d, exiting...\n", r);}
 	rtlsdr_cancel_async(dev);
 
-	if (fm.file != stdout)
-		fclose(fm.file);
+	if (fm.file != stdout) {
+		fclose(fm.file);}
 
 	rtlsdr_close(dev);
 	free (buffer);
