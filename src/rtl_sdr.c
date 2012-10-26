@@ -26,6 +26,8 @@
 #include <unistd.h>
 #else
 #include <Windows.h>
+#include <io.h>
+#include <fcntl.h>
 #include "getopt/getopt.h"
 #endif
 
@@ -231,6 +233,9 @@ int main(int argc, char **argv)
 
 	if(strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
+#ifdef _WIN32
+		_setmode(_fileno(stdin), _O_BINARY);
+#endif
 	} else {
 		file = fopen(filename, "wb");
 		if (!file) {
