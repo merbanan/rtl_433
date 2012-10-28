@@ -72,7 +72,7 @@ int fc0013_init(void *dev)
 		0x0a,	/* reg. 0x07: CHECK */
 		0xff,	/* reg. 0x08: AGC Clock divide by 256, AGC gain 1/256,
 			   Loop Bw 1/8 */
-		0x6f,	/* reg. 0x09: enable LoopThrough */
+		0x6e,	/* reg. 0x09: Disable LoopThrough, Enable LoopThrough: 0x6f */
 		0xb8,	/* reg. 0x0a: Disable LO Test Buffer */
 		0x82,	/* reg. 0x0b: CHECK */
 		0xfc,	/* reg. 0x0c: depending on AGC Up-Down mode, may need 0xf8 */
