@@ -936,6 +936,10 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	r |= rtlsdr_demod_write_reg(dev, 1, 0x01, 0x14, 1);
 	r |= rtlsdr_demod_write_reg(dev, 1, 0x01, 0x10, 1);
 
+	/* recalculate offset frequency if offset tuning is enabled */
+	if (dev->offs_freq)
+		rtlsdr_set_offset_tuning(dev, 1);
+
 	return r;
 }
 
@@ -1056,7 +1060,8 @@ int rtlsdr_set_offset_tuning(rtlsdr_dev_t *dev, int on)
 		rtlsdr_set_i2c_repeater(dev, 0);
 	}
 
-	r |= rtlsdr_set_center_freq(dev, dev->freq);
+	if (dev->freq > dev->offs_freq)
+		r |= rtlsdr_set_center_freq(dev, dev->freq);
 
 	return r;
 }
