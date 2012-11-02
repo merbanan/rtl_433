@@ -99,6 +99,38 @@ RTLSDR_API int rtlsdr_get_xtal_freq(rtlsdr_dev_t *dev, uint32_t *rtl_freq,
 RTLSDR_API int rtlsdr_get_usb_strings(rtlsdr_dev_t *dev, char *manufact,
 				      char *product, char *serial);
 
+/*!
+ * Write the device EEPROM
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param data buffer of data to be written
+ * \param offset address where the data should be written
+ * \param len length of the data
+ * \return 0 on success
+ * \return -1 if device handle is invalid
+ * \return -2 if EEPROM size is exceeded
+ * \return -3 if no EEPROM was found
+ */
+
+RTLSDR_API int rtlsdr_write_eeprom(rtlsdr_dev_t *dev, uint8_t *data,
+				  uint8_t offset, uint16_t len);
+
+/*!
+ * Read the device EEPROM
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param data buffer where the data should be written
+ * \param offset address where the data should be read from
+ * \param len length of the data
+ * \return 0 on success
+ * \return -1 if device handle is invalid
+ * \return -2 if EEPROM size is exceeded
+ * \return -3 if no EEPROM was found
+ */
+
+RTLSDR_API int rtlsdr_read_eeprom(rtlsdr_dev_t *dev, uint8_t *data,
+				  uint8_t offset, uint16_t len);
+
 RTLSDR_API int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq);
 
 /*!

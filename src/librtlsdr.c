@@ -271,6 +271,8 @@ static rtlsdr_dongle_t known_devices[] = {
 #define CTRL_TIMEOUT	300
 #define BULK_TIMEOUT	0
 
+#define EEPROM_ADDR	0xa0
+
 enum usb_reg {
 	USB_SYSCTL		= 0x2000,
 	USB_CTRL		= 0x2010,
@@ -707,6 +709,69 @@ int rtlsdr_get_usb_strings(rtlsdr_dev_t *dev, char *manufact, char *product,
 	}
 
 	return 0;
+}
+
+int rtlsdr_write_eeprom(rtlsdr_dev_t *dev, uint8_t *data, uint8_t offset, uint16_t len)
+{
+	int r = 0;
+	int i;
+	uint8_t cmd[2];
+
+	if (!dev)
+		return -1;
+
+	if ((len + offset) > 256)
+		return -2;
+
+	for (i = 0; i < len; i++) {
+		cmd[0] = i + offset;
+		r = rtlsdr_write_array(dev, IICB, EEPROM_ADDR, cmd, 1);
+		r = rtlsdr_read_array(dev, IICB, EEPROM_ADDR, &cmd[1], 1);
+
+		/* only write the byte if it differs */
+		if (cmd[1] == data[i])
+			continue;
+
+		cmd[1] = data[i];
+		r = rtlsdr_write_array(dev, IICB, EEPROM_ADDR, cmd, 2);
+		if (r != sizeof(cmd))
+			return -3;
+
+		/* for some EEPROMs (e.g. ATC 240LC02) we need a delay
+		 * between write operations, otherwise they will fail */
+#ifdef _WIN32
+		Sleep(5);
+#else
+		usleep(5000);
+#endif
+	}
+
+	return 0;
+}
+
+int rtlsdr_read_eeprom(rtlsdr_dev_t *dev, uint8_t *data, uint8_t offset, uint16_t len)
+{
+	int r = 0;
+	int i;
+
+	if (!dev)
+		return -1;
+
+	if ((len + offset) > 256)
+		return -2;
+
+	r = rtlsdr_write_array(dev, IICB, EEPROM_ADDR, &offset, 1);
+	if (r < 0)
+		return -3;
+
+	for (i = 0; i < len; i++) {
+		r = rtlsdr_read_array(dev, IICB, EEPROM_ADDR, data + i, 1);
+
+		if (r < 0)
+			return -3;
+	}
+
+	return r;
 }
 
 int rtlsdr_set_center_freq(rtlsdr_dev_t *dev, uint32_t freq)
