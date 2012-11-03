@@ -71,14 +71,20 @@ void usage(void)
 		"RTL2832 based DVB-T receivers\n\n"
 		"Usage:\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-m <str> set manufacturer string\n"
-		"\t[-p <str> set product string\n"
-		"\t[-s <str> set serial number string\n"
-		"\t[-i <0,1> disable/enable IR-endpoint\n"
-		"\t[-g <str> generate default config and write to device\n"
-		"\t[-w <filename> write dumped file to device\n"
-		"\t[-r <filename> dump EEPROM to file\n"
-		"\t[-h display this help text\n"
+		"\t[-m <str> set manufacturer string]\n"
+		"\t[-p <str> set product string]\n"
+		"\t[-s <str> set serial number string]\n"
+		"\t[-i <0,1> disable/enable IR-endpoint]\n"
+		"\t[-g <conf> generate default config and write to device]\n"
+		"\t[   <conf> can be one of:]\n"
+		"\t[   realtek\t\tRealtek default (as without EEPROM)]\n"
+		"\t[   realtek_oem\t\tRealtek default OEM with EEPROM]\n"
+		"\t[   noxon\t\tTerratec NOXON DAB Stick]\n"
+		"\t[   terratec_black\tTerratec T Stick Black]\n"
+		"\t[   terratec_plus\tTerratec T Stick+ (DVB-T/DAB)]\n"
+		"\t[-w <filename> write dumped file to device]\n"
+		"\t[-r <filename> dump EEPROM to file]\n"
+		"\t[-h display this help text]\n"
 		"\nUse on your own risk, especially -w!\n");
 	exit(1);
 }
@@ -168,16 +174,76 @@ int gen_eeprom_from_conf(rtlsdr_config_t *conf, uint8_t *dat)
 	return pos;
 }
 
-void gen_default_conf(rtlsdr_config_t *conf)
+enum configs {
+	CONF_NONE = 0,
+	REALTEK,
+	REALTEK_EEPROM,
+	TERRATEC_NOXON,
+	TERRATEC_T_BLACK,
+	TERRATEC_T_PLUS,
+};
+
+void gen_default_conf(rtlsdr_config_t *conf, int config)
 {
-	conf->vendor_id = 0x0bda;
-	conf->product_id = 0x2838;
-	strcpy(conf->manufacturer, "Realtek");
-	strcpy(conf->product, "RTL2838UHIDIR");
-	strcpy(conf->serial, "00000001");
-	conf->have_serial = 1;
-	conf->enable_ir = 1;
-	conf->remote_wakeup = 0;
+	switch (config) {
+	case REALTEK:
+		fprintf(stderr, "Realtek default (as without EEPROM)\n");
+		conf->vendor_id = 0x0bda;
+		conf->product_id = 0x2832;
+		strcpy(conf->manufacturer, "Generic");
+		strcpy(conf->product, "RTL2832U DVB-T");
+		strcpy(conf->serial, "0");
+		conf->have_serial = 1;
+		conf->enable_ir = 0;
+		conf->remote_wakeup = 1;
+		break;
+	case REALTEK_EEPROM:
+		fprintf(stderr, "Realtek default OEM with EEPROM\n");
+		conf->vendor_id = 0x0bda;
+		conf->product_id = 0x2838;
+		strcpy(conf->manufacturer, "Realtek");
+		strcpy(conf->product, "RTL2838UHIDIR");
+		strcpy(conf->serial, "00000001");
+		conf->have_serial = 1;
+		conf->enable_ir = 1;
+		conf->remote_wakeup = 0;
+		break;
+	case TERRATEC_NOXON:
+		fprintf(stderr, "Terratec NOXON DAB Stick\n");
+		conf->vendor_id = 0x0ccd;
+		conf->product_id = 0x00b3;
+		strcpy(conf->manufacturer, "NOXON");
+		strcpy(conf->product, "DAB Stick");
+		strcpy(conf->serial, "0");
+		conf->have_serial = 1;
+		conf->enable_ir = 0;
+		conf->remote_wakeup = 1;
+		break;
+	case TERRATEC_T_BLACK:
+		fprintf(stderr, "Terratec T Stick Black\n");
+		conf->vendor_id = 0x0ccd;
+		conf->product_id = 0x00a9;
+		strcpy(conf->manufacturer, "Realtek");
+		strcpy(conf->product, "RTL2838UHIDIR");
+		strcpy(conf->serial, "00000001");
+		conf->have_serial = 1;
+		conf->enable_ir = 1;
+		conf->remote_wakeup = 0;
+		break;
+	case TERRATEC_T_PLUS:
+		fprintf(stderr, "Terratec ran T Stick+\n");
+		conf->vendor_id = 0x0ccd;
+		conf->product_id = 0x00d7;
+		strcpy(conf->manufacturer, "Realtek");
+		strcpy(conf->product, "RTL2838UHIDIR");
+		strcpy(conf->serial, "00000001");
+		conf->have_serial = 1;
+		conf->enable_ir = 1;
+		conf->remote_wakeup = 0;
+		break;
+	default:
+		break;
+	};
 }
 
 int main(int argc, char **argv)
@@ -199,7 +265,7 @@ int main(int argc, char **argv)
 	int ir_endpoint = 0;
 	char ch;
 
-	while ((opt = getopt(argc, argv, "d:m:p:s:i:gw:r:h?")) != -1) {
+	while ((opt = getopt(argc, argv, "d:m:p:s:i:g:w:r:h?")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
@@ -221,8 +287,19 @@ int main(int argc, char **argv)
 			change = 1;
 			break;
 		case 'g':
-			default_config = 1;
-			change = 1;
+			if (!strcmp(optarg, "realtek"))
+				default_config = REALTEK;
+			else if (!strcmp(optarg, "realtek_oem"))
+				default_config = REALTEK_EEPROM;
+			else if (!strcmp(optarg, "noxon"))
+				default_config = TERRATEC_NOXON;
+			else if (!strcmp(optarg, "terratec_black"))
+				default_config = TERRATEC_T_BLACK;
+			else if (!strcmp(optarg, "terratec_plus"))
+				default_config = TERRATEC_T_PLUS;
+
+			if (default_config != CONF_NONE)
+				change = 1;
 			break;
 		case 'w':
 			flash_file = 1;
@@ -311,8 +388,8 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "\nNew configuration:\n");
 
-	if (default_config)
-		gen_default_conf(&conf);
+	if (default_config != CONF_NONE)
+		gen_default_conf(&conf, default_config);
 
 	if (!flash_file) {
 		if (gen_eeprom_from_conf(&conf, buf) < 0)
