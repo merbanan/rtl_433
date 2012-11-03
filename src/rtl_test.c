@@ -108,7 +108,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
 	uint32_t i, lost = 0;
 	int64_t ns;
-	double perf_sec;
 
 	if (uninit) {
 		bcnt = buf[0];
@@ -221,7 +220,6 @@ int main(int argc, char **argv)
 	int gains[100];
 	int real_rate;
 	int64_t ns;
-	double perf_sec;
 
 	while ((opt = getopt(argc, argv, "d:s:b:tpS::")) != -1) {
 		switch (opt) {
@@ -376,6 +374,6 @@ int main(int argc, char **argv)
 exit:
 	rtlsdr_close(dev);
 	free (buffer);
-out:
+
 	return r >= 0 ? r : -r;
 }

@@ -248,12 +248,11 @@ void gen_default_conf(rtlsdr_config_t *conf, int config)
 
 int main(int argc, char **argv)
 {
-	int i, r, opt, pos;
+	int i, r, opt;
 	uint32_t dev_index = 0;
 	int device_count;
 	char *filename = NULL;
 	FILE *file = NULL;
-	uint16_t idVendor, idProduct;
 	char *manuf_str = NULL;
 	char *product_str = NULL;
 	char *serial_str = NULL;
@@ -420,6 +419,5 @@ exit:
 
 	rtlsdr_close(dev);
 
-out:
 	return r >= 0 ? r : -r;
 }
