@@ -98,12 +98,12 @@ int get_string_descriptor(int pos, uint8_t *data, char *str)
 	if (data[pos + 1] != 0x03)
 		fprintf(stderr, "Error: invalid string descriptor!\n");
 
-	for(i = 0; i < (len - 2); i += 2)
-		str[j++] = data[pos + 2 + i];
+	for (i = 2; i < len; i += 2)
+		str[j++] = data[pos + i];
 
 	str[j] = 0x00;
 
-	return pos + i + 2;
+	return pos + i;
 }
 
 int set_string_descriptor(int pos, uint8_t *data, char *str)
