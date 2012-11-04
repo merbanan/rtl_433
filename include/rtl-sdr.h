@@ -49,6 +49,17 @@ RTLSDR_API int rtlsdr_get_device_usb_strings(uint32_t index,
 					     char *product,
 					     char *serial);
 
+/*!
+ * Get device index by USB serial string descriptor.
+ *
+ * \param serial serial string of the device
+ * \return device index of first device where the name matched
+ * \return -1 if name is NULL
+ * \return -2 if no devices were found at all
+ * \return -3 if devices were found, but none with matching name
+ */
+RTLSDR_API int rtlsdr_get_index_by_serial(const char *serial);
+
 RTLSDR_API int rtlsdr_open(rtlsdr_dev_t **dev, uint32_t index);
 
 RTLSDR_API int rtlsdr_close(rtlsdr_dev_t *dev);
