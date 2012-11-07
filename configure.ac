@@ -40,7 +40,7 @@ dnl libmath (for rtl_fm)
 AC_CHECK_LIB(m, atan2, [LIBS="$LIBS -lm"])
 
 dnl librealtime (for rtl_test)
-AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS"])
+AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS -lrt"])
 
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
