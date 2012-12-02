@@ -119,15 +119,16 @@ void usage(void)
 		"Use:\trtl_fm -f freq [-options] filename\n"
                 "\t-f frequency_to_tune_to [Hz]\n"
 		"\t (use multiple -f for scanning)\n"
-		"\t[-s samplerate (default: 24000 Hz)]\n"
+		"\t[-s samplerate (default: 24k Hz)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: automatic)]\n"
-		"\t[-l squelch_level (default: 150)]\n"
+		"\t[-l squelch_level (default: 0/off)]\n"
 		"\t[-o oversampling (default: 1)]\n"
+		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-E sets lower edge tuning (default: center)]\n"
 		"\t[-N enables NBFM mode (default: on)]\n"
 		"\t[-W enables WBFM mode (default: off)]\n"
-		"\t (-N -s 170e3 -o 4 -A -r 32e3 -l 0 -D)\n"
+		"\t (-N -s 170k -o 4 -A -r 32k -l 0 -D)\n"
 		"\tfilename (a '-' dumps samples to stdout)\n\n"
 		"Experimental options:\n"
 		"\t[-r output rate (default: same as -s)]\n"
@@ -144,7 +145,7 @@ void usage(void)
 		"Produces signed 16 bit ints, use Sox or aplay to hear them.\n"
 		"\trtl_fm ... - | play -t raw -r 24k -e signed-integer -b 16 -c 1 -V1 -\n"
 		"\t             | aplay -r 24k -f S16_LE -t raw -c 1\n"
-		"\t  -s 22050 - | multimon -t raw /dev/stdin\n\n");
+		"\t  -s 22.5k - | multimon -t raw /dev/stdin\n\n");
 	exit(1);
 }
 
@@ -567,6 +568,26 @@ static void *demod_thread_fn(void *arg)
 	return 0;
 }
 
+int atofs(char* f)
+/* standard suffixes */
+{
+	char* chop;
+        double suff = 1.0;
+	chop = strndup(f, strlen(f)-1);
+	switch (f[strlen(f)-1]) {
+		case 'G':
+			suff *= 1e3;
+		case 'M':
+			suff *= 1e3;
+		case 'k':
+			suff *= 1e3;
+                        suff *= atof(chop);}
+	free(chop);
+	if (suff != 1.0) {
+		return (int)suff;}
+	return (int)atof(f);
+}
+
 int main(int argc, char **argv)
 {
 #ifndef _WIN32
@@ -579,10 +600,11 @@ int main(int argc, char **argv)
 	uint8_t *buffer;
 	uint32_t dev_index = 0;
 	int device_count;
+	int ppm_error = 0;
 	char vendor[256], product[256], serial[256];
 	fm.freqs[0] = 100000000;
 	fm.sample_rate = DEFAULT_SAMPLE_RATE;
-	fm.squelch_level = 150;
+	fm.squelch_level = 0;
 	fm.term_squelch_hits = 0;
 	fm.freq_len = 0;
 	fm.edge = 0;
@@ -595,13 +617,13 @@ int main(int argc, char **argv)
 	fm.mode_demod = &fm_demod;
 	sem_init(&data_ready, 0, 0);
 
-	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:t:r:EFANWMULRD")) != -1) {
+	while ((opt = getopt(argc, argv, "d:f:g:s:b:l:o:t:r:p:EFANWMULRD")) != -1) {
 		switch (opt) {
 		case 'd':
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
-			fm.freqs[fm.freq_len] = (uint32_t)atof(optarg);
+			fm.freqs[fm.freq_len] = (uint32_t)atofs(optarg);
 			fm.freq_len++;
 			break;
 		case 'g':
@@ -611,10 +633,10 @@ int main(int argc, char **argv)
 			fm.squelch_level = (int)atof(optarg);
 			break;
 		case 's':
-			fm.sample_rate = (uint32_t)atof(optarg);
+			fm.sample_rate = (uint32_t)atofs(optarg);
 			break;
 		case 'r':
-			fm.output_rate = (int)atof(optarg);
+			fm.output_rate = (int)atofs(optarg);
 			break;
 		case 'o':
 			fm.post_downsample = (int)atof(optarg);
@@ -624,6 +646,8 @@ int main(int argc, char **argv)
 		case 't':
 			fm.term_squelch_hits = (int)atof(optarg);
 			break;
+		case 'p':
+			ppm_error = atoi(optarg);
 		case 'E':
 			fm.edge = 1;
 			break;
@@ -712,7 +736,7 @@ int main(int argc, char **argv)
 
 	/* WBFM is special */
 	if (wb_mode) {
-		fm.freqs[0] += 15000;
+		fm.freqs[0] += 16000;
 	}
 
 	if (fm.deemph) {
@@ -736,6 +760,7 @@ int main(int argc, char **argv)
 	} else {
 		fprintf(stderr, "Tuner gain set to %0.2f dB.\n", gain/10.0);
 	}
+	r = rtlsdr_set_freq_correction(dev, ppm_error);
 
 	if (strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		fm.file = stdout;
