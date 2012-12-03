@@ -25,16 +25,14 @@
  * based on rtl_sdr.c and rtl_tcp.c
  * todo: realtime ARMv5
  *       remove float math (disqualifies complex.h)
- *       replace atan2 with a fast approximation
  *       in-place array operations
- *       better wide band support
  *       sanity checks
  *       nicer FIR than square
  *       scale squelch to other input parameters
  *       test all the demodulations
- *       sci notation parsing
  *       pad output on hop
  *       nearest gain approx
+ *       frequency ranges could be stored better
  */
 
 #include <errno.h>
@@ -66,7 +64,6 @@
 #define DEFAULT_BUF_LENGTH		(1 * 16384)
 #define MAXIMUM_OVERSAMPLE		16
 #define MAXIMUM_BUF_LENGTH		(MAXIMUM_OVERSAMPLE * DEFAULT_BUF_LENGTH)
-#define CONSEQ_SQUELCH			20
 #define AUTO_GAIN			-100
 
 static pthread_t demod_thread;
@@ -86,8 +83,10 @@ struct fm_state
 	int      post_downsample;
 	int      output_scale;
 	int      squelch_level;
+	int      conseq_squelch;
 	int      squelch_hits;
-	int      term_squelch_hits;
+	int      terminate_on_squelch;
+	int      exit_flag;
 	uint8_t  buf[MAXIMUM_BUF_LENGTH];
 	uint32_t buf_len;
 	int      signal[MAXIMUM_BUF_LENGTH];  /* 16 bit signed i/q pairs */
@@ -96,7 +95,7 @@ struct fm_state
 	int      signal2_len;
 	FILE     *file;
 	int      edge;
-	uint32_t freqs[100];
+	uint32_t freqs[1000];
 	int      freq_len;
 	int      freq_now;
 	uint32_t sample_rate;
@@ -116,24 +115,26 @@ void usage(void)
 {
 	fprintf(stderr,
 		"rtl_fm, a simple narrow band FM demodulator for RTL2832 based DVB-T receivers\n\n"
-		"Use:\trtl_fm -f freq [-options] filename\n"
-                "\t-f frequency_to_tune_to [Hz]\n"
-		"\t (use multiple -f for scanning)\n"
-		"\t[-s samplerate (default: 24k Hz)]\n"
+		"Use:\trtl_fm -f freq [-options] [filename]\n"
+		"\t-f frequency_to_tune_to [Hz]\n"
+		"\t (use multiple -f for scanning, requires squelch)\n"
+		"\t (ranges supported, -f 118M:137M:25k)\n"
+		"\t[-s sample_rate (default: 24k)]\n"
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: automatic)]\n"
 		"\t[-l squelch_level (default: 0/off)]\n"
-		"\t[-o oversampling (default: 1)]\n"
+		"\t[-o oversampling (default: 1, 4 recommended)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\t[-E sets lower edge tuning (default: center)]\n"
 		"\t[-N enables NBFM mode (default: on)]\n"
 		"\t[-W enables WBFM mode (default: off)]\n"
 		"\t (-N -s 170k -o 4 -A -r 32k -l 0 -D)\n"
-		"\tfilename (a '-' dumps samples to stdout)\n\n"
+		"\tfilename (a '-' dumps samples to stdout)\n"
+		"\t (omitting the filename also uses stdout)\n\n"
 		"Experimental options:\n"
-		"\t[-r output rate (default: same as -s)]\n"
-		"\t[-t terminate_hits (default: 0/off)]\n"
-		"\t (requires squelch on and scanning off)\n"
+		"\t[-r output_rate (default: same as -s)]\n"
+		"\t[-t squelch_delay (default: 20)]\n"
+		"\t (+values will mute/scan, -values will exit)\n"
 		"\t[-M enables AM mode (default: off)]\n"
 		"\t[-L enables LSB mode (default: off)]\n"
 		"\t[-U enables USB mode (default: off)]\n"
@@ -369,7 +370,7 @@ void am_demod(struct fm_state *fm)
 	int i, pcm;
 	for (i = 0; i < (fm->signal_len); i += 2) {
 		// hypot uses floats but won't overflow
-		//pcm = (int)hypot(fm->signal[i], fm->signal[i+1]);
+		//fm->signal2[i/2] = (int16_t)hypot(fm->signal[i], fm->signal[i+1]);
 		pcm = fm->signal[i] * fm->signal[i];
 		pcm += fm->signal[i+1] * fm->signal[i+1];
 		fm->signal2[i/2] = (int16_t)sqrt(pcm); // * fm->output_scale;
@@ -445,7 +446,7 @@ int mad(int *samples, int len, int step)
 int post_squelch(struct fm_state *fm)
 /* returns 1 for active signal, 0 for no signal */
 {
-	int i, i2, dev_r, dev_j, len, sq_l;
+	int dev_r, dev_j, len, sq_l;
 	/* only for small samples, big samples need chunk processing */
 	len = fm->signal_len;
 	sq_l = fm->squelch_level;
@@ -456,12 +457,6 @@ int post_squelch(struct fm_state *fm)
 		return 1;
 	}
 	fm->squelch_hits++;
-	if (fm->term_squelch_hits) {
-		return 0;}
-	/* weak signal, kill it entirely */
-	for (i=0; i<len; i++) {
-		fm->signal2[i] = 0;
-	}
 	return 0;
 }
 
@@ -504,7 +499,7 @@ static void optimal_settings(struct fm_state *fm, int freq, int hopping)
 
 void full_demod(struct fm_state *fm)
 {
-	int sr, freq_next;
+	int i, sr, freq_next, hop = 0;
 	rotate_90(fm->buf, fm->buf_len);
 	if (fm->fir_enable) {
 		low_pass_fir(fm, fm->buf, fm->buf_len);
@@ -517,6 +512,16 @@ void full_demod(struct fm_state *fm)
 		return;
 	}
 	sr = post_squelch(fm);
+	if (!sr && fm->squelch_hits > fm->conseq_squelch) {
+		if (fm->terminate_on_squelch) {
+			fm->exit_flag = 1;}
+		if (fm->freq_len == 1) {  /* mute */
+			for (i=0; i<fm->signal_len; i++) {
+				fm->signal2[i] = 0;}
+		}
+		else {
+			hop = 1;}
+	}
 	if (fm->post_downsample > 1) {
 		fm->signal2_len = low_pass_simple(fm->signal2, fm->signal2_len, fm->post_downsample);}
 	if (fm->output_rate > 0) {
@@ -526,11 +531,11 @@ void full_demod(struct fm_state *fm)
 		deemph_filter(fm);}
 	/* ignore under runs for now */
 	fwrite(fm->signal2, 2, fm->signal2_len, fm->file);
-	if (fm->freq_len > 1 && !sr && fm->squelch_hits > CONSEQ_SQUELCH) {
+	if (hop) {
 		freq_next = (fm->freq_now + 1) % fm->freq_len;
 		optimal_settings(fm, freq_next, 1);
-		fm->squelch_hits = CONSEQ_SQUELCH + 1;  /* hair trigger */
-		/* wait for settling and dump buffer */
+		fm->squelch_hits = fm->conseq_squelch + 1;  /* hair trigger */
+		/* wait for settling and flush buffer */
 		usleep(5000);
 		rtlsdr_read_sync(dev, NULL, 4096, NULL);
 	}
@@ -559,16 +564,14 @@ static void *demod_thread_fn(void *arg)
 	while (!do_exit) {
 		sem_wait(&data_ready);
 		full_demod(fm2);
-		if (!fm2->term_squelch_hits) {
-			continue;}
-		if (fm2->squelch_hits > fm2->term_squelch_hits) {
+		if (fm2->exit_flag) {
 			do_exit = 1;
 			rtlsdr_cancel_async(dev);}
 	}
 	return 0;
 }
 
-int atofs(char* f)
+double atofs(char* f)
 /* standard suffixes */
 {
 	char* chop;
@@ -584,8 +587,26 @@ int atofs(char* f)
                         suff *= atof(chop);}
 	free(chop);
 	if (suff != 1.0) {
-		return (int)suff;}
-	return (int)atof(f);
+		return suff;}
+	return atof(f);
+}
+
+void frequency_range(struct fm_state *fm, char *arg)
+{
+	char *start, *stop, *step;
+	int i;
+	start = arg;
+	stop = strchr(start, ':') + 1;
+	stop[-1] = '\0';
+	step = strchr(stop, ':') + 1;
+	step[-1] = '\0';
+	for(i=(int)atofs(start); i<=(int)atofs(stop); i+=(int)atofs(step))
+	{
+		fm->freqs[fm->freq_len] = (uint32_t)i;
+		fm->freq_len++;
+	}
+	stop[-1] = ':';
+	step[-1] = ':';
 }
 
 int main(int argc, char **argv)
@@ -605,7 +626,8 @@ int main(int argc, char **argv)
 	fm.freqs[0] = 100000000;
 	fm.sample_rate = DEFAULT_SAMPLE_RATE;
 	fm.squelch_level = 0;
-	fm.term_squelch_hits = 0;
+	fm.conseq_squelch = 20;
+	fm.terminate_on_squelch = 0;
 	fm.freq_len = 0;
 	fm.edge = 0;
 	fm.fir_enable = 0;
@@ -623,8 +645,13 @@ int main(int argc, char **argv)
 			dev_index = atoi(optarg);
 			break;
 		case 'f':
-			fm.freqs[fm.freq_len] = (uint32_t)atofs(optarg);
-			fm.freq_len++;
+			if (strchr(optarg, ':'))
+				{frequency_range(&fm, optarg);}
+			else
+			{
+				fm.freqs[fm.freq_len] = (uint32_t)atofs(optarg);
+				fm.freq_len++;
+			}
 			break;
 		case 'g':
 			gain = (int)(atof(optarg) * 10);
@@ -644,10 +671,15 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Oversample must be between 1 and %i\n", MAXIMUM_OVERSAMPLE);}
 			break;
 		case 't':
-			fm.term_squelch_hits = (int)atof(optarg);
+			fm.conseq_squelch = (int)atof(optarg);
+			if (fm.conseq_squelch < 0) {
+				fm.conseq_squelch = -fm.conseq_squelch;
+				fm.terminate_on_squelch = 1;
+			}
 			break;
 		case 'p':
 			ppm_error = atoi(optarg);
+			break;
 		case 'E':
 			fm.edge = 1;
 			break;
@@ -693,8 +725,13 @@ int main(int argc, char **argv)
 	/* quadruple sample_rate to limit to Δθ to ±π/2 */
 	fm.sample_rate *= fm.post_downsample;
 
+	if (fm.freq_len > 1) {
+		fm.terminate_on_squelch = 0;
+	}
+
 	if (argc <= optind) {
-		usage();
+		//usage();
+		filename = "-";
 	} else {
 		filename = argv[optind];
 	}
