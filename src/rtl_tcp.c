@@ -123,8 +123,10 @@ sighandler(int signum)
 static void sighandler(int signum)
 {
 	fprintf(stderr, "Signal caught, exiting!\n");
-	do_exit = 1;
-	rtlsdr_cancel_async(dev);
+	if (!do_exit) {
+      rtlsdr_cancel_async(dev);
+      do_exit = 1;
+    }
 }
 #endif
 
@@ -206,9 +208,13 @@ static void *tcp_worker(void *arg)
 				r = select(s+1, NULL, &writefds, NULL, &tv);
 				if(r) {
 					bytessent = send(s,  &curelem->data[index], bytesleft, 0);
-					if (bytessent == SOCKET_ERROR || do_exit) {
-						printf("worker socket error\n");
+					if (bytessent == SOCKET_ERROR) {
+                        perror("worker socket error");
 						sighandler(0);
+						dead[0]=1;
+						pthread_exit(NULL);
+					} else if (do_exit) {
+						printf("do_exit\n");
 						dead[0]=1;
 						pthread_exit(NULL);
 					} else {
@@ -260,9 +266,13 @@ static void *command_worker(void *arg)
 			r = select(s+1, &readfds, NULL, NULL, &tv);
 			if(r) {
 				received = recv(s, (char*)&cmd+(sizeof(cmd)-left), left, 0);
-				if(received == SOCKET_ERROR || do_exit){
-					printf("comm recv socket error\n");
+				if(received == SOCKET_ERROR){
+                    perror("comm recv socket error");
 					sighandler(0);
+					dead[1]=1;
+					pthread_exit(NULL);
+				} else if(do_exit){
+					printf("do exit\n");
 					dead[1]=1;
 					pthread_exit(NULL);
 				} else {
@@ -514,12 +524,14 @@ int main(int argc, char **argv)
 		r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)0,
 				      buf_num, 0);
 
-		closesocket(s);
 		if(!dead[0])
 			pthread_join(tcp_worker_thread, &status);
+        dead[0]=0;
 
 		if(!dead[1])
 			pthread_join(command_thread, &status);
+        dead[1]=0;
+		closesocket(s);
 
 		printf("all threads dead..\n");
 		curelem = ll_buffers;
