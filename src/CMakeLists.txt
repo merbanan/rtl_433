@@ -71,7 +71,8 @@ add_executable(rtl_tcp rtl_tcp.c)
 add_executable(rtl_test rtl_test.c)
 add_executable(rtl_fm rtl_fm.c)
 add_executable(rtl_eeprom rtl_eeprom.c)
-set(INSTALL_TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom)
+add_executable(rtl_adsb rtl_adsb.c)
+set(INSTALL_TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom rtl_adsb)
 
 target_link_libraries(rtl_sdr rtlsdr_shared
     ${LIBUSB_LIBRARIES}
@@ -93,6 +94,10 @@ target_link_libraries(rtl_eeprom rtlsdr_shared
     ${LIBUSB_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
+target_link_libraries(rtl_adsb rtlsdr_shared
+    ${LIBUSB_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
+)
 if(UNIX)
 target_link_libraries(rtl_fm m)
 if(APPLE)
@@ -108,11 +113,13 @@ target_link_libraries(rtl_tcp libgetopt_static)
 target_link_libraries(rtl_test libgetopt_static)
 target_link_libraries(rtl_fm libgetopt_static)
 target_link_libraries(rtl_eeprom libgetopt_static)
+target_link_libraries(rtl_adsb libgetopt_static)
 set_property(TARGET rtl_sdr APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_tcp APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_test APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_fm APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 set_property(TARGET rtl_eeprom APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
+set_property(TARGET rtl_adsb APPEND PROPERTY COMPILE_DEFINITIONS "rtlsdr_STATIC" )
 endif()
 ########################################################################
 # Install built library files & utilities
