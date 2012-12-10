@@ -576,7 +576,8 @@ double atofs(char* f)
 {
 	char* chop;
         double suff = 1.0;
-	chop = strndup(f, strlen(f)-1);
+	chop = malloc((strlen(f)+1)*sizeof(char));
+	strncpy(chop, f, strlen(f)-1);
 	switch (f[strlen(f)-1]) {
 		case 'G':
 			suff *= 1e3;
