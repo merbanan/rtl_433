@@ -50,8 +50,8 @@
 
 #define ADSB_RATE			2000000
 #define ADSB_FREQ			1090000000
-#define DEFAULT_ASYNC_BUF_NUMBER	32
-#define DEFAULT_BUF_LENGTH		(128 * 16384)
+#define DEFAULT_ASYNC_BUF_NUMBER	12
+#define DEFAULT_BUF_LENGTH		(16 * 16384)
 #define AUTO_GAIN			-100
 
 static pthread_t demod_thread;
@@ -61,8 +61,9 @@ static rtlsdr_dev_t *dev = NULL;
 
 /* todo, bundle these up in a struct */
 uint8_t *buffer;
-int raw_output = 0;
+int verbose_output = 0;
 int short_output = 0;
+double quality = 1.0;
 int allowed_errors = 5;
 FILE *file;
 int adsb_frame[14];
@@ -76,16 +77,17 @@ void usage(void)
 		"rtl_adsb, a simple ADS-B decoder\n\n"
 		"Use:\trtl_adsb [-R] [-g gain] [-p ppm] [output file]\n"
 		"\t[-d device_index (default: 0)]\n"
-		"\t[-R output raw bitstream (default: off)]\n"
+		"\t[-V verbove output (default: off)]\n"
 		"\t[-S show short frames (default: off)]\n"
+		"\t[-Q quality (0: no sanity checks, 0.5: half bit, 1: one bit (default), 2: two bits)]\n"
 		"\t[-e allowed_errors (default: 5)]\n"
 		"\t[-g tuner_gain (default: automatic)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n"
 		"\t (omitting the filename also uses stdout)\n\n"
 		"Streaming with netcat:\n"
-		"\trtl_adsb -R | netcat -lp 8080\n"
-		"\twhile true; do rtl_adsb -R | nc -lp 8080; done\n"
+		"\trtl_adsb | netcat -lp 8080\n"
+		"\twhile true; do rtl_adsb | nc -lp 8080; done\n"
 		"\n");
 	exit(1);
 }
@@ -113,23 +115,25 @@ static void sighandler(int signum)
 
 void display(int *frame, int len)
 {
-	int i;
+	int i, df;
 	if (!short_output && len <= short_frame) {
 		return;}
-	if (raw_output) {
-		fprintf(file, "*");
-		for (i=0; i<((len+7)/8); i++) {
-			fprintf(file, "%02x", frame[i]);}
-		fprintf(file, ";\r\n");
-		return;
-	}
-	fprintf(file, "----------\n");
-	fprintf(file, "DF=%x CA=%x\n", (frame[0] >> 3) & 0x1f, frame[0] & 0x07);
+	df = (frame[0] >> 3) & 0x1f;
+	if (quality == 0.0 && !(df==11 || df==17 || df==18 || df==19)) {
+		return;}
+	fprintf(file, "*");
+	for (i=0; i<((len+7)/8); i++) {
+		fprintf(file, "%02x", frame[i]);}
+	fprintf(file, ";\r\n");
+	if (!verbose_output) {
+		return;}
+	fprintf(file, "DF=%i CA=%i\n", df, frame[0] & 0x07);
 	fprintf(file, "ICAO Address=%06x\n", frame[1] << 16 | frame[2] << 8 | frame[3]);
 	if (len <= short_frame) {
 		return;}
 	fprintf(file, "PI=0x%06x\n",  frame[11] << 16 | frame[12] << 8 | frame[13]);
-	fprintf(file, "Type Code=%x S.Type/Ant.=%x\n", (frame[4] >> 3) & 0x1f, frame[4] & 0x07);
+	fprintf(file, "Type Code=%i S.Type/Ant.=%x\n", (frame[4] >> 3) & 0x1f, frame[4] & 0x07);
+	fprintf(file, "--------------\n");
 }
 
 int magnitute(unsigned char *buf, int len)
@@ -151,6 +155,30 @@ inline unsigned char single_manchester(unsigned char a, unsigned char b, unsigne
 	int bit, bit_p;
 	bit_p = a > b;
 	bit   = c > d;
+
+	if (quality == 0.0) {
+		return bit;}
+
+	if (quality == 0.5) {
+		if ( bit &&  bit_p && b > c) {
+			return 255;}
+		if (!bit && !bit_p && b < c) {
+			return 255;}
+		return bit;
+	}
+
+	if (quality == 1.0) {
+		if ( bit &&  bit_p && c > b) {
+			return 1;}
+		if ( bit && !bit_p && d < b) {
+			return 1;}
+		if (!bit &&  bit_p && d > b) {
+			return 0;}
+		if (!bit && !bit_p && c < b) {
+			return 0;}
+		return 255;
+	}
+
 	if ( bit &&  bit_p && c > b && d < a) {
 		return 1;}
 	if ( bit && !bit_p && c > a && d < b) {
@@ -184,10 +212,12 @@ inline int preamble(unsigned char *buf, int len, int i)
 			case 2:
 			case 7:
 			case 9:
-				high = min(high, buf[i+i2]);
+				//high = min(high, buf[i+i2]);
+				high = buf[i+i2];
 				break;
 			default:
-				low  = max(low,  buf[i+i2]);
+				//low  = max(low,  buf[i+i2]);
+				low = buf[i+i2];
 				break;
 		}
 		if (high <= low) {
@@ -215,7 +245,6 @@ void manchester(unsigned char *buf, int len)
 			for (i2=0; i2<preamble_len; i2++) {
 				buf[i+i2] = 253;}
 			i += preamble_len;
-			//printf("preamble found\n");
 			break;
 		}
 		i2 = start = i;
@@ -231,7 +260,8 @@ void manchester(unsigned char *buf, int len)
 					buf[i2] = 255;
 					break;
 				} else {
-					bit = 0;
+					bit = a > b;
+					/* these don't have to match the bit */
 					a = 0;
 					b = 255;
 				}
@@ -239,8 +269,6 @@ void manchester(unsigned char *buf, int len)
 			buf[i] = buf[i+1] = 254;  /* to be overwritten */
 			buf[i2] = bit;
 		}
-		// todo, nuke short segments
-		//printf("%i\n", i2 - start);
 	}
 }
 
@@ -263,18 +291,16 @@ void messages(unsigned char *buf, int len)
 				adsb_frame[index] |= (unsigned char)(1<<shift);
 			}
 			if (data_i == 7) {
-				//if (adsb_frame[0] == 0) {
-				//    break;}
+				if (adsb_frame[0] == 0) {
+				    break;}
 				if (adsb_frame[0] & 0x80) {
 					frame_len = long_frame;}
 				else {
 					frame_len = short_frame;}
 			}
 		}
-		// todo, check CRC
 		if (data_i < (frame_len-1)) {
 			continue;}
-		//fprintf(file, "bits: %i\n", data_i);
 		display(adsb_frame, frame_len);
 		fflush(file);
 	}
@@ -299,7 +325,6 @@ static void *demod_thread_fn(void *arg)
 		len = magnitute(buffer, DEFAULT_BUF_LENGTH);
 		manchester(buffer, len);
 		messages(buffer, len);
-		//fsync(file);
 	}
 	rtlsdr_cancel_async(dev);
 	return 0;
@@ -312,14 +337,14 @@ int main(int argc, char **argv)
 #endif
 	char *filename = NULL;
 	int n_read, r, opt;
-	int i, gain = AUTO_GAIN; // tenths of a dB
+	int i, gain = AUTO_GAIN; /* tenths of a dB */
 	uint32_t dev_index = 0;
 	int device_count;
 	int ppm_error = 0;
 	char vendor[256], product[256], serial[256];
 	sem_init(&data_ready, 0, 0);
 
-	while ((opt = getopt(argc, argv, "g:p:e:RS")) != -1)
+	while ((opt = getopt(argc, argv, "d:g:p:e:Q:VS")) != -1)
 	{
 		switch (opt) {
 		case 'd':
@@ -331,14 +356,17 @@ int main(int argc, char **argv)
 		case 'p':
 			ppm_error = atoi(optarg);
 			break;
-		case 'R':
-			raw_output = 1;
+		case 'V':
+			verbose_output = 1;
 			break;
 		case 'S':
 			short_output = 1;
 			break;
 		case 'e':
 			allowed_errors = atoi(optarg);
+			break;
+		case 'Q':
+			quality = atof(optarg);
 			break;
 		default:
 			usage();
@@ -347,7 +375,6 @@ int main(int argc, char **argv)
 	}
 
 	if (argc <= optind) {
-		//usage();
 		filename = "-";
 	} else {
 		filename = argv[optind];
