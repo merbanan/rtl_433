@@ -28,4 +28,4 @@ rtl_eeprom_SOURCES      = rtl_eeprom.c
 rtl_eeprom_LDADD        = librtlsdr.la $(LIBM)
 
 rtl_adsb_SOURCES      = rtl_adsb.c
-rtl_adsb_LDADD        = librtlsdr.la
+rtl_adsb_LDADD        = librtlsdr.la $(LIBM)

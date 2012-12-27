@@ -39,6 +39,9 @@ AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
 dnl libmath (for rtl_fm)
 AC_CHECK_LIB(m, atan2, [LIBS="$LIBS -lm"])
 
+dnl libmath (for rtl_adsb)
+AC_CHECK_LIB(m, sqrt, [LIBS="$LIBS -lm"])
+
 dnl librealtime (for rtl_test)
 AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS -lrt"])
 

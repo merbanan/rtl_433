@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -44,8 +45,6 @@
 
 #ifdef _WIN32
 #define sleep Sleep
-#undef min
-#undef max
 #endif
 
 #define ADSB_RATE			2000000
@@ -58,6 +57,9 @@ static pthread_t demod_thread;
 static sem_t data_ready;
 static volatile int do_exit = 0;
 static rtlsdr_dev_t *dev = NULL;
+
+/* look up table, could be made smaller */
+uint8_t pyth[129][129];
 
 /* todo, bundle these up in a struct */
 uint8_t *buffer;
@@ -88,6 +90,8 @@ void usage(void)
 		"Streaming with netcat:\n"
 		"\trtl_adsb | netcat -lp 8080\n"
 		"\twhile true; do rtl_adsb | nc -lp 8080; done\n"
+		"Streaming with socat:\n"
+		"\trtl_adsb | socat -u - TCP4:sdrsharp.com:47806\n"
 		"\n");
 	exit(1);
 }
@@ -136,20 +140,34 @@ void display(int *frame, int len)
 	fprintf(file, "--------------\n");
 }
 
-int magnitute(unsigned char *buf, int len)
+void pyth_precompute(void)
+{
+	int x, y;
+	for (x=0; x<129; x++) {
+	for (y=0; y<129; y++) {
+		pyth[x][y] = (uint8_t)round(sqrt(x*x + y*y));
+	}}
+}
+
+inline uint8_t abs8(uint8_t x)
+/* do not subtract 128 from the raw iq, this handles it */
+{
+	if (x >= 128) {
+		return x - 128;}
+	return 128 - x;
+}
+
+int magnitute(uint8_t *buf, int len)
 /* takes i/q, changes buf in place, returns new len */
 {
-	int i, mag;
+	int i;
 	for (i=0; i<len; i+=2) {
-		mag = abs((int)buf[i]-128) + abs((int)buf[i+1]-128);
-		if (mag > 255) {  // todo, compression
-			mag = 255;}
-		buf[i/2] = (unsigned char)mag;
+		buf[i/2] = pyth[abs8(buf[i])][abs8(buf[i+1])];
 	}
 	return len/2;
 }
 
-inline unsigned char single_manchester(unsigned char a, unsigned char b, unsigned char c, unsigned char d)
+inline uint8_t single_manchester(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 /* takes 4 consecutive real samples, return 0 or 1, 255 on error */
 {
 	int bit, bit_p;
@@ -190,33 +208,33 @@ inline unsigned char single_manchester(unsigned char a, unsigned char b, unsigne
 	return 255;
 }
 
-inline unsigned char min(unsigned char a, unsigned char b)
+inline uint8_t min8(uint8_t a, uint8_t b)
 {
 	return a<b ? a : b;
 }
 
-inline unsigned char max(unsigned char a, unsigned char b)
+inline uint8_t max8(uint8_t a, uint8_t b)
 {
 	return a>b ? a : b;
 }
 
-inline int preamble(unsigned char *buf, int len, int i)
+inline int preamble(uint8_t *buf, int len, int i)
 /* returns 0/1 for preamble at index i */
 {
 	int i2;
-	unsigned char low  = 0;
-	unsigned char high = 255;
+	uint8_t low  = 0;
+	uint8_t high = 255;
 	for (i2=0; i2<preamble_len; i2++) {
 		switch (i2) {
 			case 0:
 			case 2:
 			case 7:
 			case 9:
-				//high = min(high, buf[i+i2]);
+				//high = min8(high, buf[i+i2]);
 				high = buf[i+i2];
 				break;
 			default:
-				//low  = max(low,  buf[i+i2]);
+				//low  = max8(low,  buf[i+i2]);
 				low = buf[i+i2];
 				break;
 		}
@@ -226,12 +244,12 @@ inline int preamble(unsigned char *buf, int len, int i)
 	return 1;
 }
 
-void manchester(unsigned char *buf, int len)
+void manchester(uint8_t *buf, int len)
 /* overwrites magnitude buffer with valid bits (255 on errors) */
 {
 	/* a and b hold old values to verify local manchester */
-	unsigned char a=0, b=0;
-	unsigned char bit;
+	uint8_t a=0, b=0;
+	uint8_t bit;
 	int i, i2, start, errors;
 	// todo, allow wrap across buffers
 	i = 0;
@@ -272,7 +290,7 @@ void manchester(unsigned char *buf, int len)
 	}
 }
 
-void messages(unsigned char *buf, int len)
+void messages(uint8_t *buf, int len)
 {
 	int i, i2, start, preamble_found;
 	int data_i, index, shift, frame_len;
@@ -288,7 +306,7 @@ void messages(unsigned char *buf, int len)
 			if (buf[i]) {
 				index = data_i / 8;
 				shift = 7 - (data_i % 8);
-				adsb_frame[index] |= (unsigned char)(1<<shift);
+				adsb_frame[index] |= (uint8_t)(1<<shift);
 			}
 			if (data_i == 7) {
 				if (adsb_frame[0] == 0) {
@@ -343,6 +361,7 @@ int main(int argc, char **argv)
 	int ppm_error = 0;
 	char vendor[256], product[256], serial[256];
 	sem_init(&data_ready, 0, 0);
+	pyth_precompute();
 
 	while ((opt = getopt(argc, argv, "d:g:p:e:Q:VS")) != -1)
 	{

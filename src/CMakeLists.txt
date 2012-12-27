@@ -100,6 +100,7 @@ target_link_libraries(rtl_adsb rtlsdr_shared
 )
 if(UNIX)
 target_link_libraries(rtl_fm m)
+target_link_libraries(rtl_adsb m)
 if(APPLE)
     target_link_libraries(rtl_test m)
 else()
