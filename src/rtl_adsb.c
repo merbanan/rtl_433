@@ -45,6 +45,7 @@
 
 #ifdef _WIN32
 #define sleep Sleep
+#define round(x) (x > 0.0 ? floor(x + 0.5): ceil(x - 0.5))
 #endif
 
 #define ADSB_RATE			2000000
