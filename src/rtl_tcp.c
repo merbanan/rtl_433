@@ -70,6 +70,12 @@ struct llist {
 	struct llist *next;
 };
 
+typedef struct { /* structure size must be multiple of 2 bytes */
+	char magic[4];
+	uint32_t tuner_type;
+	uint32_t tuner_gain_count;
+} dongle_info_t;
+
 static rtlsdr_dev_t *dev = NULL;
 
 int global_numq = 0;
@@ -236,6 +242,24 @@ static void *tcp_worker(void *arg)
 	}
 }
 
+static int set_gain_by_index(rtlsdr_dev_t *_dev, unsigned int index)
+{
+	int res = 0;
+	int* gains;
+	int count = rtlsdr_get_tuner_gains(_dev, NULL);
+
+	if (count > 0 && (unsigned int)count > index) {
+		gains = malloc(sizeof(int) * count);
+		count = rtlsdr_get_tuner_gains(_dev, gains);
+
+		res = rtlsdr_set_tuner_gain(_dev, gains[index]);
+
+		free(gains);
+	}
+
+	return res;
+}
+
 #ifdef _WIN32
 #define __attribute__(x)
 #pragma pack(push, 1)
@@ -335,6 +359,10 @@ static void *command_worker(void *arg)
 			printf("set tuner xtal %d\n", ntohl(cmd.param));
 			rtlsdr_set_xtal_freq(dev, 0, ntohl(cmd.param));
 			break;
+		case 0x0d:
+			printf("set tuner gain by index %d\n", ntohl(cmd.param));
+			set_gain_by_index(dev, ntohl(cmd.param));
+			break;
 		default:
 			break;
 		}
@@ -361,6 +389,7 @@ int main(int argc, char **argv)
 	socklen_t rlen;
 	fd_set readfds;
 	u_long blockmode = 1;
+	dongle_info_t dongle_info;
 #ifdef _WIN32
 	WSADATA wsd;
 	i = WSAStartup(MAKEWORD(2,2), &wsd);
@@ -515,22 +544,37 @@ int main(int argc, char **argv)
 
 		printf("client accepted!\n");
 
+		memset(&dongle_info, 0, sizeof(dongle_info));
+		memcpy(&dongle_info.magic, "RTL0", 4);
+
+		r = rtlsdr_get_tuner_type(dev);
+		if (r >= 0)
+			dongle_info.tuner_type = htonl(r);
+
+		r = rtlsdr_get_tuner_gains(dev, NULL);
+		if (r >= 0)
+			dongle_info.tuner_gain_count = htonl(r);
+
+		r = send(s, (const char *)&dongle_info, sizeof(dongle_info), 0);
+		if (sizeof(dongle_info) != r)
+			printf("failed to send dongle information\n");
+
 		pthread_attr_init(&attr);
 		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 		r = pthread_create(&tcp_worker_thread, &attr, tcp_worker, NULL);
 		r = pthread_create(&command_thread, &attr, command_worker, NULL);
 		pthread_attr_destroy(&attr);
 
-		r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)0,
-				      buf_num, 0);
+		r = rtlsdr_read_async(dev, rtlsdr_callback, NULL, buf_num, 0);
 
 		if(!dead[0])
 			pthread_join(tcp_worker_thread, &status);
-        dead[0]=0;
+		dead[0]=0;
 
 		if(!dead[1])
 			pthread_join(command_thread, &status);
-        dead[1]=0;
+		dead[1]=0;
+
 		closesocket(s);
 
 		printf("all threads dead..\n");
