@@ -144,9 +144,10 @@ void display(int *frame, int len)
 void pyth_precompute(void)
 {
 	int x, y;
+	double scale = 1.408 ;  /* use the full 8 bits */
 	for (x=0; x<129; x++) {
 	for (y=0; y<129; y++) {
-		pyth[x][y] = (uint8_t)round(sqrt(x*x + y*y));
+		pyth[x][y] = (uint8_t)round(scale * sqrt(x*x + y*y));
 	}}
 }
 
@@ -437,6 +438,7 @@ int main(int argc, char **argv)
 
 	if (strcmp(filename, "-") == 0) { /* Write samples to stdout */
 		file = stdout;
+		setvbuf(stdout, NULL, _IONBF, 0);
 #ifdef _WIN32
 		_setmode(_fileno(file), _O_BINARY);
 #endif
