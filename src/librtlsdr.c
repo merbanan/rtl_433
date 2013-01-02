@@ -965,7 +965,6 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	uint16_t tmp;
 	uint32_t rsamp_ratio;
 	double real_rate;
-	uint32_t rtl_freq = dev->rtl_xtal;
 
 	if (!dev)
 		return -1;
@@ -974,10 +973,10 @@ int rtlsdr_set_sample_rate(rtlsdr_dev_t *dev, uint32_t samp_rate)
 	if (samp_rate > MAX_SAMP_RATE)
 		samp_rate = MAX_SAMP_RATE;
 
-	rsamp_ratio = (rtl_freq * TWO_POW(22)) / samp_rate;
+	rsamp_ratio = (dev->rtl_xtal * TWO_POW(22)) / samp_rate;
 	rsamp_ratio &= ~3;
 
-	real_rate = (rtl_freq * TWO_POW(22)) / rsamp_ratio;
+	real_rate = (dev->rtl_xtal * TWO_POW(22)) / rsamp_ratio;
 
 	if ( ((double)samp_rate) != real_rate )
 		fprintf(stderr, "Exact sample rate is: %f Hz\n", real_rate);
