@@ -1344,6 +1344,12 @@ int rtlsdr_open(rtlsdr_dev_t **out_dev, uint32_t index)
 
 	dev->rtl_xtal = DEF_RTL_XTAL_FREQ;
 
+	/* perform a dummy write, if it fails, reset the device */
+	if (rtlsdr_write_reg(dev, USBB, USB_SYSCTL, 0x09, 1) < 0) {
+		fprintf(stderr, "Resetting device...\n");
+		libusb_reset_device(dev->devh);
+	}
+
 	rtlsdr_init_baseband(dev);
 
 	/* Probe tuners */
