@@ -74,6 +74,7 @@ struct dm_state {
     int32_t decimation_level;
     int16_t filter_buffer[MAXIMAL_BUF_LENGTH+FILTER_ORDER];
     int16_t* f_buf;
+    int analyze;
 
     int bits_col_idx;
     int bits_row_idx;
@@ -257,6 +258,42 @@ static void level_detect(struct dm_state *demod, int16_t *buf, uint32_t len)
     }
 }
 
+static int counter = 0;
+static int print = 1;
+static int print2 = 0;
+static int pulses_found = 0;
+static int pulse_start = 0;
+static int pulse_end = 0;
+
+static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
+{
+    unsigned int i;
+
+    for (i=0 ; i<len ; i++) {
+        if (buf[i] > demod->level_limit) {
+            if (print) {
+                pulses_found++;
+                fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
+                fprintf(stderr, "pulse_start[%d] found at counter %d, value = %d\n",pulses_found, counter, buf[i]);
+                pulse_start = counter;
+                print =0;
+                print2 = 1;
+                
+            }
+        }
+        counter++;
+        if (buf[i] < demod->level_limit) {
+            if (print2) {
+                fprintf(stderr, "pulse_end  [%d] found at counter %d, pulse lenght = %d\n",pulses_found, counter, counter-pulse_start);
+                pulse_end = counter;
+                print2 = 0;
+            }
+            print = 1;
+        }
+
+
+    }
+}
 
 /** Something that might look like a IIR lowpass filter
  * 
@@ -308,10 +345,13 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             rtlsdr_cancel_async(dev);
         }
 
-        envelope_detect(buf, len, demod->decimation_level);
-        low_pass_filter(sbuf, demod->f_buf, len>>(demod->decimation_level+1));
-        level_detect(demod, demod->f_buf, len/2);
-        //pwm_demod(sbuf, len/2);
+            envelope_detect(buf, len, demod->decimation_level);
+            low_pass_filter(sbuf, demod->f_buf, len>>(demod->decimation_level+1));
+        if (demod->analyze) {
+            pwm_analyze(demod, demod->f_buf, len/2);
+        } else {
+            level_detect(demod, demod->f_buf, len/2);
+        }
 
         if (demod->save_data) {
             if (fwrite(demod->f_buf, 1, len>>demod->decimation_level, demod->file) != len>>demod->decimation_level) {
@@ -352,7 +392,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
     demod_reset_bits_packet(demod);
 
-    while ((opt = getopt(argc, argv, "r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "ar:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -377,6 +417,9 @@ int main(int argc, char **argv)
             break;
         case 'c':
             demod->decimation_level = (uint32_t)atof(optarg);
+            break;
+        case 'a':
+            demod->analyze = 1;
             break;
         case 'r':
             test_mode_file = optarg;
