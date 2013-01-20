@@ -52,6 +52,8 @@
  * temp is 12 bit signed scaled by 10
  * unk0 is always 1100,c
  * unk1 is always 1100,c
+ * 
+ * The sensor can be bought at Clas Ohlson
  */ 
 
 #include <errno.h>
@@ -81,10 +83,36 @@
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define FILTER_ORDER            1
 
+#define BITBUF_COLS             5
+#define BITBUF_ROWS             12
+
+/* Protocol list */
+#define RUBICSON        0x00000001
+#define PROLOGUE        0x00000002
 
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
+
+struct protocol_state {
+    /* bits state */
+    int bits_col_idx;
+    int bits_row_idx;
+    int bits_bit_col_idx;
+    uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
+
+    /* demod state */
+    int pulse_length;
+    int pulse_count;
+    int pulse_distance;
+    int sample_counter;
+    int start_c;
+
+    /* pwm limits */
+    int short_limit;
+    int long_limit;
+    int reset_limit;
+};
 
 struct dm_state {
     FILE *file;
@@ -95,10 +123,14 @@ struct dm_state {
     int16_t* f_buf;
     int analyze;
 
-    int bits_col_idx;
-    int bits_row_idx;
-    int bits_bit_col_idx;
-    uint8_t bits_buffer[12][5];
+//    int bits_col_idx;
+//    int bits_row_idx;
+//    int bits_bit_col_idx;
+//    uint8_t bits_buffer[12][5];
+
+    /* Protocol states */
+    struct protocol_state *rubicson;
+    struct protocol_state *prologue;
 };
 
 void usage(void)
@@ -155,37 +187,37 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
     }
 }
 
-static void demod_reset_bits_packet(struct dm_state *demod) {
-    memset(demod->bits_buffer, 0 ,sizeof(int8_t)*12*2);
-    demod->bits_col_idx = 0;
-    demod->bits_bit_col_idx = 7;
-    demod->bits_row_idx = 0;
+static void demod_reset_bits_packet(struct protocol_state* p) {
+    memset(p->bits_buffer, 0 ,sizeof(int8_t)*BITBUF_ROWS*BITBUF_COLS);
+    p->bits_col_idx = 0;
+    p->bits_bit_col_idx = 7;
+    p->bits_row_idx = 0;
 }
 
-static void demod_add_bit(struct dm_state *demod, int bit) {
-    demod->bits_buffer[demod->bits_row_idx][demod->bits_col_idx] |= bit<<demod->bits_bit_col_idx;
-    demod->bits_bit_col_idx--;
-    if (demod->bits_bit_col_idx<0) {
-        demod->bits_bit_col_idx = 7;
-        demod->bits_col_idx++;
-        if (demod->bits_col_idx>4) {
-            demod->bits_col_idx = 4;
-            fprintf(stderr, "demod->bits_col_idx>4!\n");
+static void demod_add_bit(struct protocol_state* p, int bit) {
+    p->bits_buffer[p->bits_row_idx][p->bits_col_idx] |= bit<<p->bits_bit_col_idx;
+    p->bits_bit_col_idx--;
+    if (p->bits_bit_col_idx<0) {
+        p->bits_bit_col_idx = 7;
+        p->bits_col_idx++;
+        if (p->bits_col_idx>4) {
+            p->bits_col_idx = 4;
+            fprintf(stderr, "p->bits_col_idx>4!\n");
         }
     }
 }
 
-static void demod_next_bits_packet(struct dm_state *demod) {
-    demod->bits_col_idx = 0;
-    demod->bits_row_idx++;
-    demod->bits_bit_col_idx = 7;
-    if (demod->bits_row_idx>11) {
-        demod->bits_row_idx = 11;
-        fprintf(stderr, "demod->bits_row_idx>11!\n");
+static void demod_next_bits_packet(struct protocol_state* p) {
+    p->bits_col_idx = 0;
+    p->bits_row_idx++;
+    p->bits_bit_col_idx = 7;
+    if (p->bits_row_idx>11) {
+        p->bits_row_idx = 11;
+        fprintf(stderr, "p->bits_row_idx>11!\n");
     }
 }
 
-static void demod_print_bits_packet(struct dm_state *demod) {
+static void demod_print_bits_packet(struct protocol_state* p) {
     int i,j,k;
     int temp_sign;
     int temperature_before_dec;
@@ -193,10 +225,10 @@ static void demod_print_bits_packet(struct dm_state *demod) {
     int16_t temp, temp2;
     int rid;
     fprintf(stderr, "\n");
-    for (i=0 ; i<12 ; i++) {
-        for (j=0 ; j<5 ; j++) {
+    for (i=0 ; i<BITBUF_ROWS ; i++) {
+        for (j=0 ; j<BITBUF_COLS ; j++) {
             for (k=7 ; k>=0 ; k--) {
-                if (demod->bits_buffer[i][j] & 1<<k)
+                if (p->bits_buffer[i][j] & 1<<k)
                     fprintf(stderr, "1 ");
                 else
                     fprintf(stderr, "0 ");
@@ -207,29 +239,29 @@ static void demod_print_bits_packet(struct dm_state *demod) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
-    fprintf(stderr, "%02x %02x %02x %02x %02x\n",demod->bits_buffer[1][0],demod->bits_buffer[1][1],demod->bits_buffer[1][2],demod->bits_buffer[1][3],demod->bits_buffer[1][4]);
+    fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[1][0],p->bits_buffer[1][1],p->bits_buffer[1][2],p->bits_buffer[1][3],p->bits_buffer[1][4]);
 
     /* Nible 3,4,5 contains 12 bits of temperature
      * The temerature is signed and scaled by 10 */
-    temp = (int16_t)((uint16_t)(demod->bits_buffer[0][1] << 12) | (demod->bits_buffer[0][2] << 4));
+    temp = (int16_t)((uint16_t)(p->bits_buffer[0][1] << 12) | (p->bits_buffer[0][2] << 4));
     temp = temp >> 4;
 
     /* Prologue sensor */
-    temp2 = (int16_t)((uint16_t)(demod->bits_buffer[1][2] << 8) | (demod->bits_buffer[1][3]&0xF0));
+    temp2 = (int16_t)((uint16_t)(p->bits_buffer[1][2] << 8) | (p->bits_buffer[1][3]&0xF0));
     temp2 = temp2 >> 4;
-    fprintf(stderr, "button        = %d\n",demod->bits_buffer[1][1]&0x04?1:0);
-    fprintf(stderr, "first reading = %d\n",demod->bits_buffer[1][1]&0x08?0:1);
+    fprintf(stderr, "button        = %d\n",p->bits_buffer[1][1]&0x04?1:0);
+    fprintf(stderr, "first reading = %d\n",p->bits_buffer[1][1]&0x08?0:1);
     fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-    fprintf(stderr, "channel       = %d\n",(demod->bits_buffer[1][1]&0x03)+1);
-    fprintf(stderr, "id            = %d\n",(demod->bits_buffer[1][0]&0xF0)>>4);
-    rid = ((demod->bits_buffer[1][0]&0x0F)<<4)|(demod->bits_buffer[1][1]&0xF0)>>4;
+    fprintf(stderr, "channel       = %d\n",(p->bits_buffer[1][1]&0x03)+1);
+    fprintf(stderr, "id            = %d\n",(p->bits_buffer[1][0]&0xF0)>>4);
+    rid = ((p->bits_buffer[1][0]&0x0F)<<4)|(p->bits_buffer[1][1]&0xF0)>>4;
     fprintf(stderr, "rid           = %d\n", rid);
     fprintf(stderr, "hrid          = %02x\n", rid);
 
     temperature_before_dec = abs(temp / 10);
     temperature_after_dec = abs(temp % 10);
 
-    fprintf(stderr, "rid = %x\n",demod->bits_buffer[0][0]);
+    fprintf(stderr, "rid = %x\n",p->bits_buffer[0][0]);
 
     fprintf(stderr, "temp = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
 
@@ -250,7 +282,7 @@ static int start_c = 0;
  *  PW long       = 2330 samples (2*PW short)
  *  PW next       = 4670 samples (2*PW long)
  */
-
+#if 0
 static void level_detect(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
     unsigned int i;
@@ -288,6 +320,7 @@ static void level_detect(struct dm_state *demod, int16_t *buf, uint32_t len)
         }
     }
 }
+#endif
 
 static int counter = 0;
 static int print = 1;
@@ -329,39 +362,39 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
     }
 }
 
-static void pwm_demod(struct dm_state *demod, int16_t *buf, uint32_t len) {
+static void pwm_demod(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
 
     for (i=0 ; i<len ; i++) {
         if (buf[i] > demod->level_limit) {
-            pulse_count = 1;
-            start_c = 1;
+            p->pulse_count = 1;
+            p->start_c = 1;
         }
-        if (pulse_count && (buf[i] < demod->level_limit)) {
-            pulse_length = 0;
-            pulse_distance = 1;
-            sample_counter = 0;
-            pulse_count = 0;
+        if (p->pulse_count && (buf[i] < demod->level_limit)) {
+            p->pulse_length = 0;
+            p->pulse_distance = 1;
+            p->sample_counter = 0;
+            p->pulse_count = 0;
         }
-        if (start_c) sample_counter++;
-        if (pulse_distance && (buf[i] > demod->level_limit)) {
-            if (sample_counter < 3500) {
-                demod_add_bit(demod, 0);
-            } else if (sample_counter < 7000) {
-                demod_add_bit(demod, 1);
+        if (p->start_c) p->sample_counter++;
+        if (p->pulse_distance && (buf[i] > demod->level_limit)) {
+            if (p->sample_counter < p->short_limit) {
+                demod_add_bit(p, 0);
+            } else if (p->sample_counter < p->long_limit) {
+                demod_add_bit(p, 1);
             } else {
-                demod_next_bits_packet(demod);
-                pulse_count    = 0;
-                sample_counter = 0;
+                demod_next_bits_packet(p);
+                p->pulse_count    = 0;
+                p->sample_counter = 0;
             }
-            pulse_distance = 0;
+            p->pulse_distance = 0;
         }
-        if (sample_counter > 15000) {
-            start_c    = 0;
-            sample_counter = 0;
-            pulse_distance = 0;
-            demod_print_bits_packet(demod);
-            demod_reset_bits_packet(demod);
+        if (p->sample_counter > p->reset_limit) {
+            p->start_c    = 0;
+            p->sample_counter = 0;
+            p->pulse_distance = 0;
+            demod_print_bits_packet(p);
+            demod_reset_bits_packet(p);
         }
     }
 }
@@ -422,7 +455,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             pwm_analyze(demod, demod->f_buf, len/2);
         } else {
             //level_detect(demod, demod->f_buf, len/2);
-            pwm_demod(demod, demod->f_buf, len/2);
+            pwm_demod(demod, demod->prologue, demod->f_buf, len/2);
+            pwm_demod(demod, demod->rubicson, demod->f_buf, len/2);
         }
 
         if (demod->save_data) {
@@ -460,10 +494,21 @@ int main(int argc, char **argv)
 
     demod = malloc(sizeof(struct dm_state));
     memset(demod,0,sizeof(struct dm_state));
+    /* init protocols FIXME replace this with something smarter */
+    demod->rubicson = calloc(1,sizeof(struct protocol_state));
+    demod->rubicson->short_limit = 1744;
+    demod->rubicson->long_limit  = 3500;
+    demod->rubicson->reset_limit = 5000;
+    demod_reset_bits_packet(demod->rubicson);
+    demod->prologue = calloc(1,sizeof(struct protocol_state));
+    demod->prologue->short_limit = 3500;
+    demod->prologue->long_limit  = 7000;
+    demod->prologue->reset_limit = 15000;
+    demod_reset_bits_packet(demod->prologue);
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
-    demod_reset_bits_packet(demod);
+    
 
     while ((opt = getopt(argc, argv, "ar:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
@@ -671,8 +716,13 @@ int main(int argc, char **argv)
     if (demod->file && (demod->file != stdout))
         fclose(demod->file);
 
+    if(demod->prologue)
+        free(demod->prologue);
+    if(demod->rubicson)
+        free(demod->rubicson);
     if(demod)
         free(demod);
+    
 
     rtlsdr_close(dev);
     free (buffer);
