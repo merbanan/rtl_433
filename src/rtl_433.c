@@ -156,7 +156,7 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
 }
 
 static void demod_reset_bits_packet(struct dm_state *demod) {
-    memset(demod->bits_buffer, 0 ,sizeof(int32_t)*12*2);
+    memset(demod->bits_buffer, 0 ,sizeof(int8_t)*12*2);
     demod->bits_col_idx = 0;
     demod->bits_bit_col_idx = 7;
     demod->bits_row_idx = 0;
@@ -459,6 +459,7 @@ int main(int argc, char **argv)
     char vendor[256], product[256], serial[256];
 
     demod = malloc(sizeof(struct dm_state));
+    memset(demod,0,sizeof(struct dm_state));
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
@@ -669,6 +670,9 @@ int main(int argc, char **argv)
 
     if (demod->file && (demod->file != stdout))
         fclose(demod->file);
+
+    if(demod)
+        free(demod);
 
     rtlsdr_close(dev);
     free (buffer);
