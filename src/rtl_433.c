@@ -23,17 +23,36 @@
 
 /* Currently this can decode the temperature and id from Rubicson sensors
  * 
- * the sensor sends36 bits 12 times
+ * the sensor sends 36 bits 12 times pwm modulated
  * the data is grouped into 9 nibles
  * [id0] [id1], [unk0] [temp0], [temp1] [temp2], [unk1] [unk2], [unk3]
  * 
  * The id changes when the battery is changed in the sensor.
  * unk0 is always 1 0 0 0, most likely 2 channel bits as the sensor can recevice 3 channels
  * unk1-3 changes and the meaning is unknown
- * 
+ * temp is 12 bit signed scaled by 10
  * 
  * The sensor can be bought at Kjell&Co
  */
+
+/* Prologue sensor protocol
+ *
+ * the sensor sends 36 bits 7 times, before the first packet there is a pulse sent
+ * the packets are pwm modulated
+ * 
+ * the data is grouped in 9 nibles
+ * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [unk0] [unk1]
+ * 
+ * id0 is always 1001,9
+ * rid is a random id that is generated when the sensor starts, could include battery status
+ * the same batteries often generate the same id
+ * data(3) is 0 the first reading the sensor transmits
+ * data(2) is 1 when the sensor sends a reading when pressing the button on the sensor
+ * data(1,0)+1 forms the channel number that can be set by the sensor (1-3)
+ * temp is 12 bit signed scaled by 10
+ * unk0 is always 1100,c
+ * unk1 is always 1100,c
+ */ 
 
 #include <errno.h>
 #include <signal.h>
@@ -171,8 +190,8 @@ static void demod_print_bits_packet(struct dm_state *demod) {
     int temp_sign;
     int temperature_before_dec;
     int temperature_after_dec;
-    int16_t temp;
-
+    int16_t temp, temp2;
+    int rid;
     fprintf(stderr, "\n");
     for (i=0 ; i<12 ; i++) {
         for (j=0 ; j<5 ; j++) {
@@ -188,19 +207,31 @@ static void demod_print_bits_packet(struct dm_state *demod) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
-    fprintf(stderr, "%x %x %x %x %x\n",demod->bits_buffer[0][0],demod->bits_buffer[0][1],demod->bits_buffer[0][2],demod->bits_buffer[0][3],demod->bits_buffer[0][4]);
+    fprintf(stderr, "%02x %02x %02x %02x %02x\n",demod->bits_buffer[1][0],demod->bits_buffer[1][1],demod->bits_buffer[1][2],demod->bits_buffer[1][3],demod->bits_buffer[1][4]);
 
     /* Nible 3,4,5 contains 12 bits of temperature
      * The temerature is signed and scaled by 10 */
     temp = (int16_t)((uint16_t)(demod->bits_buffer[0][1] << 12) | (demod->bits_buffer[0][2] << 4));
     temp = temp >> 4;
 
-    temperature_before_dec = temp / 10;
+    /* Prologue sensor */
+    temp2 = (int16_t)((uint16_t)(demod->bits_buffer[1][2] << 8) | (demod->bits_buffer[1][3]&0xF0));
+    temp2 = temp2 >> 4;
+    fprintf(stderr, "button        = %d\n",demod->bits_buffer[1][1]&0x04?1:0);
+    fprintf(stderr, "first reading = %d\n",demod->bits_buffer[1][1]&0x08?0:1);
+    fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
+    fprintf(stderr, "channel       = %d\n",(demod->bits_buffer[1][1]&0x03)+1);
+    fprintf(stderr, "id            = %d\n",(demod->bits_buffer[1][0]&0xF0)>>4);
+    rid = ((demod->bits_buffer[1][0]&0x0F)<<4)|(demod->bits_buffer[1][1]&0xF0)>>4;
+    fprintf(stderr, "rid           = %d\n", rid);
+    fprintf(stderr, "hrid          = %02x\n", rid);
+
+    temperature_before_dec = abs(temp / 10);
     temperature_after_dec = abs(temp % 10);
 
-    fprintf(stderr, "id = %x\n",demod->bits_buffer[0][0]);
+    fprintf(stderr, "rid = %x\n",demod->bits_buffer[0][0]);
 
-    fprintf(stderr, "temp = %d.%d\n",temperature_before_dec, temperature_after_dec);
+    fprintf(stderr, "temp = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
 
     fprintf(stderr, "\n");
 
@@ -264,6 +295,7 @@ static int print2 = 0;
 static int pulses_found = 0;
 static int pulse_start = 0;
 static int pulse_end = 0;
+static int pulse_avg = 0;
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
@@ -274,7 +306,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
             if (print) {
                 pulses_found++;
                 fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
-                fprintf(stderr, "pulse_start[%d] found at counter %d, value = %d\n",pulses_found, counter, buf[i]);
+                fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
                 pulse_start = counter;
                 print =0;
                 print2 = 1;
@@ -284,7 +316,9 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         counter++;
         if (buf[i] < demod->level_limit) {
             if (print2) {
-                fprintf(stderr, "pulse_end  [%d] found at counter %d, pulse lenght = %d\n",pulses_found, counter, counter-pulse_start);
+                pulse_avg += counter-pulse_start;
+                fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse lenght = %d, pulse avg lenght = %d\n",
+                        pulses_found, counter, counter-pulse_start, pulse_avg/pulses_found);
                 pulse_end = counter;
                 print2 = 0;
             }
@@ -292,6 +326,43 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         }
 
 
+    }
+}
+
+static void pwm_demod(struct dm_state *demod, int16_t *buf, uint32_t len) {
+    unsigned int i;
+
+    for (i=0 ; i<len ; i++) {
+        if (buf[i] > demod->level_limit) {
+            pulse_count = 1;
+            start_c = 1;
+        }
+        if (pulse_count && (buf[i] < demod->level_limit)) {
+            pulse_length = 0;
+            pulse_distance = 1;
+            sample_counter = 0;
+            pulse_count = 0;
+        }
+        if (start_c) sample_counter++;
+        if (pulse_distance && (buf[i] > demod->level_limit)) {
+            if (sample_counter < 3500) {
+                demod_add_bit(demod, 0);
+            } else if (sample_counter < 7000) {
+                demod_add_bit(demod, 1);
+            } else {
+                demod_next_bits_packet(demod);
+                pulse_count    = 0;
+                sample_counter = 0;
+            }
+            pulse_distance = 0;
+        }
+        if (sample_counter > 15000) {
+            start_c    = 0;
+            sample_counter = 0;
+            pulse_distance = 0;
+            demod_print_bits_packet(demod);
+            demod_reset_bits_packet(demod);
+        }
     }
 }
 
@@ -350,7 +421,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
         if (demod->analyze) {
             pwm_analyze(demod, demod->f_buf, len/2);
         } else {
-            level_detect(demod, demod->f_buf, len/2);
+            //level_detect(demod, demod->f_buf, len/2);
+            pwm_demod(demod, demod->f_buf, len/2);
         }
 
         if (demod->save_data) {
