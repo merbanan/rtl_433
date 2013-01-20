@@ -89,6 +89,7 @@
 /* Protocol list */
 #define RUBICSON        0x00000001
 #define PROLOGUE        0x00000002
+#define SILVERCREST     0x00000004
 
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
@@ -108,10 +109,16 @@ struct protocol_state {
     int sample_counter;
     int start_c;
 
+    int packet_present;
+    int pulse_start;
+    int real_bits;
+    int start_bit;
     /* pwm limits */
     int short_limit;
     int long_limit;
     int reset_limit;
+
+    
 };
 
 struct dm_state {
@@ -123,14 +130,10 @@ struct dm_state {
     int16_t* f_buf;
     int analyze;
 
-//    int bits_col_idx;
-//    int bits_row_idx;
-//    int bits_bit_col_idx;
-//    uint8_t bits_buffer[12][5];
-
     /* Protocol states */
     struct protocol_state *rubicson;
     struct protocol_state *prologue;
+    struct protocol_state *silvercrest;
 };
 
 void usage(void)
@@ -202,7 +205,7 @@ static void demod_add_bit(struct protocol_state* p, int bit) {
         p->bits_col_idx++;
         if (p->bits_col_idx>4) {
             p->bits_col_idx = 4;
-            fprintf(stderr, "p->bits_col_idx>4!\n");
+//            fprintf(stderr, "p->bits_col_idx>4!\n");
         }
     }
 }
@@ -239,6 +242,7 @@ static void demod_print_bits_packet(struct protocol_state* p) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
+    fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[0][0],p->bits_buffer[0][1],p->bits_buffer[0][2],p->bits_buffer[0][3],p->bits_buffer[0][4]);
     fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[1][0],p->bits_buffer[1][1],p->bits_buffer[1][2],p->bits_buffer[1][3],p->bits_buffer[1][4]);
 
     /* Nible 3,4,5 contains 12 bits of temperature
@@ -362,7 +366,9 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
     }
 }
 
-static void pwm_demod(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
+/* The distance between pulses decodes into bits */
+
+static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
 
     for (i=0 ; i<len ; i++) {
@@ -398,6 +404,62 @@ static void pwm_demod(struct dm_state *demod, struct protocol_state* p, int16_t 
         }
     }
 }
+
+/* The length of pulses decodes into bits */
+
+static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
+    unsigned int i;
+
+    for (i=0 ; i<len ; i++) {
+        if (buf[i] > demod->level_limit && !p->start_bit) {
+            /* start bit detected */
+            p->start_bit = 1;
+//            fprintf(stderr, "start bit pulse start detected\n");  
+        }
+
+        if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
+            /* end of startbit */
+            p->real_bits = 1;
+//            fprintf(stderr, "start bit pulse end detected\n");  
+        }
+        if (p->start_bit) p->sample_counter++;
+
+        
+        if (!p->pulse_start && p->real_bits && (buf[i] > demod->level_limit)) {
+            /* save the pulse start, it will never be zero */
+            p->pulse_start = p->sample_counter;
+//           fprintf(stderr, "real bit pulse start detected\n");  
+
+        }
+        
+        if (p->real_bits && p->pulse_start && (buf[i] < demod->level_limit)) {
+            /* end of pulse */
+
+            p->pulse_length = p->sample_counter-p->pulse_start;
+//           fprintf(stderr, "real bit pulse end detected %d\n", p->pulse_length);  
+        
+            if (p->pulse_length <= 600) {
+                demod_add_bit(p, 1);
+            } else if (p->pulse_length > 600) {
+                demod_add_bit(p, 0);
+            }
+            p->sample_counter = 0;
+            p->pulse_start    = 0;
+        }
+
+        
+        if (p->sample_counter > p->reset_limit) {
+            p->sample_counter = 0;
+            demod_print_bits_packet(p);
+            demod_reset_bits_packet(p);
+            
+            p->start_bit = 0;
+            p->real_bits = 0;
+        }
+    }
+}
+
+
 
 /** Something that might look like a IIR lowpass filter
  * 
@@ -455,8 +517,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             pwm_analyze(demod, demod->f_buf, len/2);
         } else {
             //level_detect(demod, demod->f_buf, len/2);
-            pwm_demod(demod, demod->prologue, demod->f_buf, len/2);
-            pwm_demod(demod, demod->rubicson, demod->f_buf, len/2);
+            pwm_d_decode(demod, demod->prologue, demod->f_buf, len/2);
+            pwm_d_decode(demod, demod->rubicson, demod->f_buf, len/2);
+            pwm_p_decode(demod, demod->silvercrest, demod->f_buf, len/2);
         }
 
         if (demod->save_data) {
@@ -504,7 +567,12 @@ int main(int argc, char **argv)
     demod->prologue->short_limit = 3500;
     demod->prologue->long_limit  = 7000;
     demod->prologue->reset_limit = 15000;
-    demod_reset_bits_packet(demod->prologue);
+    demod_reset_bits_packet(demod->rubicson);
+    demod->silvercrest = calloc(1,sizeof(struct protocol_state));
+    demod->silvercrest->short_limit = 3500;
+    demod->silvercrest->long_limit  = 7000;
+    demod->silvercrest->reset_limit = 5000;
+    demod_reset_bits_packet(demod->silvercrest);
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
