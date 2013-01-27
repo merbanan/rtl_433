@@ -330,6 +330,7 @@ static int counter = 0;
 static int print = 1;
 static int print2 = 0;
 static int pulses_found = 0;
+static int prev_pulse_start = 0;
 static int pulse_start = 0;
 static int pulse_end = 0;
 static int pulse_avg = 0;
@@ -342,12 +343,14 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         if (buf[i] > demod->level_limit) {
             if (print) {
                 pulses_found++;
-                fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
-                fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
                 pulse_start = counter;
+                fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
+                fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
+                fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
+                prev_pulse_start = pulse_start;
                 print =0;
                 print2 = 1;
-                
+
             }
         }
         counter++;
