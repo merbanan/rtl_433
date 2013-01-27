@@ -82,31 +82,57 @@
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define FILTER_ORDER            1
+#define MAX_PROTOCOLS           10
 
 #define BITBUF_COLS             5
 #define BITBUF_ROWS             12
-
-/* Protocol list */
-#define RUBICSON        0x00000001
-#define PROLOGUE        0x00000002
-#define SILVERCREST     0x00000004
 
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 
 
+/* Supported modulation types */
+#define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
+#define     OOK_PWM_P   2   /* The length of the pulese varies */
 
-
-
-struct device_struct {
-    unsigned int    device_id;
-    char*           device_name;
-    unsigned int    device_modulation;
-    unsigned int    device_short_limit;
-    unsigned int    device_long_limit;
-    unsigned int    device_reset_limit;
+  
+typedef struct {
+    unsigned int    id;
+    char            name[256];
+    unsigned int    modulation;
+    unsigned int    short_limit;
+    unsigned int    long_limit;
+    unsigned int    reset_limit;
     int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]) ;
+} r_device;
+
+
+r_device rubicson = {
+    .id             = 1,
+    .name           = "Rubicson Temperature Sensor",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 1744,
+    .long_limit     = 3500,
+    .reset_limit    = 5000,
+};
+
+r_device prologue = {
+    .id             = 1,
+    .name           = "Prologue Temperature Sensor",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 3500,
+    .long_limit     = 7000,
+    .reset_limit    = 15000,
+};
+
+r_device silvercrest = {
+    .id             = 1,
+    .name           = "Silvercrest Remote Control",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 600,
+    .long_limit     = 5000,
+    .reset_limit    = 15000,
 };
 
 
@@ -116,7 +142,8 @@ struct protocol_state {
     int bits_row_idx;
     int bits_bit_col_idx;
     uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
-
+    unsigned int modulation;
+    
     /* demod state */
     int pulse_length;
     int pulse_count;
@@ -147,9 +174,9 @@ struct dm_state {
     int analyze;
 
     /* Protocol states */
-    struct protocol_state *rubicson;
-    struct protocol_state *prologue;
-    struct protocol_state *silvercrest;
+    int r_dev_num;
+    struct protocol_state *r_devs[MAX_PROTOCOLS];
+
 };
 
 void usage(void)
@@ -289,6 +316,28 @@ static void demod_print_bits_packet(struct protocol_state* p) {
 
 }
 
+static void register_protocol(struct dm_state *demod, r_device *t_dev) {
+    struct protocol_state *p =  calloc(1,sizeof(struct protocol_state));
+    p->short_limit  = t_dev->short_limit;
+    p->long_limit   = t_dev->long_limit;
+    p->reset_limit  = t_dev->reset_limit;
+    p->modulation   = t_dev->modulation;
+    demod_reset_bits_packet(p);
+
+    demod->r_devs[demod->r_dev_num] = p;
+    demod->r_dev_num++;
+
+    fprintf(stderr, "Registering protocol[%02d] %s\n",demod->r_dev_num, t_dev->name);
+
+    if (demod->r_dev_num > MAX_PROTOCOLS)
+        fprintf(stderr, "Max number of protocols reached %d\n",MAX_PROTOCOLS);
+
+}
+
+
+
+
+
 static int counter = 0;
 static int print = 1;
 static int print2 = 0;
@@ -407,16 +456,16 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 //           fprintf(stderr, "real bit pulse end detected %d\n", p->pulse_length);
 //           fprintf(stderr, "space duration %d\n", p->sample_counter);  
         
-            if (p->pulse_length <= 600) {
+            if (p->pulse_length <= p->short_limit) {
                 demod_add_bit(p, 1);
-            } else if (p->pulse_length > 600) {
+            } else if (p->pulse_length > p->short_limit) {
                 demod_add_bit(p, 0);
             }
             p->sample_counter = 0;
             p->pulse_start    = 0;
         }
 
-        if (p->real_bits && p->sample_counter > 5000) {
+        if (p->real_bits && p->sample_counter > p->long_limit) {
             demod_next_bits_packet(p);
             
             p->start_bit = 0;
@@ -477,6 +526,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 {
     struct dm_state *demod = ctx;
     uint16_t* sbuf = (uint16_t*) buf;
+    int i;
     if (demod->file || !demod->save_data) {
         if (do_exit)
             return;
@@ -492,10 +542,18 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
         if (demod->analyze) {
             pwm_analyze(demod, demod->f_buf, len/2);
         } else {
-            //level_detect(demod, demod->f_buf, len/2);
-            //pwm_d_decode(demod, demod->prologue, demod->f_buf, len/2);
-            //pwm_d_decode(demod, demod->rubicson, demod->f_buf, len/2);
-            pwm_p_decode(demod, demod->silvercrest, demod->f_buf, len/2);
+            for (i=0 ; i<demod->r_dev_num ; i++) {
+                switch (demod->r_devs[i]->modulation) {
+                    case OOK_PWM_D:
+                        pwm_d_decode(demod, demod->r_devs[i], demod->f_buf, len/2);
+                        break;
+                    case OOK_PWM_P:
+                        pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len/2);
+                        break;
+                    default:
+                        fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+                }
+            }
         }
 
         if (demod->save_data) {
@@ -533,22 +591,12 @@ int main(int argc, char **argv)
 
     demod = malloc(sizeof(struct dm_state));
     memset(demod,0,sizeof(struct dm_state));
-    /* init protocols FIXME replace this with something smarter */
-    demod->rubicson = calloc(1,sizeof(struct protocol_state));
-    demod->rubicson->short_limit = 1744;
-    demod->rubicson->long_limit  = 3500;
-    demod->rubicson->reset_limit = 5000;
-    demod_reset_bits_packet(demod->rubicson);
-    demod->prologue = calloc(1,sizeof(struct protocol_state));
-    demod->prologue->short_limit = 3500;
-    demod->prologue->long_limit  = 7000;
-    demod->prologue->reset_limit = 15000;
-    demod_reset_bits_packet(demod->rubicson);
-    demod->silvercrest = calloc(1,sizeof(struct protocol_state));
-    demod->silvercrest->short_limit = 3500;
-    demod->silvercrest->long_limit  = 7000;
-    demod->silvercrest->reset_limit = 20000;
-    demod_reset_bits_packet(demod->silvercrest);
+
+    /* init protocols somewhat ok */
+    register_protocol(demod, &rubicson);
+    register_protocol(demod, &prologue);
+    register_protocol(demod, &silvercrest);
+    
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
@@ -760,10 +808,9 @@ int main(int argc, char **argv)
     if (demod->file && (demod->file != stdout))
         fclose(demod->file);
 
-    if(demod->prologue)
-        free(demod->prologue);
-    if(demod->rubicson)
-        free(demod->rubicson);
+    for (i=0 ; i<demod->r_dev_num ; i++)
+        free(demod->r_devs[i]);
+
     if(demod)
         free(demod);
     
