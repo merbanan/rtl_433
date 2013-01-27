@@ -289,59 +289,6 @@ static void demod_print_bits_packet(struct protocol_state* p) {
 
 }
 
-static int pulse_length = 0;
-static int pulse_count = 0;
-static int pulse_distance = 0;
-static int sample_counter = 0;
-static int start_c = 0;
-
-/**
- *  Level 10000 ->
- *  Pulse length  = 604  samples
- *  PW short      = 1158 samples
- *  PW long       = 2330 samples (2*PW short)
- *  PW next       = 4670 samples (2*PW long)
- */
-#if 0
-static void level_detect(struct dm_state *demod, int16_t *buf, uint32_t len)
-{
-    unsigned int i;
-
-    for (i=0 ; i<len ; i++) {
-        if (buf[i] > demod->level_limit) {
-            pulse_count = 1;
-            start_c = 1;
-        }
-        if (pulse_count && (buf[i] < demod->level_limit)) {
-            pulse_length = 0;
-            pulse_distance = 1;
-            sample_counter = 0;
-            pulse_count = 0;
-        }
-        if (start_c) sample_counter++;
-        if (pulse_distance && (buf[i] > demod->level_limit)) {
-            if (sample_counter < 1744) {
-                demod_add_bit(demod, 0);
-            } else if (sample_counter < 3500) {
-                demod_add_bit(demod, 1);
-            } else {
-                demod_next_bits_packet(demod);
-                pulse_count    = 0;
-                sample_counter = 0;
-            }
-            pulse_distance = 0;
-        }
-        if (sample_counter > 5000) {
-            start_c    = 0;
-            sample_counter = 0;
-            pulse_distance = 0;
-            demod_print_bits_packet(demod);
-            demod_reset_bits_packet(demod);
-        }
-    }
-}
-#endif
-
 static int counter = 0;
 static int print = 1;
 static int print2 = 0;
