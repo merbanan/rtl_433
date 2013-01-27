@@ -95,6 +95,21 @@ static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 
+
+
+
+
+struct device_struct {
+    unsigned int    device_id;
+    char*           device_name;
+    unsigned int    device_modulation;
+    unsigned int    device_short_limit;
+    unsigned int    device_long_limit;
+    unsigned int    device_reset_limit;
+    int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]) ;
+};
+
+
 struct protocol_state {
     /* bits state */
     int bits_col_idx;
@@ -118,8 +133,9 @@ struct protocol_state {
     int long_limit;
     int reset_limit;
 
-    
+
 };
+
 
 struct dm_state {
     FILE *file;
