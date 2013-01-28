@@ -716,6 +716,8 @@ int main(int argc, char **argv)
         r = rtlsdr_set_tuner_gain_mode(dev, 0);
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+        else
+            fprintf(stderr, "Tuner gain set to Auto.\n");
     } else {
         /* Enable manual gain */
         r = rtlsdr_set_tuner_gain_mode(dev, 1);
