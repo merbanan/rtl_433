@@ -107,6 +107,86 @@ typedef struct {
     int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]) ;
 } r_device;
 
+static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    /* FIXME validate the received message better */
+    if (bb[1][0] == 0xF8 &&
+        bb[2][0] == 0xF8 &&
+        bb[3][0] == 0xF8 &&
+        bb[4][0] == 0xF8 &&
+        bb[1][1] == 0x4d &&
+        bb[2][1] == 0x4d &&
+        bb[3][1] == 0x4d &&
+        bb[4][1] == 0x4d) {
+        /* Pretty sure this is a Silvercrest remote */
+        fprintf(stderr, "Remote button event:\n");
+        fprintf(stderr, "model = Silvercrest\n");
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        return 1;
+    }
+    return 0;
+}
+
+static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int temperature_before_dec;
+    int temperature_after_dec;
+    int16_t temp;
+
+    /* FIXME validate the received message better, figure out crc */
+    if (bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
+        bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
+        bb[8][0] == bb[9][0] ) {
+
+        /* Nible 3,4,5 contains 12 bits of temperature
+         * The temerature is signed and scaled by 10 */
+        temp = (int16_t)((uint16_t)(bb[0][1] << 12) | (bb[0][2] << 4));
+        temp = temp >> 4;
+
+        temperature_before_dec = abs(temp / 10);
+        temperature_after_dec = abs(temp % 10);
+
+        fprintf(stderr, "Sensor temperature event:\n");
+        fprintf(stderr, "model          = Rubicson\n");
+        fprintf(stderr, "rid            = %x\n",bb[0][0]);
+        fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        return 1;
+    }
+    return 0;
+}
+
+static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int rid;
+
+    int16_t temp2;
+
+    /* FIXME validate the received message better */
+    if ((bb[1][0]&0xF0) == 0x09 && 
+        (bb[2][0]&0xF0) == 0x09 &&
+        (bb[3][0]&0xF0) == 0x09 &&
+        (bb[4][0]&0xF0) == 0x09 &&
+        (bb[5][0]&0xF0) == 0x09 &&
+        (bb[6][0]&0xF0) == 0x09) {
+
+        /* Prologue sensor */
+        temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
+        temp2 = temp2 >> 4;
+        fprintf(stderr, "Sensor temperature event:\n");
+        fprintf(stderr, "model         = Prologue\n");
+        fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
+        fprintf(stderr, "first reading = %d\n",bb[1][1]&0x08?0:1);
+        fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
+        fprintf(stderr, "channel       = %d\n",(bb[1][1]&0x03)+1);
+        fprintf(stderr, "id            = %d\n",(bb[1][0]&0xF0)>>4);
+        rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
+        fprintf(stderr, "rid           = %d\n", rid);
+        fprintf(stderr, "hrid          = %02x\n", rid);
+
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        return 1;
+    }
+    return 0;
+}
+
 
 r_device rubicson = {
     .id             = 1,
@@ -115,28 +195,43 @@ r_device rubicson = {
     .short_limit    = 1744,
     .long_limit     = 3500,
     .reset_limit    = 5000,
+    .json_callback  = &rubicson_callback,
 };
 
 r_device prologue = {
-    .id             = 1,
+    .id             = 2,
     .name           = "Prologue Temperature Sensor",
     .modulation     = OOK_PWM_D,
     .short_limit    = 3500,
     .long_limit     = 7000,
     .reset_limit    = 15000,
+    .json_callback  = &prologue_callback,
 };
 
 r_device silvercrest = {
-    .id             = 1,
+    .id             = 3,
     .name           = "Silvercrest Remote Control",
     .modulation     = OOK_PWM_P,
     .short_limit    = 600,
     .long_limit     = 5000,
     .reset_limit    = 15000,
+    .json_callback  = &silvercrest_callback,
+};
+
+r_device tech_line = {
+    .id             = 4,
+    .name           = "Tech Line FWS-500 Sensor",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 3500,
+    .long_limit     = 7000,
+    .reset_limit    = 15000,
+    //.json_callback  = &rubicson_callback,
 };
 
 
 struct protocol_state {
+    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
+
     /* bits state */
     int bits_col_idx;
     int bits_row_idx;
@@ -259,7 +354,7 @@ static void demod_next_bits_packet(struct protocol_state* p) {
     p->bits_bit_col_idx = 7;
     if (p->bits_row_idx>11) {
         p->bits_row_idx = 11;
-        fprintf(stderr, "p->bits_row_idx>11!\n");
+        //fprintf(stderr, "p->bits_row_idx>11!\n");
     }
 }
 
@@ -288,30 +383,6 @@ static void demod_print_bits_packet(struct protocol_state* p) {
     fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[0][0],p->bits_buffer[0][1],p->bits_buffer[0][2],p->bits_buffer[0][3],p->bits_buffer[0][4]);
     fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[1][0],p->bits_buffer[1][1],p->bits_buffer[1][2],p->bits_buffer[1][3],p->bits_buffer[1][4]);
 
-    /* Nible 3,4,5 contains 12 bits of temperature
-     * The temerature is signed and scaled by 10 */
-    temp = (int16_t)((uint16_t)(p->bits_buffer[0][1] << 12) | (p->bits_buffer[0][2] << 4));
-    temp = temp >> 4;
-
-    /* Prologue sensor */
-    temp2 = (int16_t)((uint16_t)(p->bits_buffer[1][2] << 8) | (p->bits_buffer[1][3]&0xF0));
-    temp2 = temp2 >> 4;
-    fprintf(stderr, "button        = %d\n",p->bits_buffer[1][1]&0x04?1:0);
-    fprintf(stderr, "first reading = %d\n",p->bits_buffer[1][1]&0x08?0:1);
-    fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-    fprintf(stderr, "channel       = %d\n",(p->bits_buffer[1][1]&0x03)+1);
-    fprintf(stderr, "id            = %d\n",(p->bits_buffer[1][0]&0xF0)>>4);
-    rid = ((p->bits_buffer[1][0]&0x0F)<<4)|(p->bits_buffer[1][1]&0xF0)>>4;
-    fprintf(stderr, "rid           = %d\n", rid);
-    fprintf(stderr, "hrid          = %02x\n", rid);
-
-    temperature_before_dec = abs(temp / 10);
-    temperature_after_dec = abs(temp % 10);
-
-    fprintf(stderr, "rid = %x\n",p->bits_buffer[0][0]);
-
-    fprintf(stderr, "temp = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
-
     fprintf(stderr, "\n");
 
 }
@@ -322,6 +393,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->long_limit   = t_dev->long_limit;
     p->reset_limit  = t_dev->reset_limit;
     p->modulation   = t_dev->modulation;
+    p->callback     = t_dev->json_callback;
     demod_reset_bits_packet(p);
 
     demod->r_devs[demod->r_dev_num] = p;
@@ -331,11 +403,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
 
     if (demod->r_dev_num > MAX_PROTOCOLS)
         fprintf(stderr, "Max number of protocols reached %d\n",MAX_PROTOCOLS);
-
 }
-
-
-
 
 
 static int counter = 0;
@@ -414,7 +482,11 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->start_c    = 0;
             p->sample_counter = 0;
             p->pulse_distance = 0;
-            demod_print_bits_packet(p);
+            if (p->callback)
+                p->callback(p->bits_buffer);
+            else
+                demod_print_bits_packet(p);
+
             demod_reset_bits_packet(p);
         }
     }
@@ -475,7 +547,9 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (p->sample_counter > p->reset_limit) {
             p->start_c = 0;
             p->sample_counter = 0;
-            demod_print_bits_packet(p);
+            //demod_print_bits_packet(p);
+            if (p->callback)
+                p->callback(p->bits_buffer);
             demod_reset_bits_packet(p);
             
             p->start_bit = 0;
@@ -596,6 +670,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &rubicson);
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
+    register_protocol(demod, &tech_line);
     
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
