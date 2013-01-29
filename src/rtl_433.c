@@ -179,7 +179,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "rid           = %d\n", rid);
         fprintf(stderr, "hrid          = %02x\n", rid);
 
-        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
         return 1;
     }
     return 0;
