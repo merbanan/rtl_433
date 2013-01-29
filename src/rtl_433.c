@@ -41,7 +41,7 @@
  * the packets are pwm modulated
  * 
  * the data is grouped in 9 nibles
- * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [humi] [unk1]
+ * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [humi0] [humi1]
  * 
  * id0 is always 1001,9
  * rid is a random id that is generated when the sensor starts, could include battery status
@@ -50,8 +50,8 @@
  * data(2) is 1 when the sensor sends a reading when pressing the button on the sensor
  * data(1,0)+1 forms the channel number that can be set by the sensor (1-3)
  * temp is 12 bit signed scaled by 10
- * humi is always 1100,c if no humidity sensor is availiable
- * unk1 is always 1100,c
+ * humi0 is always 1100,c if no humidity sensor is availiable
+ * humi1 is always 1100,c if no humidity sensor is availiable
  * 
  * The sensor can be bought at Clas Ohlson
  */ 
@@ -160,12 +160,9 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     int16_t temp2;
 
     /* FIXME validate the received message better */
-    if ((bb[1][0]&0xF0) == 0x09 && 
-        (bb[2][0]&0xF0) == 0x09 &&
-        (bb[3][0]&0xF0) == 0x09 &&
-        (bb[4][0]&0xF0) == 0x09 &&
-        (bb[5][0]&0xF0) == 0x09 &&
-        (bb[6][0]&0xF0) == 0x09) {
+    if (((bb[1][0]&0xF0) == 0x90 && (bb[2][0]&0xF0) == 0x90 && (bb[3][0]&0xF0) == 0x90 && (bb[4][0]&0xF0) == 0x90 &&
+        (bb[5][0]&0xF0) == 0x90 && (bb[6][0]&0xF0) == 0x90) ||
+        ((bb[1][0]&0xF0) == 0x50 && (bb[2][0]&0xF0) == 0x50 && (bb[3][0]&0xF0) == 0x50 && (bb[4][0]&0xF0) == 0x50)) {
 
         /* Prologue sensor */
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
@@ -175,7 +172,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
         fprintf(stderr, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
         fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-        fprintf(stderr, "humidity      = %d\n", bb[1][3]&0x0F);
+        fprintf(stderr, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));        
         fprintf(stderr, "channel       = %d\n",(bb[1][1]&0x03)+1);
         fprintf(stderr, "id            = %d\n",(bb[1][0]&0xF0)>>4);
         rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
