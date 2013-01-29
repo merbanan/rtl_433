@@ -41,16 +41,16 @@
  * the packets are pwm modulated
  * 
  * the data is grouped in 9 nibles
- * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [unk0] [unk1]
+ * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [humi] [unk1]
  * 
  * id0 is always 1001,9
  * rid is a random id that is generated when the sensor starts, could include battery status
  * the same batteries often generate the same id
- * data(3) is 0 the first reading the sensor transmits
+ * data(3) is 0 the battery status, 1 ok, 0 low, first reading always say low
  * data(2) is 1 when the sensor sends a reading when pressing the button on the sensor
  * data(1,0)+1 forms the channel number that can be set by the sensor (1-3)
  * temp is 12 bit signed scaled by 10
- * unk0 is always 1100,c
+ * humi is always 1100,c if no humidity sensor is availiable
  * unk1 is always 1100,c
  * 
  * The sensor can be bought at Clas Ohlson
@@ -134,7 +134,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     /* FIXME validate the received message better, figure out crc */
     if (bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
         bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
-        bb[8][0] == bb[9][0] ) {
+        bb[8][0] == bb[9][0] && (bb[5][0] != 0 && bb[5][1] != 0 && bb[5][2] != 0)) {
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
@@ -145,7 +145,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "model          = Rubicson\n");
+        fprintf(stderr, "protocol       = Rubicson\n");
         fprintf(stderr, "rid            = %x\n",bb[0][0]);
         fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
@@ -171,10 +171,11 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
         temp2 = temp2 >> 4;
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "model         = Prologue\n");
+        fprintf(stderr, "protocol      = Prologue\n");
         fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
-        fprintf(stderr, "first reading = %d\n",bb[1][1]&0x08?0:1);
+        fprintf(stderr, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
         fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
+        fprintf(stderr, "humidity      = %d\n", bb[1][3]&0x0F);
         fprintf(stderr, "channel       = %d\n",(bb[1][1]&0x03)+1);
         fprintf(stderr, "id            = %d\n",(bb[1][0]&0xF0)>>4);
         rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
