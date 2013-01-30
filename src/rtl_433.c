@@ -85,7 +85,7 @@
 #define MAX_PROTOCOLS           10
 
 #define BITBUF_COLS             5
-#define BITBUF_ROWS             12
+#define BITBUF_ROWS             15
 
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
@@ -224,6 +224,16 @@ r_device tech_line = {
     .long_limit     = 7000,
     .reset_limit    = 15000,
     //.json_callback  = &rubicson_callback,
+};
+
+r_device generic_hx2262 = {
+    .id             = 5,
+    .name           = "Window/Door sensor",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 1300,
+    .long_limit     = 10000,
+    .reset_limit    = 40000,
+    //.json_callback  = &silvercrest_callback,
 };
 
 
@@ -365,6 +375,7 @@ static void demod_print_bits_packet(struct protocol_state* p) {
     int rid;
     fprintf(stderr, "\n");
     for (i=0 ; i<BITBUF_ROWS ; i++) {
+        fprintf(stderr, "[%02d] %02x %02x %02x %02x %02x : ",i, p->bits_buffer[i][0],p->bits_buffer[i][1],p->bits_buffer[i][2],p->bits_buffer[i][3],p->bits_buffer[i][4]);
         for (j=0 ; j<BITBUF_COLS ; j++) {
             for (k=7 ; k>=0 ; k--) {
                 if (p->bits_buffer[i][j] & 1<<k)
@@ -378,11 +389,6 @@ static void demod_print_bits_packet(struct protocol_state* p) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
-    fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[0][0],p->bits_buffer[0][1],p->bits_buffer[0][2],p->bits_buffer[0][3],p->bits_buffer[0][4]);
-    fprintf(stderr, "%02x %02x %02x %02x %02x\n",p->bits_buffer[1][0],p->bits_buffer[1][1],p->bits_buffer[1][2],p->bits_buffer[1][3],p->bits_buffer[1][4]);
-
-    fprintf(stderr, "\n");
-
 }
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
@@ -548,6 +554,8 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             //demod_print_bits_packet(p);
             if (p->callback)
                 p->callback(p->bits_buffer);
+            else
+                demod_print_bits_packet(p);
             demod_reset_bits_packet(p);
             
             p->start_bit = 0;
@@ -668,7 +676,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &rubicson);
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
-    register_protocol(demod, &tech_line);
+    register_protocol(demod, &generic_hx2262);
     
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
