@@ -186,6 +186,28 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
+static int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int i,j,k;
+    fprintf(stderr, "\n");
+    for (i=0 ; i<BITBUF_ROWS ; i++) {
+        fprintf(stderr, "[%02d] %02x %02x %02x %02x %02x : ",i, bb[i][0],bb[i][1],bb[i][2],bb[i][3],bb[i][4]);
+        for (j=0 ; j<BITBUF_COLS ; j++) {
+            for (k=7 ; k>=0 ; k--) {
+                if (bb[i][j] & 1<<k)
+                    fprintf(stderr, "1 ");
+                else
+                    fprintf(stderr, "0 ");
+            }
+            fprintf(stderr, " ");
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+
+    return 0;
+}
+
+
 r_device rubicson = {
     .id             = 1,
     .name           = "Rubicson Temperature Sensor",
@@ -216,7 +238,7 @@ r_device silvercrest = {
     .json_callback  = &silvercrest_callback,
 };
 
-r_device tech_line = {
+r_device tech_line_fws_500 = {
     .id             = 4,
     .name           = "Tech Line FWS-500 Sensor",
     .modulation     = OOK_PWM_D,
@@ -234,6 +256,16 @@ r_device generic_hx2262 = {
     .long_limit     = 10000,
     .reset_limit    = 40000,
     //.json_callback  = &silvercrest_callback,
+};
+
+r_device technoline_ws9118 = {
+    .id             = 6,
+    .name           = "Technoline WS9118",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 1800,
+    .long_limit     = 3500,
+    .reset_limit    = 15000,
+    .json_callback  = &debug_callback,
 };
 
 
@@ -368,11 +400,6 @@ static void demod_next_bits_packet(struct protocol_state* p) {
 
 static void demod_print_bits_packet(struct protocol_state* p) {
     int i,j,k;
-    int temp_sign;
-    int temperature_before_dec;
-    int temperature_after_dec;
-    int16_t temp, temp2;
-    int rid;
     fprintf(stderr, "\n");
     for (i=0 ; i<BITBUF_ROWS ; i++) {
         fprintf(stderr, "[%02d] %02x %02x %02x %02x %02x : ",i, p->bits_buffer[i][0],p->bits_buffer[i][1],p->bits_buffer[i][2],p->bits_buffer[i][3],p->bits_buffer[i][4]);
@@ -677,6 +704,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
     register_protocol(demod, &generic_hx2262);
+    register_protocol(demod, &technoline_ws9118);
     
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
