@@ -1,9 +1,9 @@
 /*
  * rtl_433, turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
  * Copyright (C) 2012 by Benjamin Larsson <benjamin@southpole.se>
- * 
+ *
  * Based on rtl_sdr
- * 
+ *
  * Copyright (C) 2012 by Steve Markgraf <steve@steve-m.de>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -22,16 +22,16 @@
 
 
 /* Currently this can decode the temperature and id from Rubicson sensors
- * 
+ *
  * the sensor sends 36 bits 12 times pwm modulated
  * the data is grouped into 9 nibles
  * [id0] [id1], [unk0] [temp0], [temp1] [temp2], [unk1] [unk2], [unk3]
- * 
+ *
  * The id changes when the battery is changed in the sensor.
  * unk0 is always 1 0 0 0, most likely 2 channel bits as the sensor can recevice 3 channels
  * unk1-3 changes and the meaning is unknown
  * temp is 12 bit signed scaled by 10
- * 
+ *
  * The sensor can be bought at Kjell&Co
  */
 
@@ -39,10 +39,10 @@
  *
  * the sensor sends 36 bits 7 times, before the first packet there is a pulse sent
  * the packets are pwm modulated
- * 
+ *
  * the data is grouped in 9 nibles
  * [id0] [rid0] [rid1] [data0] [temp0] [temp1] [temp2] [humi0] [humi1]
- * 
+ *
  * id0 is always 1001,9
  * rid is a random id that is generated when the sensor starts, could include battery status
  * the same batteries often generate the same id
@@ -52,9 +52,9 @@
  * temp is 12 bit signed scaled by 10
  * humi0 is always 1100,c if no humidity sensor is availiable
  * humi1 is always 1100,c if no humidity sensor is availiable
- * 
+ *
  * The sensor can be bought at Clas Ohlson
- */ 
+ */
 
 #include <errno.h>
 #include <signal.h>
@@ -90,13 +90,14 @@
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
+static uint16_t scaled_squares[256];
 
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
 #define     OOK_PWM_P   2   /* The length of the pulese varies */
 
-  
+
 typedef struct {
     unsigned int    id;
     char            name[256];
@@ -172,7 +173,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
         fprintf(stderr, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
         fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-        fprintf(stderr, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));        
+        fprintf(stderr, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));
         fprintf(stderr, "channel       = %d\n",(bb[1][1]&0x03)+1);
         fprintf(stderr, "id            = %d\n",(bb[1][0]&0xF0)>>4);
         rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
@@ -278,7 +279,7 @@ struct protocol_state {
     int bits_bit_col_idx;
     uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
     unsigned int modulation;
-    
+
     /* demod state */
     int pulse_length;
     int pulse_count;
@@ -347,6 +348,12 @@ static void sighandler(int signum)
 }
 #endif
 
+/* precalculate lookup table for envelope detection */
+static void calc_squares() {
+    int i;
+    for (i=0 ; i<256 ; i++)
+        scaled_squares[i] = (128-i) * (128-i);
+}
 
 /** This will give a noisy envelope of OOK/ASK signals
  *  Subtract the bias (-128) and get an envelope estimation
@@ -362,9 +369,7 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
     unsigned int stride = 1<<decimate;
 
     for (i=0 ; i<len/2 ; i+=stride) {
-        unsigned char var_r = buf[2*i  ]^0x80;
-        unsigned char var_i = buf[2*i+1]^0x80;
-        sample_buffer[op++] = ((signed char)var_i*(signed char)var_i) + ((signed char)var_r*(signed char)var_r);
+        sample_buffer[op++] = scaled_squares[buf[2*i  ]]+scaled_squares[buf[2*i+1]];
     }
 }
 
@@ -534,31 +539,31 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->start_bit      = 1;
             p->start_c        = 1;
             p->sample_counter = 0;
-//            fprintf(stderr, "start bit pulse start detected\n");  
+//            fprintf(stderr, "start bit pulse start detected\n");
         }
 
         if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
             /* end of startbit */
             p->real_bits = 1;
-//            fprintf(stderr, "start bit pulse end detected\n");  
+//            fprintf(stderr, "start bit pulse end detected\n");
         }
         if (p->start_c) p->sample_counter++;
 
-        
+
         if (!p->pulse_start && p->real_bits && (buf[i] > demod->level_limit)) {
             /* save the pulse start, it will never be zero */
             p->pulse_start = p->sample_counter;
-//           fprintf(stderr, "real bit pulse start detected\n");  
+//           fprintf(stderr, "real bit pulse start detected\n");
 
         }
-        
+
         if (p->real_bits && p->pulse_start && (buf[i] < demod->level_limit)) {
             /* end of pulse */
 
             p->pulse_length = p->sample_counter-p->pulse_start;
 //           fprintf(stderr, "real bit pulse end detected %d\n", p->pulse_length);
-//           fprintf(stderr, "space duration %d\n", p->sample_counter);  
-        
+//           fprintf(stderr, "space duration %d\n", p->sample_counter);
+
             if (p->pulse_length <= p->short_limit) {
                 demod_add_bit(p, 1);
             } else if (p->pulse_length > p->short_limit) {
@@ -570,7 +575,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 
         if (p->real_bits && p->sample_counter > p->long_limit) {
             demod_next_bits_packet(p);
-            
+
             p->start_bit = 0;
             p->real_bits = 0;
         }
@@ -584,7 +589,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             else
                 demod_print_bits_packet(p);
             demod_reset_bits_packet(p);
-            
+
             p->start_bit = 0;
             p->real_bits = 0;
         }
@@ -594,7 +599,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 
 
 /** Something that might look like a IIR lowpass filter
- * 
+ *
  *  [b,a] = butter(1, 0.01) ->  quantizes nicely thus suitable for fixed point
  *  Q1.15*Q15.0 = Q16.15
  *  Q16.15>>1 = Q15.14
@@ -699,17 +704,20 @@ int main(int argc, char **argv)
     demod = malloc(sizeof(struct dm_state));
     memset(demod,0,sizeof(struct dm_state));
 
+    /* initialize tables */
+    calc_squares();
+
     /* init protocols somewhat ok */
     register_protocol(demod, &rubicson);
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
     register_protocol(demod, &generic_hx2262);
     register_protocol(demod, &technoline_ws9118);
-    
+
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
-    
+
 
     while ((opt = getopt(argc, argv, "ar:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
@@ -924,7 +932,7 @@ int main(int argc, char **argv)
 
     if(demod)
         free(demod);
-    
+
 
     rtlsdr_close(dev);
     free (buffer);
