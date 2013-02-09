@@ -321,6 +321,9 @@ void usage(void)
         "rtl_433, a 433.92MHz generic data receiver for RTL2832 based DVB-T receivers\n\n"
         "Usage:\t[-d device_index (default: 0)]\n"
         "\t[-g gain (default: 0 for auto)]\n"
+        "\t[-a analyze mode, print a textual description of the signal]\n"
+        "\t[-l change the detection level used to determine pulses (0-3200) default 10000]\n"
+        "\t[-f change the receive frequency, default is 433.92MHz]\n"
         "\t[-S force sync output (default: async)]\n"
         "\t[-r read data from file instead of from a receiver]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n");
