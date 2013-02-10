@@ -326,6 +326,7 @@ void usage(void)
         "\t[-f change the receive frequency, default is 433.92MHz]\n"
         "\t[-S force sync output (default: async)]\n"
         "\t[-r read data from file instead of from a receiver]\n"
+        "\t[-p ppm_error (default: 0)]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n");
     exit(1);
 }
@@ -695,6 +696,7 @@ int main(int argc, char **argv)
     int r, opt;
     int i, gain = 0;
     int sync_mode = 0;
+    int ppm_error = 0;
     struct dm_state* demod;
     uint8_t *buffer;
     uint32_t dev_index = 0;
@@ -732,6 +734,9 @@ int main(int argc, char **argv)
             break;
         case 'g':
             gain = (int)(atof(optarg) * 10); /* tenths of a dB */
+            break;
+        case 'p':
+            ppm_error = atoi(optarg);
             break;
         case 's':
             samp_rate = (uint32_t)atof(optarg);
@@ -851,6 +856,8 @@ int main(int argc, char **argv)
         else
             fprintf(stderr, "Tuner gain set to %f dB.\n", gain/10.0);
     }
+
+    r = rtlsdr_set_freq_correction(dev, ppm_error);
 
     demod->save_data = 1;
     if (!filename) {
