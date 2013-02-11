@@ -308,6 +308,7 @@ struct dm_state {
     int16_t filter_buffer[MAXIMAL_BUF_LENGTH+FILTER_ORDER];
     int16_t* f_buf;
     int analyze;
+    int debug_mode;
 
     /* Protocol states */
     int r_dev_num;
@@ -327,6 +328,8 @@ void usage(void)
         "\t[-S force sync output (default: async)]\n"
         "\t[-r read data from file instead of from a receiver]\n"
         "\t[-p ppm_error (default: 0)]\n"
+        "\t[-r test file name (indata)]\n"
+        "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n");
     exit(1);
 }
@@ -652,9 +655,12 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             do_exit = 1;
             rtlsdr_cancel_async(dev);
         }
-
+        if (demod->debug_mode == 0) {
             envelope_detect(buf, len, demod->decimation_level);
             low_pass_filter(sbuf, demod->f_buf, len>>(demod->decimation_level+1));
+        } else if (demod->debug_mode == 1){
+            memcpy(demod->f_buf, buf, len);
+        }
         if (demod->analyze) {
             pwm_analyze(demod, demod->f_buf, len/2);
         } else {
@@ -724,7 +730,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "ar:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "am:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -759,6 +765,9 @@ int main(int argc, char **argv)
         case 'r':
             test_mode_file = optarg;
             break;
+        case 'm':
+            demod->debug_mode = atoi(optarg);
+            break;
         case 'S':
             sync_mode = 1;
             break;
@@ -790,7 +799,8 @@ int main(int argc, char **argv)
     device_count = rtlsdr_get_device_count();
     if (!device_count) {
         fprintf(stderr, "No supported devices found.\n");
-        exit(1);
+        if (!test_mode_file)
+            exit(1);
     }
 
     fprintf(stderr, "Found %d device(s):\n", device_count);
@@ -806,7 +816,8 @@ int main(int argc, char **argv)
     r = rtlsdr_open(&dev, dev_index);
     if (r < 0) {
         fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
-        exit(1);
+        if (!test_mode_file)
+            exit(1);
     }
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
