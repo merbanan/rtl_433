@@ -231,7 +231,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     uint8_t dec[10];
     uint8_t bytes;
     uint8_t bit=18; // preamble
-    char *types[] = {"S", "?", "GZ"};
+    char* types[] = {"S", "?", "GZ"};
     
     bytes = 0;
     
@@ -243,7 +243,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         dec[i] = AD_POP (bb[0], 8, bit); bit+=8;
         uint8_t stopbit=AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            fprintf(stderr, "!stopbit:%i\n", i);
+//            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
         
@@ -251,10 +251,10 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         bytes++;
     }
     
-    // Read crc
+    // Read checksum
     uint8_t checksum_received = AD_POP (bb[0], 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
-        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
+//        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
     }
     
@@ -266,12 +266,12 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
     fprintf(stderr, "protocol      = ELV EM 1000\n");
-    fprintf(stderr, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[ 0]-1]:"?");
-    fprintf(stderr, "code          = %d\n",dec[ 1]);
-    fprintf(stderr, "seqno         = %d\n",dec[ 2]);
-    fprintf(stderr, "total cnt     = %d\n",dec[ 3]|dec[4]<<8);
-    fprintf(stderr, "current cnt   = %d\n",dec[ 5]|dec[6]<<8);
-    fprintf(stderr, "peak cnt      = %d\n",dec[ 7]|dec[8]<<8);
+    fprintf(stderr, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
+    fprintf(stderr, "code          = %d\n",dec[1]);
+    fprintf(stderr, "seqno         = %d\n",dec[2]);
+    fprintf(stderr, "total cnt     = %d\n",dec[3]|dec[4]<<8);
+    fprintf(stderr, "current cnt   = %d\n",dec[5]|dec[6]<<8);
+    fprintf(stderr, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
     
     return 1;
 }
