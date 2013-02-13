@@ -84,7 +84,7 @@
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
 
-#define BITBUF_COLS             5
+#define BITBUF_COLS             14
 #define BITBUF_ROWS             15
 
 static int do_exit = 0;
@@ -107,6 +107,31 @@ typedef struct {
     unsigned int    reset_limit;
     int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]) ;
 } r_device;
+
+static int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int i,j,k;
+    fprintf(stderr, "\n");
+    for (i=0 ; i<BITBUF_ROWS ; i++) {
+        fprintf(stderr, "[%02d] ",i);
+        for (j=0 ; j<BITBUF_COLS ; j++) {
+            fprintf(stderr, "%02x ", bb[i][j]);
+        }
+        fprintf(stderr, ": ");
+        for (j=0 ; j<BITBUF_COLS ; j++) {
+            for (k=7 ; k>=0 ; k--) {
+                if (bb[i][j] & 1<<k)
+                    fprintf(stderr, "1");
+                else
+                    fprintf(stderr, "0");
+            }
+            fprintf(stderr, " ");
+        }
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
+
+    return 0;
+}
 
 static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     /* FIXME validate the received message better */
@@ -187,25 +212,68 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
-static int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
-    int i,j,k;
-    fprintf(stderr, "\n");
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-        fprintf(stderr, "[%02d] %02x %02x %02x %02x %02x : ",i, bb[i][0],bb[i][1],bb[i][2],bb[i][3],bb[i][4]);
-        for (j=0 ; j<BITBUF_COLS ; j++) {
-            for (k=7 ; k>=0 ; k--) {
-                if (bb[i][j] & 1<<k)
-                    fprintf(stderr, "1 ");
-                else
-                    fprintf(stderr, "0 ");
-            }
-            fprintf(stderr, " ");
-        }
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "\n");
+uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
+    uint16_t val = 0;
 
-    return 0;
+    uint8_t i, byte_no, bit_no;
+    for (i=0;i<bits;i++) {
+        byte_no=   (bit+i)/8 ;
+        bit_no =7-((bit+i)%8);
+        if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
+    }
+    
+    return val;
+}
+
+static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+//debug_callback(bb);
+    // based on fs20.c
+    uint8_t dec[10];
+    uint8_t bytes;
+    uint8_t bit=18; // preamble
+    char* types[] = {"S", "?", "GZ"};
+    
+    bytes = 0;
+    
+    uint8_t checksum_calculated = 0;
+    
+    // read 9 bytes with stopbit ...
+    uint8_t i;
+    for (i = 0; i < 9; i++) {
+        dec[i] = AD_POP (bb[0], 8, bit); bit+=8;
+        uint8_t stopbit=AD_POP (bb[0], 1, bit); bit+=1;
+        if (!stopbit) {
+//            fprintf(stderr, "!stopbit: %i\n", i);
+            return 0;
+        }
+        
+        checksum_calculated = checksum_calculated ^ dec[i];
+        bytes++;
+    }
+    
+    // Read checksum
+    uint8_t checksum_received = AD_POP (bb[0], 8, bit); bit+=8;
+    if (checksum_received != checksum_calculated) {
+//        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
+        return 0;
+    }
+    
+/*    for (i = 0; i < bytes; i++) {
+        fprintf(stderr, "%02X ", dec[i]);
+    }
+    fprintf(stderr, "\n");*/
+    
+    // based on 15_CUL_EM.pm
+    fprintf(stderr, "Energy sensor event:\n");
+    fprintf(stderr, "protocol      = ELV EM 1000\n");
+    fprintf(stderr, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
+    fprintf(stderr, "code          = %d\n",dec[1]);
+    fprintf(stderr, "seqno         = %d\n",dec[2]);
+    fprintf(stderr, "total cnt     = %d\n",dec[3]|dec[4]<<8);
+    fprintf(stderr, "current cnt   = %d\n",dec[5]|dec[6]<<8);
+    fprintf(stderr, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
+    
+    return 1;
 }
 
 
@@ -267,6 +335,16 @@ r_device technoline_ws9118 = {
     .long_limit     = 3500,
     .reset_limit    = 15000,
     .json_callback  = &debug_callback,
+};
+
+r_device elv_em1000 = {
+    .id             = 7,
+    .name           = "ELV EM 1000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 750,
+    .long_limit     = 7250,
+    .reset_limit    = 30000,
+    .json_callback  = &em1000_callback,
 };
 
 
@@ -393,9 +471,9 @@ static void demod_add_bit(struct protocol_state* p, int bit) {
     if (p->bits_bit_col_idx<0) {
         p->bits_bit_col_idx = 7;
         p->bits_col_idx++;
-        if (p->bits_col_idx>4) {
-            p->bits_col_idx = 4;
-//            fprintf(stderr, "p->bits_col_idx>4!\n");
+        if (p->bits_col_idx>BITBUF_COLS-1) {
+            p->bits_col_idx = BITBUF_COLS-1;
+//            fprintf(stderr, "p->bits_col_idx>%i!\n", BITBUF_COLS-1);
         }
     }
 }
@@ -404,9 +482,9 @@ static void demod_next_bits_packet(struct protocol_state* p) {
     p->bits_col_idx = 0;
     p->bits_row_idx++;
     p->bits_bit_col_idx = 7;
-    if (p->bits_row_idx>11) {
-        p->bits_row_idx = 11;
-        //fprintf(stderr, "p->bits_row_idx>11!\n");
+    if (p->bits_row_idx>BITBUF_ROWS-1) {
+        p->bits_row_idx = BITBUF_ROWS-1;
+        //fprintf(stderr, "p->bits_row_idx>%i!\n", BITBUF_ROWS-1);
     }
 }
 
@@ -414,13 +492,17 @@ static void demod_print_bits_packet(struct protocol_state* p) {
     int i,j,k;
     fprintf(stderr, "\n");
     for (i=0 ; i<BITBUF_ROWS ; i++) {
-        fprintf(stderr, "[%02d] %02x %02x %02x %02x %02x : ",i, p->bits_buffer[i][0],p->bits_buffer[i][1],p->bits_buffer[i][2],p->bits_buffer[i][3],p->bits_buffer[i][4]);
+        fprintf(stderr, "[%02d] ",i);
+        for (j=0 ; j<BITBUF_COLS ; j++) {
+	        fprintf(stderr, "%02x ", p->bits_buffer[i][j]);
+        }
+        fprintf(stderr, ": ");
         for (j=0 ; j<BITBUF_COLS ; j++) {
             for (k=7 ; k>=0 ; k--) {
                 if (p->bits_buffer[i][j] & 1<<k)
-                    fprintf(stderr, "1 ");
+                    fprintf(stderr, "1");
                 else
-                    fprintf(stderr, "0 ");
+                    fprintf(stderr, "0");
             }
 //            fprintf(stderr, "=0x%x ",demod->bits_buffer[i][j]);
             fprintf(stderr, " ");
@@ -724,6 +806,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &silvercrest);
     register_protocol(demod, &generic_hx2262);
     register_protocol(demod, &technoline_ws9118);
+    register_protocol(demod, &elv_em1000);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
