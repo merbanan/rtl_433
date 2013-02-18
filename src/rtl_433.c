@@ -266,22 +266,27 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
 }
 
 static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
-//debug_callback(bb);
+debug_callback(bb);
     // based on fs20.c
     uint8_t dec[10];
-    uint8_t bytes;
+    uint8_t bytes=0;
     uint8_t bit=18; // preamble
+    uint8_t bb_p[14];
     char* types[] = {"S", "?", "GZ"};
-
-    bytes = 0;
-
     uint8_t checksum_calculated = 0;
+    uint8_t i;
+
+    // check and combine the 3 repetitions
+    for (i = 0; i < 14; i++) {
+        if(bb[0][i]==bb[1][i] || bb[0][i]==bb[2][i]) bb_p[i]=bb[0][i];
+        else if(bb[1][i]==bb[2][i])                  bb_p[i]=bb[1][i];
+        else return 0;
+    }
 
     // read 9 bytes with stopbit ...
-    uint8_t i;
     for (i = 0; i < 9; i++) {
-        dec[i] = AD_POP (bb[0], 8, bit); bit+=8;
-        uint8_t stopbit=AD_POP (bb[0], 1, bit); bit+=1;
+        dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
+        uint8_t stopbit=AD_POP (bb_p, 1, bit); bit+=1;
         if (!stopbit) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
@@ -292,7 +297,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     }
 
     // Read checksum
-    uint8_t checksum_received = AD_POP (bb[0], 8, bit); bit+=8;
+    uint8_t checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
 //        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
