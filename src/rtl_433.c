@@ -221,7 +221,7 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
         bit_no =7-((bit+i)%8);
         if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
     }
-    
+
     return val;
 }
 
@@ -232,11 +232,11 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     uint8_t bytes;
     uint8_t bit=18; // preamble
     char* types[] = {"S", "?", "GZ"};
-    
+
     bytes = 0;
-    
+
     uint8_t checksum_calculated = 0;
-    
+
     // read 9 bytes with stopbit ...
     uint8_t i;
     for (i = 0; i < 9; i++) {
@@ -246,23 +246,23 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
-        
+
         checksum_calculated = checksum_calculated ^ dec[i];
         bytes++;
     }
-    
+
     // Read checksum
     uint8_t checksum_received = AD_POP (bb[0], 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
 //        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
     }
-    
+
 /*    for (i = 0; i < bytes; i++) {
         fprintf(stderr, "%02X ", dec[i]);
     }
     fprintf(stderr, "\n");*/
-    
+
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
     fprintf(stderr, "protocol      = ELV EM 1000\n");
@@ -272,7 +272,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     fprintf(stderr, "total cnt     = %d\n",dec[3]|dec[4]<<8);
     fprintf(stderr, "current cnt   = %d\n",dec[5]|dec[6]<<8);
     fprintf(stderr, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
-    
+
     return 1;
 }
 
