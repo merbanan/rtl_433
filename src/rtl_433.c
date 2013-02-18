@@ -83,7 +83,7 @@
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
-
+#define SIGNAL_GRABBER_BUFFER   (4 * DEFAULT_BUF_LENGTH)
 #define BITBUF_COLS             14
 #define BITBUF_ROWS             15
 
@@ -388,6 +388,13 @@ struct dm_state {
     int analyze;
     int debug_mode;
 
+    /* Signal grabber variables */
+    int signal_grabber;
+    int8_t* sg_buf;
+    int sg_index;
+    int sg_len;
+
+
     /* Protocol states */
     int r_dev_num;
     struct protocol_state *r_devs[MAX_PROTOCOLS];
@@ -539,6 +546,8 @@ static int prev_pulse_start = 0;
 static int pulse_start = 0;
 static int pulse_end = 0;
 static int pulse_avg = 0;
+static int signal_start = 0;
+static int signal_end   = 0;
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
@@ -546,6 +555,8 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 
     for (i=0 ; i<len ; i++) {
         if (buf[i] > demod->level_limit) {
+            if (!signal_start)
+                signal_start = counter;
             if (print) {
                 pulses_found++;
                 pulse_start = counter;
@@ -555,7 +566,6 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 prev_pulse_start = pulse_start;
                 print =0;
                 print2 = 1;
-
             }
         }
         counter++;
@@ -568,6 +578,48 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 print2 = 0;
             }
             print = 1;
+            if (signal_start && (pulse_end + 50000 < counter)) {
+                signal_end = counter - 40000;
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-1000, signal_end);
+                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-1000));
+
+                if (demod->sg_buf) {
+                    int start_pos, signal_bszie, wlen, wrest=0;
+                    char sgf_name[256] = {0};
+                    FILE *sgfp;
+
+                    sprintf(sgf_name, "gfile%03d.data",demod->signal_grabber);
+                    demod->signal_grabber++;
+                    signal_bszie = 2*(signal_end-(signal_start-1000));
+                    start_pos = demod->sg_index - 2*i + signal_bszie;
+                        fprintf(stderr, "start_pos = %d\n", start_pos);
+                    if (start_pos < 0) {
+                        start_pos = SIGNAL_GRABBER_BUFFER+start_pos;
+                        fprintf(stderr, "start_pos = %d\n", start_pos);
+                    }
+
+                    fprintf(stderr, "*** Saving signal to file %s\n",sgf_name);
+                    sgfp = fopen(sgf_name, "wb");
+                    if (!sgfp) {
+                        fprintf(stderr, "Failed to open %s\n", sgf_name);
+                    }
+                    wlen = signal_bszie;
+                    if (start_pos + signal_bszie > SIGNAL_GRABBER_BUFFER) {
+                        wlen = SIGNAL_GRABBER_BUFFER - start_pos;
+                        wrest = signal_bszie - wlen;
+                    }
+                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
+                    fprintf(stderr, "*** Writing data from %d, len %d\n",start_pos, wlen);
+
+                    if (wrest) {
+                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
+                        fprintf(stderr, "*** Writing data from %d, len %d\n",0, wrest);
+                    }
+
+                    fclose(sgfp);
+                }
+                signal_start = 0;
+            }
         }
 
 
@@ -737,6 +789,17 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             do_exit = 1;
             rtlsdr_cancel_async(dev);
         }
+
+        if (demod->signal_grabber) {
+            fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
+            memcpy(&demod->sg_buf[demod->sg_index], buf, len);
+            demod->sg_len =len;
+            demod->sg_index +=len;
+            if (demod->sg_index+len > SIGNAL_GRABBER_BUFFER)
+                demod->sg_index = 0;
+        }
+
+
         if (demod->debug_mode == 0) {
             envelope_detect(buf, len, demod->decimation_level);
             low_pass_filter(sbuf, demod->f_buf, len>>(demod->decimation_level+1));
@@ -813,7 +876,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "am:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "tam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -847,6 +910,9 @@ int main(int argc, char **argv)
             break;
         case 'r':
             test_mode_file = optarg;
+            break;
+        case 't':
+            demod->signal_grabber = 1;
             break;
         case 'm':
             demod->debug_mode = atoi(optarg);
@@ -969,6 +1035,9 @@ int main(int argc, char **argv)
         }
     }
 
+    if (demod->signal_grabber)
+        demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
+
     if (test_mode_file) {
         int i = 0;
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
@@ -1034,9 +1103,11 @@ int main(int argc, char **argv)
     for (i=0 ; i<demod->r_dev_num ; i++)
         free(demod->r_devs[i]);
 
+    if (demod->signal_grabber)
+        free(demod->sg_buf);
+
     if(demod)
         free(demod);
-
 
     rtlsdr_close(dev);
     free (buffer);
