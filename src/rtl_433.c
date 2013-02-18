@@ -266,7 +266,7 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
 }
 
 static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
-debug_callback(bb);
+//debug_callback(bb);
     // based on fs20.c
     uint8_t dec[10];
     uint8_t bytes=0;
