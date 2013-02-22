@@ -211,6 +211,31 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
+static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
+    int i;
+    uint8_t nb[3] = {0};
+
+    if ((bb[0][0]&0x55) && (bb[0][1]&0x55) && (bb[0][2]&0x55)) {
+        for (i=0 ; i<3 ; i++) {
+            nb[i] |= ((bb[0][i]&0xC0)==0xC0) ? 0x00 : 0x01;
+            nb[i] |= ((bb[0][i]&0x30)==0x30) ? 0x00 : 0x02;
+            nb[i] |= ((bb[0][i]&0x0C)==0x0C) ? 0x00 : 0x04;
+            nb[i] |= ((bb[0][i]&0x03)==0x03) ? 0x00 : 0x08;
+        }
+
+        fprintf(stderr, "Remote button event:\n");
+        fprintf(stderr, "model   = Waveman Switch Transmitter\n");
+        fprintf(stderr, "id      = %c\n", 'A'+nb[0]);
+        fprintf(stderr, "channel = %d\n", (nb[1]>>2)+1);
+        fprintf(stderr, "button  = %d\n", (nb[1]&3)+1);
+        fprintf(stderr, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
+        fprintf(stderr, "%02x %02x %02x\n",nb[0],nb[1],nb[2]);
+
+        return 1;
+    }
+    return 0;
+}
 
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
@@ -337,6 +362,7 @@ r_device technoline_ws9118 = {
     .json_callback  = &debug_callback,
 };
 
+
 r_device elv_em1000 = {
     .id             = 7,
     .name           = "ELV EM 1000",
@@ -345,6 +371,16 @@ r_device elv_em1000 = {
     .long_limit     = 7250,
     .reset_limit    = 30000,
     .json_callback  = &em1000_callback,
+};
+
+r_device waveman = {
+    .id             = 6,
+    .name           = "Waveman Switch Transmitter",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 1000,
+    .long_limit     = 8000,
+    .reset_limit    = 30000,
+    .json_callback  = &waveman_callback,
 };
 
 
@@ -870,6 +906,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &generic_hx2262);
     register_protocol(demod, &technoline_ws9118);
     register_protocol(demod, &elv_em1000);
+    register_protocol(demod, &waveman);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
