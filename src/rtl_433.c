@@ -216,7 +216,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     int i;
     uint8_t nb[3] = {0};
 
-    if ((bb[0][0]&0x55) && (bb[0][1]&0x55) && (bb[0][2]&0x55)) {
+    if (((bb[0][0]&0x55)==0x55) && ((bb[0][1]&0x55)==0x55) && ((bb[0][2]&0x55)==0x55) && ((bb[0][3]&0x55)==0x00)) {
         for (i=0 ; i<3 ; i++) {
             nb[i] |= ((bb[0][i]&0xC0)==0xC0) ? 0x00 : 0x01;
             nb[i] |= ((bb[0][i]&0x30)==0x30) ? 0x00 : 0x02;
