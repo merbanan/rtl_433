@@ -83,7 +83,7 @@
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
-#define SIGNAL_GRABBER_BUFFER   (4 * DEFAULT_BUF_LENGTH)
+#define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define BITBUF_COLS             14
 #define BITBUF_ROWS             15
 
@@ -171,7 +171,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol       = Rubicson\n");
+        fprintf(stderr, "protocol       = Rubicson/Auriol\n");
         fprintf(stderr, "rid            = %x\n",bb[0][0]);
         fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
@@ -616,22 +616,31 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
             print = 1;
             if (signal_start && (pulse_end + 50000 < counter)) {
                 signal_end = counter - 40000;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-1000, signal_end);
-                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-1000));
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
+                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
 
                 if (demod->sg_buf) {
-                    int start_pos, signal_bszie, wlen, wrest=0;
+                    int start_pos, signal_bszie, wlen, wrest=0, sg_idx, idx;
                     char sgf_name[256] = {0};
                     FILE *sgfp;
 
                     sprintf(sgf_name, "gfile%03d.data",demod->signal_grabber);
                     demod->signal_grabber++;
-                    signal_bszie = 2*(signal_end-(signal_start-1000));
-                    start_pos = demod->sg_index - 2*i + signal_bszie;
-                        fprintf(stderr, "start_pos = %d\n", start_pos);
+                    signal_bszie = 2*(signal_end-(signal_start-10000));
+                    signal_bszie = (131072-(signal_bszie%131072)) + signal_bszie;
+                    sg_idx = demod->sg_index-demod->sg_len;
+                    if (sg_idx < 0)
+                        sg_idx = SIGNAL_GRABBER_BUFFER-demod->sg_len;
+                    idx = (i-40000)*2;
+                    start_pos = sg_idx+idx-signal_bszie;
+                    fprintf(stderr, "signal_bszie = %d  -      sg_index = %d\n", signal_bszie, demod->sg_index);
+                    fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
+                    if (signal_bszie > SIGNAL_GRABBER_BUFFER)
+                        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bszie, SIGNAL_GRABBER_BUFFER);
+
                     if (start_pos < 0) {
                         start_pos = SIGNAL_GRABBER_BUFFER+start_pos;
-                        fprintf(stderr, "start_pos = %d\n", start_pos);
+                        fprintf(stderr, "restart_pos = %d\n", start_pos);
                     }
 
                     fprintf(stderr, "*** Saving signal to file %s\n",sgf_name);
@@ -827,7 +836,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
         }
 
         if (demod->signal_grabber) {
-            fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
+            //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
             memcpy(&demod->sg_buf[demod->sg_index], buf, len);
             demod->sg_len =len;
             demod->sg_index +=len;
@@ -903,8 +912,8 @@ int main(int argc, char **argv)
     register_protocol(demod, &rubicson);
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
-    register_protocol(demod, &generic_hx2262);
-    register_protocol(demod, &technoline_ws9118);
+//    register_protocol(demod, &generic_hx2262);
+//    register_protocol(demod, &technoline_ws9118);
     register_protocol(demod, &elv_em1000);
     register_protocol(demod, &waveman);
 
