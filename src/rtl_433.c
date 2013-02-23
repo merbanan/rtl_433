@@ -91,7 +91,7 @@ static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
-
+static int debug_output = 0;
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
@@ -147,6 +147,10 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "Remote button event:\n");
         fprintf(stderr, "model = Silvercrest\n");
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
@@ -175,6 +179,10 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "rid            = %x\n",bb[0][0]);
         fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
@@ -206,6 +214,10 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "hrid          = %02x\n", rid);
 
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
@@ -231,6 +243,9 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "button  = %d\n", (nb[1]&3)+1);
         fprintf(stderr, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
         fprintf(stderr, "%02x %02x %02x\n",nb[0],nb[1],nb[2]);
+
+        if (debug_output)
+            debug_callback(bb);
 
         return 1;
     }
@@ -452,6 +467,7 @@ void usage(void)
         "\t[-p ppm_error (default: 0)]\n"
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
+        "\t[-D print debug info on event\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n");
     exit(1);
 }
@@ -923,7 +939,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "tam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -966,6 +982,9 @@ int main(int argc, char **argv)
             break;
         case 'S':
             sync_mode = 1;
+            break;
+        case 'D':
+            debug_output = 1;
             break;
         default:
             usage();
