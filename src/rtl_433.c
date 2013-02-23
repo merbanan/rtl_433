@@ -444,6 +444,7 @@ void usage(void)
         "Usage:\t[-d device_index (default: 0)]\n"
         "\t[-g gain (default: 0 for auto)]\n"
         "\t[-a analyze mode, print a textual description of the signal]\n"
+        "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
         "\t[-l change the detection level used to determine pulses (0-3200) default 10000]\n"
         "\t[-f change the receive frequency, default is 433.92MHz]\n"
         "\t[-S force sync output (default: async)]\n"
