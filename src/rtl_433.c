@@ -76,6 +76,8 @@
 
 #define DEFAULT_SAMPLE_RATE     1024000
 #define DEFAULT_FREQUENCY       433920000
+#define DEFAULT_HOP_TIME        (60*10)
+#define DEFAULT_HOP_EVENTS      2
 #define DEFAULT_ASYNC_BUF_NUMBER    32
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
 #define DEFAULT_LEVEL_LIMIT     10000
@@ -976,7 +978,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
         if(frequencies>1) {
             time_t rawtime;
             time(&rawtime);
-            if(difftime(rawtime, rawtime_old)>60*10 || events>=2) {
+            if(difftime(rawtime, rawtime_old)>DEFAULT_HOP_TIME || events>=DEFAULT_HOP_EVENTS) {
                 rawtime_old=rawtime;
                 events=0;
                 do_exit_async=1;
