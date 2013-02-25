@@ -83,7 +83,7 @@
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
-
+#define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define BITBUF_COLS             14
 #define BITBUF_ROWS             15
 
@@ -91,7 +91,7 @@ static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
-
+static int debug_output = 0;
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
@@ -147,6 +147,10 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "Remote button event:\n");
         fprintf(stderr, "model = Silvercrest\n");
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
@@ -171,10 +175,14 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol       = Rubicson\n");
+        fprintf(stderr, "protocol       = Rubicson/Auriol\n");
         fprintf(stderr, "rid            = %x\n",bb[0][0]);
         fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
@@ -206,11 +214,43 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "hrid          = %02x\n", rid);
 
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
         return 1;
     }
     return 0;
 }
 
+static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
+    int i;
+    uint8_t nb[3] = {0};
+
+    if (((bb[0][0]&0x55)==0x55) && ((bb[0][1]&0x55)==0x55) && ((bb[0][2]&0x55)==0x55) && ((bb[0][3]&0x55)==0x00)) {
+        for (i=0 ; i<3 ; i++) {
+            nb[i] |= ((bb[0][i]&0xC0)==0xC0) ? 0x00 : 0x01;
+            nb[i] |= ((bb[0][i]&0x30)==0x30) ? 0x00 : 0x02;
+            nb[i] |= ((bb[0][i]&0x0C)==0x0C) ? 0x00 : 0x04;
+            nb[i] |= ((bb[0][i]&0x03)==0x03) ? 0x00 : 0x08;
+        }
+
+        fprintf(stderr, "Remote button event:\n");
+        fprintf(stderr, "model   = Waveman Switch Transmitter\n");
+        fprintf(stderr, "id      = %c\n", 'A'+nb[0]);
+        fprintf(stderr, "channel = %d\n", (nb[1]>>2)+1);
+        fprintf(stderr, "button  = %d\n", (nb[1]&3)+1);
+        fprintf(stderr, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
+        fprintf(stderr, "%02x %02x %02x\n",nb[0],nb[1],nb[2]);
+
+        if (debug_output)
+            debug_callback(bb);
+
+        return 1;
+    }
+    return 0;
+}
 
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
@@ -221,7 +261,7 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
         bit_no =7-((bit+i)%8);
         if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
     }
-    
+
     return val;
 }
 
@@ -242,7 +282,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         else if(bb[1][i]==bb[2][i])                  bb_p[i]=bb[1][i];
         else return 0;
     }
-    
+
     // read 9 bytes with stopbit ...
     for (i = 0; i < 9; i++) {
         dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
@@ -251,23 +291,23 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
-        
+
         checksum_calculated = checksum_calculated ^ dec[i];
         bytes++;
     }
-    
+
     // Read checksum
     uint8_t checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
 //        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
     }
-    
+
 /*    for (i = 0; i < bytes; i++) {
         fprintf(stderr, "%02X ", dec[i]);
     }
     fprintf(stderr, "\n");*/
-    
+
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
     fprintf(stderr, "protocol      = ELV EM 1000\n");
@@ -277,7 +317,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     fprintf(stderr, "total cnt     = %d\n",dec[3]|dec[4]<<8);
     fprintf(stderr, "current cnt   = %d\n",dec[5]|dec[6]<<8);
     fprintf(stderr, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
-    
+
     return 1;
 }
 
@@ -342,6 +382,7 @@ r_device technoline_ws9118 = {
     .json_callback  = &debug_callback,
 };
 
+
 r_device elv_em1000 = {
     .id             = 7,
     .name           = "ELV EM 1000",
@@ -350,6 +391,16 @@ r_device elv_em1000 = {
     .long_limit     = 7250,
     .reset_limit    = 30000,
     .json_callback  = &em1000_callback,
+};
+
+r_device waveman = {
+    .id             = 6,
+    .name           = "Waveman Switch Transmitter",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 1000,
+    .long_limit     = 8000,
+    .reset_limit    = 30000,
+    .json_callback  = &waveman_callback,
 };
 
 
@@ -393,6 +444,13 @@ struct dm_state {
     int analyze;
     int debug_mode;
 
+    /* Signal grabber variables */
+    int signal_grabber;
+    int8_t* sg_buf;
+    int sg_index;
+    int sg_len;
+
+
     /* Protocol states */
     int r_dev_num;
     struct protocol_state *r_devs[MAX_PROTOCOLS];
@@ -406,6 +464,7 @@ void usage(void)
         "Usage:\t[-d device_index (default: 0)]\n"
         "\t[-g gain (default: 0 for auto)]\n"
         "\t[-a analyze mode, print a textual description of the signal]\n"
+        "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
         "\t[-l change the detection level used to determine pulses (0-3200) default 10000]\n"
         "\t[-f change the receive frequency, default is 433.92MHz]\n"
         "\t[-S force sync output (default: async)]\n"
@@ -413,6 +472,7 @@ void usage(void)
         "\t[-p ppm_error (default: 0)]\n"
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
+        "\t[-D print debug info on event\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n");
     exit(1);
 }
@@ -544,6 +604,8 @@ static int prev_pulse_start = 0;
 static int pulse_start = 0;
 static int pulse_end = 0;
 static int pulse_avg = 0;
+static int signal_start = 0;
+static int signal_end   = 0;
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
@@ -551,6 +613,8 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 
     for (i=0 ; i<len ; i++) {
         if (buf[i] > demod->level_limit) {
+            if (!signal_start)
+                signal_start = counter;
             if (print) {
                 pulses_found++;
                 pulse_start = counter;
@@ -560,7 +624,6 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 prev_pulse_start = pulse_start;
                 print =0;
                 print2 = 1;
-
             }
         }
         counter++;
@@ -573,6 +636,57 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 print2 = 0;
             }
             print = 1;
+            if (signal_start && (pulse_end + 50000 < counter)) {
+                signal_end = counter - 40000;
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
+                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
+
+                if (demod->sg_buf) {
+                    int start_pos, signal_bszie, wlen, wrest=0, sg_idx, idx;
+                    char sgf_name[256] = {0};
+                    FILE *sgfp;
+
+                    sprintf(sgf_name, "gfile%03d.data",demod->signal_grabber);
+                    demod->signal_grabber++;
+                    signal_bszie = 2*(signal_end-(signal_start-10000));
+                    signal_bszie = (131072-(signal_bszie%131072)) + signal_bszie;
+                    sg_idx = demod->sg_index-demod->sg_len;
+                    if (sg_idx < 0)
+                        sg_idx = SIGNAL_GRABBER_BUFFER-demod->sg_len;
+                    idx = (i-40000)*2;
+                    start_pos = sg_idx+idx-signal_bszie;
+                    fprintf(stderr, "signal_bszie = %d  -      sg_index = %d\n", signal_bszie, demod->sg_index);
+                    fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
+                    if (signal_bszie > SIGNAL_GRABBER_BUFFER)
+                        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bszie, SIGNAL_GRABBER_BUFFER);
+
+                    if (start_pos < 0) {
+                        start_pos = SIGNAL_GRABBER_BUFFER+start_pos;
+                        fprintf(stderr, "restart_pos = %d\n", start_pos);
+                    }
+
+                    fprintf(stderr, "*** Saving signal to file %s\n",sgf_name);
+                    sgfp = fopen(sgf_name, "wb");
+                    if (!sgfp) {
+                        fprintf(stderr, "Failed to open %s\n", sgf_name);
+                    }
+                    wlen = signal_bszie;
+                    if (start_pos + signal_bszie > SIGNAL_GRABBER_BUFFER) {
+                        wlen = SIGNAL_GRABBER_BUFFER - start_pos;
+                        wrest = signal_bszie - wlen;
+                    }
+                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
+                    fprintf(stderr, "*** Writing data from %d, len %d\n",start_pos, wlen);
+
+                    if (wrest) {
+                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
+                        fprintf(stderr, "*** Writing data from %d, len %d\n",0, wrest);
+                    }
+
+                    fclose(sgfp);
+                }
+                signal_start = 0;
+            }
         }
 
 
@@ -742,6 +856,17 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
             do_exit = 1;
             rtlsdr_cancel_async(dev);
         }
+
+        if (demod->signal_grabber) {
+            //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
+            memcpy(&demod->sg_buf[demod->sg_index], buf, len);
+            demod->sg_len =len;
+            demod->sg_index +=len;
+            if (demod->sg_index+len > SIGNAL_GRABBER_BUFFER)
+                demod->sg_index = 0;
+        }
+
+
         if (demod->debug_mode == 0) {
             envelope_detect(buf, len, demod->decimation_level);
             low_pass_filter(sbuf, demod->f_buf, len>>(demod->decimation_level+1));
@@ -809,16 +934,17 @@ int main(int argc, char **argv)
     register_protocol(demod, &rubicson);
     register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
-    register_protocol(demod, &generic_hx2262);
-    register_protocol(demod, &technoline_ws9118);
+//    register_protocol(demod, &generic_hx2262);
+//    register_protocol(demod, &technoline_ws9118);
     register_protocol(demod, &elv_em1000);
+    register_protocol(demod, &waveman);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "am:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -853,11 +979,17 @@ int main(int argc, char **argv)
         case 'r':
             test_mode_file = optarg;
             break;
+        case 't':
+            demod->signal_grabber = 1;
+            break;
         case 'm':
             demod->debug_mode = atoi(optarg);
             break;
         case 'S':
             sync_mode = 1;
+            break;
+        case 'D':
+            debug_output = 1;
             break;
         default:
             usage();
@@ -974,6 +1106,9 @@ int main(int argc, char **argv)
         }
     }
 
+    if (demod->signal_grabber)
+        demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
+
     if (test_mode_file) {
         int i = 0;
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
@@ -1039,9 +1174,11 @@ int main(int argc, char **argv)
     for (i=0 ; i<demod->r_dev_num ; i++)
         free(demod->r_devs[i]);
 
+    if (demod->signal_grabber)
+        free(demod->sg_buf);
+
     if(demod)
         free(demod);
-
 
     rtlsdr_close(dev);
     free (buffer);
