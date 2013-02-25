@@ -321,6 +321,67 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 1;
 }
 
+static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    // based on http://www.dc3yc.privat.t-online.de/protocol.htm
+    uint8_t dec[13];
+    uint8_t nibbles=0;
+    uint8_t bit=11; // preamble
+    char* types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "!KS200/KS300"};
+    uint8_t check_calculated=0, sum_calculated=0;
+    uint8_t i;
+    uint8_t stopbit;
+
+    dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
+    stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+    if (!stopbit) {
+//fprintf(stderr, "!stopbit\n");
+        return 0;
+    }
+    check_calculated ^= dec[0];
+    sum_calculated   += dec[0];
+
+    // read nibbles with stopbit ...
+    for (i = 1; i <= (dec[0]==4?12:8); i++) {
+        dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
+        stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+        if (!stopbit) {
+//fprintf(stderr, "!stopbit %i\n", i);
+            return 0;
+        }
+        check_calculated ^= dec[i];
+        sum_calculated   += dec[i];
+        nibbles++;
+    }
+
+    if (check_calculated) {
+//fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
+        return 0;
+    }
+
+    // Read sum
+    uint8_t sum_received = AD_POP (bb[0], 4, bit); bit+=4;
+    sum_calculated+=5;
+    sum_calculated&=0xF;
+    if (sum_received != sum_calculated) {
+//fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        return 0;
+    }
+
+//for (i = 0; i < nibbles; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
+
+    fprintf(stderr, "Weather station sensor event:\n");
+    fprintf(stderr, "protocol      = ELV WS 2000\n");
+    fprintf(stderr, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
+    fprintf(stderr, "code          = %d\n", dec[1]&7);
+    fprintf(stderr, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
+    fprintf(stderr, "humidity      = %d.%d\n", dec[7]*10+dec[6], dec[5]);
+    if(dec[0]==4) {
+        fprintf(stderr, "pressure      = %d\n", 200+dec[10]*100+dec[9]*10+dec[8]);
+    }
+
+    return 1;
+}
+
 
 r_device rubicson = {
     .id             = 1,
@@ -391,6 +452,16 @@ r_device elv_em1000 = {
     .long_limit     = 7250,
     .reset_limit    = 30000,
     .json_callback  = &em1000_callback,
+};
+
+r_device elv_ws2000 = {
+    .id             = 8,
+    .name           = "ELV WS 2000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 602+(1155-602)/2,
+    .long_limit     = (1755635-1655517)/2, // no repetitions
+    .reset_limit    = (1755635-1655517)*2,
+    .json_callback  = &ws2000_callback,
 };
 
 r_device waveman = {
@@ -1018,6 +1089,7 @@ int main(int argc, char **argv)
 //    register_protocol(demod, &generic_hx2262);
 //    register_protocol(demod, &technoline_ws9118);
     register_protocol(demod, &elv_em1000);
+    register_protocol(demod, &elv_ws2000);
     register_protocol(demod, &waveman);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
