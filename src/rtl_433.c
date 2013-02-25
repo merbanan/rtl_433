@@ -73,7 +73,7 @@
 
 #include "rtl-sdr.h"
 
-#define DEFAULT_SAMPLE_RATE     48000
+#define DEFAULT_SAMPLE_RATE     1024000
 #define DEFAULT_FREQUENCY       433920000
 #define DEFAULT_ASYNC_BUF_NUMBER    32
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
@@ -88,6 +88,7 @@
 #define BITBUF_ROWS             15
 
 static int do_exit = 0;
+uint32_t samp_rate=DEFAULT_SAMPLE_RATE;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
@@ -383,6 +384,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
+// timings based on samp_rate=1024000
 r_device rubicson = {
     .id             = 1,
     .name           = "Rubicson Temperature Sensor",
@@ -536,15 +538,16 @@ void usage(void)
         "\t[-g gain (default: 0 for auto)]\n"
         "\t[-a analyze mode, print a textual description of the signal]\n"
         "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-        "\t[-l change the detection level used to determine pulses (0-3200) default 10000]\n"
-        "\t[-f change the receive frequency, default is 433.92MHz]\n"
+        "\t[-l change the detection level used to determine pulses (0-3200) default: %i]\n"
+        "\t[-f change the receive frequency, default: %i Hz]\n"
+        "\t[-s samplerate (default: %i Hz)]\n"
         "\t[-S force sync output (default: async)]\n"
         "\t[-r read data from file instead of from a receiver]\n"
         "\t[-p ppm_error (default: 0)]\n"
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
         "\t[-D print debug info on event\n"
-        "\tfilename (a '-' dumps samples to stdout)\n\n");
+        "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
 
@@ -650,9 +653,9 @@ static void demod_print_bits_packet(struct protocol_state* p) {
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p =  calloc(1,sizeof(struct protocol_state));
-    p->short_limit  = t_dev->short_limit;
-    p->long_limit   = t_dev->long_limit;
-    p->reset_limit  = t_dev->reset_limit;
+    p->short_limit  = t_dev->short_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->long_limit   = t_dev->long_limit /(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->reset_limit  = t_dev->reset_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
     p->modulation   = t_dev->modulation;
     p->callback     = t_dev->json_callback;
     demod_reset_bits_packet(p);
@@ -1071,7 +1074,6 @@ int main(int argc, char **argv)
     uint8_t *buffer;
     uint32_t dev_index = 0;
     uint32_t frequency = DEFAULT_FREQUENCY;
-    uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int device_count;
     char vendor[256], product[256], serial[256];
@@ -1081,16 +1083,6 @@ int main(int argc, char **argv)
 
     /* initialize tables */
     calc_squares();
-
-    /* init protocols somewhat ok */
-    register_protocol(demod, &rubicson);
-    register_protocol(demod, &prologue);
-    register_protocol(demod, &silvercrest);
-//    register_protocol(demod, &generic_hx2262);
-//    register_protocol(demod, &technoline_ws9118);
-    register_protocol(demod, &elv_em1000);
-    register_protocol(demod, &elv_ws2000);
-    register_protocol(demod, &waveman);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
@@ -1150,6 +1142,16 @@ int main(int argc, char **argv)
         }
     }
 
+    /* init protocols somewhat ok */
+    register_protocol(demod, &rubicson);
+    register_protocol(demod, &prologue);
+    register_protocol(demod, &silvercrest);
+//    register_protocol(demod, &generic_hx2262);
+//    register_protocol(demod, &technoline_ws9118);
+    register_protocol(demod, &elv_em1000);
+    register_protocol(demod, &elv_ws2000);
+    register_protocol(demod, &waveman);
+
     if (argc <= optind-1) {
         usage();
     } else {
@@ -1208,7 +1210,7 @@ int main(int argc, char **argv)
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to set sample rate.\n");
     else
-        fprintf(stderr, "Sample rate set to %d.\n", samp_rate);
+        fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
     fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n",demod->decimation_level, samp_rate, samp_rate>>demod->decimation_level);
     fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
