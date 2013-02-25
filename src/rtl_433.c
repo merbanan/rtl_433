@@ -258,21 +258,19 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
+
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
-
     uint8_t i, byte_no, bit_no;
     for (i=0;i<bits;i++) {
         byte_no=   (bit+i)/8 ;
         bit_no =7-((bit+i)%8);
         if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
     }
-
     return val;
 }
 
 static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
-//debug_callback(bb);
     // based on fs20.c
     uint8_t dec[10];
     uint8_t bytes=0;
@@ -297,8 +295,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
-
-        checksum_calculated = checksum_calculated ^ dec[i];
+        checksum_calculated ^= dec[i];
         bytes++;
     }
 
@@ -309,10 +306,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         return 0;
     }
 
-/*    for (i = 0; i < bytes; i++) {
-        fprintf(stderr, "%02X ", dec[i]);
-    }
-    fprintf(stderr, "\n");*/
+//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
