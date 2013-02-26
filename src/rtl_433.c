@@ -606,6 +606,78 @@ static int pulse_end = 0;
 static int pulse_avg = 0;
 static int signal_start = 0;
 static int signal_end   = 0;
+static int signal_pulse_data[4000][3] = {{0}};
+static int signal_pulse_counter = 0;
+
+
+static void classify_signal() {
+    int i,k, max=0, min=1000000, t;
+    int delta, count_min, count_max, min_new, max_new;
+
+    for (i=0 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+            //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
+            //i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+            //signal_pulse_data[i][2]);
+            if (signal_pulse_data[i][2] > max)
+                max = signal_pulse_data[i][2];
+            if (signal_pulse_data[i][2] < min)
+                min = signal_pulse_data[i][2];
+        }
+    }
+    t=(max+min)/2;
+    //fprintf(stderr, "\n\nMax: %d, Min: %d  t:%d\n", max, min, t);
+
+    delta = (max - min)*(max-min);
+
+    //TODO use Lloyd-Max quantizer instead
+    k=1;
+    while((k < 10) && (delta > 0)) {
+        min_new = 0; count_min = 0;
+        max_new = 0; count_max = 0;
+
+        for (i=0 ; i < 1000 ; i++) {
+            if (signal_pulse_data[i][0] > 0) {
+                if (signal_pulse_data[i][2] < t) {
+                    min_new = min_new + signal_pulse_data[i][2];
+                    count_min++;
+                }
+                else {
+                    max_new = max_new + signal_pulse_data[i][2];
+                    count_max++;
+                }
+            }
+        }
+        min_new = min_new / count_min;
+        max_new = max_new / count_max;
+
+        delta = (min - min_new)*(min - min_new) + (max - max_new)*(max - max_new);
+        min = min_new;
+        max = max_new;
+        t = (min + max)/2;
+
+        //fprintf(stderr, "Iteration %d.     min: %d (%d)    max: %d (%d)    delta %d\n", k, min, count_min, max, count_max, delta);
+        k++;
+    }
+
+    for (i=0 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+            //fprintf(stderr, "%d\n", signal_pulse_data[i][1]);
+        }
+    }
+    /* 50% decision limit */
+    if (max/min > 1) {
+        fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
+    } else {
+        fprintf(stderr, "Distance coding: Pulse length %d\n", (min+max)/2);
+    }
+    for (i=0 ; i<1000 ; i++) {
+        signal_pulse_data[i][0] = 0;
+        signal_pulse_data[i][1] = 0;
+        signal_pulse_data[i][2] = 0;
+    }
+};
+
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
@@ -618,6 +690,9 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
             if (print) {
                 pulses_found++;
                 pulse_start = counter;
+                signal_pulse_data[signal_pulse_counter][0] = counter;
+                signal_pulse_data[signal_pulse_counter][1] = -1;
+                signal_pulse_data[signal_pulse_counter][2] = -1;
                 fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
                 fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
                 fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
@@ -630,10 +705,13 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         if (buf[i] < demod->level_limit) {
             if (print2) {
                 pulse_avg += counter-pulse_start;
-                fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse lenght = %d, pulse avg lenght = %d\n",
+                fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
                         pulses_found, counter, counter-pulse_start, pulse_avg/pulses_found);
                 pulse_end = counter;
                 print2 = 0;
+                signal_pulse_data[signal_pulse_counter][1] = counter;
+                signal_pulse_data[signal_pulse_counter][2] = counter-pulse_start;
+                signal_pulse_counter++;
             }
             print = 1;
             if (signal_start && (pulse_end + 50000 < counter)) {
@@ -641,6 +719,9 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
                 fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
 
+                classify_signal();
+
+                signal_pulse_counter = 0;
                 if (demod->sg_buf) {
                     int start_pos, signal_bszie, wlen, wrest=0, sg_idx, idx;
                     char sgf_name[256] = {0};
