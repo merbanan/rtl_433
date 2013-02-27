@@ -61,6 +61,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -73,8 +74,10 @@
 
 #include "rtl-sdr.h"
 
-#define DEFAULT_SAMPLE_RATE     48000
+#define DEFAULT_SAMPLE_RATE     1024000
 #define DEFAULT_FREQUENCY       433920000
+#define DEFAULT_HOP_TIME        (60*10)
+#define DEFAULT_HOP_EVENTS      2
 #define DEFAULT_ASYNC_BUF_NUMBER    32
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
 #define DEFAULT_LEVEL_LIMIT     10000
@@ -88,6 +91,11 @@
 #define BITBUF_ROWS             15
 
 static int do_exit = 0;
+static int do_exit_async=0, frequencies=0, events=0;
+uint32_t frequency[MAX_PROTOCOLS];
+time_t rawtime_old;
+int flag;
+uint32_t samp_rate=DEFAULT_SAMPLE_RATE;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
@@ -252,21 +260,19 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
+
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
-
     uint8_t i, byte_no, bit_no;
     for (i=0;i<bits;i++) {
         byte_no=   (bit+i)/8 ;
         bit_no =7-((bit+i)%8);
         if (bb[byte_no]&(1<<bit_no)) val = val | (1<<i);
     }
-
     return val;
 }
 
 static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
-//debug_callback(bb);
     // based on fs20.c
     uint8_t dec[10];
     uint8_t bytes=0;
@@ -291,8 +297,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
-
-        checksum_calculated = checksum_calculated ^ dec[i];
+        checksum_calculated ^= dec[i];
         bytes++;
     }
 
@@ -303,10 +308,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         return 0;
     }
 
-/*    for (i = 0; i < bytes; i++) {
-        fprintf(stderr, "%02X ", dec[i]);
-    }
-    fprintf(stderr, "\n");*/
+//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
@@ -321,7 +323,69 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 1;
 }
 
+static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    // based on http://www.dc3yc.privat.t-online.de/protocol.htm
+    uint8_t dec[13];
+    uint8_t nibbles=0;
+    uint8_t bit=11; // preamble
+    char* types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "!KS200/KS300"};
+    uint8_t check_calculated=0, sum_calculated=0;
+    uint8_t i;
+    uint8_t stopbit;
 
+    dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
+    stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+    if (!stopbit) {
+//fprintf(stderr, "!stopbit\n");
+        return 0;
+    }
+    check_calculated ^= dec[0];
+    sum_calculated   += dec[0];
+
+    // read nibbles with stopbit ...
+    for (i = 1; i <= (dec[0]==4?12:8); i++) {
+        dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
+        stopbit= AD_POP (bb[0], 1, bit); bit+=1;
+        if (!stopbit) {
+//fprintf(stderr, "!stopbit %i\n", i);
+            return 0;
+        }
+        check_calculated ^= dec[i];
+        sum_calculated   += dec[i];
+        nibbles++;
+    }
+
+    if (check_calculated) {
+//fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
+        return 0;
+    }
+
+    // Read sum
+    uint8_t sum_received = AD_POP (bb[0], 4, bit); bit+=4;
+    sum_calculated+=5;
+    sum_calculated&=0xF;
+    if (sum_received != sum_calculated) {
+//fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        return 0;
+    }
+
+//for (i = 0; i < nibbles; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
+
+    fprintf(stderr, "Weather station sensor event:\n");
+    fprintf(stderr, "protocol      = ELV WS 2000\n");
+    fprintf(stderr, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
+    fprintf(stderr, "code          = %d\n", dec[1]&7);
+    fprintf(stderr, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
+    fprintf(stderr, "humidity      = %d.%d\n", dec[7]*10+dec[6], dec[5]);
+    if(dec[0]==4) {
+        fprintf(stderr, "pressure      = %d\n", 200+dec[10]*100+dec[9]*10+dec[8]);
+    }
+
+    return 1;
+}
+
+
+// timings based on samp_rate=1024000
 r_device rubicson = {
     .id             = 1,
     .name           = "Rubicson Temperature Sensor",
@@ -393,6 +457,16 @@ r_device elv_em1000 = {
     .json_callback  = &em1000_callback,
 };
 
+r_device elv_ws2000 = {
+    .id             = 8,
+    .name           = "ELV WS 2000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 602+(1155-602)/2,
+    .long_limit     = (1755635-1655517)/2, // no repetitions
+    .reset_limit    = (1755635-1655517)*2,
+    .json_callback  = &ws2000_callback,
+};
+
 r_device waveman = {
     .id             = 6,
     .name           = "Waveman Switch Transmitter",
@@ -460,20 +534,21 @@ struct dm_state {
 void usage(void)
 {
     fprintf(stderr,
-        "rtl_433, a 433.92MHz generic data receiver for RTL2832 based DVB-T receivers\n\n"
+        "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
         "Usage:\t[-d device_index (default: 0)]\n"
         "\t[-g gain (default: 0 for auto)]\n"
         "\t[-a analyze mode, print a textual description of the signal]\n"
         "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-        "\t[-l change the detection level used to determine pulses (0-3200) default 10000]\n"
-        "\t[-f change the receive frequency, default is 433.92MHz]\n"
+        "\t[-l change the detection level used to determine pulses (0-3200) default: %i]\n"
+        "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
+        "\t[-s samplerate (default: %i Hz)]\n"
         "\t[-S force sync output (default: async)]\n"
         "\t[-r read data from file instead of from a receiver]\n"
         "\t[-p ppm_error (default: 0)]\n"
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
         "\t[-D print debug info on event\n"
-        "\tfilename (a '-' dumps samples to stdout)\n\n");
+        "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
 
@@ -579,9 +654,9 @@ static void demod_print_bits_packet(struct protocol_state* p) {
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p =  calloc(1,sizeof(struct protocol_state));
-    p->short_limit  = t_dev->short_limit;
-    p->long_limit   = t_dev->long_limit;
-    p->reset_limit  = t_dev->reset_limit;
+    p->short_limit  = t_dev->short_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->long_limit   = t_dev->long_limit /(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->reset_limit  = t_dev->reset_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
     p->modulation   = t_dev->modulation;
     p->callback     = t_dev->json_callback;
     demod_reset_bits_packet(p);
@@ -808,7 +883,7 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                p->callback(p->bits_buffer);
+                events+=p->callback(p->bits_buffer);
             else
                 demod_print_bits_packet(p);
 
@@ -874,7 +949,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             //demod_print_bits_packet(p);
             if (p->callback)
-                p->callback(p->bits_buffer);
+                events+=p->callback(p->bits_buffer);
             else
                 demod_print_bits_packet(p);
             demod_reset_bits_packet(p);
@@ -929,7 +1004,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
     uint16_t* sbuf = (uint16_t*) buf;
     int i;
     if (demod->file || !demod->save_data) {
-        if (do_exit)
+        if (do_exit || do_exit_async)
             return;
 
         if ((bytes_to_read > 0) && (bytes_to_read < len)) {
@@ -980,6 +1055,17 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 
         if (bytes_to_read > 0)
             bytes_to_read -= len;
+
+        if(frequencies>1) {
+            time_t rawtime;
+            time(&rawtime);
+            if(difftime(rawtime, rawtime_old)>DEFAULT_HOP_TIME || events>=DEFAULT_HOP_EVENTS) {
+                rawtime_old=rawtime;
+                events=0;
+                do_exit_async=1;
+                rtlsdr_cancel_async(dev);
+            }
+        }
     }
 }
 
@@ -999,8 +1085,7 @@ int main(int argc, char **argv)
     struct dm_state* demod;
     uint8_t *buffer;
     uint32_t dev_index = 0;
-    uint32_t frequency = DEFAULT_FREQUENCY;
-    uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
+    int frequency_current=0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int device_count;
     char vendor[256], product[256], serial[256];
@@ -1010,15 +1095,6 @@ int main(int argc, char **argv)
 
     /* initialize tables */
     calc_squares();
-
-    /* init protocols somewhat ok */
-    register_protocol(demod, &rubicson);
-    register_protocol(demod, &prologue);
-    register_protocol(demod, &silvercrest);
-//    register_protocol(demod, &generic_hx2262);
-//    register_protocol(demod, &technoline_ws9118);
-    register_protocol(demod, &elv_em1000);
-    register_protocol(demod, &waveman);
 
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
@@ -1031,7 +1107,8 @@ int main(int argc, char **argv)
             dev_index = atoi(optarg);
             break;
         case 'f':
-            frequency = (uint32_t)atof(optarg);
+            if(frequencies<MAX_PROTOCOLS) frequency[frequencies++] = (uint32_t)atof(optarg);
+            else fprintf(stderr, "Max number of frequencies reached %d\n",MAX_PROTOCOLS);
             break;
         case 'g':
             gain = (int)(atof(optarg) * 10); /* tenths of a dB */
@@ -1077,6 +1154,16 @@ int main(int argc, char **argv)
             break;
         }
     }
+
+    /* init protocols somewhat ok */
+    register_protocol(demod, &rubicson);
+    register_protocol(demod, &prologue);
+    register_protocol(demod, &silvercrest);
+//    register_protocol(demod, &generic_hx2262);
+//    register_protocol(demod, &technoline_ws9118);
+    register_protocol(demod, &elv_em1000);
+    register_protocol(demod, &elv_ws2000);
+    register_protocol(demod, &waveman);
 
     if (argc <= optind-1) {
         usage();
@@ -1136,17 +1223,10 @@ int main(int argc, char **argv)
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to set sample rate.\n");
     else
-        fprintf(stderr, "Sample rate set to %d.\n", samp_rate);
+        fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
     fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n",demod->decimation_level, samp_rate, samp_rate>>demod->decimation_level);
     fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
-
-    /* Set the frequency */
-    r = rtlsdr_set_center_freq(dev, frequency);
-    if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set center freq.\n");
-    else
-        fprintf(stderr, "Tuned to %u Hz.\n", frequency);
 
     if (0 == gain) {
          /* Enable automatic gain */
@@ -1239,9 +1319,26 @@ int main(int argc, char **argv)
                 bytes_to_read -= n_read;
         }
     } else {
+        if(frequencies==0) {
+          frequency[0] = DEFAULT_FREQUENCY;
+          frequencies=1;
+        } else {
+          time(&rawtime_old);
+        }
         fprintf(stderr, "Reading samples in async mode...\n");
-        r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)demod,
-                      DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+        while(!do_exit) {
+            /* Set the frequency */
+            r = rtlsdr_set_center_freq(dev, frequency[frequency_current]);
+            if (r < 0)
+                fprintf(stderr, "WARNING: Failed to set center freq.\n");
+            else
+                fprintf(stderr, "Tuned to %u Hz.\n", rtlsdr_get_center_freq(dev));
+            r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)demod,
+                          DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+            do_exit_async=0;
+            frequency_current++;
+            if(frequency_current>frequencies-1) frequency_current=0;
+        }
     }
 
     if (do_exit)
