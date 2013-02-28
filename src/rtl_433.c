@@ -754,9 +754,9 @@ static void classify_signal() {
     a[2] = 0;
     for (i=1 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
-//             fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
-//             i, signal_pulse_data[i][0], signal_pulse_data[i][1],
-//             signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
+//              fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
+//              i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+//              signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
             signal_distance_data[i] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
             if (signal_distance_data[i] > a[2])
                 a[2] = signal_distance_data[i];
@@ -764,6 +764,8 @@ static void classify_signal() {
                 a[0] = signal_distance_data[i];
         }
     }
+    min = a[0];
+    max = a[2];
     a[1] = (a[0]+a[2])/2;
 //    for (i=0 ; i<1 ; i++) {
 //        b[i] = (a[i]+a[i+1])/2;
@@ -806,6 +808,19 @@ static void classify_signal() {
             a[i] = a_new[i];
         }
         fprintf(stderr, " delta %d\n", delta);
+
+        if (a[0] < min) {
+            a[0] = min;
+            fprintf(stderr, "Fixing a[0] = %d\n", min);
+        }
+        if (a[2] > max) {
+            a[0] = max;
+            fprintf(stderr, "Fixing a[2] = %d\n", max);
+        }
+//         if (a[1] == 0) {
+//             a[1] = (a[2]+a[0])/2;
+//             fprintf(stderr, "Fixing a[1] = %d\n", a[1]);
+//         }
 
         fprintf(stderr, "Iteration %d.", k);
         for (i=0 ; i<2 ; i++) {
@@ -869,7 +884,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 signal_end = counter - 40000;
                 fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
                 fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
-
+                pulses_found = 0;
                 classify_signal();
 
                 signal_pulse_counter = 0;
