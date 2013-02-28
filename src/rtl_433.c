@@ -688,6 +688,8 @@ static int signal_pulse_counter = 0;
 static void classify_signal() {
     int i,k, max=0, min=1000000, t;
     int delta, count_min, count_max, min_new, max_new;
+    int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
+    int signal_distance_data[4000] = {0};
 
     for (i=0 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
@@ -696,7 +698,7 @@ static void classify_signal() {
             //signal_pulse_data[i][2]);
             if (signal_pulse_data[i][2] > max)
                 max = signal_pulse_data[i][2];
-            if (signal_pulse_data[i][2] < min)
+            if (signal_pulse_data[i][2] <= min)
                 min = signal_pulse_data[i][2];
         }
     }
@@ -746,11 +748,85 @@ static void classify_signal() {
     } else {
         fprintf(stderr, "Distance coding: Pulse length %d\n", (min+max)/2);
     }
+
+    /* Initial guesses */
+    a[0] = 1000000;
+    a[2] = 0;
+    for (i=1 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+//             fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
+//             i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+//             signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
+            signal_distance_data[i] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
+            if (signal_distance_data[i] > a[2])
+                a[2] = signal_distance_data[i];
+            if (signal_distance_data[i] <= a[0])
+                a[0] = signal_distance_data[i];
+        }
+    }
+    a[1] = (a[0]+a[2])/2;
+//    for (i=0 ; i<1 ; i++) {
+//        b[i] = (a[i]+a[i+1])/2;
+//    }
+    b[0] = (a[0]+a[1])/2;
+    b[1] = (a[1]+a[2])/2;
+    fprintf(stderr, "a[0]: %d\t a[1]: %d\t a[2]: %d\t\n",a[0],a[1],a[2]);
+    fprintf(stderr, "b[0]: %d\t b[1]: %d\n",b[0],b[1]);
+
+    k=1;
+    delta = 10000000;
+    while((k < 10) && (delta > 0)) {
+        for (i=0 ; i<3 ; i++) {
+            a_new[i] = 0;
+            a_cnt[i] = 0;
+        }
+
+        for (i=0 ; i < 1000 ; i++) {
+            if (signal_distance_data[i] > 0) {
+                if (signal_distance_data[i] < b[0]) {
+                    a_new[0] += signal_distance_data[i];
+                    a_cnt[0]++;
+                } else if (signal_distance_data[i] < b[1] && signal_distance_data[i] >= b[0]){
+                    a_new[1] += signal_distance_data[i];
+                    a_cnt[1]++;
+                } else if (signal_distance_data[i] >= b[1]) {
+                    a_new[2] += signal_distance_data[i];
+                    a_cnt[2]++;
+                }
+            }
+        }
+
+        fprintf(stderr, "Iteration %d.", k);
+        delta = 0;
+        for (i=0 ; i<3 ; i++) {
+            if (a_cnt[i])
+                a_new[i] /= a_cnt[i];
+            delta += (a[i]-a_new[i])*(a[i]-a_new[i]);
+            fprintf(stderr, "\ta[%d]: %d (%d)", i, a_new[i], a[i]);
+            a[i] = a_new[i];
+        }
+        fprintf(stderr, " delta %d\n", delta);
+
+        fprintf(stderr, "Iteration %d.", k);
+        for (i=0 ; i<2 ; i++) {
+            fprintf(stderr, "\tb[%d]: (%d) ", i, b[i]);
+            b[i] = (a[i]+a[i+1])/2;
+            fprintf(stderr, "%d  ", b[i]);
+        }
+        fprintf(stderr, "\n");
+        k++;
+    }
+
+    fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n",a[0],a[1],a[2]);
+
+
     for (i=0 ; i<1000 ; i++) {
         signal_pulse_data[i][0] = 0;
         signal_pulse_data[i][1] = 0;
         signal_pulse_data[i][2] = 0;
+        signal_distance_data[i] = 0;
     }
+
 };
 
 
