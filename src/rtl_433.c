@@ -599,7 +599,7 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
 }
 
 static void demod_reset_bits_packet(struct protocol_state* p) {
-    memset(p->bits_buffer, 0 ,sizeof(int8_t)*BITBUF_ROWS*BITBUF_COLS);
+    memset(p->bits_buffer, 0 ,BITBUF_ROWS*BITBUF_COLS);
     p->bits_col_idx = 0;
     p->bits_bit_col_idx = 7;
     p->bits_row_idx = 0;
@@ -687,9 +687,11 @@ static int signal_pulse_counter = 0;
 
 static void classify_signal() {
     int i,k, max=0, min=1000000, t;
-    int delta, count_min, count_max, min_new, max_new;
+    int delta, count_min, count_max, min_new, max_new, p_limit;
     int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
     int signal_distance_data[4000] = {0};
+    struct protocol_state p = {0};
+    int signal_type;
 
     for (i=0 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
@@ -745,23 +747,26 @@ static void classify_signal() {
     /* 50% decision limit */
     if (max/min > 1) {
         fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
+        signal_type = 2;
     } else {
         fprintf(stderr, "Distance coding: Pulse length %d\n", (min+max)/2);
+        signal_type = 1;
     }
+    p_limit = (max+min)/2;
 
     /* Initial guesses */
     a[0] = 1000000;
     a[2] = 0;
     for (i=1 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
-//              fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
-//              i, signal_pulse_data[i][0], signal_pulse_data[i][1],
-//              signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
-            signal_distance_data[i] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
-            if (signal_distance_data[i] > a[2])
-                a[2] = signal_distance_data[i];
-            if (signal_distance_data[i] <= a[0])
-                a[0] = signal_distance_data[i];
+              fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
+              i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+              signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
+            signal_distance_data[i-1] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
+            if (signal_distance_data[i-1] > a[2])
+                a[2] = signal_distance_data[i-1];
+            if (signal_distance_data[i-1] <= a[0])
+                a[0] = signal_distance_data[i-1];
         }
     }
     min = a[0];
@@ -833,7 +838,48 @@ static void classify_signal() {
     }
 
     fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n",a[0],a[1],a[2]);
+    fprintf(stderr, "\np_limit: %d\n",p_limit);
 
+    demod_reset_bits_packet(&p);
+    if (signal_type == 1) {
+        for(i=0 ; i<1000 ; i++){
+            if (signal_distance_data[i] > 0) {
+                if (signal_distance_data[i] < (a[0]+a[1])/2) {
+                    fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+                    demod_add_bit(&p, 0);
+                } else if ((signal_distance_data[i] > (a[0]+a[1])/2) && (signal_distance_data[i] < (a[1]+a[2])/2)) {
+                    fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+                    demod_add_bit(&p, 1);
+                } else if (signal_distance_data[i] > (a[1]+a[2])/2) {
+                    fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+                    demod_next_bits_packet(&p);
+                }
+
+             }
+
+        }
+        demod_print_bits_packet(&p);
+    }
+    if (signal_type == 2) {
+        for(i=0 ; i<1000 ; i++){
+            if(signal_pulse_data[i][2] > 0) {
+                if (signal_pulse_data[i][2] < p_limit) {
+                    fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
+                    demod_add_bit(&p, 0);
+                } else {
+                    fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
+                    demod_add_bit(&p, 1);
+                }
+                if ((signal_distance_data[i] >= (a[1]+a[2])/2)) {
+                    fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+                    demod_next_bits_packet(&p);
+                }
+
+
+            }
+        }
+        demod_print_bits_packet(&p);
+    }
 
     for (i=0 ; i<1000 ; i++) {
         signal_pulse_data[i][0] = 0;
