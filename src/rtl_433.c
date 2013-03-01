@@ -87,8 +87,8 @@
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
-#define BITBUF_COLS             14
-#define BITBUF_ROWS             15
+#define BITBUF_COLS             34
+#define BITBUF_ROWS             50
 
 static int do_exit = 0;
 static int do_exit_async=0, frequencies=0, events=0;
@@ -486,6 +486,8 @@ struct protocol_state {
     int bits_row_idx;
     int bits_bit_col_idx;
     uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
+    int16_t bits_per_row[BITBUF_ROWS];
+    int     bit_rows;
     unsigned int modulation;
 
     /* demod state */
@@ -600,9 +602,11 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
 
 static void demod_reset_bits_packet(struct protocol_state* p) {
     memset(p->bits_buffer, 0 ,BITBUF_ROWS*BITBUF_COLS);
+    memset(p->bits_per_row, 0 ,BITBUF_ROWS);
     p->bits_col_idx = 0;
     p->bits_bit_col_idx = 7;
     p->bits_row_idx = 0;
+    p->bit_rows = 0;
 }
 
 static void demod_add_bit(struct protocol_state* p, int bit) {
@@ -616,6 +620,7 @@ static void demod_add_bit(struct protocol_state* p, int bit) {
 //            fprintf(stderr, "p->bits_col_idx>%i!\n", BITBUF_COLS-1);
         }
     }
+    p->bits_per_row[p->bit_rows]++;
 }
 
 static void demod_next_bits_packet(struct protocol_state* p) {
@@ -626,18 +631,22 @@ static void demod_next_bits_packet(struct protocol_state* p) {
         p->bits_row_idx = BITBUF_ROWS-1;
         //fprintf(stderr, "p->bits_row_idx>%i!\n", BITBUF_ROWS-1);
     }
+    p->bit_rows++;
+    if (p->bit_rows > BITBUF_ROWS-1)
+        p->bit_rows -=1;
 }
 
 static void demod_print_bits_packet(struct protocol_state* p) {
     int i,j,k;
+
     fprintf(stderr, "\n");
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-        fprintf(stderr, "[%02d] ",i);
-        for (j=0 ; j<BITBUF_COLS ; j++) {
+    for (i=0 ; i<p->bit_rows+1 ; i++) {
+        fprintf(stderr, "[%02d] {%d} ",i, p->bits_per_row[i]);
+        for (j=0 ; j<((p->bits_per_row[i]+8)/8) ; j++) {
 	        fprintf(stderr, "%02x ", p->bits_buffer[i][j]);
         }
         fprintf(stderr, ": ");
-        for (j=0 ; j<BITBUF_COLS ; j++) {
+        for (j=0 ; j<((p->bits_per_row[i]+8)/8) ; j++) {
             for (k=7 ; k>=0 ; k--) {
                 if (p->bits_buffer[i][j] & 1<<k)
                     fprintf(stderr, "1");
@@ -650,6 +659,7 @@ static void demod_print_bits_packet(struct protocol_state* p) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
+    return;
 }
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
