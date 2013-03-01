@@ -769,9 +769,9 @@ static void classify_signal() {
     a[2] = 0;
     for (i=1 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
-              fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
-              i, signal_pulse_data[i][0], signal_pulse_data[i][1],
-              signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
+//               fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
+//               i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+//               signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
             signal_distance_data[i-1] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
             if (signal_distance_data[i-1] > a[2])
                 a[2] = signal_distance_data[i-1];
@@ -787,8 +787,8 @@ static void classify_signal() {
 //    }
     b[0] = (a[0]+a[1])/2;
     b[1] = (a[1]+a[2])/2;
-    fprintf(stderr, "a[0]: %d\t a[1]: %d\t a[2]: %d\t\n",a[0],a[1],a[2]);
-    fprintf(stderr, "b[0]: %d\t b[1]: %d\n",b[0],b[1]);
+//     fprintf(stderr, "a[0]: %d\t a[1]: %d\t a[2]: %d\t\n",a[0],a[1],a[2]);
+//     fprintf(stderr, "b[0]: %d\t b[1]: %d\n",b[0],b[1]);
 
     k=1;
     delta = 10000000;
@@ -813,37 +813,37 @@ static void classify_signal() {
             }
         }
 
-        fprintf(stderr, "Iteration %d.", k);
+//         fprintf(stderr, "Iteration %d.", k);
         delta = 0;
         for (i=0 ; i<3 ; i++) {
             if (a_cnt[i])
                 a_new[i] /= a_cnt[i];
             delta += (a[i]-a_new[i])*(a[i]-a_new[i]);
-            fprintf(stderr, "\ta[%d]: %d (%d)", i, a_new[i], a[i]);
+//             fprintf(stderr, "\ta[%d]: %d (%d)", i, a_new[i], a[i]);
             a[i] = a_new[i];
         }
-        fprintf(stderr, " delta %d\n", delta);
+//         fprintf(stderr, " delta %d\n", delta);
 
         if (a[0] < min) {
             a[0] = min;
-            fprintf(stderr, "Fixing a[0] = %d\n", min);
+//             fprintf(stderr, "Fixing a[0] = %d\n", min);
         }
         if (a[2] > max) {
             a[0] = max;
-            fprintf(stderr, "Fixing a[2] = %d\n", max);
+//             fprintf(stderr, "Fixing a[2] = %d\n", max);
         }
 //         if (a[1] == 0) {
 //             a[1] = (a[2]+a[0])/2;
 //             fprintf(stderr, "Fixing a[1] = %d\n", a[1]);
 //         }
 
-        fprintf(stderr, "Iteration %d.", k);
+//         fprintf(stderr, "Iteration %d.", k);
         for (i=0 ; i<2 ; i++) {
-            fprintf(stderr, "\tb[%d]: (%d) ", i, b[i]);
+//             fprintf(stderr, "\tb[%d]: (%d) ", i, b[i]);
             b[i] = (a[i]+a[i+1])/2;
-            fprintf(stderr, "%d  ", b[i]);
+//             fprintf(stderr, "%d  ", b[i]);
         }
-        fprintf(stderr, "\n");
+//         fprintf(stderr, "\n");
         k++;
     }
 
@@ -855,13 +855,13 @@ static void classify_signal() {
         for(i=0 ; i<1000 ; i++){
             if (signal_distance_data[i] > 0) {
                 if (signal_distance_data[i] < (a[0]+a[1])/2) {
-                    fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+//                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
                     demod_add_bit(&p, 0);
                 } else if ((signal_distance_data[i] > (a[0]+a[1])/2) && (signal_distance_data[i] < (a[1]+a[2])/2)) {
-                    fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+//                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
                     demod_add_bit(&p, 1);
                 } else if (signal_distance_data[i] > (a[1]+a[2])/2) {
-                    fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+//                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
                     demod_next_bits_packet(&p);
                 }
 
@@ -874,14 +874,14 @@ static void classify_signal() {
         for(i=0 ; i<1000 ; i++){
             if(signal_pulse_data[i][2] > 0) {
                 if (signal_pulse_data[i][2] < p_limit) {
-                    fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
+//                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
                     demod_add_bit(&p, 0);
                 } else {
-                    fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
+//                     fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
                     demod_add_bit(&p, 1);
                 }
                 if ((signal_distance_data[i] >= (a[1]+a[2])/2)) {
-                    fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+//                     fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
                     demod_next_bits_packet(&p);
                 }
 
