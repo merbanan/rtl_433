@@ -681,27 +681,27 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
 }
 
 
-static int counter = 0;
-static int print = 1;
-static int print2 = 0;
-static int pulses_found = 0;
-static int prev_pulse_start = 0;
-static int pulse_start = 0;
-static int pulse_end = 0;
-static int pulse_avg = 0;
-static int signal_start = 0;
-static int signal_end   = 0;
-static int signal_pulse_data[4000][3] = {{0}};
-static int signal_pulse_counter = 0;
+static unsigned int counter = 0;
+static unsigned int print = 1;
+static unsigned int print2 = 0;
+static unsigned int pulses_found = 0;
+static unsigned int prev_pulse_start = 0;
+static unsigned int pulse_start = 0;
+static unsigned int pulse_end = 0;
+static unsigned int pulse_avg = 0;
+static unsigned int signal_start = 0;
+static unsigned int signal_end   = 0;
+static unsigned int signal_pulse_data[4000][3] = {{0}};
+static unsigned int signal_pulse_counter = 0;
 
 
 static void classify_signal() {
-    int i,k, max=0, min=1000000, t;
-    int delta, count_min, count_max, min_new, max_new, p_limit;
-    int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
-    int signal_distance_data[4000] = {0};
+    unsigned int i,k, max=0, min=1000000, t;
+    unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
+    unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
+    unsigned int signal_distance_data[4000] = {0};
     struct protocol_state p = {0};
-    int signal_type;
+    unsigned int signal_type;
 
     for (i=0 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
@@ -915,9 +915,9 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 signal_pulse_data[signal_pulse_counter][0] = counter;
                 signal_pulse_data[signal_pulse_counter][1] = -1;
                 signal_pulse_data[signal_pulse_counter][2] = -1;
-                fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
-                fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
-                fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
+                if (debug_output) fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
+                if (debug_output) fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
+                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
                 prev_pulse_start = pulse_start;
                 print =0;
                 print2 = 1;
@@ -927,7 +927,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         if (buf[i] < demod->level_limit) {
             if (print2) {
                 pulse_avg += counter-pulse_start;
-                fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
+                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
                         pulses_found, counter, counter-pulse_start, pulse_avg/pulses_found);
                 pulse_end = counter;
                 print2 = 0;
@@ -978,12 +978,12 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                         wlen = SIGNAL_GRABBER_BUFFER - start_pos;
                         wrest = signal_bszie - wlen;
                     }
-                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
                     fprintf(stderr, "*** Writing data from %d, len %d\n",start_pos, wlen);
+                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
 
                     if (wrest) {
-                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
                         fprintf(stderr, "*** Writing data from %d, len %d\n",0, wrest);
+                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
                     }
 
                     fclose(sgfp);
