@@ -74,7 +74,7 @@
 
 #include "rtl-sdr.h"
 
-#define DEFAULT_SAMPLE_RATE     1024000
+#define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
 #define DEFAULT_HOP_TIME        (60*10)
 #define DEFAULT_HOP_EVENTS      2
@@ -390,9 +390,9 @@ r_device rubicson = {
     .id             = 1,
     .name           = "Rubicson Temperature Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 1744,
-    .long_limit     = 3500,
-    .reset_limit    = 5000,
+    .short_limit    = 1744/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 5000/4,
     .json_callback  = &rubicson_callback,
 };
 
@@ -400,9 +400,9 @@ r_device prologue = {
     .id             = 2,
     .name           = "Prologue Temperature Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
-    .reset_limit    = 15000,
+    .short_limit    = 3500/4,
+    .long_limit     = 7000/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &prologue_callback,
 };
 
@@ -410,9 +410,9 @@ r_device silvercrest = {
     .id             = 3,
     .name           = "Silvercrest Remote Control",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 600,
-    .long_limit     = 5000,
-    .reset_limit    = 15000,
+    .short_limit    = 600/4,
+    .long_limit     = 5000/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &silvercrest_callback,
 };
 
@@ -420,9 +420,9 @@ r_device tech_line_fws_500 = {
     .id             = 4,
     .name           = "Tech Line FWS-500 Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
-    .reset_limit    = 15000,
+    .short_limit    = 3500/4,
+    .long_limit     = 7000/4,
+    .reset_limit    = 15000/4,
     //.json_callback  = &rubicson_callback,
 };
 
@@ -430,9 +430,9 @@ r_device generic_hx2262 = {
     .id             = 5,
     .name           = "Window/Door sensor",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 1300,
-    .long_limit     = 10000,
-    .reset_limit    = 40000,
+    .short_limit    = 1300/4,
+    .long_limit     = 10000/4,
+    .reset_limit    = 40000/4,
     //.json_callback  = &silvercrest_callback,
 };
 
@@ -440,9 +440,9 @@ r_device technoline_ws9118 = {
     .id             = 6,
     .name           = "Technoline WS9118",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 1800,
-    .long_limit     = 3500,
-    .reset_limit    = 15000,
+    .short_limit    = 1800/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &debug_callback,
 };
 
@@ -451,9 +451,9 @@ r_device elv_em1000 = {
     .id             = 7,
     .name           = "ELV EM 1000",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 750,
-    .long_limit     = 7250,
-    .reset_limit    = 30000,
+    .short_limit    = 750/4,
+    .long_limit     = 7250/4,
+    .reset_limit    = 30000/4,
     .json_callback  = &em1000_callback,
 };
 
@@ -461,9 +461,9 @@ r_device elv_ws2000 = {
     .id             = 8,
     .name           = "ELV WS 2000",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 602+(1155-602)/2,
-    .long_limit     = (1755635-1655517)/2, // no repetitions
-    .reset_limit    = (1755635-1655517)*2,
+    .short_limit    = (602+(1155-602)/2)/4,
+    .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
+    .reset_limit    = ((1755635-1655517)*2)/4,
     .json_callback  = &ws2000_callback,
 };
 
@@ -471,9 +471,9 @@ r_device waveman = {
     .id             = 6,
     .name           = "Waveman Switch Transmitter",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 1000,
-    .long_limit     = 8000,
-    .reset_limit    = 30000,
+    .short_limit    = 1000/4,
+    .long_limit     = 8000/4,
+    .reset_limit    = 30000/4,
     .json_callback  = &waveman_callback,
 };
 
