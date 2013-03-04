@@ -939,7 +939,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
             if (signal_start && (pulse_end + 50000 < counter)) {
                 signal_end = counter - 40000;
                 fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
-                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
+                fprintf(stderr, "signal_len = %d,  pulses = %d\n", signal_end-(signal_start-10000), pulses_found);
                 pulses_found = 0;
                 classify_signal();
 
