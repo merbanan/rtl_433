@@ -50,8 +50,8 @@
  * data(2) is 1 when the sensor sends a reading when pressing the button on the sensor
  * data(1,0)+1 forms the channel number that can be set by the sensor (1-3)
  * temp is 12 bit signed scaled by 10
- * humi0 is always 1100,c if no humidity sensor is availiable
- * humi1 is always 1100,c if no humidity sensor is availiable
+ * humi0 is always 1100,c if no humidity sensor is available
+ * humi1 is always 1100,c if no humidity sensor is available
  *
  * The sensor can be bought at Clas Ohlson
  */
@@ -103,7 +103,7 @@ static int debug_output = 0;
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
-#define     OOK_PWM_P   2   /* The length of the pulese varies */
+#define     OOK_PWM_P   2   /* The length of the pulses varies */
 
 
 typedef struct {
