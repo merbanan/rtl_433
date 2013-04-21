@@ -1133,9 +1133,9 @@ static void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len)
     unsigned int i;
 
     /* Calculate first sample */
-    y_buf[0] = ((a[1]*y_buf[-1]>>1) + (b[0]*x_buf[0]>>1) + (b[1]*lp_xmem[0]>>1)) >> F_SCALE-1;
+    y_buf[0] = ((a[1]*y_buf[-1]>>1) + (b[0]*x_buf[0]>>1) + (b[1]*lp_xmem[0]>>1)) >> (F_SCALE-1);
     for (i=1 ; i<len ; i++) {
-        y_buf[i] = ((a[1]*y_buf[i-1]>>1) + (b[0]*x_buf[i]>>1) + (b[1]*x_buf[i-1]>>1)) >> F_SCALE-1;
+        y_buf[i] = ((a[1]*y_buf[i-1]>>1) + (b[0]*x_buf[i]>>1) + (b[1]*x_buf[i-1]>>1)) >> (F_SCALE-1);
     }
 
     /* Save last sample */
