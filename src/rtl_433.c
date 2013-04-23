@@ -934,6 +934,10 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                 signal_pulse_data[signal_pulse_counter][1] = counter;
                 signal_pulse_data[signal_pulse_counter][2] = counter-pulse_start;
                 signal_pulse_counter++;
+                if (signal_pulse_counter >= 4000) {
+                    signal_pulse_counter = 0;
+                    goto err;
+                }
             }
             print = 1;
             if (signal_start && (pulse_end + 50000 < counter)) {
@@ -994,6 +998,11 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 
 
     }
+    return;
+
+err:
+    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+    return;
 }
 
 /* The distance between pulses decodes into bits */
