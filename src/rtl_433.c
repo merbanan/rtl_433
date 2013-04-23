@@ -664,9 +664,9 @@ static void demod_print_bits_packet(struct protocol_state* p) {
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p =  calloc(1,sizeof(struct protocol_state));
-    p->short_limit  = t_dev->short_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
-    p->long_limit   = t_dev->long_limit /(DEFAULT_SAMPLE_RATE/samp_rate);
-    p->reset_limit  = t_dev->reset_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->short_limit  = (float)t_dev->short_limit/((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
+    p->long_limit   = (float)t_dev->long_limit /((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
+    p->reset_limit  = (float)t_dev->reset_limit/((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
     p->modulation   = t_dev->modulation;
     p->callback     = t_dev->json_callback;
     demod_reset_bits_packet(p);
@@ -745,7 +745,7 @@ static void classify_signal() {
         max = max_new;
         t = (min + max)/2;
 
-        //fprintf(stderr, "Iteration %d.     min: %d (%d)    max: %d (%d)    delta %d\n", k, min, count_min, max, count_max, delta);
+        fprintf(stderr, "Iteration %d. t: %d    min: %d (%d)    max: %d (%d)    delta %d\n", k,t, min, count_min, max, count_max, delta);
         k++;
     }
 
@@ -1422,6 +1422,10 @@ int main(int argc, char **argv)
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n",test_mode_file);
         test_mode = fopen(test_mode_file, "r");
+        if (!test_mode) {
+            fprintf(stderr, "Opening file: %s failed!\n",test_mode_file);
+            goto out;
+        }
         while(fread(test_mode_buf, 131072, 1, test_mode) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
