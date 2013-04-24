@@ -703,6 +703,9 @@ static void classify_signal() {
     struct protocol_state p = {0};
     unsigned int signal_type;
 
+    if (!signal_pulse_data[0][0])
+        return;
+
     for (i=0 ; i<1000 ; i++) {
         if (signal_pulse_data[i][0] > 0) {
             //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
@@ -1439,6 +1442,8 @@ int main(int argc, char **argv)
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
         }
+        //Always classify a signal at the end of the file
+        classify_signal();
         fprintf(stderr, "Test mode file issued %d packets\n", i);
         fprintf(stderr, "Filter coeffs used:\n");
         fprintf(stderr, "a: %d %d\n", a[0], a[1]);
