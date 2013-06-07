@@ -100,6 +100,8 @@ static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
 static int debug_output = 0;
+static int override_short = 0;
+static int override_long = 0;
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
@@ -550,6 +552,8 @@ void usage(void)
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
         "\t[-D print debug info on event\n"
+        "\t[-z override short value\n"
+        "\t[-x override long value\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
@@ -848,6 +852,15 @@ static void classify_signal() {
         }
 //         fprintf(stderr, "\n");
         k++;
+    }
+
+    if (override_short) {
+        p_limit = override_short;
+        a[0] = override_short;
+    }
+
+    if (override_long) {
+        a[1] = override_long;
     }
 
     fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n",a[0],a[1],a[2]);
@@ -1260,7 +1273,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -1307,6 +1320,12 @@ int main(int argc, char **argv)
             break;
         case 'D':
             debug_output = 1;
+            break;
+        case 'z':
+            override_short = atoi(optarg);
+            break;
+        case 'x':
+            override_long = atoi(optarg);
             break;
         default:
             usage();
