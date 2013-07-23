@@ -50,8 +50,8 @@
  * data(2) is 1 when the sensor sends a reading when pressing the button on the sensor
  * data(1,0)+1 forms the channel number that can be set by the sensor (1-3)
  * temp is 12 bit signed scaled by 10
- * humi0 is always 1100,c if no humidity sensor is availiable
- * humi1 is always 1100,c if no humidity sensor is availiable
+ * humi0 is always 1100,c if no humidity sensor is available
+ * humi1 is always 1100,c if no humidity sensor is available
  *
  * The sensor can be bought at Clas Ohlson
  */
@@ -74,7 +74,7 @@
 
 #include "rtl-sdr.h"
 
-#define DEFAULT_SAMPLE_RATE     1024000
+#define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
 #define DEFAULT_HOP_TIME        (60*10)
 #define DEFAULT_HOP_EVENTS      2
@@ -87,8 +87,8 @@
 #define FILTER_ORDER            1
 #define MAX_PROTOCOLS           10
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
-#define BITBUF_COLS             14
-#define BITBUF_ROWS             15
+#define BITBUF_COLS             34
+#define BITBUF_ROWS             50
 
 static int do_exit = 0;
 static int do_exit_async=0, frequencies=0, events=0;
@@ -100,10 +100,12 @@ static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
 static int debug_output = 0;
+static int override_short = 0;
+static int override_long = 0;
 
 /* Supported modulation types */
 #define     OOK_PWM_D   1   /* Pulses are of the same length, the distance varies */
-#define     OOK_PWM_P   2   /* The length of the pulese varies */
+#define     OOK_PWM_P   2   /* The length of the pulses varies */
 
 
 typedef struct {
@@ -390,9 +392,9 @@ r_device rubicson = {
     .id             = 1,
     .name           = "Rubicson Temperature Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 1744,
-    .long_limit     = 3500,
-    .reset_limit    = 5000,
+    .short_limit    = 1744/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 5000/4,
     .json_callback  = &rubicson_callback,
 };
 
@@ -400,9 +402,9 @@ r_device prologue = {
     .id             = 2,
     .name           = "Prologue Temperature Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
-    .reset_limit    = 15000,
+    .short_limit    = 3500/4,
+    .long_limit     = 7000/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &prologue_callback,
 };
 
@@ -410,9 +412,9 @@ r_device silvercrest = {
     .id             = 3,
     .name           = "Silvercrest Remote Control",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 600,
-    .long_limit     = 5000,
-    .reset_limit    = 15000,
+    .short_limit    = 600/4,
+    .long_limit     = 5000/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &silvercrest_callback,
 };
 
@@ -420,9 +422,9 @@ r_device tech_line_fws_500 = {
     .id             = 4,
     .name           = "Tech Line FWS-500 Sensor",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
-    .reset_limit    = 15000,
+    .short_limit    = 3500/4,
+    .long_limit     = 7000/4,
+    .reset_limit    = 15000/4,
     //.json_callback  = &rubicson_callback,
 };
 
@@ -430,9 +432,9 @@ r_device generic_hx2262 = {
     .id             = 5,
     .name           = "Window/Door sensor",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 1300,
-    .long_limit     = 10000,
-    .reset_limit    = 40000,
+    .short_limit    = 1300/4,
+    .long_limit     = 10000/4,
+    .reset_limit    = 40000/4,
     //.json_callback  = &silvercrest_callback,
 };
 
@@ -440,9 +442,9 @@ r_device technoline_ws9118 = {
     .id             = 6,
     .name           = "Technoline WS9118",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 1800,
-    .long_limit     = 3500,
-    .reset_limit    = 15000,
+    .short_limit    = 1800/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 15000/4,
     .json_callback  = &debug_callback,
 };
 
@@ -451,9 +453,9 @@ r_device elv_em1000 = {
     .id             = 7,
     .name           = "ELV EM 1000",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 750,
-    .long_limit     = 7250,
-    .reset_limit    = 30000,
+    .short_limit    = 750/4,
+    .long_limit     = 7250/4,
+    .reset_limit    = 30000/4,
     .json_callback  = &em1000_callback,
 };
 
@@ -461,9 +463,9 @@ r_device elv_ws2000 = {
     .id             = 8,
     .name           = "ELV WS 2000",
     .modulation     = OOK_PWM_D,
-    .short_limit    = 602+(1155-602)/2,
-    .long_limit     = (1755635-1655517)/2, // no repetitions
-    .reset_limit    = (1755635-1655517)*2,
+    .short_limit    = (602+(1155-602)/2)/4,
+    .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
+    .reset_limit    = ((1755635-1655517)*2)/4,
     .json_callback  = &ws2000_callback,
 };
 
@@ -471,9 +473,9 @@ r_device waveman = {
     .id             = 6,
     .name           = "Waveman Switch Transmitter",
     .modulation     = OOK_PWM_P,
-    .short_limit    = 1000,
-    .long_limit     = 8000,
-    .reset_limit    = 30000,
+    .short_limit    = 1000/4,
+    .long_limit     = 8000/4,
+    .reset_limit    = 30000/4,
     .json_callback  = &waveman_callback,
 };
 
@@ -486,6 +488,8 @@ struct protocol_state {
     int bits_row_idx;
     int bits_bit_col_idx;
     uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
+    int16_t bits_per_row[BITBUF_ROWS];
+    int     bit_rows;
     unsigned int modulation;
 
     /* demod state */
@@ -548,6 +552,8 @@ void usage(void)
         "\t[-r test file name (indata)]\n"
         "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
         "\t[-D print debug info on event\n"
+        "\t[-z override short value\n"
+        "\t[-x override long value\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
@@ -599,10 +605,12 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate)
 }
 
 static void demod_reset_bits_packet(struct protocol_state* p) {
-    memset(p->bits_buffer, 0 ,sizeof(int8_t)*BITBUF_ROWS*BITBUF_COLS);
+    memset(p->bits_buffer, 0 ,BITBUF_ROWS*BITBUF_COLS);
+    memset(p->bits_per_row, 0 ,BITBUF_ROWS);
     p->bits_col_idx = 0;
     p->bits_bit_col_idx = 7;
     p->bits_row_idx = 0;
+    p->bit_rows = 0;
 }
 
 static void demod_add_bit(struct protocol_state* p, int bit) {
@@ -616,6 +624,7 @@ static void demod_add_bit(struct protocol_state* p, int bit) {
 //            fprintf(stderr, "p->bits_col_idx>%i!\n", BITBUF_COLS-1);
         }
     }
+    p->bits_per_row[p->bit_rows]++;
 }
 
 static void demod_next_bits_packet(struct protocol_state* p) {
@@ -626,18 +635,22 @@ static void demod_next_bits_packet(struct protocol_state* p) {
         p->bits_row_idx = BITBUF_ROWS-1;
         //fprintf(stderr, "p->bits_row_idx>%i!\n", BITBUF_ROWS-1);
     }
+    p->bit_rows++;
+    if (p->bit_rows > BITBUF_ROWS-1)
+        p->bit_rows -=1;
 }
 
 static void demod_print_bits_packet(struct protocol_state* p) {
     int i,j,k;
+
     fprintf(stderr, "\n");
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-        fprintf(stderr, "[%02d] ",i);
-        for (j=0 ; j<BITBUF_COLS ; j++) {
+    for (i=0 ; i<p->bit_rows+1 ; i++) {
+        fprintf(stderr, "[%02d] {%d} ",i, p->bits_per_row[i]);
+        for (j=0 ; j<((p->bits_per_row[i]+8)/8) ; j++) {
 	        fprintf(stderr, "%02x ", p->bits_buffer[i][j]);
         }
         fprintf(stderr, ": ");
-        for (j=0 ; j<BITBUF_COLS ; j++) {
+        for (j=0 ; j<((p->bits_per_row[i]+8)/8) ; j++) {
             for (k=7 ; k>=0 ; k--) {
                 if (p->bits_buffer[i][j] & 1<<k)
                     fprintf(stderr, "1");
@@ -650,13 +663,14 @@ static void demod_print_bits_packet(struct protocol_state* p) {
         fprintf(stderr, "\n");
     }
     fprintf(stderr, "\n");
+    return;
 }
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p =  calloc(1,sizeof(struct protocol_state));
-    p->short_limit  = t_dev->short_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
-    p->long_limit   = t_dev->long_limit /(DEFAULT_SAMPLE_RATE/samp_rate);
-    p->reset_limit  = t_dev->reset_limit/(DEFAULT_SAMPLE_RATE/samp_rate);
+    p->short_limit  = (float)t_dev->short_limit/((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
+    p->long_limit   = (float)t_dev->long_limit /((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
+    p->reset_limit  = (float)t_dev->reset_limit/((float)DEFAULT_SAMPLE_RATE/(float)samp_rate);
     p->modulation   = t_dev->modulation;
     p->callback     = t_dev->json_callback;
     demod_reset_bits_packet(p);
@@ -671,16 +685,237 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
 }
 
 
-static int counter = 0;
-static int print = 1;
-static int print2 = 0;
-static int pulses_found = 0;
-static int prev_pulse_start = 0;
-static int pulse_start = 0;
-static int pulse_end = 0;
-static int pulse_avg = 0;
-static int signal_start = 0;
-static int signal_end   = 0;
+static unsigned int counter = 0;
+static unsigned int print = 1;
+static unsigned int print2 = 0;
+static unsigned int pulses_found = 0;
+static unsigned int prev_pulse_start = 0;
+static unsigned int pulse_start = 0;
+static unsigned int pulse_end = 0;
+static unsigned int pulse_avg = 0;
+static unsigned int signal_start = 0;
+static unsigned int signal_end   = 0;
+static unsigned int signal_pulse_data[4000][3] = {{0}};
+static unsigned int signal_pulse_counter = 0;
+
+
+static void classify_signal() {
+    unsigned int i,k, max=0, min=1000000, t;
+    unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
+    unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
+    unsigned int signal_distance_data[4000] = {0};
+    struct protocol_state p = {0};
+    unsigned int signal_type;
+
+    if (!signal_pulse_data[0][0])
+        return;
+
+    for (i=0 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+            //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
+            //i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+            //signal_pulse_data[i][2]);
+            if (signal_pulse_data[i][2] > max)
+                max = signal_pulse_data[i][2];
+            if (signal_pulse_data[i][2] <= min)
+                min = signal_pulse_data[i][2];
+        }
+    }
+    t=(max+min)/2;
+    //fprintf(stderr, "\n\nMax: %d, Min: %d  t:%d\n", max, min, t);
+
+    delta = (max - min)*(max-min);
+
+    //TODO use Lloyd-Max quantizer instead
+    k=1;
+    while((k < 10) && (delta > 0)) {
+        min_new = 0; count_min = 0;
+        max_new = 0; count_max = 0;
+
+        for (i=0 ; i < 1000 ; i++) {
+            if (signal_pulse_data[i][0] > 0) {
+                if (signal_pulse_data[i][2] < t) {
+                    min_new = min_new + signal_pulse_data[i][2];
+                    count_min++;
+                }
+                else {
+                    max_new = max_new + signal_pulse_data[i][2];
+                    count_max++;
+                }
+            }
+        }
+        min_new = min_new / count_min;
+        max_new = max_new / count_max;
+
+        delta = (min - min_new)*(min - min_new) + (max - max_new)*(max - max_new);
+        min = min_new;
+        max = max_new;
+        t = (min + max)/2;
+
+        fprintf(stderr, "Iteration %d. t: %d    min: %d (%d)    max: %d (%d)    delta %d\n", k,t, min, count_min, max, count_max, delta);
+        k++;
+    }
+
+    for (i=0 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+            //fprintf(stderr, "%d\n", signal_pulse_data[i][1]);
+        }
+    }
+    /* 50% decision limit */
+    if (max/min > 1) {
+        fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
+        signal_type = 2;
+    } else {
+        fprintf(stderr, "Distance coding: Pulse length %d\n", (min+max)/2);
+        signal_type = 1;
+    }
+    p_limit = (max+min)/2;
+
+    /* Initial guesses */
+    a[0] = 1000000;
+    a[2] = 0;
+    for (i=1 ; i<1000 ; i++) {
+        if (signal_pulse_data[i][0] > 0) {
+//               fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
+//               i, signal_pulse_data[i][0], signal_pulse_data[i][1],
+//               signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
+            signal_distance_data[i-1] = signal_pulse_data[i][0]-signal_pulse_data[i-1][1];
+            if (signal_distance_data[i-1] > a[2])
+                a[2] = signal_distance_data[i-1];
+            if (signal_distance_data[i-1] <= a[0])
+                a[0] = signal_distance_data[i-1];
+        }
+    }
+    min = a[0];
+    max = a[2];
+    a[1] = (a[0]+a[2])/2;
+//    for (i=0 ; i<1 ; i++) {
+//        b[i] = (a[i]+a[i+1])/2;
+//    }
+    b[0] = (a[0]+a[1])/2;
+    b[1] = (a[1]+a[2])/2;
+//     fprintf(stderr, "a[0]: %d\t a[1]: %d\t a[2]: %d\t\n",a[0],a[1],a[2]);
+//     fprintf(stderr, "b[0]: %d\t b[1]: %d\n",b[0],b[1]);
+
+    k=1;
+    delta = 10000000;
+    while((k < 10) && (delta > 0)) {
+        for (i=0 ; i<3 ; i++) {
+            a_new[i] = 0;
+            a_cnt[i] = 0;
+        }
+
+        for (i=0 ; i < 1000 ; i++) {
+            if (signal_distance_data[i] > 0) {
+                if (signal_distance_data[i] < b[0]) {
+                    a_new[0] += signal_distance_data[i];
+                    a_cnt[0]++;
+                } else if (signal_distance_data[i] < b[1] && signal_distance_data[i] >= b[0]){
+                    a_new[1] += signal_distance_data[i];
+                    a_cnt[1]++;
+                } else if (signal_distance_data[i] >= b[1]) {
+                    a_new[2] += signal_distance_data[i];
+                    a_cnt[2]++;
+                }
+            }
+        }
+
+//         fprintf(stderr, "Iteration %d.", k);
+        delta = 0;
+        for (i=0 ; i<3 ; i++) {
+            if (a_cnt[i])
+                a_new[i] /= a_cnt[i];
+            delta += (a[i]-a_new[i])*(a[i]-a_new[i]);
+//             fprintf(stderr, "\ta[%d]: %d (%d)", i, a_new[i], a[i]);
+            a[i] = a_new[i];
+        }
+//         fprintf(stderr, " delta %d\n", delta);
+
+        if (a[0] < min) {
+            a[0] = min;
+//             fprintf(stderr, "Fixing a[0] = %d\n", min);
+        }
+        if (a[2] > max) {
+            a[0] = max;
+//             fprintf(stderr, "Fixing a[2] = %d\n", max);
+        }
+//         if (a[1] == 0) {
+//             a[1] = (a[2]+a[0])/2;
+//             fprintf(stderr, "Fixing a[1] = %d\n", a[1]);
+//         }
+
+//         fprintf(stderr, "Iteration %d.", k);
+        for (i=0 ; i<2 ; i++) {
+//             fprintf(stderr, "\tb[%d]: (%d) ", i, b[i]);
+            b[i] = (a[i]+a[i+1])/2;
+//             fprintf(stderr, "%d  ", b[i]);
+        }
+//         fprintf(stderr, "\n");
+        k++;
+    }
+
+    if (override_short) {
+        p_limit = override_short;
+        a[0] = override_short;
+    }
+
+    if (override_long) {
+        a[1] = override_long;
+    }
+
+    fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n",a[0],a[1],a[2]);
+    fprintf(stderr, "\np_limit: %d\n",p_limit);
+
+    demod_reset_bits_packet(&p);
+    if (signal_type == 1) {
+        for(i=0 ; i<1000 ; i++){
+            if (signal_distance_data[i] > 0) {
+                if (signal_distance_data[i] < (a[0]+a[1])/2) {
+//                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+                    demod_add_bit(&p, 0);
+                } else if ((signal_distance_data[i] > (a[0]+a[1])/2) && (signal_distance_data[i] < (a[1]+a[2])/2)) {
+//                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
+                    demod_add_bit(&p, 1);
+                } else if (signal_distance_data[i] > (a[1]+a[2])/2) {
+//                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+                    demod_next_bits_packet(&p);
+                }
+
+             }
+
+        }
+        demod_print_bits_packet(&p);
+    }
+    if (signal_type == 2) {
+        for(i=0 ; i<1000 ; i++){
+            if(signal_pulse_data[i][2] > 0) {
+                if (signal_pulse_data[i][2] < p_limit) {
+//                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
+                    demod_add_bit(&p, 0);
+                } else {
+//                     fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
+                    demod_add_bit(&p, 1);
+                }
+                if ((signal_distance_data[i] >= (a[1]+a[2])/2)) {
+//                     fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
+                    demod_next_bits_packet(&p);
+                }
+
+
+            }
+        }
+        demod_print_bits_packet(&p);
+    }
+
+    for (i=0 ; i<1000 ; i++) {
+        signal_pulse_data[i][0] = 0;
+        signal_pulse_data[i][1] = 0;
+        signal_pulse_data[i][2] = 0;
+        signal_distance_data[i] = 0;
+    }
+
+};
+
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 {
@@ -693,9 +928,12 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
             if (print) {
                 pulses_found++;
                 pulse_start = counter;
-                fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
-                fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
-                fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
+                signal_pulse_data[signal_pulse_counter][0] = counter;
+                signal_pulse_data[signal_pulse_counter][1] = -1;
+                signal_pulse_data[signal_pulse_counter][2] = -1;
+                if (debug_output) fprintf(stderr, "pulse_distance %d\n",counter-pulse_end);
+                if (debug_output) fprintf(stderr, "pulse_start distance %d\n",pulse_start-prev_pulse_start);
+                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n",pulses_found, counter, buf[i]);
                 prev_pulse_start = pulse_start;
                 print =0;
                 print2 = 1;
@@ -705,17 +943,27 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
         if (buf[i] < demod->level_limit) {
             if (print2) {
                 pulse_avg += counter-pulse_start;
-                fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse lenght = %d, pulse avg lenght = %d\n",
+                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
                         pulses_found, counter, counter-pulse_start, pulse_avg/pulses_found);
                 pulse_end = counter;
                 print2 = 0;
+                signal_pulse_data[signal_pulse_counter][1] = counter;
+                signal_pulse_data[signal_pulse_counter][2] = counter-pulse_start;
+                signal_pulse_counter++;
+                if (signal_pulse_counter >= 4000) {
+                    signal_pulse_counter = 0;
+                    goto err;
+                }
             }
             print = 1;
             if (signal_start && (pulse_end + 50000 < counter)) {
                 signal_end = counter - 40000;
                 fprintf(stderr, "*** signal_start = %d, signal_end = %d\n",signal_start-10000, signal_end);
-                fprintf(stderr, "signal_len = %d\n", signal_end-(signal_start-10000));
+                fprintf(stderr, "signal_len = %d,  pulses = %d\n", signal_end-(signal_start-10000), pulses_found);
+                pulses_found = 0;
+                classify_signal();
 
+                signal_pulse_counter = 0;
                 if (demod->sg_buf) {
                     int start_pos, signal_bszie, wlen, wrest=0, sg_idx, idx;
                     char sgf_name[256] = {0};
@@ -750,12 +998,12 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
                         wlen = SIGNAL_GRABBER_BUFFER - start_pos;
                         wrest = signal_bszie - wlen;
                     }
-                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
                     fprintf(stderr, "*** Writing data from %d, len %d\n",start_pos, wlen);
+                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
 
                     if (wrest) {
-                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
                         fprintf(stderr, "*** Writing data from %d, len %d\n",0, wrest);
+                        fwrite(&demod->sg_buf[0], 1, wrest,  sgfp);
                     }
 
                     fclose(sgfp);
@@ -766,6 +1014,11 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len)
 
 
     }
+    return;
+
+err:
+    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+    return;
 }
 
 /* The distance between pulses decodes into bits */
@@ -905,9 +1158,9 @@ static void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len)
     unsigned int i;
 
     /* Calculate first sample */
-    y_buf[0] = ((a[1]*y_buf[-1]>>1) + (b[0]*x_buf[0]>>1) + (b[1]*lp_xmem[0]>>1)) >> F_SCALE-1;
+    y_buf[0] = ((a[1]*y_buf[-1]>>1) + (b[0]*x_buf[0]>>1) + (b[1]*lp_xmem[0]>>1)) >> (F_SCALE-1);
     for (i=1 ; i<len ; i++) {
-        y_buf[i] = ((a[1]*y_buf[i-1]>>1) + (b[0]*x_buf[i]>>1) + (b[1]*x_buf[i-1]>>1)) >> F_SCALE-1;
+        y_buf[i] = ((a[1]*y_buf[i-1]>>1) + (b[0]*x_buf[i]>>1) + (b[1]*x_buf[i-1]>>1)) >> (F_SCALE-1);
     }
 
     /* Save last sample */
@@ -1020,7 +1273,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -1067,6 +1320,12 @@ int main(int argc, char **argv)
             break;
         case 'D':
             debug_output = 1;
+            break;
+        case 'z':
+            override_short = atoi(optarg);
+            break;
+        case 'x':
+            override_long = atoi(optarg);
             break;
         default:
             usage();
@@ -1194,10 +1453,16 @@ int main(int argc, char **argv)
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n",test_mode_file);
         test_mode = fopen(test_mode_file, "r");
+        if (!test_mode) {
+            fprintf(stderr, "Opening file: %s failed!\n",test_mode_file);
+            goto out;
+        }
         while(fread(test_mode_buf, 131072, 1, test_mode) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
         }
+        //Always classify a signal at the end of the file
+        classify_signal();
         fprintf(stderr, "Test mode file issued %d packets\n", i);
         fprintf(stderr, "Filter coeffs used:\n");
         fprintf(stderr, "a: %d %d\n", a[0], a[1]);
