@@ -283,6 +283,8 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     char* types[] = {"S", "?", "GZ"};
     uint8_t checksum_calculated = 0;
     uint8_t i;
+	uint8_t stopbit;
+	uint8_t checksum_received;
 
     // check and combine the 3 repetitions
     for (i = 0; i < 14; i++) {
@@ -294,7 +296,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     // read 9 bytes with stopbit ...
     for (i = 0; i < 9; i++) {
         dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
-        uint8_t stopbit=AD_POP (bb_p, 1, bit); bit+=1;
+        stopbit=AD_POP (bb_p, 1, bit); bit+=1;
         if (!stopbit) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
@@ -304,7 +306,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     }
 
     // Read checksum
-    uint8_t checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
+    checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
 //        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
@@ -334,6 +336,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;
     uint8_t stopbit;
+	uint8_t sum_received;
 
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
@@ -363,7 +366,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     }
 
     // Read sum
-    uint8_t sum_received = AD_POP (bb[0], 4, bit); bit+=4;
+    sum_received = AD_POP (bb[0], 4, bit); bit+=4;
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
@@ -389,94 +392,94 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
 // timings based on samp_rate=1024000
 r_device rubicson = {
-    .id             = 1,
-    .name           = "Rubicson Temperature Sensor",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 1744/4,
-    .long_limit     = 3500/4,
-    .reset_limit    = 5000/4,
-    .json_callback  = &rubicson_callback,
+    /* .id             = */ 1,
+    /* .name           = */ "Rubicson Temperature Sensor",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 1744/4,
+    /* .long_limit     = */ 3500/4,
+    /* .reset_limit    = */ 5000/4,
+    /* .json_callback  = */ &rubicson_callback,
 };
 
 r_device prologue = {
-    .id             = 2,
-    .name           = "Prologue Temperature Sensor",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 3500/4,
-    .long_limit     = 7000/4,
-    .reset_limit    = 15000/4,
-    .json_callback  = &prologue_callback,
+    /* .id             = */ 2,
+    /* .name           = */ "Prologue Temperature Sensor",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 3500/4,
+    /* .long_limit     = */ 7000/4,
+    /* .reset_limit    = */ 15000/4,
+    /* .json_callback  = */ &prologue_callback,
 };
 
 r_device silvercrest = {
-    .id             = 3,
-    .name           = "Silvercrest Remote Control",
-    .modulation     = OOK_PWM_P,
-    .short_limit    = 600/4,
-    .long_limit     = 5000/4,
-    .reset_limit    = 15000/4,
-    .json_callback  = &silvercrest_callback,
+    /* .id             = */ 3,
+    /* .name           = */ "Silvercrest Remote Control",
+    /* .modulation     = */ OOK_PWM_P,
+    /* .short_limit    = */ 600/4,
+    /* .long_limit     = */ 5000/4,
+    /* .reset_limit    = */ 15000/4,
+    /* .json_callback  = */ &silvercrest_callback,
 };
 
 r_device tech_line_fws_500 = {
-    .id             = 4,
-    .name           = "Tech Line FWS-500 Sensor",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 3500/4,
-    .long_limit     = 7000/4,
-    .reset_limit    = 15000/4,
-    //.json_callback  = &rubicson_callback,
+    /* .id             = */ 4,
+    /* .name           = */ "Tech Line FWS-500 Sensor",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 3500/4,
+    /* .long_limit     = */ 7000/4,
+    /* .reset_limit    = */ 15000/4,
+    // /* .json_callback  = */ &rubicson_callback,
 };
 
 r_device generic_hx2262 = {
-    .id             = 5,
-    .name           = "Window/Door sensor",
-    .modulation     = OOK_PWM_P,
-    .short_limit    = 1300/4,
-    .long_limit     = 10000/4,
-    .reset_limit    = 40000/4,
-    //.json_callback  = &silvercrest_callback,
+    /* .id             = */ 5,
+    /* .name           = */ "Window/Door sensor",
+    /* .modulation     = */ OOK_PWM_P,
+    /* .short_limit    = */ 1300/4,
+    /* .long_limit     = */ 10000/4,
+    /* .reset_limit    = */ 40000/4,
+    // /* .json_callback  = */ &silvercrest_callback,
 };
 
 r_device technoline_ws9118 = {
-    .id             = 6,
-    .name           = "Technoline WS9118",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 1800/4,
-    .long_limit     = 3500/4,
-    .reset_limit    = 15000/4,
-    .json_callback  = &debug_callback,
+    /* .id             = */ 6,
+    /* .name           = */ "Technoline WS9118",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 1800/4,
+    /* .long_limit     = */ 3500/4,
+    /* .reset_limit    = */ 15000/4,
+    /* .json_callback  = */ &debug_callback,
 };
 
 
 r_device elv_em1000 = {
-    .id             = 7,
-    .name           = "ELV EM 1000",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 750/4,
-    .long_limit     = 7250/4,
-    .reset_limit    = 30000/4,
-    .json_callback  = &em1000_callback,
+    /*.id             = */ 7,
+    /*.name           = */ "ELV EM 1000",
+    /*.modulation     = */ OOK_PWM_D,
+    /*.short_limit    = */ 750/4,
+    /* .long_limit     = */ 7250/4,
+    /* .reset_limit    = */ 30000/4,
+    /* .json_callback  = */ &em1000_callback,
 };
 
 r_device elv_ws2000 = {
-    .id             = 8,
-    .name           = "ELV WS 2000",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = (602+(1155-602)/2)/4,
-    .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
-    .reset_limit    = ((1755635-1655517)*2)/4,
-    .json_callback  = &ws2000_callback,
+    /*.id             = */ 8,
+    /*.name           = */ "ELV WS 2000",
+    /*.modulation     = */ OOK_PWM_D,
+    /*.short_limit    = */ (602+(1155-602)/2)/4,
+    /* .long_limit     = */ ((1755635-1655517)/2)/4, // no repetitions
+    /* .reset_limit    = */ ((1755635-1655517)*2)/4,
+    /* .json_callback  = */ &ws2000_callback,
 };
 
 r_device waveman = {
-    .id             = 6,
-    .name           = "Waveman Switch Transmitter",
-    .modulation     = OOK_PWM_P,
-    .short_limit    = 1000/4,
-    .long_limit     = 8000/4,
-    .reset_limit    = 30000/4,
-    .json_callback  = &waveman_callback,
+    /*.id             = */ 6,
+    /*.name           = */ "Waveman Switch Transmitter",
+    /*.modulation     = */ OOK_PWM_P,
+    /*.short_limit    = */ 1000/4,
+    /* .long_limit     = */ 8000/4,
+    /* .reset_limit    = */ 30000/4,
+    /* .json_callback  = */ &waveman_callback,
 };
 
 
