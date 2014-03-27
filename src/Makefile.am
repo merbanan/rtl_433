@@ -10,7 +10,7 @@ lib_LTLIBRARIES = librtlsdr.la
 librtlsdr_la_SOURCES = librtlsdr.c tuner_e4k.c tuner_fc0012.c tuner_fc0013.c tuner_fc2580.c tuner_r820t.c
 librtlsdr_la_LDFLAGS = -version-info $(LIBVERSION)
 
-bin_PROGRAMS         = rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom rtl_adsb
+bin_PROGRAMS         = rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom rtl_adsb rtl_433
 
 rtl_sdr_SOURCES      = rtl_sdr.c
 rtl_sdr_LDADD        = librtlsdr.la
@@ -29,3 +29,6 @@ rtl_eeprom_LDADD        = librtlsdr.la $(LIBM)
 
 rtl_adsb_SOURCES      = rtl_adsb.c
 rtl_adsb_LDADD        = librtlsdr.la $(LIBM)
+
+rtl_433_SOURCES      = rtl_433.c
+rtl_433_LDADD        = librtlsdr.la $(LIBM)

@@ -453,30 +453,30 @@ r_device technoline_ws9118 = {
 
 
 r_device elv_em1000 = {
-    /*.id             = */ 7,
-    /*.name           = */ "ELV EM 1000",
-    /*.modulation     = */ OOK_PWM_D,
-    /*.short_limit    = */ 750/4,
+    /* .id             = */ 7,
+    /* .name           = */ "ELV EM 1000",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 750/4,
     /* .long_limit     = */ 7250/4,
     /* .reset_limit    = */ 30000/4,
     /* .json_callback  = */ &em1000_callback,
 };
 
 r_device elv_ws2000 = {
-    /*.id             = */ 8,
-    /*.name           = */ "ELV WS 2000",
-    /*.modulation     = */ OOK_PWM_D,
-    /*.short_limit    = */ (602+(1155-602)/2)/4,
+    /* .id             = */ 8,
+    /* .name           = */ "ELV WS 2000",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ (602+(1155-602)/2)/4,
     /* .long_limit     = */ ((1755635-1655517)/2)/4, // no repetitions
     /* .reset_limit    = */ ((1755635-1655517)*2)/4,
     /* .json_callback  = */ &ws2000_callback,
 };
 
 r_device waveman = {
-    /*.id             = */ 6,
-    /*.name           = */ "Waveman Switch Transmitter",
-    /*.modulation     = */ OOK_PWM_P,
-    /*.short_limit    = */ 1000/4,
+    /* .id             = */ 6,
+    /* .name           = */ "Waveman Switch Transmitter",
+    /* .modulation     = */ OOK_PWM_P,
+    /* .short_limit    = */ 1000/4,
     /* .long_limit     = */ 8000/4,
     /* .reset_limit    = */ 30000/4,
     /* .json_callback  = */ &waveman_callback,
