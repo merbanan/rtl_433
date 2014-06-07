@@ -524,7 +524,7 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	}
 
 	if ( has_valid )
-		printf("Energy: %.2f kWh, Power: %.2f kW, Temp: %2f \n", 
+		printf("Energy: %.2f kWh, Power: %.2f kW, Temp: %.2f \n", 
 			blueline_state.energy_kWh,
 			blueline_state.current_power_kW,
 			blueline_state.current_temp);
