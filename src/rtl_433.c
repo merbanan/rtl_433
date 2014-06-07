@@ -848,8 +848,8 @@ void usage(void)
         "\t[-z override short value\n"
         "\t[-x override long value\n"
         "\t[-I set Blueline transmitter ID (ex: 0xCC86)]\n"
-        "\t[-I set Blueline meter Kh (default: 7.2)]\n"
-        "\t[-I set Blueline kWh offset]\n"
+        "\t[-K set Blueline meter Kh (default: 7.2)]\n"
+        "\t[-E set Blueline kWh offset]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
