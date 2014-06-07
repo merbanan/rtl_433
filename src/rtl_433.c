@@ -55,6 +55,58 @@
  *
  * The sensor can be bought at Clas Ohlson
  */
+ 
+/* Blueline sensor protocol
+ * The FCC filings describe the bit protocol:
+ * https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=711409
+ * 
+ * "Data obtained by an IR-reader/sensor is  transmitted in form of short bursts every 28.5 to 31.5 
+ * seconds on 433.92 MHz (single frequency) . The carier is On/Off pulse modulated (logic ‘1’: O.5ms 
+ * TX-on followed by 2ms TX-off. logic ‘O’: O.5ms TX- on followed by 4ms TX-off).
+ * 
+ * Some nomenclature on the bit sequence.  Every 30 seconds there are 33 * 3 bursts of rf power.  
+ * Lets  call these 33*3 bursts a 'packet'.  Each packet contains 3 'frames'.   Each frame contains 
+ * 4 bytes.  The first byte is  always a leading header of 0xfe.  The second and third bytes are the 
+ * data of the frame and the fourth byte is the CRC over the second and third bytes (sometimes offset, 
+ * see below).
+ * 
+ * When the unit is first powered up it transmits a 'Transmitter ID' with 0xfe header and CRC.  
+ * Pressing the button on the transmitter causes it to retransmit this ID.  Holding the button for 10 
+ * seconds causes it to change it's ID.
+ * 
+ * The two data bytes, between the 0xfe header and the CRC are 'offset' by the house id.  There seems 
+ * to be an 'off-by-one' error in the msb as the data bytes cross above the transmitter ID probably 
+ * because of the way the microcontroller is doing it's math. 
+ * 
+ * The CRCis  used is CRC-8-ATM with polynomial 100000111.  This is calculated across the data bytes 
+ * after the offset by transmitter ID except in a transmitter ID packet.  This ensures different 
+ * meters can coexist.
+ * 
+ * The first 2 frames are always equal to each other and may be the same or different than the 3rd 
+ * frame. There are 3 types of packets that I've identified in addition to the transmitter id packet.  
+ * 
+ * The first is 'power' packet.  This  packet can be identified because the least significant 2 bits 
+ * of the 1st data bytes in frame 1 and 2 are '01' or '10'.  The second data byte contains the MSB and 
+ * the first data byte contains the LSB (including the least sig 2 bits  - not sure about this).  The 
+ * 3rd frame is  of the same format as the first 2 frames but can different!  Maybe the meter gets new 
+ * data between the first 2 and last frame. In this case the hand held display uses the one of the 
+ * first 2 frames.  To convert from this 'count' to kilowatts, take 3600/count * your meter's Kh 
+ * value (7.2 on my meter).  This packet is repeated 4 times at approx 30 second intervals.
+ * 
+ * The second is the 'temperature' packet.  This  packet can be identified because the least 
+ * significant 2 bits of the 1st data bytes in frame 1 and 2 are '11'.  The second data byte 
+ * contains the  temp data.  I'm guessing this is 2's complement, but haven't gone through enough 
+ * temp range to verify.  The first byte contains unknown flags.  I know low battery is in here but 
+ * not sure where yet.  The 3rd frame is  a power frame with decoding the same as in the power packet.  To decode temp take 0.75*temp byte -19 to get to Fahrenheit or similar for Celsius.  This packet comes 5th after 4 power packets.
+ * 
+ * The third type of packet is the 'energy' packet.  This  packet can be identified because the least 
+ * significant 2 bits of the 1st data bytes in frame 1 and 2 are '00'.   The second data byte contains 
+ * the MSB and the first data byte contains the LSB (excluding the least sig 2 bits  - 14 bits total ).
+ * The 3rd frame is  a power frame with decoding the same as in the power packet.  To decode power 
+ * take 0.004*energy value * your meter's Kh value (7.2 on my meter) to get to kWh.  This packet 
+ * comes  6th after the temperature packet.  Then the cycle restarts with power packets.
+ * 
+ */
 
 #include <errno.h>
 #include <signal.h>
