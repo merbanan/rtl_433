@@ -79,13 +79,13 @@
  * because of the way the microcontroller is doing it's math. 
  * 
  * The CRCis  used is CRC-8-ATM with polynomial 100000111.  This is calculated across the data bytes 
- * after the offset by transmitter ID except in a transmitter ID packet.  This ensures different 
+ * before the offset by transmitter ID except in a transmitter ID packet.  This ensures different 
  * meters can coexist.
  * 
  * The first 2 frames are always equal to each other and may be the same or different than the 3rd 
  * frame. There are 3 types of packets that I've identified in addition to the transmitter id packet.  
  * 
- * The first is 'power' packet.  This  packet can be identified because the least significant 2 bits 
+ * The first is a 'power' packet.  This  packet can be identified because the least significant 2 bits 
  * of the 1st data bytes in frame 1 and 2 are '01' or '10'.  The second data byte contains the MSB and 
  * the first data byte contains the LSB (including the least sig 2 bits  - not sure about this).  The 
  * 3rd frame is  of the same format as the first 2 frames but can different!  Maybe the meter gets new 
@@ -102,9 +102,9 @@
  * The third type of packet is the 'energy' packet.  This  packet can be identified because the least 
  * significant 2 bits of the 1st data bytes in frame 1 and 2 are '00'.   The second data byte contains 
  * the MSB and the first data byte contains the LSB (excluding the least sig 2 bits  - 14 bits total ).
- * The 3rd frame is  a power frame with decoding the same as in the power packet.  To decode power 
+ * The 3rd frame is  a power frame with decoding the same as in the power packet.  To decode energy 
  * take 0.004*energy value * your meter's Kh value (7.2 on my meter) to get to kWh.  This packet 
- * comes  6th after the temperature packet.  Then the cycle restarts with power packets.
+ * comes  6th after the temperature packet.  Then the packet cycle restarts with power packets.
  * 
  */
 
