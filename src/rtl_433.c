@@ -74,11 +74,11 @@
  * Pressing the button on the transmitter causes it to retransmit this ID.  Holding the button for 10 
  * seconds causes it to change it's ID.
  * 
- * The two data bytes, between the 0xfe header and the CRC are 'offset' by the house id.  There seems 
+ * The two data bytes, between the 0xfe header and the CRC are 'offset' by the transmitter id.  There seems 
  * to be an 'off-by-one' error in the msb as the data bytes cross above the transmitter ID probably 
  * because of the way the microcontroller is doing it's math. 
  * 
- * The CRCis  used is CRC-8-ATM with polynomial 100000111.  This is calculated across the data bytes 
+ * The CRC used is CRC-8-ATM with polynomial 100000111.  This is calculated across the data bytes 
  * before the offset by transmitter ID except in a transmitter ID packet.  This ensures different 
  * meters can coexist.
  * 
