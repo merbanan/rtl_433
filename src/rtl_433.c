@@ -298,6 +298,189 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
+//From chromiumos crc8.c  Credit for this function belongs to them.
+uint8_t Crc8(const void *vptr, int len){
+	const uint8_t *data = vptr;
+	unsigned crc = 0;
+	int i, j;
+	for (j = len; j; j--, data++) {
+		crc ^= (*data << 8);
+		for(i = 8; i; i--) {
+			if (crc & 0x8000)
+				crc ^= (0x1070 << 3);
+			crc <<= 1;
+		}
+	}
+	return (uint8_t)(crc >> 8);
+}
+
+typedef struct {
+    uint16_t    id;
+	uint16_t    accept_id;
+	double		meter_Kh;
+	long		energy_count;
+	double		energy_kWh;
+	int			last_recvd_energy_count;
+	int			current_power_count;
+	double		current_power_kW;
+	float			current_temp;
+	int 		unknown_bits;
+} blueline_state_t;
+
+blueline_state_t blueline_state = {
+	/* .id             = */ 0,
+	/* .accept_id      = */ 1,
+	/* .meter_Kh       = */ 7.2,
+	/* .energy_count   = */ 0,
+	/* .energy_kWh     = */ 0,
+	/* .last_recvd_energy_count = */ 0,
+	/* .current_power_count     = */ 0,
+	/* .current_power_kW        = */ 0,
+	/* .current_temp            = */ 0.0,
+	/* .unknown_bits            = */ 0,
+};
+static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+	
+	uint8_t packet[3][3];
+	unsigned int packet_val;
+	
+	int i,j,k;
+	
+	// The pwm_d_decode function incorrectly decides short distances are 
+	// zeros and long distances are ones.  This is not correct for this device.
+	
+	// Invert all bits 
+	for ( i = 0 ; i < 3; i++ ){
+		for( j = 0; j < 4; j++ ){
+			bb[i][j] = ~bb[i][j];
+		}
+	}
+	
+	// Check for new valid transmitter ID
+	if( (bb[0][0] = 0xfe) && ! Crc8( &bb[0][1] , 3 ) ){
+		//got a new transmitter ID store it
+		printf("Received valid transmitter ID 0x%x%x ... ", bb[2][1], bb[2][2]);
+		if ( blueline_state.accept_id > 0 ) {
+			printf("accepting.\n");
+			blueline_state.id = (( bb[2][1] << 8 ) + bb[2][2] );
+			blueline_state.accept_id = 0; 
+		}
+		else{
+			printf("ignoring.\n");
+		}
+	}
+
+	// Check for new CRC clean frames
+	int has_valid = 0;
+	int is_valid[3] = {0,0,0};
+	
+	for (i = 0; i < 3; i++){
+		packet_val = (( bb[i][1] << 8 ) + bb[i][2] );
+		if( bb[i][0] == 0xfe ) {
+			if( packet_val >= blueline_state.id ){
+				packet_val -= blueline_state.id;
+				packet[i][0] = (packet_val & 0xff00) >> 8;
+				packet[i][1] = (packet_val & 0x00ff);
+				packet[i][2] = bb[i][3];
+			}
+			else {
+				packet_val = 0x10000 + packet_val - blueline_state.id-1;
+				packet[i][0] = (packet_val & 0xff00) >> 8;
+				packet[i][1] = (packet_val & 0x00ff);
+				packet[i][2] = bb[i][3];
+			}
+			if ( Crc8( &packet[i][0] , 3 ) == 0 ){
+				//printf("VALID- packet   0x%02X%02X%02X\n", packet[i][0], packet[i][1], packet[i][2]);
+				is_valid[i] = -1;
+				has_valid = 1;
+			}
+			
+			// not 100% sure this is right, seemed to be required with some transmitter ids
+			packet[i][0] += 1;
+			
+			if ( Crc8( &packet[i][0] , 3 ) == 0 ){
+				//printf("VALID+ packet   0x%02X%02X%02X\n", packet[i][0], packet[i][1], packet[i][2]);
+				is_valid[i] = 1;
+				has_valid = 1;
+			}
+		}
+	}
+    
+	int recvd_energy_count = 0;
+	int got_kw = 0;
+	int recvd_delta = 0;
+	int power_count = 0;
+	
+	for( i = 0 ; i < 2 ; i++){
+		// check for kWh frame
+		if( (packet[i][0] & 0x03) == 0 && is_valid[i]){
+			recvd_energy_count = ( packet[i][1] << 6 ) + (( packet[i][0] & 0xfc) >> 2 ) ;
+			// if the least sig 6 bits are all zero, then the most sig 8 bits should be 1 count higher according to 
+			// hand held display experiments
+			// not 100% sure this is right
+			if (( packet[i][0] & 0xfc) >> 2  == 0)
+				recvd_energy_count += 2^6;
+			recvd_delta = (recvd_energy_count - blueline_state.last_recvd_energy_count) % (1 << 14); //2^14
+
+			// arbitrary limit here to not corrupt our internal count if bad data
+			if ( blueline_state.last_recvd_energy_count != -1){ // && recvd_delta < 8000 && recvd_delta > 0 ){
+				blueline_state.energy_count += recvd_delta;
+				blueline_state.energy_kWh = 0.004 * blueline_state.energy_count * blueline_state.meter_Kh;
+			}
+			//printf(".last_recvd_energy_count = %d\n", blueline_state.last_recvd_energy_count);
+			//printf("recvd_energy_count = %d\n", recvd_energy_count);
+			//printf("recvd_delta = %d\n", recvd_delta);
+			
+			blueline_state.last_recvd_energy_count = recvd_energy_count;
+		}
+		
+		// check for kW packet
+		if( ( (packet[i][0] & 0x03) == 1 || (packet[i][0] & 0x03) == 2 )  && is_valid[i]){
+			// least significant 2 bits of packet[i][0] are both a signifier and a count?
+			blueline_state.current_power_count = (packet[i][1] << 8) + packet[i][0];
+			
+			// count is the number of milliseconds of the last revolution
+			blueline_state.current_power_kW = 3600.0 / (float)blueline_state.current_power_count * blueline_state.meter_Kh;
+			
+			// the hand held display uses one of the first 2 frames, not the last one in
+			// this type of packet.  the first two frames don't always match the last 
+			got_kw = 1;  
+		}
+
+		uint8_t recvd_temp;
+		// check for temperature
+		if( ( (packet[i][0] & 0x03) == 3 )  && is_valid[i]){
+			recvd_temp = packet[i][1]; // not really sure this is a 2's complement number from the sensor
+			
+			// I use fahrenheit
+			blueline_state.current_temp = 0.75 * recvd_temp - 19.0; // constants approx
+			// If you use celcius uncomment this
+			//blueline_state.current_temp = 0.417 * recvd_temp - 28.3; // constants approx
+
+			blueline_state.unknown_bits = ( packet[i][0] & 0xfc ) >> 2; // one of these is low bat?
+		}
+	}
+	
+	// the hand held display uses one of the first 2 frames, not the last one in
+	// a packet with 3 kw frames 
+	if( (! got_kw) && ( (packet[2][0] & 0x03) == 1 || (packet[2][0] & 0x03) == 2 )  && is_valid[2]){
+		// least significant 2 bits of packet[i][0] are both a signifier and a count?
+		blueline_state.current_power_count = (packet[2][1] << 8) + packet[3][0];
+		
+		// count is the number of milliseconds of the last revolution
+		blueline_state.current_power_kW = 3600.0 / (float)blueline_state.current_power_count * blueline_state.meter_Kh;
+	}
+
+	if ( has_valid )
+		printf("Energy: %.2f kWh, Power: %.2f kW, Temp: %2f \n", 
+			blueline_state.energy_kWh,
+			blueline_state.current_power_kW,
+			blueline_state.current_temp);
+
+	return 0;
+}
+
+
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
     uint8_t i, byte_no, bit_no;
@@ -425,7 +608,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
-// timings based on samp_rate=1024000
+// F based on samp_rate=1024000
 r_device rubicson = {
     /* .id             = */ 1,
     /* .name           = */ "Rubicson Temperature Sensor",
@@ -527,6 +710,16 @@ r_device steffen = {
     /* .json_callback  = */ &steffen_callback,
 };
 
+r_device blueline = {
+    /* .id             = */ 10,
+    /* .name           = */ "Blueline Power Monitor",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 185,
+    /* .long_limit     = */ 5000,
+    /* .reset_limit    = */ 80000,
+    /* .json_callback  = */ &blueline_callback,
+};
+
 
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
@@ -602,6 +795,9 @@ void usage(void)
         "\t[-D print debug info on event\n"
         "\t[-z override short value\n"
         "\t[-x override long value\n"
+        "\t[-I set Blueline transmitter ID (ex: 0xCC86)]\n"
+        "\t[-I set Blueline meter Kh (default: 7.2)]\n"
+        "\t[-I set Blueline kWh offset]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
@@ -1309,6 +1505,7 @@ int main(int argc, char **argv)
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int device_count;
     char vendor[256], product[256], serial[256];
+	unsigned long blueline_id_long = 0;
 
     demod = malloc(sizeof(struct dm_state));
     memset(demod,0,sizeof(struct dm_state));
@@ -1321,7 +1518,10 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+	uint8_t packet[3];
+		
+	
+    while ((opt = getopt(argc, argv, "E:K:I:x:z:p:D:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -1375,6 +1575,20 @@ int main(int argc, char **argv)
         case 'x':
             override_long = atoi(optarg);
             break;
+        case 'I':
+            blueline_id_long = strtoul(optarg, NULL, 16);
+			blueline_state.id = blueline_id_long;
+			blueline_state.accept_id = 0;
+			printf("Using transmitter ID 0x%4x \n", blueline_state.id);
+            break;
+        case 'K':
+			blueline_state.meter_Kh = atof(optarg);
+            break;
+        case 'E':
+			blueline_state.energy_kWh = atof(optarg);
+			blueline_state.last_recvd_energy_count = -1;
+            break;
+			
         default:
             usage();
             break;
@@ -1391,6 +1605,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &elv_ws2000);
     register_protocol(demod, &waveman);
     register_protocol(demod, &steffen);
+    register_protocol(demod, &blueline);
 
     if (argc <= optind-1) {
         usage();
