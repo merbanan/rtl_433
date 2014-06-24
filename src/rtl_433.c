@@ -55,6 +55,60 @@
  *
  * The sensor can be bought at Clas Ohlson
  */
+ 
+/* Blueline sensor protocol
+ * The FCC filings describe the bit protocol:
+ * https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=711409
+ * 
+ * "Data obtained by an IR-reader/sensor is  transmitted in form of short bursts every 28.5 to 31.5 
+ * seconds on 433.92 MHz (single frequency) . The carier is On/Off pulse modulated (logic ‘1’: O.5ms 
+ * TX-on followed by 2ms TX-off. logic ‘O’: O.5ms TX- on followed by 4ms TX-off)."
+ * 
+ * Lets start with some nomenclature on the bit sequence.  Every 30 seconds there are 33 * 3 bursts of rf.  
+ * Lets  call these 33 * 3 bursts a 'packet'.  Each packet contains 3 'frames'.   Each frame contains 
+ * 4 bytes.  The first byte is always a leading preamble of 0xfe.  The second and third bytes are the 
+ * data of the frame and the fourth byte is the CRC over the second and third bytes (sometimes offset, 
+ * see below).
+ * 
+ * When the unit is first powered up it transmits a 16 bit 'Transmitter ID' with 0xfe preamble and CRC.  
+ * Pressing the button on the transmitter causes it to retransmit this ID.  Holding the button for 10 
+ * seconds causes it to change it's ID.
+ * 
+ * The two data bytes in a frame between the 0xfe preamble and the CRC are 'offset' by the transmitter id.  
+ * The LSB comes over the air first and the byte order needs to be swapped before offset so that the carry
+ * between the LSB and the MSB is setup correctly.
+ * 
+ * The CRC used is CRC-8-ATM with polynomial 100000111.  This is calculated across the data bytes 
+ * before the offset by transmitter ID except in a transmitter ID packet.  This ensures different 
+ * monitors can coexist.
+ * 
+ * The first 2 frames are always equal to each other and may be the same or different than the 3rd 
+ * frame. There are 3 types of packets that I've identified in addition to the transmitter id packet.  
+ * 
+ * The first is a 'power' packet.  This  packet can be identified by the least significant 2 bits 
+ * of the 1st data bytes in frame 1 and 2 are '01'.  The second data byte contains the MSB and 
+ * the first data byte contains the LSB (including the least sig 2 bits  - not sure about this).  The 
+ * 3rd frame is of the same format as the first 2 frames but can contain different data!  Maybe the meter 
+ * gets new data between the first 2 and last frame. In this case the hand held display uses the one of the 
+ * first 2 frames.  To convert from this 'count' to kilowatts, take 3600/count * your meter's Kh 
+ * value (7.2 on my meter).  This packet is repeated 4 times at approx 30 second intervals.
+ * 
+ * The second is the 'temperature' packet.  This  packet can be identified by the least 
+ * significant 2 bits of the 1st data bytes in frame 1 and 2 are '10'.  The second data byte 
+ * contains the temp data.  I'm guessing this is 2's complement, but haven't gone through enough 
+ * temp range to verify.  The first byte contains unknown flags.  I know low battery is in here but not sure 
+ * where yet.  The 3rd frame is a power frame with decoding the same as in the power packet. To decode 
+ * temp take 0.75*temp byte - 19 to get to Fahrenheit or similar for Celsius.  This packet comes 5th 
+ * after 4 power packets.
+ * 
+ * The third type of packet is the 'energy' packet.  This packet can be identified by the least 
+ * significant 2 bits of the 1st data bytes in frame 1 and 2 are '11'.   The second data byte contains 
+ * the MSB and the first data byte contains the LSB (excluding the least sig 2 bits  - 14 bits total ).
+ * The 3rd frame is a power frame with decoding the same as in the power packet.  To decode energy 
+ * take 0.004 * energy value * your meter's Kh value (7.2 on my meter) to get to kWh.  This packet 
+ * comes 6th after the temperature packet.  Then the packet cycle restarts with power packets.
+ * 
+ */
 
 #include <errno.h>
 #include <signal.h>
@@ -298,6 +352,184 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
+//From chromiumos crc8.c  Credit for this function belongs to them.
+uint8_t Crc8(const void *vptr, int len){
+	const uint8_t *data = vptr;
+	unsigned crc = 0;
+	int i, j;
+	for (j = len; j; j--, data++) {
+		crc ^= (*data << 8);
+		for(i = 8; i; i--) {
+			if (crc & 0x8000)
+				crc ^= (0x1070 << 3);
+			crc <<= 1;
+		}
+	}
+	return (uint8_t)(crc >> 8);
+}
+
+typedef struct {
+    uint16_t    id;
+	uint16_t    accept_id;
+	double		meter_Kh;
+	long		energy_count;
+	double		energy_kWh;
+	int			last_recvd_energy_count;
+	int			current_power_count;
+	double		current_power_kW;
+	float		current_temp;
+	int 		unknown_bits;
+	int 		low_batt;
+} blueline_state_t;
+
+blueline_state_t blueline_state = {
+	/* .id             = */ 0,
+	/* .accept_id      = */ 1,
+	/* .meter_Kh       = */ 7.2,
+	/* .energy_count   = */ 0,
+	/* .energy_kWh     = */ 0,
+	/* .last_recvd_energy_count = */ 0,
+	/* .current_power_count     = */ 0,
+	/* .current_power_kW        = */ 0,
+	/* .current_temp            = */ 0.0,
+	/* .unknown_bits            = */ 0,
+	/* .low_batt                = */ 0,
+};
+
+static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+	
+	uint8_t frame[3][3];
+	unsigned int frame_val;
+	
+	int i,j;
+
+	// The pwm_d_decode function incorrectly decodes short distances as 
+	// zeros and long distances as ones.  This is not correct for this device.	
+	
+	// Invert all bits 
+	for ( i = 0 ; i < 3; i++ ){
+		for( j = 0; j < 4; j++ ){
+			bb[i][j] = ~bb[i][j];
+		}
+	}
+
+	// Check for new valid transmitter ID
+	if( (bb[0][0] = 0xfe) && ( (bb[0][1] & 0x03) == 0 ) && ! Crc8( &bb[0][1] , 3 ) ){
+		//got a new transmitter ID, store it
+		printf("Received valid transmitter ID 0x%x%x ... ", bb[2][1], bb[2][2]);
+		if ( blueline_state.accept_id > 0 ) {
+			printf("accepting.\n");
+			blueline_state.id = (( bb[2][2] << 8 ) + bb[2][1] );
+			blueline_state.accept_id = 0; 
+		}
+		else
+			printf("ignoring.\n");
+	}
+
+	int has_valid = 0;
+	int is_valid[3] = {0,0,0};
+	
+	// Check for new CRC clean frames with preamble
+	for (i = 0; i < 3; i++){
+		// the least significant byte comes first, bytes need to be swapped for transmitter offset
+		frame_val = (( bb[i][2] << 8 ) + bb[i][1] );
+		if( bb[i][0] == 0xfe ) {
+			// offset frame data by the Transmitter ID
+			frame_val = 0x10000 + frame_val - blueline_state.id;
+			// the least significant byte comes first, crc is performed in 'over the air' order, swap back
+			frame[i][0] = (frame_val & 0x00ff);
+			frame[i][1] = (frame_val & 0xff00) >> 8;
+			// append original 'over the air' checksum
+			frame[i][2] = bb[i][3];
+			
+			// Check CRC over un-offset data
+			if ( Crc8( &frame[i][0] , 3 ) == 0 ){
+				if (debug_output)
+					printf("VALID frame 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
+				is_valid[i] = 1;
+				has_valid = 1;
+			}
+			else
+				if (debug_output)
+					printf("INVALID frame 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
+		}
+	}
+    
+	int recvd_energy_count = 0;
+	int got_kw = 0;
+	int recvd_delta = 0;
+	int power_count = 0;
+	uint8_t recvd_temp = 0;
+	
+	for( i = 0 ; i < 3 ; i++){
+
+		// unknown frame identifier
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 0 )){
+			//this frame type has not been observed.  The zero identifier may be reserved for ID packets
+			printf("DEBUG: This type of frame is not known to exist.\n");
+			printf("DEBUG: frame = 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);			
+		}
+		
+		// check for kW frame
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 1 )  && (! got_kw) ){
+			// least significant 2 bits of frame[i][0] are both an identifier and a count?
+			blueline_state.current_power_count = (frame[i][1] << 8) + frame[i][0];
+			
+			// count is the number of milliseconds of the last revolution
+			if ( blueline_state.current_power_count != 0xfffd ) // max value
+				blueline_state.current_power_kW = 3600.0 / (float)blueline_state.current_power_count * blueline_state.meter_Kh;
+			else
+				blueline_state.current_power_kW = 0;
+			
+			// the hand held display uses one of the first 2 frames, not the last one in
+			// this type of packet.  the first two frames don't always match the last 
+			got_kw = 1;  
+		}
+
+		// check for temperature frame
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 2 ) ){
+			recvd_temp = frame[i][1]; // not really sure this is a 2's complement number from the sensor
+			
+			// I use fahrenheit
+			blueline_state.current_temp = 0.823 * recvd_temp - 28.63; // constants approx
+			// If you use celsius uncomment this
+			//blueline_state.current_temp = 0.457 * recvd_temp - 33.68; // constants approx
+
+			blueline_state.unknown_bits = ( frame[i][0] & 0xfc ) >> 2; 
+			blueline_state.low_batt = ( blueline_state.unknown_bits & 0x20 ) >> 5;
+		}
+		
+		// check for kWh frame
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 3 ) ){
+			recvd_energy_count = ( frame[i][1] << 6 ) + (( frame[i][0] & 0xfc) >> 2 ) ;
+			
+			recvd_delta = (recvd_energy_count - blueline_state.last_recvd_energy_count);// % (1 << 14); //2^14
+			if ( recvd_delta < -1 *(1 << 13) ){ 
+				recvd_delta += (1 << 14) - 1;  // continue increasing count on counter overflow
+			}			
+			
+			if ( blueline_state.last_recvd_energy_count != -1 ){ 
+				blueline_state.energy_count += recvd_delta;
+				blueline_state.energy_kWh = 0.004 * blueline_state.energy_count * blueline_state.meter_Kh;
+			}
+			blueline_state.last_recvd_energy_count = recvd_energy_count;
+		}
+	}
+	
+
+	if ( has_valid ){
+		printf("Energy: %.2f kWh, Power: %.2f kW, Temp: %.2f F", 
+			blueline_state.energy_kWh,
+			blueline_state.current_power_kW,
+			blueline_state.current_temp);
+		if(blueline_state.low_batt)
+			printf(", low battery");
+		printf("\n");
+	}
+		
+	return 0;
+}
+
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
     uint8_t i, byte_no, bit_no;
@@ -527,6 +759,16 @@ r_device steffen = {
     /* .json_callback  = */ &steffen_callback,
 };
 
+r_device blueline = {
+    /* .id             = */ 10,
+    /* .name           = */ "Blueline Power Monitor",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 185,
+    /* .long_limit     = */ 5000,
+    /* .reset_limit    = */ 80000,
+    /* .json_callback  = */ &blueline_callback,
+};
+
 
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
@@ -602,6 +844,9 @@ void usage(void)
         "\t[-D print debug info on event\n"
         "\t[-z override short value\n"
         "\t[-x override long value\n"
+        "\t[-I set Blueline transmitter ID (ex: 0xCC86)]\n"
+        "\t[-K set Blueline meter Kh (default: 7.2)]\n"
+        "\t[-E set Blueline kWh offset]\n"
         "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
     exit(1);
 }
@@ -1309,6 +1554,7 @@ int main(int argc, char **argv)
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int device_count;
     char vendor[256], product[256], serial[256];
+	unsigned long blueline_id_long = 0;
 
     demod = malloc(sizeof(struct dm_state));
     memset(demod,0,sizeof(struct dm_state));
@@ -1321,7 +1567,7 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "E:K:I:x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
             dev_index = atoi(optarg);
@@ -1375,6 +1621,20 @@ int main(int argc, char **argv)
         case 'x':
             override_long = atoi(optarg);
             break;
+        case 'I':
+            blueline_id_long = strtoul(optarg, NULL, 16);
+			printf("Using transmitter ID 0x%4x \n",blueline_id_long);
+			blueline_state.id = ((blueline_id_long & 0x00ff) << 8) + ((blueline_id_long & 0xff00)>>8);
+			blueline_state.accept_id = 0;
+            break;
+        case 'K':
+			blueline_state.meter_Kh = atof(optarg);
+            break;
+        case 'E':
+			blueline_state.energy_kWh = atof(optarg);
+			blueline_state.last_recvd_energy_count = -1;
+            break;
+			
         default:
             usage();
             break;
@@ -1391,6 +1651,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &elv_ws2000);
     register_protocol(demod, &waveman);
     register_protocol(demod, &steffen);
+    register_protocol(demod, &blueline);
 
     if (argc <= optind-1) {
         usage();
