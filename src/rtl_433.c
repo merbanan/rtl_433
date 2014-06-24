@@ -526,9 +526,7 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 			printf(", low battery");
 		printf("\n");
 	}
-	
-	printf("Exiting function with .last_recvd_energy_count = %d\n", blueline_state.last_recvd_energy_count);
-	
+		
 	return 0;
 }
 
