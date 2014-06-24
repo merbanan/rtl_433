@@ -659,7 +659,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 }
 
 
-// F based on samp_rate=1024000
+// timings based on samp_rate=1024000
 r_device rubicson = {
     /* .id             = */ 1,
     /* .name           = */ "Rubicson Temperature Sensor",
@@ -1569,9 +1569,6 @@ int main(int argc, char **argv)
     demod->level_limit      = DEFAULT_LEVEL_LIMIT;
 
 
-	uint8_t packet[3];
-		
-	
     while ((opt = getopt(argc, argv, "E:K:I:x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
         switch (opt) {
         case 'd':
