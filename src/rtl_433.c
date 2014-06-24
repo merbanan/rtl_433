@@ -86,7 +86,7 @@
  * frame. There are 3 types of packets that I've identified in addition to the transmitter id packet.  
  * 
  * The first is a 'power' packet.  This  packet can be identified by the least significant 2 bits 
- * of the 1st data bytes in frame 1 and 2 are '00' or '01'.  The second data byte contains the MSB and 
+ * of the 1st data bytes in frame 1 and 2 are '01'.  The second data byte contains the MSB and 
  * the first data byte contains the LSB (including the least sig 2 bits  - not sure about this).  The 
  * 3rd frame is of the same format as the first 2 frames but can contain different data!  Maybe the meter 
  * gets new data between the first 2 and last frame. In this case the hand held display uses the one of the 
@@ -377,7 +377,7 @@ typedef struct {
 	int			last_recvd_energy_count;
 	int			current_power_count;
 	double		current_power_kW;
-	float			current_temp;
+	float		current_temp;
 	int 		unknown_bits;
 	int 		low_batt;
 } blueline_state_t;
@@ -395,15 +395,16 @@ blueline_state_t blueline_state = {
 	/* .unknown_bits            = */ 0,
 	/* .low_batt                = */ 0,
 };
+
 static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	
 	uint8_t frame[3][3];
 	unsigned int frame_val;
 	
-	int i,j,k;
+	int i,j;
 
-	// The pwm_d_decode function incorrectly decides short distances are 
-	// zeros and long distances are ones.  This is not correct for this device.
+	// The pwm_d_decode function incorrectly decodes short distances as 
+	// zeros and long distances as ones.  This is not correct for this device.	
 	
 	// Invert all bits 
 	for ( i = 0 ; i < 3; i++ ){
@@ -413,7 +414,7 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	}
 
 	// Check for new valid transmitter ID
-	if( (bb[0][0] = 0xfe) && ! Crc8( &bb[0][1] , 3 ) ){
+	if( (bb[0][0] = 0xfe) && ( (bb[0][1] & 0x03) == 0 ) && ! Crc8( &bb[0][1] , 3 ) ){
 		//got a new transmitter ID, store it
 		printf("Received valid transmitter ID 0x%x%x ... ", bb[2][1], bb[2][2]);
 		if ( blueline_state.accept_id > 0 ) {
@@ -441,17 +442,16 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 			// append original 'over the air' checksum
 			frame[i][2] = bb[i][3];
 			
-			// Check CRC over data un-offset data
+			// Check CRC over un-offset data
 			if ( Crc8( &frame[i][0] , 3 ) == 0 ){
 				if (debug_output)
 					printf("VALID frame 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
 				is_valid[i] = 1;
 				has_valid = 1;
 			}
-			//else
-			//	if (debug_output)
-			//		printf("INVALID frame 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
-
+			else
+				if (debug_output)
+					printf("INVALID frame 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
 		}
 	}
     
@@ -459,33 +459,20 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	int got_kw = 0;
 	int recvd_delta = 0;
 	int power_count = 0;
+	uint8_t recvd_temp = 0;
 	
-	for( i = 0 ; i < 2 ; i++){
-		// check for kWh frame
-		if( (frame[i][0] & 0x03) == 3 && is_valid[i]){
-			recvd_energy_count = ( frame[i][1] << 6 ) + (( frame[i][0] & 0xfc) >> 2 ) ;
-			
-			recvd_delta = (recvd_energy_count - blueline_state.last_recvd_energy_count) % (1 << 14); //2^14
+	for( i = 0 ; i < 3 ; i++){
 
-			if ( recvd_delta < 0){ 
-				// trying to catch a bug where the energy count sometimes decreases
-				printf("DEBUG: recvd_delta is negative, this shouldn't happen\n");
-				printf("DEBUG: .last_recvd_energy_count = %d\n", blueline_state.last_recvd_energy_count);
-				printf("DEBUG: recvd_energy_count = %d\n", recvd_energy_count);
-				printf("DEBUG: frame = 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);
-			}			
-			
-			if ( blueline_state.last_recvd_energy_count != -1){ 
-				blueline_state.energy_count += recvd_delta;
-				blueline_state.energy_kWh = 0.004 * blueline_state.energy_count * blueline_state.meter_Kh;
-			}
-			blueline_state.last_recvd_energy_count = recvd_energy_count;
+		// unknown frame identifier
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 0 )){
+			//this frame type has not been observed.  The zero identifier may be reserved for ID packets
+			printf("DEBUG: This type of frame is not known to exist.\n");
+			printf("DEBUG: frame = 0x%02X%02X%02X\n", frame[i][0], frame[i][1], frame[i][2]);			
 		}
 		
 		// check for kW frame
-		if( ( (frame[i][0] & 0x03) == 0 || (frame[i][0] & 0x03) == 1 )  && is_valid[i]){
-			// why zero and one here?
-			// least significant 2 bits of frame[i][0] are both a signifier and a count?
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 1 )  && (! got_kw) ){
+			// least significant 2 bits of frame[i][0] are both an identifier and a count?
 			blueline_state.current_power_count = (frame[i][1] << 8) + frame[i][0];
 			
 			// count is the number of milliseconds of the last revolution
@@ -499,33 +486,36 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 			got_kw = 1;  
 		}
 
-		uint8_t recvd_temp;
 		// check for temperature frame
-		if( ( (frame[i][0] & 0x03) == 2 )  && is_valid[i]){
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 2 ) ){
 			recvd_temp = frame[i][1]; // not really sure this is a 2's complement number from the sensor
 			
 			// I use fahrenheit
 			blueline_state.current_temp = 0.823 * recvd_temp - 28.63; // constants approx
-			// If you use celcius uncomment this
+			// If you use celsius uncomment this
 			//blueline_state.current_temp = 0.457 * recvd_temp - 33.68; // constants approx
 
 			blueline_state.unknown_bits = ( frame[i][0] & 0xfc ) >> 2; 
 			blueline_state.low_batt = ( blueline_state.unknown_bits & 0x20 ) >> 5;
 		}
+		
+		// check for kWh frame
+		if( (is_valid[i]) && ((frame[i][0] & 0x03) == 3 ) ){
+			recvd_energy_count = ( frame[i][1] << 6 ) + (( frame[i][0] & 0xfc) >> 2 ) ;
+			
+			recvd_delta = (recvd_energy_count - blueline_state.last_recvd_energy_count);// % (1 << 14); //2^14
+			if ( recvd_delta < -1 *(1 << 13) ){ 
+				recvd_delta += (1 << 14) - 1;  // continue increasing count on counter overflow
+			}			
+			
+			if ( blueline_state.last_recvd_energy_count != -1 ){ 
+				blueline_state.energy_count += recvd_delta;
+				blueline_state.energy_kWh = 0.004 * blueline_state.energy_count * blueline_state.meter_Kh;
+			}
+			blueline_state.last_recvd_energy_count = recvd_energy_count;
+		}
 	}
 	
-	// the hand held display uses one of the first 2 frames, not the last one in
-	// a packet with 3 kw frames 
-	if( (! got_kw) && ( (frame[2][0] & 0x03) == 0 || (frame[2][0] & 0x03) == 1 )  && is_valid[2]){
-		// least significant 2 bits of frame[i][0] are both a signifier and a count?
-		blueline_state.current_power_count = (frame[2][1] << 8) + frame[2][0];
-		
-		// count is the number of milliseconds of the last revolution
-			if ( blueline_state.current_power_count != 0xfffd ) // max value
-				blueline_state.current_power_kW = 3600.0 / (float)blueline_state.current_power_count * blueline_state.meter_Kh;
-			else
-				blueline_state.current_power_kW = 0;
-	}
 
 	if ( has_valid ){
 		printf("Energy: %.2f kWh, Power: %.2f kW, Temp: %.2f F", 
@@ -536,9 +526,11 @@ static int blueline_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 			printf(", low battery");
 		printf("\n");
 	}
+	
+	printf("Exiting function with .last_recvd_energy_count = %d\n", blueline_state.last_recvd_energy_count);
+	
 	return 0;
 }
-
 
 uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
