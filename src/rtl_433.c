@@ -264,19 +264,25 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     int temperature_after_dec;
     int16_t temp;
     int8_t  hum;
+    int8_t  channel;
 
-    if (bb[0][0] == 0 && bb[1][0] != 0  && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
-	// FIXME Negative Temperatures
+    if (bb[0][0] == 0 && (bb[1][0] & 0b01100000) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
+	// Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+	// upper 4 bits of nibble 1 are reserved for other usages.
         temp = (int16_t)((uint16_t)(bb[1][1] << 12 ) | bb[1][2]<< 4);
         temp = temp >> 4;
+	// lower 4 bits of nibble 3 and upper 4 bits of nibble 4 contains
+	// humidity as decimal value
 	hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
+	channel = ((bb[1][1] & 0b00110000) >> 4)+1 ;
 
         temperature_before_dec = abs(temp / 10);
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stderr, "Sensor temperature event:\n");
         fprintf(stderr, "protocol       = Mebus/433\n");
-        
+        fprintf(stderr, "address        = %i\n", bb[1][0] & 0b00011111); 
+        fprintf(stderr, "channel        = %i\n", channel); 
         fprintf(stderr, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "humidity       = %i%%\n", hum);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
