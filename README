@@ -30,5 +30,7 @@ Usage:  [-d device_index (default: 0)]
 
 This software is mostly useable for developers right now.
 
+## Supported Devices
+
 * Added support for Mebus/433 Sensors (YD8210BH)
 
