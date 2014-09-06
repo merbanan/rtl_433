@@ -257,6 +257,68 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
 }
 
 static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+
+
+static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int temperature_before_dec;
+    int temperature_after_dec;
+    int16_t temp;
+    int8_t  hum;
+
+    if (bb[0][0] == 0 && bb[1][0] != 0  && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
+	// FIXME Negative Temperatures
+        temp = (int16_t)((uint16_t)(bb[1][1] << 12 ) | bb[1][2]<< 4);
+        temp = temp >> 4;
+	hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
+
+        temperature_before_dec = abs(temp / 10);
+        temperature_after_dec = abs(temp % 10);
+
+        fprintf(stderr, "Sensor temperature event:\n");
+        fprintf(stderr, "protocol       = Mebus/433\n");
+        
+        fprintf(stderr, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
+        fprintf(stderr, "humidity       = %i%%\n", hum);
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
+        return 1;
+    }
+    return 0;
+}
+
+
+static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+
+      //if (bb[1][1] == 0 && bb[1][0] != 0 && bb[1][3]==bb[2][3]){
+      if(bb[0][0]==0 && bb[0][0] == 0 && bb[1][0] == 0x56){
+        fprintf(stderr, "Switch event:\n");
+        fprintf(stderr, "protocol       = Intertechno\n");
+        fprintf(stderr, "rid            = %x\n",bb[1][0]);
+        fprintf(stderr, "rid            = %x\n",bb[1][1]);
+        fprintf(stderr, "rid            = %x\n",bb[1][2]);
+        fprintf(stderr, "rid            = %x\n",bb[1][3]);
+        fprintf(stderr, "rid            = %x\n",bb[1][4]);
+        fprintf(stderr, "rid            = %x\n",bb[1][5]);
+        fprintf(stderr, "rid            = %x\n",bb[1][6]);
+        fprintf(stderr, "rid            = %x\n",bb[1][7]);
+        fprintf(stderr, "rid            = %x\n",bb[1][8]);
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
+        return 1;
+    }
+    return 0;
+}
+
+
+
+
+static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
     int rid;
 
     int16_t temp2;
@@ -894,6 +956,16 @@ r_device acurite5n1 = {
     /* .reset_limit    = */ 20000,
     /* .json_callback  = */ &acurite5n1_callback,
 };
+r_device mebus433 = {
+    /* .id             = */ 10,
+    /* .name           = */ "Mebus 433",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 300,
+    /* .long_limit     = */ 600,
+    /* .reset_limit    = */ 1500,
+    /* .json_callback  = */ &mebus433_callback,
+    /* .json_callback  = */ //&debug_callback,
+};
 
 r_device lacrossetx = {
     /* .id             = */ 11,
@@ -904,6 +976,22 @@ r_device lacrossetx = {
     /* .reset_limit    = */ 8000, 
     /* .json_callback  = */ &lacrossetx_callback,
 };
+
+
+r_device intertechno = {
+    /* .id             = */ 11,
+    /* .name           = */ "Intertechno 433",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 100,
+    /* .long_limit     = */ 350,
+    /* .reset_limit    = */ 3000,
+    /* .json_callback  = */ &intertechno_callback,
+    /* .json_callback  = */ //&debug_callback,
+};
+
+
+
+
 
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]);
@@ -1777,6 +1865,8 @@ int main(int argc, char **argv)
     register_protocol(demod, &steffen);
     register_protocol(demod, &acurite5n1);
     register_protocol(demod, &lacrossetx);
+    register_protocol(demod, &mebus433);
+    register_protocol(demod, &intertechno);
 
     if (argc <= optind-1) {
         usage();
