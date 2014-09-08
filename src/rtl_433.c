@@ -220,11 +220,11 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
         fprintf(stderr, "Sensor event:\n");
         fprintf(stderr, "protocol       = Mebus/433\n");
-        fprintf(stderr, "address        = %i\n", bb[1][0] & 0b00011111); 
-        fprintf(stderr, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1); 
+        fprintf(stderr, "address        = %i\n", bb[1][0] & 0b00011111);
+        fprintf(stderr, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1);
         fprintf(stderr, "battery        = %s\n", bb[1][1] & 0b10000000?"Ok":"Low");
         fprintf(stderr, "unkown1        = %i\n",(bb[1][1] & 0b01000000) >> 6); // always 0?
-        fprintf(stderr, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111? 
+        fprintf(stderr, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111?
         fprintf(stderr, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "humidity       = %i%%\n", hum);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
@@ -252,7 +252,7 @@ static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         fprintf(stderr, "rid            = %x\n",bb[1][5]);
         fprintf(stderr, "rid            = %x\n",bb[1][6]);
         fprintf(stderr, "rid            = %x\n",bb[1][7]);
-        fprintf(stderr, "ADDR Slave     = %i\n",bb[1][7] & 0b00001111); 
+        fprintf(stderr, "ADDR Slave     = %i\n",bb[1][7] & 0b00001111);
         fprintf(stderr, "ADDR Master    = %i\n",(bb[1][7] & 0b11110000) >> 4);
 	fprintf(stderr, "command        = %i\n",(bb[1][6] & 0b00000111));
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
@@ -335,7 +335,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
-        
+
         fprintf(stderr, "Remote button event:\n");
         fprintf(stderr, "model   = Steffan Switch Transmitter\n");
 	fprintf(stderr, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
@@ -494,6 +494,134 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 1;
 }
 
+// ** Acurite 5n1 functions **
+
+const float acurite_winddirections[] =
+    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
+      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
+
+static int acurite_raincounter = 0;
+
+static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
+    // sum of first n-1 bytes modulo 256 should equal nth byte
+    int i;
+    int sum = 0;
+    for ( i=0; i < cols; i++)
+        sum += row[i];
+    if ( sum % 256 == row[cols] )
+        return 1;
+    else
+        return 0;
+}
+
+static int acurite_detect(uint8_t *pRow) {
+    int i;
+    if ( pRow[0] != 0x00 ) {
+        // invert bits due to wierd issue
+        for (i = 0; i < 8; i++)
+            pRow[i] = ~pRow[i] & 0xFF;
+        pRow[0] |= pRow[8];  // fix first byte that has mashed leading bit
+
+        if (acurite_crc(pRow, 7))
+            return 1;  // passes crc check
+    }
+    return 0;
+}
+
+static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
+    // range -40 to 158 F
+    int highbits = (highbyte & 0x0F) << 7 ;
+    int lowbits = lowbyte & 0x7F;
+    int rawtemp = highbits | lowbits;
+    float temp = (rawtemp - 400) / 10.0;
+    return temp;
+}
+
+static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
+    // range: 0 to 159 kph
+    int highbits = ( highbyte & 0x1F) << 3;
+    int lowbits = ( lowbyte & 0x70 ) >> 4;
+    int speed = highbits | lowbits;
+    return speed;
+}
+
+static float acurite_getWindDirection (uint8_t byte) {
+    // 16 compass points, ccw from (NNW) to 15 (N)
+    int direction = byte & 0x0F;
+    return acurite_winddirections[direction];
+}
+
+static int acurite_getHumidity (uint8_t byte) {
+    // range: 1 to 99 %RH
+    int humidity = byte & 0x7F;
+    return humidity;
+}
+
+static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
+    // range: 0 to 99.99 in, 0.01 in incr., rolling counter?
+    int highbits = (highbyte & 0x3F) << 7 ;
+    int lowbits = lowbyte & 0x7F;
+    int raincounter = highbits | lowbits;
+    return raincounter;
+}
+
+static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    // acurite 5n1 weather sensor decoding for rtl_433
+    // Jens Jensen 2014
+    int i;
+    uint8_t *buf = NULL;
+    // run through rows til we find one with good crc (brute force)
+    for (i=0; i < BITBUF_ROWS; i++) {
+        if (acurite_detect(bb[i])) {
+            buf = bb[i];
+            break; // done
+        }
+    }
+
+    if (buf) {
+        // decode packet here
+        fprintf(stderr, "Detected Acurite 5n1 sensor\n");
+        if (debug_output) {
+            for (i=0; i < 8; i++)
+                fprintf(stderr, "%02X ", buf[i]);
+            fprintf(stderr, "CRC OK\n");
+        }
+
+        if ((buf[2] & 0x0F) == 1) {
+            // wind speed, wind direction, rainfall
+
+            float rainfall = 0.00;
+            int raincounter = 0;
+            if (acurite_raincounter > 0) {
+                // track rainfall difference after first run
+                raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
+                rainfall = ( raincounter - acurite_raincounter ) * 0.01;
+            } else {
+                // capture starting counter
+                acurite_raincounter = raincounter;
+            }
+
+            fprintf(stderr, "wind speed: %d kph, ",
+                acurite_getWindSpeed(buf[3], buf[4]));
+            fprintf(stderr, "wind direction: %0.1f°, ",
+                acurite_getWindDirection(buf[4]));
+            fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
+
+        } else if ((buf[2] & 0x0F) == 8) {
+            // wind speed, temp, RH
+            fprintf(stderr, "wind speed: %d kph, ",
+                acurite_getWindSpeed(buf[3], buf[4]));
+            fprintf(stderr, "temp: %2.1f° F, ",
+                acurite_getTemp(buf[4], buf[5]));
+            fprintf(stderr, "humidity: %d% RH\n",
+                acurite_getHumidity(buf[6]));
+        }
+    }
+    //if (debug_output)
+    //   debug_callback(bb);
+    return 1;
+}
+
 
 // timings based on samp_rate=1024000
 r_device rubicson = {
@@ -597,8 +725,18 @@ r_device steffen = {
     /* .json_callback  = */ &steffen_callback,
 };
 
-r_device mebus433 = {
+r_device acurite5n1 = {
     /* .id             = */ 10,
+    /* .name           = */ "Acurite 5n1 Weather Station",
+    /* .modulation     = */ OOK_PWM_P,
+    /* .short_limit    = */ 75,
+    /* .long_limit     = */ 220,
+    /* .reset_limit    = */ 20000,
+    /* .json_callback  = */ &acurite5n1_callback,
+};
+
+r_device mebus433 = {
+    /* .id             = */ 11,
     /* .name           = */ "Mebus 433",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 300,
@@ -610,7 +748,7 @@ r_device mebus433 = {
 
 
 r_device intertechno = {
-    /* .id             = */ 11,
+    /* .id             = */ 12,
     /* .name           = */ "Intertechno 433",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 100,
@@ -619,8 +757,6 @@ r_device intertechno = {
     /* .json_callback  = */ &intertechno_callback,
     /* .json_callback  = */ //&debug_callback,
 };
-
-
 
 
 
@@ -1489,6 +1625,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &steffen);
     register_protocol(demod, &mebus433);
     register_protocol(demod, &intertechno);
+    register_protocol(demod, &acurite5n1);
 
     if (argc <= optind-1) {
         usage();
