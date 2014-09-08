@@ -533,7 +533,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
             fprintf(stderr, "wind speed: %d kph, ", 
                 acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "wind direction: %0.1f deg., ",
+            fprintf(stderr, "wind direction: %0.1f°, ",
                 acurite_getWindDirection(buf[4]));
             fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
 
@@ -541,7 +541,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
             // wind speed, temp, RH
             fprintf(stderr, "wind speed: %d kph, ", 
                 acurite_getWindSpeed(buf[3], buf[4]));          
-            fprintf(stderr, "temp: %2.1f F, ", 
+            fprintf(stderr, "temp: %2.1f° F, ", 
                 acurite_getTemp(buf[4], buf[5]));
             fprintf(stderr, "humidity: %d% RH\n", 
                 acurite_getHumidity(buf[6]));
