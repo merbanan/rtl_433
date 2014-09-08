@@ -198,6 +198,76 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
+
+
+static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+    int temperature_before_dec;
+    int temperature_after_dec;
+    int16_t temp;
+    int8_t  hum;
+
+    if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0b01100000) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
+	// Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+	// upper 4 bits of nibble 1 are reserved for other usages.
+        temp = (int16_t)((uint16_t)(bb[1][1] << 12 ) | bb[1][2]<< 4);
+        temp = temp >> 4;
+	// lower 4 bits of nibble 3 and upper 4 bits of nibble 4 contains
+	// humidity as decimal value
+	hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
+
+        temperature_before_dec = abs(temp / 10);
+        temperature_after_dec = abs(temp % 10);
+
+        fprintf(stderr, "Sensor event:\n");
+        fprintf(stderr, "protocol       = Mebus/433\n");
+        fprintf(stderr, "address        = %i\n", bb[1][0] & 0b00011111);
+        fprintf(stderr, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1);
+        fprintf(stderr, "battery        = %s\n", bb[1][1] & 0b10000000?"Ok":"Low");
+        fprintf(stderr, "unkown1        = %i\n",(bb[1][1] & 0b01000000) >> 6); // always 0?
+        fprintf(stderr, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111?
+        fprintf(stderr, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
+        fprintf(stderr, "humidity       = %i%%\n", hum);
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
+        return 1;
+    }
+    return 0;
+}
+
+
+static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+
+      //if (bb[1][1] == 0 && bb[1][0] != 0 && bb[1][3]==bb[2][3]){
+      if(bb[0][0]==0 && bb[0][0] == 0 && bb[1][0] == 0x56){
+        fprintf(stderr, "Switch event:\n");
+        fprintf(stderr, "protocol       = Intertechno\n");
+        fprintf(stderr, "rid            = %x\n",bb[1][0]);
+        fprintf(stderr, "rid            = %x\n",bb[1][1]);
+        fprintf(stderr, "rid            = %x\n",bb[1][2]);
+        fprintf(stderr, "rid            = %x\n",bb[1][3]);
+        fprintf(stderr, "rid            = %x\n",bb[1][4]);
+        fprintf(stderr, "rid            = %x\n",bb[1][5]);
+        fprintf(stderr, "rid            = %x\n",bb[1][6]);
+        fprintf(stderr, "rid            = %x\n",bb[1][7]);
+        fprintf(stderr, "ADDR Slave     = %i\n",bb[1][7] & 0b00001111);
+        fprintf(stderr, "ADDR Master    = %i\n",(bb[1][7] & 0b11110000) >> 4);
+	fprintf(stderr, "command        = %i\n",(bb[1][6] & 0b00000111));
+        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+
+        if (debug_output)
+            debug_callback(bb);
+
+        return 1;
+    }
+    return 0;
+}
+
+
+
+
 static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     int rid;
 
@@ -265,7 +335,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
-        
+
         fprintf(stderr, "Remote button event:\n");
         fprintf(stderr, "model   = Steffan Switch Transmitter\n");
 	fprintf(stderr, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
@@ -426,7 +496,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
 // ** Acurite 5n1 functions **
 
-const float acurite_winddirections[] = 
+const float acurite_winddirections[] =
     { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
       157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
 
@@ -436,33 +506,33 @@ static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
     int i;
     int sum = 0;
-    for ( i=0; i < cols; i++) 
-        sum += row[i]; 
-    if ( sum % 256 == row[cols] ) 
+    for ( i=0; i < cols; i++)
+        sum += row[i];
+    if ( sum % 256 == row[cols] )
         return 1;
-    else 
+    else
         return 0;
 }
 
 static int acurite_detect(uint8_t *pRow) {
     int i;
-    if ( pRow[0] != 0x00 ) {    
-        // invert bits due to wierd issue   
-        for (i = 0; i < 8; i++) 
+    if ( pRow[0] != 0x00 ) {
+        // invert bits due to wierd issue
+        for (i = 0; i < 8; i++)
             pRow[i] = ~pRow[i] & 0xFF;
         pRow[0] |= pRow[8];  // fix first byte that has mashed leading bit
 
-        if (acurite_crc(pRow, 7)) 
+        if (acurite_crc(pRow, 7))
             return 1;  // passes crc check
     }
-    return 0;   
+    return 0;
 }
 
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     // range -40 to 158 F
     int highbits = (highbyte & 0x0F) << 7 ;
     int lowbits = lowbyte & 0x7F;
-    int rawtemp = highbits | lowbits; 
+    int rawtemp = highbits | lowbits;
     float temp = (rawtemp - 400) / 10.0;
     return temp;
 }
@@ -488,7 +558,7 @@ static int acurite_getHumidity (uint8_t byte) {
 }
 
 static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
-    // range: 0 to 99.99 in, 0.01 in incr., rolling counter? 
+    // range: 0 to 99.99 in, 0.01 in incr., rolling counter?
     int highbits = (highbyte & 0x3F) << 7 ;
     int lowbits = lowbyte & 0x7F;
     int raincounter = highbits | lowbits;
@@ -511,7 +581,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     if (buf) {
         // decode packet here
         fprintf(stderr, "Detected Acurite 5n1 sensor\n");
-        if (debug_output) { 
+        if (debug_output) {
             for (i=0; i < 8; i++)
                 fprintf(stderr, "%02X ", buf[i]);
             fprintf(stderr, "CRC OK\n");
@@ -531,7 +601,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
                 acurite_raincounter = raincounter;
             }
 
-            fprintf(stderr, "wind speed: %d kph, ", 
+            fprintf(stderr, "wind speed: %d kph, ",
                 acurite_getWindSpeed(buf[3], buf[4]));
             fprintf(stderr, "wind direction: %0.1f°, ",
                 acurite_getWindDirection(buf[4]));
@@ -539,11 +609,11 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
         } else if ((buf[2] & 0x0F) == 8) {
             // wind speed, temp, RH
-            fprintf(stderr, "wind speed: %d kph, ", 
-                acurite_getWindSpeed(buf[3], buf[4]));          
-            fprintf(stderr, "temp: %2.1f° F, ", 
+            fprintf(stderr, "wind speed: %d kph, ",
+                acurite_getWindSpeed(buf[3], buf[4]));
+            fprintf(stderr, "temp: %2.1f° F, ",
                 acurite_getTemp(buf[4], buf[5]));
-            fprintf(stderr, "humidity: %d% RH\n", 
+            fprintf(stderr, "humidity: %d%% RH\n",
                 acurite_getHumidity(buf[6]));
         }
     }
@@ -660,10 +730,35 @@ r_device acurite5n1 = {
     /* .name           = */ "Acurite 5n1 Weather Station",
     /* .modulation     = */ OOK_PWM_P,
     /* .short_limit    = */ 75,
-    /* .long_limit     = */ 220, 
+    /* .long_limit     = */ 220,
     /* .reset_limit    = */ 20000,
     /* .json_callback  = */ &acurite5n1_callback,
 };
+
+r_device mebus433 = {
+    /* .id             = */ 11,
+    /* .name           = */ "Mebus 433",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 300,
+    /* .long_limit     = */ 600,
+    /* .reset_limit    = */ 1500,
+    /* .json_callback  = */ &mebus433_callback,
+    /* .json_callback  = */ //&debug_callback,
+};
+
+
+r_device intertechno = {
+    /* .id             = */ 12,
+    /* .name           = */ "Intertechno 433",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 100,
+    /* .long_limit     = */ 350,
+    /* .reset_limit    = */ 3000,
+    /* .json_callback  = */ &intertechno_callback,
+    /* .json_callback  = */ //&debug_callback,
+};
+
+
 
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
@@ -1528,6 +1623,8 @@ int main(int argc, char **argv)
     register_protocol(demod, &elv_ws2000);
     register_protocol(demod, &waveman);
     register_protocol(demod, &steffen);
+    register_protocol(demod, &mebus433);
+    register_protocol(demod, &intertechno);
     register_protocol(demod, &acurite5n1);
 
     if (argc <= optind-1) {
