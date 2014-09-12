@@ -143,7 +143,7 @@ static int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
-static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     /* FIXME validate the received message better */
     if (bb[1][0] == 0xF8 &&
         bb[2][0] == 0xF8 &&
@@ -155,7 +155,7 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         bb[4][1] == 0x4d) {
         /* Pretty sure this is a Silvercrest remote */
         fprintf(stderr, "Remote button event:\n");
-        fprintf(stderr, "model = Silvercrest\n");
+        fprintf(stderr, "model = Silvercrest, %d bits\n",bits_per_row[1]);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
 
         if (debug_output)
@@ -166,7 +166,7 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
-static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
@@ -185,7 +185,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol       = Rubicson/Auriol\n");
+        fprintf(stderr, "protocol       = Rubicson/Auriol, %d bits\n",bits_per_row[1]);
         fprintf(stderr, "rid            = %x\n",bb[0][0]);
         fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
@@ -198,7 +198,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
-static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     int rid;
 
     int16_t temp2;
@@ -212,7 +212,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
         temp2 = temp2 >> 4;
         fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol      = Prologue\n");
+        fprintf(stderr, "protocol      = Prologue, %d bits\n",bits_per_row[1]);
         fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
         fprintf(stderr, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
         fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
@@ -233,7 +233,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
-static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};
@@ -247,7 +247,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
         }
 
         fprintf(stderr, "Remote button event:\n");
-        fprintf(stderr, "model   = Waveman Switch Transmitter\n");
+        fprintf(stderr, "model   = Waveman Switch Transmitter, %d bits\n",bits_per_row[1]);
         fprintf(stderr, "id      = %c\n", 'A'+nb[0]);
         fprintf(stderr, "channel = %d\n", (nb[1]>>2)+1);
         fprintf(stderr, "button  = %d\n", (nb[1]&3)+1);
@@ -262,12 +262,12 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 0;
 }
 
-static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
         
         fprintf(stderr, "Remote button event:\n");
-        fprintf(stderr, "model   = Steffan Switch Transmitter\n");
+        fprintf(stderr, "model   = Steffan Switch Transmitter, %d bits\n",bits_per_row[1]);
 	fprintf(stderr, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
 
 	if ((bb[1][2]&0x0f)==0x0e)
@@ -309,7 +309,7 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     return val;
 }
 
-static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     // based on fs20.c
     uint8_t dec[10];
     uint8_t bytes=0;
@@ -351,7 +351,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
     // based on 15_CUL_EM.pm
     fprintf(stderr, "Energy sensor event:\n");
-    fprintf(stderr, "protocol      = ELV EM 1000\n");
+    fprintf(stderr, "protocol      = ELV EM 1000, %d bits\n",bits_per_row[1]);
     fprintf(stderr, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
     fprintf(stderr, "code          = %d\n",dec[1]);
     fprintf(stderr, "seqno         = %d\n",dec[2]);
@@ -362,7 +362,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     return 1;
 }
 
-static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     // based on http://www.dc3yc.privat.t-online.de/protocol.htm
     uint8_t dec[13];
     uint8_t nibbles=0;
@@ -412,7 +412,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 //for (i = 0; i < nibbles; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     fprintf(stderr, "Weather station sensor event:\n");
-    fprintf(stderr, "protocol      = ELV WS 2000\n");
+    fprintf(stderr, "protocol      = ELV WS 2000, %d bits\n",bits_per_row[1]);
     fprintf(stderr, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
     fprintf(stderr, "code          = %d\n", dec[1]&7);
     fprintf(stderr, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
@@ -495,7 +495,7 @@ static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
     return raincounter;
 }
 
-static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
     // acurite 5n1 weather sensor decoding for rtl_433
     // Jens Jensen 2014
     int i;
@@ -510,7 +510,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
     if (buf) {
         // decode packet here
-        fprintf(stderr, "Detected Acurite 5n1 sensor\n");
+        fprintf(stderr, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
         if (debug_output) { 
             for (i=0; i < 8; i++)
                 fprintf(stderr, "%02X ", buf[i]);
@@ -666,7 +666,7 @@ r_device acurite5n1 = {
 };
 
 struct protocol_state {
-    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
+    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]);
 
     /* bits state */
     int bits_col_idx;
@@ -1240,7 +1240,7 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                events+=p->callback(p->bits_buffer);
+                events+=p->callback(p->bits_buffer, p->bits_per_row);
             else
                 demod_print_bits_packet(p);
 
@@ -1306,7 +1306,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             //demod_print_bits_packet(p);
             if (p->callback)
-                events+=p->callback(p->bits_buffer);
+                events+=p->callback(p->bits_buffer, p->bits_per_row);
             else
                 demod_print_bits_packet(p);
             demod_reset_bits_packet(p);
