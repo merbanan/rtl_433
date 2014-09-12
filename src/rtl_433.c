@@ -487,11 +487,9 @@ static int acurite_getHumidity (uint8_t byte) {
     return humidity;
 }
 
-static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
+static int acurite_getRainfallCounter (uint8_t byte) {
     // range: 0 to 99.99 in, 0.01 in incr., rolling counter? 
-    int highbits = (highbyte & 0x3F) << 7 ;
-    int lowbits = lowbyte & 0x7F;
-    int raincounter = highbits | lowbits;
+    int raincounter = byte & 0x7F;
     return raincounter;
 }
 
@@ -524,7 +522,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
             int raincounter = 0;
             if (acurite_raincounter > 0) {
                 // track rainfall difference after first run
-                raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
+                raincounter = acurite_getRainfallCounter(buf[6]);
                 rainfall = ( raincounter - acurite_raincounter ) * 0.01;
             } else {
                 // capture starting counter
@@ -660,8 +658,8 @@ r_device acurite5n1 = {
     /* .name           = */ "Acurite 5n1 Weather Station",
     /* .modulation     = */ OOK_PWM_P,
     /* .short_limit    = */ 75,
-    /* .long_limit     = */ 220, 
-    /* .reset_limit    = */ 20000,
+    /* .long_limit     = */ 240, 
+    /* .reset_limit    = */ 21000,
     /* .json_callback  = */ &acurite5n1_callback,
 };
 
