@@ -592,16 +592,24 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	   fprintf(stderr, "Weather Sensor RGR968   Rain Gauge  Rain Rate: %2.0fmm/hr Total Rain %3.0fmm\n", rain_rate, total_rain);
 	   }
 	   return 1;
-        } else if (sensor_id == 0xec40) {
-           if (  validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
-               int  channel = ((msg[2] >> 4)&0x0f);
-               if (channel == 4)
-                   channel = 3; // sensor 3 channel number is 0x04
-               float temp_c = get_os_temperature(msg, sensor_id);
-               if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THR228N Channel %d ", channel);
-               fprintf(stderr, "Temp: %3.1fâC  %3.1fâF\n", temp_c, ((temp_c*9)/5)+32);
-           }
-	   return 1;
+	} else if (sensor_id == 0xec40 && num_valid_v2_bits==153) {
+		if (  validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
+			int  channel = ((msg[2] >> 4)&0x0f);
+			if (channel == 4)
+				channel = 3; // sensor 3 channel number is 0x04
+			float temp_c = get_os_temperature(msg, sensor_id);
+			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THR228N Channel %d ", channel);
+			fprintf(stderr, "Temp: %3.1fâC  %3.1fâF\n", temp_c, ((temp_c*9)/5)+32);
+		}
+		return 1;
+	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
+		if (  validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
+			int  channel = ((msg[2] >> 4)&0x0f);
+			float temp_c = get_os_temperature(msg, sensor_id);
+			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N Channel %d, ", channel);
+			fprintf(stderr, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
+		}
+		return 1;
 	} else if (num_valid_v2_bits > 16) {
 fprintf(stderr, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
 fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr,"\n\n");
