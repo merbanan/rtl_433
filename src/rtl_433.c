@@ -963,9 +963,10 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
 		if (  validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
 			int  channel = ((msg[2] >> 4)&0x0f);
+			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
 			float temp_c = get_os_temperature(msg, sensor_id);
-			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N Channel %d, ", channel);
-			fprintf(stderr, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
+			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Rolling-code 0x%0X, ", channel, rolling_code);
+			fprintf(stderr, "TempC %3.1f, TempF %3.1f\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
 	} else if (num_valid_v2_bits > 16) {
