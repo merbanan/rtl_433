@@ -62,6 +62,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -426,9 +427,9 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
 // ** Acurite 5n1 functions **
 
-const float acurite_winddirections[] = 
-    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
-      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
+const char* acurite_winddirections[] =
+    { "NW", "WSW", "WNW", "W", "NNW", "SW", "N", "SSW",
+      "ENE", "SE", "E", "ESE", "NE", "SSE", "NNE", "S" };
 
 static int acurite_raincounter = 0;
 
@@ -472,10 +473,13 @@ static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
     int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
     int speed = highbits | lowbits;
+    // TODO: sensor does not seem to be in kph, e.g.,
+    // a value of 49 here was registered as 41 kph on base unit
+    // value could be rpm, etc which may need (polynomial) scaling factor??
     return speed;
 }
 
-static float acurite_getWindDirection (uint8_t byte) {
+static char* acurite_getWindDirection (uint8_t byte) {
     // 16 compass points, ccw from (NNW) to 15 (N)
     int direction = byte & 0x0F;
     return acurite_winddirections[direction];
@@ -487,11 +491,9 @@ static int acurite_getHumidity (uint8_t byte) {
     return humidity;
 }
 
-static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
+static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
     // range: 0 to 99.99 in, 0.01 in incr., rolling counter? 
-    int highbits = (highbyte & 0x3F) << 7 ;
-    int lowbits = lowbyte & 0x7F;
-    int raincounter = highbits | lowbits;
+    int raincounter = (hibyte & 0x7f) << 7 | lobyte & 0x7F;
     return raincounter;
 }
 
@@ -521,10 +523,9 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
             // wind speed, wind direction, rainfall
 
             float rainfall = 0.00;
-            int raincounter = 0;
+            int raincounter = acurite_getRainfallCounter(buf[5],buf[6]);
             if (acurite_raincounter > 0) {
                 // track rainfall difference after first run
-                raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
                 rainfall = ( raincounter - acurite_raincounter ) * 0.01;
             } else {
                 // capture starting counter
@@ -533,7 +534,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
             fprintf(stderr, "wind speed: %d kph, ", 
                 acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "wind direction: %0.1f°, ",
+            fprintf(stderr, "wind direction: %s, ",
                 acurite_getWindDirection(buf[4]));
             fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
 
@@ -659,9 +660,9 @@ r_device acurite5n1 = {
     /* .id             = */ 10,
     /* .name           = */ "Acurite 5n1 Weather Station",
     /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 75,
-    /* .long_limit     = */ 220, 
-    /* .reset_limit    = */ 20000,
+    /* .short_limit    = */ 70,
+    /* .long_limit     = */ 240, 
+    /* .reset_limit    = */ 21000,
     /* .json_callback  = */ &acurite5n1_callback,
 };
 
