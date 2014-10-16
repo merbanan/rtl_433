@@ -62,6 +62,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -426,9 +427,9 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
 // ** Acurite 5n1 functions **
 
-const float acurite_winddirections[] = 
-    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
-      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
+const char* acurite_winddirections[] =
+    { "NW", "WSW", "WNW", "W", "NNW", "SW", "N", "SSW",
+      "ENE", "SE", "E", "ESE", "NE", "SSE", "NNE", "S" };
 
 static int acurite_raincounter = 0;
 
@@ -472,10 +473,13 @@ static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
     int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
     int speed = highbits | lowbits;
+    // TODO: sensor does not seem to be in kph, e.g.,
+    // a value of 49 here was registered as 41 kph on base unit
+    // value could be rpm, etc which may need (polynomial) scaling factor??
     return speed;
 }
 
-static float acurite_getWindDirection (uint8_t byte) {
+static char* acurite_getWindDirection (uint8_t byte) {
     // 16 compass points, ccw from (NNW) to 15 (N)
     int direction = byte & 0x0F;
     return acurite_winddirections[direction];
@@ -530,7 +534,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 
             fprintf(stderr, "wind speed: %d kph, ", 
                 acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "wind direction: %0.1f°, ",
+            fprintf(stderr, "wind direction: %s, ",
                 acurite_getWindDirection(buf[4]));
             fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
 
