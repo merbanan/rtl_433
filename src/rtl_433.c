@@ -565,7 +565,7 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
          float temp_c = get_os_temperature(msg, sensor_id);
 		 if (sensor_id == 0x1d20) fprintf(stderr, "Weather Sensor THGR122N Channel %d ", channel);
 		 else fprintf(stderr, "Weather Sensor THGR968  Outdoor   ");
-		 fprintf(stderr, "Temp: %3.1f°C  %3.1f°F   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
+		 fprintf(stderr, "Temp: %3.1fÂ°C  %3.1fÂ°F   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
 	   }
 	   return 1;  
     } else if (sensor_id == 0x5d60) {
@@ -581,7 +581,7 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	     else if (forecast == 6)   forecast_str = "Partly Cloudy";
 	     else if (forecast == 0xc) forecast_str = "Sunny";
          float temp_c = get_os_temperature(msg, 0x5d60);
-	     fprintf(stderr,"Weather Sensor BHTR968  Indoor    Temp: %3.1f°C  %3.1f°F   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));  
+	     fprintf(stderr,"Weather Sensor BHTR968  Indoor    Temp: %3.1fÂ°C  %3.1fÂ°F   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));  
 	     fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);  
 	   }
 	   return 1;
@@ -599,16 +599,19 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 				channel = 3; // sensor 3 channel number is 0x04
 			float temp_c = get_os_temperature(msg, sensor_id);
 			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THR228N Channel %d ", channel);
-			fprintf(stderr, "Temp: %3.1fâC  %3.1fâF\n", temp_c, ((temp_c*9)/5)+32);
+			fprintf(stderr, "Temp: %3.1fÂ°C  %3.1fÂ°F\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
 		if (  validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
-			int  channel = ((msg[2] >> 4)&0x0f);
+                        int  channel = ((msg[2] >> 4)&0x0f);
+			if (channel == 4)
+				channel = 3; // sensor 3 channel number is 0x04
+                        int battery_low = (msg[3] >> 2 & 0x01);       
 			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
 			float temp_c = get_os_temperature(msg, sensor_id);
-			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Rolling-code 0x%0X, ", channel, rolling_code);
-			fprintf(stderr, "TempC %3.1f, TempF %3.1f\n", temp_c, ((temp_c*9)/5)+32);
+			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
+			fprintf(stderr, "Temp: %3.1fÂ°C  %3.1fÂ°F\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
 	} else if (num_valid_v2_bits > 16) {
@@ -679,7 +682,7 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	     int  channel = ((msg[2] >> 4)&0x0f);
 	     float temp_c = get_os_temperature(msg, 0xf824);
 		 int humidity = get_os_humidity(msg, 0xf824);
-		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1f°C  %3.1f°F   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
+		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1fÂ°C  %3.1fÂ°F   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
 	   }
 	   return 1;
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
