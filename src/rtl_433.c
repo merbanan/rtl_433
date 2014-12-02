@@ -149,7 +149,7 @@ static int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
     fprintf(stderr, "\n");
     for (i=0 ; i<BITBUF_ROWS ; i++) {
 	if (!rows_used[i]) {
-	    break;
+	    continue;
 	}
 
         fprintf(stderr, "[%02d] ",i);
