@@ -695,6 +695,16 @@ r_device acurite5n1 = {
     /* .json_callback  = */ &acurite5n1_callback,
 };
 
+r_device lacrossetx = {
+    /* .id             = */ 11,
+    /* .name           = */ "LaCrosse TX7U Temperature and Humidity Sensor",
+    /* .modulation     = */ OOK_PWM_P,
+    /* .short_limit    = */ 238,
+    /* .long_limit     = */ 750,
+    /* .reset_limit    = */ 8000, 
+    /* .json_callback  = */ &debug_callback,
+};
+
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]);
 
@@ -1300,6 +1310,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
             /* end of startbit */
             p->real_bits = 1;
+	    p->sample_counter = 0;
 //            fprintf(stderr, "start bit pulse end detected\n");
         }
         if (p->start_c) p->sample_counter++;
@@ -1317,7 +1328,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 
             p->pulse_length = p->sample_counter-p->pulse_start;
 //           fprintf(stderr, "real bit pulse end detected %d\n", p->pulse_length);
-//           fprintf(stderr, "space duration %d\n", p->sample_counter);
+//           fprintf(stderr, "space duration %d\n", p->sample_counter - p->pulse_length);
 
             if (p->pulse_length <= p->short_limit) {
                 demod_add_bit(p, 1);
@@ -1563,6 +1574,7 @@ int main(int argc, char **argv)
     register_protocol(demod, &waveman);
     register_protocol(demod, &steffen);
     register_protocol(demod, &acurite5n1);
+    register_protocol(demod, &lacrossetx);
 
     if (argc <= optind-1) {
         usage();
