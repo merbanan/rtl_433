@@ -685,7 +685,19 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1f°C  %3.1f°F   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
 	   }
 	   return 1;
-    } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
+    } else if ((msg[0] >= 0x50) && (msg[0] <= 0x59) && (msg[1] & 0x01 == 0x01 ) ) 
+     { 
+       fprintf(stderr, "\n");
+       fprintf(stderr,"\n\n");       
+         fprintf(stderr, "Energy sensor  OWL CM160 event:\n");
+         fprintf(stderr, "protocol      = Oregon Scientific v3\n");
+         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4); 
+         fprintf(stderr, "current measurement reading value   = %.0f\n", rawAmp);
+         fprintf(stderr, "current watts (230v)   = %.0f, %.0f, %.0f\n", rawAmp /(0.7*230)*1000);
+         fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n");
+         fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr, "\n");
+     } 
+     else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
 fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");	
 fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n");
 fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");       
