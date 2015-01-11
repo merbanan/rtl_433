@@ -1173,8 +1173,10 @@ static void classify_signal() {
                 }
             }
         }
-        min_new = min_new / count_min;
-        max_new = max_new / count_max;
+        if (count_min != 0 && count_max != 0) {
+            min_new = min_new / count_min;
+            max_new = max_new / count_max;
+        }
 
         delta = (min - min_new)*(min - min_new) + (max - max_new)*(max - max_new);
         min = min_new;
@@ -1191,7 +1193,7 @@ static void classify_signal() {
         }
     }
     /* 50% decision limit */
-    if (max/min > 1) {
+    if (min != 0 && max/min > 1) {
         fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
         signal_type = 2;
     } else {
