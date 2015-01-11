@@ -601,7 +601,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
                 acurite_getWindSpeed(buf[3], buf[4]));          
             fprintf(stderr, "temp: %2.1f° F, ", 
                 acurite_getTemp(buf[4], buf[5]));
-            fprintf(stderr, "humidity: %d% RH\n", 
+            fprintf(stderr, "humidity: %d%% RH\n", 
                 acurite_getHumidity(buf[6]));
         }
     }
