@@ -44,10 +44,10 @@ typedef struct {
     unsigned int    short_limit;
     unsigned int    long_limit;
     unsigned int    reset_limit;
-    int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS]) ;
+    int     (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) ;
 } r_device;
 
 static int debug_output = 0;
-int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS]);
+int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
 
 #endif /* INCLUDE_RTL_433_H_ */

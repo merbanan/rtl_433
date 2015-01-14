@@ -22,7 +22,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
         fprintf(stderr, "%02x %02x %02x\n",nb[0],nb[1],nb[2]);
 
         if (debug_output)
-            debug_callback(bb);
+            debug_callback(bb, bits_per_row);
 
         return 1;
     }

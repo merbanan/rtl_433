@@ -36,7 +36,7 @@ static uint16_t scaled_squares[256];
 static int override_short = 0;
 static int override_long = 0;
 
-int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
+int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
     int i,j,k;
     int rows_used[BITBUF_ROWS];
     int col_max = 0;
