@@ -49,7 +49,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
         fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
         if (debug_output)
-            debug_callback(bb);
+            debug_callback(bb, bits_per_row);
 
         return 1;
     }

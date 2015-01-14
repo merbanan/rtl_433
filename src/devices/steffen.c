@@ -28,7 +28,7 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
         }
 
         if (debug_output)
-            debug_callback(bb);
+            debug_callback(bb, bits_per_row);
 
         return 1;
     }
