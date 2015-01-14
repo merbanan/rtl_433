@@ -1,10 +1,3 @@
-/*
- * rtl_433.h
- *
- *  Created on: Jan 13, 2015
- *      Author: helgew
- */
-
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
