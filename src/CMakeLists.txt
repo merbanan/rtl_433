@@ -1,4 +1,4 @@
-# Copyrigh 2012 OSMOCOM Project
+# Copyright 2012 OSMOCOM Project
 #
 # This file is part of rtl-sdr
 #
