@@ -35,6 +35,7 @@ static rtlsdr_dev_t *dev = NULL;
 static uint16_t scaled_squares[256];
 static int override_short = 0;
 static int override_long = 0;
+int debug_output = 0;
 
 int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
     int i,j,k;
@@ -118,7 +119,7 @@ r_device technoline_ws9118 = {
     /* .short_limit    = */ 1800/4,
     /* .long_limit     = */ 3500/4,
     /* .reset_limit    = */ 15000/4,
-    /* .json_callback  = */ &debug_callback,
+    // /* .json_callback  = */ &debug_callback,
 };
 
 struct protocol_state {
