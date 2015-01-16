@@ -81,7 +81,8 @@ add_executable(rtl_433
 	devices/steffen.c
 	devices/elv.c
 	devices/lacrosse.c
-	devices/acurite.c)
+	devices/acurite.c
+	devices/oregon_scientific)
 	
 set(INSTALL_TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom rtl_adsb rtl_433)
 

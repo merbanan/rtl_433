@@ -127,6 +127,18 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
     return 1;
 }
 
+static int acurite_rain_gauge_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
+    if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
+	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
+		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
+        fprintf(stderr, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
+		fprintf(stderr, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        return 1;
+    }
+    return 0;
+}
+
 r_device acurite5n1 = {
     /* .id             = */ 10,
     /* .name           = */ "Acurite 5n1 Weather Station",
@@ -135,4 +147,14 @@ r_device acurite5n1 = {
     /* .long_limit     = */ 220,
     /* .reset_limit    = */ 20000,
     /* .json_callback  = */ &acurite5n1_callback,
+};
+
+r_device acurite_rain_gauge = {
+    /* .id             = */ 10,
+    /* .name           = */ "Acurite 896 Rain Gauge",
+    /* .modulation     = */ OOK_PWM_D,
+    /* .short_limit    = */ 1744/4,
+    /* .long_limit     = */ 3500/4,
+    /* .reset_limit    = */ 5000/4,
+    /* .json_callback  = */ &acurite_rain_gauge_callback,
 };
