@@ -39,3 +39,8 @@ CMakeCache.txt
 */CMakeFiles
 CMakeFiles
 *.cmake
+
+build/
+.cproject
+.settings
+.project
