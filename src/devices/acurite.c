@@ -45,7 +45,10 @@ static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
 
 static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
     // range: 0 to 159 kph
-    int highbits = ( highbyte & 0x1F) << 3;
+	// TODO: sensor does not seem to be in kph, e.g.,
+	// a value of 49 here was registered as 41 kph on base unit
+	// value could be rpm, etc which may need (polynomial) scaling factor??
+	int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
     int speed = highbits | lowbits;
     return speed;
@@ -63,11 +66,9 @@ static int acurite_getHumidity (uint8_t byte) {
     return humidity;
 }
 
-static int acurite_getRainfallCounter (uint8_t highbyte, uint8_t lowbyte) {
+static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
     // range: 0 to 99.99 in, 0.01 in incr., rolling counter?
-    int highbits = (highbyte & 0x3F) << 7 ;
-    int lowbits = lowbyte & 0x7F;
-    int raincounter = highbits | lowbits;
+	int raincounter = ((hibyte & 0x7f) << 7) | (lobyte & 0x7F);
     return raincounter;
 }
 
@@ -121,9 +122,13 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
             fprintf(stderr, "humidity: %d%% RH\n",
                 acurite_getHumidity(buf[6]));
         }
+    } else {
+    	return 0;
     }
-    //if (debug_output)
-    //   debug_callback(bb);
+
+    if (debug_output)
+    	debug_callback(bb, bits_per_row);
+
     return 1;
 }
 
@@ -143,9 +148,9 @@ r_device acurite5n1 = {
     /* .id             = */ 10,
     /* .name           = */ "Acurite 5n1 Weather Station",
     /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 75,
-    /* .long_limit     = */ 220,
-    /* .reset_limit    = */ 20000,
+    /* .short_limit    = */ 70,
+    /* .long_limit     = */ 240,
+    /* .reset_limit    = */ 21000,
     /* .json_callback  = */ &acurite5n1_callback,
 };
 
