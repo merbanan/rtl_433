@@ -92,34 +92,44 @@ int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BI
     return 0;
 }
 
-r_device tech_line_fws_500 = {
-    /* .id             = */ 4,
-    /* .name           = */ "Tech Line FWS-500 Sensor",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 3500 / 4,
-    /* .long_limit     = */ 7000 / 4,
-    /* .reset_limit    = */ 15000 / 4,
-    // /* .json_callback  = */ &rubicson_callback,
-};
+static int acurite_th_detect(uint8_t *buf){
+    if(buf[5] != 0) return 0;
+    uint8_t sum = (buf[0] + buf[1] + buf[2] + buf[3]) & 0xff;
+    if(sum == 0) return 0;
+    return sum == buf[4];
+}
+static float acurite_th_temperature(uint8_t *s){
+    uint16_t shifted = (((s[1] & 0x0f) << 8) | s[2]) << 4; // Logical left shift
+    return (((int16_t)shifted) >> 4) / 10.0; // Arithmetic right shift
+}
+static int acurite_th_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+    uint8_t *buf = NULL;
+    int i;
+    for(i = 0; i < BITBUF_ROWS; i++){
+	if(acurite_th_detect(bb[i])){
+            buf = bb[i];
+            break;
+        }
+    }
+    if(buf){
+        fprintf(stderr, "Temperature event:\n");
+        fprintf(stderr, "protocol      = Acurite Temp&Humidity\n");
+        fprintf(stderr, "temp          = %.1f°C\n", acurite_th_temperature(buf));
+        fprintf(stderr, "humidity      = %d%%\n\n", buf[3]);
+        return 1;
+    }
 
-r_device generic_hx2262 = {
-    /* .id             = */ 5,
-    /* .name           = */ "Window/Door sensor",
-    /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 1300 / 4,
-    /* .long_limit     = */ 10000 / 4,
-    /* .reset_limit    = */ 40000 / 4,
-    // /* .json_callback  = */ &silvercrest_callback,
-};
+    return 0;
+}
 
-r_device technoline_ws9118 = {
-    /* .id             = */ 6,
-    /* .name           = */ "Technoline WS9118",
+r_device acurite_th = {
+    /* .id             = */ 11,
+    /* .name           = */ "Acurite Temperature and Humidity Sensor",
     /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 1800 / 4,
-    /* .long_limit     = */ 3500 / 4,
-    /* .reset_limit    = */ 15000 / 4,
-    // /* .json_callback  = */ &debug_callback,
+    /* .short_limit    = */ 300,
+    /* .long_limit     = */ 550,
+    /* .reset_limit    = */ 2500,
+    /* .json_callback  = */ &acurite_th_callback,
 };
 
 struct protocol_state {
@@ -1033,8 +1043,7 @@ int main(int argc, char **argv) {
     register_protocol(demod, &steffen);
     register_protocol(demod, &acurite5n1);
     register_protocol(demod, &lacrossetx);
-    register_protocol(demod, &alectov1);
-    register_protocol(demod, &newkaku);
+    register_protocol(demod, &acurite_th);
 
     if (argc <= optind - 1) {
         usage();
