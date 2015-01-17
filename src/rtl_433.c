@@ -1002,8 +1002,14 @@ int main(int argc, char **argv) {
     register_protocol(demod, &waveman);
     register_protocol(demod, &steffen);
     register_protocol(demod, &acurite5n1);
-    register_protocol(demod, &lacrossetx);
     register_protocol(demod, &acurite_th);
+    register_protocol(demod, &acurite_rain_gauge);
+    register_protocol(demod, &lacrossetx);
+    register_protocol(demod, &oregon_scientific);
+    register_protocol(demod, &newkaku);
+    register_protocol(demod, &alectov1);
+    register_protocol(demod, &intertechno);
+    register_protocol(demod, &mebus433);
 
     if (argc <= optind - 1) {
         usage();
