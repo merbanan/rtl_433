@@ -1,12 +1,3 @@
-Added newKaKu protocol (on/off/dimm switches)
-Added AlectoV1 protocol (weatherstations)
-Added now possible to check bits send in 1 stream
-
-Pull requests send to meriban
-
-
-
-
 rtl_433, turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 ======================================================================
 
@@ -40,6 +31,18 @@ Usage:  [-d device_index (default: 0)]
 This software is mostly useable for developers right now.
 
 ## Supported Devices
-
-* Added support for Mebus/433 Sensors (YD8210BH)
-
+Rubicson Temperature Sensor
+Silvercrest Remote Control
+ELV EM 1000
+ELV WS 2000
+Waveman Switch Transmitter
+Steffen Switch Transmitter
+Acurite 5n1 Weather Station
+Acurite Temperature and Humidity Sensor
+Acurite 896 Rain Gauge
+LaCrosse TX Temperature / Humidity Sensor
+Oregon Scientific Weather Sensor
+KlikAanKlikUit Wireless Switch
+AlectoV1 Weather Sensor
+Intertechno 433
+Mebus 433
