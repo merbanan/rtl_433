@@ -24,6 +24,7 @@ install-sh
 stamp-h1
 libtool
 Doxyfile
+build
 
 .tarball-version
 .version
@@ -39,3 +40,10 @@ CMakeCache.txt
 */CMakeFiles
 CMakeFiles
 *.cmake
+
+build/
+.cproject
+.settings
+.project
+
+*.orig
