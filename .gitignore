@@ -45,3 +45,5 @@ build/
 .cproject
 .settings
 .project
+
+*.orig
