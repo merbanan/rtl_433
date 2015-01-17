@@ -1,3 +1,12 @@
+Added newKaKu protocol (on/off/dimm switches)
+Added AlectoV1 protocol (weatherstations)
+Added now possible to check bits send in 1 stream
+
+Pull requests send to meriban
+
+
+
+
 rtl_433, turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 ======================================================================
 
