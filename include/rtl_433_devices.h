@@ -11,6 +11,7 @@ extern r_device elv_ws2000;
 extern r_device lacrossetx;
 extern r_device acurite5n1;
 extern r_device acurite_rain_gauge;
+extern r_device acurite_th;
 extern r_device oregon_scientific;
 extern r_device mebus433;
 extern r_device intertechno;
