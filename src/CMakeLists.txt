@@ -84,7 +84,9 @@ add_executable(rtl_433
 	devices/acurite.c
 	devices/oregon_scientific.c
 	devices/mebus.c
-	devices/intertechno.c)
+	devices/intertechno.c
+	devices/alecto.c
+	devices/newkaku.c)
 	
 set(INSTALL_TARGETS rtlsdr_shared rtlsdr_static rtl_sdr rtl_tcp rtl_test rtl_fm rtl_eeprom rtl_adsb rtl_433)
 

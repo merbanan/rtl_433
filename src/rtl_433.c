@@ -92,273 +92,6 @@ int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BI
     return 0;
 }
 
-static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-    /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
-    /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
-    /*start pulse: 1T high, 10.44T low */
-    /*- 26 bit:  Address */
-    /*- 1  bit:  group bit*/
-    /*- 1  bit:  Status bit on/off/[dim]*/
-    /*- 4  bit:  unit*/
-    /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
-    /*- stop pulse: 1T high, 40T low */
-    int i;
-    uint8_t tmp = 0;
-    uint8_t unit = 0;
-    uint8_t packet = 0;
-    uint8_t bitcount = 0;
-    uint32_t kakuid = 0;
-
-    if (bb[0][0] == 0xac) {//allways starts with ac
-        // first bit is from startbit sequence, not part of payload!
-        // check protocol if value is 10 or 01, else stop processing as it is no vallid KAKU packet!
-        //get id=24bits, remember 1st 1 bit = startbit, no payload!
-        for (packet = 0; packet < 6; packet++) {//get first part kakuid
-            tmp = bb[0][packet] << 1;
-            if ((bb[0][packet + 1]&(1 << 7)) != 0) {// if set add bit to current
-                tmp++;
-            }
-
-            for (bitcount = 0; bitcount < 8; bitcount += 2) {//process bitstream, check protocol!
-
-                if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                    //add 1
-                    kakuid = kakuid << 1;
-                    kakuid++;
-                } else
-                    if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                    kakuid = kakuid << 1;
-                    //add 0
-                } else {
-                    return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-                }
-            }
-        }
-        tmp = bb[0][6] << 1; //Get last part ID
-        for (bitcount = 0; bitcount < 4; bitcount += 2) {
-            if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                //add 1
-                kakuid = kakuid << 1;
-                kakuid++;
-            } else
-                if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                //= add bit on kakuid
-                kakuid = kakuid << 1;
-                //add 0
-            } else {
-                //fprintf(stderr, " Packet error, no newkaku!!\n", tmp << bitcount);
-                return 0; //00 and 11 indicates packet error. no valid packet! do exit
-            }
-        }
-        //Get unit ID
-        tmp = bb[0][7] << 1;
-        if ((bb[0][8]&(1 << 7)) != 0) {// if set add bit to current
-            tmp++;
-        }
-        for (bitcount = 0; bitcount < 8; bitcount += 2) {//process bitstream, check protocol!
-            if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                //add 1
-                unit = unit << 1;
-                unit++;
-            } else
-                if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                unit = unit << 1;
-                //add 0
-            } else {
-                return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-            }
-        }
-        fprintf(stderr, "NewKaku event:\n");
-        fprintf(stderr, "Model      = NewKaKu on/off/dimmer switch\n");
-        fprintf(stderr, "KakuId     = %d (H%.2X)\n", kakuid, kakuid);
-        fprintf(stderr, "Unit       = %d (H%.2X)\n", unit, unit);
-        fprintf(stderr, "Group Call = %s\n", (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No");
-        fprintf(stderr, "Command    = %s\n", (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off");
-        if (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0x80)) {//11 indicates DIM command, 4 extra bits indicate DIM value
-            fprintf(stderr, "Dim        = Yes\n");
-            tmp = bb[0][8] << 1; // get packet, loose first bit
-            uint8_t dv = 0;
-            if ((bb[0][9]&(1 << 7)) != 0) {// if bit is set Add to current packet
-                tmp++;
-                for (bitcount = 0; bitcount < 8; bitcount += 2) {//process last bit outside
-                    if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                        //add 1
-                        dv = dv << 1;
-                        dv++;
-                    } else
-                        if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                        dv = dv << 1;
-                        //add 0
-                    } else {
-                        return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-                    }
-                }
-            }
-            fprintf(stderr, "Dim Value  = %d\n", dv);
-        } else {
-            fprintf(stderr, "Dim        = No\n");
-            fprintf(stderr, "Dim Value  = 0\n");
-        }
-        fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-                bb[0][0], bb[0][1], bb[0][2], bb[0][3], bb[0][4], bb[0][5], bb[0][6], bb[0][7], bb[0][8]);
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-        return 1;
-    }
-    return 0;
-}
-
-/* Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
- * Message Format: (9 nibbles, 36 bits):
- * Please note that bytes need to be reversed before processing!
- *
- * Format for Temperature Humidity
- *   AAAAAAAA BBBB CCCC CCCC CCCC DDDDDDDD EEEE
- *   RC       Type Temperature___ Humidity Checksum
- *   A = Rolling Code / Device ID
- *       Device ID: AAAABBAA BB is used for channel, base channel is 01
- *       When channel selector is used, channel can be 10 (2) and 11 (3)
- *   B = Message type (xyyz = temp/humidity if yy <> '11') else wind/rain sensor
- *       x indicates battery status (0 normal, 1 voltage is below ~2.6 V)
- *       z 0 indicates regular transmission, 1 indicates requested by pushbutton
- *   C = Temperature (two's complement)
- *   D = Humidity BCD format
- *   E = Checksum
- *
- * Format for Rain
- *   AAAAAAAA BBBB CCCC DDDD DDDD DDDD DDDD EEEE
- *   RC       Type      Rain                Checksum
- *   A = Rolling Code /Device ID
- *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
- *   C = fixed to 1100
- *   D = Rain (bitvalue * 0.25 mm)
- *   E = Checksum
- *
- * Format for Windspeed
- *   AAAAAAAA BBBB CCCC CCCC CCCC DDDDDDDD EEEE
- *   RC       Type                Windspd  Checksum
- *   A = Rolling Code
- *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
- *   C = Fixed to 1000 0000 0000
- *   D = Windspeed  (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
- *   E = Checksum
- *
- * Format for Winddirection & Windgust
- *   AAAAAAAA BBBB CCCD DDDD DDDD EEEEEEEE FFFF
- *   RC       Type      Winddir   Windgust Checksum
- *   A = Rolling Code
- *   B = Message type (xyyx = NON temp/humidity data if yy = '11')
- *   C = Fixed to 111
- *   D = Wind direction
- *   E = Windgust (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
- *   F = Checksum
- *********************************************************************************************
- */
-uint8_t reverse8(uint8_t x) {
-    x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
-    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
-    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
-    return x;
-}
-
-uint8_t bcd_decode8(uint8_t x) {
-    return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
-}
-
-static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-    int temperature_before_dec;
-    int temperature_after_dec;
-    int16_t temp;
-    uint8_t humidity, csum = 0, csum2 = 0;
-    int i;
-    if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
-            && (bb[5][0] != 0 && bb[5][1] != 0)) {
-
-        for (i = 0; i < 4; i++) {
-            uint8_t tmp = reverse8(bb[1][i]);
-            csum += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
-
-            tmp = reverse8(bb[5][i]);
-            csum2 += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
-        }
-
-        csum = ((bb[1][1] & 0x7f) == 0x6c) ? (csum + 0x7) : (0xf - csum);
-        csum2 = ((bb[5][1] & 0x7f) == 0x6c) ? (csum2 + 0x7) : (0xf - csum2);
-
-        csum = reverse8((csum & 0xf) << 4);
-        csum2 = reverse8((csum2 & 0xf) << 4);
-        /* Quit if checksup does not work out */
-        if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
-            fprintf(stderr, "\nAlectoV1 CRC error");
-            return 0;
-        } //Invalid checksum
-
-
-        uint8_t wind = 0;
-
-        if ((bb[1][1] & 0xe0) == 0x60) {
-            wind = ((bb[1][1] & 0xf) == 0xc) ? 0 : 1;
-
-            fprintf(stderr, "\nSensor        = %s event\n", wind ? "Wind" : "Rain gauge");
-            fprintf(stderr, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
-            fprintf(stderr, "Device        = %d\n", reverse8(bb[1][0]));
-            fprintf(stderr, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
-            fprintf(stderr, "Battery       = %s\n", bb[1][1]&0x80 ? "Low" : "OK");
-            if (wind) {
-                int skip = -1;
-                /* Untested code written according to the specification, may not decode correctly  */
-                if ((bb[1][1]&0xe) == 0x8 && bb[1][2] == 0) {
-                    skip = 0;
-                } else if ((bb[1][1]&0xe) == 0xe) {
-                    skip = 4;
-                } //According to supplied data!
-                if (skip >= 0) {
-                    double speed = reverse8(bb[1 + skip][3]);
-                    double gust = reverse8(bb[5 + skip][3]);
-                    int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
-                    fprintf(stderr, "Wind speed    = %.0f units = %.2f m/s\n", speed, speed * 0.2);
-                    fprintf(stderr, "Wind gust     = %.0f units = %.2f m/s\n", gust, gust * 0.2);
-                    fprintf(stderr, "Direction     = %.2i degrees\n", direction);
-                }
-            } else {
-                /* Untested code written according to the specification, may not decode correctly  */
-                double rain_mm = (reverse8(bb[1][2]) + (reverse8(bb[1][3] << 8))) * 0.25;
-                fprintf(stderr, "Rainfall      = %f\n", rain_mm);
-            }
-        } else if (bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] && bb[4][0] == bb[5][0] &&
-                bb[5][0] == bb[6][0] && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
-            //static char * temp_states[4] = {"stable", "increasing", "decreasing", "invalid"};
-            temp = (int16_t) ((uint16_t) (reverse8(bb[1][1]) >> 4) | (reverse8(bb[1][2]) << 4));
-            if ((temp & 0x800) != 0) {
-                temp |= 0xf000;
-            }
-            temperature_before_dec = abs(temp / 10);
-            temperature_after_dec = abs(temp % 10);
-            humidity = bcd_decode8(reverse8(bb[1][3]));
-            fprintf(stderr, "\nSensor        = Temperature event\n");
-            fprintf(stderr, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
-            fprintf(stderr, "Device        = %d\n", reverse8(bb[1][0]));
-            fprintf(stderr, "Channel       = %d\n", (bb[1][0] & 0xc) >> 2);
-            fprintf(stderr, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
-            fprintf(stderr, "Battery       = %s\n", bb[1][1]&0x80 ? "Low" : "OK");
-            fprintf(stderr, "Temp          = %s%d.%d\n", temp < 0 ? "-" : "", temperature_before_dec, temperature_after_dec);
-            fprintf(stderr, "Humidity      = %d\n", humidity);
-        }
-        fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
-
-        fprintf(stderr, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
-        if (wind) fprintf(stderr, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
-        /*
-         * fprintf(stderr, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
-         */
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
-        return 1;
-    }
-    return 0;
-}
-
 r_device tech_line_fws_500 = {
     /* .id             = */ 4,
     /* .name           = */ "Tech Line FWS-500 Sensor",
@@ -387,27 +120,6 @@ r_device technoline_ws9118 = {
     /* .long_limit     = */ 3500 / 4,
     /* .reset_limit    = */ 15000 / 4,
     // /* .json_callback  = */ &debug_callback,
-};
-
-r_device newkaku = {
-    /* .id             = */ 11,
-    /* .name           = */ "New KlikAanKlikUit protocol, on/off events ass well as DIM",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 200,
-    /* .long_limit     = */ 800,
-    /* .reset_limit    = */ 4000,
-    /* .json_callback  = */ &newkaku_callback,
-};
-
-//Timing based on 250000
-r_device alectov1 = {
-    /* .id             = */ 11,
-    /* .name           = */ "AlectoV1 Weather Sensor",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 3500/4, //875
-    /* .long_limit     = */ 7000/4, //1750
-    /* .reset_limit    = */ 15000/4, //3750
-    /* .json_callback  = */ &alectov1_callback,
 };
 
 struct protocol_state {
@@ -1061,28 +773,28 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 }
 
 /*  Machester Decode for Oregon Scientific Weather Sensors
-   Decode data streams sent by Oregon Scientific v2.1, and v3 weather sensors.  
+   Decode data streams sent by Oregon Scientific v2.1, and v3 weather sensors.
    With manchester encoding, both the pulse width and pulse distance vary.  Clock sync
-   is recovered from the data stream based on pulse widths and distances exceeding a 
-   minimum threashold (short limit* 1.5). 
+   is recovered from the data stream based on pulse widths and distances exceeding a
+   minimum threashold (short limit* 1.5).
  */
 static void manchester_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
 
 	if (p->sample_counter == 0)
 	    p->sample_counter = p->short_limit*2;
-		
+
     for (i=0 ; i<len ; i++) {
-	
-	    if (p->start_c) 
-		    p->sample_counter++; /* For this decode type, sample counter is count since last data bit recorded */			
+
+	    if (p->start_c)
+		    p->sample_counter++; /* For this decode type, sample counter is count since last data bit recorded */
 
         if (!p->pulse_count && (buf[i] > demod->level_limit)) { /* Pulse start (rising edge) */
             p->pulse_count = 1;
 			if (p->sample_counter  > (p->short_limit + (p->short_limit>>1))) {
 			   /* Last bit was recorded more than short_limit*1.5 samples ago */
 			   /* so this pulse start must be a data edge (rising data edge means bit = 0) */
-               demod_add_bit(p, 0);			   
+               demod_add_bit(p, 0);
 			   p->sample_counter=1;
 			   p->start_c++; // start_c counts number of bits received
 			}
@@ -1091,7 +803,7 @@ static void manchester_decode(struct dm_state *demod, struct protocol_state* p, 
 		    if (p->sample_counter > (p->short_limit + (p->short_limit>>1))) {
 		       /* Last bit was recorded more than "short_limit*1.5" samples ago */
 			   /* so this pulse end is a data edge (falling data edge means bit = 1) */
-               demod_add_bit(p, 1);				   
+               demod_add_bit(p, 1);
 			   p->sample_counter=1;
 			   p->start_c++;
 			}
@@ -1099,7 +811,7 @@ static void manchester_decode(struct dm_state *demod, struct protocol_state* p, 
         }
 
         if (p->sample_counter > p->reset_limit) {
-	//fprintf(stderr, "manchester_decode number of bits received=%d\n",p->start_c); 
+	//fprintf(stderr, "manchester_decode number of bits received=%d\n",p->start_c);
 		   if (p->callback)
               events+=p->callback(p->bits_buffer, p->bits_per_row);
            else
