@@ -378,7 +378,7 @@ static void classify_signal() {
         }
     }
     /* 50% decision limit */
-    if (max / min > 1) {
+    if (min != 0 && max / min > 1) {
         fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
         signal_type = 2;
     } else {
