@@ -173,11 +173,11 @@ void usage(void) {
 BOOL WINAPI
 sighandler(int signum) {
     if (CTRL_C_EVENT == signum) {
-		if (signum == SIGPIPE) {
+        if (signum == SIGPIPE) {
             signal(SIGPIPE,SIG_IGN);
-		} else {
+        } else {
             fprintf(stderr, "Signal caught, exiting!\n");
-		}
+        }
         do_exit = 1;
         rtlsdr_cancel_async(dev);
         return TRUE;
