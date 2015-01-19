@@ -17,6 +17,7 @@ config.log
 config.status
 config.guess
 configure
+compile
 depcomp
 missing
 ltmain.sh
@@ -24,7 +25,7 @@ install-sh
 stamp-h1
 libtool
 Doxyfile
-build
+.dirstamp
 
 .tarball-version
 .version
@@ -37,9 +38,6 @@ src/rtl_sdr
 src/rtl_tcp
 
 CMakeCache.txt
-*/CMakeFiles
-CMakeFiles
-*.cmake
 
 build/
 .cproject

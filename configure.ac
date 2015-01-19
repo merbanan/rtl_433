@@ -1,8 +1,8 @@
-AC_INIT([librtlsdr],
+AC_INIT([rtl433],
         m4_esyscmd([./git-version-gen .tarball-version]),
-        [osmocom-sdr@lists.osmocom.org])
+        [rtl_433@googlegroups.com])
 
-AM_INIT_AUTOMAKE([dist-bzip2])
+AM_INIT_AUTOMAKE([dist-bzip2 subdir-objects])
 
 dnl kernel style compile messages
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
@@ -14,9 +14,9 @@ AC_PROG_INSTALL
 LT_INIT
 AC_PROG_LIBTOOL
 
-PKG_CHECK_MODULES(LIBUSB, libusb-1.0 >= 1.0)
-LIBS="$LIBS $LIBUSB_LIBS"
-CFLAGS="$CFLAGS $LIBUSB_CFLAGS"
+PKG_CHECK_MODULES(LIBRTLSDR, librtlsdr)
+LIBS="$LIBS $LIBRTLSDR_LIBS"
+CFLAGS="$CFLAGS $LIBRTLSDR_CFLAGS"
 
 AC_PATH_PROG(DOXYGEN,doxygen,false)
 AM_CONDITIONAL(HAVE_DOXYGEN, test $DOXYGEN != false)
@@ -26,24 +26,12 @@ AC_CONFIG_MACRO_DIR([m4])
 dnl checks for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/types.h)
-AC_CHECK_HEADERS(pthread.h,, [AC_MSG_ERROR([pthread.h required])])
 
 # pc variables
 AC_SUBST(RTLSDR_PC_LIBS,["$LIBS"])
 AC_SUBST(RTLSDR_PC_CFLAGS,["$CFLAGS"])
 
 dnl checks for required libraries
-dnl pthreads
-AC_CHECK_LIB(pthread, pthread_create, [LIBS="$LIBS -lpthread"])
-
-dnl libmath (for rtl_fm)
-AC_CHECK_LIB(m, atan2, [LIBS="$LIBS -lm"])
-
-dnl libmath (for rtl_adsb)
-AC_CHECK_LIB(m, sqrt, [LIBS="$LIBS -lm"])
-
-dnl librealtime (for rtl_test)
-AC_CHECK_LIB(rt, clock_gettime, [LIBS="$LIBS -lrt"])
 
 # The following test is taken from WebKit's webkit.m4
 saved_CFLAGS="$CFLAGS"
@@ -68,7 +56,7 @@ dnl Generate the output
 AM_CONFIG_HEADER(config.h)
 
 AC_OUTPUT(
-	librtlsdr.pc
+	rtl433.pc
 	include/Makefile
 	src/Makefile
 	Makefile

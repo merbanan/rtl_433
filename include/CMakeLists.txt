@@ -21,7 +21,7 @@
 # Install public header files
 ########################################################################
 install(FILES
-    rtl-sdr.h
-    rtl-sdr_export.h
+    rtl_433.h
+    rtl_433_devices.h
     DESTINATION include
 )
