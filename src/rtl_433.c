@@ -695,6 +695,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
             /* end of startbit */
             p->real_bits = 1;
+            p->sample_counter = 0;
             //            fprintf(stderr, "start bit pulse end detected\n");
         }
         if (p->start_c) p->sample_counter++;
