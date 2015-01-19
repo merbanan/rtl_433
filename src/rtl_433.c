@@ -173,7 +173,11 @@ void usage(void) {
 BOOL WINAPI
 sighandler(int signum) {
     if (CTRL_C_EVENT == signum) {
-        fprintf(stderr, "Signal caught, exiting!\n");
+        if (signum == SIGPIPE) {
+            signal(SIGPIPE,SIG_IGN);
+        } else {
+            fprintf(stderr, "Signal caught, exiting!\n");
+        }
         do_exit = 1;
         rtlsdr_cancel_async(dev);
         return TRUE;
@@ -374,7 +378,7 @@ static void classify_signal() {
         }
     }
     /* 50% decision limit */
-    if (max / min > 1) {
+    if (min != 0 && max / min > 1) {
         fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
         signal_type = 2;
     } else {
@@ -691,6 +695,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
             /* end of startbit */
             p->real_bits = 1;
+            p->sample_counter = 0;
             //            fprintf(stderr, "start bit pulse end detected\n");
         }
         if (p->start_c) p->sample_counter++;
