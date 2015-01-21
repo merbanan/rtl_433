@@ -46,14 +46,15 @@ static float acurite_getTemp(uint8_t highbyte, uint8_t lowbyte) {
 	return temp;
 }
 
-static int acurite_getWindSpeed(uint8_t highbyte, uint8_t lowbyte) {
+static double acurite_getWindSpeed(uint8_t highbyte, uint8_t lowbyte) {
 	// range: 0 to 159 kph
-	// TODO: sensor does not seem to be in kph, e.g.,
-	// a value of 49 here was registered as 41 kph on base unit
-	// value could be rpm, etc which may need (polynomial) scaling factor??
-	int highbits = (highbyte & 0x1F) << 3;
-	int lowbits = (lowbyte & 0x70) >> 4;
-	int speed = highbits | lowbits;
+	int highbits = (highbyte & 0x7F) << 3;
+	int lowbits = (lowbyte & 0x7F) >> 4;
+	double speed = highbits | lowbits;
+	// speed formula according to empirical data
+	if (speed > 0) {
+		speed = speed * 0.23 + 0.28;
+	}
 	return speed;
 }
 
@@ -99,9 +100,12 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			fprintf(stderr, "CRC OK\n");
 		}
 
-		if ((buf[2] & 0x0F) == 1) {
-			// wind speed, wind direction, rainfall
+		fprintf(stderr, "wind speed: %0.2f m/s, ",
+				acurite_getWindSpeed(buf[3], buf[4]));
 
+		int type = (buf[2] & 0x3F);
+		if (type == 49) {
+			// wind speed, wind direction, rainfall
 			float rainfall = 0.00;
 			int raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
 			if (acurite_raincounter > 0) {
@@ -112,16 +116,12 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 				acurite_raincounter = raincounter;
 			}
 
-			fprintf(stderr, "wind speed: %d kph, ",
-					acurite_getWindSpeed(buf[3], buf[4]));
 			fprintf(stderr, "wind direction: %0.1f°, ",
 					acurite_getWindDirection(buf[4]));
 			fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
 
-		} else if ((buf[2] & 0x0F) == 8) {
+		} else if (type == 56) {
 			// wind speed, temp, RH
-			fprintf(stderr, "wind speed: %d kph, ",
-					acurite_getWindSpeed(buf[3], buf[4]));
 			fprintf(stderr, "temp: %2.1f° F, ",
 					acurite_getTemp(buf[4], buf[5]));
 			fprintf(stderr, "humidity: %d%% RH\n", acurite_getHumidity(buf[6]));
