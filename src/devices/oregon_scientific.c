@@ -297,8 +297,8 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 	   return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
 	} else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
 	   if (validate_os_checksum(msg, 17) == 0) {
-	   float CurWindspeed = (((msg[6]>>4)*100)+((msg[5] &0x0f)*10) + ((msg[5]>>4) &0x0f))/10.0F;
-	   float AvWindspeed = ((((msg[8]>>4)*100)+((msg[7] &0x0f)*10) + ((msg[7]>>4) &0x0f)))/10.0F;
+	   float CurWindspeed = (((msg[6]>>4)*100)+((msg[5] &0x0f)*10) + ((msg[5]>>4) &0x0f))/100.0F;
+	   float AvWindspeed = ((((msg[8]>>4)*100)+((msg[7] &0x0f)*10) + ((msg[7]>>4) &0x0f)))/100.0F;
            float quadrant = msg[8]*22.5;
 	   fprintf(stderr, "Weather Sensor WGR800 Wind Gauge // Current Wind Speed : %2.0f m/s // Average Wind Speed : %3.0f m/s Wind direction %4.0f dgrs \n", CurWindspeed, AvWindspeed, quadrant);
 	   }
