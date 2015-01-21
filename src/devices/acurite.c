@@ -2,8 +2,8 @@
 
 // ** Acurite 5n1 functions **
 
-const float acurite_winddirections[] = { 337.5, 315.0, 292.5, 270.0, 247.5,
-		225.0, 202.5, 180, 157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
+const float acurite_winddirections[] = { 270.0, 67.5, 292.5, 45.0, 337.5, 0.0,
+		315.0, 22.5, 247.5, 225.0, 112.5, 180.0, 157.5, 202.5, 135.0 };
 
 static int acurite_raincounter = 0;
 
