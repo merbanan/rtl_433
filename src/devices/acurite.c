@@ -2,8 +2,11 @@
 
 // ** Acurite 5n1 functions **
 
-const float acurite_winddirections[] = { 337.5, 315.0, 292.5, 270.0, 247.5,
-		225.0, 202.5, 180, 157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
+// as per Jens Jensen <zerog2k@yahoo.com> it should be
+// { "NW", "WSW", "WNW", "W", "NNW", "SW", "N", "SSW",
+//   "ENE", "SE", "E", "ESE", "NE", "SSE", "NNE", "S" };
+const float acurite_winddirections[] = { 315.0, 247.5, 292.5, 270.0, 337.5,
+		225.0, 0.0, 202.5, 67.5, 135.0, 90.0, 112.5, 45.0, 157.5, 22.5, 180.0 };
 
 static int acurite_raincounter = 0;
 
