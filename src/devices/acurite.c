@@ -121,14 +121,19 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 
 			fprintf(stderr, "wind direction: %0.1f°, ",
 					acurite_getWindDirection(buf[4]));
-			fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
+			fprintf(stderr, "rain gauge: %0.2f in., ", rainfall);
 
 		} else if (type == 56) {
 			// wind speed, temp, RH
 			fprintf(stderr, "temp: %2.1f° F, ",
 					acurite_getTemp(buf[4], buf[5]));
-			fprintf(stderr, "humidity: %d%% RH\n", acurite_getHumidity(buf[6]));
+			fprintf(stderr, "humidity: %d%% RH, ", acurite_getHumidity(buf[6]));
 		}
+
+		int battery = ((buf[2] & 0x40) >> 6);
+		char* bstatus[] = { "LOW", "OK" };
+		fprintf(stderr, "battery: %s\n", bstatus[battery]);
+
 	} else {
 		return 0;
 	}
