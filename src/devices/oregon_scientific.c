@@ -300,7 +300,7 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 	   float CurWindspeed = (((msg[6]>>4)*100)+((msg[5] &0x0f)*10) + ((msg[5]>>4) &0x0f))/10.0F;
 	   float AvWindspeed = ((((msg[8]>>4)*100)+((msg[7] &0x0f)*10) + ((msg[7]>>4) &0x0f)))/10.0F;
            float quadrant = msg[8]*22.5;
-	   fprintf(stderr, "Weather Sensor WGR800 Wind Gauge // Current Wind Speed : %2.0f km/h // Average Wind Speed : %3.0f km/h Wind direction %4.0f dgrs \n", CurWindspeed, AvWindspeed, quadrant);
+	   fprintf(stderr, "Weather Sensor WGR800 Wind Gauge // Current Wind Speed : %2.0f m/s // Average Wind Speed : %3.0f m/s Wind direction %4.0f dgrs \n", CurWindspeed, AvWindspeed, quadrant);
 	   }
 	   return 1;
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
