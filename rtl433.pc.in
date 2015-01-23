@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: RTL-433 Utility
+Description: C Utility
+Version: @VERSION@
+Cflags: -I${includedir}/ @RTL433_PC_CFLAGS@
