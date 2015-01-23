@@ -169,15 +169,10 @@ void usage(void) {
 }
 
 #ifdef _WIN32
-
 BOOL WINAPI
 sighandler(int signum) {
     if (CTRL_C_EVENT == signum) {
-        if (signum == SIGPIPE) {
-            signal(SIGPIPE,SIG_IGN);
-        } else {
-            fprintf(stderr, "Signal caught, exiting!\n");
-        }
+        fprintf(stderr, "Signal caught, exiting!\n");
         do_exit = 1;
         rtlsdr_cancel_async(dev);
         return TRUE;
@@ -185,9 +180,12 @@ sighandler(int signum) {
     return FALSE;
 }
 #else
-
 static void sighandler(int signum) {
-    fprintf(stderr, "Signal caught, exiting!\n");
+    if (signum == SIGPIPE) {
+        signal(SIGPIPE,SIG_IGN);
+    } else {
+        fprintf(stderr, "Signal caught, exiting!\n");
+    }
     do_exit = 1;
     rtlsdr_cancel_async(dev);
 }
