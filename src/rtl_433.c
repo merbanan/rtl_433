@@ -996,7 +996,7 @@ int main(int argc, char **argv) {
 
     /* init protocols somewhat ok */
     register_protocol(demod, &rubicson);
-    //    register_protocol(demod, &prologue);
+    register_protocol(demod, &prologue);
     register_protocol(demod, &silvercrest);
     //    register_protocol(demod, &generic_hx2262);
     //    register_protocol(demod, &technoline_ws9118);
