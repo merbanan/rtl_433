@@ -69,3 +69,9 @@ Supported Devices
     AlectoV1 Weather Sensor
     Intertechno 433
     Mebus 433
+
+Google Group
+------------
+
+https://groups.google.com/forum/#!forum/rtl_433
+
