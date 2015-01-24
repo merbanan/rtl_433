@@ -5,19 +5,13 @@ INCLUDES = $(all_includes) -I$(top_srcdir)/include
 SUBDIRS = include src
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = librtlsdr.pc
+pkgconfig_DATA = rtl433.pc
 
 BUILT_SOURCES = $(top_srcdir)/.version
 $(top_srcdir)/.version:
 	echo $(VERSION) > $@-t && mv $@-t $@
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
-
-install-udev-rules:
-	$(INSTALL_DATA) rtl-sdr.rules /etc/udev/rules.d
-
-uninstall-udev-rules:
-	rm -rf /etc/udev/rules.d/rtl-sdr.rules
 
 EXTRA_DIST = git-version-gen
 
