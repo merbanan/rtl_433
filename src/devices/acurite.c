@@ -114,10 +114,10 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			if (acurite_raincounter > 0) {
 				// track rainfall difference after first run
 				rainfall = (raincounter - acurite_raincounter) * 0.01;
-			} else {
-				// capture starting counter
-				acurite_raincounter = raincounter;
 			}
+
+			// capture starting counter
+			acurite_raincounter = raincounter;
 
 			fprintf(stderr, "wind direction: %0.1f°, ",
 					acurite_getWindDirection(buf[4]));
