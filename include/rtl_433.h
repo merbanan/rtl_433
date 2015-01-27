@@ -38,7 +38,7 @@
 #define     OOK_PWM_D		1   /* Pulses are of the same length, the distance varies (PPM) */
 #define     OOK_PWM_P		2   /* The length of the pulses varies */
 #define     OOK_MANCHESTER	3	/* Manchester code */
-#define     OOK_PWM_RAW		4   /* Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0 */
+#define     OOK_PWM_RAW	    4   /* Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0 */
 
 typedef struct {
     unsigned int    id;
