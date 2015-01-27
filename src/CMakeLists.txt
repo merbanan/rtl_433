@@ -30,7 +30,8 @@ add_executable(rtl_433
 	devices/mebus.c
 	devices/intertechno.c
 	devices/alecto.c
-	devices/newkaku.c)
+	devices/newkaku.c
+	devices/fineoffset.c)
 
 target_link_libraries(rtl_433
 	${LIBRTLSDR_LIBRARIES}
