@@ -45,3 +45,4 @@ build/
 .project
 
 *.orig
+*~
