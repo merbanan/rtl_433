@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define LEN(x)  (sizeof(x) / sizeof(x[0]))
+#define LEN(x)  (int) (sizeof(x) / sizeof(x[0]))
 
 char* float_to_str(float f);
 void print_delimited(char *quote, ...);
@@ -146,8 +146,6 @@ char* float_to_str(float f) {
 		s += 1;
 	}
 
-	fprintf(stderr, "allocating %d for %.2f\n", s, f);
-
 	char* str = malloc(s * sizeof(char));
 	sprintf(str, "%.2f", f);
 
@@ -157,11 +155,12 @@ char* float_to_str(float f) {
 void print_delimited(char *quote, ...) {
 	int n = strlen(quote);
 	char *str;
+	int i;
 
 	va_list args;
 	va_start(args, quote);
 
-	for (int i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		str = va_arg(args, char*);
 		if (quote[i] == '1' && str[0] != '\0') {
 			printf("\"%s\"", str);
@@ -178,7 +177,8 @@ void print_delimited(char *quote, ...) {
 }
 
 void print_header(int size, char* headers[]) {
-	for (int i = 0; i < size; i++) {
+	int i;
+	for (i = 0; i < size; i++) {
 		printf("\"%s\"", headers[i]);
 		if (i + 1 < size) {
 			printf(",");

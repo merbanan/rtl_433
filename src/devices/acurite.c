@@ -1,4 +1,5 @@
 #include "rtl_433.h"
+#include "device_reports.h"
 
 // ** Acurite 5n1 functions **
 
@@ -73,7 +74,7 @@ static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
 }
 
 static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
-    // acurite 5n1 weather sensor decoding for rtl_433
+	// acurite 5n1 weather sensor decoding for rtl_433
     // Jens Jensen 2014
     int i;
     uint8_t *buf = NULL;
@@ -86,13 +87,23 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
     }
 
     if (buf) {
+
+    	r_device_details_t *VN1TXC = get_device_details();
+    	VN1TXC->name = "VN1TXC";
+    	VN1TXC->id = malloc(5 * sizeof(char));
+    	sprintf(VN1TXC->id, "%02X%02X", buf[0], buf[1]);
+
+    	VN1TXC->channel = (~buf[0] & 0xC0) >> 6;
+
         // decode packet here
-        fprintf(stderr, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
         if (debug_output) {
+            fprintf(stderr, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
             for (i=0; i < 8; i++)
                 fprintf(stderr, "%02X ", buf[i]);
             fprintf(stderr, "CRC OK\n");
         }
+
+        weather_report_t *report = get_weather_report();
 
         if ((buf[2] & 0x0F) == 1) {
             // wind speed, wind direction, rainfall
@@ -102,26 +113,23 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
             if (acurite_raincounter > 0) {
                 // track rainfall difference after first run
                 rainfall = ( raincounter - acurite_raincounter ) * 0.01;
-            } else {
-                // capture starting counter
-                acurite_raincounter = raincounter;
             }
 
-            fprintf(stderr, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "wind direction: %0.1f°, ",
-                acurite_getWindDirection(buf[4]));
-            fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
+			// capture starting counter
+			acurite_raincounter = raincounter;
+
+            report->wind_speed = acurite_getWindSpeed(buf[3], buf[4]);
+            report->wind_direction = acurite_getWindDirection(buf[4]);
+            report->rainfall = in_to_mm(rainfall);
 
         } else if ((buf[2] & 0x0F) == 8) {
             // wind speed, temp, RH
-            fprintf(stderr, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "temp: %2.1f° F, ",
-                acurite_getTemp(buf[4], buf[5]));
-            fprintf(stderr, "humidity: %d%% RH\n",
-                acurite_getHumidity(buf[6]));
+            report->wind_speed = acurite_getWindSpeed(buf[3], buf[4]);
+            report->outdoor_temperature = fahrenheit_to_celcius(acurite_getTemp(buf[4], buf[5]));
+            report->outdoor_humidity = acurite_getHumidity(buf[6]);
         }
+
+        print_weather_report(VN1TXC, report);
     } else {
     	return 0;
     }

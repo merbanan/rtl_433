@@ -18,6 +18,7 @@
 ########################################################################
 add_executable(rtl_433 
 	rtl_433.c
+	device_reports.c
 	devices/silvercrest.c
 	devices/rubicson.c
 	devices/prologue.c
