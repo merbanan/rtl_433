@@ -177,6 +177,23 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 	     fprintf(stderr,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));
 	     fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
 	   }
+	 } else if (sensor_id == 0x5d53) {
+		 if (validate_os_v2_message(msg, 185, num_valid_v2_bits, 19) == 0) {
+			 unsigned int comfort = msg[7] >>4;
+			  char *comfort_str="Normal";
+	     		if      (comfort == 4)   comfort_str = "Comfortable";
+			 else if (comfort == 8)   comfort_str = "Dry";
+	     		else if (comfort == 0xc) comfort_str = "Humid";
+	     unsigned int forecast = msg[9]>>4;
+	     char *forecast_str="Sunny";
+	     if      (forecast == 3)   forecast_str = "Rainy";
+	     else if (forecast == 6)   forecast_str = "Partly Cloudy";
+	     else if (forecast == 0xc) forecast_str = "Cloudy";
+         float temp_c = get_os_temperature(msg, 0x5d53);
+	     fprintf(stderr,"Weather Sensor BTHGN 129    Temp: %3.1fÂ°C  %3.1fÂ°F   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d53));  
+	     fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);  
+	   }
+	   return 1;
 	   return 1;
 	} else if (sensor_id == 0x2d10) {
 	   if (validate_os_v2_message(msg, 161, num_valid_v2_bits, 16) == 0) {
@@ -280,9 +297,10 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 	   return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
 	} else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
 	   if (validate_os_checksum(msg, 17) == 0) {
-	     float gustWindspeed = (msg[11]+msg[10])/100;
-             float quadrant = msg[8]*22.5;
-	   fprintf(stderr, "Weather Sensor WGR800   Wind Gauge  Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", gustWindspeed, quadrant);
+	   float CurWindspeed = (((msg[6]>>4)*100)+((msg[5] &0x0f)*10) + ((msg[5]>>4) &0x0f))/100.0F;
+	   float AvWindspeed = ((((msg[8]>>4)*100)+((msg[7] &0x0f)*10) + ((msg[7]>>4) &0x0f)))/100.0F;
+           float quadrant = msg[8]*22.5;
+	   fprintf(stderr, "Weather Sensor WGR800 Wind Gauge // Current Wind Speed : %2.0f m/s // Average Wind Speed : %3.0f m/s Wind direction %4.0f dgrs \n", CurWindspeed, AvWindspeed, quadrant);
 	   }
 	   return 1;
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
