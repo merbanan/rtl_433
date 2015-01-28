@@ -15,6 +15,32 @@ unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
  return humidity;
 }
 
+unsigned int get_os_rollingcode(unsigned char *message, unsigned int sensor_id){
+   int rc = 0;
+   rc = (message[2]&0x0F) + (message[3]&0xF0);
+   return rc;
+}
+
+unsigned short int power(const unsigned char* d){
+  unsigned short int val = 0;
+  val += d[4] << 8;
+  val += d[3];
+  //fprintf(stderr, "Power: %x %d", val, val);
+  return val & 0xFFF0 ;
+}
+
+unsigned long total(const unsigned char* d){
+  unsigned long val = 0;
+  if ( (d[1]&0x0F) == 0 ){
+    // Sensor returns total only if nibble#4 == 0
+    val = (unsigned long)d[8]<<24;
+    val += (unsigned long)d[7] << 16;
+    val += d[6] << 8;
+    val += d[5];
+  }
+  return val ;
+}
+
 static int validate_os_checksum(unsigned char *msg, int checksum_nibble_idx) {
   // Oregon Scientific v2.1 and v3 checksum is a  1 byte  'sum of nibbles' checksum.
   // with the 2 nibbles of the checksum byte  swapped.
@@ -126,9 +152,13 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 	     if (channel == 4)
 	       channel = 3; // sensor 3 channel number is 0x04
          float temp_c = get_os_temperature(msg, sensor_id);
-		 if (sensor_id == 0x1d20) fprintf(stderr, "Weather Sensor THGR122N Channel %d ", channel);
+         unsigned int rc = get_os_rollingcode(msg, sensor_id);
+		 if (sensor_id == 0x1d20) {
+            fprintf(stderr, "Weather Sensor THGR122N RC %x Channel %d ", rc, channel);
+            //fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", msg[i]); 
+         }
 		 else fprintf(stderr, "Weather Sensor THGR968  Outdoor   ");
-		 fprintf(stderr, "Temp: %3.1f¬∞C  %3.1f¬∞F   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
+		 fprintf(stderr, "Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
 	   }
 	   return 1;
     } else if (sensor_id == 0x5d60) {
@@ -144,7 +174,7 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 	     else if (forecast == 6)   forecast_str = "Partly Cloudy";
 	     else if (forecast == 0xc) forecast_str = "Sunny";
          float temp_c = get_os_temperature(msg, 0x5d60);
-	     fprintf(stderr,"Weather Sensor BHTR968  Indoor    Temp: %3.1f¬∞C  %3.1f¬∞F   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));
+	     fprintf(stderr,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));
 	     fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
 	   }
 	   return 1;
@@ -162,7 +192,7 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 				channel = 3; // sensor 3 channel number is 0x04
 			float temp_c = get_os_temperature(msg, sensor_id);
 			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THR228N Channel %d ", channel);
-			fprintf(stderr, "Temp: %3.1f¬∞C  %3.1f¬∞F\n", temp_c, ((temp_c*9)/5)+32);
+			fprintf(stderr, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
@@ -174,7 +204,7 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], i
 			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
 			float temp_c = get_os_temperature(msg, sensor_id);
 			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
-			fprintf(stderr, "Temp: %3.1f¬∞C  %3.1f¬∞F\n", temp_c, ((temp_c*9)/5)+32);
+			fprintf(stderr, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
 	} else if (num_valid_v2_bits > 16) {
@@ -192,62 +222,62 @@ fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", ms
 static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
 
    // Check stream for possible Oregon Scientific v3 protocol data (skip part of first and last bytes to get past sync/startup bit errors)
-   if ((((bb[0][0]&0xf) == 0x0f) && (bb[0][1] == 0xff) && ((bb[0][2]&0xc0) == 0xc0)) ||
+    if ((((bb[0][0]&0xf) == 0x0f) && (bb[0][1] == 0xff) && ((bb[0][2]&0xc0) == 0xc0)) ||
        (((bb[0][0]&0xf) == 0x00) && (bb[0][1] == 0x00) && ((bb[0][2]&0xc0) == 0x00))) {
-	  int i,j;
-	  unsigned char msg[BITBUF_COLS] = {0};
-	  unsigned int sync_test_val = (bb[0][2]<<24) | (bb[0][3]<<16) | (bb[0][4]<<8);
-	  int dest_bit = 0;
-	  int pattern_index;
-	  // Could be extra/dropped bits in stream.  Look for sync byte at expected position +/- some bits in either direction
-      for(pattern_index=0; pattern_index<16; pattern_index++) {
-        unsigned int     mask = (unsigned int)(0xfff00000>>pattern_index);
-        unsigned int  pattern = (unsigned int)(0xffa00000>>pattern_index);
-        unsigned int pattern2 = (unsigned int)(0xff500000>>pattern_index);
-		unsigned int pattern3 = (unsigned int)(0x00500000>>pattern_index);
-//fprintf(stderr, "OS v3 Sync nibble search - test_val=%08x pattern=%08x  mask=%08x\n", sync_test_val, pattern, mask);
-	    if (((sync_test_val & mask) == pattern)  ||
-            ((sync_test_val & mask) == pattern2) ||
-            ((sync_test_val & mask) == pattern3)) {
-		  //  Found sync byte - start working on decoding the stream data.
-		  // pattern_index indicates  where sync nibble starts, so now we can find the start of the payload
-	      int start_byte = 3 + (pattern_index>>3);
-	      int start_bit = (pattern_index+4) & 0x07;
-//fprintf(stderr, "Oregon Scientific v3 Sync test val %08x ok, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
-          j = start_bit;
-	      for (i=start_byte;i<BITBUF_COLS;i++) {
-	        while (j<8) {
-			   unsigned char bit_val = ((bb[0][i] & (0x80 >> j)) >> (7-j));
+        int i,j;
+        unsigned char msg[BITBUF_COLS] = {0};
+        unsigned int sync_test_val = (bb[0][2]<<24) | (bb[0][3]<<16) | (bb[0][4]<<8);
+        int dest_bit = 0;
+        int pattern_index;
+        // Could be extra/dropped bits in stream.  Look for sync byte at expected position +/- some bits in either direction
+        for(pattern_index=0; pattern_index<16; pattern_index++) {
+            unsigned int     mask = (unsigned int)(0xfff00000>>pattern_index);
+            unsigned int  pattern = (unsigned int)(0xffa00000>>pattern_index);
+            unsigned int pattern2 = (unsigned int)(0xff500000>>pattern_index);
+            unsigned int pattern3 = (unsigned int)(0x00500000>>pattern_index);
+            //fprintf(stderr, "OS v3 Sync nibble search - test_val=%08x pattern=%08x  mask=%08x\n", sync_test_val, pattern, mask);
+            if (((sync_test_val & mask) == pattern)  ||
+                ((sync_test_val & mask) == pattern2) ||
+                ((sync_test_val & mask) == pattern3)) {
+                // Found sync byte - start working on decoding the stream data.
+                // pattern_index indicates  where sync nibble starts, so now we can find the start of the payload
+                int start_byte = 3 + (pattern_index>>3);
+                int start_bit = (pattern_index+4) & 0x07;
+                //fprintf(stderr, "Oregon Scientific v3 Sync test val %08x ok, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
+                j = start_bit;
+                for (i=start_byte;i<BITBUF_COLS;i++) {
+                    while (j<8) {
+                        unsigned char bit_val = ((bb[0][i] & (0x80 >> j)) >> (7-j));
 
-			   // copy every  bit from source stream to dest packet
-			   msg[dest_bit>>3] |= (((bb[0][i] & (0x80 >> j)) >> (7-j)) << (7-(dest_bit & 0x07)));
+                        // copy every  bit from source stream to dest packet
+                        msg[dest_bit>>3] |= (((bb[0][i] & (0x80 >> j)) >> (7-j)) << (7-(dest_bit & 0x07)));
 
-//fprintf(stderr,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, bb[0][i], msg[dest_bit>>3]);
-			   if ((dest_bit & 0x07) == 0x07) {
-				  // after assembling each dest byte, flip bits in each nibble to convert from lsb to msb bit ordering
-				  int k = (dest_bit>>3);
-                  unsigned char indata = msg[k];
-	              // flip the 4 bits in the upper and lower nibbles
-	              msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) |
-	   	                   ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
-		         }
-			   dest_bit++;
-			   j++;
-			}
-			j=0;
-	       }
-		  break;
-		  }
-	    }
-
+            //fprintf(stderr,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, bb[0][i], msg[dest_bit>>3]);
+                        if ((dest_bit & 0x07) == 0x07) {
+                            // after assembling each dest byte, flip bits in each nibble to convert from lsb to msb bit ordering
+                            int k = (dest_bit>>3);
+                            unsigned char indata = msg[k];
+                            // flip the 4 bits in the upper and lower nibbles
+                            msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) |
+                                    ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
+                        }
+                        dest_bit++;
+                        j++;
+                    }
+                    j=0;
+                }
+                break;
+            }
+        }
+    
 	if ((msg[0] == 0xf8) && (msg[1] == 0x24))	{
 	   if (validate_os_checksum(msg, 15) == 0) {
 	     int  channel = ((msg[2] >> 4)&0x0f);
 	     float temp_c = get_os_temperature(msg, 0xf824);
 		 int humidity = get_os_humidity(msg, 0xf824);
-		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1f¬∞C  %3.1f¬∞F   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
+		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
 	   }
-	   return 1;
+	   return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
 	} else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
 	   if (validate_os_checksum(msg, 17) == 0) {
 	     float gustWindspeed = (msg[11]+msg[10])/100;
@@ -256,11 +286,50 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 	   }
 	   return 1;
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
-fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n");
-fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");
-    } else if (bb[0][3] != 0) {
-//fprintf(stderr, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); fprintf(stderr, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");
+        fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
+        fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n");
+        fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");
+    } else if (bb[0][0] == 0 && bb[0][1] == 0 && bb[0][2] == 0 && bb[0][5] == 0x3c) {
+        //fprintf(stderr, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");
+
+        int start_bit = 0;
+        int start_byte = 3;
+        j = start_bit;
+        for (i=start_byte;i<BITBUF_COLS;i++) {
+            while (j<8) {
+               unsigned char bit_val = ((bb[0][i] & (0x80 >> j)) >> (7-j));
+
+               // copy every  bit from source stream to dest packet
+               msg[dest_bit>>3] |= (((bb[0][i] & (0x80 >> j)) >> (7-j)) << (7-(dest_bit & 0x07)));
+
+               //fprintf(stderr,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, bb[0][i], msg[dest_bit>>3]);
+               if ((dest_bit & 0x07) == 0x07) {
+                  // after assembling each dest byte, flip bits in each nibble to convert from lsb to msb bit ordering
+                  int k = (dest_bit>>3);
+                  unsigned char indata = msg[k];
+                  // flip the 4 bits in the upper and lower nibbles
+                  msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) |
+                           ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
+                  // Flip nibbles
+                  msg[k] = (msg[k] & 0xF0) >> 4 |  (msg[k] & 0x0F) << 4;    
+                }
+               dest_bit++;
+               j++;
+            }
+            j=0;
+        }
+        unsigned short int ipower = power(msg);
+        unsigned long itotal = total(msg);
+        float total_energy = itotal/3600/1000.0;
+        if (itotal) 
+            fprintf(stderr,"Energy Sensor CMR180 Id %x%x power: %dW, total: %luW, Total Energy: %.3fkWh\n", msg[0], msg[1], ipower, itotal, total_energy);
+        else
+            fprintf(stderr,"Energy Sensor cmr180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);
+        
+        //for (i=0 ; i<15 ; i++) fprintf(stderr, "%02x ", msg[i]);fprintf(stderr,"\n"); 
+    } else if (bb[0][3] != 0 ) {
+        //fprintf(stderr, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
+        //fprintf(stderr, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr,"\n\n");
     }
    }
    else { // Based on first couple of bytes, either corrupt message or something other than an Oregon Scientific v3 message

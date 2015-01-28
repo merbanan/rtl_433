@@ -17,5 +17,6 @@ extern r_device mebus433;
 extern r_device intertechno;
 extern r_device newkaku;
 extern r_device alectov1;
+extern r_device fineoffset_WH2;
 
 #endif /* INCLUDE_RTL_433_DEVICES_H_ */
