@@ -66,7 +66,11 @@ Running:
            [14] Intertechno 433
            [15] KlikAanKlikUit Wireless Switch
            [16] AlectoV1 Weather Sensor
-           [17] Fine Offset Electronics, WH-2 Sensor
+           [17] Cardin S466-TX2
+           [18] Fine Offset Electronics, WH-2 Sensor
+           [19] Nexus Temperature & Humidity Sensor
+           [20] Ambient Weather Temperature Sensor
+
 
 Examples:
 
