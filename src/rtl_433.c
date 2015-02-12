@@ -22,7 +22,6 @@
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
-#include "rtl_433_devices.h"
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
@@ -36,6 +35,8 @@ static uint16_t scaled_squares[256];
 static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
+
+int num_r_devices = 0;
 
 int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
     int i,j,k;
@@ -146,25 +147,35 @@ struct dm_state {
 
 };
 
-void usage(void) {
-    fprintf(stderr,
+void usage(r_device *devices) {
+	int i;
+
+	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
-            "Usage:\t[-d device_index (default: 0)]\n"
+            "Usage:\t[-d device index (default: 0)]\n"
             "\t[-g gain (default: 0 for auto)]\n"
             "\t[-a analyze mode, print a textual description of the signal]\n"
             "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
             "\t[-l change the detection level used to determine pulses (0-3200) default: %i]\n"
             "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
-            "\t[-s samplerate (default: %i Hz)]\n"
+            "\t[-s sample rate (default: %i Hz)]\n"
             "\t[-S force sync output (default: async)]\n"
             "\t[-r read data from file instead of from a receiver]\n"
             "\t[-p ppm_error (default: 0)]\n"
             "\t[-r test file name (indata)]\n"
             "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
             "\t[-D print debug info on event\n"
-            "\t[-z override short value\n"
-            "\t[-x override long value\n"
+            "\t[-z override short value]\n"
+            "\t[-x override long value]\n"
+            "\t[-R listen only for the specified remote device (can be used multiple times)]\n"
             "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
+
+    fprintf(stderr, "Supported devices:\n");
+    for (i = 0; i < num_r_devices; i++) {
+        fprintf(stderr, "\t[%02d] %s\n", i + 1, devices[i].name);
+    }
+    fprintf(stderr, "\n");
+
     exit(1);
 }
 
@@ -289,7 +300,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
-    fprintf(stderr, "Registering protocol[%02d] %s\n", demod->r_dev_num, t_dev->name);
+    fprintf(stderr, "Registering protocol \"%s\"\n", t_dev->name);
 
     if (demod->r_dev_num > MAX_PROTOCOLS)
         fprintf(stderr, "Max number of protocols reached %d\n", MAX_PROTOCOLS);
@@ -974,6 +985,7 @@ int main(int argc, char **argv) {
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
     int device_count;
     char vendor[256], product[256], serial[256];
+    int have_opt_R = 0;
 
     demod = malloc(sizeof (struct dm_state));
     memset(demod, 0, sizeof (struct dm_state));
@@ -981,12 +993,20 @@ int main(int argc, char **argv) {
     /* initialize tables */
     calc_squares();
 
+	r_device devices[] = {
+#define DECL(name) name,
+			DEVICES
+#undef DECL
+			};
+
+    num_r_devices = sizeof(devices)/sizeof(*devices);
+
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
 
-    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S::")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:S:R::")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -1040,37 +1060,38 @@ int main(int argc, char **argv) {
             case 'x':
                 override_long = atoi(optarg);
                 break;
+            case 'R':
+                if (!have_opt_R) {
+                    for (i = 0; i < num_r_devices; i++) {
+                        devices[i].disabled = 1;
+                    }
+                    have_opt_R = 1;
+                }
+
+                i = atoi(optarg);
+                if (i > num_r_devices) {
+                    fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
+                    usage(devices);
+                }
+
+                devices[i - 1].disabled = 0;
+                break;
             default:
-                usage();
+                usage(devices);
                 break;
         }
     }
 
-    /* init protocols somewhat ok */
-    register_protocol(demod, &rubicson);
-    register_protocol(demod, &prologue);
-    register_protocol(demod, &silvercrest);
-    //    register_protocol(demod, &generic_hx2262);
-    //    register_protocol(demod, &technoline_ws9118);
-    register_protocol(demod, &elv_em1000);
-    register_protocol(demod, &elv_ws2000);
-    register_protocol(demod, &waveman);
-    register_protocol(demod, &steffen);
-    register_protocol(demod, &acurite5n1);
-    register_protocol(demod, &acurite_th);
-    register_protocol(demod, &acurite_rain_gauge);
-    register_protocol(demod, &lacrossetx);
-    register_protocol(demod, &oregon_scientific);
-    register_protocol(demod, &newkaku);
-    register_protocol(demod, &alectov1);
-    register_protocol(demod, &intertechno);
-    register_protocol(demod, &mebus433);
-    register_protocol(demod, &fineoffset_WH2);
-
     if (argc <= optind - 1) {
-        usage();
+        usage(devices);
     } else {
         filename = argv[optind];
+    }
+
+    for (i = 0; i < num_r_devices; i++) {
+        if (!devices[i].disabled) {
+            register_protocol(demod, &devices[i]);
+        }
     }
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
