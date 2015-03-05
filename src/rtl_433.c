@@ -471,7 +471,7 @@ static int validate_os_checksum(unsigned char *msg, int checksum_nibble_idx) {
   if (sum_of_nibbles == checksum)
     return 0;
   else {
-    fprintf(stderr, "Checksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);	
+    fprintf(stderr, "\aChecksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);	
 	fprintf(stderr, "Message: "); int i; for (i=0 ;i<((checksum_nibble_idx+4)>>1) ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n\n");
 	return 1;
   }
@@ -607,14 +607,40 @@ static int oregon_scientific_v2_1_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
                         int  channel = ((msg[2] >> 4)&0x0f);
 			if (channel == 4)
 				channel = 3; // sensor 3 channel number is 0x04
-                        int battery_low = (msg[3] >> 2 & 0x01);       
+            int battery_low = (msg[3] >> 2 & 0x01);       
 			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
 			float temp_c = get_os_temperature(msg, sensor_id);
-			if (sensor_id == 0xec40) fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
+			fprintf(stderr, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code: 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
 			fprintf(stderr, "Temp: %3.1f°C  %3.1f°F\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
-	} else if (num_valid_v2_bits > 16) {
+	} else if ((sensor_id == 0xacc3) || (sensor_id == 0xdcc3) || (sensor_id == 0xbcc3) || (sensor_id == 0x9cc3) || (sensor_id == 0xccc3))	{
+	   if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0) {
+         int  channel = ((msg[2] >> 4)&0x0f);
+	     if (channel == 4)
+	       channel = 3; // sensor 3 channel number is 0x04
+         int battery_low = (msg[3] >> 2 & 0x01);       
+		 unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
+         float temp_c = get_os_temperature(msg, sensor_id);
+		 fprintf(stderr, "Weather Sensor THGR328N/RTGR328N Outdoor, Channel %d, Battery: %s, Rolling-code: 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code); 
+		 fprintf(stderr, "Temp: %3.1f°C  %3.1f°F   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
+fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr,"\n\n");
+	   }
+	   return 1; 
+	} else if ((sensor_id == 0x8ce3) )	{
+	   if (validate_os_v2_message(msg, 201, num_valid_v2_bits, 21) == 0) {
+         int  channel = ((msg[2] >> 4)&0x0f);
+	     if (channel == 4)
+	       channel = 3; // sensor 3 channel number is 0x04
+         int battery_low = (msg[3] >> 2 & 0x01);       
+		 unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
+         float temp_c = get_os_temperature(msg, sensor_id);
+		 fprintf(stderr, "Unknown sensor with ID 0x8ce3\n"); 
+         fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr,"\n\n");
+       }
+	   return 1; 
+ 
+     } else if (num_valid_v2_bits > 16) {
 fprintf(stderr, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
 fprintf(stderr, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr,"\n\n");
     } else {
@@ -687,15 +713,10 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS]) {
 	   return 1;
     } else if ((msg[0] >= 0x50) && (msg[0] <= 0x59) && (msg[1] & 0x01 == 0x01 ) ) 
      { 
-       fprintf(stderr, "\n");
-       fprintf(stderr,"\n\n");       
-         fprintf(stderr, "Energy sensor  OWL CM160 event:\n");
-         fprintf(stderr, "protocol      = Oregon Scientific v3\n");
          float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4); 
-         fprintf(stderr, "current measurement reading value   = %.0f\n", rawAmp);
-         fprintf(stderr, "current watts (230v)   = %.0f, %.0f, %.0f\n", rawAmp /(0.7*230)*1000);
-         fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n");
-         fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr, "\n");
+         fprintf(stderr, "Energy sensor OWL CM160  Current: %.3f A, Electric power (230V): %.0f W\n", rawAmp/100, rawAmp /(0.7*230)*1000);
+         fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n\n");
+//         fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stderr, "%02x ", bb[0][i]); fprintf(stderr, "\n");
      } 
      else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
 fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");	
@@ -1746,15 +1767,15 @@ int main(int argc, char **argv)
     }
 
     /* init protocols somewhat ok */
-    register_protocol(demod, &rubicson);
-    register_protocol(demod, &prologue);
-    register_protocol(demod, &silvercrest);
+//    register_protocol(demod, &rubicson);
+//    register_protocol(demod, &prologue);
+//    register_protocol(demod, &silvercrest);
 //    register_protocol(demod, &generic_hx2262);
 //    register_protocol(demod, &technoline_ws9118);
-    register_protocol(demod, &elv_em1000);
-    register_protocol(demod, &elv_ws2000);
-    register_protocol(demod, &waveman);
-    register_protocol(demod, &steffen);
+//    register_protocol(demod, &elv_em1000);
+//    register_protocol(demod, &elv_ws2000);
+//    register_protocol(demod, &waveman);
+//    register_protocol(demod, &steffen);
 //    register_protocol(demod, &acurite_rain_gauge);
    register_protocol(demod, &oregon_scientific);
 
@@ -1931,7 +1952,7 @@ int main(int argc, char **argv)
             if (r < 0)
                 fprintf(stderr, "WARNING: Failed to set center freq.\n");
             else
-                fprintf(stderr, "Tuned to %u Hz.\n", rtlsdr_get_center_freq(dev));
+                fprintf(stderr, "Tuned to %u Hz.\n\n", rtlsdr_get_center_freq(dev));
             r = rtlsdr_read_async(dev, rtlsdr_callback, (void *)demod,
                           DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
             do_exit_async=0;
