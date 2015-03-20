@@ -31,6 +31,7 @@ add_executable(rtl_433
 	devices/intertechno.c
 	devices/alecto.c
 	devices/newkaku.c
+	devices/cardin.c
 	devices/fineoffset.c)
 
 target_link_libraries(rtl_433
