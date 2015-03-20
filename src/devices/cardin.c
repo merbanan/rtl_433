@@ -10,7 +10,8 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
-	fprintf(stderr, "\nprotocol       = Cardin S466\n");
+	fprintf(stderr, "------------------------------\n");
+	fprintf(stderr, "protocol       = Cardin S466\n");
 	fprintf(stderr, "message        = ");
 	for (i=0 ; i<3 ; i++) {
 		for (k = 7; k >= 0; k--) {
@@ -21,7 +22,11 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 		}
 		fprintf(stderr, " ");
 	}
-	fprintf(stderr, "\n");
+	if(bb[0][2] == 0) {
+		fprintf(stderr, "\npartial message - abording\n");
+		return 0;
+	}
+	fprintf(stderr, "\n\n");
 
 	// Dip 1
 	if(bb[0][0] & 8) {
@@ -79,9 +84,26 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 	}
 
 	fprintf(stderr, "                 123456789\n");
-	fprintf(stderr, "dipswitch      = %s\n",dip);
+	fprintf(stderr, "dipswitch      = %s\n\n",dip);
 
-
+        fprintf(stderr, "                 -->ON\n");
+	fprintf(stderr, "right button   = ");
+	if((bb[0][2] & 3) == 3) {
+		fprintf(stderr,                  "2 --o (this is rigt button)\n");
+		fprintf(stderr, "                 1 --o\n");
+	}
+	if((bb[0][2] & 9) == 9) {
+		fprintf(stderr,                  "2 --o (this is rigt button)\n");
+		fprintf(stderr, "                 1 o--\n");
+	}
+	if((bb[0][2] & 12) == 12) {
+		fprintf(stderr,                  "2 o-- (this is left button or two buttons on same channel)\n");
+		fprintf(stderr, "                 1 o--\n");
+	}
+	if((bb[0][2] & 6) == 6) {
+		fprintf(stderr,                  "2 o-- (this is rigt button)\n");
+		fprintf(stderr, "                 1 --o\n");
+	}
 
 	return 1;
 }
