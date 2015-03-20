@@ -89,11 +89,11 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
         fprintf(stderr, "                 -->ON\n");
 	fprintf(stderr, "right button   = ");
 	if((bb[0][2] & 3) == 3) {
-		fprintf(stderr,                  "2 --o (this is rigt button)\n");
+		fprintf(stderr,                  "2 --o (this is right button)\n");
 		fprintf(stderr, "                 1 --o\n");
 	}
 	if((bb[0][2] & 9) == 9) {
-		fprintf(stderr,                  "2 --o (this is rigt button)\n");
+		fprintf(stderr,                  "2 --o (this is right button)\n");
 		fprintf(stderr, "                 1 o--\n");
 	}
 	if((bb[0][2] & 12) == 12) {
@@ -101,7 +101,7 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 		fprintf(stderr, "                 1 o--\n");
 	}
 	if((bb[0][2] & 6) == 6) {
-		fprintf(stderr,                  "2 o-- (this is rigt button)\n");
+		fprintf(stderr,                  "2 o-- (this is right button)\n");
 		fprintf(stderr, "                 1 --o\n");
 	}
 
