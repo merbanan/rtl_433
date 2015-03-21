@@ -17,6 +17,7 @@ rtl_433_SOURCES      = rtl_433.c \
                        devices/mebus.c \
                        devices/prologue.c \
                        devices/steffen.c \
+		       devices/cardin.c \
                        devices/fineoffset.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

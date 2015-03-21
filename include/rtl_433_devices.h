@@ -18,6 +18,7 @@
 		DECL(intertechno) \
 		DECL(newkaku) \
 		DECL(alectov1) \
+		DECL(cardin) \
 		DECL(fineoffset_WH2)
 
 #define BITBUF_COLS             34
