@@ -158,13 +158,14 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			case 0x00:
 				temp_c = msg_value - 50.0;
 				temp_f = temp_c * 1.8 + 32;
-				printf(
+				fprintf(stderr,
 						"%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
 						time_str, sensor_id, temp_c, temp_f);
 				break;
 
 			case 0x0E:
-				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
+				fprintf(stderr,
+						"%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
 						time_str, sensor_id, msg_value);
 				break;
 
