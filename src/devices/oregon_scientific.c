@@ -14,6 +14,12 @@ unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
     humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
  return humidity;
 }
+unsigned int get_os_uv(unsigned char *message, unsigned int sensor_id) {
+ // sensor ID included to support sensors with temp in different position
+ int uvidx = 0;
+    uvidx = ((message[4]&0x0f)*10)+(message[4]>>4);
+ return uvidx;
+}
 
 unsigned int get_os_rollingcode(unsigned char *message, unsigned int sensor_id){
    int rc = 0;
@@ -278,6 +284,12 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 		 fprintf(stderr,"Weather Sensor THGR810  Channel %d Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
 	   }
 	   return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
+	} else if ((msg[0] == 0xd8) && (msg[1] == 0x74)) {
+	   if (validate_os_checksum(msg, 13) == 0) {   // ok
+	     int  channel = ((msg[2] >> 4)&0x0f);
+	     int uvidx = get_os_uv(msg, 0xd874);
+	     fprintf(stderr, "Weather Sensor UVN800 Channel %d  UV index: %d \n", channel, uvidx);
+	   }
 	} else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
 	   if (validate_os_checksum(msg, 17) == 0) {
 	     float gustWindspeed = (msg[11]+msg[10])/100;
