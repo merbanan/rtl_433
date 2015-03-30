@@ -19,7 +19,8 @@
 		DECL(newkaku) \
 		DECL(alectov1) \
 		DECL(cardin) \
-		DECL(fineoffset_WH2)
+		DECL(fineoffset_WH2) \
+		DECL(nexus) 
 
 #define BITBUF_COLS             34
 #define BITBUF_ROWS             50
