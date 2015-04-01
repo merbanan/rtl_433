@@ -22,19 +22,19 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 				(bb[0][2] & 12) == 12 ||
 				(bb[0][2] & 6) == 6) ) {
 
-		fprintf(stderr, "------------------------------\n");
-		fprintf(stderr, "protocol       = Cardin S466\n");
-		fprintf(stderr, "message        = ");
+		fprintf(stdout, "------------------------------\n");
+		fprintf(stdout, "protocol       = Cardin S466\n");
+		fprintf(stdout, "message        = ");
 		for (i=0 ; i<3 ; i++) {
 			for (k = 7; k >= 0; k--) {
 				if (bb[0][i] & 1 << k)
-					fprintf(stderr, "1");
+					fprintf(stdout, "1");
 				else
-					fprintf(stderr, "0");
+					fprintf(stdout, "0");
 			}
-			fprintf(stderr, " ");
+			fprintf(stdout, " ");
 		}
-		fprintf(stderr, "\n\n");
+		fprintf(stdout, "\n\n");
 
 		// Dip 1
 		if(bb[0][0] & 8) {
@@ -91,26 +91,26 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 				dip[8]='+';
 		}
 
-		fprintf(stderr, "                 123456789\n");
-		fprintf(stderr, "dipswitch      = %s\n\n",dip);
+		fprintf(stdout, "                 123456789\n");
+		fprintf(stdout, "dipswitch      = %s\n\n",dip);
 
-		fprintf(stderr, "                 -->ON\n");
-		fprintf(stderr, "right button   = ");
+		fprintf(stdout, "                 -->ON\n");
+		fprintf(stdout, "right button   = ");
 		if((bb[0][2] & 3) == 3) {
-			fprintf(stderr,                  "2 --o (this is right button)\n");
-			fprintf(stderr, "                 1 --o\n");
+			fprintf(stdout,                  "2 --o (this is right button)\n");
+			fprintf(stdout, "                 1 --o\n");
 		}
 		if((bb[0][2] & 9) == 9) {
-			fprintf(stderr,                  "2 --o (this is right button)\n");
-			fprintf(stderr, "                 1 o--\n");
+			fprintf(stdout,                  "2 --o (this is right button)\n");
+			fprintf(stdout, "                 1 o--\n");
 		}
 		if((bb[0][2] & 12) == 12) {
-			fprintf(stderr,                  "2 o-- (this is left button or two buttons on same channel)\n");
-			fprintf(stderr, "                 1 o--\n");
+			fprintf(stdout,                  "2 o-- (this is left button or two buttons on same channel)\n");
+			fprintf(stdout, "                 1 o--\n");
 		}
 		if((bb[0][2] & 6) == 6) {
-			fprintf(stderr,                  "2 o-- (this is right button)\n");
-			fprintf(stderr, "                 1 --o\n");
+			fprintf(stdout,                  "2 o-- (this is right button)\n");
+			fprintf(stdout, "                 1 --o\n");
 		}
 
 		return 1;

@@ -54,7 +54,7 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                 kakuid = kakuid << 1;
                 //add 0
             } else {
-                //fprintf(stderr, " Packet error, no newkaku!!\n", tmp << bitcount);
+                //fprintf(stdout, " Packet error, no newkaku!!\n", tmp << bitcount);
                 return 0; //00 and 11 indicates packet error. no valid packet! do exit
             }
         }
@@ -76,14 +76,14 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                 return 0; //00 and 11 indicates packet error. Do exit, no valid packet
             }
         }
-        fprintf(stderr, "NewKaku event:\n");
-        fprintf(stderr, "Model      = NewKaKu on/off/dimmer switch\n");
-        fprintf(stderr, "KakuId     = %d (H%.2X)\n", kakuid, kakuid);
-        fprintf(stderr, "Unit       = %d (H%.2X)\n", unit, unit);
-        fprintf(stderr, "Group Call = %s\n", (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No");
-        fprintf(stderr, "Command    = %s\n", (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off");
+        fprintf(stdout, "NewKaku event:\n");
+        fprintf(stdout, "Model      = NewKaKu on/off/dimmer switch\n");
+        fprintf(stdout, "KakuId     = %d (H%.2X)\n", kakuid, kakuid);
+        fprintf(stdout, "Unit       = %d (H%.2X)\n", unit, unit);
+        fprintf(stdout, "Group Call = %s\n", (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No");
+        fprintf(stdout, "Command    = %s\n", (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off");
         if (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0x80)) {//11 indicates DIM command, 4 extra bits indicate DIM value
-            fprintf(stderr, "Dim        = Yes\n");
+            fprintf(stdout, "Dim        = Yes\n");
             tmp = bb[0][8] << 1; // get packet, loose first bit
             uint8_t dv = 0;
             if ((bb[0][9]&(1 << 7)) != 0) {// if bit is set Add to current packet
@@ -102,12 +102,12 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                     }
                 }
             }
-            fprintf(stderr, "Dim Value  = %d\n", dv);
+            fprintf(stdout, "Dim Value  = %d\n", dv);
         } else {
-            fprintf(stderr, "Dim        = No\n");
-            fprintf(stderr, "Dim Value  = 0\n");
+            fprintf(stdout, "Dim        = No\n");
+            fprintf(stdout, "Dim Value  = 0\n");
         }
-        fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+        fprintf(stdout, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                 bb[0][0], bb[0][1], bb[0][2], bb[0][3], bb[0][4], bb[0][5], bb[0][6], bb[0][7], bb[0][8]);
         if (debug_output)
             debug_callback(bb, bits_per_row);

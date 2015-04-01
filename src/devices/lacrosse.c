@@ -82,7 +82,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 				parity += bit;
 			}
 
-			//	    fprintf(stderr, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d %s\n", rbyte_no, rbit_no,
+			//	    fprintf(stdout, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d %s\n", rbyte_no, rbit_no,
 			//		    bit, mnybble_no, mbit_no, msg_nybbles[mnybble_no], parity,
 			//		    ( mbit_no == 0 ) ? "\n" : "" );
 		}
@@ -96,12 +96,12 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 			checksum = (checksum + msg_nybbles[i]) & 0x0F;
 		}
 
-		// fprintf(stderr,"Parity: %d, parity bit %d, Good %d\n", parity, parity_bit, parity % 2);
+		// fprintf(stdout,"Parity: %d, parity bit %d, Good %d\n", parity, parity_bit, parity % 2);
 
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
-			fprintf(stderr,
+			fprintf(stdout,
 					"LaCrosse Checksum/Parity error: %d != %d, Parity %d\n",
 					checksum, msg_nybbles[10], parity);
 			return 0;
@@ -158,19 +158,19 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			case 0x00:
 				temp_c = msg_value - 50.0;
 				temp_f = temp_c * 1.8 + 32;
-				fprintf(stderr,
+				fprintf(stdout,
 						"%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
 						time_str, sensor_id, temp_c, temp_f);
 				break;
 
 			case 0x0E:
-				fprintf(stderr,
+				fprintf(stdout,
 						"%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
 						time_str, sensor_id, msg_value);
 				break;
 
 			default:
-				fprintf(stderr,
+				fprintf(stdout,
 						"%s LaCrosse Sensor %02x: Unknown Reading % 3.1f (%d)\n",
 						time_str, sensor_id, msg_value, msg_value_int);
 			}

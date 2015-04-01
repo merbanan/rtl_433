@@ -87,11 +87,11 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
 
     if (buf) {
         // decode packet here
-        fprintf(stderr, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
         if (debug_output) {
             for (i=0; i < 8; i++)
-                fprintf(stderr, "%02X ", buf[i]);
-            fprintf(stderr, "CRC OK\n");
+                fprintf(stdout, "%02X ", buf[i]);
+            fprintf(stdout, "CRC OK\n");
         }
 
         if ((buf[2] & 0x0F) == 1) {
@@ -107,19 +107,19 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
                 acurite_raincounter = raincounter;
             }
 
-            fprintf(stderr, "wind speed: %d kph, ",
+            fprintf(stdout, "wind speed: %d kph, ",
                 acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "wind direction: %0.1f°, ",
+            fprintf(stdout, "wind direction: %0.1f°, ",
                 acurite_getWindDirection(buf[4]));
-            fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
+            fprintf(stdout, "rain gauge: %0.2f in.\n", rainfall);
 
         } else if ((buf[2] & 0x0F) == 8) {
             // wind speed, temp, RH
-            fprintf(stderr, "wind speed: %d kph, ",
+            fprintf(stdout, "wind speed: %d kph, ",
                 acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stderr, "temp: %2.1f° F, ",
+            fprintf(stdout, "temp: %2.1f° F, ",
                 acurite_getTemp(buf[4], buf[5]));
-            fprintf(stderr, "humidity: %d%% RH\n",
+            fprintf(stdout, "humidity: %d%% RH\n",
                 acurite_getHumidity(buf[6]));
         }
     } else {
@@ -137,8 +137,8 @@ static int acurite_rain_gauge_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
     if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
 	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
 		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
-        fprintf(stderr, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
-		fprintf(stderr, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
+		fprintf(stdout, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
         return 1;
     }
     return 0;
@@ -164,10 +164,10 @@ static int acurite_th_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bit
         }
     }
     if(buf){
-        fprintf(stderr, "Temperature event:\n");
-        fprintf(stderr, "protocol      = Acurite Temp&Humidity\n");
-        fprintf(stderr, "temp          = %.1f°C\n", acurite_th_temperature(buf));
-        fprintf(stderr, "humidity      = %d%%\n\n", buf[3]);
+        fprintf(stdout, "Temperature event:\n");
+        fprintf(stdout, "protocol      = Acurite Temp&Humidity\n");
+        fprintf(stdout, "temp          = %.1f°C\n", acurite_th_temperature(buf));
+        fprintf(stdout, "humidity      = %d%%\n\n", buf[3]);
         return 1;
     }
 

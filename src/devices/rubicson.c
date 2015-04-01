@@ -32,11 +32,11 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
         temperature_before_dec = abs(temp / 10);
         temperature_after_dec = abs(temp % 10);
 
-        fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol       = Rubicson/Auriol, %d bits\n",bits_per_row[1]);
-        fprintf(stderr, "rid            = %x\n",bb[0][0]);
-        fprintf(stderr, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
-        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+        fprintf(stdout, "Sensor temperature event:\n");
+        fprintf(stdout, "protocol       = Rubicson/Auriol, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "rid            = %x\n",bb[0][0]);
+        fprintf(stdout, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
+        fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
 
         if (debug_output)
             debug_callback(bb, bits_per_row);
