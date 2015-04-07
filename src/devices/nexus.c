@@ -19,44 +19,28 @@ static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_
     int temperature_after_dec;
     int16_t temp;
     int16_t humidity;
-    time_t currtime;
-    char tmpbuf[MAX_BUF_SIZE];
-    struct tm *ptoday;
-    FILE * pFile;
-	
+
     /* FIXME validate the received message better, figure out crc */
-if ((bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
+    if ((bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
         bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
         bb[8][0] == bb[9][0] && (bb[5][0] != 0 && bb[5][1] != 0 && bb[5][2] != 0 && bb[12][1] != 0x80)) &&
         (bb[1][4] == bb[2][4] && bb[2][4] == bb[3][4] && bb[3][4] == bb[4][4] &&
         bb[4][4] == bb[5][4] && bb[5][4] == bb[6][4] && bb[6][4] == bb[7][4] && bb[7][4] == bb[8][4] &&
         bb[8][4] == bb[9][4] && (bb[5][2] != 0 && bb[5][3] != 0 ) && ((bb[5][4]&0x0F) == 0))) {
-    
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
         temp = (int16_t)((uint16_t)(bb[5][1] << 12) | (bb[5][2] << 4));
         temp = temp >> 4;
 
-	time (&currtime);
-	ptoday = localtime(&currtime);
-	strftime( tmpbuf, MAX_BUF_SIZE,"%d/%m/%y %R,%s", ptoday);
-
         temperature_before_dec = abs(temp / 10);
         temperature_after_dec = abs(temp % 10);
         humidity = (int16_t)(((bb[5][3]&0x0F)<<4)|(bb[5][4]>>4));
 
-	fprintf(stderr, "Nexus %s",tmpbuf);
-	fprintf(stderr, ",%s%d.%d",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
-	fprintf(stderr, ",%d\n", humidity);
-	
-	pFile= fopen ("nexus.csv", "w");
-	fprintf(pFile, "Nexus %s",tmpbuf);
-	fprintf(pFile, ",%s%d.%d",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
-	fprintf(pFile, ",%d\n", humidity);
-        fclose(pFile);
+        fprintf(stdout, "Temp: %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
+        fprintf(stdout, "Humidity: %d\n", humidity);
 
-	if (debug_output)
+        if (debug_output)
             debug_callback(bb, bits_per_row);
 
         return 1;
