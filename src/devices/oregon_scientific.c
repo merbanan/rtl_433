@@ -297,6 +297,10 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
 	   fprintf(stdout, "Weather Sensor WGR800   Wind Gauge  Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", gustWindspeed, quadrant);
 	   }
 	   return 1;
+    } else if (msg[1] == 0x89) { //  Owl CM160 Readings
+        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
+        fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
+        fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
         fprintf(stdout, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
         fprintf(stdout, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
