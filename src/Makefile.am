@@ -19,5 +19,6 @@ rtl_433_SOURCES      = rtl_433.c \
                        devices/steffen.c \
 		       devices/cardin.c \
                        devices/fineoffset.c \
-		       devices/nexus.c 
+		       devices/nexus.c \
+		       devices/ambient_weather.c 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
