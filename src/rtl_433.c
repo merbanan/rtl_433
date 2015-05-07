@@ -987,6 +987,9 @@ int main(int argc, char **argv) {
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
 
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
+
     demod = malloc(sizeof (struct dm_state));
     memset(demod, 0, sizeof (struct dm_state));
 
