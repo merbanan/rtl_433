@@ -4,27 +4,27 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
 
-        fprintf(stderr, "Remote button event:\n");
-        fprintf(stderr, "model   = Steffan Switch Transmitter, %d bits\n",bits_per_row[1]);
-	fprintf(stderr, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
+        fprintf(stdout, "Remote button event:\n");
+        fprintf(stdout, "model   = Steffan Switch Transmitter, %d bits\n",bits_per_row[1]);
+	fprintf(stdout, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
 
 	if ((bb[1][2]&0x0f)==0x0e)
-            fprintf(stderr, "button  = A\n");
+            fprintf(stdout, "button  = A\n");
         else if ((bb[1][2]&0x0f)==0x0d)
-            fprintf(stderr, "button  = B\n");
+            fprintf(stdout, "button  = B\n");
         else if ((bb[1][2]&0x0f)==0x0b)
-            fprintf(stderr, "button  = C\n");
+            fprintf(stdout, "button  = C\n");
         else if ((bb[1][2]&0x0f)==0x07)
-            fprintf(stderr, "button  = D\n");
+            fprintf(stdout, "button  = D\n");
         else if ((bb[1][2]&0x0f)==0x0f)
-            fprintf(stderr, "button  = ALL\n");
+            fprintf(stdout, "button  = ALL\n");
 	else
-	    fprintf(stderr, "button  = unknown\n");
+	    fprintf(stdout, "button  = unknown\n");
 
 	if ((bb[1][2]&0xf0)==0xf0) {
-            fprintf(stderr, "state   = OFF\n");
+            fprintf(stdout, "state   = OFF\n");
 	} else {
-            fprintf(stderr, "state   = ON\n");
+            fprintf(stdout, "state   = ON\n");
         }
 
         if (debug_output)

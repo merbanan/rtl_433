@@ -35,7 +35,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
         dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
         stopbit=AD_POP (bb_p, 1, bit); bit+=1;
         if (!stopbit) {
-//            fprintf(stderr, "!stopbit: %i\n", i);
+//            fprintf(stdout, "!stopbit: %i\n", i);
             return 0;
         }
         checksum_calculated ^= dec[i];
@@ -45,21 +45,21 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
     // Read checksum
     checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
-//        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
+//        fprintf(stdout, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
     }
 
-//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
+//for (i = 0; i < bytes; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
 
     // based on 15_CUL_EM.pm
-    fprintf(stderr, "Energy sensor event:\n");
-    fprintf(stderr, "protocol      = ELV EM 1000, %d bits\n",bits_per_row[1]);
-    fprintf(stderr, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
-    fprintf(stderr, "code          = %d\n",dec[1]);
-    fprintf(stderr, "seqno         = %d\n",dec[2]);
-    fprintf(stderr, "total cnt     = %d\n",dec[3]|dec[4]<<8);
-    fprintf(stderr, "current cnt   = %d\n",dec[5]|dec[6]<<8);
-    fprintf(stderr, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
+    fprintf(stdout, "Energy sensor event:\n");
+    fprintf(stdout, "protocol      = ELV EM 1000, %d bits\n",bits_per_row[1]);
+    fprintf(stdout, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
+    fprintf(stdout, "code          = %d\n",dec[1]);
+    fprintf(stdout, "seqno         = %d\n",dec[2]);
+    fprintf(stdout, "total cnt     = %d\n",dec[3]|dec[4]<<8);
+    fprintf(stdout, "current cnt   = %d\n",dec[5]|dec[6]<<8);
+    fprintf(stdout, "peak cnt      = %d\n",dec[7]|dec[8]<<8);
 
     return 1;
 }
@@ -78,7 +78,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-//fprintf(stderr, "!stopbit\n");
+//fprintf(stdout, "!stopbit\n");
         return 0;
     }
     check_calculated ^= dec[0];
@@ -89,7 +89,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-//fprintf(stderr, "!stopbit %i\n", i);
+//fprintf(stdout, "!stopbit %i\n", i);
             return 0;
         }
         check_calculated ^= dec[i];
@@ -98,7 +98,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
     }
 
     if (check_calculated) {
-//fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
+//fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
         return 0;
     }
 
@@ -107,20 +107,20 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-//fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+//fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
         return 0;
     }
 
-//for (i = 0; i < nibbles; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
+//for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
 
-    fprintf(stderr, "Weather station sensor event:\n");
-    fprintf(stderr, "protocol      = ELV WS 2000, %d bits\n",bits_per_row[1]);
-    fprintf(stderr, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
-    fprintf(stderr, "code          = %d\n", dec[1]&7);
-    fprintf(stderr, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
-    fprintf(stderr, "humidity      = %d.%d\n", dec[7]*10+dec[6], dec[5]);
+    fprintf(stdout, "Weather station sensor event:\n");
+    fprintf(stdout, "protocol      = ELV WS 2000, %d bits\n",bits_per_row[1]);
+    fprintf(stdout, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
+    fprintf(stdout, "code          = %d\n", dec[1]&7);
+    fprintf(stdout, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
+    fprintf(stdout, "humidity      = %d.%d\n", dec[7]*10+dec[6], dec[5]);
     if(dec[0]==4) {
-        fprintf(stderr, "pressure      = %d\n", 200+dec[10]*100+dec[9]*10+dec[8]);
+        fprintf(stdout, "pressure      = %d\n", 200+dec[10]*100+dec[9]*10+dec[8]);
     }
 
     return 1;

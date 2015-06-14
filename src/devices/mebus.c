@@ -18,16 +18,16 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
         temperature_before_dec = abs(temp / 10);
         temperature_after_dec = abs(temp % 10);
 
-        fprintf(stderr, "Sensor event:\n");
-        fprintf(stderr, "protocol       = Mebus/433\n");
-        fprintf(stderr, "address        = %i\n", bb[1][0] & 0b00011111);
-        fprintf(stderr, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1);
-        fprintf(stderr, "battery        = %s\n", bb[1][1] & 0b10000000?"Ok":"Low");
-        fprintf(stderr, "unkown1        = %i\n",(bb[1][1] & 0b01000000) >> 6); // always 0?
-        fprintf(stderr, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111?
-        fprintf(stderr, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
-        fprintf(stderr, "humidity       = %i%%\n", hum);
-        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+        fprintf(stdout, "Sensor event:\n");
+        fprintf(stdout, "protocol       = Mebus/433\n");
+        fprintf(stdout, "address        = %i\n", bb[1][0] & 0b00011111);
+        fprintf(stdout, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1);
+        fprintf(stdout, "battery        = %s\n", bb[1][1] & 0b10000000?"Ok":"Low");
+        fprintf(stdout, "unkown1        = %i\n",(bb[1][1] & 0b01000000) >> 6); // always 0?
+        fprintf(stdout, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111?
+        fprintf(stdout, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
+        fprintf(stdout, "humidity       = %i%%\n", hum);
+        fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
         if (debug_output)
             debug_callback(bb, bits_per_row);

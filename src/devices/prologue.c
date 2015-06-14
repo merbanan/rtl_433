@@ -34,19 +34,19 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
         /* Prologue sensor */
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
         temp2 = temp2 >> 4;
-        fprintf(stderr, "Sensor temperature event:\n");
-        fprintf(stderr, "protocol      = Prologue, %d bits\n",bits_per_row[1]);
-        fprintf(stderr, "button        = %d\n",bb[1][1]&0x04?1:0);
-        fprintf(stderr, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
-        fprintf(stderr, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-        fprintf(stderr, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));
-        fprintf(stderr, "channel       = %d\n",(bb[1][1]&0x03)+1);
-        fprintf(stderr, "id            = %d\n",(bb[1][0]&0xF0)>>4);
+        fprintf(stdout, "Sensor temperature event:\n");
+        fprintf(stdout, "protocol      = Prologue, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "button        = %d\n",bb[1][1]&0x04?1:0);
+        fprintf(stdout, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
+        fprintf(stdout, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
+        fprintf(stdout, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));
+        fprintf(stdout, "channel       = %d\n",(bb[1][1]&0x03)+1);
+        fprintf(stdout, "id            = %d\n",(bb[1][0]&0xF0)>>4);
         rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
-        fprintf(stderr, "rid           = %d\n", rid);
-        fprintf(stderr, "hrid          = %02x\n", rid);
+        fprintf(stdout, "rid           = %d\n", rid);
+        fprintf(stdout, "hrid          = %02x\n", rid);
 
-        fprintf(stderr, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+        fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
         if (debug_output)
             debug_callback(bb, bits_per_row);
