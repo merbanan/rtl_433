@@ -138,4 +138,118 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 	return 0;	// Out of data
 }
 
+#define MAX_HIST_BINS 16
+
+typedef struct {
+	unsigned count;
+	unsigned sum;
+	unsigned mean;
+	unsigned min;
+	unsigned max;
+} hist_bin_t;
+
+typedef struct {
+	unsigned bins_count;
+	hist_bin_t bins[MAX_HIST_BINS];
+} histogram_t;
+
+/**
+ * Generate a histogram (unsorted)
+ */
+void histogram_sum(const unsigned *data, unsigned len, float tolerance, histogram_t *hist) {
+	unsigned bin;	// Iterator will be used outside for! 
+	float t_upper = 1.0 + tolerance;
+	float t_lower = 1.0 - tolerance;
+
+	for(unsigned n = 0; n < len; ++n) {
+		for(bin = 0; bin < hist->bins_count; ++bin) {
+			if((data[n] > (t_lower * hist->bins[bin].mean)) 
+			&& (data[n] < (t_upper * hist->bins[bin].mean))
+			) {
+				hist->bins[bin].count++;
+				hist->bins[bin].sum += data[n];
+				hist->bins[bin].mean = hist->bins[bin].sum / hist->bins[bin].count;
+				hist->bins[bin].min = (data[n] < hist->bins[bin].min ? data[n] : hist->bins[bin].min);
+				hist->bins[bin].max = (data[n] > hist->bins[bin].max ? data[n] : hist->bins[bin].max);
+				break;	// Match found!
+			}
+		}
+		// No match found?
+		if(bin == hist->bins_count && bin < MAX_HIST_BINS) {
+			hist->bins[bin].count	= 1;
+			hist->bins[bin].sum		= data[n];
+			hist->bins[bin].mean	= data[n];
+			hist->bins[bin].min		= data[n];
+			hist->bins[bin].max		= data[n];
+			hist->bins_count++;
+		} // for bin
+	} // for data
+}
+
+
+/**
+ * Print a histogram
+ */
+void histogram_print(const histogram_t *hist) {
+	for(unsigned n = 0; n < hist->bins_count; ++n) {
+		fprintf(stderr, " [%2u] mean: %4u (%u/%u),\t count: %3u\n", n, 
+			hist->bins[n].mean, 
+			hist->bins[n].min, 
+			hist->bins[n].max, 
+			hist->bins[n].count);
+	}
+}
+
+
+#define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
+
+/**
+ * Analyze and print result
+ */
+void pulse_analyzer(const pulse_data_t *data)
+{
+	// Generate pulse period data
+	pulse_data_t pulse_periods = {0};
+	pulse_periods.num_pulses = data->num_pulses;
+	for(unsigned n = 0; n < pulse_periods.num_pulses; ++n) {
+		pulse_periods.pulse[n] = data->pulse[n] + data->gap[n];
+	}
+
+	histogram_t hist_pulses = {0};
+	histogram_t hist_gaps = {0};
+	histogram_t hist_periods = {0};
+
+	histogram_sum(data->pulse, data->num_pulses, 0.2, &hist_pulses);
+	histogram_sum(data->gap, data->num_pulses-1, 0.2, &hist_gaps);						// Leave out last gap (end)
+	histogram_sum(pulse_periods.pulse, pulse_periods.num_pulses-1, 0.1, &hist_periods);	// Leave out last gap (end)
+
+	fprintf(stderr, "\nAnalyzing pulses...\n");
+	fprintf(stderr, "Total number of pulses: %u\n", data->num_pulses);
+	fprintf(stderr, "Pulse width distribution:\n");
+	histogram_print(&hist_pulses);
+	fprintf(stderr, "Gap width distribution:\n");
+	histogram_print(&hist_gaps);
+	fprintf(stderr, "Pulse period distribution:\n");
+	histogram_print(&hist_periods);
+	
+	fprintf(stderr, "Guessing modulation: ");
+	if(data->num_pulses == 1) {
+		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
+	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 2) {
+		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
+	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
+		fprintf(stderr, "Pulse Width Modulation with fixed period\n");
+	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1 && hist_periods.bins_count == 2) {
+		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
+	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
+		fprintf(stderr, "Manchester coding\n");
+	} else if(hist_pulses.bins_count == 3 && hist_gaps.bins_count == 3 && hist_periods.bins_count == 1) {
+		fprintf(stderr, "Pulse Width Modulation with startbit/delimiter\n");
+	} else {
+		fprintf(stderr, "No clue...\n");
+	}
+	
+	
+	fprintf(stderr, "\n");
+}
 

@@ -47,5 +47,10 @@ void pulse_data_print(const pulse_data_t *data);
 int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, pulse_data_t *pulses);
 
 
+/**
+ * Analyze and print result
+ */
+void pulse_analyzer(const pulse_data_t *data);
+
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

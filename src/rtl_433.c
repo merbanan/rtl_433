@@ -944,7 +944,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                 }
             }
 			while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
-				if(debug_output) pulse_data_print(&demod->pulse_data);
+//				if(debug_output) pulse_data_print(&demod->pulse_data);
+				if(debug_output) pulse_analyzer(&demod->pulse_data);
 				pulse_data_clear(&demod->pulse_data);
 			}
         }
