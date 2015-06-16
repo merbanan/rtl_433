@@ -22,6 +22,7 @@
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
+#include "pulse_detect.h"
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
@@ -145,6 +146,7 @@ struct dm_state {
     int r_dev_num;
     struct protocol_state *r_devs[MAX_PROTOCOLS];
 
+	pulse_data_t	pulse_data;
 };
 
 void usage(r_device *devices) {
@@ -941,6 +943,10 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                 }
             }
+			while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+				if(debug_output) pulse_data_print(&demod->pulse_data);
+				pulse_data_clear(&demod->pulse_data);
+			}
         }
 
         if (demod->save_data) {

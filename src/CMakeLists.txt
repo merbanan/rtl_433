@@ -18,6 +18,7 @@
 ########################################################################
 add_executable(rtl_433 
 	rtl_433.c
+	pulse_detect.c
 	devices/silvercrest.c
 	devices/rubicson.c
 	devices/prologue.c
