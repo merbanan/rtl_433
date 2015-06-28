@@ -13,9 +13,12 @@
  * - Zero Pulses are longer (1,400 uS High, 1,000 uS Low) = 2,400 uS
  * - One Pulses are shorter (  550 uS High, 1,000 uS Low) = 1,600 uS
  * - Sensor id changes when the battery is changed
- * - Values are BCD with one decimal place: vvv = 12.3
- * - Value is repeated integer only iv = 12
+ * - Primay Value are BCD with one decimal place: vvv = 12.3
+ * - Secondary value is integer only intval = 12, seems to be a repeat of primary
+ *   This may actually be an additional data check because the 4 bit checksum
+ *   and parity bit is  pretty week at detecting errors.
  * - Temperature is in Celsius with 50.0 added (to handle negative values)
+ * - Humidity values appear to be integer precision, decimal always 0.
  * - There is a 4 bit checksum and a parity bit covering the three digit value
  * - Parity check for TX-3 and TX-4 might be different.
  * - Msg sent with one repeat after 30 mS
@@ -56,6 +59,8 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum, parity_bit, parity = 0;
+	time_t time_now;
+	char time_str[LOCAL_TIME_BUFLEN];
 
 	// Actual Packet should start with 0x0A and be 6 bytes
 	// actual message is 44 bit, 11 x 4 bit nybbles.
@@ -101,9 +106,11 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
+			time(&time_now);
+			local_time_str(time_now, time_str);
 			fprintf(stdout,
-					"LaCrosse Checksum/Parity error: %d != %d, Parity %d\n",
-					checksum, msg_nybbles[10], parity);
+				"%s LaCrosse Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
+				time_str, checksum, msg_nybbles[10], parity);
 			return 0;
 		}
 	}
@@ -123,7 +130,7 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 	int msg_value_int;
 	float msg_value = 0, temp_c = 0, temp_f = 0;
 	time_t time_now;
-	char time_str[25];
+	char time_str[LOCAL_TIME_BUFLEN];
 
 	static float last_msg_value = 0.0;
 	static uint8_t last_sensor_id = 0;
@@ -154,25 +161,32 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 
 			local_time_str(time_now, time_str);
 
+			// Check Repeated data values as another way of verifying
+			// message integrity.
+			if (msg_nybbles[5] != msg_nybbles[8] || 
+			    msg_nybbles[6] != msg_nybbles[9]) {
+			    fprintf(stderr,
+				    "%s LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+				    time_str, sensor_id, msg_type, msg_value, msg_value_int);
+			}
+
 			switch (msg_type) {
 			case 0x00:
 				temp_c = msg_value - 50.0;
 				temp_f = temp_c * 1.8 + 32;
-				fprintf(stdout,
-						"%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
-						time_str, sensor_id, temp_c, temp_f);
+				printf("%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
+					time_str, sensor_id, temp_c, temp_f);
 				break;
 
 			case 0x0E:
-				fprintf(stdout,
-						"%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
-						time_str, sensor_id, msg_value);
+				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
+					time_str, sensor_id, msg_value);
 				break;
 
 			default:
-				fprintf(stdout,
-						"%s LaCrosse Sensor %02x: Unknown Reading % 3.1f (%d)\n",
-						time_str, sensor_id, msg_value, msg_value_int);
+				fprintf(stderr,
+					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+					time_str, sensor_id, msg_type, msg_value, msg_value_int);
 			}
 
 			time(&last_msg_time);
@@ -197,4 +211,5 @@ r_device lacrossetx = {
 /* .short_limit    = */238,
 /* .long_limit     = */750,
 /* .reset_limit    = */8000,
-/* .json_callback  = */&lacrossetx_callback, };
+/* .json_callback  = */&lacrossetx_callback, 
+/* .disabled       = */0, };
