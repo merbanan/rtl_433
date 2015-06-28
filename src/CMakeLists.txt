@@ -18,6 +18,8 @@
 ########################################################################
 add_executable(rtl_433 
 	rtl_433.c
+	bitbuffer.c
+	pulse_demod.c
 	pulse_detect.c
 	devices/silvercrest.c
 	devices/rubicson.c
