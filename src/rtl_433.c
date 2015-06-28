@@ -925,6 +925,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
         if (demod->analyze) {
             pwm_analyze(demod, demod->f_buf, len / 2);
         } else {
+            // Loop through all demodulators for all samples (CPU intensive!)
             for (i = 0; i < demod->r_dev_num; i++) {
                 switch (demod->r_devs[i]->modulation) {
                     case OOK_PWM_D:
@@ -943,11 +944,24 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                 }
             }
-			while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+            // Detect a package and loop through demodulators with pulse data
+            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+                for (i = 0; i < demod->r_dev_num; i++) {
+                    switch (demod->r_devs[i]->modulation) {
+                        // Un-implemented decoders
+                        case OOK_PWM_D:
+                        case OOK_PWM_P:
+                        case OOK_MANCHESTER:
+                        case OOK_PWM_RAW:
+                            break;
+                        default:
+                            fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+                    }
+                } // for demodulators
 //				if(debug_output) pulse_data_print(&demod->pulse_data);
-				if(debug_output) pulse_analyzer(&demod->pulse_data);
-				pulse_data_clear(&demod->pulse_data);
-			}
+                if(debug_output) pulse_analyzer(&demod->pulse_data);
+                pulse_data_clear(&demod->pulse_data);
+            }
         }
 
         if (demod->save_data) {
