@@ -25,11 +25,11 @@ int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *devic
 		}
 
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
-            if (device->callback) {
-                events += device->callback(bits.bits_buffer, bits.bits_per_row);
+			if (device->callback) {
+				events += device->callback(bits.bits_buffer, bits.bits_per_row);
 				bitbuffer_clear(&bits);
-            } else {
-                bitbuffer_print(&bits);
+			} else {
+				bitbuffer_print(&bits);
 			}
 		} else if(pulses->gap[n] >= (unsigned)device->long_limit) {
 			bitbuffer_add_row(&bits);

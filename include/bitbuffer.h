@@ -15,8 +15,8 @@
 
 #include <stdint.h>
 
-#define BITBUF_COLS             34		// Number of bytes in a column
-#define BITBUF_ROWS             50
+#define BITBUF_COLS		34		// Number of bytes in a column
+#define BITBUF_ROWS		50
 
 
 /// Bit buffer

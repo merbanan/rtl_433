@@ -18,8 +18,8 @@
 void bitbuffer_clear(bitbuffer_t *bits) {
 	bits->row_index = 0;
 	bits->bit_col_index = 0;
-    memset(bits->bits_per_row, 0, BITBUF_ROWS*2);
-    memset(bits->bits_buffer, 0, BITBUF_ROWS * BITBUF_COLS);
+	memset(bits->bits_per_row, 0, BITBUF_ROWS*2);
+	memset(bits->bits_buffer, 0, BITBUF_ROWS * BITBUF_COLS);
 }
 
 
@@ -31,8 +31,8 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 		bits->bits_buffer[bits->row_index][col_index] |= bit << (7-bits->bit_col_index);
 		bits->bit_col_index++;
 		bits->bit_col_index %= 8;		// Wrap around
-		bits->bits_per_row[bits->row_index]++;	
-	}	
+		bits->bits_per_row[bits->row_index]++;
+	}
 	else {
 		fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");
 	}

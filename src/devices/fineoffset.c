@@ -61,10 +61,10 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
     // Validate package
     if (bits_per_row[0] >= 48 &&        // Dont waste time on a short package
         bb[0][0] == 0xFF &&             // Preamble
-	    bb[0][5] == crc8(&bb[0][1], 4, polynomial)	// CRC (excluding preamble)
-	) 
+        bb[0][5] == crc8(&bb[0][1], 4, polynomial)	// CRC (excluding preamble)
+    ) 
     {
-	    // Nibble 3,4 contains ID
+         // Nibble 3,4 contains ID
         ID = ((bb[0][1]&0x0F) << 4) | ((bb[0][2]&0xF0) >> 4);
 
         // Nible 5,6,7 contains 12 bits of temperature
