@@ -19,6 +19,12 @@
 
 
 /// Demodulate a plain Pulse Width Modulation signal
+///
+/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
+/// Gap between pulses may be of fixed size or variable (e.g. fixed period)
+/// - Short pulse will add a 1 bit
+/// - Long  pulse will add a 0 bit
+/// - No start bit detection or removal
 /// @return number of events processed
 int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
 

@@ -781,54 +781,6 @@ static void manchester_decode(struct dm_state *demod, struct protocol_state* p, 
 }
 
 
-/* Pulse Width Modulation. No startbit removal */
-static void pwm_raw_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-    for (i = 0; i < len; i++) {
-        if (p->start_c) p->sample_counter++;
-
-        // Detect Pulse Start (leading edge)
-        if (!p->pulse_start && (buf[i] > demod->level_limit)) {
-            p->pulse_start    = 1;
-            p->sample_counter = 0;
-            // Check for first bit in sequence
-            if(!p->start_c) {
-                p->start_c = 1;
-            }
-        }
-
-        // Detect Pulse End (trailing edge)
-        if (p->pulse_start && (buf[i] < demod->level_limit)) {
-            p->pulse_start      = 0;
-            if (p->sample_counter <= p->short_limit) {
-                demod_add_bit(p, 1);
-            } else {
-                demod_add_bit(p, 0);
-            }
-        }
-
-        // Detect Pulse period overrun
-        if (p->sample_counter == p->long_limit) {
-                demod_next_bits_packet(p);
-        }
-
-        // Detect Pulse exceeding reset limit
-        if (p->sample_counter > p->reset_limit) {
-            p->sample_counter   = 0;
-            p->start_c          = 0;
-            p->pulse_start      = 0;
-
-            if (p->callback)
-                events+=p->callback(p->bits_buffer, p->bits_per_row);
-            else
-                demod_print_bits_packet(p);
-
-            demod_reset_bits_packet(p);
-        }
-    }
-}
-
-
 /** Something that might look like a IIR lowpass filter
  *
  *  [b,a] = butter(1, 0.01) ->  quantizes nicely thus suitable for fixed point
@@ -908,9 +860,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                     case OOK_MANCHESTER:
                         manchester_decode(demod, demod->r_devs[i], demod->f_buf, len/2);
                         break;
-                    case OOK_PWM_RAW:
-                        pwm_raw_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
-                        break;
                     // Add pulse demodulators here
                     case OOK_PULSE_PWM_RAW:
                         break;
@@ -926,7 +875,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         case OOK_PWM_D:
                         case OOK_PWM_P:
                         case OOK_MANCHESTER:
-                        case OOK_PWM_RAW:
                             break;
                         case OOK_PULSE_PWM_RAW:
                             pulse_demod_pwm_raw(&demod->pulse_data, demod->r_devs[i]);               
