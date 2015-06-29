@@ -39,8 +39,39 @@
 #define     OOK_PWM_P		2   /* The length of the pulses varies */
 #define     OOK_MANCHESTER	3	/* Manchester code */
 #define     OOK_PWM_RAW	    4   /* Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0 */
+#define     OOK_PULSE_PWM_RAW  5    /* Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0 */
 
 extern int debug_output;
 int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
+
+
+struct protocol_state {
+    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
+
+    /* bits state */
+    int bits_col_idx;
+    int bits_row_idx;
+    int bits_bit_col_idx;
+    uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
+    int16_t bits_per_row[BITBUF_ROWS];
+    int bit_rows;
+    unsigned int modulation;
+
+    /* demod state */
+    int pulse_length;
+    int pulse_count;
+    int pulse_distance;
+    int sample_counter;
+    int start_c;
+
+    int packet_present;
+    int pulse_start;
+    int real_bits;
+    int start_bit;
+    /* pwm limits */
+    int short_limit;
+    int long_limit;
+    int reset_limit;
+};
 
 #endif /* INCLUDE_RTL_433_H_ */

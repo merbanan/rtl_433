@@ -99,7 +99,7 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
 r_device fineoffset_WH2 = {
     /* .id             = */ 12,
     /* .name           = */ "Fine Offset Electronics, WH-2 Sensor",
-    /* .modulation     = */ OOK_PWM_RAW,
+    /* .modulation     = */ OOK_PULSE_PWM_RAW,
     /* .short_limit    = */ 200,	// Short pulse 136, long pulse 381, fixed gap 259
     /* .long_limit     = */ 700,	// Maximum pulse period (long pulse + fixed gap)
     /* .reset_limit    = */ 700,	// We just want 1 package

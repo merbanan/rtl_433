@@ -23,6 +23,8 @@
 #include "rtl-sdr.h"
 #include "rtl_433.h"
 #include "pulse_detect.h"
+#include "pulse_demod.h"
+
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
@@ -93,37 +95,6 @@ int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BI
 
     return 0;
 }
-
-struct protocol_state {
-    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
-
-    /* bits state */
-    int bits_col_idx;
-    int bits_row_idx;
-    int bits_bit_col_idx;
-    uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
-    int16_t bits_per_row[BITBUF_ROWS];
-    int bit_rows;
-    unsigned int modulation;
-
-    /* demod state */
-    int pulse_length;
-    int pulse_count;
-    int pulse_distance;
-    int sample_counter;
-    int start_c;
-
-    int packet_present;
-    int pulse_start;
-    int real_bits;
-    int start_bit;
-    /* pwm limits */
-    int short_limit;
-    int long_limit;
-    int reset_limit;
-
-
-};
 
 struct dm_state {
     FILE *file;
@@ -940,6 +911,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                     case OOK_PWM_RAW:
                         pwm_raw_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
                         break;
+                    // Add pulse demodulators here
+                    case OOK_PULSE_PWM_RAW:
+                        break;
                     default:
                         fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                 }
@@ -948,11 +922,14 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
             while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
-                        // Un-implemented decoders
+                        // Old style decoders
                         case OOK_PWM_D:
                         case OOK_PWM_P:
                         case OOK_MANCHESTER:
                         case OOK_PWM_RAW:
+                            break;
+                        case OOK_PULSE_PWM_RAW:
+                            pulse_demod_pwm_raw(&demod->pulse_data, demod->r_devs[i]);               
                             break;
                         default:
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);

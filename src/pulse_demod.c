@@ -14,30 +14,30 @@
 #include "bitbuffer.h"
 #include <stdio.h>
 
-int pulse_demod_pwm_raw(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
 	bitbuffer_t bits = {0};
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		if(pulses->pulse[n] <= device->short_limit) {
+		if(pulses->pulse[n] <= (unsigned)device->short_limit) {
 			bitbuffer_add_bit(&bits, 1);
 		} else {
 			bitbuffer_add_bit(&bits, 0);
 		}
 
-		if(pulses->gap[n] > device->reset_limit) {
-            if (device->json_callback) {
-                events += device->json_callback(bits.bits_buffer, bits.bits_per_row);
+		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+            if (device->callback) {
+                events += device->callback(bits.bits_buffer, bits.bits_per_row);
 				bitbuffer_clear(&bits);
             } else {
                 bitbuffer_print(&bits);
 			}
-		} else if(pulses->gap[n] >= device->long_limit) {
+		} else if(pulses->gap[n] >= (unsigned)device->long_limit) {
 			bitbuffer_add_row(&bits);
 		}
 	}
 	return events;
 }
-/*
+/* ** To Be Deleted - for reference only! **
 /// Pulse Width Modulation. No startbit removal
 static void pwm_raw_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;

@@ -15,12 +15,12 @@
 
 #include <stdint.h>
 #include "pulse_detect.h"
-#include "rtl_433_devices.h"
+#include "rtl_433.h"
 
 
 /// Demodulate a plain Pulse Width Modulation signal
 /// @return number of events processed
-int pulse_demod_pwm_raw(const pulse_data_t *pulses, r_device *device);
+int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
 
 
 #endif /* INCLUDE_PULSE_DEMOD_H_ */
