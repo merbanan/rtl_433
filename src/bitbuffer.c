@@ -25,7 +25,9 @@ void bitbuffer_clear(bitbuffer_t *bits) {
 
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 	uint16_t col_index = bits->bits_per_row[bits->row_index]/8;
-	if(col_index < BITBUF_COLS)	{
+	if((col_index < BITBUF_COLS)
+	&& (bits->row_index < BITBUF_ROWS)
+	) {
 		bits->bits_buffer[bits->row_index][col_index] |= bit << (7-bits->bit_col_index);
 		bits->bit_col_index++;
 		bits->bit_col_index %= 8;		// Wrap around
@@ -58,3 +60,51 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 		fprintf(stderr, "\n");
 	}
 }
+
+
+// Test code
+// gcc -I include/ -std=gnu11 -D _TEST src/bitbuffer.c
+#ifdef _TEST
+int main(int argc, char **argv) {
+	fprintf(stderr, "bitbuffer:: test\n");
+
+	bitbuffer_t bits = {0};
+
+	fprintf(stderr, "TEST: bitbuffer:: The empty buffer\n");
+	bitbuffer_print(&bits);
+	
+	fprintf(stderr, "TEST: bitbuffer:: Add 1 bit\n");
+	bitbuffer_add_bit(&bits, 1);
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: Add 1 new row\n");
+	bitbuffer_add_row(&bits);
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: Fill row\n");
+	for (int i=0; i < BITBUF_COLS*8; ++i) {
+		bitbuffer_add_bit(&bits, i%2);
+	}
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: Add row and fill 1 column too many\n");
+	bitbuffer_add_row(&bits);
+	for (int i=0; i <= BITBUF_COLS*8; ++i) {
+		bitbuffer_add_bit(&bits, i%2);
+	}
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: Clear\n");
+	bitbuffer_clear(&bits);
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: Add 1 row too many\n");
+	for (int i=0; i <= BITBUF_ROWS; ++i) {
+		bitbuffer_add_row(&bits);
+	}
+	bitbuffer_add_bit(&bits, 1);
+	bitbuffer_print(&bits);
+
+	return 0;
+}
+#endif /* _TEST */
