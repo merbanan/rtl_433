@@ -10,7 +10,7 @@
 
 #include "pulse_detect.h"
 #include <stdio.h>
-
+#include <stdlib.h>
 
 void pulse_data_clear(pulse_data_t *data) {
 	data->num_pulses = 0;
@@ -141,22 +141,26 @@ typedef struct {
 	hist_bin_t bins[MAX_HIST_BINS];
 } histogram_t;
 
+
+// Helper macros
+#define max(a,b) ((a) > (b) ? (a) : (b))
+#define min(a,b) ((a) < (b) ? (a) : (b))
+
+
 /// Generate a histogram (unsorted)
-void histogram_sum(const unsigned *data, unsigned len, float tolerance, histogram_t *hist) {
-	unsigned bin;	// Iterator will be used outside for! 
-	float t_upper = 1.0 + tolerance;
-	float t_lower = 1.0 - tolerance;
+void histogram_sum(histogram_t *hist, const unsigned *data, unsigned len, float tolerance) {
+	unsigned bin;	// Iterator will be used outside for!
 
 	for(unsigned n = 0; n < len; ++n) {
 		for(bin = 0; bin < hist->bins_count; ++bin) {
-			if((data[n] > (t_lower * hist->bins[bin].mean)) 
-			&& (data[n] < (t_upper * hist->bins[bin].mean))
-			) {
+			int bn = data[n];
+			int bm = hist->bins[bin].mean;
+			if (abs(bn - bm) < (tolerance * max(bn, bm))) {
 				hist->bins[bin].count++;
 				hist->bins[bin].sum += data[n];
 				hist->bins[bin].mean = hist->bins[bin].sum / hist->bins[bin].count;
-				hist->bins[bin].min = (data[n] < hist->bins[bin].min ? data[n] : hist->bins[bin].min);
-				hist->bins[bin].max = (data[n] > hist->bins[bin].max ? data[n] : hist->bins[bin].max);
+				hist->bins[bin].min	= min(data[n], hist->bins[bin].min);
+				hist->bins[bin].max	= max(data[n], hist->bins[bin].max);
 				break;	// Match found!
 			}
 		}
@@ -170,6 +174,35 @@ void histogram_sum(const unsigned *data, unsigned len, float tolerance, histogra
 			hist->bins_count++;
 		} // for bin
 	} // for data
+}
+
+
+/// Fuse histogram bins with means within tolerance
+void histogram_fuse_bins(histogram_t *hist, float tolerance) {
+	hist_bin_t	zerobin = {0};
+	if (hist->bins_count < 2) return;		// Avoid underflow
+	// Compare all bins
+	for(unsigned n = 0; n < hist->bins_count-1; ++n) {
+		for(unsigned m = n+1; m < hist->bins_count; ++m) {
+			int bn = hist->bins[n].mean;
+			int bm = hist->bins[m].mean;
+			if (abs(bn - bm) < (tolerance * max(bn, bm))) {
+				// Fuse data for bin[n] and bin[m]
+				hist->bins[n].count += hist->bins[m].count;
+				hist->bins[n].sum	+= hist->bins[m].sum;
+				hist->bins[n].mean 	= hist->bins[n].sum / hist->bins[n].count;
+				hist->bins[n].min 	= min(hist->bins[n].min, hist->bins[m].min);
+				hist->bins[n].max 	= max(hist->bins[n].max, hist->bins[m].max);
+				// Delete bin[m]
+				for(unsigned l = m; l < hist->bins_count-1; ++l) {
+					hist->bins[l] = hist->bins[l+1];
+				}
+				hist->bins_count--;
+				hist->bins[hist->bins_count] = zerobin;
+				m--;	// Compare new bin in same place!
+			} // if within tolerance
+		} // for m
+	} // for n
 }
 
 
@@ -201,9 +234,15 @@ void pulse_analyzer(const pulse_data_t *data)
 	histogram_t hist_gaps = {0};
 	histogram_t hist_periods = {0};
 
-	histogram_sum(data->pulse, data->num_pulses, TOLERANCE, &hist_pulses);
-	histogram_sum(data->gap, data->num_pulses-1, TOLERANCE, &hist_gaps);						// Leave out last gap (end)
-	histogram_sum(pulse_periods.pulse, pulse_periods.num_pulses-1, TOLERANCE, &hist_periods);	// Leave out last gap (end)
+	// Generate statistics
+	histogram_sum(&hist_pulses, data->pulse, data->num_pulses, TOLERANCE);
+	histogram_sum(&hist_gaps, data->gap, data->num_pulses-1, TOLERANCE);						// Leave out last gap (end)
+	histogram_sum(&hist_periods, pulse_periods.pulse, pulse_periods.num_pulses-1, TOLERANCE);	// Leave out last gap (end)
+
+	// Fuse overlapping bins
+	histogram_fuse_bins(&hist_pulses, TOLERANCE);
+	histogram_fuse_bins(&hist_gaps, TOLERANCE);
+	histogram_fuse_bins(&hist_periods, TOLERANCE);
 
 	fprintf(stderr, "\nAnalyzing pulses...\n");
 	fprintf(stderr, "Total number of pulses: %u\n", data->num_pulses);
