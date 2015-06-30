@@ -1056,72 +1056,74 @@ int main(int argc, char **argv) {
 
     buffer = malloc(out_block_size * sizeof (uint8_t));
 
-    device_count = rtlsdr_get_device_count();
-    if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
-        if (!test_mode_file)
-            exit(1);
-    }
+    if (!test_mode_file) {
+	device_count = rtlsdr_get_device_count();
+	if (!device_count) {
+	    fprintf(stderr, "No supported devices found.\n");
+	    if (!test_mode_file)
+		exit(1);
+	}
 
-    fprintf(stderr, "Found %d device(s):\n", device_count);
-    for (i = 0; i < device_count; i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-    }
-    fprintf(stderr, "\n");
+	fprintf(stderr, "Found %d device(s):\n", device_count);
+	for (i = 0; i < device_count; i++) {
+	    rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+	    fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+	}
+	fprintf(stderr, "\n");
 
-    fprintf(stderr, "Using device %d: %s\n",
-            dev_index, rtlsdr_get_device_name(dev_index));
+	fprintf(stderr, "Using device %d: %s\n",
+		dev_index, rtlsdr_get_device_name(dev_index));
 
-    r = rtlsdr_open(&dev, dev_index);
-    if (r < 0) {
-        fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
-        if (!test_mode_file)
-            exit(1);
-    }
+	r = rtlsdr_open(&dev, dev_index);
+	if (r < 0) {
+	    fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+	    exit(1);
+	}
 #ifndef _WIN32
-    sigact.sa_handler = sighandler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
-    sigaction(SIGQUIT, &sigact, NULL);
-    sigaction(SIGPIPE, &sigact, NULL);
+	sigact.sa_handler = sighandler;
+	sigemptyset(&sigact.sa_mask);
+	sigact.sa_flags = 0;
+	sigaction(SIGINT, &sigact, NULL);
+	sigaction(SIGTERM, &sigact, NULL);
+	sigaction(SIGQUIT, &sigact, NULL);
+	sigaction(SIGPIPE, &sigact, NULL);
 #else
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
+	SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
-    /* Set the sample rate */
-    r = rtlsdr_set_sample_rate(dev, samp_rate);
-    if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-    else
-        fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+	/* Set the sample rate */
+	r = rtlsdr_set_sample_rate(dev, samp_rate);
+	if (r < 0)
+	    fprintf(stderr, "WARNING: Failed to set sample rate.\n");
+	else
+	    fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
-    fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n", demod->decimation_level, samp_rate, samp_rate >> demod->decimation_level);
-    fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
+	fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n", demod->decimation_level, samp_rate, samp_rate >> demod->decimation_level);
+	fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
 
-    if (0 == gain) {
-        /* Enable automatic gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 0);
-        if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
-        else
-            fprintf(stderr, "Tuner gain set to Auto.\n");
-    } else {
-        /* Enable manual gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 1);
-        if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+	if (0 == gain) {
+	    /* Enable automatic gain */
+	    r = rtlsdr_set_tuner_gain_mode(dev, 0);
+	    if (r < 0)
+		fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
+	    else
+		fprintf(stderr, "Tuner gain set to Auto.\n");
+	} else {
+	    /* Enable manual gain */
+	    r = rtlsdr_set_tuner_gain_mode(dev, 1);
+	    if (r < 0)
+		fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
 
-        /* Set the tuner gain */
-        r = rtlsdr_set_tuner_gain(dev, gain);
-        if (r < 0)
-            fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-        else
-            fprintf(stderr, "Tuner gain set to %f dB.\n", gain / 10.0);
+	    /* Set the tuner gain */
+	    r = rtlsdr_set_tuner_gain(dev, gain);
+	    if (r < 0)
+		fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
+	    else
+		fprintf(stderr, "Tuner gain set to %f dB.\n", gain / 10.0);
+	}
+
+	r = rtlsdr_set_freq_correction(dev, ppm_error);
+
     }
-
-    r = rtlsdr_set_freq_correction(dev, ppm_error);
 
     demod->save_data = 1;
     if (!filename) {
