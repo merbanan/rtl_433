@@ -29,4 +29,17 @@
 int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
 
 
+/// Demodulate a Manchester encoded signal with a hardcoded zerobit in front
+///
+/// Demodulate a Manchester encoded signal where first rising edge is counted as a databit 
+/// and therefore always will be zero (Most likely a hardcoded Oregon Scientific peculiarity)
+///
+/// Clock is recovered from the data based on pulse width. When time since last bit is more 
+/// than 1.5 times the clock half period (short_width) it is declared a data edge where:
+/// - Rising edge means bit = 0
+/// - Falling edge means bit = 1
+/// @return number of events processed
+int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 #endif /* INCLUDE_PULSE_DEMOD_H_ */

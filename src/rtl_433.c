@@ -862,6 +862,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         break;
                     // Add pulse demodulators here
                     case OOK_PULSE_PWM_RAW:
+                    case OOK_PULSE_MANCHESTER_ZEROBIT:
                         break;
                     default:
                         fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
@@ -877,7 +878,10 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         case OOK_MANCHESTER:
                             break;
                         case OOK_PULSE_PWM_RAW:
-                            pulse_demod_pwm_raw(&demod->pulse_data, demod->r_devs[i]);               
+                            pulse_demod_pwm_raw(&demod->pulse_data, demod->r_devs[i]);
+                            break;
+                        case OOK_PULSE_MANCHESTER_ZEROBIT:
+                            pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);               
                             break;
                         default:
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);

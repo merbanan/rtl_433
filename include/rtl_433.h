@@ -38,7 +38,8 @@
 #define     OOK_PWM_D		1   /* Pulses are of the same length, the distance varies (PPM) */
 #define     OOK_PWM_P		2   /* The length of the pulses varies */
 #define     OOK_MANCHESTER	3	/* Manchester code */
-#define     OOK_PULSE_PWM_RAW  4    /* Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0 */
+#define     OOK_PULSE_PWM_RAW	4	// Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0
+#define     OOK_PULSE_MANCHESTER_ZEROBIT	5	// Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
 
 extern int debug_output;
 int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
