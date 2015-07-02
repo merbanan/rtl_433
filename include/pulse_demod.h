@@ -18,15 +18,16 @@
 #include "rtl_433.h"
 
 
-/// Demodulate a plain Pulse Width Modulation signal
+/// Demodulate a Pulse Width Modulation signal
 ///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit
 /// - Long  pulse will add a 0 bit
-/// - No start bit detection or removal
+/// @param start_bit = 0: Do not remove any startbits
+/// @param start_bit = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
-int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit);
 
 
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front

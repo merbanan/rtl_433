@@ -14,15 +14,23 @@
 #include "bitbuffer.h"
 #include <stdio.h>
 
-int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *device) {
+int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit) {
 	int events = 0;
+	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
+	
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// Detect pulse width
-		if(pulses->pulse[n] <= (unsigned)device->short_limit) {
-			bitbuffer_add_bit(&bits, 1);
+		
+		// Should we disregard startbit?
+		if(start_bit == 1 && start_bit_detected == 0) {	
+			start_bit_detected = 1;
 		} else {
-			bitbuffer_add_bit(&bits, 0);
+			// Detect pulse width
+			if(pulses->pulse[n] <= (unsigned)device->short_limit) {
+				bitbuffer_add_bit(&bits, 1);
+			} else {
+				bitbuffer_add_bit(&bits, 0);
+			}
 		}
 
 		// End of Message?
@@ -30,12 +38,14 @@ int pulse_demod_pwm_raw(const pulse_data_t *pulses, struct protocol_state *devic
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
 				bitbuffer_clear(&bits);
+				start_bit_detected = 0;
 			} else {
 				bitbuffer_print(&bits);
 			}
 		// Check for new packet in multipacket
-		} else if(pulses->gap[n] >= (unsigned)device->long_limit) {
+		} else if(pulses->gap[n] > (unsigned)device->long_limit) {
 			bitbuffer_add_row(&bits);
+			start_bit_detected = 0;
 		}
 	}
 	return events;
