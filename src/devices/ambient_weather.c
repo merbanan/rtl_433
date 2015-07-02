@@ -147,7 +147,6 @@ ambient_weather_callback (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per
 r_device ambient_weather = {
     /* .id             = */ 14,
     /* .name           = */ "Ambient Weather Temperature Sensor",
-//    /* .modulation     = */ OOK_MANCHESTER,
     /* .modulation     = */ OOK_PULSE_MANCHESTER_ZEROBIT,
     /* .short_limit    = */ 125,
     /* .long_limit     = */ 0, // not used

@@ -729,57 +729,6 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
     }
 }
 
-/*  Machester Decode for Oregon Scientific Weather Sensors
-   Decode data streams sent by Oregon Scientific v2.1, and v3 weather sensors.
-   With manchester encoding, both the pulse width and pulse distance vary.  Clock sync
-   is recovered from the data stream based on pulse widths and distances exceeding a
-   minimum threashold (short limit* 1.5).
- */
-static void manchester_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-
-	if (p->sample_counter == 0)
-	    p->sample_counter = p->short_limit*2;
-
-    for (i=0 ; i<len ; i++) {
-
-	    if (p->start_c)
-		    p->sample_counter++; /* For this decode type, sample counter is count since last data bit recorded */
-
-        if (!p->pulse_count && (buf[i] > demod->level_limit)) { /* Pulse start (rising edge) */
-            p->pulse_count = 1;
-			if (p->sample_counter  > (p->short_limit + (p->short_limit>>1))) {
-			   /* Last bit was recorded more than short_limit*1.5 samples ago */
-			   /* so this pulse start must be a data edge (rising data edge means bit = 0) */
-               demod_add_bit(p, 0);
-			   p->sample_counter=1;
-			   p->start_c++; // start_c counts number of bits received
-			}
-        }
-        if (p->pulse_count && (buf[i] <= demod->level_limit)) { /* Pulse end (falling edge) */
-		    if (p->sample_counter > (p->short_limit + (p->short_limit>>1))) {
-		       /* Last bit was recorded more than "short_limit*1.5" samples ago */
-			   /* so this pulse end is a data edge (falling data edge means bit = 1) */
-               demod_add_bit(p, 1);
-			   p->sample_counter=1;
-			   p->start_c++;
-			}
-            p->pulse_count = 0;
-        }
-
-        if (p->sample_counter > p->reset_limit) {
-	//fprintf(stderr, "manchester_decode number of bits received=%d\n",p->start_c);
-		   if (p->callback)
-              events+=p->callback(p->bits_buffer, p->bits_per_row);
-           else
-              demod_print_bits_packet(p);
-			demod_reset_bits_packet(p);
-	        p->sample_counter = p->short_limit*2;
-			p->start_c = 0;
-        }
-    }
-}
-
 
 /** Something that might look like a IIR lowpass filter
  *
@@ -857,9 +806,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                     case OOK_PWM_P:
                         pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
                         break;
-                    case OOK_MANCHESTER:
-                        manchester_decode(demod, demod->r_devs[i], demod->f_buf, len/2);
-                        break;
                     // Add pulse demodulators here
                     case OOK_PULSE_PWM_RAW:
                     case OOK_PULSE_MANCHESTER_ZEROBIT:
@@ -875,7 +821,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         // Old style decoders
                         case OOK_PWM_D:
                         case OOK_PWM_P:
-                        case OOK_MANCHESTER:
                             break;
                         case OOK_PULSE_PWM_RAW:
                             pulse_demod_pwm_raw(&demod->pulse_data, demod->r_devs[i]);
