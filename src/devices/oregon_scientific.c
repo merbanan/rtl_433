@@ -29,17 +29,19 @@ unsigned int get_os_rollingcode(unsigned char *message, unsigned int sensor_id){
 
 unsigned short int power(const unsigned char* d){
   unsigned short int val = 0;
-  val += d[4] << 8;
-  val += d[3];
-  //fprintf(stdout, "Power: %x %d", val, val);
-  return val & 0xFFF0 ;
+  val = ( d[4] << 8) + d[3];
+  val = val & 0xFFF0;
+  val = val * 1.00188;
+  return val;
 }
 
-unsigned long total(const unsigned char* d){
-  unsigned long val = 0;
+unsigned long long total(const unsigned char* d){
+  unsigned long long val = 0;
   if ( (d[1]&0x0F) == 0 ){
     // Sensor returns total only if nibble#4 == 0
-    val = (unsigned long)d[8]<<24;
+    val =  (unsigned long long)d[10]<< 40;
+    val += (unsigned long long)d[9] << 32;   
+    val += (unsigned long)d[8]<<24;
     val += (unsigned long)d[7] << 16;
     val += d[6] << 8;
     val += d[5];
@@ -241,10 +243,12 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
             unsigned int  pattern = (unsigned int)(0xffa00000>>pattern_index);
             unsigned int pattern2 = (unsigned int)(0xff500000>>pattern_index);
             unsigned int pattern3 = (unsigned int)(0x00500000>>pattern_index);
+            unsigned int pattern4 = (unsigned int)(0x04600000>>pattern_index);
             //fprintf(stdout, "OS v3 Sync nibble search - test_val=%08x pattern=%08x  mask=%08x\n", sync_test_val, pattern, mask);
             if (((sync_test_val & mask) == pattern)  ||
                 ((sync_test_val & mask) == pattern2) ||
-                ((sync_test_val & mask) == pattern3)) {
+                ((sync_test_val & mask) == pattern3) ||
+                ((sync_test_val & mask) == pattern4)) {
                 // Found sync byte - start working on decoding the stream data.
                 // pattern_index indicates  where sync nibble starts, so now we can find the start of the payload
                 int start_byte = 3 + (pattern_index>>3);
@@ -301,48 +305,23 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
         fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
         fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+    } else if (msg[0] == 0x26) { //  Owl CM180 readings
+        int k;
+        for (k=0; k<BITBUF_COLS;k++) {  // Reverse nibbles
+            msg[k] = (msg[k] & 0xF0) >> 4 |  (msg[k] & 0x0F) << 4;
+        }
+        unsigned short int ipower = power(msg);
+        unsigned long long itotal = total(msg); 
+        float total_energy = itotal/3600/1000.0;
+        if (itotal) 
+            fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW, total: %lluW, Total Energy: %.3fkWh\n", msg[0], msg[1], ipower, itotal, total_energy);
+        else
+            fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);  
+   
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
         fprintf(stdout, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
         fprintf(stdout, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
-        fprintf(stdout, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
-    } else if (bb[0][0] == 0 && bb[0][1] == 0 && bb[0][2] == 0 && bb[0][5] == 0x3c) {
-        //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
-
-        int start_bit = 0;
-        int start_byte = 3;
-        j = start_bit;
-        for (i=start_byte;i<BITBUF_COLS;i++) {
-            while (j<8) {
-               unsigned char bit_val = ((bb[0][i] & (0x80 >> j)) >> (7-j));
-
-               // copy every  bit from source stream to dest packet
-               msg[dest_bit>>3] |= (((bb[0][i] & (0x80 >> j)) >> (7-j)) << (7-(dest_bit & 0x07)));
-
-               //fprintf(stdout,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, bb[0][i], msg[dest_bit>>3]);
-               if ((dest_bit & 0x07) == 0x07) {
-                  // after assembling each dest byte, flip bits in each nibble to convert from lsb to msb bit ordering
-                  int k = (dest_bit>>3);
-                  unsigned char indata = msg[k];
-                  // flip the 4 bits in the upper and lower nibbles
-                  msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) |
-                           ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
-                  // Flip nibbles
-                  msg[k] = (msg[k] & 0xF0) >> 4 |  (msg[k] & 0x0F) << 4;    
-                }
-               dest_bit++;
-               j++;
-            }
-            j=0;
-        }
-        unsigned short int ipower = power(msg);
-        unsigned long itotal = total(msg);
-        float total_energy = itotal/3600/1000.0;
-        if (itotal) 
-            fprintf(stdout,"Energy Sensor CMR180 Id %x%x power: %dW, total: %luW, Total Energy: %.3fkWh\n", msg[0], msg[1], ipower, itotal, total_energy);
-        else
-            fprintf(stdout,"Energy Sensor cmr180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);
-        
-        //for (i=0 ; i<15 ; i++) fprintf(stdout, "%02x ", msg[i]);fprintf(stdout,"\n"); 
+        fprintf(stdout, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");    
     } else if (bb[0][3] != 0 ) {
         //fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
         //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
