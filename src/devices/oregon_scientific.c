@@ -317,10 +317,6 @@ static int oregon_scientific_v3_parser(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int
             fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW, total: %lluW, Total Energy: %.3fkWh\n", msg[0], msg[1], ipower, itotal, total_energy);
         else
             fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);  
-    } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
-        fprintf(stdout, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-        fprintf(stdout, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
-        fprintf(stdout, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
     } else if (bb[0][3] != 0 ) {
         //fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
         //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
