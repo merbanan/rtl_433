@@ -22,6 +22,9 @@
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
+#include "pulse_detect.h"
+#include "pulse_demod.h"
+
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
@@ -93,37 +96,6 @@ int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BI
     return 0;
 }
 
-struct protocol_state {
-    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
-
-    /* bits state */
-    int bits_col_idx;
-    int bits_row_idx;
-    int bits_bit_col_idx;
-    uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
-    int16_t bits_per_row[BITBUF_ROWS];
-    int bit_rows;
-    unsigned int modulation;
-
-    /* demod state */
-    int pulse_length;
-    int pulse_count;
-    int pulse_distance;
-    int sample_counter;
-    int start_c;
-
-    int packet_present;
-    int pulse_start;
-    int real_bits;
-    int start_bit;
-    /* pwm limits */
-    int short_limit;
-    int long_limit;
-    int reset_limit;
-
-
-};
-
 struct dm_state {
     FILE *file;
     int save_data;
@@ -145,6 +117,7 @@ struct dm_state {
     int r_dev_num;
     struct protocol_state *r_devs[MAX_PROTOCOLS];
 
+	pulse_data_t	pulse_data;
 };
 
 void usage(r_device *devices) {
@@ -756,105 +729,6 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
     }
 }
 
-/*  Machester Decode for Oregon Scientific Weather Sensors
-   Decode data streams sent by Oregon Scientific v2.1, and v3 weather sensors.
-   With manchester encoding, both the pulse width and pulse distance vary.  Clock sync
-   is recovered from the data stream based on pulse widths and distances exceeding a
-   minimum threashold (short limit* 1.5).
- */
-static void manchester_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-
-	if (p->sample_counter == 0)
-	    p->sample_counter = p->short_limit*2;
-
-    for (i=0 ; i<len ; i++) {
-
-	    if (p->start_c)
-		    p->sample_counter++; /* For this decode type, sample counter is count since last data bit recorded */
-
-        if (!p->pulse_count && (buf[i] > demod->level_limit)) { /* Pulse start (rising edge) */
-            p->pulse_count = 1;
-			if (p->sample_counter  > (p->short_limit + (p->short_limit>>1))) {
-			   /* Last bit was recorded more than short_limit*1.5 samples ago */
-			   /* so this pulse start must be a data edge (rising data edge means bit = 0) */
-               demod_add_bit(p, 0);
-			   p->sample_counter=1;
-			   p->start_c++; // start_c counts number of bits received
-			}
-        }
-        if (p->pulse_count && (buf[i] <= demod->level_limit)) { /* Pulse end (falling edge) */
-		    if (p->sample_counter > (p->short_limit + (p->short_limit>>1))) {
-		       /* Last bit was recorded more than "short_limit*1.5" samples ago */
-			   /* so this pulse end is a data edge (falling data edge means bit = 1) */
-               demod_add_bit(p, 1);
-			   p->sample_counter=1;
-			   p->start_c++;
-			}
-            p->pulse_count = 0;
-        }
-
-        if (p->sample_counter > p->reset_limit) {
-	//fprintf(stderr, "manchester_decode number of bits received=%d\n",p->start_c);
-		   if (p->callback)
-              events+=p->callback(p->bits_buffer, p->bits_per_row);
-           else
-              demod_print_bits_packet(p);
-			demod_reset_bits_packet(p);
-	        p->sample_counter = p->short_limit*2;
-			p->start_c = 0;
-        }
-    }
-}
-
-
-/* Pulse Width Modulation. No startbit removal */
-static void pwm_raw_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-    for (i = 0; i < len; i++) {
-        if (p->start_c) p->sample_counter++;
-
-        // Detect Pulse Start (leading edge)
-        if (!p->pulse_start && (buf[i] > demod->level_limit)) {
-            p->pulse_start    = 1;
-            p->sample_counter = 0;
-            // Check for first bit in sequence
-            if(!p->start_c) {
-                p->start_c = 1;
-            }
-        }
-
-        // Detect Pulse End (trailing edge)
-        if (p->pulse_start && (buf[i] < demod->level_limit)) {
-            p->pulse_start      = 0;
-            if (p->sample_counter <= p->short_limit) {
-                demod_add_bit(p, 1);
-            } else {
-                demod_add_bit(p, 0);
-            }
-        }
-
-        // Detect Pulse period overrun
-        if (p->sample_counter == p->long_limit) {
-                demod_next_bits_packet(p);
-        }
-
-        // Detect Pulse exceeding reset limit
-        if (p->sample_counter > p->reset_limit) {
-            p->sample_counter   = 0;
-            p->start_c          = 0;
-            p->pulse_start      = 0;
-
-            if (p->callback)
-                events+=p->callback(p->bits_buffer, p->bits_per_row);
-            else
-                demod_print_bits_packet(p);
-
-            demod_reset_bits_packet(p);
-        }
-    }
-}
-
 
 /** Something that might look like a IIR lowpass filter
  *
@@ -923,6 +797,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
         if (demod->analyze) {
             pwm_analyze(demod, demod->f_buf, len / 2);
         } else {
+            // Loop through all demodulators for all samples (CPU intensive!)
             for (i = 0; i < demod->r_dev_num; i++) {
                 switch (demod->r_devs[i]->modulation) {
                     case OOK_PWM_D:
@@ -931,15 +806,39 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                     case OOK_PWM_P:
                         pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
                         break;
-                    case OOK_MANCHESTER:
-                        manchester_decode(demod, demod->r_devs[i], demod->f_buf, len/2);
-                        break;
-                    case OOK_PWM_RAW:
-                        pwm_raw_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
+                    // Add pulse demodulators here
+                    case OOK_PULSE_PWM_STARTBIT:
+                    case OOK_PULSE_PWM_RAW:
+                    case OOK_PULSE_MANCHESTER_ZEROBIT:
                         break;
                     default:
                         fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                 }
+            }
+            // Detect a package and loop through demodulators with pulse data
+            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+                for (i = 0; i < demod->r_dev_num; i++) {
+                    switch (demod->r_devs[i]->modulation) {
+                        // Old style decoders
+                        case OOK_PWM_D:
+                        case OOK_PWM_P:
+                            break;
+                        case OOK_PULSE_PWM_STARTBIT:
+                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 1);
+                            break;
+                        case OOK_PULSE_PWM_RAW:
+                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 0);
+                            break;
+                        case OOK_PULSE_MANCHESTER_ZEROBIT:
+                            pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+                            break;
+                        default:
+                            fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+                    }
+                } // for demodulators
+//                if(debug_output) pulse_data_print(&demod->pulse_data);
+                if(debug_output) pulse_analyzer(&demod->pulse_data);
+                pulse_data_clear(&demod->pulse_data);
             }
         }
 
