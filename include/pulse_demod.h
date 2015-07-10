@@ -18,6 +18,17 @@
 #include "rtl_433.h"
 
 
+/// Demodulate a Pulse Position Modulation signal
+///
+/// Demodulate a Pulse Position Modulation (PPM) signal consisting of pulses with variable gap.
+/// Pulse width may be fixed or variable.
+/// Gap between pulses determine the encoding:
+/// - Short gap will add a 0 bit
+/// - Long  gap will add a 1 bit
+/// @return number of events processed
+int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 /// Demodulate a Pulse Width Modulation signal
 ///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.

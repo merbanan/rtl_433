@@ -807,6 +807,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
                         break;
                     // Add pulse demodulators here
+                    case OOK_PULSE_PPM_RAW:
                     case OOK_PULSE_PWM_STARTBIT:
                     case OOK_PULSE_PWM_RAW:
                     case OOK_PULSE_MANCHESTER_ZEROBIT:
@@ -822,6 +823,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         // Old style decoders
                         case OOK_PWM_D:
                         case OOK_PWM_P:
+                            break;
+                        case OOK_PULSE_PPM_RAW:
+                            pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM_STARTBIT:
                             pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 1);
