@@ -1110,6 +1110,11 @@ int main(int argc, char **argv) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
         }
+
+        // Call a last time with cleared samples to ensure EOP detection
+        memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);     // 128 is 0 in unsigned data
+        rtlsdr_callback(test_mode_buf, 131072, demod);      // Why the magic value 131072?
+
         //Always classify a signal at the end of the file
         classify_signal();
         fprintf(stderr, "Test mode file issued %d packets\n", i);
