@@ -817,7 +817,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                 }
             }
             // Detect a package and loop through demodulators with pulse data
-            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data)) {
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // Old style decoders
