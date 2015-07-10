@@ -16,6 +16,7 @@
 
 
 int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
+//	fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
 	int events = 0;
 	bitbuffer_t bits = {0};
 	
@@ -44,6 +45,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit) {
+//	fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 	int events = 0;
 	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
@@ -82,6 +84,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, i
 
 
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device) {
+//	fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
 	int events = 0;
 	unsigned time_since_last = 0;
 	bitbuffer_t bits = {0};

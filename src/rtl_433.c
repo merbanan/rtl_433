@@ -268,6 +268,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->reset_limit = (float) t_dev->reset_limit / ((float) DEFAULT_SAMPLE_RATE / (float) samp_rate);
     p->modulation = t_dev->modulation;
     p->callback = t_dev->json_callback;
+    p->name = t_dev->name;
     demod_reset_bits_packet(p);
 
     demod->r_devs[demod->r_dev_num] = p;

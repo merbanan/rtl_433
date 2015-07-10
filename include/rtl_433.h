@@ -73,6 +73,7 @@ struct protocol_state {
     int short_limit;
     int long_limit;
     int reset_limit;
+    char *name;
 };
 
 #endif /* INCLUDE_RTL_433_H_ */
