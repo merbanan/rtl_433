@@ -70,6 +70,7 @@ Running:
            [18] Fine Offset Electronics, WH-2 Sensor
            [19] Nexus Temperature & Humidity Sensor
            [20] Ambient Weather Temperature Sensor
+           [21] Calibeur RF-104 Sensor
 
 
 Examples:
