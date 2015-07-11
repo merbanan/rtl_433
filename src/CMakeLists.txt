@@ -41,6 +41,7 @@ add_executable(rtl_433
 	devices/ambient_weather.c
 	devices/calibeur.c
 	devices/x10_rf.c
+	devices/dsc.c
 )
 
 target_link_libraries(rtl_433
