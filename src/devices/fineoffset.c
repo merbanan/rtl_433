@@ -27,29 +27,7 @@
  * (at your option) any later version.
  */
 #include "rtl_433.h"
-
-
-// Generic CRC-8
-// (Should probably be moved to somewhere common)
-// polynomial byte is from x^7 to x^0 (x^8 is implicitly one)
-uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial) {
-    uint8_t remainder = 0;	
-    unsigned byte, bit;
-
-    for (byte = 0; byte < nBytes; ++byte) {
-        remainder ^= message[byte];
-        for (bit = 0; bit < 8; ++bit) {
-            if (remainder & 0x80) {
-                remainder = (remainder << 1) ^ polynomial;
-            }
-            else {
-                remainder = (remainder << 1);
-            }
-        }
-    }
-    return remainder;
-}
-
+#include "util.h"
 
 static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
     uint8_t ID;

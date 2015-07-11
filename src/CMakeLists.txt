@@ -21,6 +21,7 @@ add_executable(rtl_433
 	bitbuffer.c
 	pulse_demod.c
 	pulse_detect.c
+	util.c
 	devices/silvercrest.c
 	devices/rubicson.c
 	devices/prologue.c
