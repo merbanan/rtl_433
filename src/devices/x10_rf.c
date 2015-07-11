@@ -32,7 +32,6 @@ static int X10_RF_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 
 
 r_device X10_RF = {
-	.id				= 12,
 	.name			= "X10 RF",
 	.modulation		= OOK_PULSE_PPM_RAW,
 	.short_limit	= 275,	// Short gap 150, long gap 420

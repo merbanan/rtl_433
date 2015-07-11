@@ -38,7 +38,6 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
 }
 
 r_device mebus433 = {
-    /* .id             = */ 10,
     /* .name           = */ "Mebus 433",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 300,

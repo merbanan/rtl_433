@@ -88,7 +88,6 @@ static int calibeur_rf104_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
 
 
 r_device calibeur_RF104 = {
-	.id             = 12,
 	.name           = "Calibeur RF-104 Sensor",
 	.modulation     = OOK_PULSE_PWM_TERNARY,
 	.short_limit    = 290,	// Short pulse 190, Startbit 390, Long pulse 560

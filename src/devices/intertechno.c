@@ -28,7 +28,6 @@ static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bi
 }
 
 r_device intertechno = {
-    /* .id             = */ 11,
     /* .name           = */ "Intertechno 433",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 100,

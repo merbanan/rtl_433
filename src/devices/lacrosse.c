@@ -205,7 +205,6 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 }
 
 r_device lacrossetx = {
- .id             = 11,
  .name           = "LaCrosse TX Temperature / Humidity Sensor",
  .modulation     = OOK_PULSE_PWM_RAW,
  .short_limit    = 238,

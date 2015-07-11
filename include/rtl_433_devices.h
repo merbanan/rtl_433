@@ -31,7 +31,6 @@
 #define BITBUF_ROWS             50
 
 typedef struct {
-	unsigned int id;
 	char name[256];
 	unsigned int modulation;
 	unsigned int short_limit;

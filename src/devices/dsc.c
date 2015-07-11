@@ -40,7 +40,6 @@ static int DSC_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 
 
 r_device DSC = {
-	.id				= 12,
 	.name			= "DSC (Digital Security Controls)",
 	.modulation		= OOK_PULSE_PCM_RZ,
 	.short_limit	= 62,	// Pulse length

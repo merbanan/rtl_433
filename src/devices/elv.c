@@ -127,7 +127,6 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
 }
 
 r_device elv_em1000 = {
-    /* .id             = */ 7,
     /* .name           = */ "ELV EM 1000",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 750/4,
@@ -137,7 +136,6 @@ r_device elv_em1000 = {
 };
 
 r_device elv_ws2000 = {
-    /* .id             = */ 8,
     /* .name           = */ "ELV WS 2000",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ (602+(1155-602)/2)/4,

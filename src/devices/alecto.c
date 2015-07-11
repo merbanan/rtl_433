@@ -176,7 +176,6 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
 
 //Timing based on 250000
 r_device alectov1 = {
-    /* .id             = */ 11,
     /* .name           = */ "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 3500 / 4, //875
