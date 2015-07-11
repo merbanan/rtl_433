@@ -37,7 +37,9 @@ add_executable(rtl_433
 	devices/cardin.c
 	devices/fineoffset.c
 	devices/nexus.c
-	devices/ambient_weather.c)
+	devices/ambient_weather.c
+	devices/calibeur.c
+)
 
 target_link_libraries(rtl_433
 	${LIBRTLSDR_LIBRARIES}
