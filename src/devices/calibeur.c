@@ -31,16 +31,18 @@
  * ffffff45 01236pHH hhhhh Encoding
 */
 #include "rtl_433.h"
-
+#include "util.h"
 
 static int calibeur_rf104_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
 	uint8_t ID;
 	float temperature;
 	float humidity;
 
-	// Validate package
-	if (bits_per_row[1] == 21         // Dont waste time on a long/short package
-	) // Parity check still missing!! Should also check more than one message...
+	// Validate package (row [0] is empty due to sync bit)
+	if ((bits_per_row[1] == 21)			// Dont waste time on a long/short package
+	 && (crc8(bb[1], 3, 0x80) != 0)		// It should be odd parity
+	 && (memcmp(bb[1], bb[2], 3) == 0)	// We want at least two messages in a row
+	)
 	{
 		uint8_t bits;
 
