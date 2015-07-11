@@ -59,9 +59,9 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
 r_device prologue = {
     /* .id             = */ 2,
     /* .name           = */ "Prologue Temperature Sensor",
-    /* .modulation     = */ OOK_PWM_D,
+    /* .modulation     = */ OOK_PULSE_PPM_RAW,
     /* .short_limit    = */ 3500/4,
     /* .long_limit     = */ 7000/4,
-    /* .reset_limit    = */ 15000/4,
+    /* .reset_limit    = */ 2500,
     /* .json_callback  = */ &prologue_callback,
 };

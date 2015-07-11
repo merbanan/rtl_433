@@ -268,6 +268,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->reset_limit = (float) t_dev->reset_limit / ((float) DEFAULT_SAMPLE_RATE / (float) samp_rate);
     p->modulation = t_dev->modulation;
     p->callback = t_dev->json_callback;
+    p->name = t_dev->name;
     demod_reset_bits_packet(p);
 
     demod->r_devs[demod->r_dev_num] = p;
@@ -807,6 +808,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
                         break;
                     // Add pulse demodulators here
+                    case OOK_PULSE_PPM_RAW:
                     case OOK_PULSE_PWM_STARTBIT:
                     case OOK_PULSE_PWM_RAW:
                     case OOK_PULSE_MANCHESTER_ZEROBIT:
@@ -816,12 +818,15 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                 }
             }
             // Detect a package and loop through demodulators with pulse data
-            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, &demod->pulse_data)) {
+            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data)) {
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // Old style decoders
                         case OOK_PWM_D:
                         case OOK_PWM_P:
+                            break;
+                        case OOK_PULSE_PPM_RAW:
+                            pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM_STARTBIT:
                             pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 1);
@@ -1110,6 +1115,11 @@ int main(int argc, char **argv) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
         }
+
+        // Call a last time with cleared samples to ensure EOP detection
+        memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);     // 128 is 0 in unsigned data
+        rtlsdr_callback(test_mode_buf, 131072, demod);      // Why the magic value 131072?
+
         //Always classify a signal at the end of the file
         classify_signal();
         fprintf(stderr, "Test mode file issued %d packets\n", i);

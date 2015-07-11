@@ -45,8 +45,8 @@ typedef struct {
 static pulse_state_t pulse_state;
 
 
-int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, pulse_data_t *pulses) {
-
+int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses) {
+	const unsigned int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
 
 	// Process all new samples
@@ -67,7 +67,7 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 
 					// EOP if pulse is too long
-					if (s->pulse_length > PD_MAX_PULSE_LENGTH) {
+					if (s->pulse_length > (PD_MAX_PULSE_MS * samples_per_ms)) {
 						pulses->num_pulses++;	// Store last pulse (with no gap)
 						s->state = PD_STATE_IDLE;
 						return 1;	// End Of Package!!
@@ -103,8 +103,9 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 				}
 
 				// EOP if gap is too long
-				if ((s->pulse_length > (s->max_pulse * PD_MAX_GAP_RATIO))
-//				 || (s->pulse_length > (s->max_gap * PD_MAX_GAP_RATIO) && s->max_gap !=0)
+				if (((s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse))	// gap/pulse ratio exceeded
+				 && (s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)))	// Minimum gap exceeded
+				 || (s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms))	// maximum gap exceeded
 				 ) {
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Store last pulse
@@ -256,7 +257,7 @@ void pulse_analyzer(const pulse_data_t *data)
 	fprintf(stderr, "Guessing modulation: ");
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
-	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 2) {
+	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1 && hist_periods.bins_count > 1) {
 		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with fixed period\n");

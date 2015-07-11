@@ -14,7 +14,38 @@
 #include "bitbuffer.h"
 #include <stdio.h>
 
+
+int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
+//	fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
+	int events = 0;
+	bitbuffer_t bits = {0};
+	
+	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		// Short gap
+		if(pulses->gap[n] < (unsigned)device->short_limit) {
+			bitbuffer_add_bit(&bits, 0);
+		// Long gap
+		} else if(pulses->gap[n] < (unsigned)device->long_limit) {
+			bitbuffer_add_bit(&bits, 1);
+		// Check for new packet in multipacket
+		} else if(pulses->gap[n] < (unsigned)device->reset_limit) {
+			bitbuffer_add_row(&bits);
+		// End of Message?
+		} else {
+			if (device->callback) {
+				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				bitbuffer_clear(&bits);
+			} else {
+				bitbuffer_print(&bits);
+			}
+		}
+	} // for pulses
+	return events;
+}
+
+
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit) {
+//	fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 	int events = 0;
 	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
@@ -53,6 +84,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, i
 
 
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device) {
+//	fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
 	int events = 0;
 	unsigned time_since_last = 0;
 	bitbuffer_t bits = {0};

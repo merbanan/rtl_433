@@ -34,7 +34,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 		bits->bits_per_row[bits->row_index]++;
 	}
 	else {
-		fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");
+//		fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");	// Some decoders may add many columns...
 	}
 }
 
@@ -45,7 +45,7 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 		bits->bit_col_index = 0;
 	} 
 	else {
-		fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");
+//		fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");	// Some decoders may add many rows...
 	}
 }
 
