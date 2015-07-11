@@ -22,7 +22,8 @@
 		DECL(fineoffset_WH2) \
 		DECL(nexus) \
 		DECL(ambient_weather) \
-		DECL(calibeur_RF104)
+		DECL(calibeur_RF104) \
+		DECL(X10_RF)
 
 
 #define BITBUF_COLS             34
