@@ -18,6 +18,17 @@
 #include "rtl_433.h"
 
 
+/// Demodulate a Pulse Code Modulation signal
+///
+/// Demodulate a Pulse Code Modulation (PPM) signal with Return-to-Zero encoding.
+/// Binary width is fixed and each bit starts with a pulse or not
+/// The presence of a pulse is:
+/// - Presence of a pulse equals 0
+/// - Absence of a pulse equals 1
+/// @return number of events processed
+int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 /// Demodulate a Pulse Position Modulation signal
 ///
 /// Demodulate a Pulse Position Modulation (PPM) signal consisting of pulses with variable gap.
