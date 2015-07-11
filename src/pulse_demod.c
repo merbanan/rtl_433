@@ -44,14 +44,14 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 }
 
 
-int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit) {
+int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 //	fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 	int events = 0;
 	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
-	
+	int start_bit = device->demod_arg;
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		
 		// Should we disregard startbit?
 		if(start_bit == 1 && start_bit_detected == 0) {	
 			start_bit_detected = 1;
@@ -63,7 +63,6 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, i
 				bitbuffer_add_bit(&bits, 0);
 			}
 		}
-
 		// End of Message?
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {

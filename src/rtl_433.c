@@ -810,7 +810,6 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         break;
                     // Add pulse demodulators here
                     case OOK_PULSE_PPM_RAW:
-                    case OOK_PULSE_PWM_STARTBIT:
                     case OOK_PULSE_PWM_RAW:
                     case OOK_PULSE_PWM_TERNARY:
                     case OOK_PULSE_MANCHESTER_ZEROBIT:
@@ -830,11 +829,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PPM_RAW:
                             pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_PWM_STARTBIT:
-                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 1);
-                            break;
                         case OOK_PULSE_PWM_RAW:
-                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 0);
+                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM_TERNARY:
                             pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);

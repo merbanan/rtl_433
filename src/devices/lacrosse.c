@@ -205,13 +205,14 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 }
 
 r_device lacrossetx = {
-/* .id             = */11,
-/* .name           = */"LaCrosse TX Temperature / Humidity Sensor",
-///* .modulation     = */OOK_PWM_P,
-/* .modulation     = */OOK_PULSE_PWM_STARTBIT,
-/* .short_limit    = */238,
-/* .long_limit     = */750,
-///* .reset_limit    = */8000,
-/* .reset_limit    = */2000,
-/* .json_callback  = */&lacrossetx_callback, 
-/* .disabled       = */0, };
+ .id             = 11,
+ .name           = "LaCrosse TX Temperature / Humidity Sensor",
+ .modulation     = OOK_PULSE_PWM_RAW,
+ .short_limit    = 238,
+ .long_limit     = 750,
+/// .reset_limit    = 8000,
+ .reset_limit    = 2000,
+ .json_callback  = &lacrossetx_callback, 
+ .disabled       = 0,
+ .demod_arg      = 1, 	// Startbit removal
+};
