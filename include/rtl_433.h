@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "rtl_433_devices.h"
+#include "bitbuffer.h"
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -50,13 +51,9 @@ int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_ro
 struct protocol_state {
     int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
 
-    /* bits state */
-    int bits_col_idx;
-    int bits_row_idx;
-    int bits_bit_col_idx;
-    uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
-    int16_t bits_per_row[BITBUF_ROWS];
-    int bit_rows;
+   // Bits state (for old sample based decoders)
+    bitbuffer_t bits;
+
     unsigned int modulation;
 
     /* demod state */

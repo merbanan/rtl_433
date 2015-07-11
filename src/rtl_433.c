@@ -199,67 +199,6 @@ static void envelope_detect(unsigned char *buf, uint32_t len, int decimate) {
     }
 }
 
-static void demod_reset_bits_packet(struct protocol_state* p) {
-    memset(p->bits_buffer, 0, BITBUF_ROWS * BITBUF_COLS);
-    memset(p->bits_per_row, 0, BITBUF_ROWS);
-    p->bits_col_idx = 0;
-    p->bits_bit_col_idx = 7;
-    p->bits_row_idx = 0;
-    p->bit_rows = 0;
-}
-
-static void demod_add_bit(struct protocol_state* p, int bit) {
-    p->bits_buffer[p->bits_row_idx][p->bits_col_idx] |= bit << p->bits_bit_col_idx;
-    p->bits_bit_col_idx--;
-    if (p->bits_bit_col_idx < 0) {
-        p->bits_bit_col_idx = 7;
-        p->bits_col_idx++;
-        if (p->bits_col_idx > BITBUF_COLS - 1) {
-            p->bits_col_idx = BITBUF_COLS - 1;
-            //            fprintf(stderr, "p->bits_col_idx>%i!\n", BITBUF_COLS-1);
-        }
-    }
-    p->bits_per_row[p->bit_rows]++;
-}
-
-static void demod_next_bits_packet(struct protocol_state* p) {
-    p->bits_col_idx = 0;
-    p->bits_row_idx++;
-    p->bits_bit_col_idx = 7;
-    if (p->bits_row_idx > BITBUF_ROWS - 1) {
-        p->bits_row_idx = BITBUF_ROWS - 1;
-        //fprintf(stderr, "p->bits_row_idx>%i!\n", BITBUF_ROWS-1);
-    }
-    p->bit_rows++;
-    if (p->bit_rows > BITBUF_ROWS - 1)
-        p->bit_rows -= 1;
-}
-
-static void demod_print_bits_packet(struct protocol_state* p) {
-    int i, j, k;
-
-    fprintf(stderr, "\n");
-    for (i = 0; i < p->bit_rows + 1; i++) {
-        fprintf(stderr, "[%02d] {%d} ", i, p->bits_per_row[i]);
-        for (j = 0; j < ((p->bits_per_row[i] + 8) / 8); j++) {
-            fprintf(stderr, "%02x ", p->bits_buffer[i][j]);
-        }
-        fprintf(stderr, ": ");
-        for (j = 0; j < ((p->bits_per_row[i] + 8) / 8); j++) {
-            for (k = 7; k >= 0; k--) {
-                if (p->bits_buffer[i][j] & 1 << k)
-                    fprintf(stderr, "1");
-                else
-                    fprintf(stderr, "0");
-            }
-            //            fprintf(stderr, "=0x%x ",demod->bits_buffer[i][j]);
-            fprintf(stderr, " ");
-        }
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "\n");
-    return;
-}
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
@@ -270,7 +209,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;
     p->demod_arg = t_dev->demod_arg;
-    demod_reset_bits_packet(p);
+    bitbuffer_clear(&p->bits);
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
@@ -466,45 +405,45 @@ static void classify_signal() {
     fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n", a[0], a[1], a[2]);
     fprintf(stderr, "\np_limit: %d\n", p_limit);
 
-    demod_reset_bits_packet(&p);
+    bitbuffer_clear(&p.bits);
     if (signal_type == 1) {
         for (i = 0; i < 1000; i++) {
             if (signal_distance_data[i] > 0) {
                 if (signal_distance_data[i] < (a[0] + a[1]) / 2) {
                     //                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
-                    demod_add_bit(&p, 0);
+                    bitbuffer_add_bit(&p.bits, 0);
                 } else if ((signal_distance_data[i] > (a[0] + a[1]) / 2) && (signal_distance_data[i] < (a[1] + a[2]) / 2)) {
                     //                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
-                    demod_add_bit(&p, 1);
+                    bitbuffer_add_bit(&p.bits, 1);
                 } else if (signal_distance_data[i] > (a[1] + a[2]) / 2) {
                     //                     fprintf(stderr, "0 [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
-                    demod_next_bits_packet(&p);
+                    bitbuffer_add_row(&p.bits);
                 }
 
             }
 
         }
-        demod_print_bits_packet(&p);
+        bitbuffer_print(&p.bits);
     }
     if (signal_type == 2) {
         for (i = 0; i < 1000; i++) {
             if (signal_pulse_data[i][2] > 0) {
                 if (signal_pulse_data[i][2] < p_limit) {
                     //                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
-                    demod_add_bit(&p, 0);
+                    bitbuffer_add_bit(&p.bits, 0);
                 } else {
                     //                     fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
-                    demod_add_bit(&p, 1);
+                    bitbuffer_add_bit(&p.bits, 1);
                 }
                 if ((signal_distance_data[i] >= (a[1] + a[2]) / 2)) {
                     //                     fprintf(stderr, "\\n [%d] %d > %d\n",i, signal_distance_data[i], (a[1]+a[2])/2);
-                    demod_next_bits_packet(&p);
+                    bitbuffer_add_row(&p.bits);
                 }
 
 
             }
         }
-        demod_print_bits_packet(&p);
+        bitbuffer_print(&p.bits);
     }
 
     for (i = 0; i < 1000; i++) {
@@ -638,11 +577,11 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (p->start_c) p->sample_counter++;
         if (p->pulse_distance && (buf[i] > demod->level_limit)) {
             if (p->sample_counter < p->short_limit) {
-                demod_add_bit(p, 0);
+                bitbuffer_add_bit(&p->bits, 0);
             } else if (p->sample_counter < p->long_limit) {
-                demod_add_bit(p, 1);
+                bitbuffer_add_bit(&p->bits, 1);
             } else {
-                demod_next_bits_packet(p);
+                bitbuffer_add_row(&p->bits);
                 p->pulse_count = 0;
                 p->sample_counter = 0;
             }
@@ -653,11 +592,11 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                events += p->callback(p->bits_buffer, p->bits_per_row);
+                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
             else
-                demod_print_bits_packet(p);
+                bitbuffer_print(&p->bits);
 
-            demod_reset_bits_packet(p);
+            bitbuffer_clear(&p->bits);
         }
     }
 }
@@ -700,16 +639,16 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             //           fprintf(stderr, "space duration %d\n", p->sample_counter);
 
             if (p->pulse_length <= p->short_limit) {
-                demod_add_bit(p, 1);
+                bitbuffer_add_bit(&p->bits, 1);
             } else if (p->pulse_length > p->short_limit) {
-                demod_add_bit(p, 0);
+                bitbuffer_add_bit(&p->bits, 0);
             }
             p->sample_counter = 0;
             p->pulse_start = 0;
         }
 
         if (p->real_bits && p->sample_counter > p->long_limit) {
-            demod_next_bits_packet(p);
+            bitbuffer_add_row(&p->bits);
 
             p->start_bit = 0;
             p->real_bits = 0;
@@ -720,10 +659,10 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             //demod_print_bits_packet(p);
             if (p->callback)
-                events += p->callback(p->bits_buffer, p->bits_per_row);
+                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
             else
-                demod_print_bits_packet(p);
-            demod_reset_bits_packet(p);
+                bitbuffer_print(&p->bits);
+            bitbuffer_clear(&p->bits);
 
             p->start_bit = 0;
             p->real_bits = 0;
