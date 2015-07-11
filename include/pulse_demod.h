@@ -46,10 +46,10 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit
 /// - Long  pulse will add a 0 bit
-/// @param start_bit = 0: Do not remove any startbits
-/// @param start_bit = 1: First bit in each message is considered a startbit and not stored in bitbuffer
+/// @param device->demod_arg = 0: Do not remove any startbits
+/// @param device->demod_arg = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
-int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit);
+int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 
 
 /// Demodulate a Pulse Width Modulation signal with three pulse widths
