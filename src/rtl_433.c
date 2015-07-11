@@ -269,6 +269,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->modulation = t_dev->modulation;
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;
+    p->demod_arg = t_dev->demod_arg;
     demod_reset_bits_packet(p);
 
     demod->r_devs[demod->r_dev_num] = p;
@@ -811,6 +812,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                     case OOK_PULSE_PPM_RAW:
                     case OOK_PULSE_PWM_STARTBIT:
                     case OOK_PULSE_PWM_RAW:
+                    case OOK_PULSE_PWM_TERNARY:
                     case OOK_PULSE_MANCHESTER_ZEROBIT:
                         break;
                     default:
@@ -833,6 +835,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                             break;
                         case OOK_PULSE_PWM_RAW:
                             pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i], 0);
+                            break;
+                        case OOK_PULSE_PWM_TERNARY:
+                            pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                             pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);

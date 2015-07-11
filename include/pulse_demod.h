@@ -41,6 +41,18 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit);
 
 
+/// Demodulate a Pulse Width Modulation signal with three pulse widths
+///
+/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, middle and long high pulses.
+/// Gap between pulses may be of fixed size or variable (e.g. fixed period)
+/// The sync bit will add a new row to the bitbuffer
+/// @param device->demod_arg = 0: Short pulse is sync, middle is 0, long is 1
+/// @param device->demod_arg = 1: Short pulse is 0, middle is sync, long is 1
+/// @param device->demod_arg = 2: Short pulse is 0, middle is 1, long is sync
+/// @return number of events processed
+int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front
 ///
 /// Demodulate a Manchester encoded signal where first rising edge is counted as a databit 

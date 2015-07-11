@@ -37,6 +37,7 @@ typedef struct {
 	int (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS],
 			int16_t bits_per_row[BITBUF_ROWS]);
 	unsigned int disabled;
+	unsigned long demod_arg;	// Decoder specific optional argument (may be pointer to struct)
 } r_device;
 
 #define DECL(name) extern r_device name;

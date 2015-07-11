@@ -41,6 +41,7 @@
 #define     OOK_PULSE_PWM_RAW	4	// Pulse Width Modulation. No startbit removal. Short pulses = 1, Long = 0
 #define     OOK_PULSE_MANCHESTER_ZEROBIT	5	// Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
 #define     OOK_PULSE_PPM_RAW	6	// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
+#define     OOK_PULSE_PWM_TERNARY	7	// Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
 
 extern int debug_output;
 int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
@@ -74,6 +75,7 @@ struct protocol_state {
     int long_limit;
     int reset_limit;
     char *name;
+    unsigned long demod_arg;
 };
 
 #endif /* INCLUDE_RTL_433_H_ */
