@@ -12,7 +12,7 @@
 #include "rtl_433.h"
 
 static int X10_RF_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-   
+	// Row [0] is sync pulse
 	// Validate package
 	if ((bits_per_row[1] == 32)		// Dont waste time on a short package
 	// && (bb[1][0] == (uint8_t)(~bb[1][1]))		// Check integrity - apparently some chips may use both bytes..
@@ -20,6 +20,7 @@ static int X10_RF_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 	)
 	{
 		fprintf(stdout, "X10 RF:\n");
+		fprintf(stdout, "data    = %02X %02X %02X %02X\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3]);
 
 		if (debug_output)
 			debug_callback(bb, bits_per_row);
