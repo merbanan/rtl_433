@@ -30,7 +30,6 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
 }
 
 r_device waveman = {
-    /* .id             = */ 6,
     /* .name           = */ "Waveman Switch Transmitter",
     /* .modulation     = */ OOK_PWM_P,
     /* .short_limit    = */ 1000/4,

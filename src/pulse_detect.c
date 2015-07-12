@@ -9,6 +9,7 @@
  */
 
 #include "pulse_detect.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -141,11 +142,6 @@ typedef struct {
 	unsigned bins_count;
 	hist_bin_t bins[MAX_HIST_BINS];
 } histogram_t;
-
-
-// Helper macros
-#define max(a,b) ((a) > (b) ? (a) : (b))
-#define min(a,b) ((a) < (b) ? (a) : (b))
 
 
 /// Generate a histogram (unsorted)

@@ -21,14 +21,16 @@
 		DECL(cardin) \
 		DECL(fineoffset_WH2) \
 		DECL(nexus) \
-		DECL(ambient_weather) 
+		DECL(ambient_weather) \
+		DECL(calibeur_RF104) \
+		DECL(X10_RF) \
+		DECL(DSC)
 
 
 #define BITBUF_COLS             34
 #define BITBUF_ROWS             50
 
 typedef struct {
-	unsigned int id;
 	char name[256];
 	unsigned int modulation;
 	unsigned int short_limit;
@@ -37,6 +39,7 @@ typedef struct {
 	int (*json_callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS],
 			int16_t bits_per_row[BITBUF_ROWS]);
 	unsigned int disabled;
+	unsigned long demod_arg;	// Decoder specific optional argument (may be pointer to struct)
 } r_device;
 
 #define DECL(name) extern r_device name;

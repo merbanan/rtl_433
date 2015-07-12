@@ -175,7 +175,6 @@ static int acurite_th_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bit
 }
 
 r_device acurite5n1 = {
-    /* .id             = */ 10,
     /* .name           = */ "Acurite 5n1 Weather Station",
     /* .modulation     = */ OOK_PWM_P,
     /* .short_limit    = */ 70,
@@ -185,7 +184,6 @@ r_device acurite5n1 = {
 };
 
 r_device acurite_rain_gauge = {
-    /* .id             = */ 10,
     /* .name           = */ "Acurite 896 Rain Gauge",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 1744/4,
@@ -195,7 +193,6 @@ r_device acurite_rain_gauge = {
 };
 
 r_device acurite_th = {
-    /* .id             = */ 11,
     /* .name           = */ "Acurite Temperature and Humidity Sensor",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 300,

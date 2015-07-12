@@ -21,6 +21,7 @@ add_executable(rtl_433
 	bitbuffer.c
 	pulse_demod.c
 	pulse_detect.c
+	util.c
 	devices/silvercrest.c
 	devices/rubicson.c
 	devices/prologue.c
@@ -37,7 +38,11 @@ add_executable(rtl_433
 	devices/cardin.c
 	devices/fineoffset.c
 	devices/nexus.c
-	devices/ambient_weather.c)
+	devices/ambient_weather.c
+	devices/calibeur.c
+	devices/x10_rf.c
+	devices/dsc.c
+)
 
 target_link_libraries(rtl_433
 	${LIBRTLSDR_LIBRARIES}

@@ -119,7 +119,6 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 }
 
 r_device cardin = {
-    /* .id             = */ 12,
     /* .name           = */ "Cardin S466-TX2",
     /* .modulation     = */ OOK_PULSE_PPM_RAW,
     /* .short_limit    = */ 303,

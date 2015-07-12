@@ -12,7 +12,55 @@
 
 #include "pulse_demod.h"
 #include "bitbuffer.h"
+#include "util.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+
+int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device)
+{
+//	fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
+	int events = 0;
+	bitbuffer_t bits = {0};
+	const int MAX_ZEROS = device->reset_limit / device->long_limit;
+	const int TOLERANCE = device->long_limit / 10;		// Tolerance is 10% of a bit period
+	
+	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;	// Number of bits
+
+		// Validate data
+		if ((abs(pulses->pulse[n] - device->short_limit) < TOLERANCE)					// Pulse must be within tolerance
+		 && ((abs(pulses->pulse[n] + pulses->gap[n] - periods * device->long_limit) < TOLERANCE)	// Pulse + Gap must be within tolerance
+		  || (pulses->gap[n] > (unsigned)device->reset_limit))							// .. or we are above our limit
+		) {
+			// The pulse is a one
+			bitbuffer_add_bit(&bits, 1);
+
+			// Add run of zeros
+			periods--;							// First period is the one
+			periods = min(periods, MAX_ZEROS); 	// Dont overflow at end of message
+			for (int n=0; n < periods; ++n) {
+				bitbuffer_add_bit(&bits, 0);
+			}
+		} else {
+			// Data is corrupt
+			bitbuffer_clear(&bits);
+		}
+
+		// End of Message?
+		if ((pulses->gap[n] > (unsigned)device->reset_limit)
+		 && (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
+		) {
+			if (device->callback) {
+				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				bitbuffer_clear(&bits);
+			} else {
+				bitbuffer_print(&bits);
+			}
+		}
+	} // for
+	return events;
+}
 
 
 int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
@@ -44,14 +92,14 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 }
 
 
-int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, int start_bit) {
+int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 //	fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 	int events = 0;
 	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
-	
+	int start_bit = device->demod_arg;
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		
 		// Should we disregard startbit?
 		if(start_bit == 1 && start_bit_detected == 0) {	
 			start_bit_detected = 1;
@@ -63,7 +111,6 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, i
 				bitbuffer_add_bit(&bits, 0);
 			}
 		}
-
 		// End of Message?
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {
@@ -79,6 +126,53 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device, i
 			start_bit_detected = 0;
 		}
 	}
+	return events;
+}
+
+
+int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *device)
+{
+//	fprintf(stderr, "pulse_demod_pwm_ternary(): %s \n", device->name);
+	int events = 0;
+	bitbuffer_t bits = {0};
+	unsigned sync_bit = device->demod_arg;
+	
+	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		// Short pulse
+		if (pulses->pulse[n] < (unsigned)device->short_limit) {
+			if (sync_bit == 0) {
+				bitbuffer_add_row(&bits);
+			} else {
+				bitbuffer_add_bit(&bits, 0);
+			}
+		// Middle pulse
+		} else if (pulses->pulse[n] < (unsigned)device->long_limit) {
+			if (sync_bit == 0) {
+				bitbuffer_add_bit(&bits, 0);
+			} else if (sync_bit == 1) {
+				bitbuffer_add_row(&bits);
+			} else {
+				bitbuffer_add_bit(&bits, 1);
+			}
+		// Long pulse
+		} else {
+			if (sync_bit == 2) {
+				bitbuffer_add_row(&bits);
+			} else {
+				bitbuffer_add_bit(&bits, 1);
+			}
+		} 
+
+		// End of Message?
+		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+			if (device->callback) {
+				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				bitbuffer_clear(&bits);
+			} else {
+				bitbuffer_print(&bits);
+			}
+		}
+	} // for
 	return events;
 }
 

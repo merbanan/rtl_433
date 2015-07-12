@@ -36,7 +36,6 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
 }
 
 r_device steffen = {
-    /* .id             = */ 9,
     /* .name           = */ "Steffen Switch Transmitter",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 140,

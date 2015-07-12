@@ -48,7 +48,6 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
 
 // timings based on samp_rate=1024000
 r_device rubicson = {
-    /* .id             = */ 1,
     /* .name           = */ "Rubicson Temperature Sensor",
     /* .modulation     = */ OOK_PWM_D,
     /* .short_limit    = */ 1744/4,
