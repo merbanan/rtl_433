@@ -71,6 +71,8 @@ Running:
            [19] Nexus Temperature & Humidity Sensor
            [20] Ambient Weather Temperature Sensor
            [21] Calibeur RF-104 Sensor
+           [22] X10 RF
+           [23] DSC (Digital Security Controls)
 
 
 Examples:
