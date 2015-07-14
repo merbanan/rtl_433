@@ -1,6 +1,7 @@
 #include "rtl_433.h"
 
-static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int intertechno_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
 
       //if (bb[1][1] == 0 && bb[1][0] != 0 && bb[1][3]==bb[2][3]){
       if(bb[0][0]==0 && bb[0][0] == 0 && bb[1][0] == 0x56){

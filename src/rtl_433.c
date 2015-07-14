@@ -538,7 +538,7 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                newevents = p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
+                newevents = p->callback(&p->bits);
             // Debug printout
             if(!p->callback || (debug_output && newevents > 0)) {
                 fprintf(stderr, "pwm_d_decode(): %s \n", p->name);
@@ -608,7 +608,7 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->start_c = 0;
             p->sample_counter = 0;
             if (p->callback)
-                newevents = p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
+                newevents = p->callback(&p->bits);
             // Debug printout
             if(!p->callback || (debug_output && newevents > 0)) {
                 fprintf(stderr, "pwm_p_decode(): %s \n", p->name);

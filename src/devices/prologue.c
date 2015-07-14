@@ -20,7 +20,8 @@
  */
 #include "rtl_433.h"
 
-static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int prologue_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
     int rid;
 
     int16_t temp2;
@@ -35,7 +36,7 @@ static int prologue_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
         temp2 = temp2 >> 4;
         fprintf(stdout, "Sensor temperature event:\n");
-        fprintf(stdout, "protocol      = Prologue, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "protocol      = Prologue, %d bits\n",bitbuffer->bits_per_row[1]);
         fprintf(stdout, "button        = %d\n",bb[1][1]&0x04?1:0);
         fprintf(stdout, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
         fprintf(stdout, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));

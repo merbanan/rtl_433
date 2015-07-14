@@ -1,11 +1,12 @@
 #include "rtl_433.h"
 
-static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int steffen_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
 
         fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Steffan Switch Transmitter, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "model   = Steffan Switch Transmitter, %d bits\n",bitbuffer->bits_per_row[1]);
 	fprintf(stdout, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
 
 	if ((bb[1][2]&0x0f)==0x0e)

@@ -1,6 +1,6 @@
 #include "rtl_433.h"
 
-static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
     /*start pulse: 1T high, 10.44T low */
@@ -10,6 +10,7 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
     /*- 4  bit:  unit*/
     /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
     /*- stop pulse: 1T high, 40T low */
+    bitrow_t *bb = bitbuffer->bits_buffer;
     int i;
     uint8_t tmp = 0;
     uint8_t unit = 0;

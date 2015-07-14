@@ -51,7 +51,7 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 		 && (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->callback) {
-				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
@@ -82,7 +82,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 		// End of Message?
 		} else {
 			if (device->callback) {
-				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
@@ -117,7 +117,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 		// End of Message?
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {
-				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
@@ -171,7 +171,7 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 		// End of Message?
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {
-				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
@@ -208,7 +208,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			int newevents = 0;
 			if (device->callback) {
-				events += device->callback(bits.bits_buffer, bits.bits_per_row);
+				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {

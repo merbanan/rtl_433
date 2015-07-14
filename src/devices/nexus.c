@@ -14,7 +14,8 @@
  * The sensor can be bought at Clas Ohlsen
  */
 
-static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int nexus_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;

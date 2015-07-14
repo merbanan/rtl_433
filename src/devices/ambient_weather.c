@@ -93,8 +93,9 @@ get_channel (uint8_t * msg)
 }
 
 static int
-ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
+  bitrow_t *bb = bitbuffer->bits_buffer;
   /* shift all the bits left 1 to align the fields */
   int i;
   for (i = 0; i < BITBUF_COLS-1; i++) {
@@ -139,9 +140,9 @@ ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 }
 
 static int
-ambient_weather_callback (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_callback (bitbuffer_t *bitbuffer)
 {
-  return ambient_weather_parser (bb, bits_per_row);
+  return ambient_weather_parser (bitbuffer);
 }
 
 r_device ambient_weather = {

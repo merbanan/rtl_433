@@ -11,12 +11,13 @@
  * published by the Free Software Foundation.
  */
 
-static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int cardin_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bits_buffer;
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
 	// validate message as we can
-	if((bb[0][2] & 48) == 0 && bits_per_row[0] == 24 && (
+	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
 				(bb[0][2] & 3) == 3 ||
 				(bb[0][2] & 9) == 9 ||
 				(bb[0][2] & 12) == 12 ||

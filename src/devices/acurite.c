@@ -72,9 +72,10 @@ static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
     return raincounter;
 }
 
-static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+int acurite5n1_callback(bitbuffer_t *bitbuffer) {
     // acurite 5n1 weather sensor decoding for rtl_433
     // Jens Jensen 2014
+	bitrow_t *bb = bitbuffer->bits_buffer;
     int i;
     uint8_t *buf = NULL;
     // run through rows til we find one with good crc (brute force)
@@ -87,7 +88,7 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
 
     if (buf) {
         // decode packet here
-        fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
         if (debug_output) {
             for (i=0; i < 8; i++)
                 fprintf(stdout, "%02X ", buf[i]);
@@ -129,8 +130,9 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
     return 1;
 }
 
-static int acurite_rain_gauge_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
+static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
+ 	bitrow_t *bb = bitbuffer->bits_buffer;
+   // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
 	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
 		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
@@ -151,7 +153,8 @@ static float acurite_th_temperature(uint8_t *s){
     uint16_t shifted = (((s[1] & 0x0f) << 8) | s[2]) << 4; // Logical left shift
     return (((int16_t)shifted) >> 4) / 10.0; // Arithmetic right shift
 }
-static int acurite_th_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int acurite_th_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bits_buffer;
     uint8_t *buf = NULL;
     int i;
     for(i = 0; i < BITBUF_ROWS; i++){

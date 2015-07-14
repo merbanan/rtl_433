@@ -14,7 +14,8 @@
  * The sensor can be bought at Kjell&Co
  */
 
-static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int rubicson_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
@@ -33,7 +34,7 @@ static int rubicson_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_p
         temperature_after_dec = abs(temp % 10);
 
         fprintf(stdout, "Sensor temperature event:\n");
-        fprintf(stdout, "protocol       = Rubicson/Auriol, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "protocol       = Rubicson/Auriol, %d bits\n",bitbuffer->bits_per_row[1]);
         fprintf(stdout, "rid            = %x\n",bb[0][0]);
         fprintf(stdout, "temp           = %s%d.%d\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);

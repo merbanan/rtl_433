@@ -1,6 +1,7 @@
 #include "rtl_433.h"
 
-static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int waveman_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};
@@ -14,7 +15,7 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
         }
 
         fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Waveman Switch Transmitter, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "model   = Waveman Switch Transmitter, %d bits\n",bitbuffer->bits_per_row[1]);
         fprintf(stdout, "id      = %c\n", 'A'+nb[0]);
         fprintf(stdout, "channel = %d\n", (nb[1]>>2)+1);
         fprintf(stdout, "button  = %d\n", (nb[1]&3)+1);

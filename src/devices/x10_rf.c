@@ -11,10 +11,11 @@
  */
 #include "rtl_433.h"
 
-static int X10_RF_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int X10_RF_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
 	// Row [0] is sync pulse
 	// Validate package
-	if ((bits_per_row[1] == 32)		// Dont waste time on a short package
+	if ((bitbuffer->bits_per_row[1] == 32)		// Dont waste time on a short package
 	// && (bb[1][0] == (uint8_t)(~bb[1][1]))		// Check integrity - apparently some chips may use both bytes..
 	 && (bb[1][2] == (uint8_t)(~bb[1][3]))		// Check integrity
 	)

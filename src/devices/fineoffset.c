@@ -29,7 +29,8 @@
 #include "rtl_433.h"
 #include "util.h"
 
-static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bits_buffer;
     uint8_t ID;
     float temperature;
     float humidity;
@@ -37,7 +38,7 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
     const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
 
     // Validate package
-    if (bits_per_row[0] >= 48 &&        // Dont waste time on a short package
+    if (bitbuffer->bits_per_row[0] >= 48 &&         // Dont waste time on a short package
         bb[0][0] == 0xFF &&             // Preamble
         bb[0][5] == crc8(&bb[0][1], 4, polynomial)	// CRC (excluding preamble)
     ) 
