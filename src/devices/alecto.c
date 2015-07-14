@@ -1,4 +1,5 @@
 #include "rtl_433.h"
+#include "util.h"
 
 /* Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
  * Message Format: (9 nibbles, 36 bits):
@@ -46,7 +47,7 @@
  *   F = Checksum
  *********************************************************************************************
  */
-#define LOCAL_TIME_BUFLEN	32
+
 uint8_t reverse8(uint8_t x) {
     x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
     x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
@@ -156,7 +157,7 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
             (bb[1][0] & 0xc) >> 2
             );
             fprintf(stdout, ": Temperature %s%d.%d C", temp < 0 ? "-" : "", temperature_before_dec, temperature_after_dec);
-            fprintf(stdout, ": Humidity %d %", humidity);
+            fprintf(stdout, ": Humidity %d %%", humidity);
             fprintf(stdout, ": Battery %s\n", bb[1][1]&0x80 ? "Low" : "OK");
             
         }        
@@ -183,4 +184,5 @@ r_device alectov1 = {
     /* .reset_limit    = */ 15000 / 4, //3750
     /* .json_callback  = */ &alectov1_callback,
     /* .Disable        = */ 0,
+    /* .demod_arg      = */ 0,
 };

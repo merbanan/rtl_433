@@ -12,6 +12,7 @@
 #define INCLUDE_UTIL_H_
 
 #include <stdint.h>
+#include <time.h>
 
 // Helper macros
 #define max(a,b) ((a) > (b) ? (a) : (b))
@@ -28,5 +29,14 @@
 /// @return CRC value
 uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial);
 
+
+// buffer to hold localized timestamp YYYY-MM-DD HH:MM:SS
+#define LOCAL_TIME_BUFLEN	32
+
+/// Printable timestamp in local time
+///
+/// @param time_secs: 0 for now, or seconds since the epoch
+/// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
+void local_time_str(time_t time_secs, char *buf);
 
 #endif /* INCLUDE_UTIL_H_ */

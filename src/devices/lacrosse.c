@@ -1,7 +1,14 @@
-/* LaCrosse TX Temperature and Humidity Sensors
+/* LaCrosse TX 433 Mhz Temperature and Humidity Sensors
  * Tested: TX-7U and TX-6U (Temperature only)
  *
  * Not Tested but should work: TX-3, TX-4
+ *
+ * Copyright (C) 2015 Robert C. Terzi
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
  * Protocol Documentation: http://www.f6fbb.org/domo/sensors/tx3_th.php
  *
@@ -24,59 +31,56 @@
  * - Msg sent with one repeat after 30 mS
  * - Temperature and humidity are sent as separate messages
  * - Frequency for each sensor may be could be off by as much as 50-75 khz
+ * - LaCrosse Sensors in other frequency ranges (915 Mhz) use FSK not OOK
+ *   so they can't be decoded by rtl_433 currently.
+ *
+ * TO DO:
+ * - Now that we have a demodulator that isn't stripping the first bit
+ *   the detect and decode could be collapsed into a single reasonably
+ *   readable function.
+ *
+ * - Make the time stamp output a generat utility function.
  */
 
 #include "rtl_433.h"
+#include "util.h"
 
-// buffer to hold localized timestamp YYYY-MM-DD HH:MM:SS
-#define LOCAL_TIME_BUFLEN	32
+#define LACROSSE_TX_BITLEN	44
+#define LACROSSE_NYBBLE_CNT	11
 
-void local_time_str(time_t time_secs, char *buf) {
-	time_t etime;
-	struct tm *tm_info;
-
-	if (time_secs == 0) {
-		time(&etime);
-	} else {
-		etime = time_secs;
-	}
-
-	tm_info = localtime(&etime);
-
-	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
-}
-
-// Check for a valid LaCrosse Packet
+// Check for a valid LaCrosse TX Packet
 //
-// written for the version of pwm_p_decode() (OOK_PWM_P)
-// pulse width detector with two anomalys:
-// 1. bits are inverted
-// 2. The first bit is discarded as a start bit
+// Return message nybbles broken out into bytes
+// for clarity.  The LaCrosse protocol is based
+// on 4 bit nybbles.
+// 
+// Domodulation
+// Long bits = 0
+// short bits = 1
 //
-// If a fixed pulse width decoder is used this
-// routine will need to be changed.
-static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
+static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum, parity_bit, parity = 0;
 	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 
+
 	// Actual Packet should start with 0x0A and be 6 bytes
 	// actual message is 44 bit, 11 x 4 bit nybbles.
-	if ((pRow[0] & 0xFE) == 0x14 && pRow[6] == 0 && pRow[7] == 0) {
+	if (rowlen == LACROSSE_TX_BITLEN && pRow[0] == 0x0a) {
 
-		for (i = 0; i < 11; i++) {
+		for (i = 0; i < LACROSSE_NYBBLE_CNT; i++) {
 			msg_nybbles[i] = 0;
 		}
 
 		// Move nybbles into a byte array
-		// shifted by one to compensate for loss of first bit.
-		for (i = 0; i < 43; i++) {
+		// Compute parity and checksum at the same time.
+		for (i = 0; i < 44; i++) {
 			rbyte_no = i / 8;
 			rbit_no = 7 - (i % 8);
-			mnybble_no = (i + 1) / 4;
-			mbit_no = 3 - ((i + 1) % 4);
+			mnybble_no = i / 4;
+			mbit_no = 3 - (i % 4);
 			bit = (pRow[rbyte_no] & (1 << rbit_no)) ? 1 : 0;
 			msg_nybbles[mnybble_no] |= (bit << mbit_no);
 
@@ -113,6 +117,11 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 				time_str, checksum, msg_nybbles[10], parity);
 			return 0;
 		}
+	} else {
+	    if (debug_output) {
+		fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
+			pRow[0], rowlen);
+	    }
 	}
 
 	return 0;
@@ -125,7 +134,7 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 
 	int i, m, valid = 0;
 	uint8_t *buf;
-	uint8_t msg_nybbles[11];
+	uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
 	uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
 	int msg_value_int;
 	float msg_value = 0, temp_c = 0, temp_f = 0;
@@ -137,9 +146,13 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 	static uint8_t last_msg_type = 0;
 	static time_t last_msg_time = 0;
 
+	if (debug_output)
+		debug_callback(bb, bits_per_row);
+
 	for (m = 0; m < BITBUF_ROWS; m++) {
 		valid = 0;
-		if (lacrossetx_detect(bb[m], msg_nybbles)) {
+		// break out the message nybbles into separate bytes
+		if (lacrossetx_detect(bb[m], msg_nybbles, bits_per_row[m])) {
 
 			msg_len = msg_nybbles[1];
 			msg_type = msg_nybbles[2];
@@ -156,7 +169,11 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			if (sensor_id == last_sensor_id && msg_type == last_msg_type
 					&& last_msg_value == msg_value
 					&& time_now - last_msg_time < 50) {
-				continue;
+			    if (debug_output) {
+				fprintf(stderr,"LaCrosse TX Sensor %02x, duplicate message suppressed\n",
+					sensor_id);
+			    }
+			    continue;
 			}
 
 			local_time_str(time_now, time_str);
@@ -199,8 +216,6 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 		}
 	}
 
-	if (debug_output)
-		debug_callback(bb, bits_per_row);
 	return 1;
 }
 
@@ -213,5 +228,5 @@ r_device lacrossetx = {
  .reset_limit    = 2000,
  .json_callback  = &lacrossetx_callback, 
  .disabled       = 0,
- .demod_arg      = 1, 	// Startbit removal
+ .demod_arg      = 0, 	// No Startbit removal
 };
