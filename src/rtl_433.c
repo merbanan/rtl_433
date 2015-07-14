@@ -41,61 +41,6 @@ int debug_output = 0;
 
 int num_r_devices = 0;
 
-int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-    int i,j,k;
-    int rows_used[BITBUF_ROWS];
-    int col_max = 0;
-    int row_cnt = 0;
-
-    // determine what part of bb[][] has non-zero data to avoid
-    // outputting lots of empty rows
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-	for (j=BITBUF_COLS - 1 ; j > 0 ; j--) {
-	    if (bb[i][j] != 0)
-		break;
-	}
-	if (j != 0) {
-	    rows_used[i] = 1;
-	    row_cnt++;
-	    if (j > col_max)
-		col_max = j;
-	} else {
-	    rows_used[i] = 0;
-	}
-    }
-
-    if (!row_cnt) {
-	fprintf(stderr, "debug_callback: empty data array\n");
-	return 0;
-    }
-
-    fprintf(stderr, "\n");
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-	if (!rows_used[i]) {
-	    continue;
-	}
-
-        fprintf(stderr, "[%02d] ",i);
-        for (j=0 ; j<=col_max ; j++) {
-            fprintf(stderr, "%02x ", bb[i][j]);
-        }
-        fprintf(stderr, ": ");
-        for (j=0 ; j<=col_max ; j++) {
-            for (k=7 ; k>=0 ; k--) {
-                if (bb[i][j] & 1<<k)
-                    fprintf(stderr, "1");
-                else
-                    fprintf(stderr, "0");
-            }
-            fprintf(stderr, " ");
-        }
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "\n");
-
-    return 0;
-}
-
 struct dm_state {
     FILE *file;
     int save_data;

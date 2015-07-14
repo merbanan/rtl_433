@@ -78,9 +78,6 @@ static int calibeur_rf104_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
 		fprintf(stdout, "temperature = %.1f C\n", temperature);
 		fprintf(stdout, "humidity    = %2.0f %%\n", humidity);
 
-		if (debug_output)
-			debug_callback(bb, bits_per_row);
-
 		return 1;
 	}
 	return 0;

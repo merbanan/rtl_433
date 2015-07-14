@@ -40,9 +40,6 @@ static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_
         fprintf(stdout, "Temp: %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
         fprintf(stdout, "Humidity: %d\n", humidity);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;

@@ -126,9 +126,6 @@ static int acurite5n1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits
     	return 0;
     }
 
-    if (debug_output)
-    	debug_callback(bb, bits_per_row);
-
     return 1;
 }
 

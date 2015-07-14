@@ -22,11 +22,8 @@ static int X10_RF_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 		fprintf(stdout, "X10 RF:\n");
 		fprintf(stdout, "data    = %02X %02X %02X %02X\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3]);
 
-		if (debug_output)
-			debug_callback(bb, bits_per_row);
-
 		return 1;
-    }
+	}
 	return 0;
 }
 

@@ -65,9 +65,6 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
         fprintf(stdout, "humidity    = %2.0f %%\n", humidity);
         // fprintf(stdout, "raw         = %02x %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4],bb[0][5]);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;

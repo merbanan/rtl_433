@@ -29,9 +29,6 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
         fprintf(stdout, "humidity       = %i%%\n", hum);
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;

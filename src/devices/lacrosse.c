@@ -124,6 +124,7 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 		int16_t bits_per_row[BITBUF_ROWS]) {
 
 	int i, m, valid = 0;
+	int events = 0;
 	uint8_t *buf;
 	uint8_t msg_nybbles[11];
 	uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
@@ -176,17 +177,20 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 				temp_f = temp_c * 1.8 + 32;
 				printf("%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
 					time_str, sensor_id, temp_c, temp_f);
+				events++;
 				break;
 
 			case 0x0E:
 				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
 					time_str, sensor_id, msg_value);
+				events++;
 				break;
 
 			default:
 				fprintf(stderr,
 					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
 					time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				events++;
 			}
 
 			time(&last_msg_time);
@@ -194,14 +198,10 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			last_msg_type = msg_type;
 			last_sensor_id = sensor_id;
 
-		} else {
-			return 0;
 		}
 	}
 
-	if (debug_output)
-		debug_callback(bb, bits_per_row);
-	return 1;
+	return events;
 }
 
 r_device lacrossetx = {

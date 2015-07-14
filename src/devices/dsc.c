@@ -30,9 +30,6 @@ static int DSC_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 		fprintf(stdout, "DSC (Digital Security Controls):\n");
 		fprintf(stdout, "data    = %02X %02X %02X %02X %02X\n", bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
 
-		if (debug_output)
-			debug_callback(bb, bits_per_row);
-
 		return 1;
 	}
 	return 0;

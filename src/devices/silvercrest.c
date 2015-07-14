@@ -15,9 +15,6 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bit
         fprintf(stdout, "model = Silvercrest, %d bits\n",bits_per_row[1]);
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;

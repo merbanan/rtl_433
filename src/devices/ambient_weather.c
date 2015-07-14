@@ -132,8 +132,8 @@ ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 
     uint16_t deviceID = get_device_id (bb[0]);
     fprintf (stderr, "id            = %d\n", deviceID);
-
-  } 
+    return 1;
+  }
 
   return 0;
 }

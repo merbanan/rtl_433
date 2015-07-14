@@ -109,8 +109,6 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
         }
         fprintf(stdout, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                 bb[0][0], bb[0][1], bb[0][2], bb[0][3], bb[0][4], bb[0][5], bb[0][6], bb[0][7], bb[0][8]);
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
         return 1;
     }
     return 0;
