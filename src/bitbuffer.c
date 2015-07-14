@@ -57,6 +57,18 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 		for (int col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 			fprintf(stderr, "%02x ", bits->bits_buffer[row][col]);
 		}
+		// Print binary values also?
+		if (bits->bits_per_row[row] <= BITBUF_MAX_PRINT_BITS) {
+			fprintf(stderr, ": ");
+			for (int bit = 0; bit < bits->bits_per_row[row]; ++bit) {
+				if (bits->bits_buffer[row][bit/8] & (0x80 >> (bit % 8))) {
+					fprintf(stderr, "1");
+				} else {
+					fprintf(stderr, "0");
+				}
+				if ((bit % 8) == 7) { fprintf(stderr, " "); }	// Add byte separators
+			}
+		}
 		fprintf(stderr, "\n");
 	}
 }
