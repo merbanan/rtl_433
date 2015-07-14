@@ -21,10 +21,12 @@ static int silvercrest_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bit
 }
 
 r_device silvercrest = {
-    /* .name           = */ "Silvercrest Remote Control",
-    /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 600/4,
-    /* .long_limit     = */ 5000/4,
-    /* .reset_limit    = */ 15000/4,
-    /* .json_callback  = */ &silvercrest_callback,
+    .name           = "Silvercrest Remote Control",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 600/4,
+    .long_limit     = 5000/4,
+    .reset_limit    = 15000/4,
+    .json_callback  = &silvercrest_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

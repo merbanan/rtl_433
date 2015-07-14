@@ -27,10 +27,12 @@ static int waveman_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
 }
 
 r_device waveman = {
-    /* .name           = */ "Waveman Switch Transmitter",
-    /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 1000/4,
-    /* .long_limit     = */ 8000/4,
-    /* .reset_limit    = */ 30000/4,
-    /* .json_callback  = */ &waveman_callback,
+    .name           = "Waveman Switch Transmitter",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 1000/4,
+    .long_limit     = 8000/4,
+    .reset_limit    = 30000/4,
+    .json_callback  = &waveman_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

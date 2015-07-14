@@ -63,7 +63,6 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
         fprintf(stdout, "ID          = 0x%2X\n", ID);
         fprintf(stdout, "temperature = %.1f C\n", temperature);
         fprintf(stdout, "humidity    = %2.0f %%\n", humidity);
-        // fprintf(stdout, "raw         = %02x %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4],bb[0][5]);
 
         return 1;
     }
@@ -72,12 +71,14 @@ static int fineoffset_WH2_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t
 
 
 r_device fineoffset_WH2 = {
-    /* .name           = */ "Fine Offset Electronics, WH-2 Sensor",
-    /* .modulation     = */ OOK_PULSE_PWM_RAW,
-    /* .short_limit    = */ 200,	// Short pulse 136, long pulse 381, fixed gap 259
-    /* .long_limit     = */ 700,	// Maximum pulse period (long pulse + fixed gap)
-    /* .reset_limit    = */ 700,	// We just want 1 package
-    /* .json_callback  = */ &fineoffset_WH2_callback,
+    .name           = "Fine Offset Electronics, WH-2 Sensor",
+    .modulation     = OOK_PULSE_PWM_RAW,
+    .short_limit    = 200,	// Short pulse 136, long pulse 381, fixed gap 259
+    .long_limit     = 700,	// Maximum pulse period (long pulse + fixed gap)
+    .reset_limit    = 700,	// We just want 1 package
+    .json_callback  = &fineoffset_WH2_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 
 

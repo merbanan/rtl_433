@@ -64,8 +64,6 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
     int16_t temp;
     uint8_t humidity, csum = 0, csum2 = 0;
     int i;
-    time_t time_now;
-    char time_str[LOCAL_TIME_BUFLEN];
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
             && (bb[5][0] != 0 && bb[5][1] != 0)) {
 
@@ -85,11 +83,7 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
         /* Quit if checksup does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
-            time(&time_now);
-            local_time_str(time_now, time_str);
-            fprintf(stdout,
-            "%s AlectoV1 Checksum/Parity error\n",
-            time_str);
+            fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
             return 0;
         } //Invalid checksum
 
@@ -98,13 +92,8 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
 
         if ((bb[1][1] & 0xe0) == 0x60) {
             wind = ((bb[1][1] & 0xf) == 0xc) ? 0 : 1;
-            time(&time_now);
-            local_time_str(time_now, time_str);
-            time(&time_now);
-            local_time_str(time_now, time_str);
             fprintf(stdout,
-            "%s AlectoV1 %s Sensor %d",
-            time_str,
+            "AlectoV1 %s Sensor %d",
             wind ? "Wind" : "Rain",
             reverse8(bb[1][0])
             );
@@ -147,16 +136,13 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
             temperature_before_dec = abs(temp / 10);
             temperature_after_dec = abs(temp % 10);
             humidity = bcd_decode8(reverse8(bb[1][3]));
-            time(&time_now);
-            local_time_str(time_now, time_str);
             fprintf(stdout,
-            "%s AlectoV1 Sensor %d Channel %d",
-            time_str,
+            "AlectoV1 Sensor %d Channel %d",
             reverse8(bb[1][0]),
             (bb[1][0] & 0xc) >> 2
             );
             fprintf(stdout, ": Temperature %s%d.%d C", temp < 0 ? "-" : "", temperature_before_dec, temperature_after_dec);
-            fprintf(stdout, ": Humidity %d %", humidity);
+            fprintf(stdout, ": Humidity %d %%", humidity);
             fprintf(stdout, ": Battery %s\n", bb[1][1]&0x80 ? "Low" : "OK");
             
         }        
@@ -175,11 +161,12 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
 
 //Timing based on 250000
 r_device alectov1 = {
-    /* .name           = */ "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 3500 / 4, //875
-    /* .long_limit     = */ 7000 / 4, //1750
-    /* .reset_limit    = */ 15000 / 4, //3750
-    /* .json_callback  = */ &alectov1_callback,
-    /* .Disable        = */ 0,
+    .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 3500 / 4, //875
+    .long_limit     = 7000 / 4, //1750
+    .reset_limit    = 15000 / 4, //3750
+    .json_callback  = &alectov1_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

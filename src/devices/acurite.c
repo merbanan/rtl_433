@@ -172,28 +172,34 @@ static int acurite_th_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bit
 }
 
 r_device acurite5n1 = {
-    /* .name           = */ "Acurite 5n1 Weather Station",
-    /* .modulation     = */ OOK_PWM_P,
-    /* .short_limit    = */ 70,
-    /* .long_limit     = */ 240,
-    /* .reset_limit    = */ 21000,
-    /* .json_callback  = */ &acurite5n1_callback,
+    .name           = "Acurite 5n1 Weather Station",
+    .modulation     = OOK_PWM_P,
+    .short_limit    = 70,
+    .long_limit     = 240,
+    .reset_limit    = 21000,
+    .json_callback  = &acurite5n1_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 
 r_device acurite_rain_gauge = {
-    /* .name           = */ "Acurite 896 Rain Gauge",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 1744/4,
-    /* .long_limit     = */ 3500/4,
-    /* .reset_limit    = */ 5000/4,
-    /* .json_callback  = */ &acurite_rain_gauge_callback,
+    .name           = "Acurite 896 Rain Gauge",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 1744/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 5000/4,
+    .json_callback  = &acurite_rain_gauge_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 
 r_device acurite_th = {
-    /* .name           = */ "Acurite Temperature and Humidity Sensor",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 300,
-    /* .long_limit     = */ 550,
-    /* .reset_limit    = */ 2500,
-    /* .json_callback  = */ &acurite_th_callback,
+    .name           = "Acurite Temperature and Humidity Sensor",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 300,
+    .long_limit     = 550,
+    .reset_limit    = 2500,
+    .json_callback  = &acurite_th_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

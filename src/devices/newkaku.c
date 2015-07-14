@@ -115,10 +115,12 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
 }
 
 r_device newkaku = {
-    /* .name           = */ "KlikAanKlikUit Wireless Switch",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 200,
-    /* .long_limit     = */ 800,
-    /* .reset_limit    = */ 4000,
-    /* .json_callback  = */ &newkaku_callback,
+    .name           = "KlikAanKlikUit Wireless Switch",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 200,
+    .long_limit     = 800,
+    .reset_limit    = 4000,
+    .json_callback  = &newkaku_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

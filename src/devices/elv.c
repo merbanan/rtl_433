@@ -127,19 +127,23 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
 }
 
 r_device elv_em1000 = {
-    /* .name           = */ "ELV EM 1000",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 750/4,
-    /* .long_limit     = */ 7250/4,
-    /* .reset_limit    = */ 30000/4,
-    /* .json_callback  = */ &em1000_callback,
+    .name           = "ELV EM 1000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 750/4,
+    .long_limit     = 7250/4,
+    .reset_limit    = 30000/4,
+    .json_callback  = &em1000_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 
 r_device elv_ws2000 = {
-    /* .name           = */ "ELV WS 2000",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ (602+(1155-602)/2)/4,
-    /* .long_limit     = */ ((1755635-1655517)/2)/4, // no repetitions
-    /* .reset_limit    = */ ((1755635-1655517)*2)/4,
-    /* .json_callback  = */ &ws2000_callback,
+    .name           = "ELV WS 2000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = (602+(1155-602)/2)/4,
+    .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
+    .reset_limit    = ((1755635-1655517)*2)/4,
+    .json_callback  = &ws2000_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

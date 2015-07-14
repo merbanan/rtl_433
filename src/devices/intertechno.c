@@ -16,7 +16,7 @@ static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bi
         fprintf(stdout, "rid            = %x\n",bb[1][7]);
         fprintf(stdout, "ADDR Slave     = %i\n",bb[1][7] & 0b00001111);
         fprintf(stdout, "ADDR Master    = %i\n",(bb[1][7] & 0b11110000) >> 4);
-	fprintf(stdout, "command        = %i\n",(bb[1][6] & 0b00000111));
+        fprintf(stdout, "command        = %i\n",(bb[1][6] & 0b00000111));
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
         return 1;
@@ -25,11 +25,12 @@ static int intertechno_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bi
 }
 
 r_device intertechno = {
-    /* .name           = */ "Intertechno 433",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 100,
-    /* .long_limit     = */ 350,
-    /* .reset_limit    = */ 3000,
-    /* .json_callback  = */ &intertechno_callback,
-    /* .json_callback  = */ //&debug_callback,
+    .name           = "Intertechno 433",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 100,
+    .long_limit     = 350,
+    .reset_limit    = 3000,
+    .json_callback  = &intertechno_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

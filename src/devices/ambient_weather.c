@@ -145,10 +145,12 @@ ambient_weather_callback (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per
 }
 
 r_device ambient_weather = {
-    /* .name           = */ "Ambient Weather Temperature Sensor",
-    /* .modulation     = */ OOK_PULSE_MANCHESTER_ZEROBIT,
-    /* .short_limit    = */ 125,
-    /* .long_limit     = */ 0, // not used
-    /* .reset_limit    = */ 600,
-    /* .json_callback  = */ &ambient_weather_callback,
+    .name           = "Ambient Weather Temperature Sensor",
+    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = 125,
+    .long_limit     = 0, // not used
+    .reset_limit    = 600,
+    .json_callback  = &ambient_weather_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

@@ -341,10 +341,12 @@ static int oregon_scientific_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int1
 }
 
 r_device oregon_scientific = {
-    /* .name           = */ "Oregon Scientific Weather Sensor",
-    /* .modulation     = */ OOK_PULSE_MANCHESTER_ZEROBIT,
-    /* .short_limit    = */ 125,
-    /* .long_limit     = */ 0, // not used
-    /* .reset_limit    = */ 600,
-    /* .json_callback  = */ &oregon_scientific_callback,
+    .name           = "Oregon Scientific Weather Sensor",
+    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = 125,
+    .long_limit     = 0, // not used
+    .reset_limit    = 600,
+    .json_callback  = &oregon_scientific_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
