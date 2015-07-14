@@ -19,7 +19,6 @@
 
 int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device)
 {
-//	fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
 	int events = 0;
 	bitbuffer_t bits = {0};
 	const int MAX_ZEROS = device->reset_limit / device->long_limit;
@@ -53,10 +52,13 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 		) {
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
-				bitbuffer_clear(&bits);
-			} else {
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
+			bitbuffer_clear(&bits);
 		}
 	} // for
 	return events;
@@ -64,7 +66,6 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 
 
 int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
-//	fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
 	int events = 0;
 	bitbuffer_t bits = {0};
 	
@@ -82,10 +83,13 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 		} else {
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
-				bitbuffer_clear(&bits);
-			} else {
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
+			bitbuffer_clear(&bits);
 		}
 	} // for pulses
 	return events;
@@ -93,7 +97,6 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
-//	fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 	int events = 0;
 	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
@@ -115,11 +118,14 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
-				bitbuffer_clear(&bits);
-				start_bit_detected = 0;
-			} else {
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
+			bitbuffer_clear(&bits);
+			start_bit_detected = 0;
 		// Check for new packet in multipacket
 		} else if(pulses->gap[n] > (unsigned)device->long_limit) {
 			bitbuffer_add_row(&bits);
@@ -132,7 +138,6 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *device)
 {
-//	fprintf(stderr, "pulse_demod_pwm_ternary(): %s \n", device->name);
 	int events = 0;
 	bitbuffer_t bits = {0};
 	unsigned sync_bit = device->demod_arg;
@@ -167,10 +172,13 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
-				bitbuffer_clear(&bits);
-			} else {
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_pwm_ternary(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
+			bitbuffer_clear(&bits);
 		}
 	} // for
 	return events;
@@ -178,7 +186,6 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 
 
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device) {
-//	fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
 	int events = 0;
 	unsigned time_since_last = 0;
 	bitbuffer_t bits = {0};
@@ -198,15 +205,19 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		}
 		
 		// End of Message?
-		if(pulses->gap[n] > (unsigned)device->reset_limit) {		
+		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+			int newevents = 0;
 			if (device->callback) {
 				events += device->callback(bits.bits_buffer, bits.bits_per_row);
-				bitbuffer_clear(&bits);
-				bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
-				time_since_last = 0;
-			} else {
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
+			bitbuffer_clear(&bits);
+			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
+			time_since_last = 0;
 		// Rising edge is on end of gap
 		} else if(pulses->gap[n] + time_since_last > (unsigned)(device->short_limit + (device->short_limit>>1))) {
 			// Last bit was recorded more than short_limit*1.5 samples ago 

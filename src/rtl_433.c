@@ -562,6 +562,7 @@ err:
 
 static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int newevents;
 
     for (i = 0; i < len; i++) {
         if (buf[i] > demod->level_limit) {
@@ -592,10 +593,13 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
-            else
+                newevents = p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
+            // Debug printout
+            if(!p->callback || (debug_output && newevents > 0)) {
+                fprintf(stderr, "pwm_d_decode(): %s \n", p->name);
                 bitbuffer_print(&p->bits);
-
+            }
+            events += newevents;
             bitbuffer_clear(&p->bits);
         }
     }
@@ -605,6 +609,7 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
 
 static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int newevents;
 
     for (i = 0; i < len; i++) {
         if (buf[i] > demod->level_limit && !p->start_bit) {
@@ -657,11 +662,14 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (p->sample_counter > p->reset_limit) {
             p->start_c = 0;
             p->sample_counter = 0;
-            //demod_print_bits_packet(p);
             if (p->callback)
-                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
-            else
+                newevents = p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
+            // Debug printout
+            if(!p->callback || (debug_output && newevents > 0)) {
+                fprintf(stderr, "pwm_p_decode(): %s \n", p->name);
                 bitbuffer_print(&p->bits);
+            }
+            events += newevents;
             bitbuffer_clear(&p->bits);
 
             p->start_bit = 0;
