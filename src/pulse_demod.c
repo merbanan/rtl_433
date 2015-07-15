@@ -55,7 +55,7 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
+				fprintf(stderr, "\npulse_demod_pcm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
@@ -86,7 +86,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
+				fprintf(stderr, "\npulse_demod_ppm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
@@ -121,7 +121,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
+				fprintf(stderr, "\npulse_demod_pwm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
@@ -175,7 +175,7 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm_ternary(): %s \n", device->name);
+				fprintf(stderr, "\npulse_demod_pwm_ternary(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
@@ -212,7 +212,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
+				fprintf(stderr, "\npulse_demod_manchester_zerobit(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
