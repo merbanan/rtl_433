@@ -129,10 +129,11 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 
 // LaCrosse TX-6u, TX-7u,  Temperature and Humidity Sensors
 // Temperature and Humidity are sent in different messages bursts.
-static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
-		int16_t bits_per_row[BITBUF_ROWS]) {
+static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bb;
 
 	int i, m, valid = 0;
+	int events = 0;
 	uint8_t *buf;
 	uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
 	uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
@@ -146,13 +147,10 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 	static uint8_t last_msg_type = 0;
 	static time_t last_msg_time = 0;
 
-	if (debug_output)
-		debug_callback(bb, bits_per_row);
-
 	for (m = 0; m < BITBUF_ROWS; m++) {
 		valid = 0;
 		// break out the message nybbles into separate bytes
-		if (lacrossetx_detect(bb[m], msg_nybbles, bits_per_row[m])) {
+		if (lacrossetx_detect(bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
 
 			msg_len = msg_nybbles[1];
 			msg_type = msg_nybbles[2];
@@ -193,17 +191,20 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 				temp_f = temp_c * 1.8 + 32;
 				printf("%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
 					time_str, sensor_id, temp_c, temp_f);
+				events++;
 				break;
 
 			case 0x0E:
 				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
 					time_str, sensor_id, msg_value);
+				events++;
 				break;
 
 			default:
 				fprintf(stderr,
 					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
 					time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				events++;
 			}
 
 			time(&last_msg_time);
@@ -211,12 +212,10 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			last_msg_type = msg_type;
 			last_sensor_id = sensor_id;
 
-		} else {
-			return 0;
 		}
 	}
 
-	return 1;
+	return events;
 }
 
 r_device lacrossetx = {

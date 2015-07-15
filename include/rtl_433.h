@@ -45,11 +45,9 @@
 #define	OOK_PULSE_PWM_TERNARY	7			// Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
 
 extern int debug_output;
-int debug_callback(uint8_t buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
-
 
 struct protocol_state {
-    int (*callback)(uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]);
+    int (*callback)(bitbuffer_t *bitbuffer);
 
    // Bits state (for old sample based decoders)
     bitbuffer_t bits;

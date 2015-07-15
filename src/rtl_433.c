@@ -41,61 +41,6 @@ int debug_output = 0;
 
 int num_r_devices = 0;
 
-int debug_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
-    int i,j,k;
-    int rows_used[BITBUF_ROWS];
-    int col_max = 0;
-    int row_cnt = 0;
-
-    // determine what part of bb[][] has non-zero data to avoid
-    // outputting lots of empty rows
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-	for (j=BITBUF_COLS - 1 ; j > 0 ; j--) {
-	    if (bb[i][j] != 0)
-		break;
-	}
-	if (j != 0) {
-	    rows_used[i] = 1;
-	    row_cnt++;
-	    if (j > col_max)
-		col_max = j;
-	} else {
-	    rows_used[i] = 0;
-	}
-    }
-
-    if (!row_cnt) {
-	fprintf(stderr, "debug_callback: empty data array\n");
-	return 0;
-    }
-
-    fprintf(stderr, "\n");
-    for (i=0 ; i<BITBUF_ROWS ; i++) {
-	if (!rows_used[i]) {
-	    continue;
-	}
-
-        fprintf(stderr, "[%02d] ",i);
-        for (j=0 ; j<=col_max ; j++) {
-            fprintf(stderr, "%02x ", bb[i][j]);
-        }
-        fprintf(stderr, ": ");
-        for (j=0 ; j<=col_max ; j++) {
-            for (k=7 ; k>=0 ; k--) {
-                if (bb[i][j] & 1<<k)
-                    fprintf(stderr, "1");
-                else
-                    fprintf(stderr, "0");
-            }
-            fprintf(stderr, " ");
-        }
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, "\n");
-
-    return 0;
-}
-
 struct dm_state {
     FILE *file;
     int save_data;
@@ -562,6 +507,7 @@ err:
 
 static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int newevents;
 
     for (i = 0; i < len; i++) {
         if (buf[i] > demod->level_limit) {
@@ -592,10 +538,13 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
             p->sample_counter = 0;
             p->pulse_distance = 0;
             if (p->callback)
-                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
-            else
+                newevents = p->callback(&p->bits);
+            // Debug printout
+            if(!p->callback || (debug_output && newevents > 0)) {
+                fprintf(stderr, "pwm_d_decode(): %s \n", p->name);
                 bitbuffer_print(&p->bits);
-
+            }
+            events += newevents;
             bitbuffer_clear(&p->bits);
         }
     }
@@ -605,6 +554,7 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
 
 static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int newevents;
 
     for (i = 0; i < len; i++) {
         if (buf[i] > demod->level_limit && !p->start_bit) {
@@ -657,11 +607,14 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
         if (p->sample_counter > p->reset_limit) {
             p->start_c = 0;
             p->sample_counter = 0;
-            //demod_print_bits_packet(p);
             if (p->callback)
-                events += p->callback(p->bits.bits_buffer, p->bits.bits_per_row);
-            else
+                newevents = p->callback(&p->bits);
+            // Debug printout
+            if(!p->callback || (debug_output && newevents > 0)) {
+                fprintf(stderr, "pwm_p_decode(): %s \n", p->name);
                 bitbuffer_print(&p->bits);
+            }
+            events += newevents;
             bitbuffer_clear(&p->bits);
 
             p->start_bit = 0;

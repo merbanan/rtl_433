@@ -17,14 +17,16 @@
 
 #define BITBUF_COLS		34		// Number of bytes in a column
 #define BITBUF_ROWS		50
+#define BITBUF_MAX_PRINT_BITS	50	// Maximum number of bits to print (in addition to hex values)
 
+typedef uint8_t bitrow_t[BITBUF_COLS];
+typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer
 typedef struct {
-	int		row_index;		// Number of active rows - 1
-	int		bit_col_index;	// Bit index into byte (0 is MSB, 7 is LSB)
-	int16_t bits_per_row[BITBUF_ROWS];
-	uint8_t bits_buffer[BITBUF_ROWS][BITBUF_COLS];
+	uint16_t	num_rows;	// Number of active rows
+	uint16_t	bits_per_row[BITBUF_ROWS];	// Number of active bits per row
+	bitarray_t	bb;			// The actual bits buffer
 } bitbuffer_t;
 
 

@@ -11,9 +11,10 @@
  */
 #include "rtl_433.h"
 
-static int DSC_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int DSC_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bb;
 	// Validate package
-	if ((bits_per_row[0] >= 48)			// Dont waste time on a short package
+	if ((bitbuffer->bits_per_row[0] >= 48)	// Dont waste time on a short package
 	 && (bb[0][0] & 0xF0)				// First 4 bits are sync bits
 	 && (bb[0][1] & 0x08)				// Start bit
 	 && (bb[0][2] & 0x04)				// Start bit
@@ -29,9 +30,6 @@ static int DSC_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 
 		fprintf(stdout, "DSC (Digital Security Controls):\n");
 		fprintf(stdout, "data    = %02X %02X %02X %02X %02X\n", bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
-
-		if (debug_output)
-			debug_callback(bb, bits_per_row);
 
 		return 1;
 	}

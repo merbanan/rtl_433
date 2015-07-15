@@ -93,8 +93,9 @@ get_channel (uint8_t * msg)
 }
 
 static int
-ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
+  bitrow_t *bb = bitbuffer->bb;
   /* shift all the bits left 1 to align the fields */
   int i;
   for (i = 0; i < BITBUF_COLS-1; i++) {
@@ -132,23 +133,25 @@ ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
 
     uint16_t deviceID = get_device_id (bb[0]);
     fprintf (stderr, "id            = %d\n", deviceID);
-
-  } 
+    return 1;
+  }
 
   return 0;
 }
 
 static int
-ambient_weather_callback (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_callback (bitbuffer_t *bitbuffer)
 {
-  return ambient_weather_parser (bb, bits_per_row);
+  return ambient_weather_parser (bitbuffer);
 }
 
 r_device ambient_weather = {
-    /* .name           = */ "Ambient Weather Temperature Sensor",
-    /* .modulation     = */ OOK_PULSE_MANCHESTER_ZEROBIT,
-    /* .short_limit    = */ 125,
-    /* .long_limit     = */ 0, // not used
-    /* .reset_limit    = */ 600,
-    /* .json_callback  = */ &ambient_weather_callback,
+    .name           = "Ambient Weather Temperature Sensor",
+    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = 125,
+    .long_limit     = 0, // not used
+    .reset_limit    = 600,
+    .json_callback  = &ambient_weather_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
