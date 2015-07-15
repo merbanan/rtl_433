@@ -59,7 +59,7 @@ uint8_t bcd_decode8(uint8_t x) {
 }
 
 static int alectov1_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;

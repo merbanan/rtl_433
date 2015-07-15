@@ -95,7 +95,7 @@ get_channel (uint8_t * msg)
 static int
 ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
-  bitrow_t *bb = bitbuffer->bits_buffer;
+  bitrow_t *bb = bitbuffer->bb;
   /* shift all the bits left 1 to align the fields */
   int i;
   for (i = 0; i < BITBUF_COLS-1; i++) {

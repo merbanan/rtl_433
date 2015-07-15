@@ -1,7 +1,7 @@
 #include "rtl_433.h"
 
 static int silvercrest_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     /* FIXME validate the received message better */
     if (bb[1][0] == 0xF8 &&
         bb[2][0] == 0xF8 &&

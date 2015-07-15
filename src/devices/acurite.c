@@ -75,7 +75,7 @@ static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
 int acurite5n1_callback(bitbuffer_t *bitbuffer) {
     // acurite 5n1 weather sensor decoding for rtl_433
     // Jens Jensen 2014
-	bitrow_t *bb = bitbuffer->bits_buffer;
+	bitrow_t *bb = bitbuffer->bb;
     int i;
     uint8_t *buf = NULL;
     // run through rows til we find one with good crc (brute force)
@@ -131,7 +131,7 @@ int acurite5n1_callback(bitbuffer_t *bitbuffer) {
 }
 
 static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
- 	bitrow_t *bb = bitbuffer->bits_buffer;
+ 	bitrow_t *bb = bitbuffer->bb;
    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
 	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
@@ -154,7 +154,7 @@ static float acurite_th_temperature(uint8_t *s){
     return (((int16_t)shifted) >> 4) / 10.0; // Arithmetic right shift
 }
 static int acurite_th_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bits_buffer;
+	bitrow_t *bb = bitbuffer->bb;
     uint8_t *buf = NULL;
     int i;
     for(i = 0; i < BITBUF_ROWS; i++){

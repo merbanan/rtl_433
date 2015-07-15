@@ -121,7 +121,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 // LaCrosse TX-6u, TX-7u,  Temperature and Humidity Sensors
 // Temperature and Humidity are sent in different messages bursts.
 static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bits_buffer;
+	bitrow_t *bb = bitbuffer->bb;
 
 	int i, m, valid = 0;
 	int events = 0;

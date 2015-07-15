@@ -12,7 +12,7 @@
 #include "rtl_433.h"
 
 static int DSC_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bits_buffer;
+	bitrow_t *bb = bitbuffer->bb;
 	// Validate package
 	if ((bitbuffer->bits_per_row[0] >= 48)	// Dont waste time on a short package
 	 && (bb[0][0] & 0xF0)				// First 4 bits are sync bits

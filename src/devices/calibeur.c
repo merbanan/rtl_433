@@ -39,7 +39,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	uint8_t ID;
 	float temperature;
 	float humidity;
-	bitrow_t *bb = bitbuffer->bits_buffer;
+	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package (row [0] is empty due to sync bit)
 	if ((bitbuffer->bits_per_row[1] == 21)			// Dont waste time on a long/short package

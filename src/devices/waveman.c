@@ -1,7 +1,7 @@
 #include "rtl_433.h"
 
 static int waveman_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};

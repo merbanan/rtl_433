@@ -21,7 +21,7 @@
 #include "rtl_433.h"
 
 static int prologue_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     int rid;
 
     int16_t temp2;

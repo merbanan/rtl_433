@@ -10,7 +10,7 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /*- 4  bit:  unit*/
     /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
     /*- stop pulse: 1T high, 40T low */
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     int i;
     uint8_t tmp = 0;
     uint8_t unit = 0;

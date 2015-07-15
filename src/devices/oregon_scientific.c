@@ -87,7 +87,7 @@ static int validate_os_v2_message(unsigned char * msg, int bits_expected, int va
 }
 
 static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
    // Check 2nd and 3rd bytes of stream for possible Oregon Scientific v2.1 sensor data (skip first byte to get past sync/startup bit errors)
    if ( ((bb[0][1] == 0x55) && (bb[0][2] == 0x55)) ||
 	    ((bb[0][1] == 0xAA) && (bb[0][2] == 0xAA))) {
@@ -229,7 +229,7 @@ fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", ms
 }
 
 static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
 
    // Check stream for possible Oregon Scientific v3 protocol data (skip part of first and last bytes to get past sync/startup bit errors)
     if ((((bb[0][0]&0xf) == 0x0f) && (bb[0][1] == 0xff) && ((bb[0][2]&0xc0) == 0xc0)) ||

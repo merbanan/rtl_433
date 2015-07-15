@@ -30,7 +30,7 @@
 #include "util.h"
 
 static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bits_buffer;
+    bitrow_t *bb = bitbuffer->bb;
     uint8_t ID;
     float temperature;
     float humidity;

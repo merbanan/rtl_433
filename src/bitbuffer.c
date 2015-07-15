@@ -19,7 +19,7 @@ void bitbuffer_clear(bitbuffer_t *bits) {
 	bits->row_index = 0;
 	bits->bit_col_index = 0;
 	memset(bits->bits_per_row, 0, BITBUF_ROWS*2);
-	memset(bits->bits_buffer, 0, BITBUF_ROWS * BITBUF_COLS);
+	memset(bits->bb, 0, BITBUF_ROWS * BITBUF_COLS);
 }
 
 
@@ -28,7 +28,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 	if((col_index < BITBUF_COLS)
 	&& (bits->row_index < BITBUF_ROWS)
 	) {
-		bits->bits_buffer[bits->row_index][col_index] |= bit << (7-bits->bit_col_index);
+		bits->bb[bits->row_index][col_index] |= bit << (7-bits->bit_col_index);
 		bits->bit_col_index++;
 		bits->bit_col_index %= 8;		// Wrap around
 		bits->bits_per_row[bits->row_index]++;
@@ -55,13 +55,13 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 	for (int row = 0; row <= bits->row_index; ++row) {
 		fprintf(stderr, "[%02d] {%d} ", row, bits->bits_per_row[row]);
 		for (int col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-			fprintf(stderr, "%02x ", bits->bits_buffer[row][col]);
+			fprintf(stderr, "%02x ", bits->bb[row][col]);
 		}
 		// Print binary values also?
 		if (bits->bits_per_row[row] <= BITBUF_MAX_PRINT_BITS) {
 			fprintf(stderr, ": ");
 			for (int bit = 0; bit < bits->bits_per_row[row]; ++bit) {
-				if (bits->bits_buffer[row][bit/8] & (0x80 >> (bit % 8))) {
+				if (bits->bb[row][bit/8] & (0x80 >> (bit % 8))) {
 					fprintf(stderr, "1");
 				} else {
 					fprintf(stderr, "0");
