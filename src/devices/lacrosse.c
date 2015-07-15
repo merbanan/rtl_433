@@ -119,8 +119,9 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 		}
 	} else {
 	    if (debug_output) {
-		fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
-			pRow[0], rowlen);
+		// Debug: This is very noisy
+		//fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
+		//	pRow[0], rowlen);
 	    }
 	}
 
