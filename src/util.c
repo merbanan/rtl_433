@@ -30,6 +30,23 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial) {
 }
 
 
+void local_time_str(time_t time_secs, char *buf) {
+	time_t etime;
+	struct tm *tm_info;
+
+	if (time_secs == 0) {
+		time(&etime);
+	} else {
+		etime = time_secs;
+	}
+
+	tm_info = localtime(&etime);
+
+	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+}
+
+
+
 // Test code
 // gcc -I include/ -std=gnu99 -D _TEST src/util.c
 #ifdef _TEST
