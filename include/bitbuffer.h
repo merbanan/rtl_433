@@ -24,10 +24,9 @@ typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer
 typedef struct {
-	int		row_index;		// Number of active rows - 1
-	int		bit_col_index;	// Bit index into byte (0 is MSB, 7 is LSB)
-	int16_t bits_per_row[BITBUF_ROWS];
-	bitarray_t bb;			// The actual bits buffer
+	uint16_t	num_rows;	// Number of active rows
+	uint16_t	bits_per_row[BITBUF_ROWS];	// Number of active bits per row
+	bitarray_t	bb;			// The actual bits buffer
 } bitbuffer_t;
 
 

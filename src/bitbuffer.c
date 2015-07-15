@@ -16,22 +16,21 @@
 
 
 void bitbuffer_clear(bitbuffer_t *bits) {
-	bits->row_index = 0;
-	bits->bit_col_index = 0;
+	bits->num_rows = 0;
 	memset(bits->bits_per_row, 0, BITBUF_ROWS*2);
 	memset(bits->bb, 0, BITBUF_ROWS * BITBUF_COLS);
 }
 
 
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
-	uint16_t col_index = bits->bits_per_row[bits->row_index]/8;
+	if(bits->num_rows == 0) bits->num_rows++;	// Add first row automatically
+	uint16_t col_index = bits->bits_per_row[bits->num_rows-1] / 8;
+	uint16_t bit_index = bits->bits_per_row[bits->num_rows-1] % 8;
 	if((col_index < BITBUF_COLS)
-	&& (bits->row_index < BITBUF_ROWS)
+	&& (bits->num_rows <= BITBUF_ROWS)
 	) {
-		bits->bb[bits->row_index][col_index] |= bit << (7-bits->bit_col_index);
-		bits->bit_col_index++;
-		bits->bit_col_index %= 8;		// Wrap around
-		bits->bits_per_row[bits->row_index]++;
+		bits->bb[bits->num_rows-1][col_index] |= (bit << (7-bit_index));
+		bits->bits_per_row[bits->num_rows-1]++;
 	}
 	else {
 //		fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");	// Some decoders may add many columns...
@@ -40,10 +39,10 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 
 
 void bitbuffer_add_row(bitbuffer_t *bits) {
-	if(bits->row_index < BITBUF_ROWS) {
-		bits->row_index++;
-		bits->bit_col_index = 0;
-	} 
+	if(bits->num_rows == 0) bits->num_rows++;	// Add first row automatically
+	if(bits->num_rows < BITBUF_ROWS) {
+		bits->num_rows++;
+	}
 	else {
 //		fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");	// Some decoders may add many rows...
 	}
@@ -51,16 +50,16 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 
 
 void bitbuffer_print(const bitbuffer_t *bits) {
-	fprintf(stderr, "bitbuffer:: row_index: %d, bit_col_index: %d\n", bits->row_index, bits->bit_col_index);
-	for (int row = 0; row <= bits->row_index; ++row) {
+	fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
+	for (uint16_t row = 0; row < bits->num_rows; ++row) {
 		fprintf(stderr, "[%02d] {%d} ", row, bits->bits_per_row[row]);
-		for (int col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
+		for (uint16_t col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 			fprintf(stderr, "%02x ", bits->bb[row][col]);
 		}
 		// Print binary values also?
 		if (bits->bits_per_row[row] <= BITBUF_MAX_PRINT_BITS) {
 			fprintf(stderr, ": ");
-			for (int bit = 0; bit < bits->bits_per_row[row]; ++bit) {
+			for (uint16_t bit = 0; bit < bits->bits_per_row[row]; ++bit) {
 				if (bits->bb[row][bit/8] & (0x80 >> (bit % 8))) {
 					fprintf(stderr, "1");
 				} else {
