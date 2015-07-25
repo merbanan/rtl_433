@@ -11,8 +11,9 @@ uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
     return val;
 }
 
-static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int em1000_callback(bitbuffer_t *bitbuffer) {
     // based on fs20.c
+    bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[10];
     uint8_t bytes=0;
     uint8_t bit=18; // preamble
@@ -53,7 +54,7 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
 
     // based on 15_CUL_EM.pm
     fprintf(stdout, "Energy sensor event:\n");
-    fprintf(stdout, "protocol      = ELV EM 1000, %d bits\n",bits_per_row[1]);
+    fprintf(stdout, "protocol      = ELV EM 1000, %d bits\n",bitbuffer->bits_per_row[1]);
     fprintf(stdout, "type          = EM 1000-%s\n",dec[0]>=1&&dec[0]<=3?types[dec[0]-1]:"?");
     fprintf(stdout, "code          = %d\n",dec[1]);
     fprintf(stdout, "seqno         = %d\n",dec[2]);
@@ -64,8 +65,9 @@ static int em1000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
     return 1;
 }
 
-static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int ws2000_callback(bitbuffer_t *bitbuffer) {
     // based on http://www.dc3yc.privat.t-online.de/protocol.htm
+    bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[13];
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
@@ -114,7 +116,7 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
 //for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
 
     fprintf(stdout, "Weather station sensor event:\n");
-    fprintf(stdout, "protocol      = ELV WS 2000, %d bits\n",bits_per_row[1]);
+    fprintf(stdout, "protocol      = ELV WS 2000, %d bits\n",bitbuffer->bits_per_row[1]);
     fprintf(stdout, "type (!=ToDo) = %s\n", dec[0]<=7?types[dec[0]]:"?");
     fprintf(stdout, "code          = %d\n", dec[1]&7);
     fprintf(stdout, "temp          = %s%d.%d\n", dec[1]&8?"-":"", dec[4]*10+dec[3], dec[2]);
@@ -127,19 +129,23 @@ static int ws2000_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per
 }
 
 r_device elv_em1000 = {
-    /* .name           = */ "ELV EM 1000",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 750/4,
-    /* .long_limit     = */ 7250/4,
-    /* .reset_limit    = */ 30000/4,
-    /* .json_callback  = */ &em1000_callback,
+    .name           = "ELV EM 1000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 750/4,
+    .long_limit     = 7250/4,
+    .reset_limit    = 30000/4,
+    .json_callback  = &em1000_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 
 r_device elv_ws2000 = {
-    /* .name           = */ "ELV WS 2000",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ (602+(1155-602)/2)/4,
-    /* .long_limit     = */ ((1755635-1655517)/2)/4, // no repetitions
-    /* .reset_limit    = */ ((1755635-1655517)*2)/4,
-    /* .json_callback  = */ &ws2000_callback,
+    .name           = "ELV WS 2000",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = (602+(1155-602)/2)/4,
+    .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
+    .reset_limit    = ((1755635-1655517)*2)/4,
+    .json_callback  = &ws2000_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

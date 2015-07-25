@@ -59,7 +59,8 @@ uint8_t bcd_decode8(uint8_t x) {
     return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
 }
 
-static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int alectov1_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
@@ -168,7 +169,6 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
          /*
          * fprintf(stdout, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
          */
-            debug_callback(bb, bits_per_row);
         }
         return 1;
     }
@@ -177,12 +177,12 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
 
 //Timing based on 250000
 r_device alectov1 = {
-    /* .name           = */ "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 3500 / 4, //875
-    /* .long_limit     = */ 7000 / 4, //1750
-    /* .reset_limit    = */ 15000 / 4, //3750
-    /* .json_callback  = */ &alectov1_callback,
-    /* .Disable        = */ 0,
-    /* .demod_arg      = */ 0,
+    .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 3500 / 4, //875
+    .long_limit     = 7000 / 4, //1750
+    .reset_limit    = 15000 / 4, //3750
+    .json_callback  = &alectov1_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

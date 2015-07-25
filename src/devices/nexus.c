@@ -14,7 +14,8 @@
  * The sensor can be bought at Clas Ohlsen
  */
 
-static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int nexus_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
@@ -40,9 +41,6 @@ static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_
         fprintf(stdout, "Temp: %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
         fprintf(stdout, "Humidity: %d\n", humidity);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;
@@ -50,11 +48,13 @@ static int nexus_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_
 
 // timings based on samp_rate=1024000
 r_device nexus = {
-    /* .name           = */ "Nexus Temperature & Humidity Sensor",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 1744/4,
-    /* .long_limit     = */ 3500/4,
-    /* .reset_limit    = */ 5000/4,
-    /* .json_callback  = */ &nexus_callback,
+    .name           = "Nexus Temperature & Humidity Sensor",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 1744/4,
+    .long_limit     = 3500/4,
+    .reset_limit    = 5000/4,
+    .json_callback  = &nexus_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
 

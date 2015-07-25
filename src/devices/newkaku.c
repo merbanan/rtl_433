@@ -1,6 +1,6 @@
 #include "rtl_433.h"
 
-static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
     /*start pulse: 1T high, 10.44T low */
@@ -10,6 +10,7 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
     /*- 4  bit:  unit*/
     /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
     /*- stop pulse: 1T high, 40T low */
+    bitrow_t *bb = bitbuffer->bb;
     int i;
     uint8_t tmp = 0;
     uint8_t unit = 0;
@@ -109,18 +110,18 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
         }
         fprintf(stdout, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                 bb[0][0], bb[0][1], bb[0][2], bb[0][3], bb[0][4], bb[0][5], bb[0][6], bb[0][7], bb[0][8]);
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
         return 1;
     }
     return 0;
 }
 
 r_device newkaku = {
-    /* .name           = */ "KlikAanKlikUit Wireless Switch",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 200,
-    /* .long_limit     = */ 800,
-    /* .reset_limit    = */ 4000,
-    /* .json_callback  = */ &newkaku_callback,
+    .name           = "KlikAanKlikUit Wireless Switch",
+    .modulation     = OOK_PWM_D,
+    .short_limit    = 200,
+    .long_limit     = 800,
+    .reset_limit    = 4000,
+    .json_callback  = &newkaku_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
