@@ -43,6 +43,11 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 			}
 		} else {
 			// Data is corrupt
+			if (debug_output > 3) {
+			        fprintf(stderr,"bitbuffer cleared at %d: pulse %d, gap %d, period %d\n",
+					n,pulses->pulse[n],pulses->gap[n],
+					pulses->pulse[n] + pulses->gap[n]);
+			}
 			bitbuffer_clear(&bits);
 		}
 
