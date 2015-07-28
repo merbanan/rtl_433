@@ -67,7 +67,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
     int valid_cnt = 0;
     char time_str[LOCAL_TIME_BUFLEN];
 
-    if (debug_output) {
+    if (debug_output > 1) {
 	fprintf(stderr,"Possible DSC Contact: ");
 	bitbuffer_print(bitbuffer);
     }
@@ -124,7 +124,8 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 	bytes[4] = ((bb[row][5]));
 
 	// XXX change to debug_output
-	fprintf(stdout, "DSC Contact Raw Data: %02X %02X %02X %02X %02X\n",
+	if (debug_output) 
+	    fprintf(stdout, "DSC Contact Raw Data: %02X %02X %02X %02X %02X\n",
 		bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
 
 	status = bytes[0];

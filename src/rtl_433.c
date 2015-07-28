@@ -738,7 +738,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if(debug_output) pulse_data_print(&demod->pulse_data);
+                if(debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if(debug_output) pulse_analyzer(&demod->pulse_data);
                 pulse_data_clear(&demod->pulse_data);
             }
@@ -856,7 +856,7 @@ int main(int argc, char **argv) {
                 sync_mode = 1;
                 break;
             case 'D':
-                debug_output = 1;
+                debug_output++;
                 break;
             case 'z':
                 override_short = atoi(optarg);
