@@ -790,7 +790,7 @@ int main(int argc, char **argv) {
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
-
+    dup2(1, 2);
     demod = malloc(sizeof (struct dm_state));
     memset(demod, 0, sizeof (struct dm_state));
 
