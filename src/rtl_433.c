@@ -752,7 +752,7 @@ int main(int argc, char **argv) {
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
-
+    pulse_data_clear(&demod->pulse_data);
 
     while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
