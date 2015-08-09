@@ -74,7 +74,7 @@ void usage(r_device *devices) {
             "\t[-g gain (default: 0 for auto)]\n"
             "\t[-a analyze mode, print a textual description of the signal]\n"
             "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-            "\t[-l change the detection level used to determine pulses (0-3200) default: %i]\n"
+            "\t[-l change the detection level used to determine pulses (0-32767) default: %i]\n"
             "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
             "\t[-s sample rate (default: %i Hz)]\n"
             "\t[-S force sync output (default: async)]\n"
