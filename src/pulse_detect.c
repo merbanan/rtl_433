@@ -39,7 +39,6 @@ typedef struct {
 	} state;
 	unsigned int pulse_length;		// Counter for internal pulse detection
 	unsigned int max_pulse;			// Size of biggest pulse detected
-	unsigned int max_gap;			// Size of biggest gap detected
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
 } pulse_state_t;
@@ -57,7 +56,6 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 			case PD_STATE_IDLE:
 				s->pulse_length = 0;
 				s->max_pulse = 0;
-				s->max_gap = 0;
 				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {
 					s->state = PD_STATE_PULSE;
 				}
@@ -68,6 +66,7 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 				// End of pulse detected?
 				if (envelope_data[s->data_counter] < (level_limit - HYSTERESIS)) {	// Gap?
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
+					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
 
 					// EOP if pulse is too long
 					if (s->pulse_length > (PD_MAX_PULSE_MS * samples_per_ms)) {
@@ -76,10 +75,6 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 						return 1;	// End Of Package!!
 					}
 
-					// Find largest pulse
-					if(s->pulse_length > s->max_pulse) {
-						s->max_pulse = s->pulse_length;
-					}
 					s->pulse_length = 0;
 					s->state = PD_STATE_GAP;
 				}
@@ -97,10 +92,6 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 						return 1;	// End Of Package!!
 					}
 
-					// Find largest gap
-					if(s->pulse_length > s->max_gap) {
-						s->max_gap = s->pulse_length;
-					}
 					s->pulse_length = 0;
 					s->state = PD_STATE_PULSE;
 				}
@@ -271,8 +262,10 @@ void pulse_analyzer(const pulse_data_t *data)
 
 	// Print level statistics
 	fprintf(stderr, "Mean pulse level: %5u [%u;%u]\n", (unsigned)(data->pulse_sum / data->pulse_num), data->pulse_min, data->pulse_max);
-	fprintf(stderr, "Mean gap level:   %5u [%u;%u]\n", (unsigned)(data->gap_sum / data->gap_num), data->gap_min, data->gap_max);
-
+	if (data->gap_num) {	// Avoid divide by zero at early EOP
+		fprintf(stderr, "Mean gap level:   %5u [%u;%u]\n", (unsigned)(data->gap_sum / data->gap_num), data->gap_min, data->gap_max);
+	}
+	
 	fprintf(stderr, "Guessing modulation: ");
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
