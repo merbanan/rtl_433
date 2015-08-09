@@ -48,6 +48,7 @@ static pulse_state_t pulse_state;
 
 int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
+	const int16_t HYSTERESIS = level_limit / 8;	// ±12%
 	pulse_state_t *s = &pulse_state;
 
 	// Process all new samples
@@ -57,14 +58,14 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 				s->pulse_length = 0;
 				s->max_pulse = 0;
 				s->max_gap = 0;
-				if (envelope_data[s->data_counter] > level_limit) {
+				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {
 					s->state = PD_STATE_PULSE;
 				}
 				break;
 			case PD_STATE_PULSE:
 				s->pulse_length++;
 				// End of pulse detected?
-				if (envelope_data[s->data_counter] < level_limit) {		// Gap?
+				if (envelope_data[s->data_counter] < (level_limit - HYSTERESIS)) {	// Gap?
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 
 					// EOP if pulse is too long
@@ -85,7 +86,7 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 			case PD_STATE_GAP:
 				s->pulse_length++;
 				// New pulse detected?
-				if (envelope_data[s->data_counter] > level_limit) {		// New pulse?
+				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {	// New pulse?
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Next pulse
 
