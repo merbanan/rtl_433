@@ -1,17 +1,31 @@
 #include "rtl_433.h"
 
 static int waveman_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b = bitbuffer->bb[0];
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};
 
-    if (((bb[0][0]&0x55)==0x55) && ((bb[0][1]&0x55)==0x55) && ((bb[0][2]&0x55)==0x55) && ((bb[0][3]&0x55)==0x00)) {
+    /*
+     * Catch the case triggering false positive for other transmitters.
+     * example: Brennstuhl RCS 2044SN
+     * @todo is this message valid at all??? if not then put more validation below
+     *       instead of this special case
+     */
+    if ( 24   == bitbuffer->bits_per_row[0] &&
+         0xFF == b[0] &&
+         0xFF == b[1] &&
+         0xFF == b[2] )
+        return 0;
+
+    /* Test if the bit stream conforms to the rule of every odd bit being set to one */
+    if (((b[0]&0x55)==0x55) && ((b[1]&0x55)==0x55) && ((b[2]&0x55)==0x55) && ((b[3]&0x55)==0x00)) {
+        /* Extract data from the bit stream */
         for (i=0 ; i<3 ; i++) {
-            nb[i] |= ((bb[0][i]&0xC0)==0xC0) ? 0x00 : 0x01;
-            nb[i] |= ((bb[0][i]&0x30)==0x30) ? 0x00 : 0x02;
-            nb[i] |= ((bb[0][i]&0x0C)==0x0C) ? 0x00 : 0x04;
-            nb[i] |= ((bb[0][i]&0x03)==0x03) ? 0x00 : 0x08;
+            nb[i] |= ((b[i]&0xC0)==0xC0) ? 0x00 : 0x01;
+            nb[i] |= ((b[i]&0x30)==0x30) ? 0x00 : 0x02;
+            nb[i] |= ((b[i]&0x0C)==0x0C) ? 0x00 : 0x04;
+            nb[i] |= ((b[i]&0x03)==0x03) ? 0x00 : 0x08;
         }
 
         fprintf(stdout, "Remote button event:\n");
