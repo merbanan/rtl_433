@@ -628,7 +628,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
             envelope_detect(buf, len, demod->decimation_level);
             // baseband_dumpfile(buf, len);				// Debug
             low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1));
-            // baseband_dumpfile(demod->f_buf, len);	// Debug
+            // baseband_dumpfile((uint8_t*)demod->f_buf, len);	// Debug
         } else if (demod->debug_mode == 1) {
             memcpy(demod->f_buf, buf, len);
         }

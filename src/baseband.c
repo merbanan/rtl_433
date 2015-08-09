@@ -45,22 +45,25 @@ void envelope_detect(unsigned char *buf, uint32_t len, int decimate) {
 
 /** Something that might look like a IIR lowpass filter
  *
- *  [b,a] = butter(1, 0.01) ->  quantizes nicely thus suitable for fixed point
+ *  [b,a] = butter(1, Wc) # low pass filter with cutoff pi*Wc radians
  *  Q1.15*Q15.0 = Q16.15
  *  Q16.15>>1 = Q15.14
  *  Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
  *  but the b coeffs are small so it wont happen
  *  Q15.14>>14 = Q15.0 \o/
  */
-
 #define F_SCALE 15
 #define S_CONST (1<<F_SCALE)
 #define FIX(x) ((int)(x*S_CONST))
 
 static uint16_t lp_xmem[FILTER_ORDER] = {0};
 
-static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
-static int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
+///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
+//static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
+//static int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
+///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
+static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.72654)};
+static int b[FILTER_ORDER + 1] = {FIX(0.13673), FIX(0.13673)};
 
 void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len) {
     unsigned int i;
