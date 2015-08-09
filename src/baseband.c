@@ -61,9 +61,9 @@ static uint16_t lp_xmem[FILTER_ORDER] = {0};
 ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
 //static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
 //static int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
-///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.72654)};
-static int b[FILTER_ORDER + 1] = {FIX(0.13673), FIX(0.13673)};
+///  [b,a] = butter(1, 0.05) -> 3x tau (95%) ~20 samples
+static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.85408)};
+static int b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
 
 void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len) {
     unsigned int i;
