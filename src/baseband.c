@@ -23,7 +23,7 @@ static uint16_t scaled_squares[256];
 static void calc_squares() {
     int i;
     for (i = 0; i < 256; i++)
-        scaled_squares[i] = (128 - i) * (128 - i);
+        scaled_squares[i] = (127 - i) * (127 - i);
 }
 
 /** This will give a noisy envelope of OOK/ASK signals
