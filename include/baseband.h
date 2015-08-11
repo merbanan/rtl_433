@@ -26,8 +26,20 @@ void envelope_detect(unsigned char *buf, uint32_t len, int decimate);
 
 #define FILTER_ORDER 1
 
+/// Filter state buffer
+typedef struct {
+	int16_t	y[FILTER_ORDER];
+	int16_t	x[FILTER_ORDER];
+} FilterState;
+
 /// Lowpass filter
-void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len);
+///
+/// Function is stateful
+/// @param *x_buf: input samples to be filtered
+/// @param *y_buf: output from filter
+/// @param len: number of samples to process
+/// @param FilterState: State to store between chunk processing
+void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t len, FilterState *state);
 
 /// Initialize tables and constants
 /// Should be called once at startup

@@ -46,8 +46,8 @@ struct dm_state {
     int save_data;
     int32_t level_limit;
     int32_t decimation_level;
-    int16_t filter_buffer[MAXIMAL_BUF_LENGTH + FILTER_ORDER];
-    int16_t* f_buf;
+    int16_t f_buf[MAXIMAL_BUF_LENGTH];
+    FilterState lowpass_filter_state;
     int analyze;
     int debug_mode;
 
@@ -627,7 +627,7 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
         if (demod->debug_mode == 0) {
             envelope_detect(buf, len, demod->decimation_level);
             // baseband_dumpfile(buf, len);				// Debug
-            low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1));
+            baseband_low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);
             // baseband_dumpfile((uint8_t*)demod->f_buf, len);	// Debug
         } else if (demod->debug_mode == 1) {
             memcpy(demod->f_buf, buf, len);
@@ -749,7 +749,6 @@ int main(int argc, char **argv) {
 
     num_r_devices = sizeof(devices)/sizeof(*devices);
 
-    demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     pulse_data_clear(&demod->pulse_data);

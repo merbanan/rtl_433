@@ -56,8 +56,6 @@ void envelope_detect(unsigned char *buf, uint32_t len, int decimate) {
 #define S_CONST (1<<F_SCALE)
 #define FIX(x) ((int)(x*S_CONST))
 
-static uint16_t lp_xmem[FILTER_ORDER] = {0};
-
 ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
 //static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
 //static int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
@@ -65,18 +63,19 @@ static uint16_t lp_xmem[FILTER_ORDER] = {0};
 static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.85408)};
 static int b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
 
-void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len) {
+
+void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t len, FilterState *state) {
     unsigned int i;
 
     /* Calculate first sample */
-    y_buf[0] = ((a[1] * y_buf[-1] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * lp_xmem[0] >> 1)) >> (F_SCALE - 1);
+    y_buf[0] = ((a[1] * state->y[0] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * state->x[0] >> 1)) >> (F_SCALE - 1);
     for (i = 1; i < len; i++) {
         y_buf[i] = ((a[1] * y_buf[i - 1] >> 1) + (b[0] * x_buf[i] >> 1) + (b[1] * x_buf[i - 1] >> 1)) >> (F_SCALE - 1);
     }
 
-    /* Save last sample */
-    memcpy(lp_xmem, &x_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
-    memcpy(&y_buf[-FILTER_ORDER], &y_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
+    /* Save last samples */
+    memcpy(state->x, &x_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
+    memcpy(state->y, &y_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
     //fprintf(stderr, "%d\n", y_buf[0]);
 }
 
