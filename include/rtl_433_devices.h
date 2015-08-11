@@ -26,7 +26,8 @@
 		DECL(ambient_weather) \
 		DECL(calibeur_RF104) \
 		DECL(X10_RF) \
-		DECL(DSC)
+		DECL(DSC) \
+		DECL(brennstuhl_rcs_2044)
 
 
 typedef struct {
