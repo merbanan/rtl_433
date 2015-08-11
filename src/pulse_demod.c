@@ -22,10 +22,11 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 	int events = 0;
 	bitbuffer_t bits = {0};
 	const int MAX_ZEROS = device->reset_limit / device->long_limit;
-	const int TOLERANCE = device->long_limit / 10;		// Tolerance is 10% of a bit period
-	
+	const int TOLERANCE = device->long_limit / 4;		// Tolerance is ±25% of a bit period
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;	// Number of bits
+		// Determine number of bit periods in current pulse/gap length (rounded)
+		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;
 
 		// Validate data
 		if ((abs(pulses->pulse[n] - device->short_limit) < TOLERANCE)					// Pulse must be within tolerance
