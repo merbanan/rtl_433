@@ -18,15 +18,56 @@
  * https://github.com/xkonni/raspberry-remote
  */
 
+static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer);
 static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
 {
-  uint8_t *b = bitbuffer->bb[0];
+  int counter = 0;
+  for(int row=0; row<bitbuffer->num_rows; row++)
+    counter += brennstuhl_rcs_2044_process_row(row, bitbuffer);
+  return counter;
+}
+
+static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
+{
+  const uint8_t *b = bitbuffer->bb[row];
+  const int length = bitbuffer->bits_per_row[row];
   /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
   int i;
   uint8_t nb[3] = {0};
 
+#if 0
+  {
+    // print raw bit squence for debug purposes (before exclusion of invalid sequenced is executed)
+    time_t time_now;
+    char time_str[LOCAL_TIME_BUFLEN];
+    time(&time_now);
+    local_time_str(time_now, time_str);
+    fprintf(stdout, "%s Brennstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
+    for(int i=0; i<4; i++)
+    {
+      for(int p=7; p>=0; p--)
+        fprintf(stdout, "%d", (b[i]>>p ) & 0x1);
+      fprintf(stdout, " ");
+    }
+    fprintf(stdout, "\n");
+
+    fprintf(stdout, "%s Brennstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
+    for(int i=0; i<4; i++)
+    {
+      for(int p=7; p>=0; p--)
+        if (p%2)
+          fprintf(stdout, ".");
+        else
+          fprintf(stdout, "%d", (b[i]>>p ) & 0x1);
+      fprintf(stdout, " ");
+    }
+    fprintf(stdout, "\n");
+
+  }
+#endif
+
   /* Test bit pattern for every second bit being 1 */
-  if ( 25 != bitbuffer->bits_per_row[0]
+  if ( 25 != length
        || (b[0]&0xaa) != 0xaa
        || (b[1]&0xaa) != 0xaa
        || (b[2]&0xaa) != 0xaa
@@ -136,9 +177,9 @@ static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
 r_device brennstuhl_rcs_2044 = {
   .name          = "Brennstuhl RCS 2044",
   .modulation    = OOK_PULSE_PWM_RAW,
-  .short_limit   = 75,
-  .long_limit    = 350,
-  .reset_limit   = 600,
+  .short_limit   = 150,
+  .long_limit    = 1000,
+  .reset_limit   = 1000,
   .json_callback = &brennstuhl_rcs_2044_callback,
   .disabled      = 0,
   .demod_arg     = 0,
