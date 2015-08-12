@@ -47,6 +47,7 @@ struct dm_state {
     int32_t decimation_level;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];	// AM demodulated signal (for OOK decoding)
     int16_t fm_buf[MAXIMAL_BUF_LENGTH];	// FM demodulated signal (for FSK decoding)
+    uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int analyze;
@@ -82,7 +83,10 @@ void usage(r_device *devices) {
             "\t[-r read data from file instead of from a receiver]\n"
             "\t[-p ppm_error (default: 0)]\n"
             "\t[-r test file name (indata)]\n"
-            "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
+            "\t[-m test file mode (default: 0)\n"
+            "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
+            "\t\t 1 = AM demodulated samples (uint16)\n"
+            "\t\t 2 = FM demodulated samples (uint16) (experimental)\n"
             "\t[-D print debug info on event\n"
             "\t[-z override short value]\n"
             "\t[-x override long value]\n"
@@ -601,9 +605,8 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 }
 
 
-static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
+static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
-    uint16_t* sbuf = (uint16_t*) buf;
     int i;
 
 	if (do_exit || do_exit_async)
@@ -617,25 +620,29 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
 
 	if (demod->signal_grabber) {
 		//fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
-		memcpy(&demod->sg_buf[demod->sg_index], buf, len);
+		memcpy(&demod->sg_buf[demod->sg_index], iq_buf, len);
 		demod->sg_len = len;
 		demod->sg_index += len;
 		if (demod->sg_index + len > SIGNAL_GRABBER_BUFFER)
 			demod->sg_index = 0;
 	}
 
+	// FM demodulation
+	baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+	// AM demodulation
+	envelope_detect(iq_buf, demod->temp_buf, len/2, demod->decimation_level);
+	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);
 
-	if (demod->debug_mode == 0) {
-		baseband_demod_FM(buf, demod->fm_buf, len/2, &demod->demod_FM_state);
-		//baseband_dumpfile((uint8_t*)demod->fm_buf, len);				// Debug
-		envelope_detect(buf, len, demod->decimation_level);
-		// baseband_dumpfile(buf, len);				// Debug
-		baseband_low_pass_filter(sbuf, demod->am_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);
-		// baseband_dumpfile((uint8_t*)demod->am_buf, len);	// Debug
-	} else if (demod->debug_mode == 1) {
-		memcpy(demod->am_buf, buf, len);
+	// Handle special input formats
+	if(!demod->out_file) {
+		if (demod->debug_mode == 1) {	// The IQ buffer is really AM demodulated data
+			memcpy(demod->am_buf, iq_buf, len);
+		} else if (demod->debug_mode == 2) {	// The IQ buffer is really FM demodulated data
+			fprintf(stderr, "Reading FM modulated data not implemented yet!\n");
+		}
 	}
-	if (demod->analyze) {
+
+	if (demod->analyze || (demod->out_file == stdout)) {	// We don't want to decode devices when outputting to stdout
 		pwm_analyze(demod, demod->am_buf, len / 2);
 	} else {
 		// Loop through all demodulators for all samples (CPU intensive!)
@@ -692,7 +699,13 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
 	}
 
 	if (demod->out_file) {
-		if (fwrite(demod->am_buf, 1, len >> demod->decimation_level, demod->out_file) != len >> demod->decimation_level) {
+		uint8_t* out_buf = iq_buf;				// Default is to dump IQ samples
+		if (demod->debug_mode == 1) {			// AM data
+			out_buf = (uint8_t*)demod->am_buf;
+		} else if (demod->debug_mode == 2) {	// FM data
+			out_buf = (uint8_t*)demod->fm_buf;
+		}
+		if (fwrite(out_buf, 1, len >> demod->decimation_level, demod->out_file) != len >> demod->decimation_level) {
 			fprintf(stderr, "Short write, samples lost, exiting!\n");
 			rtlsdr_cancel_async(dev);
 		}

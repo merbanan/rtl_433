@@ -17,12 +17,13 @@
 
 #include <stdint.h>
 
-/** This will give a noisy envelope of OOK/ASK signals
- *  Subtract the bias (-128) and get an envelope estimation
- *  The output will be written in the input buffer
- *  @returns   pointer to the input buffer
- */
-void envelope_detect(unsigned char *buf, uint32_t len, int decimate);
+/// This will give a noisy envelope of OOK/ASK signals
+
+/// Subtract the bias (-128) and get an envelope estimation (absolute squared)
+/// @param *iq_buf: input samples (I/Q samples in interleaved uint8)
+/// @param *y_buf: output 
+/// @param len: number of samples to process
+void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len, int decimate);
 
 #define FILTER_ORDER 1
 
