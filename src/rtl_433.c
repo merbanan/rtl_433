@@ -87,6 +87,7 @@ void usage(r_device *devices) {
             "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
             "\t\t 1 = AM demodulated samples (uint16)\n"
             "\t\t 2 = FM demodulated samples (uint16) (experimental)\n"
+            "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-D print debug info on event\n"
             "\t[-z override short value]\n"
             "\t[-x override long value]\n"
@@ -634,7 +635,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);
 
 	// Handle special input formats
-	if(!demod->out_file) {
+	if(!demod->out_file) {				// If output file is specified we always assume I/Q input
 		if (demod->debug_mode == 1) {	// The IQ buffer is really AM demodulated data
 			memcpy(demod->am_buf, iq_buf, len);
 		} else if (demod->debug_mode == 2) {	// The IQ buffer is really FM demodulated data
