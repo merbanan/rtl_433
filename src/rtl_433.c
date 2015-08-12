@@ -72,27 +72,28 @@ void usage(r_device *devices) {
 
 	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
-            "Usage:\t[-d device index (default: 0)]\n"
-            "\t[-g gain (default: 0 for auto)]\n"
-            "\t[-a analyze mode, print a textual description of the signal]\n"
-            "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-            "\t[-l change the detection level used to determine pulses (0-32767) default: %i]\n"
-            "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
-            "\t[-s sample rate (default: %i Hz)]\n"
-            "\t[-S force sync output (default: async)]\n"
-            "\t[-r read data from file instead of from a receiver]\n"
-            "\t[-p ppm_error (default: 0)]\n"
-            "\t[-r test file name (indata)]\n"
-            "\t[-m test file mode (default: 0)\n"
+            "Usage:\t[-d <device index>] (default: 0)\n"
+            "\t[-g <gain>] (default: 0 for auto)\n"
+            "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
+            "\t[-p <ppm_error>] (default: 0)\n"
+            "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "\t[-S] Force sync output (default: async)\n"
+            "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
+            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (default: %i)\n"
+            "\t[-z <value>] Override short value in data decoder\n"
+            "\t[-x <value>] Override long value in data decoder\n"
+            "\t[-D] Print debug info on event (repeat for more info)\n"
+            "\t[-a] Analyze mode. Print a textual description of the signal\n"
+            "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
+            "\t\t Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files\n"
+            "\t[-r <filename>] Read data from input file instead of a receiver\n"
+            "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
             "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
-            "\t\t 1 = AM demodulated samples (uint16)\n"
-            "\t\t 2 = FM demodulated samples (uint16) (experimental)\n"
+            "\t\t 1 = AM demodulated samples (int16)\n"
+            "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
-            "\t[-D print debug info on event\n"
-            "\t[-z override short value]\n"
-            "\t[-x override long value]\n"
-            "\t[-R listen only for the specified remote device (can be used multiple times)]\n"
-            "\tout_filename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
+            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
+            DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     fprintf(stderr, "Supported devices:\n");
     for (i = 0; i < num_r_devices; i++) {
