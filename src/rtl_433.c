@@ -47,7 +47,9 @@ struct dm_state {
     int32_t level_limit;
     int32_t decimation_level;
     int16_t f_buf[MAXIMAL_BUF_LENGTH];
+    int16_t fm_buf[MAXIMAL_BUF_LENGTH];
     FilterState lowpass_filter_state;
+    DemodFM_State demod_FM_state;
     int analyze;
     int debug_mode;
 
@@ -625,6 +627,8 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
 
 
         if (demod->debug_mode == 0) {
+            baseband_demod_FM(buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+            //baseband_dumpfile((uint8_t*)demod->fm_buf, len);				// Debug
             envelope_detect(buf, len, demod->decimation_level);
             // baseband_dumpfile(buf, len);				// Debug
             baseband_low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);

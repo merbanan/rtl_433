@@ -15,6 +15,7 @@
 #include "baseband.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 
 static uint16_t scaled_squares[256];
@@ -79,6 +80,48 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
     //fprintf(stderr, "%d\n", y_buf[0]);
 }
 
+///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
+static int alp[2] = {FIX(1.00000), FIX(0.72654)};
+static int blp[2] = {FIX(0.13673), FIX(0.13673)};
+
+void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_samples, DemodFM_State *state) {
+	int16_t ar, ai;		// New IQ sample: x[n]
+	int16_t br, bi;		// Old IQ sample: x[n-1]
+	int32_t pr, pi;		// Phase difference vector
+	int16_t angle;		// Phase difference angle
+	int16_t xdc, ydc, xdc_old, ydc_old;	// DC blocker variables
+	int16_t xlp, ylp, xlp_old, ylp_old;	// Low Pass filter variables
+
+	// Pre-feed old sample
+	ar = state->br; ai = state->bi;
+
+	for (unsigned n = 0; n < num_samples; n++) {
+		// delay old sample 
+		br = ar;
+		bi = ai;
+		// get new sample
+		ar = x_buf[2*n]-128;
+		ai = x_buf[2*n+1]-128;
+		// Calculate phase difference vector: x[n] * conj(x[n-1])
+		//pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
+		pi = ai*br-ar*bi; 
+		//angle = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Inefficient floating point for now...
+		// DC blocker filter
+		xdc = pi;	// We cheat for now and only use imaginary part (works well for small angles)
+		ydc = xdc - xdc_old + ydc_old - ydc_old/256;
+		ydc_old = ydc; xdc_old = xdc;
+		// Low pass filter
+		xlp = ydc;
+		ylp = ((alp[1] * ylp_old >> 1) + (blp[0] * xlp >> 1) + (blp[1] * xlp_old >> 1)) >> (F_SCALE - 1);
+		ylp_old = ylp; xlp_old = xlp;
+		
+		y_buf[n] = ylp;
+	}
+
+	// Store newest sample for next run
+	state->br = ar; state->bi = ai;
+}
+
 
 void baseband_init(void) {
 	calc_squares();
@@ -87,7 +130,7 @@ void baseband_init(void) {
 
 static FILE *dumpfile = NULL;
 
-void baseband_dumpfile(uint8_t *buf, uint32_t len) {
+void baseband_dumpfile(const uint8_t *buf, uint32_t len) {
 	if (dumpfile == NULL) {
 		dumpfile = fopen("dumpfile.dat", "wb");
 	}
