@@ -22,6 +22,7 @@
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
+#include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 
@@ -34,7 +35,6 @@ int flag;
 uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
-static uint16_t scaled_squares[256];
 static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
@@ -74,7 +74,7 @@ void usage(r_device *devices) {
             "\t[-g gain (default: 0 for auto)]\n"
             "\t[-a analyze mode, print a textual description of the signal]\n"
             "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-            "\t[-l change the detection level used to determine pulses (0-3200) default: %i]\n"
+            "\t[-l change the detection level used to determine pulses (0-32767) default: %i]\n"
             "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
             "\t[-s sample rate (default: %i Hz)]\n"
             "\t[-S force sync output (default: async)]\n"
@@ -119,30 +119,6 @@ static void sighandler(int signum) {
     rtlsdr_cancel_async(dev);
 }
 #endif
-
-/* precalculate lookup table for envelope detection */
-static void calc_squares() {
-    int i;
-    for (i = 0; i < 256; i++)
-        scaled_squares[i] = (128 - i) * (128 - i);
-}
-
-/** This will give a noisy envelope of OOK/ASK signals
- *  Subtract the bias (-128) and get an envelope estimation
- *  The output will be written in the input buffer
- *  @returns   pointer to the input buffer
- */
-
-static void envelope_detect(unsigned char *buf, uint32_t len, int decimate) {
-    uint16_t* sample_buffer = (uint16_t*) buf;
-    unsigned int i;
-    unsigned op = 0;
-    unsigned int stride = 1 << decimate;
-
-    for (i = 0; i < len / 2; i += stride) {
-        sample_buffer[op++] = scaled_squares[buf[2 * i ]] + scaled_squares[buf[2 * i + 1]];
-    }
-}
 
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
@@ -624,40 +600,6 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 }
 
 
-/** Something that might look like a IIR lowpass filter
- *
- *  [b,a] = butter(1, 0.01) ->  quantizes nicely thus suitable for fixed point
- *  Q1.15*Q15.0 = Q16.15
- *  Q16.15>>1 = Q15.14
- *  Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
- *  but the b coeffs are small so it wont happen
- *  Q15.14>>14 = Q15.0 \o/
- */
-
-static uint16_t lp_xmem[FILTER_ORDER] = {0};
-
-#define F_SCALE 15
-#define S_CONST (1<<F_SCALE)
-#define FIX(x) ((int)(x*S_CONST))
-
-int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
-int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
-
-static void low_pass_filter(uint16_t *x_buf, int16_t *y_buf, uint32_t len) {
-    unsigned int i;
-
-    /* Calculate first sample */
-    y_buf[0] = ((a[1] * y_buf[-1] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * lp_xmem[0] >> 1)) >> (F_SCALE - 1);
-    for (i = 1; i < len; i++) {
-        y_buf[i] = ((a[1] * y_buf[i - 1] >> 1) + (b[0] * x_buf[i] >> 1) + (b[1] * x_buf[i - 1] >> 1)) >> (F_SCALE - 1);
-    }
-
-    /* Save last sample */
-    memcpy(lp_xmem, &x_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
-    memcpy(&y_buf[-FILTER_ORDER], &y_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
-    //fprintf(stderr, "%d\n", y_buf[0]);
-}
-
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     uint16_t* sbuf = (uint16_t*) buf;
@@ -684,7 +626,9 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
 
         if (demod->debug_mode == 0) {
             envelope_detect(buf, len, demod->decimation_level);
+            // baseband_dumpfile(buf, len);				// Debug
             low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1));
+            // baseband_dumpfile((uint8_t*)demod->f_buf, len);	// Debug
         } else if (demod->debug_mode == 1) {
             memcpy(demod->f_buf, buf, len);
         }
@@ -795,7 +739,7 @@ int main(int argc, char **argv) {
     memset(demod, 0, sizeof (struct dm_state));
 
     /* initialize tables */
-    calc_squares();
+    baseband_init();
 
 	r_device devices[] = {
 #define DECL(name) name,
@@ -808,7 +752,7 @@ int main(int argc, char **argv) {
     demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
     demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
-
+    pulse_data_clear(&demod->pulse_data);
 
     while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
@@ -1020,9 +964,6 @@ int main(int argc, char **argv) {
         //Always classify a signal at the end of the file
         classify_signal();
         fprintf(stderr, "Test mode file issued %d packets\n", i);
-        fprintf(stderr, "Filter coeffs used:\n");
-        fprintf(stderr, "a: %d %d\n", a[0], a[1]);
-        fprintf(stderr, "b: %d %d\n", b[0], b[1]);
         exit(0);
     }
 

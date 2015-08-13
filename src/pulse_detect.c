@@ -14,11 +14,11 @@
 #include <stdlib.h>
 
 void pulse_data_clear(pulse_data_t *data) {
-	data->num_pulses = 0;
-	for(unsigned n = 0; n < PD_MAX_PULSES; ++n) {
-		data->pulse[n] = 0;
-		data->gap[n] = 0;
-	}
+	*data = (const pulse_data_t) {
+		 0,
+		 .pulse_min = INT16_MAX,
+		 .gap_min = INT16_MAX,
+	};
 }
 
 
@@ -39,7 +39,6 @@ typedef struct {
 	} state;
 	unsigned int pulse_length;		// Counter for internal pulse detection
 	unsigned int max_pulse;			// Size of biggest pulse detected
-	unsigned int max_gap;			// Size of biggest gap detected
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
 } pulse_state_t;
@@ -48,6 +47,7 @@ static pulse_state_t pulse_state;
 
 int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
+	const int16_t HYSTERESIS = level_limit / 8;	// ±12%
 	pulse_state_t *s = &pulse_state;
 
 	// Process all new samples
@@ -56,16 +56,17 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 			case PD_STATE_IDLE:
 				s->pulse_length = 0;
 				s->max_pulse = 0;
-				s->max_gap = 0;
-				if (envelope_data[s->data_counter] > level_limit) {
+				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {
 					s->state = PD_STATE_PULSE;
 				}
 				break;
 			case PD_STATE_PULSE:
 				s->pulse_length++;
+
 				// End of pulse detected?
-				if (envelope_data[s->data_counter] < level_limit) {		// Gap?
+				if (envelope_data[s->data_counter] < (level_limit - HYSTERESIS)) {	// Gap?
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
+					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
 
 					// EOP if pulse is too long
 					if (s->pulse_length > (PD_MAX_PULSE_MS * samples_per_ms)) {
@@ -74,10 +75,6 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 						return 1;	// End Of Package!!
 					}
 
-					// Find largest pulse
-					if(s->pulse_length > s->max_pulse) {
-						s->max_pulse = s->pulse_length;
-					}
 					s->pulse_length = 0;
 					s->state = PD_STATE_GAP;
 				}
@@ -85,7 +82,7 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 			case PD_STATE_GAP:
 				s->pulse_length++;
 				// New pulse detected?
-				if (envelope_data[s->data_counter] > level_limit) {		// New pulse?
+				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {	// New pulse?
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Next pulse
 
@@ -95,10 +92,6 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 						return 1;	// End Of Package!!
 					}
 
-					// Find largest gap
-					if(s->pulse_length > s->max_gap) {
-						s->max_gap = s->pulse_length;
-					}
 					s->pulse_length = 0;
 					s->state = PD_STATE_PULSE;
 				}
@@ -117,6 +110,23 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 			default:
 				fprintf(stderr, "demod_OOK(): Unknown state!!\n");
 				s->state = PD_STATE_IDLE;
+		} // switch
+		// Level statistics
+		int16_t level = envelope_data[s->data_counter];
+		switch (s->state) {
+			case PD_STATE_PULSE:
+				pulses->pulse_max = max(pulses->pulse_max, level); 
+				pulses->pulse_min = min(pulses->pulse_min, level); 
+				pulses->pulse_sum += level;
+				pulses->pulse_num++;
+				break;
+			case PD_STATE_GAP:
+				pulses->gap_max = max(pulses->gap_max, level); 
+				pulses->gap_min = min(pulses->gap_min, level); 
+				pulses->gap_sum += level;
+				pulses->gap_num++;
+				break;
+			default: break;	// Only statistics for pulse and gap
 		} // switch
 		// Todo: check for too many pulses
 		s->data_counter++;
@@ -206,7 +216,7 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance) {
 /// Print a histogram
 void histogram_print(const histogram_t *hist) {
 	for(unsigned n = 0; n < hist->bins_count; ++n) {
-		fprintf(stderr, " [%2u] mean: %4u (%u/%u),\t count: %3u\n", n, 
+		fprintf(stderr, " [%2u] mean: %4u [%u;%u],\t count: %3u\n", n, 
 			hist->bins[n].mean, 
 			hist->bins[n].min, 
 			hist->bins[n].max, 
@@ -250,6 +260,12 @@ void pulse_analyzer(const pulse_data_t *data)
 	fprintf(stderr, "Pulse period distribution:\n");
 	histogram_print(&hist_periods);
 
+	// Print level statistics
+	fprintf(stderr, "Mean pulse level: %5u [%u;%u]\n", (unsigned)(data->pulse_sum / data->pulse_num), data->pulse_min, data->pulse_max);
+	if (data->gap_num) {	// Avoid divide by zero at early EOP
+		fprintf(stderr, "Mean gap level:   %5u [%u;%u]\n", (unsigned)(data->gap_sum / data->gap_num), data->gap_min, data->gap_max);
+	}
+	
 	fprintf(stderr, "Guessing modulation: ");
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");

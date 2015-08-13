@@ -345,7 +345,7 @@ static int oregon_scientific_callback(bitbuffer_t *bitbuffer) {
 r_device oregon_scientific = {
     .name           = "Oregon Scientific Weather Sensor",
     .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_limit    = 125,
+    .short_limit    = 110, // Nominal 1024Hz (122), but pulses are shorter than pauses 
     .long_limit     = 0, // not used
     .reset_limit    = 600,
     .json_callback  = &oregon_scientific_callback,
