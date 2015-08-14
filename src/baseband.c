@@ -32,13 +32,10 @@ static void calc_squares() {
  *  The output will be written in the input buffer
  *  @returns   pointer to the input buffer
  */
-void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len, int decimate) {
+void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len) {
     unsigned int i;
-    unsigned op = 0;
-    unsigned int stride = 1 << decimate;
-
-    for (i = 0; i < len; i += stride) {
-        y_buf[op++] = scaled_squares[iq_buf[2 * i ]] + scaled_squares[iq_buf[2 * i + 1]];
+    for (i = 0; i < len; i++) {
+        y_buf[i] = scaled_squares[iq_buf[2 * i ]] + scaled_squares[iq_buf[2 * i + 1]];
     }
 }
 

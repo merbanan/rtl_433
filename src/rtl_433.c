@@ -44,7 +44,6 @@ int num_r_devices = 0;
 struct dm_state {
     FILE *out_file;
     int32_t level_limit;
-    int32_t decimation_level;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];	// AM demodulated signal (for OOK decoding)
     int16_t fm_buf[MAXIMAL_BUF_LENGTH];	// FM demodulated signal (for FSK decoding)
     uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
@@ -632,8 +631,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	// FM demodulation
 	baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
 	// AM demodulation
-	envelope_detect(iq_buf, demod->temp_buf, len/2, demod->decimation_level);
-	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len >> (demod->decimation_level + 1), &demod->lowpass_filter_state);
+	envelope_detect(iq_buf, demod->temp_buf, len/2);
+	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
 
 	// Handle special input formats
 	if(!demod->out_file) {				// If output file is specified we always assume I/Q input
@@ -707,7 +706,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 		} else if (demod->debug_mode == 2) {	// FM data
 			out_buf = (uint8_t*)demod->fm_buf;
 		}
-		if (fwrite(out_buf, 1, len >> demod->decimation_level, demod->out_file) != len >> demod->decimation_level) {
+		if (fwrite(out_buf, 1, len, demod->out_file) != len) {
 			fprintf(stderr, "Short write, samples lost, exiting!\n");
 			rtlsdr_cancel_async(dev);
 		}
@@ -766,7 +765,6 @@ int main(int argc, char **argv) {
 
     num_r_devices = sizeof(devices)/sizeof(*devices);
 
-    demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     pulse_data_clear(&demod->pulse_data);
 
@@ -796,9 +794,6 @@ int main(int argc, char **argv) {
                 break;
             case 'n':
                 bytes_to_read = (uint32_t) atof(optarg) * 2;
-                break;
-            case 'c':
-                demod->decimation_level = (uint32_t) atof(optarg);
                 break;
             case 'a':
                 demod->analyze = 1;
@@ -912,7 +907,6 @@ int main(int argc, char **argv) {
 	else
 	    fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
-	fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n", demod->decimation_level, samp_rate, samp_rate >> demod->decimation_level);
 	fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
 
 	if (0 == gain) {

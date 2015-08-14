@@ -23,7 +23,7 @@
 /// @param *iq_buf: input samples (I/Q samples in interleaved uint8)
 /// @param *y_buf: output 
 /// @param len: number of samples to process
-void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len, int decimate);
+void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
 
 #define FILTER_ORDER 1
 
