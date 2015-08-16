@@ -39,4 +39,11 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial);
 /// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
 void local_time_str(time_t time_secs, char *buf);
 
+/**
+ * convert unit from celsius to fahrenheit
+ * @param celsius input temperature in Celsius
+ * @return temperature value in Fahrenheit
+ */
+float celsius2fahrenheit(float celsius);
+
 #endif /* INCLUDE_UTIL_H_ */
