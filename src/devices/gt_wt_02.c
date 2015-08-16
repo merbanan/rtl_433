@@ -39,15 +39,6 @@
 */
 
 
-static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer);
-static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
-{
-  int counter = 0;
-  for(int row=0; row<bitbuffer->num_rows; row++)
-    counter += gt_wt_02_process_row(row, bitbuffer);
-  return counter;
-}
-
 static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 {
   const uint8_t *b = bitbuffer->bb[row];
@@ -68,17 +59,27 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 
   float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
   {
+    /* @todo: remove timestamp printing as soon as the controller takes this task */
     time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
     time(&time_now);
     local_time_str(time_now, time_str);
 
-    printf("%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %2d%%\n"
+    /* @todo make temperature unit configurable, not printing both */
+    fprintf(stdout, "%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %2d%%\n"
         , time_str, sensor_id, battery_low ? "low" : "OK", channel, button_pressed
         , tempC, celsius2fahrenheit(tempC), humidity
         );
   }
   return 1;
+}
+
+static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
+{
+  int counter = 0;
+  for(int row=0; row<bitbuffer->num_rows; row++)
+    counter += gt_wt_02_process_row(row, bitbuffer);
+  return counter;
 }
 
 r_device gt_wt_02 = {
