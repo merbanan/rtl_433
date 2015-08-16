@@ -82,7 +82,7 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 }
 
 r_device gt_wt_02 = {
-  .name          = "GT-WT-02 sensor",
+  .name          = "GT-WT-02 Sensor",
   .modulation    = OOK_PULSE_PPM_RAW,
   .short_limit   = 1150,
   .long_limit    = 2500,
