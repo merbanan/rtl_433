@@ -85,7 +85,6 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 	int16_t br, bi;		// Old IQ sample: x[n-1]
 	int32_t pr, pi;		// Phase difference vector
 	int16_t angle;		// Phase difference angle
-	int16_t xdc, ydc, xdc_old, ydc_old;	// DC blocker variables
 	int16_t xlp, ylp, xlp_old, ylp_old;	// Low Pass filter variables
 
 	// Pre-feed old sample
@@ -102,15 +101,10 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 		//pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
 		pi = ai*br-ar*bi; 
 		//angle = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Inefficient floating point for now...
-		// DC blocker filter
-		xdc = pi;	// We cheat for now and only use imaginary part (works well for small angles)
-		ydc = xdc - xdc_old + ydc_old - ydc_old/256;
-		ydc_old = ydc; xdc_old = xdc;
+		xlp = pi;	// We cheat for now and only use imaginary part (works OK for small angles)
 		// Low pass filter
-		xlp = ydc;
 		ylp = ((alp[1] * ylp_old >> 1) + (blp[0] * xlp >> 1) + (blp[1] * xlp_old >> 1)) >> (F_SCALE - 1);
 		ylp_old = ylp; xlp_old = xlp;
-		
 		y_buf[n] = ylp;
 	}
 
