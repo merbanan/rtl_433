@@ -50,6 +50,7 @@ add_executable(rtl_433
 	devices/valeo.c
 	devices/chuango.c
 	devices/generic_remote.c
+	devices/tfa_twin_plus_30.3049.c
 )
 
 target_link_libraries(rtl_433
