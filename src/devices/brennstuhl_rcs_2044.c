@@ -18,14 +18,6 @@
  * https://github.com/xkonni/raspberry-remote
  */
 
-static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer);
-static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
-{
-  int counter = 0;
-  for(int row=0; row<bitbuffer->num_rows; row++)
-    counter += brennstuhl_rcs_2044_process_row(row, bitbuffer);
-  return counter;
-}
 
 static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
 {
@@ -37,7 +29,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
 
 #if 0
   {
-    // print raw bit squence for debug purposes (before exclusion of invalid sequenced is executed)
+    // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
     time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
     time(&time_now);
@@ -76,7 +68,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
 
 #if 0 && !defined(NDEBUG)
   {
-    // print raw bit squence for debug purposes (before exclusion of invalid sequenced is executed)
+    // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
     time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
     time(&time_now);
@@ -146,7 +138,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
     }
 
     if (! (on ^ off ) )
-      return 0;  /* Pressing simultaneously ON and OFF key is not usefull either */
+      return 0;  /* Pressing simultaneously ON and OFF key is not useful either */
   }
 
   char key = 0;
@@ -159,6 +151,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
                     Skip it. It happens sometimes as the last code repetition */
 
   {
+    /* @todo: remove timestamp printing as soon as the controller takes this task */
     time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
     time(&time_now);
@@ -172,6 +165,14 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
   }
 
   return 1;
+}
+
+static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
+{
+  int counter = 0;
+  for(int row=0; row<bitbuffer->num_rows; row++)
+    counter += brennstuhl_rcs_2044_process_row(row, bitbuffer);
+  return counter;
 }
 
 r_device brennstuhl_rcs_2044 = {

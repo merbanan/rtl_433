@@ -74,6 +74,7 @@ Running:
            [22] X10 RF
            [23] DSC (Digital Security Controls)
            [24] Brennstuhl RCS 2044
+           [25] GT-WT-02 Sensor
 
 
 Examples:

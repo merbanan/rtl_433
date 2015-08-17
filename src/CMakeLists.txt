@@ -44,6 +44,7 @@ add_executable(rtl_433
 	devices/x10_rf.c
 	devices/dsc.c
 	devices/brennstuhl_rcs_2044.c
+	devices/gt_wt_02.c
 )
 
 target_link_libraries(rtl_433

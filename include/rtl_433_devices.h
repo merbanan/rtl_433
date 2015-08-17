@@ -27,7 +27,8 @@
 		DECL(calibeur_RF104) \
 		DECL(X10_RF) \
 		DECL(DSC) \
-		DECL(brennstuhl_rcs_2044)
+		DECL(brennstuhl_rcs_2044) \
+		DECL(gt_wt_02)
 
 
 typedef struct {
