@@ -26,15 +26,6 @@ typedef struct {
 	unsigned int num_pulses;
 	unsigned int pulse[PD_MAX_PULSES];	// Contains width of a pulse	(high)
 	unsigned int gap[PD_MAX_PULSES];	// Width of gaps between pulses (low)
-	// Statistics for levels
-	int16_t		pulse_max;	// Maximum level detected
-	int16_t		pulse_min;	// Minimum level detected
-	int64_t		pulse_sum;	// Sum of levels (for averaging)
-	uint32_t	pulse_num;	// Number of samples (for averaging)
-	int16_t		gap_max;	// Maximum level detected
-	int16_t		gap_min;	// Minimum level detected
-	int64_t		gap_sum;	// Sum of levels (for averaging)
-	uint32_t	gap_num;	// Number of samples (for averaging)
 } pulse_data_t;
 
 

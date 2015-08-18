@@ -16,8 +16,6 @@
 void pulse_data_clear(pulse_data_t *data) {
 	*data = (const pulse_data_t) {
 		 0,
-		 .pulse_min = INT16_MAX,
-		 .gap_min = INT16_MAX,
 	};
 }
 
@@ -42,14 +40,14 @@ typedef struct {
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
 
-	unsigned int fsk_pulse_length;		// Counter for internal pulse detection
+	unsigned int fsk_pulse_length;		// Counter for internal FSK pulse detection
 	enum {
-		PD_STATE_FSK_HIGH	= 0,
-		PD_STATE_FSK_LOW	= 1
+		PD_STATE_FSK_HIGH	= 0,	// High pulse
+		PD_STATE_FSK_LOW	= 1		// Low pulse (gap)
 	} state_fsk;
 
-	int16_t fm_base_est;			// Estimate for the FM base frequency for 
-	int16_t fm_delta_est;
+	int16_t fm_base_est;			// Estimate for the FM base frequency for FSK
+	int16_t fm_delta_est;			// Estimate for the FM frequency delta for FSK
 
 } pulse_state_t;
 static pulse_state_t pulse_state;
@@ -170,22 +168,6 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 				s->state = PD_STATE_IDLE;
 		} // switch
 		// Level statistics
-		int16_t level = envelope_data[s->data_counter];
-		switch (s->state) {
-			case PD_STATE_PULSE:
-				pulses->pulse_max = max(pulses->pulse_max, level); 
-				pulses->pulse_min = min(pulses->pulse_min, level); 
-				pulses->pulse_sum += level;
-				pulses->pulse_num++;
-				break;
-			case PD_STATE_GAP:
-				pulses->gap_max = max(pulses->gap_max, level); 
-				pulses->gap_min = min(pulses->gap_min, level); 
-				pulses->gap_sum += level;
-				pulses->gap_num++;
-				break;
-			default: break;	// Only statistics for pulse and gap
-		} // switch
 		// Todo: check for too many pulses
 		s->data_counter++;
 	} // while
@@ -309,7 +291,7 @@ void pulse_analyzer(const pulse_data_t *data)
 	histogram_fuse_bins(&hist_gaps, TOLERANCE);
 	histogram_fuse_bins(&hist_periods, TOLERANCE);
 
-	fprintf(stderr, "\nAnalyzing pulses...\n");
+	fprintf(stderr, "Analyzing pulses...\n");
 	fprintf(stderr, "Total number of pulses: %u\n", data->num_pulses);
 	fprintf(stderr, "Pulse width distribution:\n");
 	histogram_print(&hist_pulses);
@@ -318,12 +300,6 @@ void pulse_analyzer(const pulse_data_t *data)
 	fprintf(stderr, "Pulse period distribution:\n");
 	histogram_print(&hist_periods);
 
-	// Print level statistics
-	fprintf(stderr, "Mean pulse level: %5u [%u;%u]\n", (unsigned)(data->pulse_sum / data->pulse_num), data->pulse_min, data->pulse_max);
-	if (data->gap_num) {	// Avoid divide by zero at early EOP
-		fprintf(stderr, "Mean gap level:   %5u [%u;%u]\n", (unsigned)(data->gap_sum / data->gap_num), data->gap_min, data->gap_max);
-	}
-	
 	fprintf(stderr, "Guessing modulation: ");
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
