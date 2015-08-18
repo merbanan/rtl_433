@@ -45,6 +45,10 @@ void local_time_str(time_t time_secs, char *buf) {
 	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
 }
 
+float celsius2fahrenheit(float celsius)
+{
+  return celsius * 9 / 5 + 32;
+}
 
 
 // Test code
