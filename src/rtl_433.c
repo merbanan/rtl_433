@@ -64,6 +64,7 @@ struct dm_state {
     struct protocol_state *r_devs[MAX_PROTOCOLS];
 
 	pulse_data_t	pulse_data;
+	pulse_data_t	fsk_pulse_data;
 };
 
 void usage(r_device *devices) {
@@ -667,35 +668,48 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 			}
 		}
 		// Detect a package and loop through demodulators with pulse data
-		while(detect_pulse_package(demod->am_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data)) {
-			for (i = 0; i < demod->r_dev_num; i++) {
-				switch (demod->r_devs[i]->modulation) {
-					// Old style decoders
-					case OOK_PWM_D:
-					case OOK_PWM_P:
-						break;
-					case OOK_PULSE_PCM_RZ:
-						pulse_demod_pcm_rz(&demod->pulse_data, demod->r_devs[i]);
-						break;
-					case OOK_PULSE_PPM_RAW:
-						pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
-						break;
-					case OOK_PULSE_PWM_RAW:
-						pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
-						break;
-					case OOK_PULSE_PWM_TERNARY:
-						pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
-						break;
-					case OOK_PULSE_MANCHESTER_ZEROBIT:
-						pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
-						break;
-					default:
-						fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
-				}
-			} // for demodulators
-			if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-			if(debug_output) pulse_analyzer(&demod->pulse_data);
-			pulse_data_clear(&demod->pulse_data);
+		int package_type = 1;	// Just to get us started
+		while(package_type) {
+			package_type = detect_pulse_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+			if (package_type == 1) {
+				if(debug_output) fprintf(stderr, "Detected OOK package\n");
+				for (i = 0; i < demod->r_dev_num; i++) {
+					switch (demod->r_devs[i]->modulation) {
+						// Old style decoders
+						case OOK_PWM_D:
+						case OOK_PWM_P:
+							break;
+						case OOK_PULSE_PCM_RZ:
+							pulse_demod_pcm_rz(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PPM_RAW:
+							pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PWM_RAW:
+							pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PWM_TERNARY:
+							pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_MANCHESTER_ZEROBIT:
+							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						default:
+							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+					}
+				} // for demodulators
+				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
+				if(debug_output) pulse_analyzer(&demod->pulse_data);
+				pulse_data_clear(&demod->pulse_data);
+				pulse_data_clear(&demod->fsk_pulse_data);
+			} else if (package_type == 2) {
+				if(debug_output) fprintf(stderr, "Detected FSK package\n");
+				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
+				if(debug_output) pulse_analyzer(&demod->fsk_pulse_data);
+				pulse_data_clear(&demod->pulse_data);
+				pulse_data_clear(&demod->fsk_pulse_data);
+			}
+
 		}
 	}
 
@@ -767,6 +781,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     pulse_data_clear(&demod->pulse_data);
+    pulse_data_clear(&demod->fsk_pulse_data);
 
     while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {

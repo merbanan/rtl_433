@@ -14,6 +14,8 @@
 #include <stdint.h>
 
 #define PD_MAX_PULSES 1000			// Maximum number of pulses before forcing End Of Package
+#define PD_MIN_PULSES 4				// Minimum number of pulses before declaring a proper package
+#define PD_MIN_PULSE_SAMPLES 10		// Minimum number of samples in a pulse for proper detection
 #define PD_MIN_GAP_MS 10			// Minimum gap size in milliseconds to exceed to declare End Of Package
 #define PD_MAX_GAP_MS 100			// Maximum gap size in milliseconds to exceed to declare End Of Package
 #define PD_MAX_GAP_RATIO 10			// Ratio gap/pulse width to exceed to declare End Of Package (heuristic)
@@ -43,14 +45,19 @@ void pulse_data_clear(pulse_data_t *data);		// Clear the struct
 void pulse_data_print(const pulse_data_t *data);
 
 
-/// Demodulate On/Off Keying from an envelope signal
+/// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
 ///
 /// Function is stateful and can be called with chunks of input data
+/// @param envelope_data: Samples with amplitude envelope of carrier 
+/// @param fm_data: Samples with frequency offset from center frequency
+/// @param len: Number of samples in input buffers
 /// @param samp_rate: Sample rate in samples per second
 /// @param *pulses: Will return a pulse_data_t structure
-/// @return 0 if all input data is processed
-/// @return 1 if package is detected (but data is still not completely processed)
-int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses);
+/// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
+/// @return 0 if all input sample data is processed
+/// @return 1 if OOK package is detected (but all sample data is still not completely processed)
+/// @return 2 if FSK package is detected (but all sample data is still not completely processed)
+int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 
 /// Analyze and print result

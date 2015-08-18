@@ -41,11 +41,23 @@ typedef struct {
 	unsigned int max_pulse;			// Size of biggest pulse detected
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
+
+	unsigned int fsk_pulse_length;		// Counter for internal pulse detection
+	enum {
+		PD_STATE_FSK_HIGH	= 0,
+		PD_STATE_FSK_LOW	= 1
+	} state_fsk;
+
+	int16_t fm_base_est;			// Estimate for the FM base frequency for 
+	int16_t fm_delta_est;
+
 } pulse_state_t;
 static pulse_state_t pulse_state;
 
+#define FSK_EST_RATIO	32	// Constant for slowness of FSK estimators
+#define FSK_DEFAULT_FM_DELTA	8000	// Default estimate for frequency delta
 
-int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses) {
+int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
 	const int16_t HYSTERESIS = level_limit / 8;	// ±12%
 	pulse_state_t *s = &pulse_state;
@@ -57,6 +69,10 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 				s->pulse_length = 0;
 				s->max_pulse = 0;
 				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {
+					s->fsk_pulse_length = 0;
+					s->fm_base_est = 0;						// FM low frequency may be everywhere
+					s->fm_delta_est = FSK_DEFAULT_FM_DELTA;	// FM delta default estimate
+					s->state_fsk = PD_STATE_FSK_HIGH;		// Base frequency = high pulse
 					s->state = PD_STATE_PULSE;
 				}
 				break;
@@ -68,16 +84,54 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
 
-					// EOP if pulse is too long
-					if (s->pulse_length > (PD_MAX_PULSE_MS * samples_per_ms)) {
-						pulses->num_pulses++;	// Store last pulse (with no gap)
+					// EOP if FSK modulation detected within pulse
+					if(fsk_pulses->num_pulses > PD_MIN_PULSES) {
+						if(s->state_fsk == PD_STATE_FSK_HIGH) {
+							fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store last pulse
+							fsk_pulses->gap[fsk_pulses->num_pulses] = 0;	// Zero gap at end
+						} else {
+							fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store last gap
+						}
+						fsk_pulses->num_pulses++;
 						s->state = PD_STATE_IDLE;
-						return 1;	// End Of Package!!
+						return 2;	// Signal FSK package
+					} else {
+						fsk_pulses->num_pulses = 0;		// Clear pulses (should be more effective...)
 					}
-
 					s->pulse_length = 0;
 					s->state = PD_STATE_GAP;
-				}
+				} else {
+					// FSK demodulation is only relevant when a carrier is present
+					s->fsk_pulse_length++;
+					int16_t fm_n = fm_data[s->data_counter];		// Get current FM sample
+					int16_t fm_delta = abs(fm_n - s->fm_base_est);	// Get delta from base frequency estimate
+					switch(s->state_fsk) {
+						case PD_STATE_FSK_HIGH:
+							if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {		// Initial samples in OOK pulse?
+								s->fm_base_est = s->fm_base_est - s->fm_base_est/2 + fm_n/2;	// Quick initial estimator
+							} else if (fm_delta < s->fm_delta_est/2) {		// Freq offset below delta threshold?
+								s->fm_base_est = s->fm_base_est - s->fm_base_est/FSK_EST_RATIO + fm_n/FSK_EST_RATIO;	// Slow estimator
+							} else {	// Above threshold
+								fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
+								s->fsk_pulse_length = 0;
+								s->state_fsk = PD_STATE_FSK_LOW;
+							}
+							break;
+						case PD_STATE_FSK_LOW:
+							if (fm_delta > s->fm_delta_est/2) {		// Freq offset above delta threshold?
+								s->fm_delta_est = s->fm_delta_est - s->fm_delta_est/FSK_EST_RATIO + fm_delta/FSK_EST_RATIO;	// Slow estimator
+							} else {	// Below threshold
+								fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store gap width
+								fsk_pulses->num_pulses++;
+								s->fsk_pulse_length = 0;
+								s->state_fsk = PD_STATE_FSK_HIGH;
+							}
+							break;
+						default:
+							fprintf(stderr, "pulse_demod(): Unknown FSK state!!\n");
+							s->state_fsk = PD_STATE_FSK_HIGH;
+					} // switch(s->state_fsk)
+				} // if
 				break;
 			case PD_STATE_GAP:
 				s->pulse_length++;
@@ -93,6 +147,10 @@ int detect_pulse_package(const int16_t *envelope_data, uint32_t len, int16_t lev
 					}
 
 					s->pulse_length = 0;
+					s->fsk_pulse_length = 0;
+					s->fm_base_est = 0;						// FM low frequency may be everywhere
+					s->fm_delta_est = FSK_DEFAULT_FM_DELTA;	// FM delta default estimate
+					s->state_fsk = PD_STATE_FSK_HIGH;		// Base frequency = high pulse
 					s->state = PD_STATE_PULSE;
 				}
 
