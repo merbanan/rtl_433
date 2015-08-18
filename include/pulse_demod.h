@@ -20,8 +20,10 @@
 
 /// Demodulate a Pulse Code Modulation signal
 ///
-/// Demodulate a Pulse Code Modulation (PPM) signal with Return-to-Zero encoding.
-/// Binary width is fixed and each bit starts with a pulse or not
+/// Demodulate a Pulse Code Modulation (PPM) signal where bit width 
+/// is fixed and each bit starts with a pulse or not. It may be either 
+/// Return-to-Zero (RZ) encoding, where pulses are shorter than bit width
+/// or Non-Return-to-Zero (NRZ) encoding, where pulses are equal to bit width
 /// The presence of a pulse is:
 /// - Presence of a pulse equals 1
 /// - Absence of a pulse equals 0
@@ -29,7 +31,7 @@
 /// @param device->long_limit:  Nominal width of bit period [samples]
 /// @param device->reset_limit: Maximum gap size before End Of Message [samples].
 /// @return number of events processed
-int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device);
 
 
 /// Demodulate a Pulse Position Modulation signal

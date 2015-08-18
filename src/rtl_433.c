@@ -662,6 +662,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				case OOK_PULSE_PWM_RAW:
 				case OOK_PULSE_PWM_TERNARY:
 				case OOK_PULSE_MANCHESTER_ZEROBIT:
+				case FSK_PULSE_PCM:
 					break;
 				default:
 					fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
@@ -680,7 +681,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 						case OOK_PWM_P:
 							break;
 						case OOK_PULSE_PCM_RZ:
-							pulse_demod_pcm_rz(&demod->pulse_data, demod->r_devs[i]);
+							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PPM_RAW:
 							pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
@@ -694,6 +695,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 						case OOK_PULSE_MANCHESTER_ZEROBIT:
 							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
 							break;
+						// FSK decoders
+						case FSK_PULSE_PCM:
+							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
 					}
@@ -704,12 +708,29 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				pulse_data_clear(&demod->fsk_pulse_data);
 			} else if (package_type == 2) {
 				if(debug_output) fprintf(stderr, "Detected FSK package\n");
+				for (i = 0; i < demod->r_dev_num; i++) {
+					switch (demod->r_devs[i]->modulation) {
+						// Old style decoders + OOK decoders
+						case OOK_PWM_D:
+						case OOK_PWM_P:
+						case OOK_PULSE_PCM_RZ:
+						case OOK_PULSE_PPM_RAW:
+						case OOK_PULSE_PWM_RAW:
+						case OOK_PULSE_PWM_TERNARY:
+						case OOK_PULSE_MANCHESTER_ZEROBIT:
+							break;
+						case FSK_PULSE_PCM:
+							pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							break;
+						default:
+							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+					}
+				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
 				if(debug_output) pulse_analyzer(&demod->fsk_pulse_data);
 				pulse_data_clear(&demod->pulse_data);
 				pulse_data_clear(&demod->fsk_pulse_data);
 			}
-
 		}
 	}
 

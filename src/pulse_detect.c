@@ -103,11 +103,12 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					s->fsk_pulse_length++;
 					int16_t fm_n = fm_data[s->data_counter];		// Get current FM sample
 					int16_t fm_delta = abs(fm_n - s->fm_base_est);	// Get delta from base frequency estimate
+					int16_t fm_hyst = fm_delta / 8; 				// ±12% hysteresis
 					switch(s->state_fsk) {
 						case PD_STATE_FSK_HIGH:
 							if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {		// Initial samples in OOK pulse?
 								s->fm_base_est = s->fm_base_est - s->fm_base_est/2 + fm_n/2;	// Quick initial estimator
-							} else if (fm_delta < s->fm_delta_est/2) {		// Freq offset below delta threshold?
+							} else if (fm_delta < (s->fm_delta_est/2 - fm_hyst)) {	// Freq offset below delta threshold?
 								s->fm_base_est = s->fm_base_est - s->fm_base_est/FSK_EST_RATIO + fm_n/FSK_EST_RATIO;	// Slow estimator
 							} else {	// Above threshold
 								fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
@@ -116,7 +117,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 							}
 							break;
 						case PD_STATE_FSK_LOW:
-							if (fm_delta > s->fm_delta_est/2) {		// Freq offset above delta threshold?
+							if (fm_delta > (s->fm_delta_est/2 + fm_hyst)) {	// Freq offset above delta threshold?
 								s->fm_delta_est = s->fm_delta_est - s->fm_delta_est/FSK_EST_RATIO + fm_delta/FSK_EST_RATIO;	// Slow estimator
 							} else {	// Below threshold
 								fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store gap width

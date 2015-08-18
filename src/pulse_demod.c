@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 
-int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device)
+int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
 	bitbuffer_t bits = {0};
@@ -25,16 +25,21 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 	const int TOLERANCE = device->long_limit / 4;		// Tolerance is ±25% of a bit period
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		// Determine number of high bit periods for NRZ coding, where bits may not be separated
+		int highs = (pulses->pulse[n] + device->short_limit/2) / device->short_limit;
 		// Determine number of bit periods in current pulse/gap length (rounded)
 		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;
 
 		// Validate data
-		if ((abs(pulses->pulse[n] - device->short_limit) < TOLERANCE)					// Pulse must be within tolerance
+		if ((abs(pulses->pulse[n] - highs * device->short_limit) < TOLERANCE)			// Pulse must be within tolerance
 		 && ((abs(pulses->pulse[n] + pulses->gap[n] - periods * device->long_limit) < TOLERANCE)	// Pulse + Gap must be within tolerance
-		  || (pulses->gap[n] > (unsigned)device->reset_limit))							// .. or we are above our limit
+		  || (n == pulses->num_pulses-1)												// .. or we are at last pulse (FSK)
+		  || (pulses->gap[n] > (unsigned)device->reset_limit))							// .. or we are above our limit (OOK)
 		) {
-			// The pulse is a one
-			bitbuffer_add_bit(&bits, 1);
+			// Add run of ones (1 for RZ, many for NRZ)
+			for (int n=0; n < highs; ++n) {
+				bitbuffer_add_bit(&bits, 1);
+			}
 
 			// Add run of zeros
 			periods--;							// First period is the one
@@ -53,7 +58,8 @@ int pulse_demod_pcm_rz(const pulse_data_t *pulses, struct protocol_state *device
 		}
 
 		// End of Message?
-		if ((pulses->gap[n] > (unsigned)device->reset_limit)
+		if (((n == pulses->num_pulses-1) 	// No more pulses? (FSK)
+		 || (pulses->gap[n] > (unsigned)device->reset_limit))	// Loong silence (OOK)
 		 && (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->callback) {

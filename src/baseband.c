@@ -77,8 +77,11 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
 }
 
 ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-static int alp[2] = {FIX(1.00000), FIX(0.72654)};
-static int blp[2] = {FIX(0.13673), FIX(0.13673)};
+//static int alp[2] = {FIX(1.00000), FIX(0.72654)};
+//static int blp[2] = {FIX(0.13673), FIX(0.13673)};
+///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
+static int alp[2] = {FIX(1.00000), FIX(0.50953)};
+static int blp[2] = {FIX(0.24524), FIX(0.24524)};
 
 void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_samples, DemodFM_State *state) {
 	int16_t ar, ai;		// New IQ sample: x[n]
