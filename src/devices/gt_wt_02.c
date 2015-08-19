@@ -56,11 +56,11 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 
   //fprintf(stderr, "GT-WT-02: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
 
-  // sum 8 nibbles (use 31 bits, the last one fill with 0 on 31st bit)
+  // sum 8 nibbles (use 31 bits, the last one fill with 0 on 32nd bit)
   const int sum_nimbbles = ((b[0] >> 4) & 0xF) + (b[0] & 0xF)
       +  ((b[1] >> 4) & 0xF) + (b[1] & 0xF)
       +  ((b[2] >> 4) & 0xF) + (b[2] & 0xF)
-      +  ((b[3] >> 4) & 0xF) + ((((b[3] >> 1)) & 0x7) << 1);
+      +  ((b[3] >> 4) & 0xF) + (b[3] & 0xe);
 
   // put last 6 bits into a number
   const int checksum = ((b[3] & 1 )<<5) + (b[4]>>3);
