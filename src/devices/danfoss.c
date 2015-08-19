@@ -12,22 +12,26 @@
 #include "util.h"
 
 static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
-    return 0;
+	bitrow_t *bb = bitbuffer->bb;
+
+	// Validate package
+	unsigned bits = bitbuffer->bits_per_row[0];
+	if (bits >= 246 && bits <= 262) {	// Package is likely 254 always
+		fprintf(stdout, "Danfoss CFR Thermostat:\n");
+		bitbuffer_print(bitbuffer);
+		return 1;
+	}
+	return 0;
 }
 
 
 r_device danfoss_CFR = {
-    .name           = "Danfoss CFR Thermostat",
-    .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 25,	// NRZ decoding
-    .long_limit     = 25,	// Bit width
-    .reset_limit    = 250,	// 10 zeros...
-    .json_callback  = NULL,
-//    .json_callback  = &danfoss_CFR_callback,
-    .disabled       = 0,
-    .demod_arg      = 0,
+	.name           = "Danfoss CFR Thermostat",
+	.modulation     = FSK_PULSE_PCM,
+	.short_limit    = 25,	// NRZ decoding
+	.long_limit     = 25,	// Bit width
+	.reset_limit    = 250,	// 10 zeros...
+	.json_callback  = &danfoss_CFR_callback,
+	.disabled       = 0,
+	.demod_arg      = 0,
 };
-
-
-

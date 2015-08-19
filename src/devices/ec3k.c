@@ -17,21 +17,28 @@
 #include "util.h"
 
 static int ec3k_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
-    return 0;
+	bitrow_t *bb = bitbuffer->bb;
+
+	// Validate package
+	unsigned bits = bitbuffer->bits_per_row[0];
+	if (bits >= 550 && bits <= 590) {	// Package should be around 578?!
+		fprintf(stdout, "Energy Count 3000:\n");
+		bitbuffer_print(bitbuffer);
+		return 1;
+	}
+	return 0;
 }
 
 
 r_device ec3k = {
-    .name           = "Energy Count 3000 (868.3 MHz)",
-    .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 12,	// NRZ decoding
-    .long_limit     = 12,	// Bit width
-    .reset_limit    = 120,	// 10 zeros...
-    .json_callback  = NULL,
-//    .json_callback  = &ec3k_callback,
-    .disabled       = 0,
-    .demod_arg      = 0,
+	.name           = "Energy Count 3000 (868.3 MHz)",
+	.modulation     = FSK_PULSE_PCM,
+	.short_limit    = 12,	// NRZ decoding
+	.long_limit     = 12,	// Bit width
+	.reset_limit    = 120,	// 10 zeros...
+	.json_callback  = &ec3k_callback,
+	.disabled       = 0,
+	.demod_arg      = 0,
 };
 
 
