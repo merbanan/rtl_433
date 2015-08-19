@@ -704,8 +704,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
 				if(debug_output) pulse_analyzer(&demod->pulse_data);
-				pulse_data_clear(&demod->pulse_data);
-				pulse_data_clear(&demod->fsk_pulse_data);
 			} else if (package_type == 2) {
 				if(debug_output) fprintf(stderr, "Detected FSK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
@@ -728,8 +726,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
 				if(debug_output) pulse_analyzer(&demod->fsk_pulse_data);
-				pulse_data_clear(&demod->pulse_data);
-				pulse_data_clear(&demod->fsk_pulse_data);
 			}
 		}
 	}
@@ -801,8 +797,6 @@ int main(int argc, char **argv) {
     num_r_devices = sizeof(devices)/sizeof(*devices);
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    pulse_data_clear(&demod->pulse_data);
-    pulse_data_clear(&demod->fsk_pulse_data);
 
     while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
