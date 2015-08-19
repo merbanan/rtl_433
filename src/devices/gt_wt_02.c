@@ -97,7 +97,8 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
 {
   int counter = 0;
-  for(int row=0; row<bitbuffer->num_rows; row++)
+  // iterate through all rows, return on first successful
+  for(int row=0; row<bitbuffer->num_rows && !counter; row++)
     counter += gt_wt_02_process_row(row, bitbuffer);
   return counter;
 }
@@ -105,8 +106,8 @@ static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
 r_device gt_wt_02 = {
   .name          = "GT-WT-02 Sensor",
   .modulation    = OOK_PULSE_PPM_RAW,
-  .short_limit   = 1150,
-  .long_limit    = 2500,
+  .short_limit   = 750,
+  .long_limit    = 1500,
   .reset_limit   = 2500,
   .json_callback = &gt_wt_02_callback,
   .disabled      = 0,
