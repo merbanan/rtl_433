@@ -6,14 +6,19 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
     int i;
     uint8_t nb[3] = {0};
 
+    /* @todo iterate through all rows */
+
+    /* Reject codes of wrong length */
+    if ( 24 != bitbuffer->bits_per_row[0])
+      return 0;
+
     /*
      * Catch the case triggering false positive for other transmitters.
      * example: Brennstuhl RCS 2044SN
      * @todo is this message valid at all??? if not then put more validation below
      *       instead of this special case
      */
-    if ( 24   == bitbuffer->bits_per_row[0] &&
-         0xFF == b[0] &&
+    if ( 0xFF == b[0] &&
          0xFF == b[1] &&
          0xFF == b[2] )
         return 0;
@@ -29,12 +34,11 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
         }
 
         fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Waveman Switch Transmitter, %d bits\n",bitbuffer->bits_per_row[1]);
+        fprintf(stdout, "model   = Waveman Switch Transmitter\n");
         fprintf(stdout, "id      = %c\n", 'A'+nb[0]);
         fprintf(stdout, "channel = %d\n", (nb[1]>>2)+1);
         fprintf(stdout, "button  = %d\n", (nb[1]&3)+1);
         fprintf(stdout, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
-        fprintf(stdout, "%02x %02x %02x\n",nb[0],nb[1],nb[2]);
 
         return 1;
     }
