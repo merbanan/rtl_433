@@ -10,12 +10,8 @@
  * published by the Free Software Foundation.
  */
 
- /* NOTE: not everything is correct, more examples are necessary to
-  * complete the protocol description
-  *
-  * Example provided by https://github.com/ludwich66
+ /* Example and frame description provided by https://github.com/ludwich66
 
- 2 examples
  [01] {37} 34 00 ed 47 60 : 00110100 00000000 11101101 01000111 01100000
  code, BatOK,not-man-send, Channel1, +23,7°C, 35%
 
@@ -23,7 +19,7 @@
  code, BatOK,not-man-send, Channel1,-12,1°C, 10%
 
  SENSOR: GT-WT-02 (ALDI Globaltronics..)
- TYP AAAAAAAA BCDDEFFF FFFFFFFF FGGGGGGG xxxxx
+ TYP AAAAAAAA BCDDEFFF FFFFFFFF GGGGGGGx xxxxx
  BIT 76543210 76543210 76543210 76543210 76543
 
  TYPDescriptian
@@ -35,7 +31,18 @@
  F = PositiveTemp =12 Bit bin2dez Temp,
  F = negative Temp = 4095+1- F (12Bit bin2dez) , Factor Divid F / 10 (1Dezimal)
  G = Humidity = 7 Bit bin2dez 00-99
- x = unknown
+ x = checksum
+
+  bin2dez(Bit1;Bit2;Bit3;Bit4)+ #rolling code
+  bin2dez(Bit5;Bit6;Bit7;Bit8)+ #rolling code
+  bin2dez(Bit9;Bit10;Bit11;Bit12)+ # send, bat , ch
+  bin2dez(Bit13;Bit14;Bit15;Bit16)+ #temp1
+  bin2dez(Bit17;Bit18;Bit19;Bit20)+ #temp2
+  bin2dez(Bit21;Bit22;Bit23;Bit24)+ #temp3
+  bin2dez(Bit25;Bit26;Bit27;Bit28)+ #hum1
+  bin2dez(Bit29;Bit30;Bit31;Bit=0) = #hum2
+  bin2dez(Bit32;Bit33;Bit34;Bit35;Bit36;Bit37) #checksum
+  checksum = sum modulo 64
 */
 
 
@@ -48,6 +55,19 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
     return 0;
 
   //fprintf(stderr, "GT-WT-02: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
+
+  // sum 8 nibbles (use 31 bits, the last one fill with 0 on 31st bit)
+  const int sum_nimbbles = ((b[0] >> 4) & 0xF) + (b[0] & 0xF)
+      +  ((b[1] >> 4) & 0xF) + (b[1] & 0xF)
+      +  ((b[2] >> 4) & 0xF) + (b[2] & 0xF)
+      +  ((b[3] >> 4) & 0xF) + ((((b[3] >> 1)) & 0x7) << 1);
+
+  // put last 6 bits into a number
+  const int checksum = ((b[3] & 1 )<<5) + (b[4]>>3);
+
+  // accept only correct checksums
+  if (sum_nimbbles != checksum)
+    return 0;
 
   const int sensor_id      =  b[0];                    /* 8 x A */
   const int battery_low    = (b[1] >> 7 & 1);          /* 1 x B */
