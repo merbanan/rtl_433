@@ -73,7 +73,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
     }
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-	if (debug_output && bitbuffer->bits_per_row[row] > 0 ) {
+	if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0 ) {
 	    fprintf(stderr,"row %d bit count %d\n", row, 
 		    bitbuffer->bits_per_row[row]);
 	}
@@ -87,7 +87,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 	// will need to be changed as there may be more zero bit padding
 	if (bitbuffer->bits_per_row[row] < 48 || 
 	    bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
-	    if (debug_output && bitbuffer->bits_per_row[row] > 0) {
+	    if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0) {
 		fprintf(stderr,"DSC row %d invalid bit count %d\n",
 			row, bitbuffer->bits_per_row[row]);
 	    }
@@ -100,7 +100,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 	      (bb[row][2] & 0x04) &&	// every 8 data bits
 	      (bb[row][3] & 0x02) &&
 	      (bb[row][4] & 0x01))) {
-	    if (debug_output) {
+	    if (debug_output > 1) {
 		fprintf(stderr,
 			"DSC Invalid start/sync bits %02x %02x %02x %02x %02x\n",
 			bb[row][0] & 0xF0,
