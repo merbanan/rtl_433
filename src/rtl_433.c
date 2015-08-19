@@ -42,12 +42,13 @@ int debug_output = 0;
 int num_r_devices = 0;
 
 struct dm_state {
-    FILE *file;
-    int save_data;
+    FILE *out_file;
     int32_t level_limit;
-    int32_t decimation_level;
-    int16_t filter_buffer[MAXIMAL_BUF_LENGTH + FILTER_ORDER];
-    int16_t* f_buf;
+    int16_t am_buf[MAXIMAL_BUF_LENGTH];	// AM demodulated signal (for OOK decoding)
+    int16_t fm_buf[MAXIMAL_BUF_LENGTH];	// FM demodulated signal (for FSK decoding)
+    uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
+    FilterState lowpass_filter_state;
+    DemodFM_State demod_FM_state;
     int analyze;
     int debug_mode;
 
@@ -63,6 +64,7 @@ struct dm_state {
     struct protocol_state *r_devs[MAX_PROTOCOLS];
 
 	pulse_data_t	pulse_data;
+	pulse_data_t	fsk_pulse_data;
 };
 
 void usage(r_device *devices) {
@@ -70,23 +72,28 @@ void usage(r_device *devices) {
 
 	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
-            "Usage:\t[-d device index (default: 0)]\n"
-            "\t[-g gain (default: 0 for auto)]\n"
-            "\t[-a analyze mode, print a textual description of the signal]\n"
-            "\t[-t signal auto save, use it together with analyze mode (-a -t)\n"
-            "\t[-l change the detection level used to determine pulses (0-32767) default: %i]\n"
-            "\t[-f [-f...] receive frequency[s], default: %i Hz]\n"
-            "\t[-s sample rate (default: %i Hz)]\n"
-            "\t[-S force sync output (default: async)]\n"
-            "\t[-r read data from file instead of from a receiver]\n"
-            "\t[-p ppm_error (default: 0)]\n"
-            "\t[-r test file name (indata)]\n"
-            "\t[-m test file mode (0 rtl_sdr data, 1 rtl_433 data)]\n"
-            "\t[-D print debug info on event\n"
-            "\t[-z override short value]\n"
-            "\t[-x override long value]\n"
-            "\t[-R listen only for the specified remote device (can be used multiple times)]\n"
-            "\tfilename (a '-' dumps samples to stdout)\n\n", DEFAULT_LEVEL_LIMIT, DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE);
+            "Usage:\t[-d <device index>] (default: 0)\n"
+            "\t[-g <gain>] (default: 0 for auto)\n"
+            "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
+            "\t[-p <ppm_error>] (default: 0)\n"
+            "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "\t[-S] Force sync output (default: async)\n"
+            "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
+            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (default: %i)\n"
+            "\t[-z <value>] Override short value in data decoder\n"
+            "\t[-x <value>] Override long value in data decoder\n"
+            "\t[-D] Print debug info on event (repeat for more info)\n"
+            "\t[-a] Analyze mode. Print a textual description of the signal\n"
+            "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
+            "\t\t Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files\n"
+            "\t[-r <filename>] Read data from input file instead of a receiver\n"
+            "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
+            "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
+            "\t\t 1 = AM demodulated samples (int16)\n"
+            "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
+            "\t\t Note: If output file is specified, input will always be I/Q\n"
+            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
+            DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     fprintf(stderr, "Supported devices:\n");
     for (i = 0; i < num_r_devices; i++) {
@@ -600,124 +607,164 @@ static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16
 }
 
 
-static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx) {
+static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
-    uint16_t* sbuf = (uint16_t*) buf;
     int i;
-    if (demod->file || !demod->save_data) {
-        if (do_exit || do_exit_async)
-            return;
 
-        if ((bytes_to_read > 0) && (bytes_to_read < len)) {
-            len = bytes_to_read;
-            do_exit = 1;
-            rtlsdr_cancel_async(dev);
-        }
+	if (do_exit || do_exit_async)
+		return;
 
-        if (demod->signal_grabber) {
-            //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
-            memcpy(&demod->sg_buf[demod->sg_index], buf, len);
-            demod->sg_len = len;
-            demod->sg_index += len;
-            if (demod->sg_index + len > SIGNAL_GRABBER_BUFFER)
-                demod->sg_index = 0;
-        }
+	if ((bytes_to_read > 0) && (bytes_to_read < len)) {
+		len = bytes_to_read;
+		do_exit = 1;
+		rtlsdr_cancel_async(dev);
+	}
 
+	if (demod->signal_grabber) {
+		//fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
+		memcpy(&demod->sg_buf[demod->sg_index], iq_buf, len);
+		demod->sg_len = len;
+		demod->sg_index += len;
+		if (demod->sg_index + len > SIGNAL_GRABBER_BUFFER)
+			demod->sg_index = 0;
+	}
 
-        if (demod->debug_mode == 0) {
-            envelope_detect(buf, len, demod->decimation_level);
-            // baseband_dumpfile(buf, len);				// Debug
-            low_pass_filter(sbuf, demod->f_buf, len >> (demod->decimation_level + 1));
-            // baseband_dumpfile((uint8_t*)demod->f_buf, len);	// Debug
-        } else if (demod->debug_mode == 1) {
-            memcpy(demod->f_buf, buf, len);
-        }
-        if (demod->analyze) {
-            pwm_analyze(demod, demod->f_buf, len / 2);
-        } else {
-            // Loop through all demodulators for all samples (CPU intensive!)
-            for (i = 0; i < demod->r_dev_num; i++) {
-                switch (demod->r_devs[i]->modulation) {
-                    case OOK_PWM_D:
-                        pwm_d_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
-                        break;
-                    case OOK_PWM_P:
-                        pwm_p_decode(demod, demod->r_devs[i], demod->f_buf, len / 2);
-                        break;
-                    // Add pulse demodulators here
-                    case OOK_PULSE_PCM_RZ:
-                    case OOK_PULSE_PPM_RAW:
-                    case OOK_PULSE_PWM_RAW:
-                    case OOK_PULSE_PWM_TERNARY:
-                    case OOK_PULSE_MANCHESTER_ZEROBIT:
-                        break;
-                    default:
-                        fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
-                }
-            }
-            // Detect a package and loop through demodulators with pulse data
-            while(detect_pulse_package(demod->f_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data)) {
-                for (i = 0; i < demod->r_dev_num; i++) {
-                    switch (demod->r_devs[i]->modulation) {
-                        // Old style decoders
-                        case OOK_PWM_D:
-                        case OOK_PWM_P:
-                            break;
-                        case OOK_PULSE_PCM_RZ:
-                            pulse_demod_pcm_rz(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        case OOK_PULSE_PPM_RAW:
-                            pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        case OOK_PULSE_PWM_RAW:
-                            pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        case OOK_PULSE_PWM_TERNARY:
-                            pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        case OOK_PULSE_MANCHESTER_ZEROBIT:
-                            pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        default:
-                            fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
-                    }
-                } // for demodulators
-                if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-                if(debug_output) pulse_analyzer(&demod->pulse_data);
-                pulse_data_clear(&demod->pulse_data);
-            }
-        }
+	// FM demodulation
+	baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+	// AM demodulation
+	envelope_detect(iq_buf, demod->temp_buf, len/2);
+	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
 
-        if (demod->save_data) {
-            if (fwrite(demod->f_buf, 1, len >> demod->decimation_level, demod->file) != len >> demod->decimation_level) {
-                fprintf(stderr, "Short write, samples lost, exiting!\n");
-                rtlsdr_cancel_async(dev);
-            }
-        }
+	// Handle special input formats
+	if(!demod->out_file) {				// If output file is specified we always assume I/Q input
+		if (demod->debug_mode == 1) {	// The IQ buffer is really AM demodulated data
+			memcpy(demod->am_buf, iq_buf, len);
+		} else if (demod->debug_mode == 2) {	// The IQ buffer is really FM demodulated data
+			fprintf(stderr, "Reading FM modulated data not implemented yet!\n");
+		}
+	}
 
-        if (bytes_to_read > 0)
-            bytes_to_read -= len;
+	if (demod->analyze || (demod->out_file == stdout)) {	// We don't want to decode devices when outputting to stdout
+		pwm_analyze(demod, demod->am_buf, len / 2);
+	} else {
+		// Loop through all demodulators for all samples (CPU intensive!)
+		for (i = 0; i < demod->r_dev_num; i++) {
+			switch (demod->r_devs[i]->modulation) {
+				case OOK_PWM_D:
+					pwm_d_decode(demod, demod->r_devs[i], demod->am_buf, len / 2);
+					break;
+				case OOK_PWM_P:
+					pwm_p_decode(demod, demod->r_devs[i], demod->am_buf, len / 2);
+					break;
+				// Add pulse demodulators here
+				case OOK_PULSE_PCM_RZ:
+				case OOK_PULSE_PPM_RAW:
+				case OOK_PULSE_PWM_RAW:
+				case OOK_PULSE_PWM_TERNARY:
+				case OOK_PULSE_MANCHESTER_ZEROBIT:
+				case FSK_PULSE_PCM:
+					break;
+				default:
+					fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+			}
+		}
+		// Detect a package and loop through demodulators with pulse data
+		int package_type = 1;	// Just to get us started
+		while(package_type) {
+			package_type = detect_pulse_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+			if (package_type == 1) {
+				if(debug_output) fprintf(stderr, "Detected OOK package\n");
+				for (i = 0; i < demod->r_dev_num; i++) {
+					switch (demod->r_devs[i]->modulation) {
+						// Old style decoders
+						case OOK_PWM_D:
+						case OOK_PWM_P:
+							break;
+						case OOK_PULSE_PCM_RZ:
+							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PPM_RAW:
+							pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PWM_RAW:
+							pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_PWM_TERNARY:
+							pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						case OOK_PULSE_MANCHESTER_ZEROBIT:
+							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							break;
+						// FSK decoders
+						case FSK_PULSE_PCM:
+							break;
+						default:
+							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+					}
+				} // for demodulators
+				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
+				if(debug_output) pulse_analyzer(&demod->pulse_data);
+			} else if (package_type == 2) {
+				if(debug_output) fprintf(stderr, "Detected FSK package\n");
+				for (i = 0; i < demod->r_dev_num; i++) {
+					switch (demod->r_devs[i]->modulation) {
+						// Old style decoders + OOK decoders
+						case OOK_PWM_D:
+						case OOK_PWM_P:
+						case OOK_PULSE_PCM_RZ:
+						case OOK_PULSE_PPM_RAW:
+						case OOK_PULSE_PWM_RAW:
+						case OOK_PULSE_PWM_TERNARY:
+						case OOK_PULSE_MANCHESTER_ZEROBIT:
+							break;
+						case FSK_PULSE_PCM:
+							pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							break;
+						default:
+							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+					}
+				} // for demodulators
+				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
+				if(debug_output) pulse_analyzer(&demod->fsk_pulse_data);
+			}
+		}
+	}
 
-        if (frequencies > 1) {
-            time_t rawtime;
-            time(&rawtime);
-            if (difftime(rawtime, rawtime_old) > DEFAULT_HOP_TIME || events >= DEFAULT_HOP_EVENTS) {
-                rawtime_old = rawtime;
-                events = 0;
-                do_exit_async = 1;
-                rtlsdr_cancel_async(dev);
-            }
-        }
-    }
+	if (demod->out_file) {
+		uint8_t* out_buf = iq_buf;				// Default is to dump IQ samples
+		if (demod->debug_mode == 1) {			// AM data
+			out_buf = (uint8_t*)demod->am_buf;
+		} else if (demod->debug_mode == 2) {	// FM data
+			out_buf = (uint8_t*)demod->fm_buf;
+		}
+		if (fwrite(out_buf, 1, len, demod->out_file) != len) {
+			fprintf(stderr, "Short write, samples lost, exiting!\n");
+			rtlsdr_cancel_async(dev);
+		}
+	}
+
+	if (bytes_to_read > 0)
+		bytes_to_read -= len;
+
+	if (frequencies > 1) {
+		time_t rawtime;
+		time(&rawtime);
+		if (difftime(rawtime, rawtime_old) > DEFAULT_HOP_TIME || events >= DEFAULT_HOP_EVENTS) {
+			rawtime_old = rawtime;
+			events = 0;
+			do_exit_async = 1;
+			rtlsdr_cancel_async(dev);
+		}
+	}
 }
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
 #endif
-    char *filename = NULL;
-    char *test_mode_file = NULL;
-    FILE *test_mode;
+    char *out_filename = NULL;
+    char *in_filename = NULL;
+    FILE *in_file;
     int n_read;
     int r, opt;
     int i, gain = 0;
@@ -749,10 +796,7 @@ int main(int argc, char **argv) {
 
     num_r_devices = sizeof(devices)/sizeof(*devices);
 
-    demod->f_buf = &demod->filter_buffer[FILTER_ORDER];
-    demod->decimation_level = DEFAULT_DECIMATION_LEVEL;
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    pulse_data_clear(&demod->pulse_data);
 
     while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
@@ -781,14 +825,11 @@ int main(int argc, char **argv) {
             case 'n':
                 bytes_to_read = (uint32_t) atof(optarg) * 2;
                 break;
-            case 'c':
-                demod->decimation_level = (uint32_t) atof(optarg);
-                break;
             case 'a':
                 demod->analyze = 1;
                 break;
             case 'r':
-                test_mode_file = optarg;
+                in_filename = optarg;
                 break;
             case 't':
                 demod->signal_grabber = 1;
@@ -833,7 +874,7 @@ int main(int argc, char **argv) {
     if (argc <= optind - 1) {
         usage(devices);
     } else {
-        filename = argv[optind];
+        out_filename = argv[optind];
     }
 
     for (i = 0; i < num_r_devices; i++) {
@@ -855,11 +896,11 @@ int main(int argc, char **argv) {
 
     buffer = malloc(out_block_size * sizeof (uint8_t));
 
-    if (!test_mode_file) {
+    if (!in_filename) {
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
 	    fprintf(stderr, "No supported devices found.\n");
-	    if (!test_mode_file)
+	    if (!in_filename)
 		exit(1);
 	}
 
@@ -896,7 +937,6 @@ int main(int argc, char **argv) {
 	else
 	    fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
-	fprintf(stderr, "Sample rate decimation set to %d. %d->%d\n", demod->decimation_level, samp_rate, samp_rate >> demod->decimation_level);
 	fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
 
 	if (0 == gain) {
@@ -924,35 +964,34 @@ int main(int argc, char **argv) {
 
     }
 
-    demod->save_data = 1;
-    if (!filename) {
-        demod->save_data = 0;
-    } else if (strcmp(filename, "-") == 0) { /* Write samples to stdout */
-        demod->file = stdout;
+	if (out_filename) {
+		if (strcmp(out_filename, "-") == 0) { /* Write samples to stdout */
+			demod->out_file = stdout;
 #ifdef _WIN32
-        _setmode(_fileno(stdin), _O_BINARY);
+			_setmode(_fileno(stdin), _O_BINARY);
 #endif
-    } else {
-        demod->file = fopen(filename, "wb");
-        if (!demod->file) {
-            fprintf(stderr, "Failed to open %s\n", filename);
-            goto out;
-        }
-    }
+		} else {
+			demod->out_file = fopen(out_filename, "wb");
+			if (!demod->out_file) {
+				fprintf(stderr, "Failed to open %s\n", out_filename);
+				goto out;
+			}
+		}
+	}
 
     if (demod->signal_grabber)
         demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
 
-    if (test_mode_file) {
+    if (in_filename) {
         int i = 0;
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
-        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", test_mode_file);
-        test_mode = fopen(test_mode_file, "r");
-        if (!test_mode) {
-            fprintf(stderr, "Opening file: %s failed!\n", test_mode_file);
+        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
+        in_file = fopen(in_filename, "r");
+        if (!in_file) {
+            fprintf(stderr, "Opening file: %s failed!\n", in_filename);
             goto out;
         }
-        while (fread(test_mode_buf, 131072, 1, test_mode) != 0) {
+        while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
         }
@@ -986,7 +1025,7 @@ int main(int argc, char **argv) {
                 do_exit = 1;
             }
 
-            if (fwrite(buffer, 1, n_read, demod->file) != (size_t) n_read) {
+            if (fwrite(buffer, 1, n_read, demod->out_file) != (size_t) n_read) {
                 fprintf(stderr, "Short write, samples lost, exiting!\n");
                 break;
             }
@@ -1027,8 +1066,8 @@ int main(int argc, char **argv) {
     else
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    if (demod->file && (demod->file != stdout))
-        fclose(demod->file);
+    if (demod->out_file && (demod->out_file != stdout))
+        fclose(demod->out_file);
 
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);

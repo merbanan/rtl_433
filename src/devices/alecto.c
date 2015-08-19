@@ -89,9 +89,11 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
             time(&time_now);
             local_time_str(time_now, time_str);
-            fprintf(stdout,
-            "%s AlectoV1 Checksum/Parity error\n",
-            time_str);
+            if(debug_output) {
+                fprintf(stderr,
+                "%s AlectoV1 Checksum/Parity error\n",
+                time_str);
+            }
             return 0;
         } //Invalid checksum
 

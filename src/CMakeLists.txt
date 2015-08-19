@@ -45,6 +45,8 @@ add_executable(rtl_433
 	devices/dsc.c
 	devices/brennstuhl_rcs_2044.c
 	devices/gt_wt_02.c
+	devices/danfoss.c
+	devices/ec3k.c
 )
 
 target_link_libraries(rtl_433

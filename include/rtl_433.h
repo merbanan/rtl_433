@@ -28,10 +28,9 @@
 #define DEFAULT_ASYNC_BUF_NUMBER    32
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
 #define DEFAULT_LEVEL_LIMIT     8000		// Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
-#define DEFAULT_DECIMATION_LEVEL 0
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
-#define MAX_PROTOCOLS           25
+#define MAX_PROTOCOLS           30
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 /* Supported modulation types */
@@ -42,6 +41,7 @@
 #define	OOK_PULSE_PPM_RAW		5			// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
 #define	OOK_PULSE_PWM_RAW		6			// Pulse Width Modulation. Short pulses = 1, Long = 0
 #define	OOK_PULSE_PWM_TERNARY	7			// Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
+#define	FSK_PULSE_PCM			8			// FSK, Pulse Code Modulation
 
 extern int debug_output;
 
