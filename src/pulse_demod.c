@@ -30,24 +30,21 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 		// Determine number of bit periods in current pulse/gap length (rounded)
 		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;
 
-		// Validate data
-		if ((abs(pulses->pulse[n] - highs * device->short_limit) < TOLERANCE)			// Pulse must be within tolerance
-		 && ((abs(pulses->pulse[n] + pulses->gap[n] - periods * device->long_limit) < TOLERANCE)	// Pulse + Gap must be within tolerance
-		  || (n == pulses->num_pulses-1)												// .. or we are at last pulse (FSK)
-		  || (pulses->gap[n] > (unsigned)device->reset_limit))							// .. or we are above our limit (OOK)
-		) {
-			// Add run of ones (1 for RZ, many for NRZ)
-			for (int n=0; n < highs; ++n) {
-				bitbuffer_add_bit(&bits, 1);
-			}
+		// Add run of ones (1 for RZ, many for NRZ)
+		for (int i=0; i < highs; ++i) {
+			bitbuffer_add_bit(&bits, 1);
+		}
+		// Add run of zeros
+		periods -= highs;					// Remove 1s from whole period
+		periods = min(periods, MAX_ZEROS); 	// Dont overflow at end of message
+		for (int i=0; i < periods; ++i) {
+			bitbuffer_add_bit(&bits, 0);
+		}
 
-			// Add run of zeros
-			periods--;							// First period is the one
-			periods = min(periods, MAX_ZEROS); 	// Dont overflow at end of message
-			for (int n=0; n < periods; ++n) {
-				bitbuffer_add_bit(&bits, 0);
-			}
-		} else {
+		// Validate data
+		if ((device->short_limit != device->long_limit) 		// Only for RZ coding
+		 && (abs(pulses->pulse[n] - device->short_limit) > TOLERANCE)		// Pulse must be within tolerance
+		) {
 			// Data is corrupt
 			if (debug_output > 3) {
 			        fprintf(stderr,"bitbuffer cleared at %d: pulse %d, gap %d, period %d\n",
