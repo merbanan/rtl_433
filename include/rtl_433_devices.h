@@ -30,7 +30,8 @@
 		DECL(brennstuhl_rcs_2044) \
 		DECL(gt_wt_02) \
 		DECL(danfoss_CFR) \
-		DECL(ec3k) 
+		DECL(ec3k) \
+		DECL(valeo) 
 
 
 typedef struct {
