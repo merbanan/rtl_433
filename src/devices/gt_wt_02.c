@@ -51,22 +51,24 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   const uint8_t *b = bitbuffer->bb[row];
   const int length = bitbuffer->bits_per_row[row];
 
-  if ( 37 != length)
+  if ( 37 != length
+      || !(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
     return 0;
 
-  //fprintf(stderr, "GT-WT-02: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
+  fprintf(stderr, "GT-WT-02: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
 
   // sum 8 nibbles (use 31 bits, the last one fill with 0 on 32nd bit)
-  const int sum_nimbbles = ((b[0] >> 4) & 0xF) + (b[0] & 0xF)
-      +  ((b[1] >> 4) & 0xF) + (b[1] & 0xF)
-      +  ((b[2] >> 4) & 0xF) + (b[2] & 0xF)
-      +  ((b[3] >> 4) & 0xF) + (b[3] & 0xe);
+  const int sum_nibbles =
+        (b[0] >> 4) + (b[0] & 0xF)
+      + (b[1] >> 4) + (b[1] & 0xF)
+      + (b[2] >> 4) + (b[2] & 0xF)
+      + (b[3] >> 4) + (b[3] & 0xe);
 
   // put last 6 bits into a number
   const int checksum = ((b[3] & 1 )<<5) + (b[4]>>3);
 
-  // accept only correct checksums
-  if (sum_nimbbles != checksum)
+  // accept only correct checksums, (sum of nibbles modulo 64)
+  if ((sum_nibbles & 0x3F) != checksum)
     return 0;
 
   const int sensor_id      =  b[0];                    /* 8 x A */
@@ -75,7 +77,7 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   const int channel        = (b[1] >> 4 & 3);          /* 2 x D */
   const int negative_sign  = (b[1] >> 3 & 1);          /* 1 x E */
   const int temp           = (((b[1] & 15) << 8) | b[2]); /* E + 11 X G */
-  const int humidity = (b[3]>>1) & 0x7F;
+  const int humidity = (b[3]>>1);
 
   float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
   {
@@ -120,19 +122,22 @@ r_device gt_wt_02 = {
 int main()
 {
   bitbuffer_t bb;
-  bb.num_rows = 3;
+  bb.num_rows = 1;
   bb.bits_per_row[0] = 37;
-  bb.bits_per_row[1] = 37;
-  bb.bits_per_row[2] = 37;
-  const uint8_t b0[] = {0x34, 0x00, 0xed, 0x47, 0x60};
-  const uint8_t b1[] = {0x34, 0x8f, 0x87, 0x15, 0x90};
-  const uint8_t b2[] = {0x34, 0x00, 0xde, 0x77, 0x78};
+  const uint8_t b[4][5] =
+    {
+      {0x00, 0x00, 0x00, 0x00, 0x00}, // this one is excluded despite the correct checksum
+      {0x34, 0x00, 0xed, 0x47, 0x60},
+      {0x34, 0x8f, 0x87, 0x15, 0x90},
+      {0x34, 0x00, 0xde, 0x77, 0x78},
+    };
 
-  memcpy(bb.bb[0], b0, 5);
-  memcpy(bb.bb[1], b1, 5);
-  memcpy(bb.bb[2], b2, 5);
+  for(int i=0; i<4; i++)
+  {
+    memcpy(bb.bb[0], b[i], 5);
+    gt_wt_02_callback(&bb);
+  }
 
-  gt_wt_02_callback(&bb);
 /*
  * Result:
 2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery OK, channel 0, button 0, temperature 23.7 C / 74.7 F, humidity 35%
