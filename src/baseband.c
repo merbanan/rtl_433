@@ -92,6 +92,7 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 
 	// Pre-feed old sample
 	ar = state->br; ai = state->bi;
+	xlp_old = state->xlp; ylp_old = state->ylp;
 
 	for (unsigned n = 0; n < num_samples; n++) {
 		// delay old sample 
@@ -113,6 +114,7 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 
 	// Store newest sample for next run
 	state->br = ar; state->bi = ai;
+	state->xlp = xlp_old; state->ylp = ylp_old;
 }
 
 

@@ -36,6 +36,7 @@ typedef struct {
 /// FM_Demod state buffer
 typedef struct {
 	int16_t	br, bi;		// Last I/Q sample
+	int16_t xlp, ylp;	// Low-pass filter state
 } DemodFM_State;
 
 /// Lowpass filter
