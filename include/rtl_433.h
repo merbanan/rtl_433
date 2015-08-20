@@ -41,7 +41,9 @@
 #define	OOK_PULSE_PPM_RAW		5			// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
 #define	OOK_PULSE_PWM_RAW		6			// Pulse Width Modulation. Short pulses = 1, Long = 0
 #define	OOK_PULSE_PWM_TERNARY	7			// Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
-#define	FSK_PULSE_PCM			8			// FSK, Pulse Code Modulation
+
+#define	FSK_DEMOD_MIN_VAL		16			// Dummy. FSK demodulation must start at this value
+#define	FSK_PULSE_PCM			16			// FSK, Pulse Code Modulation
 
 extern int debug_output;
 

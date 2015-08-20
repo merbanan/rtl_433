@@ -49,6 +49,7 @@ struct dm_state {
     uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
+    int enable_FM_demod;
     int analyze;
     int debug_mode;
 
@@ -630,7 +631,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	}
 
 	// FM demodulation
-	baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+	if (demod->enable_FM_demod) {
+		baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+	}
 	// AM demodulation
 	envelope_detect(iq_buf, demod->temp_buf, len/2);
 	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
@@ -880,6 +883,9 @@ int main(int argc, char **argv) {
     for (i = 0; i < num_r_devices; i++) {
         if (!devices[i].disabled) {
             register_protocol(demod, &devices[i]);
+            if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
+              demod->enable_FM_demod = 1;
+            }
         }
     }
 
