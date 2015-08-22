@@ -47,6 +47,8 @@ add_executable(rtl_433
 	devices/gt_wt_02.c
 	devices/danfoss.c
 	devices/ec3k.c
+	devices/valeo.c
+	devices/chuango.c
 )
 
 target_link_libraries(rtl_433

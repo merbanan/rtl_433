@@ -9,7 +9,10 @@
  */
 
 #include "pulse_detect.h"
+#include "pulse_demod.h"
 #include "util.h"
+#include "rtl_433.h"
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -313,20 +316,108 @@ void pulse_analyzer(const pulse_data_t *data)
 	histogram_print(&hist_periods);
 
 	fprintf(stderr, "Guessing modulation: ");
+	struct protocol_state device = { .name = "Analyzer Device", 0};
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
 	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1 && hist_periods.bins_count > 1) {
 		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
+		device.modulation	= OOK_PULSE_PPM_RAW;
+		// Find minimum gap
+		device.short_limit	= UINT_MAX;
+		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
+			device.short_limit = min(device.short_limit, hist_gaps.bins[n].max);
+		}
+		device.short_limit	+= 1;	// Add tolerance
+		// Find next lowest gap
+		device.long_limit	= UINT_MAX;
+		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
+			if (hist_gaps.bins[n].max > device.short_limit) {
+				device.long_limit = min(device.long_limit, hist_gaps.bins[n].max);
+			}
+		}
+		device.long_limit	+= 1;	// Add tolerance
+		// Find maximum gap
+		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
+			device.reset_limit = max(device.reset_limit, hist_gaps.bins[n].max);
+		}
+		device.reset_limit	+= 1;	// Add tolerance
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with fixed period\n");
+		device.modulation	= OOK_PULSE_PWM_RAW;
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;
+		device.long_limit	= max(hist_gaps.bins[0].max, hist_gaps.bins[1].max) + 1;	// Add tolerance
+		device.reset_limit	= device.long_limit;
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1 && hist_periods.bins_count == 2) {
 		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
+		device.modulation	= OOK_PULSE_PWM_RAW;
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;
+		device.long_limit	= hist_gaps.bins[0].max + 1;	// Add tolerance
+		device.reset_limit	= device.long_limit;
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
 		fprintf(stderr, "Manchester coding\n");
+		device.modulation	= OOK_PULSE_MANCHESTER_ZEROBIT;
+		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);
+		device.reset_limit	= max(hist_gaps.bins[0].max, hist_gaps.bins[1].max) + 1;	// Add tolerance
 	} else if(hist_pulses.bins_count == 3 && hist_gaps.bins_count == 3 && hist_periods.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with startbit/delimiter\n");
+		device.modulation	= OOK_PULSE_PWM_TERNARY;
+		// Find minimum pulse
+		device.short_limit	= UINT_MAX;
+		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
+			device.short_limit = min(device.short_limit, hist_pulses.bins[n].max);
+		}
+		device.short_limit	+= 1;	// Add tolerance
+		// Find next lowest pulse
+		device.long_limit	= UINT_MAX;
+		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
+			if (hist_pulses.bins[n].max > device.short_limit) {	// Only if higher than lowest pulse
+				device.long_limit = min(device.long_limit, hist_pulses.bins[n].max);
+			}
+		}
+		device.long_limit	+= 1;	// Add tolerance
+		// Find maximum gap
+		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
+			device.reset_limit = max(device.reset_limit, hist_gaps.bins[n].max);
+		}
+		device.reset_limit	+= 1;	// Add tolerance
+		// Find lowest pulse count index (is probably delimiter)
+		unsigned count = UINT_MAX;
+		unsigned lc_index = 0;
+		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
+			if (hist_pulses.bins[n].count < count) {
+				count = hist_pulses.bins[n].count;
+				lc_index = n;
+			}
+		}
+		if		(hist_pulses.bins[lc_index].mean < device.short_limit)	{	device.demod_arg = 0; }
+		else if	(hist_pulses.bins[lc_index].mean < device.long_limit)	{	device.demod_arg = 1; }
+		else															{	device.demod_arg = 2; }
 	} else {
 		fprintf(stderr, "No clue...\n");
+	}
+
+	if(device.modulation) {
+		fprintf(stderr, "Attempting demodulation... short_limit: %u, long_limit: %u, reset_limit: %u, demod_arg: %lu\n", 
+			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
+		switch(device.modulation) {
+//			case OOK_PULSE_PCM_RZ:
+//				pulse_demod_pcm(data, &device);
+//				break;
+			case OOK_PULSE_PPM_RAW:
+				pulse_demod_ppm(data, &device);
+				break;
+			case OOK_PULSE_PWM_RAW:
+				pulse_demod_pwm(data, &device);
+				break;
+			case OOK_PULSE_PWM_TERNARY:
+				pulse_demod_pwm_ternary(data, &device);
+				break;
+			case OOK_PULSE_MANCHESTER_ZEROBIT:
+				pulse_demod_manchester_zerobit(data, &device);
+				break;
+			default:
+				fprintf(stderr, "Unsupported\n");
+		}
 	}
 
 	fprintf(stderr, "\n");

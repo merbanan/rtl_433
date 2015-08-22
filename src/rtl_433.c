@@ -51,6 +51,7 @@ struct dm_state {
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
     int analyze;
+    int analyze_pulses;
     int debug_mode;
 
     /* Signal grabber variables */
@@ -73,18 +74,23 @@ void usage(r_device *devices) {
 
 	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
-            "Usage:\t[-d <device index>] (default: 0)\n"
+            "Usage:\t= Tuner options =\n"
+            "\t[-d <device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-p <ppm_error>] (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
+            "\t= Demodulator options =\n"
             "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-32767] (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
+            "\t= Analyze/Debug options =\n"
+            "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
+            "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
-            "\t[-a] Analyze mode. Print a textual description of the signal\n"
+            "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
@@ -706,7 +712,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-				if(debug_output) pulse_analyzer(&demod->pulse_data);
+				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data);
 			} else if (package_type == 2) {
 				if(debug_output) fprintf(stderr, "Detected FSK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
@@ -728,7 +734,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-				if(debug_output) pulse_analyzer(&demod->fsk_pulse_data);
+				if(demod->analyze_pulses) pulse_analyzer(&demod->fsk_pulse_data);
 			}
 		}
 	}
@@ -801,7 +807,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:Dtam:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -830,6 +836,9 @@ int main(int argc, char **argv) {
                 break;
             case 'a':
                 demod->analyze = 1;
+                break;
+            case 'A':
+                demod->analyze_pulses = 1;
                 break;
             case 'r':
                 in_filename = optarg;

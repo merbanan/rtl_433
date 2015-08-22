@@ -56,10 +56,10 @@ struct protocol_state {
     unsigned int modulation;
 
     /* demod state */
-    int pulse_length;
+    unsigned int pulse_length;
     int pulse_count;
     int pulse_distance;
-    int sample_counter;
+    unsigned int sample_counter;
     int start_c;
 
     int packet_present;
@@ -67,9 +67,9 @@ struct protocol_state {
     int real_bits;
     int start_bit;
     /* pwm limits */
-    int short_limit;
-    int long_limit;
-    int reset_limit;
+    unsigned int short_limit;
+    unsigned int long_limit;
+    unsigned int reset_limit;
     char *name;
     unsigned long demod_arg;
 };
