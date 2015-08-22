@@ -88,7 +88,7 @@ void usage(r_device *devices) {
             "\t[-x <value>] Override long value in data decoder\n"
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
-            "\t[-Q] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
+            "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
@@ -807,7 +807,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaQm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -837,7 +837,7 @@ int main(int argc, char **argv) {
             case 'a':
                 demod->analyze = 1;
                 break;
-            case 'Q':
+            case 'A':
                 demod->analyze_pulses = 1;
                 break;
             case 'r':
