@@ -384,8 +384,10 @@ void pulse_analyzer(const pulse_data_t *data)
 		unsigned count = UINT_MAX;
 		unsigned lc_index = 0;
 		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
-			count = min(count, hist_pulses.bins[n].count);
-			lc_index = 0;
+			if (hist_pulses.bins[n].count < count) {
+				count = hist_pulses.bins[n].count;
+				lc_index = n;
+			}
 		}
 		if		(hist_pulses.bins[lc_index].mean < device.short_limit)	{	device.demod_arg = 0; }
 		else if	(hist_pulses.bins[lc_index].mean < device.long_limit)	{	device.demod_arg = 1; }
