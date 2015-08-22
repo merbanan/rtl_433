@@ -26,9 +26,10 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 	// Validate package
 	if ((bits == 25)
 	 && (b[3] && 0x80)	// Last bit is always 1
+	 && (b[0] != 0xFF) && (b[1] != 0xFF) && (b[2] != 0xFF)	// Reduce false positives. ID 0xFFFFF not supported
 	) {
 		uint32_t ID = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
-		char *CMD; 
+		char *CMD;
 		switch(b[2] & 0x0F) {
 			case 0x0:	CMD = "0x0 (?)";	break;
 			case 0x1:	CMD = "0x1 (?)";	break;
