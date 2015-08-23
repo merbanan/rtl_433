@@ -32,7 +32,7 @@ Running:
     rtl_433 -h
 
 ```
- Usage:	= Tuner options =
+Usage:	= Tuner options =
 	[-d <device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
