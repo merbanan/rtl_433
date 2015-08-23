@@ -31,7 +31,7 @@ Running:
 
     rtl_433 -h
 
-´´´
+```
  Usage:	= Tuner options =
 	[-d <device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
@@ -89,7 +89,7 @@ Supported devices:
 	[27] Energy Count 3000 (868.3 MHz)
 	[28] Valeo Car Key
 	[29] Chuango Security Technology
-´´´
+```
 
 
 Examples:
