@@ -214,6 +214,7 @@ void histogram_sum(histogram_t *hist, const unsigned *data, unsigned len, float 
 	unsigned bin;	// Iterator will be used outside for!
 
 	for(unsigned n = 0; n < len; ++n) {
+		// Search for match in existing bins
 		for(bin = 0; bin < hist->bins_count; ++bin) {
 			int bn = data[n];
 			int bm = hist->bins[bin].mean;
@@ -223,10 +224,10 @@ void histogram_sum(histogram_t *hist, const unsigned *data, unsigned len, float 
 				hist->bins[bin].mean = hist->bins[bin].sum / hist->bins[bin].count;
 				hist->bins[bin].min	= min(data[n], hist->bins[bin].min);
 				hist->bins[bin].max	= max(data[n], hist->bins[bin].max);
-				break;	// Match found!
+				break;	// Match found! Data added to existing bin
 			}
 		}
-		// No match found?
+		// No match found? Add new bin
 		if(bin == hist->bins_count && bin < MAX_HIST_BINS) {
 			hist->bins[bin].count	= 1;
 			hist->bins[bin].sum		= data[n];
@@ -239,9 +240,60 @@ void histogram_sum(histogram_t *hist, const unsigned *data, unsigned len, float 
 }
 
 
+/// Delete bin from histogram
+void histogram_delete_bin(histogram_t *hist, unsigned index) {
+	const hist_bin_t	zerobin = {0};
+	if (hist->bins_count < 1) return;	// Avoid out of bounds
+	// Move all bins afterwards one forward
+	for(unsigned n = index; n < hist->bins_count-1; ++n) {
+		hist->bins[n] = hist->bins[n+1];
+	}
+	hist->bins_count--;
+	hist->bins[hist->bins_count] = zerobin;	// Clear previously last bin
+}
+
+
+/// Swap two bins in histogram
+void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned index2) {
+	hist_bin_t	tempbin;
+	if ((index1 < hist->bins_count) && (index2 < hist->bins_count)) {		// Avoid out of bounds
+		tempbin = hist->bins[index1];
+		hist->bins[index1] = hist->bins[index2];
+		hist->bins[index2] = tempbin;
+	}
+}
+
+
+/// Sort histogram with mean value (order lowest to highest)
+void histogram_sort_mean(histogram_t *hist) {
+	if (hist->bins_count < 2) return;		// Avoid underflow
+	// Compare all bins (bubble sort)
+	for(unsigned n = 0; n < hist->bins_count-1; ++n) {
+		for(unsigned m = n+1; m < hist->bins_count; ++m) {
+			if (hist->bins[m].mean < hist->bins[n].mean) {
+				histogram_swap_bins(hist, m, n);
+			} // if 
+		} // for m
+	} // for n
+}
+
+
+/// Sort histogram with count value (order lowest to highest)
+void histogram_sort_count(histogram_t *hist) {
+	if (hist->bins_count < 2) return;		// Avoid underflow
+	// Compare all bins (bubble sort)
+	for(unsigned n = 0; n < hist->bins_count-1; ++n) {
+		for(unsigned m = n+1; m < hist->bins_count; ++m) {
+			if (hist->bins[m].count < hist->bins[n].count) {
+				histogram_swap_bins(hist, m, n);
+			} // if 
+		} // for m
+	} // for n
+}
+
+
 /// Fuse histogram bins with means within tolerance
 void histogram_fuse_bins(histogram_t *hist, float tolerance) {
-	hist_bin_t	zerobin = {0};
 	if (hist->bins_count < 2) return;		// Avoid underflow
 	// Compare all bins
 	for(unsigned n = 0; n < hist->bins_count-1; ++n) {
@@ -256,11 +308,7 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance) {
 				hist->bins[n].min 	= min(hist->bins[n].min, hist->bins[m].min);
 				hist->bins[n].max 	= max(hist->bins[n].max, hist->bins[m].max);
 				// Delete bin[m]
-				for(unsigned l = m; l < hist->bins_count-1; ++l) {
-					hist->bins[l] = hist->bins[l+1];
-				}
-				hist->bins_count--;
-				hist->bins[hist->bins_count] = zerobin;
+				histogram_delete_bin(hist, m);
 				m--;	// Compare new bin in same place!
 			} // if within tolerance
 		} // for m
@@ -317,81 +365,47 @@ void pulse_analyzer(const pulse_data_t *data)
 
 	fprintf(stderr, "Guessing modulation: ");
 	struct protocol_state device = { .name = "Analyzer Device", 0};
+	histogram_sort_mean(&hist_pulses);	// Easier to work with sorted data
+	histogram_sort_mean(&hist_gaps);
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
-	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1 && hist_periods.bins_count > 1) {
+	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count == 1) {
+		fprintf(stderr, "Un-modulated signal. Maybe a preamble...\n");
+	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1) {
 		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
 		device.modulation	= OOK_PULSE_PPM_RAW;
-		// Find minimum gap
-		device.short_limit	= UINT_MAX;
-		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
-			device.short_limit = min(device.short_limit, hist_gaps.bins[n].max);
-		}
-		device.short_limit	+= 1;	// Add tolerance
-		// Find next lowest gap
-		device.long_limit	= UINT_MAX;
-		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
-			if (hist_gaps.bins[n].max > device.short_limit) {
-				device.long_limit = min(device.long_limit, hist_gaps.bins[n].max);
-			}
-		}
-		device.long_limit	+= 1;	// Add tolerance
-		// Find maximum gap
-		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
-			device.reset_limit = max(device.reset_limit, hist_gaps.bins[n].max);
-		}
-		device.reset_limit	+= 1;	// Add tolerance
+		device.short_limit	= (hist_gaps.bins[0].mean + hist_gaps.bins[1].mean) / 2;	// Set limit between two lowest gaps
+		device.long_limit	= hist_gaps.bins[1].max + 1;								// Set limit above next lower gap
+		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;			// Set limit above biggest gap
+	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1) {
+		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
+		device.modulation	= OOK_PULSE_PWM_RAW;
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;	// Set limit between two pulse widths
+		device.long_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
+		device.reset_limit	= device.long_limit;
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with fixed period\n");
 		device.modulation	= OOK_PULSE_PWM_RAW;
-		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;
-		device.long_limit	= max(hist_gaps.bins[0].max, hist_gaps.bins[1].max) + 1;	// Add tolerance
-		device.reset_limit	= device.long_limit;
-	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1 && hist_periods.bins_count == 2) {
-		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
-		device.modulation	= OOK_PULSE_PWM_RAW;
-		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;
-		device.long_limit	= hist_gaps.bins[0].max + 1;	// Add tolerance
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;	// Set limit between two pulse widths
+		device.long_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
 		device.reset_limit	= device.long_limit;
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
 		fprintf(stderr, "Manchester coding\n");
 		device.modulation	= OOK_PULSE_MANCHESTER_ZEROBIT;
-		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);
-		device.reset_limit	= max(hist_gaps.bins[0].max, hist_gaps.bins[1].max) + 1;	// Add tolerance
-	} else if(hist_pulses.bins_count == 3 && hist_gaps.bins_count == 3 && hist_periods.bins_count == 1) {
+		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);		// Assume shortest pulse is half period
+		device.long_limit	= 0; // Not used
+		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
+	} else if(hist_pulses.bins_count == 3) {
 		fprintf(stderr, "Pulse Width Modulation with startbit/delimiter\n");
 		device.modulation	= OOK_PULSE_PWM_TERNARY;
-		// Find minimum pulse
-		device.short_limit	= UINT_MAX;
-		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
-			device.short_limit = min(device.short_limit, hist_pulses.bins[n].max);
-		}
-		device.short_limit	+= 1;	// Add tolerance
-		// Find next lowest pulse
-		device.long_limit	= UINT_MAX;
-		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
-			if (hist_pulses.bins[n].max > device.short_limit) {	// Only if higher than lowest pulse
-				device.long_limit = min(device.long_limit, hist_pulses.bins[n].max);
-			}
-		}
-		device.long_limit	+= 1;	// Add tolerance
-		// Find maximum gap
-		for(unsigned n = 0; n < hist_gaps.bins_count; ++n) {
-			device.reset_limit = max(device.reset_limit, hist_gaps.bins[n].max);
-		}
-		device.reset_limit	+= 1;	// Add tolerance
-		// Find lowest pulse count index (is probably delimiter)
-		unsigned count = UINT_MAX;
-		unsigned lc_index = 0;
-		for(unsigned n = 0; n < hist_pulses.bins_count; ++n) {
-			if (hist_pulses.bins[n].count < count) {
-				count = hist_pulses.bins[n].count;
-				lc_index = n;
-			}
-		}
-		if		(hist_pulses.bins[lc_index].mean < device.short_limit)	{	device.demod_arg = 0; }
-		else if	(hist_pulses.bins[lc_index].mean < device.long_limit)	{	device.demod_arg = 1; }
-		else															{	device.demod_arg = 2; }
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;	// Set limit between two lowest pulse widths
+		device.long_limit	= (hist_pulses.bins[1].mean + hist_pulses.bins[2].mean) / 2;	// Set limit between two next lowest pulse widths
+		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max  +1;				// Set limit above biggest gap
+		// Re-sort to find lowest pulse count index (is probably delimiter)
+		histogram_sort_count(&hist_pulses);
+		if		(hist_pulses.bins[0].mean < device.short_limit)	{	device.demod_arg = 0; }	// Shortest pulse is delimiter
+		else if	(hist_pulses.bins[0].mean < device.long_limit)	{	device.demod_arg = 1; }	// Middle pulse is delimiter
+		else													{	device.demod_arg = 2; }	// Longest pulse is delimiter
 	} else {
 		fprintf(stderr, "No clue...\n");
 	}

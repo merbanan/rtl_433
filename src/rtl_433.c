@@ -682,7 +682,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 		while(package_type) {
 			package_type = detect_pulse_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
 			if (package_type == 1) {
-				if(debug_output) fprintf(stderr, "Detected OOK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						// Old style decoders
@@ -714,7 +714,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
 				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data);
 			} else if (package_type == 2) {
-				if(debug_output) fprintf(stderr, "Detected FSK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						// Old style decoders + OOK decoders
