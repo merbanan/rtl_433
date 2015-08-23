@@ -31,54 +31,65 @@ Running:
 
     rtl_433 -h
 
-    Usage: [-d <device index>] (default: 0)
-           [-g <gain>] (default: 0 for auto)
-           [-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
-           [-p <ppm_error>] (default: 0)
-           [-s <sample rate>] Set sample rate (default: 250000 Hz)
-           [-S] Force sync output (default: async)
-           [-R <device>] Listen only for the specified remote device (can be used multiple times)
-           [-l <level>] Change detection level used to determine pulses [0-32767] (default: 8000)
-           [-z <value>] Override short value in data decoder
-           [-x <value>] Override long value in data decoder
-           [-D] Print debug info on event (repeat for more info)
-           [-a] Analyze mode. Print a textual description of the signal
-           [-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
-                Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files
-           [-r <filename>] Read data from input file instead of a receiver
-           [-m <mode>] Data file mode for input / output file (default: 0)
-                0 = Raw I/Q samples (uint8, 2 channel)
-                1 = AM demodulated samples (int16)
-                2 = FM demodulated samples (int16) (experimental)
-                Note: If output file is specified, input will always be I/Q
-           [<filename>] Save data stream to output file (a '-' dumps samples to stdout)
+```
+Usage:	= Tuner options =
+	[-d <device index>] (default: 0)
+	[-g <gain>] (default: 0 for auto)
+	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
+	[-p <ppm_error>] (default: 0)
+	[-s <sample rate>] Set sample rate (default: 250000 Hz)
+	[-S] Force sync output (default: async)
+	= Demodulator options =
+	[-R <device>] Listen only for the specified remote device (can be used multiple times)
+	[-l <level>] Change detection level used to determine pulses [0-32767] (default: 8000)
+	[-z <value>] Override short value in data decoder
+	[-x <value>] Override long value in data decoder
+	= Analyze/Debug options =
+	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
+	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
+	[-D] Print debug info on event (repeat for more info)
+	= File I/O options =
+	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
+		 Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files
+	[-r <filename>] Read data from input file instead of a receiver
+	[-m <mode>] Data file mode for input / output file (default: 0)
+		 0 = Raw I/Q samples (uint8, 2 channel)
+		 1 = AM demodulated samples (int16)
+		 2 = FM demodulated samples (int16) (experimental)
+		 Note: If output file is specified, input will always be I/Q
+	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
-     Supported devices:
-           [01] Silvercrest Remote Control
-           [02] Rubicson Temperature Sensor
-           [03] Prologue Temperature Sensor
-           [04] Waveman Switch Transmitter
-           [05] Steffen Switch Transmitter
-           [06] ELV EM 1000
-           [07] ELV WS 2000
-           [08] LaCrosse TX Temperature / Humidity Sensor
-           [09] Acurite 5n1 Weather Station
-           [10] Acurite 896 Rain Gauge
-           [11] Acurite Temperature and Humidity Sensor
-           [12] Oregon Scientific Weather Sensor
-           [13] Mebus 433
-           [14] Intertechno 433
-           [15] KlikAanKlikUit Wireless Switch
-           [16] AlectoV1 Weather Sensor
-           [17] Cardin S466-TX2
-           [18] Fine Offset Electronics, WH-2 Sensor
-           [19] Nexus Temperature & Humidity Sensor
-           [20] Ambient Weather Temperature Sensor
-           [21] Calibeur RF-104 Sensor
-           [22] X10 RF
-           [23] DSC (Digital Security Controls)
-           [24] Brennstuhl RCS 2044
-           [25] GT-WT-02 Sensor
+Supported devices:
+	[01] Silvercrest Remote Control
+	[02] Rubicson Temperature Sensor
+	[03] Prologue Temperature Sensor
+	[04] Waveman Switch Transmitter
+	[05] Steffen Switch Transmitter
+	[06] ELV EM 1000
+	[07] ELV WS 2000
+	[08] LaCrosse TX Temperature / Humidity Sensor
+	[09] Acurite 5n1 Weather Station
+	[10] Acurite 896 Rain Gauge
+	[11] Acurite Temperature and Humidity Sensor
+	[12] Oregon Scientific Weather Sensor
+	[13] Mebus 433
+	[14] Intertechno 433
+	[15] KlikAanKlikUit Wireless Switch
+	[16] AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
+	[17] Cardin S466-TX2
+	[18] Fine Offset Electronics, WH-2 Sensor
+	[19] Nexus Temperature & Humidity Sensor
+	[20] Ambient Weather Temperature Sensor
+	[21] Calibeur RF-104 Sensor
+	[22] X10 RF
+	[23] DSC Security Contact
+	[24] Brennstuhl RCS 2044
+	[25] GT-WT-02 Sensor
+	[26] Danfoss CFR Thermostat
+	[27] Energy Count 3000 (868.3 MHz)
+	[28] Valeo Car Key
+	[29] Chuango Security Technology
+```
 
 
 Examples:
