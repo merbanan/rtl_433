@@ -96,6 +96,10 @@ static int
 ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
   bitrow_t *bb = bitbuffer->bb;
+
+  if(bitbuffer->bits_per_row[0] != 195)	// There seems to be 195 bits in a correct message
+    return 0;
+
   /* shift all the bits left 1 to align the fields */
   int i;
   for (i = 0; i < BITBUF_COLS-1; i++) {
