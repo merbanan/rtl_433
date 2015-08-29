@@ -336,7 +336,7 @@ void histogram_print(const histogram_t *hist) {
 #define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
-void pulse_analyzer(const pulse_data_t *data)
+void pulse_analyzer(pulse_data_t *data)
 {
 	// Generate pulse period data
 	pulse_data_t pulse_periods = {0};
@@ -418,6 +418,7 @@ void pulse_analyzer(const pulse_data_t *data)
 	if(device.modulation) {
 		fprintf(stderr, "Attempting demodulation... short_limit: %u, long_limit: %u, reset_limit: %u, demod_arg: %lu\n", 
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
+		data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 		switch(device.modulation) {
 //			case OOK_PULSE_PCM_RZ:
 //				pulse_demod_pcm(data, &device);
