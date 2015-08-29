@@ -145,6 +145,43 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 }
 
 
+int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device)
+{
+	int events = 0;
+	bitbuffer_t bits = {0};
+	PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
+	
+	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		// 'Short' 1 pulse
+		if (abs(pulses->pulse[n] - device->short_limit) < p->pulse_tolerance) {
+			bitbuffer_add_bit(&bits, 1);
+		// 'Long' 0 pulse
+		} else if (abs(pulses->pulse[n] - device->long_limit) < p->pulse_tolerance) {
+			bitbuffer_add_bit(&bits, 0);
+		// Sync pulse
+		} else if (p->pulse_sync_width && (abs(pulses->pulse[n] - p->pulse_sync_width) < p->pulse_tolerance)) {
+			bitbuffer_add_row(&bits);
+		} else {
+			return 0;	// Pulse outside specified timing
+		}
+
+		// End of Message?
+		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+			if (device->callback) {
+				events += device->callback(&bits);
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_pwm_precise(): %s \n", device->name);
+				bitbuffer_print(&bits);
+			}
+			bitbuffer_clear(&bits);
+		}
+	} // for
+	return events;
+}
+
+
 int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
