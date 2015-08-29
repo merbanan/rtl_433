@@ -50,8 +50,8 @@ typedef struct {
 		PD_STATE_FSK_F2	= 1		// Low pulse (gap)
 	} state_fsk;
 
-	int16_t fm_f1_est;			// Estimate for the F1 frequency for FSK
-	int16_t fm_delta_est;		// Estimate for the delta |F2-F1| frequency for FSK
+	int fm_f1_est;			// Estimate for the F1 frequency for FSK
+	int fm_delta_est;		// Estimate for the delta |F2-F1| frequency for FSK
 
 } pulse_state_t;
 static pulse_state_t pulse_state;
@@ -106,9 +106,9 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					}
 				} else {
 					// FSK Demodulation
-					int16_t fm_n = fm_data[s->data_counter];		// Get current FM sample
-					int16_t fm_delta = abs(fm_n - s->fm_f1_est);	// Get delta from base frequency estimate
-					int16_t fm_hyst = (s->fm_delta_est/2) / 8; 		// ±12% hysteresis on threshold
+					int fm_n = fm_data[s->data_counter];		// Get current FM sample
+					int fm_delta = abs(fm_n - s->fm_f1_est);	// Get delta from base frequency estimate
+					int fm_hyst = (s->fm_delta_est/2) / 8; 		// ±12% hysteresis on threshold
 					switch(s->state_fsk) {
 						case PD_STATE_FSK_F1:		// Pulse high at initial frequency
 							// Initial samples in OOK pulse?
@@ -131,6 +131,11 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 								fsk_pulses->num_pulses++;
 								s->fsk_pulse_length = 0;
 								s->state_fsk = PD_STATE_FSK_F1;
+								// EOP if too many pulses
+								if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
+									s->state = PD_STATE_IDLE;
+									return 2;	// FSK: End Of Package!!
+								}
 							// Still above threshold
 							} else {
 								s->fm_delta_est = s->fm_delta_est - s->fm_delta_est/FSK_EST_RATIO + fm_delta/FSK_EST_RATIO;	// Slow estimator
@@ -331,7 +336,7 @@ void histogram_print(const histogram_t *hist) {
 #define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
-void pulse_analyzer(const pulse_data_t *data)
+void pulse_analyzer(pulse_data_t *data)
 {
 	// Generate pulse period data
 	pulse_data_t pulse_periods = {0};
@@ -413,6 +418,7 @@ void pulse_analyzer(const pulse_data_t *data)
 	if(device.modulation) {
 		fprintf(stderr, "Attempting demodulation... short_limit: %u, long_limit: %u, reset_limit: %u, demod_arg: %lu\n", 
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
+		data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 		switch(device.modulation) {
 //			case OOK_PULSE_PCM_RZ:
 //				pulse_demod_pcm(data, &device);

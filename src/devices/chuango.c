@@ -16,6 +16,7 @@
  * (at your option) any later version.
  */
 #include "rtl_433.h"
+#include "pulse_demod.h"
 
 
 static int chuango_callback(bitbuffer_t *bitbuffer) {
@@ -60,13 +61,18 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 }
 
 
+PWM_Precise_Parameters pwm_precise_parameters = {
+	.pulse_tolerance	= 20,
+	.pulse_sync_width	= 0,	// No sync bit used
+};
+
 r_device chuango = {
 	.name			= "Chuango Security Technology",
-	.modulation		= OOK_PULSE_PWM_RAW,
-	.short_limit	= 284,	// Pulse: Short 142, Long 426 
-	.long_limit		= 450,	// Gaps:  Short 142, Long 424
+	.modulation		= OOK_PULSE_PWM_PRECISE,
+	.short_limit	= 142,	// Pulse: Short 142, Long 426 
+	.long_limit		= 426,	// Gaps:  Short 142, Long 424
 	.reset_limit	= 450,	// Intermessage Gap 4300 (individually for now)
 	.json_callback	= &chuango_callback,
 	.disabled		= 0,
-	.demod_arg		= 0,	// Do not remove startbit
+	.demod_arg		= (unsigned long)&pwm_precise_parameters,
 };

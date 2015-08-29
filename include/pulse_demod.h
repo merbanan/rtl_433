@@ -63,6 +63,28 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 
 
+/// Parameters for pulse_demod_pwm_precise
+typedef struct {
+	int	pulse_sync_width;		// Width of a sync pulse [samples] (optional, ignored if 0)
+	int	pulse_tolerance;		// Tolerance of pulse widths [samples]
+} PWM_Precise_Parameters;
+
+
+/// Demodulate a Pulse Width Modulation signal with precise timing
+///
+/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
+/// Gap between pulses may be of fixed size or variable (e.g. fixed period)
+/// - Short pulse will add a 1 bit
+/// - Long  pulse will add a 0 bit
+/// - Sync  pulse will add a new row to bitbuffer
+/// @param device->short_limit: Width in samples of '1' [samples]
+/// @param device->long_limit:  Width in samples of '0' [samples]
+/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->demod_arg: pointer to PWM_Precise_Parameters
+/// @return number of events processed
+int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 /// Demodulate a Pulse Width Modulation signal with three pulse widths
 ///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, middle and long high pulses.

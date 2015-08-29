@@ -52,7 +52,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 
 
 /// Analyze and print result
-void pulse_analyzer(const pulse_data_t *data);
+void pulse_analyzer(pulse_data_t *data);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */
