@@ -37,53 +37,27 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 		char *CMD;
 		switch(b[2] & 0x0F) {
 			case 0xF:	CMD = "0xF (?)";	break;
-			case 0xE:	CMD = "0xE (?)";	break; //tristate 1110 = 1? invalid code!
+			case 0xE:	CMD = "0xE (?)";	break;
 			case 0xD:	CMD = "0xD (Low Battery)";	break;
 			case 0xC:	CMD = "0xC (?)";	break;
 			case 0xB:	CMD = "0xB (24H Zone)";	break;
 			case 0xA:	CMD = "0xA (Single Delay Zone)";	break;
 			case 0x9:	CMD = "0x9 (?)";	break;
 			case 0x8:	CMD = "0x8 (Arm)";	break;
-			case 0x7:	CMD = "0x7 (Normal Zone)";	break; //tristate 0111 = F1, all floating tristate should be impossible in data part, only valid in address!
-			case 0x6:	CMD = "0x6 (Home Mode Zone)";	break; //tristate 0110 = F?, invalid code!
-			case 0x5:	CMD = "0x5 (?)";	break; //tristate 0101 = FF
-			case 0x4:	CMD = "0x4 (Home Mode)";	break; //tristate 0100 = F0
+			case 0x7:	CMD = "0x7 (Normal Zone)";	break;
+			case 0x6:	CMD = "0x6 (Home Mode Zone)";	break; 
+			case 0x5:	CMD = "0x5 (?)";	break; 
+			case 0x4:	CMD = "0x4 (Home Mode)";	break; 
 			case 0x3:	CMD = "0x3 (Tamper)";	break;
 			case 0x2:	CMD = "0x2 (Alarm!)";	break;
-			case 0x1:	CMD = "0x1 (Disarm)";	break; //tristate 0001 = 0F 
+			case 0x1:	CMD = "0x1 (Disarm)";	break; 
 			case 0x0:	CMD = "0x0 (Test)";	break;
 			default:	CMD = ""; break;
 		}
 
-		uint32_t ID_16b = b[0] << 8 | b[1];
-		unsigned char CMD_8b = b[2];
-
 		fprintf(stdout, "Chuango Security Technology\n");
 		fprintf(stdout, "ID 20bit = 0x%05X\n", ID);
 		fprintf(stdout, "CMD 4bit = %s\n", CMD);
-		fprintf(stdout, "ID 16bit = 0x%04X\n", ID_16b);
-		fprintf(stdout, "CMD 8bit = 0x%02X\n", CMD_8b);
-
-
-		// output tristate coding
-
-		uint32_t FULL = b[0] << 16 | b[1] << 8 | b[2];
-		char c;
-
-		fprintf(stdout, "TRISTATE = ");
-		for (signed char i=22; i>=0; i-=2) {
-
-			switch ((FULL>>i) & 0x03) {
-				case 0x00:	c = '0'; break;
-				case 0x01:	c = 'F'; break;
-				case 0x02:	c = '!'; break; // tristate 10 is invalid code!
-				case 0x03:	c = '1'; break;
-				default:	c = '?'; break; // not possible anyway
-			}
-
-			fputc(c, stdout);
-		}
-		fprintf(stdout, "\n");
 
 		return 1;
 	}
