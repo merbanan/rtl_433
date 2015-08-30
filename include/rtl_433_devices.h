@@ -32,7 +32,8 @@
 		DECL(danfoss_CFR) \
 		DECL(ec3k) \
 		DECL(valeo) \
-		DECL(chuango) 
+		DECL(chuango) \
+		DECL(generic_remote) 
 
 
 typedef struct {

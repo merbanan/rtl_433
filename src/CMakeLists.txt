@@ -49,6 +49,7 @@ add_executable(rtl_433
 	devices/ec3k.c
 	devices/valeo.c
 	devices/chuango.c
+	devices/generic_remote.c
 )
 
 target_link_libraries(rtl_433
