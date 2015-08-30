@@ -303,10 +303,14 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
 	   fprintf(stdout, "Weather Sensor WGR800   Wind Gauge  Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", gustWindspeed, quadrant);
 	   }
 	   return 1;
-    } else if (msg[1] == 0x89) { //  Owl CM160 Readings
-        float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
-        fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
-        fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+    } else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22)
+              || (msg[0] == 0x23) || (msg[0] == 0x24)) { //  Owl CM160 Readings
+        msg[0]=msg[0] & 0x0f;
+        if (validate_os_checksum(msg, 22) == 0) {
+          float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
+          fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
+          fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+        }
     } else if (msg[0] == 0x26) { //  Owl CM180 readings
         int k;
         for (k=0; k<BITBUF_COLS;k++) {  // Reverse nibbles
