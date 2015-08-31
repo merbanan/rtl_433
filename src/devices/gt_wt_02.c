@@ -18,6 +18,11 @@
  [01] {37} 34 8f 87 15 90 : 00110100 10001111 10000111 00010101 10010000
  code, BatOK,not-man-send, Channel1,-12,1°C, 10%
 
+ Humidity:
+  * the working range is 20-90 %
+  * if „LL“ in display view it sends 10 %
+  * if „HH“ in display view it sends 110%
+
  SENSOR: GT-WT-02 (ALDI Globaltronics..)
  TYP AAAAAAAA BCDDEFFF FFFFFFFF GGGGGGGx xxxxx
  BIT 76543210 76543210 76543210 76543210 76543
@@ -71,13 +76,30 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   if ((sum_nibbles & 0x3F) != checksum)
     return 0;
 
+  // humidity: see above the note about working range
+  const int humidity = (b[3]>>1);  // extract bits for humidity
+  char const * humidity_str;       // pointer passed to the final printf
+  char humidity_str_buf[4]={0};    // buffer for humidity als decimal string
+  if (10 == humidity)
+    humidity_str = "LL";           // below working range of 20%
+  else if (110 == humidity)
+    humidity_str = "HH";           // above working range of 90%
+  else if (20<= humidity && humidity <= 90)
+  {
+    snprintf(humidity_str_buf, 4, "%2d", humidity);
+    humidity_str = humidity_str_buf;
+  }
+  else
+    return 0;  // very unlikely, but the humidity is outside of valid range
+
+
   const int sensor_id      =  b[0];                    /* 8 x A */
   const int battery_low    = (b[1] >> 7 & 1);          /* 1 x B */
   const int button_pressed = (b[1] >> 6 & 1);          /* 1 x C */
   const int channel        = (b[1] >> 4 & 3);          /* 2 x D */
   const int negative_sign  = (b[1] >> 3 & 1);          /* 1 x E */
   const int temp           = (((b[1] & 15) << 8) | b[2]); /* E + 11 X G */
-  const int humidity = (b[3]>>1);
+
 
   float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
   {
@@ -88,9 +110,9 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
     local_time_str(time_now, time_str);
 
     /* @todo make temperature unit configurable, not printing both */
-    fprintf(stdout, "%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %2d%%\n"
-        , time_str, sensor_id, battery_low ? "low" : "OK", channel, button_pressed
-        , tempC, celsius2fahrenheit(tempC), humidity
+    fprintf(stdout, "%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %s%%\n"
+        , time_str, sensor_id, battery_low ? "low" : "OK", channel+1, button_pressed
+        , tempC, celsius2fahrenheit(tempC), humidity_str
         );
   }
   return 1;
@@ -141,7 +163,7 @@ int main()
 /*
  * Result:
 2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery OK, channel 0, button 0, temperature 23.7 C / 74.7 F, humidity 35%
-2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery low, channel 0, button 0, temperature -12.1 C / 10.2 F, humidity 10%
+2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery low, channel 0, button 0, temperature -12.1 C / 10.2 F, humidity LL%
 2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery OK, channel 0, button 0, temperature 22.2 C / 72.0 F, humidity 59%
 */
 
