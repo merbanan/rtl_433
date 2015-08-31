@@ -23,7 +23,7 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
     /* FIXME validate the received message better, figure out crc */
     if (bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
         bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
-        bb[8][0] == bb[9][0] && (bb[5][0] != 0 && bb[5][1] != 0 && bb[5][2] != 0)) {
+        bb[8][0] == bb[9][0] && (bb[5][0] != 0 && /*bb[5][1] != 0 &&*/ bb[5][2] != 0)) {
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
@@ -47,10 +47,10 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
 // timings based on samp_rate=1024000
 r_device rubicson = {
     .name           = "Rubicson Temperature Sensor",
-    .modulation     = OOK_PWM_D,
-    .short_limit    = 1744/4,
-    .long_limit     = 3500/4,
-    .reset_limit    = 5000/4,
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = (244+485)/2,      // Gaps:  Short 244, Long 485, Sync 1000
+    .long_limit     = (485+1000)/2,     // Pulse: 125 (Initial pulse in each package is 97)
+    .reset_limit    = 1200,             // Two initial pulses and a gap of 2280 is filtered out
     .json_callback  = &rubicson_callback,
     .disabled       = 0,
     .demod_arg      = 0,
