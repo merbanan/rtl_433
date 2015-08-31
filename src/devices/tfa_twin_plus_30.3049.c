@@ -45,13 +45,12 @@
  *
  */
 
-inline static int reverse_bits(int bits, int length)
+inline static uint8_t reverse_byte(uint8_t byte)
 {
-  int tmp = 0;
-  for(int i=0; i<length; i++)
-    tmp = (tmp << 1) | ((bits >> i) & 1);
-
-  return tmp;
+  byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
+  byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
+  byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
+  return byte;
 }
 
 static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffer)
@@ -64,21 +63,25 @@ static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffe
     return 0;
 
   //fprintf(stderr, "TFA-Twin-Plus-30.3049: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
+  // reverse bit order
+  const uint8_t rb[5] = { reverse_byte(b[0]), reverse_byte(b[1]), reverse_byte(b[2])
+                        , reverse_byte(b[3]), reverse_byte(b[4]) };
 
   const int sum_nibbles =
-        reverse_bits(b[0] >> 4,4) + reverse_bits(b[0] & 0xF,4)
-      + reverse_bits(b[1] >> 4,4) + reverse_bits(b[1] & 0xF,4)
-      + reverse_bits(b[2] >> 4,4) + reverse_bits(b[2] & 0xF,4)
-      + reverse_bits(b[3] >> 4,4) + reverse_bits(b[3] & 0xF,4);
+        (rb[0] >> 4) + (rb[0] & 0xF)
+      + (rb[1] >> 4) + (rb[1] & 0xF)
+      + (rb[2] >> 4) + (rb[2] & 0xF)
+      + (rb[3] >> 4) + (rb[3] & 0xF);
 
-  const int checksum = reverse_bits(b[4] >> 4,4);
+  const int checksum = rb[4] & 0x0F;  // just make sure the 10th nibble does not contain junk
   if (checksum != (sum_nibbles & 0xF))
     return 0; // wrong checksum
 
+  /* IIIICCII B???TTTT TTTTTSSS HHHHHHH1 XXXX */
   const int negative_sign = (b[2] & 7);
-  const int temp          = reverse_bits(((b[1] & 0xF) << 5) | ((b[2] >> 3) & 0x1F), 9);
-  const int humidity      = reverse_bits((b[3]>>1) & 0x7F, 7) - 28;
-  const int sensor_id     = reverse_bits(( ( b[0] & 0xF0) >> 2 ) | (b[0] & 0x03), 6);
+  const int temp          = ((rb[2]&0x1F) << 4) | (rb[1]>> 4);
+  const int humidity      = (rb[3] & 0x7F) - 28;
+  const int sensor_id     = (rb[0] & 0x0F) | ((rb[0] & 0xC0)>>2);
   const int battery_low   = b[1] >> 7;
   const int channel       = (b[0]>>2) & 3;
 
