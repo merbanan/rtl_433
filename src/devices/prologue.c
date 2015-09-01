@@ -18,10 +18,14 @@
  *
  * The sensor can be bought at Clas Ohlson
  */
+ 
 #include "rtl_433.h"
+#include "util.h"
 
 static int prologue_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
+    time_t time_now;
+    char time_str[LOCAL_TIME_BUFLEN];
     int rid;
 
     int16_t temp2;
@@ -35,17 +39,12 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
         /* Prologue sensor */
         temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
         temp2 = temp2 >> 4;
-        fprintf(stdout, "Sensor temperature event:\n");
-        fprintf(stdout, "protocol      = Prologue, %d bits\n",bitbuffer->bits_per_row[1]);
-        fprintf(stdout, "button        = %d\n",bb[1][1]&0x04?1:0);
-        fprintf(stdout, "battery       = %s\n",bb[1][1]&0x08?"Ok":"Low");
-        fprintf(stdout, "temp          = %s%d.%d\n",temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10));
-        fprintf(stdout, "humidity      = %d\n", ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4));
-        fprintf(stdout, "channel       = %d\n",(bb[1][1]&0x03)+1);
-        fprintf(stdout, "id            = %d\n",(bb[1][0]&0xF0)>>4);
-        rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;
-        fprintf(stdout, "rid           = %d\n", rid);
-        fprintf(stdout, "hrid          = %02x\n", rid);
+        time(&time_now);
+        local_time_str(time_now, time_str);
+        rid = ((bb[1][0]&0x0F)<<4)|(bb[1][1]&0xF0)>>4;        
+        fprintf(stdout,"%s Prologue Sensor %02x Channel %02x: Button %d:Temperature %s%d.%d C: Humidity %d %: Battery %s\n",
+        time_str,rid,(bb[1][1]&0x03)+1,bb[1][1]&0x04?1:0,temp2<0?"-":"",abs((int16_t)temp2/10),abs((int16_t)temp2%10),
+        ((bb[1][3]&0x0F)<<4)|(bb[1][4]>>4),bb[1][1]&0x08?"Ok":"Low");
         return 1;
     }
     return 0;
