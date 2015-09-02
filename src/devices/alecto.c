@@ -159,6 +159,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
             reverse8(bb[1][0]),
             (bb[1][0] & 0xc) >> 2
             );
+            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto            
             fprintf(stdout, ": Temperature %s%d.%d C", temp < 0 ? "-" : "", temperature_before_dec, temperature_after_dec);
             fprintf(stdout, ": Humidity %d %%", humidity);
             fprintf(stdout, ": Battery %s\n", bb[1][1]&0x80 ? "Low" : "OK");
