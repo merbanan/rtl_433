@@ -5,6 +5,7 @@
  * EV1527
  *
  * Copyright (C) 2015 Tommy Vestermark
+ * Copyright (C) 2015 nebman
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -66,7 +67,7 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 
 PWM_Precise_Parameters pwm_precise_parameters_generic = {
-	.pulse_tolerance	= 20,
+	.pulse_tolerance	= 50,
 	.pulse_sync_width	= 0,	// No sync bit used
 };
 
