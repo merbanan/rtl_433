@@ -196,7 +196,7 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 				break;
 
 			case 0x0E:
-				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
+				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f %%\n",
 					time_str, sensor_id, msg_value);
 				events++;
 				break;
