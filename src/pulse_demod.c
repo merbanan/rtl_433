@@ -276,3 +276,45 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 	}
 	return events;
 }
+
+int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device) {
+   unsigned int symbol[PD_MAX_PULSES * 2];
+   unsigned int n;
+
+   PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
+   bitbuffer_t bits = {0};
+   int events = 0;
+
+   for(n = 0; n < pulses->num_pulses; n++) {
+      symbol[n*2] = pulses->pulse[n];
+      symbol[(n*2)+1] = pulses->gap[n];
+   }
+
+   for(n = 0; n < pulses->num_pulses * 2; ++n) {
+      if ( abs(symbol[n] - device->short_limit) < p->pulse_tolerance) {
+         // Short - 1
+         bitbuffer_add_bit(&bits, 1);
+         if ( abs(symbol[++n] - device->short_limit) > p->pulse_tolerance) {
+/*            fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
+                    device->name);
+*/            return events;
+         }
+      } else if ( abs(symbol[n] - device->long_limit) < p->pulse_tolerance) {
+         // Long - 0
+         bitbuffer_add_bit(&bits, 0);
+      } else if (symbol[n] >= (unsigned int)device->reset_limit - p->pulse_tolerance ) {
+         //END message ?
+         if (device->callback) {
+            events += device->callback(&bits);
+         }
+         if(!device->callback || (debug_output && events > 0)) {
+            fprintf(stderr, "pulse_demod_clock_bits(): %s \n", device->name);
+            bitbuffer_print(&bits);
+         }
+         bitbuffer_clear(&bits);
+      }
+   }
+
+   return events;
+}
+

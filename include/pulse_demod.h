@@ -115,5 +115,6 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 /// @return number of events processed
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
 
+int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device);
 
 #endif /* INCLUDE_PULSE_DEMOD_H_ */
