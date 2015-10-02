@@ -1,5 +1,5 @@
 #include "rtl_433.h"
-#define MAX_BUF_SIZE		64
+extern int rubicson_crc_check(bitrow_t *bb);
 
 /* Currently this can decode the temperature and id from Nexus sensors
  *
@@ -21,13 +21,16 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     int16_t temp;
     int16_t humidity;
 
-    /* FIXME validate the received message better, figure out crc */
-    if ((bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
+    /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
+      * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
+      * So less then 0.5% which should be acceptable.
+      */
+    if (!rubicson_crc_check(bb) && ((bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
         bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
         bb[8][0] == bb[9][0] && (bb[5][0] != 0 && bb[5][1] != 0 && bb[5][2] != 0 && bb[12][1] != 0x80)) &&
         (bb[1][4] == bb[2][4] && bb[2][4] == bb[3][4] && bb[3][4] == bb[4][4] &&
         bb[4][4] == bb[5][4] && bb[5][4] == bb[6][4] && bb[6][4] == bb[7][4] && bb[7][4] == bb[8][4] &&
-        bb[8][4] == bb[9][4] && (bb[5][2] != 0 && bb[5][3] != 0 ) && ((bb[5][4]&0x0F) == 0))) {
+        bb[8][4] == bb[9][4] && (bb[5][2] != 0 && bb[5][3] != 0 ) && ((bb[5][4]&0x0F) == 0)))) {
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
@@ -38,8 +41,11 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         temperature_after_dec = abs(temp % 10);
         humidity = (int16_t)(((bb[5][3]&0x0F)<<4)|(bb[5][4]>>4));
 
-        fprintf(stdout, "Temp: %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
+        fprintf(stdout, "Sensor temperature event:\n");
+        fprintf(stdout, "protocol: Nexus\n");
+        fprintf(stdout, "Temp    : %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
         fprintf(stdout, "Humidity: %d\n", humidity);
+		fprintf(stdout, "%02x %02x %02x %02x %02x = %s%d.%d\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4],temp<0?"-":"",temperature_before_dec, temperature_after_dec);
 
         return 1;
     }
