@@ -52,6 +52,7 @@ add_executable(rtl_433
 	devices/generic_remote.c
 	devices/tfa_twin_plus_30.3049.c
 	devices/xc0348.c
+	devices/wt450.c
 )
 
 target_link_libraries(rtl_433
