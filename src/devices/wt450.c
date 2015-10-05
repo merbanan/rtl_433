@@ -42,14 +42,15 @@
  * every 60 seconds 3 packets.
  *
  * 1100 0001 | 0011 0011 | 1000 0011 | 1011 0011 | 0001
- * xxxx ssss | ccxx xhhh | hhhh tttt | tttt tttt | tttp
+ * xxxx ssss | ccxx bhhh | hhhh tttt | tttt tttt | tttp
  *
  * x - constant
  * s - House code
  * c - Channel
+ * b - battery indicator (0=>OK, 1=>LOW)
  * h - Humidity
  * t - Temperature
- * p - parity
+ * p - parity (xor of all bits should give 0)
  */
 
 #include "rtl_433.h"
@@ -64,7 +65,12 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
    uint8_t humidity = 0;
    uint8_t temp_whole = 0;
    uint8_t temp_fraction = 0;
+   uint8_t house_code = 0;
+   uint8_t channel = 0;
+   uint8_t battery_low = 0;
    float temp = 0;
+   uint8_t bit;
+   uint8_t parity = 0;
 
    time_t time_now;
    char time_str[LOCAL_TIME_BUFLEN];
@@ -87,6 +93,21 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
       return 0;
    }
 
+   for ( bit = 0; bit < bitbuffer->bits_per_row[0]; bit++ )
+   {
+      parity ^= b[bit/8] & (0x80 >> (bit % 8));
+   }
+
+   if ( !parity )
+   {
+      fprintf(stderr, "wt450_callback: wrong parity\n");
+      bitbuffer_print(bitbuffer);
+      return 0;
+   }
+
+   house_code = b[0] & 0xF;
+   channel = (b[1] >> 6) + 1;
+   battery_low = b[1] & 0x8;
    humidity = ((b[1] & 0x7) << 4) + (b[2] >> 4);
    temp_whole = (b[2] << 4) + (b[3] >> 4);
    temp_fraction = ((b[3] & 0xF) << 3) + (b[4] >> 5);
@@ -97,11 +118,11 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
    fprintf(stdout, "temp fraction[%u]\n", temp_fraction);
 */
    fprintf(stdout, "%s WT450 sensor: House Code %u, "
-                   "Channel %u, Temperature %.02f C, "
-                   "Humidity %u %%\n",
-           time_str, b[0]&0xF,
-           b[1]>>6, temp,
-           humidity);
+                   "Channel %u, Battery %s, "
+                   "Temperature %.02f C, Humidity %u %%\n",
+           time_str, house_code,
+           channel, (battery_low) ? "LOW" : "OK",
+           temp, humidity);
 
    return 1;
 }
