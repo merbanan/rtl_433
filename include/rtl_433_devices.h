@@ -12,7 +12,6 @@
 		DECL(elv_em1000) \
 		DECL(elv_ws2000) \
 		DECL(lacrossetx) \
-		DECL(lacrossews) \
 		DECL(acurite5n1) \
 		DECL(acurite_rain_gauge) \
 		DECL(acurite_th) \
@@ -37,7 +36,8 @@
 		DECL(generic_remote) \
 		DECL(tfa_twin_plus_303049) \
 		DECL(digitech_ws) \
-		DECL(wt450)
+		DECL(wt450) \
+		DECL(lacrossews) \
 
 
 typedef struct {

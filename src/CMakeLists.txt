@@ -30,7 +30,6 @@ add_executable(rtl_433
 	devices/steffen.c
 	devices/elv.c
 	devices/lacrosse.c
-	devices/lacrossews.c
 	devices/acurite.c
 	devices/oregon_scientific.c
 	devices/mebus.c
@@ -54,6 +53,7 @@ add_executable(rtl_433
 	devices/tfa_twin_plus_30.3049.c
 	devices/xc0348.c
 	devices/wt450.c
+	devices/lacrossews.c
 )
 
 target_link_libraries(rtl_433
