@@ -54,6 +54,7 @@ add_executable(rtl_433
 	devices/tfa_twin_plus_30.3049.c
 	devices/xc0348.c
 	devices/wt450.c
+	devices/esperanza_ews.c
 )
 
 target_link_libraries(rtl_433
