@@ -25,6 +25,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/gt_wt_02.c \
                        devices/intertechno.c \
                        devices/lacrosse.c \
+                       devices/lacrossews.c \
                        devices/mebus.c \
                        devices/newkaku.c \
                        devices/nexus.c \

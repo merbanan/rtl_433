@@ -30,6 +30,7 @@ add_executable(rtl_433
 	devices/steffen.c
 	devices/elv.c
 	devices/lacrosse.c
+	devices/lacrossews.c
 	devices/acurite.c
 	devices/oregon_scientific.c
 	devices/mebus.c
