@@ -37,7 +37,8 @@
 		DECL(generic_remote) \
 		DECL(tfa_twin_plus_303049) \
 		DECL(digitech_ws) \
-		DECL(wt450)
+		DECL(wt450) \
+		DECL(esperanza_ews)
 
 
 typedef struct {
