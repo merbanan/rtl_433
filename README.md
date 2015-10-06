@@ -92,6 +92,7 @@ Supported devices:
 	[30] Generic Remote SC226x EV1527
 	[31] TFA-Twin-Plus-30.3049
 	[32] WT450H/WT260H
+	[33] LaCrosse Weather Station WS-2310TWC
 ```
 
 

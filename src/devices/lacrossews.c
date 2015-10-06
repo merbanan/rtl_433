@@ -4,11 +4,11 @@
 	nibble
 	   0 - 0000
 	   1 - 1001
-	   2 - Type  ?DTT  Type 00=Temp, 01=Humidity, 10=Rain, 11=Wind, D=Dupe, ?=
+	   2 - Type  ?DTT  ?=0, D=?, TT=Type 00=Temp, 01=Humidity, 10=Rain, 11=Wind
 	   3 - ID High
 	   4 - ID Low
 	   5 - Packet Count - 1
-	   6 - Parity 1SSP SS=Update Time 00=8 seconds, 11=128 seconds, P=Parity of ? bits?
+	   6 - Parity 1UUP UU=Next Update, 00=8 seconds, 11=128 seconds, P=Parity of ? bits?
 	   7 - Value (Tens)
 	   8 - Value (Ones)
 	   9 - Value (Tenths)
@@ -108,7 +108,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 
 			local_time_str(time_now, time_str);
 
-#if 0
+#if 1
 			fprintf(stderr, "%1X%1X %1X %1X%1X %1X %1X %1X%1X%1X %1X%1X %1X   ",
 									msg_nybbles[0], msg_nybbles[1], msg_nybbles[2], msg_nybbles[3],
 									msg_nybbles[4], msg_nybbles[5], msg_nybbles[6], msg_nybbles[7],
@@ -147,7 +147,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			case 3:
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
-				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE && msg_nybbles[9] == 0x0)
+				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE)
 					printf("%s LaCrosse WS %02X: Wind Not Connected\n",
 						time_str, sensor_id);
 				else {
