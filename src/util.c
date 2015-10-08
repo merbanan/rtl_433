@@ -19,8 +19,8 @@ uint8_t reverse8(uint8_t x) {
 }
 
 
-uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial) {
-    uint8_t remainder = 0;	
+uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+    uint8_t remainder = init;	
     unsigned byte, bit;
 
     for (byte = 0; byte < nBytes; ++byte) {

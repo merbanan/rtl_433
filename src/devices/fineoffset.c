@@ -40,7 +40,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Validate package
     if (bitbuffer->bits_per_row[0] >= 48 &&         // Dont waste time on a short package
         bb[0][0] == 0xFF &&             // Preamble
-        bb[0][5] == crc8(&bb[0][1], 4, polynomial)	// CRC (excluding preamble)
+        bb[0][5] == crc8(&bb[0][1], 4, polynomial, 0)	// CRC (excluding preamble)
     ) 
     {
          // Nibble 3,4 contains ID

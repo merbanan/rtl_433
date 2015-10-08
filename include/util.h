@@ -31,8 +31,9 @@ uint8_t reverse8(uint8_t x);
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
 /// @param polynomial: byte is from x^7 to x^0 (x^8 is implicitly one)
+/// @param init: starting crc value
 /// @return CRC value
-uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial);
+uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
 /// "Little-endian" Cyclic Redundancy Check CRC-8 LE
 ///
@@ -40,7 +41,7 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial);
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
-/// @param polynomial: byte is from x^7 to x^0 (x^8 is implicitly one)
+/// @param polynomial: CRC polynomial
 /// @param init: starting crc value
 /// @return CRC value
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
