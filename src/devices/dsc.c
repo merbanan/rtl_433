@@ -56,10 +56,22 @@
  *  CRC (cr)    = 8 bits, CRC, type/polynom to be determined
  *
  * The ESN in practice is 24 bits, The type + remaining 5 nybbles, 
+ *
+ * The CRC is 8 bit, "little endian", Polynomial 0xf5, Inital value 0x3d
+ *
+ * CRC algorithm found with CRC reveng (reveng.sourceforge.net)
+ *
+ * CRC Model Parameters:
+ * width=8  poly=0xf5  init=0x3d  refin=true  refout=true  xorout=0x00  check=0xfd  name=(none)
+ *
  */
 
 #include "rtl_433.h"
 #include "util.h"
+
+#define DSC_CT_MSGLEN		5	
+#define DSC_CT_CRC_POLY		0xf5
+#define DSC_CT_CRC_INIT		0x3d
 
 
 static int DSC_callback(bitbuffer_t *bitbuffer) {
@@ -134,13 +146,15 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 
 	local_time_str(0, time_str);
 
-	// TODO - figure out CRC, I haven't been able to find an
-        // 8 bit CRC and polynomial that seems to match
+	if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) == 0) {
+	    printf("%s DSC Contact ESN: %06X, Status: %02X, CRC: %02X\n",
+		   time_str, esn, status, crc);
 
-	printf("%s DSC Contact ESN: %06X, Status: %02X, CRC: %02X\n",
-	       time_str, esn, status, crc);
-
-	valid_cnt++; // Have a valid packet.
+	    valid_cnt++; // Have a valid packet.
+	} else {
+	    fprintf(stderr,"%s DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
+		   time_str, esn, status, crc);
+	}
     }
 
     if (valid_cnt) {

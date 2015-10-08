@@ -11,6 +11,14 @@
 #include "util.h"
 #include <stdio.h>
 
+uint8_t reverse8(uint8_t x) {
+    x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
+    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
+    return x;
+}
+
+
 uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial) {
     uint8_t remainder = 0;	
     unsigned byte, bit;
@@ -29,6 +37,29 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial) {
     return remainder;
 }
 
+
+uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+    uint8_t crc = init, i;	
+    unsigned byte;
+    uint8_t bit;
+
+
+    for (byte = 0; byte < nBytes; ++byte) {
+	for (i = 0x01; i & 0xff; i <<= 1) {
+	    bit = (crc & 0x80) == 0x80;	    
+	    if (message[byte] & i) {
+		bit = !bit;
+	    }
+	    crc <<= 1;
+	    if (bit) {
+		crc ^= polynomial;
+	    }
+	}
+	crc &= 0xff;
+    }
+
+    return reverse8(crc);
+}
 
 void local_time_str(time_t time_secs, char *buf) {
 	time_t etime;
