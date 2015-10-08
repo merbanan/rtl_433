@@ -43,7 +43,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 
 	// Validate package (row [0] is empty due to sync bit)
 	if ((bitbuffer->bits_per_row[1] == 21)			// Dont waste time on a long/short package
-	 && (crc8(bb[1], 3, 0x80) != 0)		// It should be odd parity
+	 && (crc8(bb[1], 3, 0x80, 0) != 0)		// It should be odd parity
 	 && (memcmp(bb[1], bb[2], 3) == 0)	// We want at least two messages in a row
 	)
 	{
