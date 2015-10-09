@@ -1010,12 +1010,17 @@ int main(int argc, char **argv) {
     if (in_filename) {
         int i = 0;
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
+	if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
+	    in_file = stdin;
+	    in_filename = "<stdin>";
+	} else {
+	    in_file = fopen(in_filename, "r");
+	    if (!in_file) {
+		fprintf(stderr, "Opening file: %s failed!\n", in_filename);
+		goto out;
+	    }
+	}
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
-        in_file = fopen(in_filename, "r");
-        if (!in_file) {
-            fprintf(stderr, "Opening file: %s failed!\n", in_filename);
-            goto out;
-        }
         while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
