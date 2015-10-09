@@ -38,6 +38,7 @@ static rtlsdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
+int quiet_mode = 0;
 
 int num_r_devices = 0;
 
@@ -90,6 +91,7 @@ void usage(r_device *devices) {
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
+	    "\t[-q] Quiet, suppress messages non-data related messages\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files\n"
@@ -149,7 +151,9 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
-    fprintf(stderr, "Registering protocol \"%s\"\n", t_dev->name);
+    if (!quiet_mode) {
+	fprintf(stderr, "Registering protocol \"%s\"\n", t_dev->name);
+    }
 
     if (demod->r_dev_num > MAX_PROTOCOLS)
         fprintf(stderr, "Max number of protocols reached %d\n", MAX_PROTOCOLS);
@@ -817,7 +821,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -887,6 +891,9 @@ int main(int argc, char **argv) {
 
                 devices[i - 1].disabled = 0;
                 break;
+ 	    case 'q':
+	        quiet_mode = 1;
+		break;
             default:
                 usage(devices);
                 break;
@@ -929,15 +936,17 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++) {
-	    rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-	    fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-	}
-	fprintf(stderr, "\n");
+	if (!quiet_mode) {
+	    fprintf(stderr, "Found %d device(s):\n", device_count);
+	    for (i = 0; i < device_count; i++) {
+		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+	    }
+	    fprintf(stderr, "\n");
 
-	fprintf(stderr, "Using device %d: %s\n",
-		dev_index, rtlsdr_get_device_name(dev_index));
+	    fprintf(stderr, "Using device %d: %s\n",
+		    dev_index, rtlsdr_get_device_name(dev_index));
+	}
 
 	r = rtlsdr_open(&dev, dev_index);
 	if (r < 0) {
@@ -1020,7 +1029,9 @@ int main(int argc, char **argv) {
 		goto out;
 	    }
 	}
-        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
+	if (!quiet_mode) {
+	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
+	}
         while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
@@ -1032,7 +1043,9 @@ int main(int argc, char **argv) {
 
         //Always classify a signal at the end of the file
         classify_signal();
-        fprintf(stderr, "Test mode file issued %d packets\n", i);
+	if (!quiet_mode) {
+	    fprintf(stderr, "Test mode file issued %d packets\n", i);
+	}
         exit(0);
     }
 
@@ -1042,7 +1055,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
     if (sync_mode) {
-        fprintf(stderr, "Reading samples in sync mode...\n");
+	fprintf(stderr, "Reading samples in sync mode...\n");
         while (!do_exit) {
             r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
             if (r < 0) {
@@ -1075,7 +1088,9 @@ int main(int argc, char **argv) {
         } else {
             time(&rawtime_old);
         }
-        fprintf(stderr, "Reading samples in async mode...\n");
+	if (!quiet_mode) {
+	    fprintf(stderr, "Reading samples in async mode...\n");
+	}
         while (!do_exit) {
             /* Set the frequency */
             r = rtlsdr_set_center_freq(dev, frequency[frequency_current]);
