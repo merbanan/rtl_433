@@ -86,7 +86,6 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 	uint8_t ws_id, msg_type, sensor_id, msg_data, msg_unknown, msg_checksum;
 	int msg_value_bcd, msg_value_bcd2, msg_value_bin;
 	float temp_c, temp_f, wind_dir, wind_spd, rain_mm, rain_in;
-	char *wg;
 	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 
@@ -108,13 +107,12 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 
 			local_time_str(time_now, time_str);
 
-#if 0
-			fprintf(stderr, "%1X%1X %1X %1X%1X %1X %1X %1X%1X%1X %1X%1X %1X   ",
+			if (debug_output) 
+				fprintf(stderr, "%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X   ",
 									msg_nybbles[0], msg_nybbles[1], msg_nybbles[2], msg_nybbles[3],
 									msg_nybbles[4], msg_nybbles[5], msg_nybbles[6], msg_nybbles[7],
 									msg_nybbles[8], msg_nybbles[9], msg_nybbles[10], msg_nybbles[11],
 									msg_nybbles[12]);
-#endif
 
 			switch (msg_type) {
 			// Temperature
@@ -147,18 +145,14 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			case 3:
 			// Gust
 			case 7:
-				if(msg_type == 3)
-					wg = "Wind";
-				else
-					wg = "Gust";
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
 				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE)
 					printf("%s LaCrosse WS %02X-%02X: %s Not Connected\n",
-						time_str, ws_id, sensor_id, wg);
+						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
 				else {
 					printf("%s LaCrosse WS %02X-%02X: %s Dir %3.1f  Speed %3.1f m/s / %3.1f mph\n",
-						time_str, ws_id, sensor_id, wg, wind_dir, wind_spd, wind_spd * 2.236936292054);
+						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust", wind_dir, wind_spd, wind_spd * 2.236936292054);
 					events++;
 				}
 				break;
