@@ -35,9 +35,9 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 		uint32_t ID_16b = b[0] << 8 | b[1];
 		unsigned char CMD_8b = b[2];
 
-		fprintf(stdout, "Generic remote keypress / sensor\n");
-		fprintf(stdout, "ID 16bit = 0x%04X\n", ID_16b);
-		fprintf(stdout, "CMD 8bit = 0x%02X\n", CMD_8b);
+		fprintf(stdout, "Generic remote keypress / sensor ");
+		fprintf(stdout, "ID 16bit = 0x%04X ", ID_16b);
+		fprintf(stdout, "CMD 8bit = 0x%02X ", CMD_8b);
 
 
 		// output tristate coding

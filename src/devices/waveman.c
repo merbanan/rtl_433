@@ -33,11 +33,11 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
             nb[i] |= ((b[i]&0x03)==0x03) ? 0x00 : 0x08;
         }
 
-        fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Waveman Switch Transmitter\n");
-        fprintf(stdout, "id      = %c\n", 'A'+nb[0]);
-        fprintf(stdout, "channel = %d\n", (nb[1]>>2)+1);
-        fprintf(stdout, "button  = %d\n", (nb[1]&3)+1);
+        fprintf(stdout, "Remote button event: ");
+        fprintf(stdout, "model   = Waveman Switch Transmitter ");
+        fprintf(stdout, "id      = %c ", 'A'+nb[0]);
+        fprintf(stdout, "channel = %d ", (nb[1]>>2)+1);
+        fprintf(stdout, "button  = %d ", (nb[1]&3)+1);
         fprintf(stdout, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
 
         return 1;
