@@ -20,8 +20,8 @@
 
 /// Demodulate a Pulse Code Modulation signal
 ///
-/// Demodulate a Pulse Code Modulation (PPM) signal where bit width 
-/// is fixed and each bit starts with a pulse or not. It may be either 
+/// Demodulate a Pulse Code Modulation (PCM) signal where bit width
+/// is fixed and each bit starts with a pulse or not. It may be either
 /// Return-to-Zero (RZ) encoding, where pulses are shorter than bit width
 /// or Non-Return-to-Zero (NRZ) encoding, where pulses are equal to bit width
 /// The presence of a pulse is:
@@ -115,6 +115,24 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 /// @return number of events processed
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
 
+
+/// No level shift within the clock cycle translates to a logic 0
+/// One level shift within the clock cycle translates to a logic 1
+/// Each clock cycle begins with a level shift
+///
+/// +---+   +---+   +-------+       +  high
+/// |   |   |   |   |       |       |
+/// |   |   |   |   |       |       |
+/// +   +---+   +---+       +-------+  low
+///
+/// ^       ^       ^       ^       ^  clock cycle
+/// |   1   |   1   |   0   |   0   |  translates as
+///
+/// @param device->short_limit: Width in samples of '1' [samples]
+/// @param device->long_limit:  Width in samples of '0' [samples]
+/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->demod_arg: pointer to PWM_Precise_Parameters (only pulse_tolerance used)
+/// @return number of events processed
 int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device);
 
 #endif /* INCLUDE_PULSE_DEMOD_H_ */
