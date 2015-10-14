@@ -37,6 +37,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/valeo.c \
                        devices/waveman.c \
+                       devices/wt450.c \
                        devices/x10_rf.c \
                        devices/esperanza_ews.c \
                        devices/xc0348.c
