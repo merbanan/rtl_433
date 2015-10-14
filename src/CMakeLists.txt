@@ -18,7 +18,7 @@
 ########################################################################
 add_executable(rtl_433 
 	rtl_433.c
-    baseband.c
+	baseband.c
 	bitbuffer.c
 	pulse_demod.c
 	pulse_detect.c
@@ -55,6 +55,7 @@ add_executable(rtl_433
 	devices/wt450.c
 	devices/lacrossews.c
 	devices/esperanza_ews.c
+	devices/efergy_e2_classic.c
 )
 
 target_link_libraries(rtl_433

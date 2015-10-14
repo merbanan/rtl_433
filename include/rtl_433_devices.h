@@ -38,7 +38,8 @@
 		DECL(digitech_ws) \
 		DECL(wt450) \
 		DECL(lacrossews) \
-		DECL(esperanza_ews)
+		DECL(esperanza_ews) \
+		DECL(efergy_e2_classic)
 
 
 typedef struct {
