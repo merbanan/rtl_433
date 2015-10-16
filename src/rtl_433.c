@@ -46,8 +46,11 @@ struct dm_state {
     FILE *out_file;
     int32_t level_limit;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];	// AM demodulated signal (for OOK decoding)
-    int16_t fm_buf[MAXIMAL_BUF_LENGTH];	// FM demodulated signal (for FSK decoding)
-    uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
+    union {
+        // These buffers aren't used at the same time, so let's use a union to save some memory
+        int16_t fm_buf[MAXIMAL_BUF_LENGTH];	// FM demodulated signal (for FSK decoding)
+        uint16_t temp_buf[MAXIMAL_BUF_LENGTH];	// Temporary buffer (to be optimized out..)
+    };
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
@@ -640,13 +643,14 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 			demod->sg_index = 0;
 	}
 
+	// AM demodulation
+	envelope_detect(iq_buf, demod->temp_buf, len/2);
+	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
+
 	// FM demodulation
 	if (demod->enable_FM_demod) {
 		baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
 	}
-	// AM demodulation
-	envelope_detect(iq_buf, demod->temp_buf, len/2);
-	baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
 
 	// Handle special input formats
 	if(!demod->out_file) {				// If output file is specified we always assume I/Q input
