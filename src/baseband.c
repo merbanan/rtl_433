@@ -71,8 +71,8 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
     }
 
     /* Save last samples */
-    memcpy(state->x, &x_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
-    memcpy(state->y, &y_buf[len - 1 - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
+    memcpy(state->x, &x_buf[len - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
+    memcpy(state->y, &y_buf[len - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
     //fprintf(stderr, "%d\n", y_buf[0]);
 }
 
