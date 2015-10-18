@@ -678,6 +678,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				case OOK_PULSE_MANCHESTER_ZEROBIT:
 				case OOK_PULSE_CLOCK_BITS:
 				case FSK_PULSE_PCM:
+				case FSK_PULSE_PWM_RAW:
 					break;
 				default:
 					fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
@@ -718,6 +719,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 							break;
 						// FSK decoders
 						case FSK_PULSE_PCM:
+						case FSK_PULSE_PWM_RAW:
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
@@ -742,6 +744,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 							break;
 						case FSK_PULSE_PCM:
 							pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							break;
+						case FSK_PULSE_PWM_RAW:
+							pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);

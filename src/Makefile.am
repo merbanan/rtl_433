@@ -19,7 +19,9 @@ rtl_433_SOURCES      = baseband.c \
                        devices/danfoss.c \
                        devices/dsc.c \
                        devices/ec3k.c \
+                       devices/efergy_e2_classic.c \
                        devices/elv.c \
+                       devices/esperanza_ews.c \
                        devices/fineoffset.c \
                        devices/generic_remote.c \
                        devices/gt_wt_02.c \
@@ -39,7 +41,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/waveman.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/esperanza_ews.c \
                        devices/xc0348.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

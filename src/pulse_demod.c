@@ -77,7 +77,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
 	bitbuffer_t bits = {0};
-	
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short gap
 		if(pulses->gap[n] < (unsigned)device->short_limit) {
@@ -124,13 +124,14 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 			}
 		}
 		// End of Message?
-		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+                if (n == pulses->num_pulses - 1                           // No more pulses (FSK)
+		    || pulses->gap[n] > (unsigned)device->reset_limit) {  // Long silence (OOK)
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
+				fprintf(stderr, "pulse_demod_pwm(): %s\n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
@@ -150,7 +151,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 	int events = 0;
 	bitbuffer_t bits = {0};
 	PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
-	
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// 'Short' 1 pulse
 		if (abs(pulses->pulse[n] - device->short_limit) < p->pulse_tolerance) {
@@ -187,7 +188,7 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 	int events = 0;
 	bitbuffer_t bits = {0};
 	unsigned sync_bit = device->demod_arg;
-	
+
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short pulse
 		if (pulses->pulse[n] < (unsigned)device->short_limit) {
@@ -235,7 +236,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 	int events = 0;
 	unsigned time_since_last = 0;
 	bitbuffer_t bits = {0};
-	
+
 	// First rising edge is allways counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
 	bitbuffer_add_bit(&bits, 0);
 
@@ -249,7 +250,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		} else {
 			time_since_last += pulses->pulse[n];
 		}
-		
+
 		// End of Message?
 		if(pulses->gap[n] > (unsigned)device->reset_limit) {
 			int newevents = 0;
@@ -317,4 +318,3 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
 
    return events;
 }
-
