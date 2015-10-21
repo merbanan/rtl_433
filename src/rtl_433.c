@@ -830,7 +830,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:c:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
