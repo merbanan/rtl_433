@@ -803,7 +803,6 @@ int main(int argc, char **argv) {
     int sync_mode = 0;
     int ppm_error = 0;
     struct dm_state* demod;
-    uint8_t *buffer;
     uint32_t dev_index = 0;
     int frequency_current = 0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
@@ -935,8 +934,6 @@ int main(int argc, char **argv) {
         out_block_size = DEFAULT_BUF_LENGTH;
     }
 
-    buffer = malloc(out_block_size * sizeof (uint8_t));
-
     if (!in_filename) {
 	device_count = rtlsdr_get_device_count();
 	if (!device_count) {
@@ -1065,6 +1062,8 @@ int main(int argc, char **argv) {
 
     if (sync_mode) {
 	fprintf(stderr, "Reading samples in sync mode...\n");
+	uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
+
         while (!do_exit) {
             r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
             if (r < 0) {
@@ -1090,6 +1089,8 @@ int main(int argc, char **argv) {
             if (bytes_to_read > 0)
                 bytes_to_read -= n_read;
         }
+
+	free(buffer);
     } else {
         if (frequencies == 0) {
             frequency[0] = DEFAULT_FREQUENCY;
@@ -1129,11 +1130,9 @@ int main(int argc, char **argv) {
     if (demod->signal_grabber)
         free(demod->sg_buf);
 
-    if (demod)
-        free(demod);
+    free(demod);
 
     rtlsdr_close(dev);
-    free(buffer);
 out:
     return r >= 0 ? r : -r;
 }
