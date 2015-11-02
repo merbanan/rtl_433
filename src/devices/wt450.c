@@ -82,28 +82,34 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
    if ( bitbuffer->bits_per_row[0] != 36 )
    {
       if (debug_output) 
-         fprintf(stderr, "wt450_callback: wrong size of bit per row %d\n",
-              bitbuffer->bits_per_row[0] );
+         fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
+                 time_str, bitbuffer->bits_per_row[0] );
 
       return 0;
    }
 
    if ( b[0]>>4 != 0xC )
    {
-      fprintf(stderr, "wt450_callback: wrong preamble\n");
-      bitbuffer_print(bitbuffer);
+      if (debug_output)
+      {
+         fprintf(stderr, "%s wt450_callback: wrong preamble\n", time_str);
+         bitbuffer_print(bitbuffer);
+      }
       return 0;
    }
 
    for ( bit = 0; bit < bitbuffer->bits_per_row[0]; bit++ )
    {
-      parity ^= b[bit/8] & (0x80 >> (bit % 8));
+      parity ^= (b[bit/8] & (0x80 >> (bit % 8))) ? 1 : 0;
    }
 
-   if ( !parity )
+   if ( parity )
    {
-      fprintf(stderr, "wt450_callback: wrong parity\n");
-      bitbuffer_print(bitbuffer);
+      if (debug_output)
+      {
+         fprintf(stderr, "%s wt450_callback: wrong parity\n", time_str);
+         bitbuffer_print(bitbuffer);
+      }
       return 0;
    }
 
