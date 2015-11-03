@@ -39,7 +39,9 @@
 		DECL(wt450) \
 		DECL(lacrossews) \
 		DECL(esperanza_ews) \
-		DECL(efergy_e2_classic)
+		DECL(efergy_e2_classic) \
+		DECL(kw9015b) \
+		DECL(rfwireless)
 
 
 typedef struct {
