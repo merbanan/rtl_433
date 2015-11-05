@@ -41,7 +41,7 @@
 		DECL(esperanza_ews) \
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
-		DECL(rfwireless)
+		DECL(generic_temperature_sensor)
 
 
 typedef struct {

@@ -41,6 +41,8 @@ rtl_433_SOURCES      = baseband.c \
                        devices/waveman.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/xc0348.c
+                       devices/xc0348.c \
+                       devices/inovalley-kw9015b.c \
+                       devices/generic_temperature_sensor.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

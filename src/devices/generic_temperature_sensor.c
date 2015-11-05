@@ -1,4 +1,4 @@
-/* Unknown Temperature weather station
+/* Generic temperature sensor 1
  *
  * Copyright (C) 2015 Alexandre Coffignal
  * This program is free software; you can redistribute it and/or modify
@@ -8,7 +8,7 @@
  */
 #include "rtl_433.h"
 
-static int rfwireless_callback(bitbuffer_t *bitbuffer) {
+static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	int i,device,battery;
@@ -34,7 +34,7 @@ static int rfwireless_callback(bitbuffer_t *bitbuffer) {
 	fprintf(stdout, "Device        = %d\n", device);
 	fprintf(stdout, "Battery?      = %02X\n", battery);
 	fprintf(stdout, "Temp          = %f\n",fTemp);
-	fprintf(stdout, "Model         = RF Wireless Transmitter\n");
+	fprintf(stdout, "Model         = Generic temperature sensor 1\n");
 	fprintf(stdout, "Received Data = %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2]);
 
 
@@ -42,14 +42,14 @@ static int rfwireless_callback(bitbuffer_t *bitbuffer) {
 	return 1;
 }
 
-r_device rfwireless = {
+r_device generic_temperature_sensor = {
 
-  .name          = "RF Wireless Temp Transmitter",
+  .name          = "Generic temperature sensor 1",
   .modulation    = OOK_PWM_D,
   .short_limit   = 875,
   .long_limit    = 1200,
   .reset_limit   = 3000,
-  .json_callback = &rfwireless_callback,
+  .json_callback = &generic_temperature_sensor_callback,
   .disabled      = 0,
   .demod_arg     = 0,
 };
