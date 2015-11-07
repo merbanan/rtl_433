@@ -96,6 +96,9 @@ Supported devices:
 	[34] LaCrosse WS-2310 Weather Station
 	[35] Esperanza EWS
 	[36] Efergy e2 classic
+	[37] Inovalley kw9015b rain and Temperature weather station
+	[38] Generic temperature sensor 1
+	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
 ```
 
 
