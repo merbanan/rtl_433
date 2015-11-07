@@ -44,8 +44,6 @@
 		DECL(generic_temperature_sensor) \
 		DECL(acurite_txr)
 
-
-
 typedef struct {
 	char name[256];
 	unsigned int modulation;
