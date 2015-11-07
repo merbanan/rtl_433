@@ -61,6 +61,14 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
     return reverse8(crc);
 }
 
+
+int byteParity(uint8_t inByte){
+    inByte ^= inByte >> 4;
+    inByte &= 0xf;
+    return (0x6996 >> inByte) & 1;
+}
+
+
 void local_time_str(time_t time_secs, char *buf) {
 	time_t etime;
 	struct tm *tm_info;
@@ -79,6 +87,23 @@ void local_time_str(time_t time_secs, char *buf) {
 float celsius2fahrenheit(float celsius)
 {
   return celsius * 9 / 5 + 32;
+}
+
+
+float fahrenheit2celsius(float fahrenheit)
+{
+    return (fahrenheit - 32) / 1.8;
+}
+
+
+float kmph2mph(float kmph)
+{
+    return kmph / 1.609344;
+}
+
+float mph2kmph(float mph)
+{
+    return mph * 1.609344;
 }
 
 
