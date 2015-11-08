@@ -47,6 +47,12 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
 
+/// compute bit parity of a single byte
+///
+/// @param inByte: single byte to check
+/// @return 1 odd parity, 0 even parity
+int byteParity(uint8_t inByte);
+
 // buffer to hold localized timestamp YYYY-MM-DD HH:MM:SS
 #define LOCAL_TIME_BUFLEN	32
 
@@ -62,5 +68,26 @@ void local_time_str(time_t time_secs, char *buf);
  * @return temperature value in Fahrenheit
  */
 float celsius2fahrenheit(float celsius);
+
+
+/// Convert Celsious to Fahrenheit
+///
+/// @param celsius: temperature in Celsius
+/// @return temperature value in Fahrenheit
+float fahrenheit2celsius(float fahrenheit);
+
+
+/// Convert Kilometers per hour (kph) to Miles per hour (mph)
+///
+/// @param kph: speed in Kilometers per hour
+/// @return speed in miles per hour
+float kmph2mph(float kph);
+
+/// Convert Miles per hour (mph) to Kilometers per hour (kmph)
+///
+/// @param mph: speed in Kilometers per hour
+/// @return speed in kilometers per hour
+float mph2kmph(float kph);
+
 
 #endif /* INCLUDE_UTIL_H_ */
