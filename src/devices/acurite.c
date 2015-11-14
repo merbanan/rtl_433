@@ -9,6 +9,7 @@
  * - 896 Rain gauge, Model: 00896
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
  * - "Th" temperature and humidity sensor (Model(s) ??)
+ * - Acurite 986 Refrigerator / Freezer Thermometer
  */
 
 
@@ -484,6 +485,117 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 }
 
 
+/*
+ * Acurite 00896 Refrigerator / Freezer Thermometer 
+ *
+ * Includes two sensors and a display, labeled 1 and 2,
+ * by default 1 - Refridgerator, 2 - Freezer
+ *
+ * PPM, 5 bytes, sent twice, no gap between repeaters
+ * start/sync pulses two short, with short gaps, followed by
+ * 4 long pulse/gaps.
+ * 
+ * @todo, the 2 short sync pulses get confused as data.
+ * 
+ * Data Format - 5 bytes, sent LSB first, reversed
+ *
+ * TT II II SS CC
+ *
+ * T - Temperature in Fahrenehit, 2's complement, integer
+ * I - 16 bit sensor ID.
+ * S - status/sensor type, 0x01 = Sensor 2
+ * C = Check/CRC?
+ *
+ * @todo
+ * - needs new PPM demod that can separate out the short 
+ *   start/sync pulses which confuse things and cause
+ *   one data bit to be lost in the check value.
+ * - Figure out check/CRC
+ * - low battery detection
+ * - verify 2's complement
+ *
+ */
+
+static int acurite_986_callback(bitbuffer_t *bitbuf) {
+    int browlen;
+    uint8_t *bb, sensor_num, status, check, tempf;
+    float tempc;
+    time_t time_now;
+    uint16_t sensor_id;
+    char sensor_type;
+
+    time(&time_now);
+    local_time_str(time_now, time_str);
+
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_986\n");
+        bitbuffer_print(bitbuf);
+    }
+
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
+	bb = bitbuf->bb[brow];
+
+	if (debug_output > 1)
+	    fprintf(stderr,"acurite_986: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
+
+	if (bitbuf->bits_per_row[brow] < 39 ||
+	    bitbuf->bits_per_row[brow] > 43 ) {
+	    if (debug_output > 1 && bitbuf->bits_per_row[brow] > 16)
+		fprintf(stderr,"acurite_986: skipping wrong len\n");
+	    continue;
+	}
+
+	// XXX FIXME DELETE - temporary false positive work around
+	if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
+	    (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
+	    continue;
+	}
+	
+
+	// There will be 1 extra false zero bit added by the demod.
+	// this forces an extra zero byte to be added
+	if (bb[browlen - 1] == 0)
+	    browlen--;
+
+	if (debug_output > 1) {
+	    fprintf(stderr,"Acurite 986 Raw bytes: ");
+	    for (uint8_t i = 0; i < browlen; i++)
+		fprintf(stderr," %02x",bb[i]);
+	    fprintf(stderr,"\n");
+	}
+
+	if (debug_output > 0) {
+	    fprintf(stderr,"Acurite 986 reversed: ");
+	    for (uint8_t i = 0; i < browlen; i++)
+		fprintf(stderr," %02x",reverse8(bb[i]));
+	    fprintf(stderr,"\n");
+	}
+
+	tempf = reverse8(bb[0]);
+	tempc = fahrenheit2celsius(tempf);
+	sensor_id = (reverse8(bb[1]) << 8) + reverse8(bb[2]);
+	status = reverse8(bb[3]);
+	sensor_num = (status & 0x01) + 1;
+	status = status >> 1;
+	sensor_type = sensor_num == 2 ? 'F' : 'R';
+	check = reverse8(bb[4]);
+
+	if (status != 0) {
+	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
+		    time_str, sensor_id, sensor_num, sensor_type, status);
+	}
+
+	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
+	       time_str, sensor_id, sensor_num, sensor_type,
+	       tempc, tempf);
+
+
+    }
+
+    return 0;
+}
+
 r_device acurite5n1 = {
     .name           = "Acurite 5n1 Weather Station",
     .modulation     = OOK_PWM_P,
@@ -555,3 +667,26 @@ r_device acurite_txr = {
 //    .disabled       = 0,
 //    .demod_arg      = (unsigned long)&pwm_precise_param_acurite_txr,
 //};
+
+
+/*
+ * Acurite 00986 Refrigerator / Freezer Thermometer
+ *
+ * Temperature only, Pulse Position
+ *
+ * 4 x 400 sample (150 uS) start/sync pulses
+ * 40 (42) 50 (20 uS)  (sample data pulses)
+ * short gap approx 130 samples
+ * long gap approx 220 samples
+ *
+ */
+r_device acurite_986 = {
+    .name           = "Acurite 986 Refrigerator / Freezer Thermometer",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 180,   // Threshold between short and long gap
+    .long_limit     = 320,
+    .reset_limit    = 1000,
+    .json_callback  = &acurite_986_callback,
+    .disabled       = 0,
+    .demod_arg      = 2,
+};

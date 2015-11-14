@@ -42,7 +42,8 @@
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
 		DECL(generic_temperature_sensor) \
-		DECL(acurite_txr)
+		DECL(acurite_txr) \
+		DECL(acurite_986)
 
 typedef struct {
 	char name[256];
