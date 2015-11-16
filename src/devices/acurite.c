@@ -110,6 +110,7 @@ const float acurite_5n1_winddirections[] =
 
 static int acurite_raincounter = 0;
 
+// FIXME< this is a checksum, not a CRC
 static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
     int i;
@@ -486,7 +487,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 
 /*
- * Acurite 00896 Refrigerator / Freezer Thermometer 
+ * Acurite 00986 Refrigerator / Freezer Thermometer
  *
  * Includes two sensors and a display, labeled 1 and 2,
  * by default 1 - Refridgerator, 2 - Freezer
@@ -494,34 +495,35 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  * PPM, 5 bytes, sent twice, no gap between repeaters
  * start/sync pulses two short, with short gaps, followed by
  * 4 long pulse/gaps.
- * 
+ *
  * @todo, the 2 short sync pulses get confused as data.
- * 
+ *
  * Data Format - 5 bytes, sent LSB first, reversed
  *
  * TT II II SS CC
  *
- * T - Temperature in Fahrenehit, 2's complement, integer
+ * T - Temperature in Fahrenehit, integer, MSB = sign.
+ *     Encoding is "Sign and magnitude"
  * I - 16 bit sensor ID.
  * S - status/sensor type, 0x01 = Sensor 2
- * C = Check/CRC?
+ * C = CRC (CRC-8 poly 0x07, little-endian)
  *
  * @todo
- * - needs new PPM demod that can separate out the short 
+ * - needs new PPM demod that can separate out the short
  *   start/sync pulses which confuse things and cause
  *   one data bit to be lost in the check value.
- * - Figure out check/CRC
  * - low battery detection
- * - verify 2's complement
  *
  */
 
 static int acurite_986_callback(bitbuffer_t *bitbuf) {
     int browlen;
-    uint8_t *bb, sensor_num, status, check, tempf;
+    uint8_t *bb, sensor_num, status, crc, crcc;
+    uint8_t br[8];
+    int8_t tempf; // Raw Temp is 8 bit signed Fahrenheit
     float tempc;
     time_t time_now;
-    uint16_t sensor_id;
+    uint16_t sensor_id, valid_cnt = 0;
     char sensor_type;
 
     time(&time_now);
@@ -546,52 +548,67 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	    continue;
 	}
 
-	// XXX FIXME DELETE - temporary false positive work around
+	// XXX FIXME DELETE - temporary false positive avoidance
 	if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
 	    (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
 	    continue;
 	}
-	
 
 	// There will be 1 extra false zero bit added by the demod.
 	// this forces an extra zero byte to be added
-	if (bb[browlen - 1] == 0)
+	if (browlen > 5 && bb[browlen - 1] == 0)
 	    browlen--;
 
-	if (debug_output > 1) {
-	    fprintf(stderr,"Acurite 986 Raw bytes: ");
-	    for (uint8_t i = 0; i < browlen; i++)
-		fprintf(stderr," %02x",bb[i]);
-	    fprintf(stderr,"\n");
-	}
+	// Reverse the bits
+	for (uint8_t i = 0; i < browlen; i++)
+	    br[i] = reverse8(bb[i]);
 
 	if (debug_output > 0) {
 	    fprintf(stderr,"Acurite 986 reversed: ");
 	    for (uint8_t i = 0; i < browlen; i++)
-		fprintf(stderr," %02x",reverse8(bb[i]));
+		fprintf(stderr," %02x",br[i]);
 	    fprintf(stderr,"\n");
 	}
 
-	tempf = reverse8(bb[0]);
+	tempf = br[0];
 	tempc = fahrenheit2celsius(tempf);
-	sensor_id = (reverse8(bb[1]) << 8) + reverse8(bb[2]);
-	status = reverse8(bb[3]);
+	sensor_id = (br[1] << 8) + br[2];
+	status = br[3];
 	sensor_num = (status & 0x01) + 1;
 	status = status >> 1;
 	sensor_type = sensor_num == 2 ? 'F' : 'R';
-	check = reverse8(bb[4]);
+	crc = br[4];
+
+	if ((crcc = crc8le(br, 5, 0x07, 0)) != 0) {
+	    // XXX make debug
+	    fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
+		    time_str, crc8le(br, 4, 0x07, 0));
+	    for (uint8_t i = 0; i < browlen; i++)
+		fprintf(stderr," %02x", br[i]);
+	    fprintf(stderr,"\n");
+	    continue;
+	}
 
 	if (status != 0) {
 	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
 		    time_str, sensor_id, sensor_num, sensor_type, status);
 	}
 
+	if (tempf & 0x80) {
+	    tempf = (tempf & 0x7f) * -1;
+	}
+
+
 	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
 	       time_str, sensor_id, sensor_num, sensor_type,
 	       tempc, tempf);
 
+	valid_cnt++;
 
     }
+
+    if (valid_cnt)
+	return 1;
 
     return 0;
 }
