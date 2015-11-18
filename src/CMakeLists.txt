@@ -23,6 +23,7 @@ add_executable(rtl_433
 	pulse_demod.c
 	pulse_detect.c
 	util.c
+	data.c
 	devices/silvercrest.c
 	devices/rubicson.c
 	devices/prologue.c
@@ -59,6 +60,8 @@ add_executable(rtl_433
 	devices/inovalley-kw9015b.c
 	devices/generic_temperature_sensor.c
 )
+
+add_library(data data.c)
 
 target_link_libraries(rtl_433
 	${LIBRTLSDR_LIBRARIES}
