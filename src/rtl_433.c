@@ -20,11 +20,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdbool.h>
+
 #include "rtl-sdr.h"
 #include "rtl_433.h"
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
+#include "data.h"
 
 
 static int do_exit = 0;
@@ -104,6 +107,7 @@ void usage(r_device *devices) {
             "\t\t 1 = AM demodulated samples (int16)\n"
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
+            "\t[-j] Produce decoded output in JSON format. Not yet supported by all drivers.\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -176,6 +180,15 @@ static unsigned int signal_end = 0;
 static unsigned int signal_pulse_data[4000][3] = {
     {0}};
 static unsigned int signal_pulse_counter = 0;
+static _Bool use_json = false;
+
+/* handles incoming structured data by dumping it */
+void data_acquired_handler(data_t *data)
+{
+	data_print(data, stdout, use_json ? &data_json_printer : &data_kv_printer);
+	fflush(stdout);
+	data_free(data);
+}
 
 static void classify_signal() {
     unsigned int i, k, max = 0, min = 1000000, t;
@@ -829,7 +842,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:j")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -901,6 +914,9 @@ int main(int argc, char **argv) {
                 break;
  	    case 'q':
 	        quiet_mode = 1;
+		break;
+	    case 'j':
+	        use_json = true;
 		break;
             default:
                 usage(devices);

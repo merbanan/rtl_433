@@ -11,6 +11,7 @@
 
 #include "rtl_433_devices.h"
 #include "bitbuffer.h"
+#include "data.h"
 
 #ifndef _WIN32
 #include <unistd.h>
@@ -76,5 +77,7 @@ struct protocol_state {
     char *name;
     unsigned long demod_arg;
 };
+
+void data_acquired_handler(data_t *data);
 
 #endif /* INCLUDE_RTL_433_H_ */
