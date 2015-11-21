@@ -27,7 +27,8 @@ typedef enum {
 	DATA_DOUBLE,		/* pointer to a double is stored */
 	DATA_STRING,		/* pointer to a string is stored */
 	DATA_ARRAY,		/* pointer to an array of values is stored */
-	DATA_COUNT		/* invalid */
+	DATA_COUNT,		/* invalid */
+	DATA_FORMAT		/* indicates the following value is formatted */
 } data_type_t;
 
 typedef struct data_array {
@@ -40,6 +41,7 @@ typedef struct data {
 	char	    *key;
 	char	    *pretty_key; /* the name used for displaying data to user in with a nicer name */
 	data_type_t  type;
+	char        *format; /* if not null, contains special formatting string */
 	void	    *value;
 	struct data* next; /* chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
@@ -79,7 +81,7 @@ extern struct data_printer data_kv_printer;
 
     @return A constructed data_t* object or NULL if there was a memory allocation error.
 */
-data_t *data_make(const char *key, const char *pretty_key, data_type_t type, ...);
+data_t *data_make(const char *key, const char *pretty_key, ...);
 
 /** Constructs an array from given data of the given uniform type.
 
