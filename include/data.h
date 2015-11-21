@@ -44,6 +44,10 @@ typedef struct data {
 	struct data* next; /* chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
 
+struct data_printer;
+extern struct data_printer data_json_printer;
+extern struct data_printer data_kv_printer;
+
 /** Constructs a structured data object.
 
     Example:
@@ -90,7 +94,7 @@ data_array_t *data_array(int num_values, data_type_t type, void *ptr);
 void data_array_free(data_array_t *array);
 
 /** Prints a structured data object as JSON to the given stream */
-void data_print_json(data_t *data, FILE* file);
+void data_print(data_t *data, FILE* file, struct data_printer *printer);
 
 /** Releases a structure object */
 void data_free(data_t *data);

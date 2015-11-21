@@ -112,10 +112,21 @@ static void print_json_string(data_printer_context_t *printer_ctx, const char *d
 static void print_json_double(data_printer_context_t *printer_ctx, double data, FILE *file);
 static void print_json_int(data_printer_context_t *printer_ctx, int data, FILE *file);
 
-static data_printer_t json_printer = {
+static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, FILE *file);
+static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, FILE *file);
+
+data_printer_t data_json_printer = {
 	print_data   : print_json_data,
 	print_array  : print_json_array,
 	print_string : print_json_string,
+	print_double : print_json_double,
+	print_int    : print_json_int
+};
+
+data_printer_t data_kv_printer = {
+	print_data   : print_kv_data,
+	print_array  : print_json_array,
+	print_string : print_kv_string,
 	print_double : print_json_double,
 	print_int    : print_json_int
 };
@@ -266,14 +277,10 @@ void data_free(data_t *data) {
 	}
 }
 
-void data_print(data_t* data, FILE *file, data_printer_context_t *printer_ctx)
+void data_print(data_t* data, FILE *file, data_printer_t *printer)
 {
-	printer_ctx->printer->print_data(printer_ctx, data, file);
-}
-
-void data_print_json(data_t* data, FILE* file) {
 	data_printer_context_t ctx = {
-		printer : &json_printer
+		printer : printer
 	};
 	ctx.printer->print_data(&ctx, data, file);
 	fputc('\n', file);
@@ -324,15 +331,15 @@ static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *
 
 static void print_json_data(data_printer_context_t *printer_ctx, data_t *data, FILE *file)
 {
-	_Bool prev = false;
+	_Bool separator = false;
 	fputc('{', file);
 	while (data) {
-		if (prev)
+		if (separator)
 			fprintf(file, ", ");
 		print_json_string(printer_ctx, data->key, file);
 		fprintf(file, " : ");
 		print_value(printer_ctx, file, data->type, data->value);
-		prev = true;
+		separator = true;
 		data = data->next;
 	}
 	fputc('}', file);
@@ -357,4 +364,40 @@ static void print_json_double(data_printer_context_t *printer_ctx, double data, 
 static void print_json_int(data_printer_context_t *printer_ctx, int data, FILE *file)
 {
 	fprintf(file, "%d", data);
+}
+
+/* Key-Value printer */
+static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, FILE *file)
+{
+	_Bool separator = false;
+	_Bool was_labeled = false;
+	_Bool written_title = false;
+	while (data) {
+		_Bool labeled = data->pretty_key[0];
+		/* put a : between the first non-labeled and labeled */
+		if (separator) {
+			if (labeled && !was_labeled && !written_title) {
+				fprintf(file, ": ");
+				written_title = true;
+				separator = false;
+			} else {
+				if (was_labeled)
+					fprintf(file, ", ");
+				else
+					fprintf(file, " ");
+			}
+		}
+		fprintf(file, "%s", data->pretty_key);
+		if (labeled)
+			fputc(' ', file);
+		print_value(printer_ctx, file, data->type, data->value);
+		separator = true;
+		was_labeled = labeled;
+		data = data->next;
+	}
+}
+
+static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, FILE *file)
+{
+	fprintf(file, "%s", data);
 }
