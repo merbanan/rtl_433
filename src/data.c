@@ -115,6 +115,9 @@ static void print_json_int(data_printer_context_t *printer_ctx, int data, char *
 
 static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
 static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
+static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
+static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
+
 
 data_printer_t data_json_printer = {
 	print_data   : print_json_data,
@@ -128,8 +131,8 @@ data_printer_t data_kv_printer = {
 	print_data   : print_kv_data,
 	print_array  : print_json_array,
 	print_string : print_kv_string,
-	print_double : print_json_double,
-	print_int    : print_json_int
+	print_double : print_kv_double,
+	print_int    : print_kv_int
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -373,12 +376,12 @@ static void print_json_string(data_printer_context_t *printer_ctx, const char *s
 
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, format ? format : "%f", data);
+	fprintf(file, "%f", data);
 }
 
 static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
 {
-	fprintf(file, format ? format : "%d", data);
+	fprintf(file, "%d", data);
 }
 
 /* Key-Value printer */
@@ -411,6 +414,17 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 		data = data->next;
 	}
 }
+
+static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+{
+	fprintf(file, format ? format : "%f", data);
+}
+
+static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+{
+	fprintf(file, format ? format : "%d", data);
+}
+
 
 static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file)
 {
