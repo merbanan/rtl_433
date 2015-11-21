@@ -185,7 +185,7 @@ static _Bool use_json = false;
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
-	data_print(data, stdout, use_json ? &data_json_printer : &data_kv_printer);
+	data_print(data, stdout, use_json ? &data_json_printer : &data_kv_printer, NULL);
 	fflush(stdout);
 	data_free(data);
 }

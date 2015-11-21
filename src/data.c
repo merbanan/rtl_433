@@ -67,6 +67,7 @@ typedef struct data_printer {
 
 typedef struct data_printer_context {
 	data_printer_t *printer;
+	void           *aux;
 } data_printer_context_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
@@ -289,10 +290,11 @@ void data_free(data_t *data) {
 	}
 }
 
-void data_print(data_t* data, FILE *file, data_printer_t *printer)
+void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 {
 	data_printer_context_t ctx = {
-		printer : printer
+		printer : printer,
+		aux     : aux
 	};
 	ctx.printer->print_data(&ctx, data, NULL, file);
 	fputc('\n', file);

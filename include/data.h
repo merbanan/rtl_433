@@ -96,7 +96,7 @@ data_array_t *data_array(int num_values, data_type_t type, void *ptr);
 void data_array_free(data_array_t *array);
 
 /** Prints a structured data object as JSON to the given stream */
-void data_print(data_t *data, FILE* file, struct data_printer *printer);
+void data_print(data_t *data, FILE* file, struct data_printer *printer, void *aux);
 
 /** Releases a structure object */
 void data_free(data_t *data);

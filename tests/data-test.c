@@ -34,7 +34,7 @@ int main()
 				 					 data_array(2, DATA_INT, (int[2]){5, 5}) }),
 				 "data"       , "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
 				 NULL);
-	data_print(data, stdout, &data_json_printer); fprintf(stdout, "\n");
-	data_print(data, stdout, &data_kv_printer);
+	data_print(data, stdout, &data_json_printer, NULL); fprintf(stdout, "\n");
+	data_print(data, stdout, &data_kv_printer, NULL);
 	data_free(data);
 }
