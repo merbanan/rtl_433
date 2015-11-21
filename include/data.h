@@ -49,6 +49,7 @@ typedef struct data {
 struct data_printer;
 extern struct data_printer data_json_printer;
 extern struct data_printer data_kv_printer;
+extern struct data_printer data_csv_printer;
 
 /** Constructs a structured data object.
 
@@ -100,5 +101,19 @@ void data_print(data_t *data, FILE* file, struct data_printer *printer, void *au
 
 /** Releases a structure object */
 void data_free(data_t *data);
+
+/** Construct auxiliary data for CSV construction
+
+    @param fields the list of fields to accept and expect. Array is copied, but the actual
+                  strings not. The list may contain duplicates and they are eliminated.
+    @param num_fields number of fields
+
+    @return The auxiliary data to pass along with data_csv_printer to data_print.
+            You must release this object with data_csv_free once you're done with it.
+*/
+void *data_csv_init(const char **fields, int num_fields);
+
+/** Destructs auxiliary CSV data. */
+void data_csv_free(void *csv);
 
 #endif // INCLUDE_DATA_H_

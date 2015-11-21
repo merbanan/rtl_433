@@ -118,6 +118,14 @@ static void print_kv_string(data_printer_context_t *printer_ctx, const char *dat
 static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
 static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
 
+typedef struct {
+	const char **fields;
+	int          data_recursion;
+	const char*  separator;
+} data_csv_aux_t;
+
+static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
+static void print_csv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 
 data_printer_t data_json_printer = {
 	print_data   : print_json_data,
@@ -133,6 +141,14 @@ data_printer_t data_kv_printer = {
 	print_string : print_kv_string,
 	print_double : print_kv_double,
 	print_int    : print_kv_int
+};
+
+data_printer_t data_csv_printer = {
+	print_data   : print_csv_data,
+	print_array  : print_json_array,
+	print_string : print_csv_string,
+	print_double : print_json_double,
+	print_int    : print_json_int
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -429,4 +445,113 @@ static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *fo
 static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file)
 {
 	fprintf(file, format ? format : "%s", data);
+}
+
+/* CSV printer; doesn't really support recursive data objects yes */
+static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+{
+	data_csv_aux_t *csv = printer_ctx->aux;
+	const char **fields = csv->fields;
+	int i;
+
+	if (csv->data_recursion)
+		return;
+
+	++csv->data_recursion;
+	for (i = 0; fields[i]; ++i) {
+		const char *key = fields[i];
+		data_t *iter, *found = NULL;
+		if (i) fprintf(file, "%s", csv->separator);
+		iter = data;
+		for (iter = data, found; !found && iter; iter = iter->next)
+			if (strcmp(iter->key, key) == 0)
+				found = iter;
+
+		if (found)
+			print_value(printer_ctx, file, found->type, found->value, found->format);
+	}
+	--csv->data_recursion;
+}
+
+static void print_csv_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+{
+	data_csv_aux_t *csv = printer_ctx->aux;
+	while (*str) {
+		if (strncmp(str,  csv->separator, strlen(csv->separator)) == 0)
+			fputc('\\', file);
+		fputc(*str, file);
+		++str;
+	}
+}
+
+static int compare_strings(char** a, char** b)
+{
+    return strcmp(*a, *b);
+}
+
+void *data_csv_init(const char **fields, int num_fields)
+{
+	data_csv_aux_t *csv = calloc(1, sizeof(data_csv_aux_t));
+	int csv_fields = 0;
+	int i, j;
+	const char **allowed = NULL;
+	if (!csv)
+		goto alloc_error;
+
+	csv->separator = ",";
+
+	allowed = calloc(num_fields, sizeof(const char*));
+	memcpy(allowed, fields, sizeof(const char*) * num_fields);
+
+	qsort(allowed, num_fields, sizeof(char*), (void*) compare_strings);
+
+	// overwrite duplicates
+	i = 0;
+	j = 0;
+	while (j < num_fields) {
+		while (j > 0 && j < num_fields &&
+		       strcmp(allowed[j - 1], allowed[j]) == 0)
+			++j;
+
+		if (j < num_fields) {
+			allowed[i] = allowed[j];
+			++i;
+			++j;
+		}
+	}
+	num_fields = i;
+
+	csv->fields = calloc(num_fields + 1, sizeof(const char**));
+	if (!csv->fields)
+		goto alloc_error;
+
+	for (i = 0; i < num_fields; ++i) {
+		if (bsearch(&fields[i], allowed, num_fields, sizeof(const char*),
+			    (void*) compare_strings)) {
+			csv->fields[csv_fields] = fields[i];
+			++csv_fields;
+		}
+	}
+	csv->fields[csv_fields] = NULL;
+	free(allowed);
+
+	// Output the CSV header
+	for (i = 0; csv->fields[i]; ++i) {
+		printf("%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+	}
+	printf("\n");
+	return csv;
+
+ alloc_error:
+	free(allowed);
+	if (csv) free(csv->fields);
+	free(csv);
+	return NULL;
+}
+
+void data_csv_free(void *aux)
+{
+	data_csv_aux_t *csv = aux;
+	free(csv->fields);
+	free(csv);
 }
