@@ -504,8 +504,11 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  *
  * T - Temperature in Fahrenehit, integer, MSB = sign.
  *     Encoding is "Sign and magnitude"
- * I - 16 bit sensor ID.
- * S - status/sensor type, 0x01 = Sensor 2
+ * I - 16 bit sensor ID
+ *     changes at each power up
+ * S - status/sensor type
+ *     0x01 = Sensor 2
+ *     0x02 = low battery
  * C = CRC (CRC-8 poly 0x07, little-endian)
  *
  * @todo
@@ -548,9 +551,10 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	    continue;
 	}
 
-	// XXX FIXME DELETE - temporary false positive avoidance
+	// Reduce false positives
+	// may eliminate these with a beter PPM (precise?) demod.
 	if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
-	    (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
+	   (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
 	    continue;
 	}
 
@@ -571,25 +575,33 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	}
 
 	tempf = br[0];
-	tempc = fahrenheit2celsius(tempf);
 	sensor_id = (br[1] << 8) + br[2];
 	status = br[3];
 	sensor_num = (status & 0x01) + 1;
 	status = status >> 1;
+	// By default Sensor 1 is the Freezer, 2 Refrigerator
 	sensor_type = sensor_num == 2 ? 'F' : 'R';
 	crc = br[4];
 
 	if ((crcc = crc8le(br, 5, 0x07, 0)) != 0) {
 	    // XXX make debug
-	    fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
-		    time_str, crc8le(br, 4, 0x07, 0));
-	    for (uint8_t i = 0; i < browlen; i++)
-		fprintf(stderr," %02x", br[i]);
-	    fprintf(stderr,"\n");
+	    if (debug_output) {
+		fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
+			time_str, crc8le(br, 4, 0x07, 0));
+		for (uint8_t i = 0; i < browlen; i++)
+		    fprintf(stderr," %02x", br[i]);
+		fprintf(stderr,"\n");
+	    }
 	    continue;
 	}
 
-	if (status != 0) {
+	if ((status & 1) == 1) {
+	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
+		    time_str, sensor_id, sensor_num, sensor_type, status);
+	}
+
+	// catch any status bits that haven't been decoded yet
+	if ((status & 0xFE) != 0) {
 	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
 		    time_str, sensor_id, sensor_num, sensor_type, status);
 	}
@@ -597,6 +609,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	if (tempf & 0x80) {
 	    tempf = (tempf & 0x7f) * -1;
 	}
+	tempc = fahrenheit2celsius(tempf);
 
 
 	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
