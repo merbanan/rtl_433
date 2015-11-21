@@ -141,6 +141,17 @@ PWM_Precise_Parameters clock_bits_parameters_generic = {
    .pulse_sync_width	= 0,	// No sync bit used
 };
 
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"channel",
+	"battery",
+	"temperature_C",
+	"humidity",
+	NULL
+};
+
 r_device wt450 = {
    .name          = "WT450",
    .modulation    = OOK_PULSE_CLOCK_BITS,
@@ -150,4 +161,5 @@ r_device wt450 = {
    .json_callback = &wt450_callback,
    .disabled      = 0,
    .demod_arg     = (unsigned long)&clock_bits_parameters_generic,
+   .fields        = output_fields
 };
