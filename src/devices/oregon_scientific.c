@@ -216,6 +216,16 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 			fprintf(stdout, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
 		}
 		return 1;
+	} else if ((sensor_id >= 0x0cc3) && (sensor_id <= 0xfcc3)) {
+		if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0) {
+			int channel = ((msg[2] >> 4)&0x0f);
+			int battery_low = (msg[3] >> 2 & 0x01);
+			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
+			float temp_c = get_os_temperature(msg, sensor_id);
+			fprintf(stdout, "Thermo Hygro RF Clock Sensor RTGN318, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
+			fprintf(stdout, "Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, sensor_id));
+		}
+		return 1;
 	} else if (num_valid_v2_bits > 16) {
 fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
 fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n\n");
