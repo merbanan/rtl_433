@@ -22,14 +22,16 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 		}
 	}
 
-	//AAAAAAAA BBBBCCCC CCCCCCCC
+	//AAAAAAAA BBCCCCCC CCCCCCCC
 	//AAAAAAAA     : ID
 	//BBBB         : battery ?
-	//CCCCCCCCCCCC : Temp * 40
+	//CCCCCCCCCCCC : Temp
 
 	device=(bb[1][0]);
 	battery=(bb[1][1]&0xF0)>>4;
-	fTemp=(float)((bb[1][1]&0x0f)*256+bb[1][2])/40.0;
+
+
+	fTemp=(float)((signed short)(((bb[1][1]&0x3f)*256+bb[1][2])<<2))/160.0;
 	fprintf(stdout, "\nSensor        = Temperature event\n");
 	fprintf(stdout, "Device        = %d\n", device);
 	fprintf(stdout, "Battery?      = %02X\n", battery);
