@@ -30,7 +30,7 @@ static int kw9015b_callback(bitbuffer_t *bitbuffer) {
 			//D : checksum
 
 			device=reverse8(bb[i][0]);
-			fTemp=(float)(reverse8(bb[i][2])*256+reverse8(bb[i][1]))/160;
+			fTemp=(float)((signed short)(reverse8(bb[i][2])*256+reverse8(bb[i][1]))) /160;
 			iRain = reverse8(bb[i][3]);
 			chksum=((reverse8(bb[i][0])>>4)+(reverse8(bb[i][0])&0x0F)+
 				(reverse8(bb[i][1])>>4)+(reverse8(bb[i][1])&0x0F)+
