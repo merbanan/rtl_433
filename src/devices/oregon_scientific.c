@@ -195,8 +195,8 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 	   }
 	   return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==153) {
-		if (  validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
-			int  channel = ((msg[2] >> 4)&0x0f);
+		if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
+			int channel = ((msg[2] >> 4)&0x0f);
 			if (channel == 4)
 				channel = 3; // sensor 3 channel number is 0x04
 			float temp_c = get_os_temperature(msg, sensor_id);
@@ -205,11 +205,11 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 		}
 		return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
-		if (  validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
-                        int  channel = ((msg[2] >> 4)&0x0f);
+		if (validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
+			int channel = ((msg[2] >> 4)&0x0f);
 			if (channel == 4)
 				channel = 3; // sensor 3 channel number is 0x04
-                        int battery_low = (msg[3] >> 2 & 0x01);
+			int battery_low = (msg[3] >> 2 & 0x01);
 			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
 			float temp_c = get_os_temperature(msg, sensor_id);
 			if (sensor_id == 0xec40) fprintf(stdout, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
@@ -227,8 +227,8 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 		}
 		return 1;
 	} else if (num_valid_v2_bits > 16) {
-fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
-fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n\n");
+		fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
+		fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n\n");
     } else {
 //fprintf(stdout, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n"); fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
     }
