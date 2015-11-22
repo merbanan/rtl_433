@@ -9,6 +9,7 @@
  * - 896 Rain gauge, Model: 00896
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
  * - "Th" temperature and humidity sensor (Model(s) ??)
+ * - Acurite 986 Refrigerator / Freezer Thermometer
  */
 
 
@@ -109,6 +110,7 @@ const float acurite_5n1_winddirections[] =
 
 static int acurite_raincounter = 0;
 
+// FIXME< this is a checksum, not a CRC
 static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
     int i;
@@ -484,6 +486,146 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 }
 
 
+/*
+ * Acurite 00986 Refrigerator / Freezer Thermometer
+ *
+ * Includes two sensors and a display, labeled 1 and 2,
+ * by default 1 - Refridgerator, 2 - Freezer
+ *
+ * PPM, 5 bytes, sent twice, no gap between repeaters
+ * start/sync pulses two short, with short gaps, followed by
+ * 4 long pulse/gaps.
+ *
+ * @todo, the 2 short sync pulses get confused as data.
+ *
+ * Data Format - 5 bytes, sent LSB first, reversed
+ *
+ * TT II II SS CC
+ *
+ * T - Temperature in Fahrenehit, integer, MSB = sign.
+ *     Encoding is "Sign and magnitude"
+ * I - 16 bit sensor ID
+ *     changes at each power up
+ * S - status/sensor type
+ *     0x01 = Sensor 2
+ *     0x02 = low battery
+ * C = CRC (CRC-8 poly 0x07, little-endian)
+ *
+ * @todo
+ * - needs new PPM demod that can separate out the short
+ *   start/sync pulses which confuse things and cause
+ *   one data bit to be lost in the check value.
+ * - low battery detection
+ *
+ */
+
+static int acurite_986_callback(bitbuffer_t *bitbuf) {
+    int browlen;
+    uint8_t *bb, sensor_num, status, crc, crcc;
+    uint8_t br[8];
+    int8_t tempf; // Raw Temp is 8 bit signed Fahrenheit
+    float tempc;
+    time_t time_now;
+    uint16_t sensor_id, valid_cnt = 0;
+    char sensor_type;
+
+    time(&time_now);
+    local_time_str(time_now, time_str);
+
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_986\n");
+        bitbuffer_print(bitbuf);
+    }
+
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
+	bb = bitbuf->bb[brow];
+
+	if (debug_output > 1)
+	    fprintf(stderr,"acurite_986: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
+
+	if (bitbuf->bits_per_row[brow] < 39 ||
+	    bitbuf->bits_per_row[brow] > 43 ) {
+	    if (debug_output > 1 && bitbuf->bits_per_row[brow] > 16)
+		fprintf(stderr,"acurite_986: skipping wrong len\n");
+	    continue;
+	}
+
+	// Reduce false positives
+	// may eliminate these with a beter PPM (precise?) demod.
+	if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
+	   (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
+	    continue;
+	}
+
+	// There will be 1 extra false zero bit added by the demod.
+	// this forces an extra zero byte to be added
+	if (browlen > 5 && bb[browlen - 1] == 0)
+	    browlen--;
+
+	// Reverse the bits
+	for (uint8_t i = 0; i < browlen; i++)
+	    br[i] = reverse8(bb[i]);
+
+	if (debug_output > 0) {
+	    fprintf(stderr,"Acurite 986 reversed: ");
+	    for (uint8_t i = 0; i < browlen; i++)
+		fprintf(stderr," %02x",br[i]);
+	    fprintf(stderr,"\n");
+	}
+
+	tempf = br[0];
+	sensor_id = (br[1] << 8) + br[2];
+	status = br[3];
+	sensor_num = (status & 0x01) + 1;
+	status = status >> 1;
+	// By default Sensor 1 is the Freezer, 2 Refrigerator
+	sensor_type = sensor_num == 2 ? 'F' : 'R';
+	crc = br[4];
+
+	if ((crcc = crc8le(br, 5, 0x07, 0)) != 0) {
+	    // XXX make debug
+	    if (debug_output) {
+		fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
+			time_str, crc8le(br, 4, 0x07, 0));
+		for (uint8_t i = 0; i < browlen; i++)
+		    fprintf(stderr," %02x", br[i]);
+		fprintf(stderr,"\n");
+	    }
+	    continue;
+	}
+
+	if ((status & 1) == 1) {
+	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
+		    time_str, sensor_id, sensor_num, sensor_type, status);
+	}
+
+	// catch any status bits that haven't been decoded yet
+	if ((status & 0xFE) != 0) {
+	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
+		    time_str, sensor_id, sensor_num, sensor_type, status);
+	}
+
+	if (tempf & 0x80) {
+	    tempf = (tempf & 0x7f) * -1;
+	}
+	tempc = fahrenheit2celsius(tempf);
+
+
+	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
+	       time_str, sensor_id, sensor_num, sensor_type,
+	       tempc, tempf);
+
+	valid_cnt++;
+
+    }
+
+    if (valid_cnt)
+	return 1;
+
+    return 0;
+}
+
 r_device acurite5n1 = {
     .name           = "Acurite 5n1 Weather Station",
     .modulation     = OOK_PWM_P,
@@ -555,3 +697,26 @@ r_device acurite_txr = {
 //    .disabled       = 0,
 //    .demod_arg      = (unsigned long)&pwm_precise_param_acurite_txr,
 //};
+
+
+/*
+ * Acurite 00986 Refrigerator / Freezer Thermometer
+ *
+ * Temperature only, Pulse Position
+ *
+ * 4 x 400 sample (150 uS) start/sync pulses
+ * 40 (42) 50 (20 uS)  (sample data pulses)
+ * short gap approx 130 samples
+ * long gap approx 220 samples
+ *
+ */
+r_device acurite_986 = {
+    .name           = "Acurite 986 Refrigerator / Freezer Thermometer",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 180,   // Threshold between short and long gap
+    .long_limit     = 320,
+    .reset_limit    = 1000,
+    .json_callback  = &acurite_986_callback,
+    .disabled       = 0,
+    .demod_arg      = 2,
+};
