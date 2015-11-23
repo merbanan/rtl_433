@@ -56,6 +56,7 @@
 #include "rtl_433.h"
 #include "util.h"
 #include "pulse_demod.h"
+#include "data.h"
 
 static int wt450_callback(bitbuffer_t *bitbuffer) {
 
@@ -74,6 +75,7 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
 
    time_t time_now;
    char time_str[LOCAL_TIME_BUFLEN];
+   data_t *data;
    time(&time_now);
    local_time_str(time_now, time_str);
 
@@ -121,16 +123,15 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
    temp_fraction = ((b[3] & 0xF) << 3) + (b[4] >> 5);
    temp = (temp_whole - 50) + (temp_fraction/100.0);
 
-/*
-   fprintf(stdout, "Temperature[%d]\n", temp_whole-50);
-   fprintf(stdout, "temp fraction[%u]\n", temp_fraction);
-*/
-   fprintf(stdout, "%s WT450 sensor: House Code %u, "
-                   "Channel %u, Battery %s, "
-                   "Temperature %.02f C, Humidity %u %%\n",
-           time_str, house_code,
-           channel, (battery_low) ? "LOW" : "OK",
-           temp, humidity);
+   data = data_make("time",          "",	   DATA_STRING, time_str,
+		    "model",         "",	   DATA_STRING, "WT450 sensor",
+		    "id",            "House Code", DATA_INT, house_code,
+		    "channel",       "Channel",    DATA_INT, channel,
+		    "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+		    "temperature_C", "Temperature",DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+		    "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
+		    NULL);
+   data_acquired_handler(data);
 
    return 1;
 }
@@ -138,6 +139,17 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
 PWM_Precise_Parameters clock_bits_parameters_generic = {
    .pulse_tolerance	= 20,
    .pulse_sync_width	= 0,	// No sync bit used
+};
+
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"channel",
+	"battery",
+	"temperature_C",
+	"humidity",
+	NULL
 };
 
 r_device wt450 = {
@@ -149,4 +161,5 @@ r_device wt450 = {
    .json_callback = &wt450_callback,
    .disabled      = 0,
    .demod_arg     = (unsigned long)&clock_bits_parameters_generic,
+   .fields        = output_fields
 };
