@@ -3,6 +3,12 @@ rtl_433
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
+How to add support for unsupported sensors
+------------------------------------------
+
+Read the Test Data section at the bottom.
+
+
 Installation instructions:
 --------------------------
 
@@ -114,11 +120,20 @@ Examples:
 
 This software is mostly useable for developers right now.
 
+
 Test Data
 ------------
 
-Test data files for supported devices can be found here: https://github.com/merbanan/rtl_433_tests
-Please add test data for all devices added to the code to facilitate regression testing.
+Recordings of the transmitted signals are vital in trying to figure out the signal format. So before you
+request anything make sure you have recorded a proper set of test signals (10 maybe) together with
+with the decoded reference values. Then take pictures of the device, preferable even the pcb. Then
+document as much as possible about the device. Now when you have all this, check out the rtl_433_tests
+repository.
+
+https://github.com/merbanan/rtl_433_tests
+
+Follow the existing structure as best as possible and send a pull request.
+Now you can add an issue about wanting support for an unsupported format.
 
 Google Group
 ------------
