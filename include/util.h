@@ -69,10 +69,10 @@ void local_time_str(time_t time_secs, char *buf);
 float celsius2fahrenheit(float celsius);
 
 
-/// Convert Celsious to Fahrenheit
+/// Convert Fahrenheit to Celsius
 ///
-/// @param celsius: temperature in Celsius
-/// @return temperature value in Fahrenheit
+/// @param celsius: temperature in Fahrenheit
+/// @return temperature value in Celsius
 float fahrenheit2celsius(float fahrenheit);
 
 
