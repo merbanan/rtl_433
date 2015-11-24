@@ -20,11 +20,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdbool.h>
+
 #include "rtl-sdr.h"
 #include "rtl_433.h"
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
+#include "data.h"
 
 
 static int do_exit = 0;
@@ -104,6 +107,7 @@ void usage(r_device *devices) {
             "\t\t 1 = AM demodulated samples (int16)\n"
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
+            "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -176,6 +180,31 @@ static unsigned int signal_end = 0;
 static unsigned int signal_pulse_data[4000][3] = {
     {0}};
 static unsigned int signal_pulse_counter = 0;
+typedef enum  {
+    OUTPUT_KV,
+    OUTPUT_JSON,
+    OUTPUT_CSV
+} output_format_t;
+static output_format_t output_format;
+void *csv_aux_data;
+
+/* handles incoming structured data by dumping it */
+void data_acquired_handler(data_t *data)
+{
+    switch (output_format) {
+    case OUTPUT_KV: {
+        data_print(data, stdout,  &data_kv_printer, NULL);
+    } break;
+    case OUTPUT_JSON: {
+        data_print(data, stdout,  &data_json_printer, NULL);
+    } break;
+    case OUTPUT_CSV: {
+        data_print(data, stdout,  &data_csv_printer, csv_aux_data);
+    } break;
+    }
+    fflush(stdout);
+    data_free(data);
+}
 
 static void classify_signal() {
     unsigned int i, k, max = 0, min = 1000000, t;
@@ -790,6 +819,38 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	}
 }
 
+// find the fields output for CSV
+void *determine_csv_fields(r_device* devices, int num_devices)
+{
+    int i, j;
+    int cur_output_fields = 0;
+    int num_output_fields = 0;
+    void *csv_aux;
+    const char **output_fields = NULL;
+    for (i = 0; i < num_devices; i++)
+        if (!devices[i].disabled) {
+	    if (devices[i].fields)
+		for (int c = 0; devices[i].fields[c]; ++c)
+		    ++num_output_fields;
+	    else
+		fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
+			i, devices[i].name);
+	}
+    output_fields = calloc(num_output_fields + 1, sizeof(char*));
+    for (i = 0; i < num_devices; i++) {
+        if (!devices[i].disabled && devices[i].fields) {
+            for (int c = 0; devices[i].fields[c]; ++c) {
+                output_fields[cur_output_fields] = devices[i].fields[c];
+                ++cur_output_fields;
+            }
+        }
+    }
+
+    csv_aux = data_csv_init(output_fields, num_output_fields);
+    free(output_fields);
+    return csv_aux;
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -829,7 +890,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -902,6 +963,18 @@ int main(int argc, char **argv) {
  	    case 'q':
 	        quiet_mode = 1;
 		break;
+	    case 'F':
+		if (strcmp(optarg, "json") == 0) {
+		    output_format = OUTPUT_JSON;
+		} else if (strcmp(optarg, "csv") == 0) {
+		    output_format = OUTPUT_CSV;
+		} else if (strcmp(optarg, "kv") == 0) {
+		    output_format = OUTPUT_KV;
+		} else {
+                    fprintf(stderr, "Invalid output format %s\n", optarg);
+                    usage(devices);
+		}
+		break;
             default:
                 usage(devices);
                 break;
@@ -912,6 +985,14 @@ int main(int argc, char **argv) {
         usage(devices);
     } else {
         out_filename = argv[optind];
+    }
+
+    if (output_format == OUTPUT_CSV) {
+        csv_aux_data = determine_csv_fields(devices, num_r_devices);
+        if (!csv_aux_data) {
+            fprintf(stderr, "rtl_433: failed to allocate memory for CSV auxiliary data\n");
+            exit(1);
+        }
     }
 
     for (i = 0; i < num_r_devices; i++) {
@@ -1134,5 +1215,8 @@ int main(int argc, char **argv) {
 
     rtlsdr_close(dev);
 out:
+    if (csv_aux_data) {
+        data_csv_free(csv_aux_data);
+    }
     return r >= 0 ? r : -r;
 }

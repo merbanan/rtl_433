@@ -5,6 +5,8 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};
+    data_t *data;
+    char id_str[2];
 
     /* @todo iterate through all rows */
 
@@ -33,17 +35,30 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
             nb[i] |= ((b[i]&0x03)==0x03) ? 0x00 : 0x08;
         }
 
-        fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Waveman Switch Transmitter\n");
-        fprintf(stdout, "id      = %c\n", 'A'+nb[0]);
-        fprintf(stdout, "channel = %d\n", (nb[1]>>2)+1);
-        fprintf(stdout, "button  = %d\n", (nb[1]&3)+1);
-        fprintf(stdout, "state   = %s\n", (nb[2]==0xe) ? "on" : "off");
+	id_str[0] = 'A'+nb[0];
+	id_str[1] = 0;
+	data = data_make("model", NULL,   DATA_STRING, "Waveman Switch Transmitter",
+		         "id", NULL,      DATA_STRING, id_str,
+		         "channel", NULL, DATA_INT, (nb[1]>>2)+1,
+		         "button", NULL,  DATA_INT, (nb[1]&3)+1,
+		         "state", NULL,   DATA_STRING, (nb[2]==0xe) ? "on" : "off",
+		         NULL);
+	data_acquired_handler(data);
 
         return 1;
     }
     return 0;
 }
+
+static char *output_fields[] = {
+	"model",
+	"id",
+	"channel"
+	"button",
+	"state",
+	NULL
+};
+
 
 r_device waveman = {
     .name           = "Waveman Switch Transmitter",
@@ -54,4 +69,5 @@ r_device waveman = {
     .json_callback  = &waveman_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields
 };

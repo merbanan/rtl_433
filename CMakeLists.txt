@@ -71,6 +71,7 @@ add_custom_target(uninstall
 ########################################################################
 add_subdirectory(include)
 add_subdirectory(src)
+add_subdirectory(tests)
 
 # use space-separation format for the pc file
 STRING(REPLACE ";" " " RTL433_PC_CFLAGS "${RTL433_PC_CFLAGS}")
