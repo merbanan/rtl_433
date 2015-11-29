@@ -477,8 +477,14 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     char sgf_name[256] = {0};
                     FILE *sgfp;
 
-                    sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
-                    demod->signal_grabber++;
+		    while (1) {
+			sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
+			demod->signal_grabber++;
+			if (access(sgf_name, F_OK) == -1) {
+			    break;
+			}
+		    }
+
                     signal_bszie = 2 * (signal_end - (signal_start - 10000));
                     signal_bszie = (131072 - (signal_bszie % 131072)) + signal_bszie;
                     sg_idx = demod->sg_index - demod->sg_len;
@@ -1092,6 +1098,10 @@ int main(int argc, char **argv) {
 			_setmode(_fileno(stdin), _O_BINARY);
 #endif
 		} else {
+		        if (access(out_filename, F_OK) == 0) {
+			    fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
+			    goto out;
+			}
 			demod->out_file = fopen(out_filename, "wb");
 			if (!demod->out_file) {
 				fprintf(stderr, "Failed to open %s\n", out_filename);
