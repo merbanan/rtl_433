@@ -106,7 +106,7 @@ Supported devices:
 	[37] Inovalley kw9015b rain and Temperature weather station
 	[38] Generic temperature sensor 1
 	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
-        [40] Acurite 986 Refrigerator / Freezer Thermometer
+	[40] Acurite 986 Refrigerator / Freezer Thermometer
 ```
 
 
@@ -117,7 +117,7 @@ Examples:
 | `rtl_433` | Will run the software in receive mode. Some sensor data can be received and decoded.
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
-| `rtl_433 -a -t` | Will run in analyze mode and save a test file per|detected signal (gfile###.data). Format is uint8, 2 channels.
+| `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
 | `rtl_433 -r file_name` | Play back a saved data file. 
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
 
