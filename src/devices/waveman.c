@@ -53,7 +53,7 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
 	"model",
 	"id",
-	"channel"
+	"channel",
 	"button",
 	"state",
 	NULL
