@@ -23,11 +23,11 @@ static int silvercrest_callback(bitbuffer_t *bitbuffer) {
 
 r_device silvercrest = {
     .name           = "Silvercrest Remote Control",
-    .modulation     = OOK_PWM_P,
+    .modulation     = OOK_PULSE_PWM_RAW,
     .short_limit    = 600/4,
     .long_limit     = 5000/4,
     .reset_limit    = 15000/4,
     .json_callback  = &silvercrest_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
+    .demod_arg      = 1,	// Remove startbit
 };
