@@ -628,10 +628,10 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 
 r_device acurite5n1 = {
     .name           = "Acurite 5n1 Weather Station",
-    .modulation     = OOK_PWM_P,
+    .modulation     = OOK_PULSE_PWM_RAW,
     .short_limit    = 70,
-    .long_limit     = 240,
-    .reset_limit    = 21000,
+    .long_limit     = 130,
+    .reset_limit    = 200,
     .json_callback  = &acurite5n1_callback,
     .disabled       = 0,
     .demod_arg      = 0,
