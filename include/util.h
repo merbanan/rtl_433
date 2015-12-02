@@ -62,18 +62,17 @@ int byteParity(uint8_t inByte);
 /// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
 void local_time_str(time_t time_secs, char *buf);
 
-/**
- * convert unit from celsius to fahrenheit
- * @param celsius input temperature in Celsius
- * @return temperature value in Fahrenheit
- */
-float celsius2fahrenheit(float celsius);
-
-
-/// Convert Celsious to Fahrenheit
+/// Convert Celsius to Fahrenheit
 ///
 /// @param celsius: temperature in Celsius
 /// @return temperature value in Fahrenheit
+float celsius2fahrenheit(float celsius);
+
+
+/// Convert Fahrenheit to Celsius
+///
+/// @param celsius: temperature in Fahrenheit
+/// @return temperature value in Celsius
 float fahrenheit2celsius(float fahrenheit);
 
 

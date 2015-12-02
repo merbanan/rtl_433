@@ -1,4 +1,6 @@
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 static float
 get_temperature (uint8_t * msg)
@@ -96,6 +98,16 @@ static int
 ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
   bitrow_t *bb = bitbuffer->bb;
+  float temperature;
+  uint8_t humidity;
+  uint16_t channel;
+  uint16_t deviceID;
+
+  time_t time_now;
+  char time_str[LOCAL_TIME_BUFLEN];
+  data_t *data;
+  time(&time_now);
+  local_time_str(time_now, time_str);
 
   if(bitbuffer->bits_per_row[0] != 195)	// There seems to be 195 bits in a correct message
     return 0;
@@ -119,24 +131,24 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
   */
 
   if ( (bb[0][0] == 0x00) && (bb[0][1] == 0x14) && (bb[0][2] & 0x50) ) {
-    fprintf (stderr, "\nSensor Temperature Event:\n");
-    fprintf (stderr, "protocol      = Ambient Weather\n");
 
     if (validate_checksum (bb[0], BITBUF_COLS)) {
       return 0;
     }
-    
-    float temperature = get_temperature (bb[0]);
-    fprintf (stderr, "temp          = %.1f\n", temperature);
 
-    uint8_t humidity = get_humidity (bb[0]);
-    fprintf (stderr, "humidity      = %d\n", humidity);
-  
-    uint16_t channel = get_channel (bb[0]);
-    fprintf (stderr, "channel       = %d\n", channel);
+    temperature = get_temperature (bb[0]);
+    humidity = get_humidity (bb[0]);
+    channel = get_channel (bb[0]);
+    deviceID = get_device_id (bb[0]);
 
-    uint16_t deviceID = get_device_id (bb[0]);
-    fprintf (stderr, "id            = %d\n", deviceID);
+    data = data_make("time", "", DATA_STRING, time_str,
+		     "device", "", DATA_INT, deviceID,
+		     "channel", "", DATA_INT, channel,
+		     "temperature_F", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+		     "humidity", "", DATA_INT, humidity,
+		     NULL);
+    data_acquired_handler(data);
+
     return 1;
   }
 
@@ -149,6 +161,15 @@ ambient_weather_callback (bitbuffer_t *bitbuffer)
   return ambient_weather_parser (bitbuffer);
 }
 
+static char *output_fields[] = {
+	"time",
+	"device",
+	"channel",
+	"temperature_F",
+	"humidity",
+	NULL
+};
+
 r_device ambient_weather = {
     .name           = "Ambient Weather Temperature Sensor",
     .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
@@ -158,4 +179,5 @@ r_device ambient_weather = {
     .json_callback  = &ambient_weather_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields	    = output_fields
 };
