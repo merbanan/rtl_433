@@ -495,6 +495,8 @@ void *data_csv_init(const char **fields, int num_fields)
 	int csv_fields = 0;
 	int i, j;
 	const char **allowed = NULL;
+	int *use_count = NULL;
+	int num_unique_fields;
 	if (!csv)
 		goto alloc_error;
 
@@ -517,23 +519,32 @@ void *data_csv_init(const char **fields, int num_fields)
 			allowed[i] = allowed[j];
 			++i;
 			++j;
+
 		}
 	}
-	num_fields = i;
+	num_unique_fields = i;
 
-	csv->fields = calloc(num_fields + 1, sizeof(const char**));
+	csv->fields = calloc(num_unique_fields + 1, sizeof(const char**));
 	if (!csv->fields)
 		goto alloc_error;
 
+	use_count = calloc(num_unique_fields, sizeof(*use_count));
+	if (!use_count)
+		goto alloc_error;
+
 	for (i = 0; i < num_fields; ++i) {
-		if (bsearch(&fields[i], allowed, num_fields, sizeof(const char*),
-			    (void*) compare_strings)) {
+		const char **field = bsearch(&fields[i], allowed, num_unique_fields, sizeof(const char*),
+					     (void*) compare_strings);
+		int *field_use_count = use_count + (field - allowed);
+		if (field && !*field_use_count) {
 			csv->fields[csv_fields] = fields[i];
 			++csv_fields;
+			++*field_use_count;
 		}
 	}
 	csv->fields[csv_fields] = NULL;
 	free(allowed);
+	free(use_count);
 
 	// Output the CSV header
 	for (i = 0; csv->fields[i]; ++i) {
@@ -543,6 +554,7 @@ void *data_csv_init(const char **fields, int num_fields)
 	return csv;
 
  alloc_error:
+	free(use_count);
 	free(allowed);
 	if (csv) free(csv->fields);
 	free(csv);
