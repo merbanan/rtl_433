@@ -1,33 +1,54 @@
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
   float temp_c = 0;
-  temp_c = (((message[5]>>4)*100)+((message[4]&0x0f)*10) + ((message[4]>>4)&0x0f)) /10.0F;
+  temp_c = (((message[5]>>4)*100)+((message[4]&0x0f)*10) + ((message[4]>>4)&0x0f)) / 10.0F;
   if (message[5] & 0x0f)
-       temp_c = -temp_c;
+    temp_c = -temp_c;
   return temp_c;
 }
+
 unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
- // sensor ID included to support sensors with temp in different position
- int humidity = 0;
-    humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
- return humidity;
+  // sensor ID included to support sensors with humidity in different position
+  int humidity = 0;
+  humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
+  return humidity;
 }
+
 unsigned int get_os_uv(unsigned char *message, unsigned int sensor_id) {
- // sensor ID included to support sensors with temp in different position
- int uvidx = 0;
-    uvidx = ((message[4]&0x0f)*10)+(message[4]>>4);
- return uvidx;
+  // sensor ID included to support sensors with uv in different position
+  int uvidx = 0;
+  uvidx = ((message[4]&0x0f)*10)+(message[4]>>4);
+  return uvidx;
 }
 
-unsigned int get_os_rollingcode(unsigned char *message, unsigned int sensor_id){
-   int rc = 0;
-   rc = (message[2]&0x0F) + (message[3]&0xF0);
-   return rc;
+unsigned int get_os_channel(unsigned char *message, unsigned int sensor_id) {
+  // sensor ID included to support sensors with channel in different position
+  int channel = 0;
+  channel = ((message[2] >> 4)&0x0f);
+  if ((channel == 4) && ! ((sensor_id >= 0x0cc3) && (sensor_id <= 0xfcc3)))
+    channel = 3; // sensor 3 channel number is 0x04
+  return channel;
 }
 
-unsigned short int power(const unsigned char* d){
+unsigned int get_os_battery(unsigned char *message, unsigned int sensor_id) {
+  // sensor ID included to support sensors with battery in different position
+  int battery_low = 0;
+  battery_low = (message[3] >> 2 & 0x01);
+  return battery_low;
+}
+
+unsigned int get_os_rollingcode(unsigned char *message, unsigned int sensor_id) {
+  // sensor ID included to support sensors with rollingcode in different position
+  int rc = 0;
+  rc = (message[2]&0x0F) + (message[3]&0xF0);
+  return rc;
+}
+
+unsigned short int power(const unsigned char* d) {
   unsigned short int val = 0;
   val = ( d[4] << 8) + d[3];
   val = val & 0xFFF0;
@@ -35,7 +56,7 @@ unsigned short int power(const unsigned char* d){
   return val;
 }
 
-unsigned long long total(const unsigned char* d){
+unsigned long long total(const unsigned char* d) {
   unsigned long long val = 0;
   if ( (d[1]&0x0F) == 0 ){
     // Sensor returns total only if nibble#4 == 0
@@ -68,8 +89,8 @@ static int validate_os_checksum(unsigned char *msg, int checksum_nibble_idx) {
   if (sum_of_nibbles == checksum)
     return 0;
   else {
-    fprintf(stdout, "Checksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);
-	fprintf(stdout, "Message: "); int i; for (i=0 ;i<((checksum_nibble_idx+4)>>1) ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+    fprintf(stderr, "Checksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);
+	fprintf(stderr, "Message: "); int i; for (i=0 ;i<((checksum_nibble_idx+4)>>1) ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
 	return 1;
   }
 }
@@ -80,8 +101,8 @@ static int validate_os_v2_message(unsigned char * msg, int bits_expected, int va
   if (bits_expected == valid_v2_bits_received) {
     return (validate_os_checksum(msg, nibbles_in_checksum));
   } else {
-    fprintf(stdout, "Bit validation error on Oregon Scientific message.  Expected %d bits, received error after bit %d \n",        bits_expected, valid_v2_bits_received);
-    fprintf(stdout, "Message: "); int i; for (i=0 ;i<(bits_expected+7)/8 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+    fprintf(stderr, "Bit validation error on Oregon Scientific message.  Expected %d bits, received error after bit %d \n",        bits_expected, valid_v2_bits_received);
+    fprintf(stderr, "Message: "); int i; for (i=0 ;i<(bits_expected+7)/8 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
   }
   return 1;
 }
@@ -153,21 +174,38 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 	    } //if (sync_test_val...
       } // for (pattern...
 
+	data_t *data;
+	time_t time_now;
+	char time_str[LOCAL_TIME_BUFLEN];
+	time(&time_now);
+	local_time_str(time_now, time_str);
 
     int sensor_id = (msg[0] << 8) | msg[1];
 	if ((sensor_id == 0x1d20) || (sensor_id == 0x1d30))	{
 	   if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0) {
-         int  channel = ((msg[2] >> 4)&0x0f);
-	     if (channel == 4)
-	       channel = 3; // sensor 3 channel number is 0x04
-         float temp_c = get_os_temperature(msg, sensor_id);
-         unsigned int rc = get_os_rollingcode(msg, sensor_id);
+
 		 if (sensor_id == 0x1d20) {
-            fprintf(stdout, "Weather Sensor THGR122N RC %x Channel %d ", rc, channel);
-            //fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); 
+			data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "Weather Sensor THGR122N",
+							"id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
+							"battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+							NULL);
+			data_acquired_handler(data);
          }
-		 else fprintf(stdout, "Weather Sensor THGR968  Outdoor   ");
-		 fprintf(stdout, "Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32,get_os_humidity(msg, sensor_id));
+		 else {
+			data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "Weather Sensor THGR968 Outdoor",
+							"id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
+							"battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+							NULL);
+			data_acquired_handler(data);
+		 }
 	   }
 	   return 1;
     } else if (sensor_id == 0x5d60) {
@@ -189,41 +227,61 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 	   return 1;
 	} else if (sensor_id == 0x2d10) {
 	   if (validate_os_v2_message(msg, 161, num_valid_v2_bits, 16) == 0) {
-	   float rain_rate = (((msg[4] &0x0f)*100)+((msg[4]>>4)*10) + ((msg[5]>>4)&0x0f)) /10.0F;
-       float total_rain = (((msg[7]&0xf)*10000)+((msg[7]>>4)*1000) + ((msg[6]&0xf)*100)+((msg[6]>>4)*10) + (msg[5]&0xf))/10.0F;
-	   fprintf(stdout, "Weather Sensor RGR968   Rain Gauge  Rain Rate: %2.0fmm/hr Total Rain %3.0fmm\n", rain_rate, total_rain);
+			float rain_rate = (((msg[4] &0x0f)*100)+((msg[4]>>4)*10) + ((msg[5]>>4)&0x0f)) /10.0F;
+			float total_rain = (((msg[7]&0xf)*10000)+((msg[7]>>4)*1000) + ((msg[6]&0xf)*100)+((msg[6]>>4)*10) + (msg[5]&0xf))/10.0F;
+
+			data = data_make("time",      "",           DATA_STRING, time_str,
+							"model",      "",           DATA_STRING, "Weather Sensor RGR968 Rain Gauge",
+							"id"          "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
+							"battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"rain_rate",  "Rain Rate",  DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
+							"rain_total", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
+							NULL);
+			data_acquired_handler(data);
 	   }
 	   return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==153) {
 		if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
-			int channel = ((msg[2] >> 4)&0x0f);
-			if (channel == 4)
-				channel = 3; // sensor 3 channel number is 0x04
-			float temp_c = get_os_temperature(msg, sensor_id);
-			if (sensor_id == 0xec40) fprintf(stdout, "Thermo Sensor THR228N Channel %d ", channel);
-			fprintf(stdout, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
+
+			data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "Thermo Sensor THR228N",
+							"id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
+							"battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+							NULL);
+			data_acquired_handler(data);
 		}
 		return 1;
 	} else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
 		if (validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
-			int channel = ((msg[2] >> 4)&0x0f);
-			if (channel == 4)
-				channel = 3; // sensor 3 channel number is 0x04
-			int battery_low = (msg[3] >> 2 & 0x01);
-			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
-			float temp_c = get_os_temperature(msg, sensor_id);
-			if (sensor_id == 0xec40) fprintf(stdout, "Thermo Sensor THN132N, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
-			fprintf(stdout, "Temp: %3.1fC  %3.1fF\n", temp_c, ((temp_c*9)/5)+32);
+
+			data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "Thermo Sensor THN132N",
+							"id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
+							"battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+							NULL);
+			data_acquired_handler(data);
 		}
 		return 1;
 	} else if ((sensor_id >= 0x0cc3) && (sensor_id <= 0xfcc3)) {
-		if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0) {
-			int channel = ((msg[2] >> 4)&0x0f);
-			int battery_low = (msg[3] >> 2 & 0x01);
-			unsigned char rolling_code = ((msg[2] << 4)&0xF0) | ((msg[3] >> 4)&0x0F);
-			float temp_c = get_os_temperature(msg, sensor_id);
-			fprintf(stdout, "Thermo Hygro RF Clock Sensor RTGN318, Channel %d, Battery: %s, Rolling-code 0x%0X, ", channel, battery_low?"Low":"Ok", rolling_code);
-			fprintf(stdout, "Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, sensor_id));
+		if (num_valid_v2_bits==153 && (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0)) {
+
+			data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "Thermo Hygro RF Clock Sensor RTGN318",
+							"id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+							"channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+							"battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+							NULL);
+			data_acquired_handler(data);
+		} else if (num_valid_v2_bits==201 && (validate_os_v2_message(msg, 201, num_valid_v2_bits, 21) == 0)) {
+
+			// RF Clock message ??
 		}
 		return 1;
 	} else if (num_valid_v2_bits > 16) {
@@ -235,6 +293,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
    } else {
 //if (bb[0][3] != 0) int i; fprintf(stdout, "\nBadly formatted OS v2.1 message encountered."); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");}
    }
+      
    return 0;
 }
 
@@ -335,9 +394,9 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
             fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);  
    
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
-        fprintf(stdout, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-        fprintf(stdout, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
-        fprintf(stdout, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");    
+        fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
+        fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
+        fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");    
     } else if (bb[0][3] != 0 ) {
         //fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
         //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
@@ -356,6 +415,19 @@ static int oregon_scientific_callback(bitbuffer_t *bitbuffer) {
  return ret;
 }
 
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"channel",
+	"battery",
+	"temperature_C",
+	"humidity",
+	"rain_rate",
+	"rain_total",
+	NULL
+};
+
 r_device oregon_scientific = {
     .name           = "Oregon Scientific Weather Sensor",
     .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
@@ -365,4 +437,5 @@ r_device oregon_scientific = {
     .json_callback  = &oregon_scientific_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields
 };
