@@ -72,39 +72,39 @@ typedef struct data_printer_context {
 
 static data_meta_type_t dmt[DATA_COUNT] = {
 	//  DATA_DATA
-	{ array_element_size	   : sizeof(data_t*),
-	  array_is_boxed	   : true,
-	  array_elementwise_import : NULL,
-	  array_element_release	   : (array_element_release_fn) data_free,
-	  value_release		   : (value_release_fn) data_free },
+	{ .array_element_size       = sizeof(data_t*),
+	  .array_is_boxed           = true,
+	  .array_elementwise_import = NULL,
+	  .array_element_release    = (array_element_release_fn) data_free,
+	  .value_release            = (value_release_fn) data_free },
 
 	//  DATA_INT
-	{ array_element_size	   : sizeof(int),
-	  array_is_boxed	   : false,
-	  array_elementwise_import : NULL,
-	  array_element_release	   : NULL,
-	  value_release		   : (value_release_fn) free },
+	{ .array_element_size       = sizeof(int),
+	  .array_is_boxed           = false,
+	  .array_elementwise_import = NULL,
+	  .array_element_release    = NULL,
+	  .value_release            = (value_release_fn) free },
 
 	//  DATA_DOUBLE
-	{ array_element_size	   : sizeof(double),
-	  array_is_boxed	   : false,
-	  array_elementwise_import : NULL,
-	  array_element_release	   : NULL,
-	  value_release		   : (value_release_fn) free },
+	{ .array_element_size       = sizeof(double),
+	  .array_is_boxed           = false,
+	  .array_elementwise_import = NULL,
+	  .array_element_release    = NULL,
+	  .value_release            = (value_release_fn) free },
 
 	//  DATA_STRING
-	{ array_element_size	   : sizeof(char*),
-	  array_is_boxed	   : true,
-	  array_elementwise_import : (array_elementwise_import_fn) strdup,
-	  array_element_release	   : (array_element_release_fn) free,
-	  value_release		   : (value_release_fn) free },
+	{ .array_element_size       = sizeof(char*),
+	  .array_is_boxed           = true,
+	  .array_elementwise_import = (array_elementwise_import_fn) strdup,
+	  .array_element_release    = (array_element_release_fn) free,
+	  .value_release            = (value_release_fn) free },
 
 	//  DATA_ARRAY
-	{ array_element_size	   : sizeof(data_array_t*),
-	  array_is_boxed	   : true,
-	  array_elementwise_import : NULL,
-	  array_element_release	   : (array_element_release_fn) data_array_free ,
-	  value_release		   : (value_release_fn) data_array_free },
+	{ .array_element_size       = sizeof(data_array_t*),
+	  .array_is_boxed           = true,
+	  .array_elementwise_import = NULL,
+	  .array_element_release    = (array_element_release_fn) data_array_free ,
+	  .value_release            = (value_release_fn) data_array_free },
 };
 
 static void print_json_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
@@ -128,27 +128,27 @@ static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, ch
 static void print_csv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 
 data_printer_t data_json_printer = {
-	print_data   : print_json_data,
-	print_array  : print_json_array,
-	print_string : print_json_string,
-	print_double : print_json_double,
-	print_int    : print_json_int
+	.print_data   = print_json_data,
+	.print_array  = print_json_array,
+	.print_string = print_json_string,
+	.print_double = print_json_double,
+	.print_int    = print_json_int
 };
 
 data_printer_t data_kv_printer = {
-	print_data   : print_kv_data,
-	print_array  : print_json_array,
-	print_string : print_kv_string,
-	print_double : print_kv_double,
-	print_int    : print_kv_int
+	.print_data   = print_kv_data,
+	.print_array  = print_json_array,
+	.print_string = print_kv_string,
+	.print_double = print_kv_double,
+	.print_int    = print_kv_int
 };
 
 data_printer_t data_csv_printer = {
-	print_data   : print_csv_data,
-	print_array  : print_json_array,
-	print_string : print_csv_string,
-	print_double : print_json_double,
-	print_int    : print_json_int
+	.print_data   = print_csv_data,
+	.print_array  = print_json_array,
+	.print_string = print_csv_string,
+	.print_double = print_json_double,
+	.print_int    = print_json_int
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -312,8 +312,8 @@ void data_free(data_t *data) {
 void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 {
 	data_printer_context_t ctx = {
-		printer : printer,
-		aux     : aux
+		.printer = printer,
+		.aux     = aux
 	};
 	ctx.printer->print_data(&ctx, data, NULL, file);
 	fputc('\n', file);
