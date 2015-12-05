@@ -115,6 +115,32 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 /// @return number of events processed
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
 
+/// Demodulate a Manchester encoded signal with preamble and postamble as used by HopeRF RFMxx modules
+///
+/// Each frame has a preamble of three high-level periods, followed by three low-level
+/// periods (which we presume might be four, if the first data bit is a 1. Although
+/// we actually have yet to see a transmission where the first data bit is a 1).
+/// The end of frame is marked by staying at the same level (high or low
+/// depending on the value of the last data bit) for two further periods.
+///
+/// +-----------+           +---+       +-----------+  high frequency
+/// |           |           |   |       |
+/// |           |           |   |       |
+/// +           +-----------+   +-------+              low frequency
+///
+/// ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^   ^
+/// |  preamble | preamble  |   0   |   1   |  end      translates as
+///
+/// Clock is recovered from the data based on pulse width. When time since last bit is more
+/// than 1.5 times the clock half period (short_width) it is declared a data edge where:
+/// - Rising edge means bit = 1
+/// - Falling edge means bit = 0
+/// @param device->short_limit: Nominal width of clock half period [samples]
+/// @param device->long_limit:  Not used
+/// @param device->reset_limit: Not used
+/// @return number of events processed
+int pulse_demod_manchester_framed(const pulse_data_t *pulses, struct protocol_state *device);
+
 
 /// No level shift within the clock cycle translates to a logic 0
 /// One level shift within the clock cycle translates to a logic 1

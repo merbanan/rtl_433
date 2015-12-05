@@ -43,10 +43,10 @@
 #define	OOK_PULSE_PWM_RAW		7			// Pulse Width Modulation. Short pulses = 1, Long = 0
 #define	OOK_PULSE_PWM_TERNARY	8			// Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
 #define	OOK_PULSE_CLOCK_BITS		9			// Level shift within the clock cycle.
-
 #define	FSK_DEMOD_MIN_VAL		16			// Dummy. FSK demodulation must start at this value
 #define	FSK_PULSE_PCM			16			// FSK, Pulse Code Modulation
 #define	FSK_PULSE_PWM_RAW		17			// FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
+#define	FSK_PULSE_MANCHESTER_FRAMED 18		// FSK, Framed Manchester encoding as used by HopeRF RFMxx modules.
 
 extern int debug_output;
 

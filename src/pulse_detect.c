@@ -435,6 +435,9 @@ void pulse_analyzer(pulse_data_t *data)
 			case OOK_PULSE_MANCHESTER_ZEROBIT:
 				pulse_demod_manchester_zerobit(data, &device);
 				break;
+			case FSK_PULSE_MANCHESTER_FRAMED:
+				pulse_demod_manchester_framed(data, &device);
+				break;
 			default:
 				fprintf(stderr, "Unsupported\n");
 		}
