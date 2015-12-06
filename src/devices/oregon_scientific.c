@@ -188,18 +188,17 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         if (sensor_id == 0x1d20) {
           data = data_make("time",         "",            DATA_STRING, time_str,
               "model",         "",            DATA_STRING, "Weather Sensor THGR122N",
-              "id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+              "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
               "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
               "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
               "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
               "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
               NULL);
           data_acquired_handler(data);
-        }
-        else {
+        } else {
           data = data_make("time",         "",            DATA_STRING, time_str,
               "model",         "",            DATA_STRING, "Weather Sensor THGR968 Outdoor",
-              "id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+              "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
               "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
               "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
               "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
@@ -233,7 +232,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 
         data = data_make("time",      "",           DATA_STRING, time_str,
             "model",      "",           DATA_STRING, "Weather Sensor RGR968 Rain Gauge",
-            "id"          "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "rain_rate",  "Rain Rate",  DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
@@ -247,7 +246,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Thermo Sensor THR228N",
-            "id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
@@ -260,7 +259,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Thermo Sensor THN132N",
-            "id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
@@ -273,7 +272,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Thermo Hygro RF Clock Sensor RTGN318",
-            "id"             "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
