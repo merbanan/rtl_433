@@ -105,6 +105,8 @@ Supported devices:
 	[37] Inovalley kw9015b rain and Temperature weather station
 	[38] Generic temperature sensor 1
 	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
+	[40] Acurite 986 Refrigerator / Freezer Thermometer
+	[41] HIDEKI TS04 Temperature and Humidity sensor
 ```
 
 
