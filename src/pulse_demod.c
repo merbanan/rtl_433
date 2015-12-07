@@ -278,6 +278,82 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 	return events;
 }
 
+int pulse_demod_manchester_framed(const pulse_data_t *pulses, struct protocol_state *device) {
+	int events = 0;
+	unsigned time_since_last = -1;
+	bitbuffer_t bits = {0};
+
+	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+		if (time_since_last == (unsigned)-1) {
+			// Waiting for start-of-frame pulse (HHH)
+			if (pulses->pulse[0] < (unsigned)(device->short_limit*5)/2)
+				continue;
+			// First gap must be 3 or 4 periods.
+			if (pulses->gap[0] < (unsigned)(device->short_limit * 5)/2 ||
+			    pulses->gap[0] > (unsigned)(device->short_limit * 9)/2)
+				continue;
+
+			// If first gap is three periods (LLL), the first bit
+			// first bit is a 0 (HL) and will be counted on the
+			// next pulse. If first gap is four periods (LLLL),
+			// the first bit is a 1 (LH) and must be counted now.
+			if (pulses->gap[0] > (unsigned)(device->short_limit*7)/2) {
+				time_since_last = 0;
+				bitbuffer_add_bit(&bits, 1);
+			} else
+				time_since_last = device->short_limit;
+			continue;
+		}
+
+		// Falling edge is on end of pulse
+		if(!time_since_last && pulses->pulse[n] > (unsigned)(device->short_limit * 5)/2) {
+			// End of frame */
+		end_of_frame:
+			if (device->callback) {
+				events += device->callback(&bits);
+			}
+			// Debug printout
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
+				bitbuffer_print(&bits);
+			}
+		reset:
+			bitbuffer_clear(&bits);
+			time_since_last = -1;
+			continue;
+		}
+
+		// If there's no edge where we need one...
+		if(pulses->pulse[n] + time_since_last > (unsigned)(device->short_limit * 5)/2)
+			goto reset;
+
+		if(pulses->pulse[n] + time_since_last > (unsigned)(device->short_limit * 3)/2) {
+			// Last bit was recorded more than short_limit*1.5 samples ago 
+			// so this pulse start must be a data edge (falling data edge means bit = 0)
+			bitbuffer_add_bit(&bits, 0);
+			time_since_last = 0;
+		} else {
+			time_since_last += pulses->pulse[n];
+		}
+
+		if(!time_since_last && pulses->gap[n] > (unsigned)(device->short_limit * 5)/2)
+			goto end_of_frame;
+		if(pulses->gap[n] + time_since_last > (unsigned)(device->short_limit * 5)/2)
+			goto reset;
+
+		// Rising edge is on end of gap
+		if(pulses->gap[n] + time_since_last > (unsigned)(device->short_limit * 3)/2) {
+			// Last bit was recorded more than short_limit*1.5 samples ago 
+			// so this pulse end is a data edge (rising data edge means bit = 1) 
+			bitbuffer_add_bit(&bits, 1);
+			time_since_last = 0;
+		} else {
+			time_since_last += pulses->gap[n];
+		}
+	}
+	return events;
+}
+
 int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device) {
    unsigned int symbol[PD_MAX_PULSES * 2];
    unsigned int n;
