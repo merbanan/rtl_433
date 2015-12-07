@@ -60,6 +60,7 @@ add_executable(rtl_433
 	devices/inovalley-kw9015b.c
 	devices/generic_temperature_sensor.c
 	devices/hideki.c
+	devices/oil_watchman.c
 )
 
 add_library(data data.c)
