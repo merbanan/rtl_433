@@ -37,10 +37,8 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
         packet[i] ^= 0xFF;
         // check parity
         uint8_t parity = ((b[i+offset+1] >> (7 - i%8)) ^ 0xFF) & 0x01;
-        if(parity != byteParity(packet[i])){
-            fprintf(stderr, "Invalid parity\n");
+        if(parity != byteParity(packet[i]))
             return 0;
-        }
     }
 
     // Read data
