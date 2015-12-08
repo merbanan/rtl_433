@@ -61,6 +61,7 @@ add_executable(rtl_433
 	devices/generic_temperature_sensor.c
 	devices/hideki.c
 	devices/oil_watchman.c
+	devices/current_cost.c
 )
 
 add_library(data data.c)
