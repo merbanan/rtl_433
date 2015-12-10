@@ -335,40 +335,6 @@ void histogram_print(const histogram_t *hist) {
 
 #define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
-// Detecting the RFM01/Si4320 framed FSK is non-trivial so do it in a separate function
-static int detect_framed_fsk(histogram_t *hist_pulses, histogram_t *hist_gaps, pulse_data_t *data)
-{
-	unsigned halfbit;
-
-	// It is theoretically possible for a valid data packet to contain
-	// no double-halfbit pulses, or no single-halfbit pulses, if the
-	// packet is either *all* zeroes or repeated 010101, respectively.
-	// As long the actual devices decoders *will* work for this unlikely
-	// case, it's probably OK for the heuristic not to guess it. This
-	// function is fun enough already without coping with that...
-	if (hist_pulses->bins_count < 3 || hist_gaps->bins_count < 3)
-		return 0;
-
-	// We use the gaps not the pulses because we *consistently* see
-	// a misdetected pulse of a few (5 or 6) samples, after a frame
-	// ends with a low frequency (i.e. last data bit is a 0). See
-	// discussion in Issue #218.
-	halfbit = min(hist_gaps->bins[0].mean, hist_gaps->bins[1].mean);
-
-	// Start of frame must be 3 halfbits high, followed by 3 or 4 low.
-	if (data->pulse[0] < halfbit * 5/2 || data->pulse[0] > halfbit * 7/2 ||
-	    data->gap[0] < halfbit * 5/2 || data->gap[0] > halfbit * 9/2)
-		return 0;
-
-	// We could do a lot here, to the extent of a full decoding to check
-	// the framing. That doesn't seem necessary, as long as we don't have
-	// too many false positives. This is just a heuristic, after all.
-	if (hist_gaps->bins[2].mean < halfbit * 5/2)
-		return 0;
-
-	return 1;
-}
-
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data)
 {
@@ -434,12 +400,6 @@ void pulse_analyzer(pulse_data_t *data)
 		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);		// Assume shortest pulse is half period
 		device.long_limit	= 0; // Not used
 		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
-	} else if(detect_framed_fsk(&hist_pulses, &hist_gaps, data)) {
-		fprintf(stderr, "RFM Framed Manchester coding\n");
-		device.modulation	= FSK_PULSE_MANCHESTER_FRAMED;
-		device.short_limit	= min(hist_gaps.bins[0].mean, hist_gaps.bins[1].mean);		// Assume shortest pulse is half period
-		device.long_limit	= 0; // Not used
-		device.reset_limit	= 0; // Not used
 	} else if(hist_pulses.bins_count == 3) {
 		fprintf(stderr, "Pulse Width Modulation with startbit/delimiter\n");
 		device.modulation	= OOK_PULSE_PWM_TERNARY;
@@ -474,9 +434,6 @@ void pulse_analyzer(pulse_data_t *data)
 				break;
 			case OOK_PULSE_MANCHESTER_ZEROBIT:
 				pulse_demod_manchester_zerobit(data, &device);
-				break;
-			case FSK_PULSE_MANCHESTER_FRAMED:
-				pulse_demod_manchester_framed(data, &device);
 				break;
 			default:
 				fprintf(stderr, "Unsupported\n");
