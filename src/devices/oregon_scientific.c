@@ -42,7 +42,7 @@ unsigned int get_os_channel(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with channel in different position
   int channel = 0;
   channel = ((message[2] >> 4)&0x0f);
-  if ((channel == 4) && ! ((sensor_id >= 0x0cc3) && (sensor_id <= 0xfcc3)))
+  if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318)
     channel = 3; // sensor 3 channel number is 0x04
   return channel;
 }
