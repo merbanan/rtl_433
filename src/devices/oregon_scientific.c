@@ -2,6 +2,19 @@
 #include "data.h"
 #include "util.h"
 
+/// Documentation for Oregon Scientific protocols can be found here:
+/// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+
+// Sensors ID
+#define ID_THGR122N 0x1d20
+#define ID_THGR968  0x1d30
+#define ID_BHTR968  0x5d60
+#define ID_RGR968   0x2d10
+#define ID_THR228N  0xec40
+#define ID_THN132N  0xec40 // same as THR228N but different packet size
+#define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
+
+
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
   float temp_c = 0;
@@ -182,33 +195,20 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
     local_time_str(time_now, time_str);
 
     int sensor_id = (msg[0] << 8) | msg[1];
-    if ((sensor_id == 0x1d20) || (sensor_id == 0x1d30))    {
+    if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)){
       if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0) {
-
-        if (sensor_id == 0x1d20) {
-          data = data_make("time",         "",            DATA_STRING, time_str,
-              "model",         "",            DATA_STRING, "Weather Sensor THGR122N",
-              "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
-              "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
-              "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-              "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
-              "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
-              NULL);
-          data_acquired_handler(data);
-        } else {
-          data = data_make("time",         "",            DATA_STRING, time_str,
-              "model",         "",            DATA_STRING, "Weather Sensor THGR968 Outdoor",
-              "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
-              "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
-              "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-              "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
-              "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
-              NULL);
-          data_acquired_handler(data);
-        }
+        data = data_make("time",         "",            DATA_STRING, time_str,
+            "model",         "",            DATA_STRING, (sensor_id == ID_THGR122N) ? "Weather Sensor THGR122N": "Weather Sensor THGR968 Outdoor",
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
+            "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+            NULL);
+        data_acquired_handler(data);
       }
       return 1;
-    } else if (sensor_id == 0x5d60) {
+    } else if (sensor_id == ID_BHTR968) {
       if (validate_os_v2_message(msg, 185, num_valid_v2_bits, 19) == 0) {
         unsigned int comfort = msg[7] >>4;
         char *comfort_str="Normal";
@@ -220,12 +220,13 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         if      (forecast == 3)   forecast_str = "Rainy";
         else if (forecast == 6)   forecast_str = "Partly Cloudy";
         else if (forecast == 0xc) forecast_str = "Sunny";
-        float temp_c = get_os_temperature(msg, 0x5d60);
+        float temp_c = get_os_temperature(msg, sensor_id);
+        //TODO: change to new output system
         fprintf(stdout,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));
         fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
       }
       return 1;
-    } else if (sensor_id == 0x2d10) {
+    } else if (sensor_id == ID_RGR968) {
       if (validate_os_v2_message(msg, 161, num_valid_v2_bits, 16) == 0) {
         float rain_rate = (((msg[4] &0x0f)*100)+((msg[4]>>4)*10) + ((msg[5]>>4)&0x0f)) /10.0F;
         float total_rain = (((msg[7]&0xf)*10000)+((msg[7]>>4)*1000) + ((msg[6]&0xf)*100)+((msg[6]>>4)*10) + (msg[5]&0xf))/10.0F;
@@ -241,7 +242,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
       }
       return 1;
-    } else if (sensor_id == 0xec40 && num_valid_v2_bits==153) {
+    } else if (sensor_id == ID_THR228N && num_valid_v2_bits==153) {
       if (validate_os_v2_message(msg, 153, num_valid_v2_bits, 12) == 0) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
@@ -254,7 +255,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
       }
       return 1;
-    } else if (sensor_id == 0xec40 && num_valid_v2_bits==129) {
+    } else if (sensor_id == ID_THN132N && num_valid_v2_bits==129) {
       if (validate_os_v2_message(msg, 129, num_valid_v2_bits, 12) == 0) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
@@ -267,7 +268,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
       }
       return 1;
-    } else if ((sensor_id >= 0x0cc3) && (sensor_id <= 0xfcc3)) {
+    } else if ((sensor_id & 0x0fff) == ID_RTGN318) {
       if (num_valid_v2_bits==153 && (validate_os_v2_message(msg, 153, num_valid_v2_bits, 15) == 0)) {
 
         data = data_make("time",         "",            DATA_STRING, time_str,
