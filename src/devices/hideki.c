@@ -9,7 +9,7 @@
 //    SYNC+HEAD P   RC cha P           P     Nr.? P   .1° 1°  P   10°  BV P   1%  10% P  ????SYNC    -------Check?------- P
 
 //    00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999
-//    SYNC+HEAD cha   RC                Nr.?    1° .1°    BV 10°   10%  1%  SYNC????  -----Check?------
+//    SYNC+HEAD cha   RC                Nr.?    1° .1°  VB   10°   10%  1%  SYNC????  -----Check?------
 
 static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
@@ -27,6 +27,7 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
     //  * change endianness
     //  * toggle each bits
     //  * Remove (and check) parity bit
+    // TODO this may be factorise as a bitbuffer method (as for bitbuffer_manchester_decode)
     for(int i=0; i<HIDEKI_BYTES_PER_ROW; i++){
         unsigned int offset = i/8;
         packet[i] = b[i+offset] << (i%8);
@@ -47,18 +48,17 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
         if(channel >= 5) channel -= 1;
         uint8_t rc = packet[1] & 0x0F;
         int temp = (packet[5] & 0x0F) * 100 + ((packet[4] & 0xF0) >> 4) * 10 + (packet[4] & 0x0F);
-        if((packet[5]>>4) & 0x01){
+        if(((packet[5]>>7) & 0x01) == 0){
             temp = -temp;
         }
         uint8_t humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
-
-        uint8_t battery_low = (packet[5]>>5) & 0x01;
+        uint8_t battery_ok = (packet[5]>>6) & 0x01;
 
         data = data_make("time",          "",       DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "HIDEKI TS04 sensor",
                 "rc",            "Rolling Code",  DATA_INT, rc,
                 "channel",       "Channel",       DATA_INT, channel,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.f,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
