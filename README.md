@@ -108,6 +108,7 @@ Supported devices:
 	[40] Acurite 986 Refrigerator / Freezer Thermometer
 	[41] HIDEKI TS04 Temperature and Humidity sensor
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
+	[43] CurrentCost Current Sensor
 ```
 
 
