@@ -107,6 +107,7 @@ Supported devices:
 	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
 	[40] Acurite 986 Refrigerator / Freezer Thermometer
 	[41] HIDEKI TS04 Temperature and Humidity sensor
+	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 ```
 
 

@@ -48,6 +48,62 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 	}
 }
 
+// If we make this an inline function instead of a macro, it means we don't
+// have to worry about using bit numbers with side-effects (bit++).
+static inline int bit(const uint8_t *bytes, unsigned bit)
+{
+	return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+}
+
+unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
+			  const uint8_t *pattern, unsigned pattern_bits_len)
+{
+    uint8_t *bits = bitbuffer->bb[row];
+    unsigned len = bitbuffer->bits_per_row[row];
+    unsigned ipos = start;
+    unsigned ppos = 0;  // cursor on init pattern
+
+    while (ipos < len && ppos < pattern_bits_len) {
+	    if (bit(bits, ipos) == bit(pattern, ppos)) {
+		    ppos++;
+		    ipos++;
+		    if (ppos == pattern_bits_len)
+			    return ipos - pattern_bits_len;
+	    } else {
+		    ipos += -ppos + 1;
+		    ppos = 0;
+	    }
+    }
+
+    // Not found
+    return len;
+}
+
+unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
+				     bitbuffer_t *outbuf, unsigned max)
+{
+	uint8_t *bits = inbuf->bb[row];
+	unsigned int len = inbuf->bits_per_row[row];
+	unsigned int ipos = start;
+
+	if (max && len > start + (max * 2))
+		len = start + (max * 2);
+
+	while (ipos < len) {
+		uint8_t bit1, bit2;
+
+		bit1 = bit(bits, ipos++);
+		bit2 = bit(bits, ipos++);
+
+		if (bit1 == bit2)
+			break;
+
+		bitbuffer_add_bit(outbuf, bit2);
+	}
+
+	return ipos;
+}
+
 
 void bitbuffer_print(const bitbuffer_t *bits) {
 	fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
