@@ -53,7 +53,7 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
 	"model",
 	"id",
-	"channel"
+	"channel",
 	"button",
 	"state",
 	NULL
@@ -62,12 +62,12 @@ static char *output_fields[] = {
 
 r_device waveman = {
     .name           = "Waveman Switch Transmitter",
-    .modulation     = OOK_PWM_P,
+    .modulation     = OOK_PULSE_PWM_RAW,
     .short_limit    = 1000/4,
     .long_limit     = 8000/4,
     .reset_limit    = 30000/4,
     .json_callback  = &waveman_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
+    .demod_arg      = 1,	// Remove startbit
     .fields         = output_fields
 };

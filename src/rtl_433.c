@@ -582,79 +582,6 @@ static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16
     }
 }
 
-/* The length of pulses decodes into bits */
-
-static void pwm_p_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-    int newevents;
-
-    for (i = 0; i < len; i++) {
-        if (buf[i] > demod->level_limit && !p->start_bit) {
-            /* start bit detected */
-            p->start_bit = 1;
-            p->start_c = 1;
-            p->sample_counter = 0;
-            //            fprintf(stderr, "start bit pulse start detected\n");
-        }
-
-        if (!p->real_bits && p->start_bit && (buf[i] < demod->level_limit)) {
-            /* end of startbit */
-            p->real_bits = 1;
-            p->sample_counter = 0;
-            //            fprintf(stderr, "start bit pulse end detected\n");
-        }
-        if (p->start_c) p->sample_counter++;
-
-
-        if (!p->pulse_start && p->real_bits && (buf[i] > demod->level_limit)) {
-            /* save the pulse start, it will never be zero */
-            p->pulse_start = p->sample_counter;
-            //           fprintf(stderr, "real bit pulse start detected\n");
-
-        }
-
-        if (p->real_bits && p->pulse_start && (buf[i] < demod->level_limit)) {
-            /* end of pulse */
-
-            p->pulse_length = p->sample_counter - p->pulse_start;
-            //           fprintf(stderr, "real bit pulse end detected %d\n", p->pulse_length);
-            //           fprintf(stderr, "space duration %d\n", p->sample_counter);
-
-            if (p->pulse_length <= p->short_limit) {
-                bitbuffer_add_bit(&p->bits, 1);
-            } else if (p->pulse_length > p->short_limit) {
-                bitbuffer_add_bit(&p->bits, 0);
-            }
-            p->sample_counter = 0;
-            p->pulse_start = 0;
-        }
-
-        if (p->real_bits && p->sample_counter > p->long_limit) {
-            bitbuffer_add_row(&p->bits);
-
-            p->start_bit = 0;
-            p->real_bits = 0;
-        }
-
-        if (p->sample_counter > p->reset_limit) {
-            p->start_c = 0;
-            p->sample_counter = 0;
-            if (p->callback)
-                newevents = p->callback(&p->bits);
-            // Debug printout
-            if(!p->callback || (debug_output && newevents > 0)) {
-                fprintf(stderr, "pwm_p_decode(): %s \n", p->name);
-                bitbuffer_print(&p->bits);
-            }
-            events += newevents;
-            bitbuffer_clear(&p->bits);
-
-            p->start_bit = 0;
-            p->real_bits = 0;
-        }
-    }
-}
-
 
 static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
@@ -705,9 +632,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				case OOK_PWM_D:
 					pwm_d_decode(demod, demod->r_devs[i], demod->am_buf, len / 2);
 					break;
-				case OOK_PWM_P:
-					pwm_p_decode(demod, demod->r_devs[i], demod->am_buf, len / 2);
-					break;
 				// Add pulse demodulators here
 				case OOK_PULSE_PCM_RZ:
 				case OOK_PULSE_PPM_RAW:
@@ -733,7 +657,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					switch (demod->r_devs[i]->modulation) {
 						// Old style decoders
 						case OOK_PWM_D:
-						case OOK_PWM_P:
 							break;
 						case OOK_PULSE_PCM_RZ:
 							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
@@ -772,7 +695,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					switch (demod->r_devs[i]->modulation) {
 						// Old style decoders + OOK decoders
 						case OOK_PWM_D:
-						case OOK_PWM_P:
 						case OOK_PULSE_PCM_RZ:
 						case OOK_PULSE_PPM_RAW:
 						case OOK_PULSE_PWM_PRECISE:
