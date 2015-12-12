@@ -54,12 +54,12 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 		if (bitbuffer_search(bitbuffer, 0, bitpos, &postamble_pattern[b[7] & 1], 2) != bitpos)
 			continue;
 
-		if (b[0] != 0x28 || b[7] != crc8le(b, 7, 0x31, 0))
+		if (b[7] != crc8le(b, 7, 0x31, 0))
 			continue;
 
 		// The unit ID changes when you rebind by holding a magnet to the
 		// sensor for long enough; it seems to be time-based.
-		unit_id = (b[1] << 16) | (b[2] << 8) | b[3];
+		unit_id = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 
 		// 0x01: Rebinding (magnet held to sensor)
 		// 0x08: Leak/theft alarm
