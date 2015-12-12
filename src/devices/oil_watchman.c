@@ -107,7 +107,7 @@ static char *output_fields[] = {
 };
 
 r_device oil_watchman = {
-	.name			= "Ultrasonic oil monitor",
+	.name			= "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
 	.modulation		= FSK_PULSE_PCM,
 	.short_limit	= 250,
 	.long_limit     = 250, // NRZ

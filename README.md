@@ -54,7 +54,7 @@ Usage:	= Tuner options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
 	[-D] Print debug info on event (repeat for more info)
-        [-q] Quiet, suppress messages non-data related messages
+	[-q] Quiet mode, suppress non-data messages
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files
@@ -64,6 +64,7 @@ Usage:	= Tuner options =
 		 1 = AM demodulated samples (int16, 1 channel)
 		 2 = FM demodulated samples (int16) (experimental)
 		 Note: If output file is specified, input will always be I/Q
+	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported devices:
@@ -97,7 +98,7 @@ Supported devices:
 	[28] Valeo Car Key
 	[29] Chuango Security Technology
 	[30] Generic Remote SC226x EV1527
-	[31] TFA-Twin-Plus-30.3049 and Ea2 BL999
+	[31] TFA-Twin-Plus-30.3049
 	[32] Digitech XC0348 Weather Station
 	[33] WT450
 	[34] LaCrosse WS-2310 Weather Station
@@ -107,9 +108,10 @@ Supported devices:
 	[38] Generic temperature sensor 1
 	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
 	[40] Acurite 986 Refrigerator / Freezer Thermometer
-	[41] HIDEKI TS04 Temperature and Humidity sensor
+	[41] HIDEKI TS04 Temperature and Humidity Sensor
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
+
 ```
 
 
