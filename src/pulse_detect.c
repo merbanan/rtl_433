@@ -60,8 +60,8 @@ typedef struct {
 static pulse_state_t pulse_state;
 
 // OOK adaptive level estimator constants
-#define OOK_HIGH_LOW_RATIO	4			// Default ratio between high and low (noise) level
-#define OOK_MIN_HIGH_LEVEL	1000		// Minimum estimate of high level
+#define OOK_HIGH_LOW_RATIO	8			// Default ratio between high and low (noise) level
+#define OOK_MIN_HIGH_LEVEL	2000		// Minimum estimate of high level
 #define OOK_MAX_HIGH_LEVEL	(128*128)	// Maximum estimate for high level (A unit phasor is 128, anything above is overdrive)
 #define OOK_MAX_LOW_LEVEL	(OOK_MAX_HIGH_LEVEL/2)	// Maximum estimate for low level
 #define OOK_EST_RATIO		32			// Constant for slowness of OOK estimators
@@ -73,6 +73,7 @@ static pulse_state_t pulse_state;
 int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
+	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
 
 	// Process all new samples
 	while(s->data_counter < len) {
@@ -111,11 +112,16 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 				s->fsk_pulse_length++;
 				// End of pulse detected?
 				if (am_n  < (ook_threshold - ook_hysteresis)) {	// Gap?
-					// Continue with OOK decoding
-					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
-					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
-					s->pulse_length = 0;
-					s->state = PD_STATE_GAP;
+					// Check for spurious short pulses
+					if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
+						s->state = PD_STATE_IDLE;
+					} else {
+						// Continue with OOK decoding
+						pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
+						s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
+						s->pulse_length = 0;
+						s->state = PD_STATE_GAP;
+					}
 					// Determine if FSK modulation is detected
 					if(fsk_pulses->num_pulses > PD_MIN_PULSES) {
 						// Store last pulse/gap
