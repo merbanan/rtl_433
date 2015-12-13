@@ -42,7 +42,7 @@ Usage:	= Tuner options =
 	[-d <device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
-	[-p <ppm_error>] (default: 0)
+	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	[-S] Force sync output (default: async)
 	= Demodulator options =
@@ -55,13 +55,14 @@ Usage:	= Tuner options =
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
+	[-W] Overwrite mode, disable checks to prevent files from being overwritten
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
-		 Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files
+		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
 	[-r <filename>] Read data from input file instead of a receiver
 	[-m <mode>] Data file mode for input / output file (default: 0)
 		 0 = Raw I/Q samples (uint8, 2 channel)
-		 1 = AM demodulated samples (int16, 1 channel)
+		 1 = AM demodulated samples (int16 pcm, 1 channel)
 		 2 = FM demodulated samples (int16) (experimental)
 		 Note: If output file is specified, input will always be I/Q
 	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
@@ -98,7 +99,7 @@ Supported devices:
 	[28] Valeo Car Key
 	[29] Chuango Security Technology
 	[30] Generic Remote SC226x EV1527
-	[31] TFA-Twin-Plus-30.3049
+	[31] TFA-Twin-Plus-30.3049 and Ea2 BL999
 	[32] Digitech XC0348 Weather Station
 	[33] WT450
 	[34] LaCrosse WS-2310 Weather Station
@@ -111,7 +112,6 @@ Supported devices:
 	[41] HIDEKI TS04 Temperature and Humidity Sensor
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
-
 ```
 
 
