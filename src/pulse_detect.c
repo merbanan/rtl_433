@@ -152,9 +152,16 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 								s->fm_f1_est = s->fm_f1_est/2 + fm_n/2;		// Quick initial estimator
 							// Freq offset above delta threshold?
 							} else if (fm_delta > (s->fm_delta_est/2 + fm_hyst)) {
-								fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
-								s->fsk_pulse_length = 0;
 								s->state_fsk = PD_STATE_FSK_F2;
+								// Store if pulse is not too short (suppress spurious)
+								if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
+									fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
+									s->fsk_pulse_length = 0;
+								// Rewind if last gap was a good one (avoid rewinding too much)
+								} else if (fsk_pulses->gap[fsk_pulses->num_pulses-1] >= PD_MIN_PULSE_SAMPLES) {
+									s->fsk_pulse_length += fsk_pulses->gap[fsk_pulses->num_pulses-1];	// Restore counter
+									fsk_pulses->num_pulses--;		// Rewind one pulse
+								}
 							// Still below threshold
 							} else {
 								s->fm_f1_est = s->fm_f1_est - s->fm_f1_est/FSK_EST_RATIO + fm_n/FSK_EST_RATIO;	// Slow estimator
@@ -163,14 +170,20 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 						case PD_STATE_FSK_F2:		// Pulse gap at delta frequency
 							// Freq offset below delta threshold?
 							if (fm_delta < (s->fm_delta_est/2 - fm_hyst)) {
-								fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store gap width
-								fsk_pulses->num_pulses++;
-								s->fsk_pulse_length = 0;
 								s->state_fsk = PD_STATE_FSK_F1;
-								// EOP if too many pulses
-								if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-									s->state = PD_STATE_IDLE;
-									return 2;	// FSK: End Of Package!!
+								// Store if pulse is not too short (suppress spurious)
+								if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
+									fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store gap width
+									fsk_pulses->num_pulses++;	// Go to next pulse
+									s->fsk_pulse_length = 0;
+									// EOP if too many pulses
+									if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
+										s->state = PD_STATE_IDLE;
+										return 2;	// FSK: End Of Package!!
+									}
+								// Rewind if last pulse was a good one (avoid rewinding too much)
+								} else if (fsk_pulses->pulse[fsk_pulses->num_pulses] >= PD_MIN_PULSE_SAMPLES) {
+									s->fsk_pulse_length += fsk_pulses->pulse[fsk_pulses->num_pulses];	// Restore counter
 								}
 							// Still above threshold
 							} else {
