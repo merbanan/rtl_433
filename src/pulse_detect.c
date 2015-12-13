@@ -133,6 +133,9 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 						}
 						fsk_pulses->num_pulses++;
 //fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
+						// Store estimates
+						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
+						fsk_pulses->ook_high_estimate = s->ook_high_estimate;
 						return 2;	// FSK package detected!!!
 					}
 				} else {
@@ -179,6 +182,9 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 									// EOP if too many pulses
 									if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
 										s->state = PD_STATE_IDLE;
+										// Store estimates
+										fsk_pulses->ook_low_estimate = s->ook_low_estimate;
+										fsk_pulses->ook_high_estimate = s->ook_high_estimate;
 										return 2;	// FSK: End Of Package!!
 									}
 								// Rewind if last pulse was a good one (avoid rewinding too much)
@@ -222,6 +228,9 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					// EOP if too many pulses
 					if (pulses->num_pulses >= PD_MAX_PULSES) {
 						s->state = PD_STATE_IDLE;
+						// Store estimates
+						pulses->ook_low_estimate = s->ook_low_estimate;
+						pulses->ook_high_estimate = s->ook_high_estimate;
 						return 1;	// End Of Package!!
 					}
 
@@ -238,6 +247,9 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					pulses->num_pulses++;	// Store last pulse
 					s->state = PD_STATE_IDLE;
 //fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
+					// Store estimates
+					pulses->ook_low_estimate = s->ook_low_estimate;
+					pulses->ook_high_estimate = s->ook_high_estimate;
 					return 1;	// End Of Package!!
 				}
 				break;
@@ -423,6 +435,7 @@ void pulse_analyzer(pulse_data_t *data)
 	histogram_print(&hist_gaps);
 	fprintf(stderr, "Pulse period distribution:\n");
 	histogram_print(&hist_periods);
+	fprintf(stderr, "Level estimates: %i / %i\n", data->ook_low_estimate, data->ook_high_estimate);
 
 	fprintf(stderr, "Guessing modulation: ");
 	struct protocol_state device = { .name = "Analyzer Device", 0};
