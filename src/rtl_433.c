@@ -1058,8 +1058,9 @@ int main(int argc, char **argv) {
 	if (!quiet_mode) {
 	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
 	}
-        while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
-            rtlsdr_callback(test_mode_buf, 131072, demod);
+        int n_read;
+        while ((n_read = fread(test_mode_buf, 1, 131072, in_file)) != 0) {
+            rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
         }
 
