@@ -42,6 +42,8 @@ static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
 int quiet_mode = 0;
+int overwrite_mode = 0;
+
 
 int num_r_devices = 0;
 
@@ -98,6 +100,7 @@ void usage(r_device *devices) {
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
 	    "\t[-q] Quiet mode, suppress non-data messages\n"
+	    "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
@@ -480,7 +483,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
 		    while (1) {
 			sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
 			demod->signal_grabber++;
-			if (access(sgf_name, F_OK) == -1) {
+			if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
 			    break;
 			}
 		    }
@@ -818,7 +821,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:W")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -903,6 +906,10 @@ int main(int argc, char **argv) {
                     usage(devices);
 		}
 		break;
+            case 'W':
+	        overwrite_mode = 1;
+		break;
+
             default:
                 usage(devices);
                 break;
@@ -1020,7 +1027,7 @@ int main(int argc, char **argv) {
 			_setmode(_fileno(stdin), _O_BINARY);
 #endif
 		} else {
-		        if (access(out_filename, F_OK) == 0) {
+		        if (access(out_filename, F_OK) == 0 && !overwrite_mode) {
 			    fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
 			    goto out;
 			}
