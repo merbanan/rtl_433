@@ -362,7 +362,7 @@ Passed 74/74 positive tests
 #endif
 
 r_device tfa_twin_plus_303049 = {
-  .name          = "TFA-Twin-Plus-30.3049",
+  .name          = "TFA-Twin-Plus-30.3049 and Ea2 BL999",
   .modulation    = OOK_PULSE_PPM_RAW,
   .short_limit   = 700,
   .long_limit    = 2000,

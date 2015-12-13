@@ -42,6 +42,8 @@ static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
 int quiet_mode = 0;
+int overwrite_mode = 0;
+
 
 int num_r_devices = 0;
 
@@ -85,7 +87,7 @@ void usage(r_device *devices) {
             "\t[-d <device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
-            "\t[-p <ppm_error>] (default: 0)\n"
+            "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
@@ -97,14 +99,15 @@ void usage(r_device *devices) {
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
-	    "\t[-q] Quiet, suppress messages non-data related messages\n"
+	    "\t[-q] Quiet mode, suppress non-data messages\n"
+	    "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
-            "\t\t Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files\n"
+            "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
             "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
             "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
-            "\t\t 1 = AM demodulated samples (int16)\n"
+            "\t\t 1 = AM demodulated samples (int16 pcm, 1 channel)\n"
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
@@ -477,8 +480,14 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     char sgf_name[256] = {0};
                     FILE *sgfp;
 
-                    sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
-                    demod->signal_grabber++;
+		    while (1) {
+			sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
+			demod->signal_grabber++;
+			if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
+			    break;
+			}
+		    }
+
                     signal_bszie = 2 * (signal_end - (signal_start - 10000));
                     signal_bszie = (131072 - (signal_bszie % 131072)) + signal_bszie;
                     sg_idx = demod->sg_index - demod->sg_len;
@@ -812,7 +821,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:W")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -897,6 +906,10 @@ int main(int argc, char **argv) {
                     usage(devices);
 		}
 		break;
+            case 'W':
+	        overwrite_mode = 1;
+		break;
+
             default:
                 usage(devices);
                 break;
@@ -1014,6 +1027,10 @@ int main(int argc, char **argv) {
 			_setmode(_fileno(stdin), _O_BINARY);
 #endif
 		} else {
+		        if (access(out_filename, F_OK) == 0 && !overwrite_mode) {
+			    fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
+			    goto out;
+			}
 			demod->out_file = fopen(out_filename, "wb");
 			if (!demod->out_file) {
 				fprintf(stderr, "Failed to open %s\n", out_filename);

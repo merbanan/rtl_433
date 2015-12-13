@@ -42,7 +42,7 @@ Usage:	= Tuner options =
 	[-d <device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
-	[-p <ppm_error>] (default: 0)
+	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	[-S] Force sync output (default: async)
 	= Demodulator options =
@@ -54,15 +54,18 @@ Usage:	= Tuner options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
 	[-D] Print debug info on event (repeat for more info)
+	[-q] Quiet mode, suppress non-data messages
+	[-W] Overwrite mode, disable checks to prevent files from being overwritten
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
-		 Note: Saves raw I/Q samples (uint8, 2 channel). Preferred mode for generating test files
+		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
 	[-r <filename>] Read data from input file instead of a receiver
 	[-m <mode>] Data file mode for input / output file (default: 0)
 		 0 = Raw I/Q samples (uint8, 2 channel)
-		 1 = AM demodulated samples (int16)
+		 1 = AM demodulated samples (int16 pcm, 1 channel)
 		 2 = FM demodulated samples (int16) (experimental)
 		 Note: If output file is specified, input will always be I/Q
+	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported devices:
@@ -106,7 +109,7 @@ Supported devices:
 	[38] Generic temperature sensor 1
 	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
 	[40] Acurite 986 Refrigerator / Freezer Thermometer
-	[41] HIDEKI TS04 Temperature and Humidity sensor
+	[41] HIDEKI TS04 Temperature and Humidity Sensor
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
 ```
@@ -116,30 +119,44 @@ Examples:
 
 | Command | Description
 |---------|------------
-| `rtl_433` | Will run the software in receive mode. Some sensor data can be received and decoded.
+| `rtl_433` | Default receive mode, attempt to decode all known devices
+| `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40 | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
+| `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
 | `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
-| `rtl_433 -r file_name` | Will run with a saved test file as input data.
-| `rtl_433 file_name` | Will save the received signal data stream in a file (file may become large).
+| `rtl_433 -r file_name` | Play back a saved data file. 
+| `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
 
 This software is mostly useable for developers right now.
 
 
-Test Data
-------------
+Supporting Additional Devices and Test Data
+-------------------------------------------
 
-Recordings of the transmitted signals are vital in trying to figure out the signal format. So before you
-request anything make sure you have recorded a proper set of test signals (10 maybe) together with
-with the decoded reference values. Then take pictures of the device, preferable even the pcb. Then
-document as much as possible about the device. Now when you have all this, check out the rtl_433_tests
-repository.
+The first step in decoding new devices is to record the signals using `-a -t`. The signals will be
+stored individually in files named gfileNNN.data that can be played back with `rtl_433 -r gfileNNN.data`.
+
+These files are vital for understanding the signal format as well as the message data.  Use both analyzers
+`-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gfileNNN.data -a -A`.
+
+Make sure you have recorded a proper set of test signals representing different conditions together
+with any and all information about the values that the signal should represent. For example, make a
+note of what temperature and/or humidity is the signal encoding. Ideally, capture a range of data
+values, such a different temperatures, to make it easy to spot what part of the message is changing.
+
+Add the data files, a text file describing the captured signals, pictures of the device and/or
+a link the manufacturer's page (ideally with specifications) to the rtl_433_tests
+github repository. Follow the existing structure as best as possible and send a pull request.
 
 https://github.com/merbanan/rtl_433_tests
 
-Follow the existing structure as best as possible and send a pull request.
-Now you can add an issue about wanting support for an unsupported format.
+Please don't open a new github issue for device support or request decoding help from others
+until you've added test signals and the description to the repository.
+
+The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
 
 Google Group
 ------------
 
+Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433

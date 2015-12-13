@@ -62,7 +62,7 @@ static char *output_fields[] = {
 };
 
 r_device current_cost = {
-    .name           = "CurrentCost Sensor",
+    .name           = "CurrentCost Current Sensor",
     .modulation     = FSK_PULSE_PCM,
     .short_limit    = 62,
     .long_limit     = 62, // NRZ
