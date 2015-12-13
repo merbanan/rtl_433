@@ -85,7 +85,7 @@ void usage(r_device *devices) {
             "\t[-d <device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
-            "\t[-p <ppm_error>] (default: 0)\n"
+            "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
