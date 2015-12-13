@@ -44,6 +44,9 @@ typedef struct {
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
 
+	int ook_low_estimate;		// Estimate for the OOK low level (base noise level) in the envelope data
+	int ook_high_estimate;		// Estimate for the OOK high level
+
 	unsigned int fsk_pulse_length;		// Counter for internal FSK pulse detection
 	enum {
 		PD_STATE_FSK_F1	= 0,	// High pulse
@@ -56,20 +59,34 @@ typedef struct {
 } pulse_state_t;
 static pulse_state_t pulse_state;
 
+// OOK adaptive level estimator constants
+#define OOK_HIGH_LOW_RATIO	4			// Default ratio between high and low (noise) level
+#define OOK_MIN_HIGH_LEVEL	1000		// Minimum estimate of high level
+#define OOK_MAX_HIGH_LEVEL	(128*128)	// Maximum estimate for high level (A unit phasor is 128, anything above is overdrive)
+#define OOK_MAX_LOW_LEVEL	(OOK_MAX_HIGH_LEVEL/2)	// Maximum estimate for low level
+#define OOK_EST_RATIO		32			// Constant for slowness of OOK estimators
+
+// FSK adaptive frequency estimator constants
 #define FSK_EST_RATIO	32	// Constant for slowness of FSK estimators
 #define FSK_DEFAULT_FM_DELTA	8000	// Default estimate for frequency delta
 
 int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
-	const int16_t HYSTERESIS = level_limit / 8;	// ±12%
 	pulse_state_t *s = &pulse_state;
 
 	// Process all new samples
 	while(s->data_counter < len) {
+		// Calculate OOK detection threshold and hysteresis
+		const int16_t am_n = envelope_data[s->data_counter];
+		int16_t ook_threshold = s->ook_low_estimate + (s->ook_high_estimate - s->ook_low_estimate) / 2;
+		if (level_limit != 0) ook_threshold = level_limit;	// Manual override
+		const int16_t ook_hysteresis = ook_threshold / 8;	// ±12%
+
+		// OOK State machine
 		switch (s->state) {
 			case PD_STATE_IDLE:
 				// Above threshold?
-				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {
+				if (am_n > (ook_threshold + ook_hysteresis)) {
 					// Initialize all data
 					pulse_data_clear(pulses);
 					pulse_data_clear(fsk_pulses);
@@ -80,13 +97,20 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					s->fm_delta_est = FSK_DEFAULT_FM_DELTA;	// FSK delta frequency start estimate
 					s->state_fsk = PD_STATE_FSK_F1;
 					s->state = PD_STATE_FIRST_PULSE;
+				} else {
+					// Estimate low (noise) level
+					s->ook_low_estimate += am_n / OOK_EST_RATIO - s->ook_low_estimate / OOK_EST_RATIO;
+					// Calculate default OOK high level estimate
+					s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;	// Default is a ratio of low level
+					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
 				}
 				break;
 			case PD_STATE_FIRST_PULSE:		// First pulse may be FSK
 				s->pulse_length++;
 				s->fsk_pulse_length++;
 				// End of pulse detected?
-				if (envelope_data[s->data_counter] < (level_limit - HYSTERESIS)) {	// Gap?
+				if (am_n  < (ook_threshold - ook_hysteresis)) {	// Gap?
 					// Continue with OOK decoding
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
@@ -102,10 +126,16 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 							fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store last gap
 						}
 						fsk_pulses->num_pulses++;
+//fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
 						return 2;	// FSK package detected!!!
 					}
 				} else {
-					// FSK Demodulation
+					// Calculate OOK high level estimate
+					s->ook_high_estimate += am_n / OOK_EST_RATIO - s->ook_high_estimate / OOK_EST_RATIO;	//  Slow estimator
+					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+
+					// **** Start of FSK Demodulation ****
 					int fm_n = fm_data[s->data_counter];		// Get current FM sample
 					int fm_delta = abs(fm_n - s->fm_f1_est);	// Get delta from base frequency estimate
 					int fm_hyst = (s->fm_delta_est/2) / 8; 		// ±12% hysteresis on threshold
@@ -145,22 +175,28 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 							fprintf(stderr, "pulse_demod(): Unknown FSK state!!\n");
 							s->state_fsk = PD_STATE_FSK_F1;
 					} // switch(s->state_fsk)
+					// **** End of FSK Demodulation ****
 				} // if
 				break;
 			case PD_STATE_PULSE:
 				s->pulse_length++;
 				// End of pulse detected?
-				if (envelope_data[s->data_counter] < (level_limit - HYSTERESIS)) {	// Gap?
+				if (am_n  < (ook_threshold - ook_hysteresis)) {	// Gap?
 					pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 					s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
 					s->pulse_length = 0;
 					s->state = PD_STATE_GAP;
+				} else {
+					// Calculate OOK high level estimate
+					s->ook_high_estimate += am_n / OOK_EST_RATIO - s->ook_high_estimate / OOK_EST_RATIO;	//  Slow estimator
+					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
 				}
 				break;
 			case PD_STATE_GAP:
 				s->pulse_length++;
 				// New pulse detected?
-				if (envelope_data[s->data_counter] > (level_limit + HYSTERESIS)) {	// New pulse?
+				if (am_n  > (ook_threshold + ook_hysteresis)) {	// New pulse?
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Next pulse
 
@@ -182,6 +218,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Store last pulse
 					s->state = PD_STATE_IDLE;
+//fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
 					return 1;	// End Of Package!!
 				}
 				break;
