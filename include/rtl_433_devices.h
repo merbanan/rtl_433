@@ -46,7 +46,8 @@
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \
 		DECL(oil_watchman) \
-		DECL(current_cost)
+		DECL(current_cost) \
+                DECL(rst)
 
 typedef struct {
 	char name[256];
