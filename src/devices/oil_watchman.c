@@ -28,14 +28,12 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 	uint16_t binding_countdown = 0;
 	uint8_t flags;
 	uint8_t maybetemp;
-	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	unsigned bitpos = 0;
 	bitbuffer_t databits = {0};
 
-	time(&time_now);
-	local_time_str(time_now, time_str);
+	local_time_str(0, time_str);
 
 	// Find a preamble with enough bits after it that it could be a complete packet
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, &preamble_pattern, 6)) + 136 <=

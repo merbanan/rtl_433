@@ -36,6 +36,7 @@ uint32_t frequency[MAX_PROTOCOLS];
 time_t rawtime_old;
 int flag;
 uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
+float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static int override_short = 0;
@@ -1058,9 +1059,11 @@ int main(int argc, char **argv) {
 	if (!quiet_mode) {
 	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
 	}
+	sample_file_pos = 0.0;
         while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
             rtlsdr_callback(test_mode_buf, 131072, demod);
             i++;
+	    sample_file_pos = (float)i * 131072 / samp_rate;
         }
 
         // Call a last time with cleared samples to ensure EOP detection

@@ -62,10 +62,8 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
     int i;
 
 	data_t *data;
-	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
-	time(&time_now);
-	local_time_str(time_now, time_str);
+	local_time_str(0, time_str);
 
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
             && (bb[5][0] != 0 && bb[5][1] != 0)) {

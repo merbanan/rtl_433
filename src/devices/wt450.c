@@ -73,11 +73,9 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
    uint8_t bit;
    uint8_t parity = 0;
 
-   time_t time_now;
    char time_str[LOCAL_TIME_BUFLEN];
    data_t *data;
-   time(&time_now);
-   local_time_str(time_now, time_str);
+   local_time_str(0, time_str);
 
 //bitbuffer_print(bitbuffer);
 

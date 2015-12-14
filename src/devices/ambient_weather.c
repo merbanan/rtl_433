@@ -103,11 +103,9 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
   uint16_t channel;
   uint16_t deviceID;
 
-  time_t time_now;
   char time_str[LOCAL_TIME_BUFLEN];
   data_t *data;
-  time(&time_now);
-  local_time_str(time_now, time_str);
+  local_time_str(0, time_str);
 
   if(bitbuffer->bits_per_row[0] != 195)	// There seems to be 195 bits in a correct message
     return 0;
