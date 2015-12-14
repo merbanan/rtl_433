@@ -30,10 +30,8 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
 #if 0
   {
     // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
     fprintf(stdout, "%s Brennstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
     for(int i=0; i<4; i++)
     {
@@ -69,10 +67,8 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
 #if 0 && !defined(NDEBUG)
   {
     // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
     fprintf(stdout, "%s Brennstuhl RCS 2044: received bit sequence: ", time_str);
     for(int i=0; i<4; i++)
     {
@@ -152,10 +148,8 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
 
   {
     /* @todo: remove timestamp printing as soon as the controller takes this task */
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
     fprintf(stdout, "%s Brennstuhl RCS 2044: system code: %d%d%d%d%d. key: %c, state: %s\n",
       time_str,
       system_code[0], system_code[1], system_code[2], system_code[3], system_code[4],

@@ -26,7 +26,6 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
 
     uint8_t rid;
@@ -45,8 +44,7 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
         (bb[1][3] == bb[2][3]) && (bb[1][4] == bb[2][4]))) {
 
         /* Get time now */
-        time(&time_now);
-        local_time_str(time_now, time_str);
+        local_time_str(0, time_str);
 
         /* Prologue sensor */
         id = (bb[1][0]&0xF0)>>4;

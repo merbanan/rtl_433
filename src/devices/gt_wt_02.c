@@ -104,10 +104,8 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
   {
     /* @todo: remove timestamp printing as soon as the controller takes this task */
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
 
     /* @todo make temperature unit configurable, not printing both */
     fprintf(stdout, "%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %s%%\n"

@@ -7,11 +7,9 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
 
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
 
     uint8_t init_pattern[] = {
       0b11001100, //8
