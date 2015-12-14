@@ -62,6 +62,7 @@ add_executable(rtl_433
 	devices/hideki.c
 	devices/oil_watchman.c
 	devices/current_cost.c
+        devices/rst.c
 )
 
 add_library(data data.c)
