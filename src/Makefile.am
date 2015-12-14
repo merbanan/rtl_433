@@ -46,6 +46,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/inovalley-kw9015b.c \
                        devices/generic_temperature_sensor.c\
                        devices/hideki.c\
-                       devices/current_cost.c
+                       devices/current_cost.c\
+                       devices/rst.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
