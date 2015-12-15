@@ -28,6 +28,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 	uint16_t binding_countdown = 0;
 	uint8_t flags;
 	uint8_t maybetemp;
+	double temperature;
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	unsigned bitpos = 0;
@@ -67,7 +68,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 		// Not entirely sure what this is but it might be inversely
 		// proportional to temperature.
 		maybetemp = b[5] >> 2;
-
+		temperature = (double)(145.0 - 5.0 * maybetemp) / 3.0;
 		if (flags & 1)
 			// When binding, the countdown counts up from 0x51 to 0x5a
 			// (as long as you hold the magnet to it for long enough)
@@ -85,6 +86,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 				 "id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
 				 "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
 				 "maybetemp", "", DATA_INT, maybetemp,
+				 "temperature_C", "", DATA_DOUBLE, temperature,
 				 "binding_countdown", "", DATA_INT, binding_countdown,
 				 "depth", "", DATA_INT, depth,
 				 NULL);
@@ -99,6 +101,7 @@ static char *output_fields[] = {
 	"id",
 	"flags",
 	"maybetemp",
+	"temperature_C",
 	"binding_countdown",
 	"depth",
 	NULL
