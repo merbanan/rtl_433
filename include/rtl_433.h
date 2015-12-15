@@ -49,6 +49,7 @@
 #define	FSK_PULSE_PWM_RAW		17			// FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
 
 extern int debug_output;
+extern float sample_file_pos;
 
 struct protocol_state {
     int (*callback)(bitbuffer_t *bitbuffer);

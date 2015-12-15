@@ -62,7 +62,6 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum, parity_bit, parity = 0;
-	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 
 
@@ -110,8 +109,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
-			time(&time_now);
-			local_time_str(time_now, time_str);
+			local_time_str(0, time_str);
 			fprintf(stdout,
 				"%s LaCrosse Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
 				time_str, checksum, msg_nybbles[10], parity);
@@ -175,7 +173,7 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 			    continue;
 			}
 
-			local_time_str(time_now, time_str);
+			local_time_str(0, time_str);
 
 			// Check Repeated data values as another way of verifying
 			// message integrity.

@@ -189,10 +189,8 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
     } // for (pattern...
 
     data_t *data;
-    time_t time_now;
     char time_str[LOCAL_TIME_BUFLEN];
-    time(&time_now);
-    local_time_str(time_now, time_str);
+    local_time_str(0, time_str);
 
     int sensor_id = (msg[0] << 8) | msg[1];
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)){

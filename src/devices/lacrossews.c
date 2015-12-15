@@ -26,7 +26,6 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum = 0, parity = 0;
-	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 
 	// Weather Station 2310 Packets
@@ -61,8 +60,7 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 			checksum == msg_nybbles[12])
 			return 1;
 		else {
-			time(&time_now);
-			local_time_str(time_now, time_str);
+			local_time_str(0, time_str);
 			fprintf(stdout,
 				"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
 				time_str, checksum, msg_nybbles[12], parity);
@@ -86,7 +84,6 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 	uint8_t ws_id, msg_type, sensor_id, msg_data, msg_unknown, msg_checksum;
 	int msg_value_bcd, msg_value_bcd2, msg_value_bin;
 	float temp_c, temp_f, wind_dir, wind_spd, rain_mm, rain_in;
-	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
 
 	for (m = 0; m < BITBUF_ROWS; m++) {
@@ -103,9 +100,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			msg_value_bin = (msg_nybbles[7] * 256 + msg_nybbles[8] * 16 + msg_nybbles[9]);
 			msg_checksum = msg_nybbles[12];
 
-			time(&time_now);
-
-			local_time_str(time_now, time_str);
+			local_time_str(0, time_str);
 
 			if (debug_output) 
 				fprintf(stderr, "%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X   ",
