@@ -431,9 +431,10 @@ static void classify_signal() {
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
 
     for (i = 0; i < len; i++) {
-        if (buf[i] > demod->level_limit) {
+        if (buf[i] > threshold) {
             if (!signal_start)
                 signal_start = counter;
             if (print) {
@@ -451,7 +452,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
             }
         }
         counter++;
-        if (buf[i] < demod->level_limit) {
+        if (buf[i] < threshold) {
             if (print2) {
                 pulse_avg += counter - pulse_start;
                 if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
@@ -543,20 +544,21 @@ err:
 static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
     int newevents;
+    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
 
     for (i = 0; i < len; i++) {
-        if (buf[i] > demod->level_limit) {
+        if (buf[i] > threshold) {
             p->pulse_count = 1;
             p->start_c = 1;
         }
-        if (p->pulse_count && (buf[i] < demod->level_limit)) {
+        if (p->pulse_count && (buf[i] < threshold)) {
             p->pulse_length = 0;
             p->pulse_distance = 1;
             p->sample_counter = 0;
             p->pulse_count = 0;
         }
         if (p->start_c) p->sample_counter++;
-        if (p->pulse_distance && (buf[i] > demod->level_limit)) {
+        if (p->pulse_distance && (buf[i] > threshold)) {
             if (p->sample_counter < p->short_limit) {
                 bitbuffer_add_bit(&p->bits, 0);
             } else if (p->sample_counter < p->long_limit) {

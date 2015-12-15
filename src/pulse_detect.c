@@ -43,6 +43,7 @@ typedef struct {
 	unsigned int max_pulse;			// Size of biggest pulse detected
 
 	unsigned int data_counter;		// Counter for how much of data chunck is processed
+	unsigned int lead_in_counter;	// Counter for allowing initial noise estimate to settle
 
 	int ook_low_estimate;		// Estimate for the OOK low level (base noise level) in the envelope data
 	int ook_high_estimate;		// Estimate for the OOK high level
@@ -68,7 +69,7 @@ static pulse_state_t pulse_state;
 
 // FSK adaptive frequency estimator constants
 #define FSK_EST_RATIO	32	// Constant for slowness of FSK estimators
-#define FSK_DEFAULT_FM_DELTA	8000	// Default estimate for frequency delta
+#define FSK_DEFAULT_FM_DELTA	4000	// Default estimate for frequency delta
 
 int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const unsigned int samples_per_ms = samp_rate / 1000;
@@ -87,7 +88,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 		switch (s->state) {
 			case PD_STATE_IDLE:
 				// Above threshold?
-				if (am_n > (ook_threshold + ook_hysteresis)) {
+				if (am_n > (ook_threshold + ook_hysteresis) && s->lead_in_counter > OOK_EST_RATIO) {
 					// Initialize all data
 					pulse_data_clear(pulses);
 					pulse_data_clear(fsk_pulses);
@@ -105,6 +106,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;	// Default is a ratio of low level
 					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
 					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+					if (s->lead_in_counter <= OOK_EST_RATIO) s->lead_in_counter++;		// Allow inital estimate to settle
 				}
 				break;
 			case PD_STATE_FIRST_PULSE:		// First pulse may be FSK
