@@ -93,15 +93,15 @@ void usage(r_device *devices) {
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
-            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (default: %i)\n"
+            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
-	    "\t[-q] Quiet mode, suppress non-data messages\n"
-	    "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
+            "\t[-q] Quiet mode, suppress non-data messages\n"
+            "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
@@ -432,9 +432,10 @@ static void classify_signal() {
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
+    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
 
     for (i = 0; i < len; i++) {
-        if (buf[i] > demod->level_limit) {
+        if (buf[i] > threshold) {
             if (!signal_start)
                 signal_start = counter;
             if (print) {
@@ -452,7 +453,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
             }
         }
         counter++;
-        if (buf[i] < demod->level_limit) {
+        if (buf[i] < threshold) {
             if (print2) {
                 pulse_avg += counter - pulse_start;
                 if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
@@ -544,20 +545,21 @@ err:
 static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
     unsigned int i;
     int newevents;
+    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
 
     for (i = 0; i < len; i++) {
-        if (buf[i] > demod->level_limit) {
+        if (buf[i] > threshold) {
             p->pulse_count = 1;
             p->start_c = 1;
         }
-        if (p->pulse_count && (buf[i] < demod->level_limit)) {
+        if (p->pulse_count && (buf[i] < threshold)) {
             p->pulse_length = 0;
             p->pulse_distance = 1;
             p->sample_counter = 0;
             p->pulse_count = 0;
         }
         if (p->start_c) p->sample_counter++;
-        if (p->pulse_distance && (buf[i] > demod->level_limit)) {
+        if (p->pulse_distance && (buf[i] > threshold)) {
             if (p->sample_counter < p->short_limit) {
                 bitbuffer_add_bit(&p->bits, 0);
             } else if (p->sample_counter < p->long_limit) {
@@ -1060,10 +1062,11 @@ int main(int argc, char **argv) {
 	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
 	}
 	sample_file_pos = 0.0;
-        while (fread(test_mode_buf, 131072, 1, in_file) != 0) {
-            rtlsdr_callback(test_mode_buf, 131072, demod);
+        int n_read;
+        while ((n_read = fread(test_mode_buf, 1, 131072, in_file)) != 0) {
+            rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
-	    sample_file_pos = (float)i * 131072 / samp_rate;
+	    sample_file_pos = (float)i * n_read / samp_rate;
         }
 
         // Call a last time with cleared samples to ensure EOP detection

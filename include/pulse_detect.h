@@ -26,6 +26,8 @@ typedef struct {
 	unsigned int num_pulses;
 	unsigned int pulse[PD_MAX_PULSES];	// Contains width of a pulse	(high)
 	unsigned int gap[PD_MAX_PULSES];	// Width of gaps between pulses (low)
+	int ook_low_estimate;				// Estimate for the OOK low level (base noise level) at beginning of package
+	int ook_high_estimate;				// Estimate for the OOK high level at end of package
 } pulse_data_t;
 
 
