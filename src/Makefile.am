@@ -16,6 +16,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/brennstuhl_rcs_2044.c \
                        devices/calibeur.c \
                        devices/cardin.c \
+                       devices/current_cost.c \
                        devices/chuango.c \
                        devices/danfoss.c \
                        devices/dsc.c \
@@ -25,13 +26,17 @@ rtl_433_SOURCES      = baseband.c \
                        devices/esperanza_ews.c \
                        devices/fineoffset.c \
                        devices/generic_remote.c \
+                       devices/generic_temperature_sensor.c \
                        devices/gt_wt_02.c \
+                       devices/hideki.c \
+                       devices/inovalley-kw9015b.c \
                        devices/intertechno.c \
                        devices/lacrosse.c \
                        devices/lacrossews.c \
                        devices/mebus.c \
                        devices/newkaku.c \
                        devices/nexus.c \
+                       devices/oil_watchman.c \
                        devices/oregon_scientific.c \
                        devices/prologue.c \
                        devices/rubicson.c \
@@ -42,10 +47,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/waveman.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/xc0348.c \
-                       devices/inovalley-kw9015b.c \
-                       devices/generic_temperature_sensor.c\
-                       devices/hideki.c\
-                       devices/current_cost.c
+                       devices/xc0348.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
