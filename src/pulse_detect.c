@@ -437,7 +437,7 @@ void pulse_analyzer(pulse_data_t *data)
 	histogram_print(&hist_gaps);
 	fprintf(stderr, "Pulse period distribution:\n");
 	histogram_print(&hist_periods);
-	fprintf(stderr, "Level estimates: %i / %i\n", data->ook_low_estimate, data->ook_high_estimate);
+	fprintf(stderr, "Level estimates (signal / noise): %i / %i\n", data->ook_high_estimate, data->ook_low_estimate);
 
 	fprintf(stderr, "Guessing modulation: ");
 	struct protocol_state device = { .name = "Analyzer Device", 0};
