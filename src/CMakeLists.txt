@@ -17,51 +17,51 @@
 # Build utility
 ########################################################################
 add_executable(rtl_433 
-	rtl_433.c
 	baseband.c
 	bitbuffer.c
+	data.c
 	pulse_demod.c
 	pulse_detect.c
+	rtl_433.c
 	util.c
-	data.c
-	devices/silvercrest.c
-	devices/rubicson.c
-	devices/prologue.c
-	devices/waveman.c
-	devices/steffen.c
-	devices/elv.c
-	devices/lacrosse.c
 	devices/acurite.c
-	devices/oregon_scientific.c
-	devices/mebus.c
-	devices/intertechno.c
 	devices/alecto.c
-	devices/newkaku.c
-	devices/cardin.c
-	devices/fineoffset.c
-	devices/nexus.c
 	devices/ambient_weather.c
-	devices/calibeur.c
-	devices/x10_rf.c
-	devices/dsc.c
 	devices/brennstuhl_rcs_2044.c
-	devices/gt_wt_02.c
-	devices/danfoss.c
-	devices/ec3k.c
-	devices/valeo.c
+	devices/calibeur.c
+	devices/cardin.c
 	devices/chuango.c
-	devices/generic_remote.c
-	devices/tfa_twin_plus_30.3049.c
-	devices/xc0348.c
-	devices/wt450.c
-	devices/lacrossews.c
-	devices/esperanza_ews.c
-	devices/efergy_e2_classic.c
-	devices/inovalley-kw9015b.c
-	devices/generic_temperature_sensor.c
-	devices/hideki.c
-	devices/oil_watchman.c
 	devices/current_cost.c
+	devices/danfoss.c
+	devices/dsc.c
+	devices/ec3k.c
+	devices/efergy_e2_classic.c
+	devices/elv.c
+	devices/esperanza_ews.c
+	devices/fineoffset.c
+	devices/generic_remote.c
+	devices/generic_temperature_sensor.c
+	devices/gt_wt_02.c
+	devices/hideki.c
+	devices/inovalley-kw9015b.c
+	devices/intertechno.c
+	devices/lacrosse.c
+	devices/lacrossews.c
+	devices/mebus.c
+	devices/newkaku.c
+	devices/nexus.c
+	devices/oil_watchman.c
+	devices/oregon_scientific.c
+	devices/prologue.c
+	devices/rubicson.c
+	devices/silvercrest.c
+	devices/steffen.c
+	devices/tfa_twin_plus_30.3049.c
+	devices/valeo.c
+	devices/waveman.c
+	devices/wt450.c
+	devices/x10_rf.c
+	devices/xc0348.c
 )
 
 add_library(data data.c)
