@@ -36,7 +36,7 @@ void pulse_data_print(const pulse_data_t *data) {
 #define OOK_MIN_HIGH_LEVEL	1000		// Minimum estimate of high level
 #define OOK_MAX_HIGH_LEVEL	(128*128)	// Maximum estimate for high level (A unit phasor is 128, anything above is overdrive)
 #define OOK_MAX_LOW_LEVEL	(OOK_MAX_HIGH_LEVEL/2)	// Maximum estimate for low level
-#define OOK_EST_RATIO		32			// Constant for slowness of OOK estimators
+#define OOK_EST_RATIO		64			// Constant for slowness of OOK estimators
 
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA	4000	// Default estimate for frequency delta
