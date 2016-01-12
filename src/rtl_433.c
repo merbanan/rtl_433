@@ -110,6 +110,7 @@ void usage(r_device *devices) {
             "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
             "\t\t 1 = AM demodulated samples (int16 pcm, 1 channel)\n"
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
+            "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
@@ -1048,6 +1049,7 @@ int main(int argc, char **argv) {
     if (in_filename) {
         int i = 0;
         unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
+        float test_mode_float_buf[DEFAULT_BUF_LENGTH];
 	if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
 	    in_file = stdin;
 	    in_filename = "<stdin>";
@@ -1060,14 +1062,30 @@ int main(int argc, char **argv) {
 	}
 	if (!quiet_mode) {
 	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
+	    fprintf(stderr, "Input format: %s\n", demod->debug_mode?"cf32":"uint8");
 	}
 	sample_file_pos = 0.0;
-        int n_read;
-        while ((n_read = fread(test_mode_buf, 1, 131072, in_file)) != 0) {
+
+        int n_read, cf32_tmp;
+        do {
+	    if (demod->debug_mode) {
+		n_read = fread(test_mode_float_buf, sizeof(float), 131072, in_file);
+		for(int n = 0; n < n_read; n++) {
+		    cf32_tmp = test_mode_float_buf[n]*127 + 127;
+			if (cf32_tmp < 0)
+			    cf32_tmp = 0;
+			else if (cf32_tmp > 255)
+			    cf32_tmp = 255;
+			test_mode_buf[n] = (uint8_t)cf32_tmp;
+		}
+            } else {
+                n_read = fread(test_mode_buf, 1, 131072, in_file);
+            }
+
             rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
 	    sample_file_pos = (float)i * n_read / samp_rate;
-        }
+        } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
         memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);     // 128 is 0 in unsigned data
