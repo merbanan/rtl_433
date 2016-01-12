@@ -635,7 +635,7 @@ r_device acurite5n1 = {
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1744/4,
     .long_limit     = 3500/4,
     .reset_limit    = 5000/4,
@@ -646,7 +646,7 @@ r_device acurite_rain_gauge = {
 
 r_device acurite_th = {
     .name           = "Acurite Temperature and Humidity Sensor",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 300,
     .long_limit     = 550,
     .reset_limit    = 2500,
