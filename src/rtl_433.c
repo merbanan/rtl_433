@@ -541,54 +541,6 @@ err:
     return;
 }
 
-/* The distance between pulses decodes into bits */
-
-static void pwm_d_decode(struct dm_state *demod, struct protocol_state* p, int16_t *buf, uint32_t len) {
-    unsigned int i;
-    int newevents;
-    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
-
-    for (i = 0; i < len; i++) {
-        if (buf[i] > threshold) {
-            p->pulse_count = 1;
-            p->start_c = 1;
-        }
-        if (p->pulse_count && (buf[i] < threshold)) {
-            p->pulse_length = 0;
-            p->pulse_distance = 1;
-            p->sample_counter = 0;
-            p->pulse_count = 0;
-        }
-        if (p->start_c) p->sample_counter++;
-        if (p->pulse_distance && (buf[i] > threshold)) {
-            if (p->sample_counter < p->short_limit) {
-                bitbuffer_add_bit(&p->bits, 0);
-            } else if (p->sample_counter < p->long_limit) {
-                bitbuffer_add_bit(&p->bits, 1);
-            } else {
-                bitbuffer_add_row(&p->bits);
-                p->pulse_count = 0;
-                p->sample_counter = 0;
-            }
-            p->pulse_distance = 0;
-        }
-        if (p->sample_counter > p->reset_limit) {
-            p->start_c = 0;
-            p->sample_counter = 0;
-            p->pulse_distance = 0;
-            if (p->callback)
-                newevents = p->callback(&p->bits);
-            // Debug printout
-            if(!p->callback || (debug_output && newevents > 0)) {
-                fprintf(stderr, "pwm_d_decode(): %s \n", p->name);
-                bitbuffer_print(&p->bits);
-            }
-            events += newevents;
-            bitbuffer_clear(&p->bits);
-        }
-    }
-}
-
 
 static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
@@ -633,27 +585,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	if (demod->analyze || (demod->out_file == stdout)) {	// We don't want to decode devices when outputting to stdout
 		pwm_analyze(demod, demod->am_buf, len / 2);
 	} else {
-		// Loop through all demodulators for all samples (CPU intensive!)
-		for (i = 0; i < demod->r_dev_num; i++) {
-			switch (demod->r_devs[i]->modulation) {
-				case OOK_PWM_D:
-					pwm_d_decode(demod, demod->r_devs[i], demod->am_buf, len / 2);
-					break;
-				// Add pulse demodulators here
-				case OOK_PULSE_PCM_RZ:
-				case OOK_PULSE_PPM_RAW:
-				case OOK_PULSE_PWM_PRECISE:
-				case OOK_PULSE_PWM_RAW:
-				case OOK_PULSE_PWM_TERNARY:
-				case OOK_PULSE_MANCHESTER_ZEROBIT:
-				case OOK_PULSE_CLOCK_BITS:
-				case FSK_PULSE_PCM:
-				case FSK_PULSE_PWM_RAW:
-					break;
-				default:
-					fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
-			}
-		}
 		// Detect a package and loop through demodulators with pulse data
 		int package_type = 1;	// Just to get us started
 		while(package_type) {
@@ -662,9 +593,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
-						// Old style decoders
-						case OOK_PWM_D:
-							break;
 						case OOK_PULSE_PCM_RZ:
 							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
 							break;
@@ -700,8 +628,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
-						// Old style decoders + OOK decoders
-						case OOK_PWM_D:
+						// OOK decoders
 						case OOK_PULSE_PCM_RZ:
 						case OOK_PULSE_PPM_RAW:
 						case OOK_PULSE_PWM_PRECISE:
