@@ -55,7 +55,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
 // timings based on samp_rate=1024000
 r_device nexus = {
     .name           = "Nexus Temperature & Humidity Sensor",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1744/4,
     .long_limit     = 3500/4,
     .reset_limit    = 5000/4,
