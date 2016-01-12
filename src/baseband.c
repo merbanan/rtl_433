@@ -13,7 +13,9 @@
  */
 
 #include "baseband.h"
+#include "util.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
@@ -76,6 +78,37 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
     //fprintf(stderr, "%d\n", y_buf[0]);
 }
 
+
+/// Integer implementation of atan2() with int16_t normalized output
+///
+/// Returns arc tangent of y/x across all quadrants in radians
+/// Reference: http://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization
+/// @param y: Numerator (imaginary value of complex vector)
+/// @param x: Denominator (real value of complex vector)
+/// @return angle in radians (Pi equals INT16_MAX)
+int16_t atan2_int16(int16_t y, int16_t x) {
+	static const int32_t I_PI_4 = INT16_MAX/4;		// M_PI/4
+	static const int32_t I_3_PI_4 = 3*INT16_MAX/4;	// 3*M_PI/4
+	const int32_t abs_y = abs(y);
+	int32_t r, angle;
+
+	if (x >= 0) {	// Quadrant I and IV
+		int32_t denom = (abs_y + x);
+		if (denom == 0) denom = 1;	// Prevent divide by zero
+		r = ((x - abs_y) << 16) / denom;
+		angle = I_PI_4;
+	} else {		// Quadrant II and III
+		int32_t denom = (abs_y - x);
+		if (denom == 0) denom = 1;	// Prevent divide by zero
+		r = ((x + abs_y) << 16) / denom;
+		angle = I_3_PI_4;
+	}
+	angle -= (I_PI_4 * r) >> 16;	// Error max 0.07 radians
+	if (y < 0) angle = -angle;	// Negate if in III or IV
+	return angle;
+}
+
+
 ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
 //static int alp[2] = {FIX(1.00000), FIX(0.72654)};
 //static int blp[2] = {FIX(0.13673), FIX(0.13673)};
@@ -102,10 +135,11 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 		ar = x_buf[2*n]-128;
 		ai = x_buf[2*n+1]-128;
 		// Calculate phase difference vector: x[n] * conj(x[n-1])
-		//pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
+		pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
 		pi = ai*br-ar*bi; 
-		//angle = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Inefficient floating point for now...
-		xlp = pi;	// We cheat for now and only use imaginary part (works OK for small angles)
+//		xlp = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Floating point implementation
+		xlp = atan2_int16(pi, pr);	// Integer implementation
+//		xlp = pi;					// Cheat and use only imaginary part (works OK, but is amplitude sensitive)
 		// Low pass filter
 		ylp = ((alp[1] * ylp_old >> 1) + (blp[0] * xlp >> 1) + (blp[1] * xlp_old >> 1)) >> (F_SCALE - 1);
 		ylp_old = ylp; xlp_old = xlp;
