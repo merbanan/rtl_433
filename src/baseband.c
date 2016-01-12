@@ -65,6 +65,7 @@ static int b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
 
 void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t len, FilterState *state) {
     unsigned int i;
+    // Fixme: Will Segmentation Fault if len < FILTERORDER
 
     /* Calculate first sample */
     y_buf[0] = ((a[1] * state->y[0] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * state->x[0] >> 1)) >> (F_SCALE - 1);

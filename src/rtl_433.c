@@ -1008,7 +1008,7 @@ int main(int argc, char **argv) {
             } else {
                 n_read = fread(test_mode_buf, 1, 131072, in_file);
             }
-
+            if (n_read == 0) break;	// rtlsdr_callback() will Segmentation Fault with len=0
             rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
 	    sample_file_pos = (float)i * n_read / samp_rate;
