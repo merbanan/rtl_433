@@ -195,10 +195,10 @@ static char *output_fields[] = {
 //Timing based on 250000
 r_device alectov1 = {
     .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 3500 / 4, //875
     .long_limit     = 7000 / 4, //1750
-    .reset_limit    = 15000 / 4, //3750
+    .reset_limit    = 10000 / 4, //2500
     .json_callback  = &alectov1_callback,
     .disabled       = 0,
     .demod_arg      = 0,

@@ -47,10 +47,10 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 r_device generic_temperature_sensor = {
 
   .name          = "Generic temperature sensor 1",
-  .modulation    = OOK_PWM_D,
+  .modulation    = OOK_PULSE_PPM_RAW,
   .short_limit   = 875,
   .long_limit    = 1200,
-  .reset_limit   = 3000,
+  .reset_limit   = 2500,
   .json_callback = &generic_temperature_sensor_callback,
   .disabled      = 0,
   .demod_arg     = 0,

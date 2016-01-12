@@ -47,7 +47,7 @@ Usage:	= Tuner options =
 	[-S] Force sync output (default: async)
 	= Demodulator options =
 	[-R <device>] Listen only for the specified remote device (can be used multiple times)
-	[-l <level>] Change detection level used to determine pulses [0-32767] (default: 8000)
+	[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: 8000)
 	[-z <value>] Override short value in data decoder
 	[-x <value>] Override long value in data decoder
 	= Analyze/Debug options =
@@ -64,6 +64,7 @@ Usage:	= Tuner options =
 		 0 = Raw I/Q samples (uint8, 2 channel)
 		 1 = AM demodulated samples (int16 pcm, 1 channel)
 		 2 = FM demodulated samples (int16) (experimental)
+		 3 = Raw I/Q samples (cf32, 2 channel)
 		 Note: If output file is specified, input will always be I/Q
 	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)

@@ -130,7 +130,7 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
 
 r_device elv_em1000 = {
     .name           = "ELV EM 1000",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 750/4,
     .long_limit     = 7250/4,
     .reset_limit    = 30000/4,
@@ -141,7 +141,7 @@ r_device elv_em1000 = {
 
 r_device elv_ws2000 = {
     .name           = "ELV WS 2000",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = (602+(1155-602)/2)/4,
     .long_limit     = ((1755635-1655517)/2)/4, // no repetitions
     .reset_limit    = ((1755635-1655517)*2)/4,

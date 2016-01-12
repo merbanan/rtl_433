@@ -37,7 +37,7 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
 
 r_device mebus433 = {
     .name           = "Mebus 433",
-    .modulation     = OOK_PWM_D,
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 300,
     .long_limit     = 600,
     .reset_limit    = 1500,
