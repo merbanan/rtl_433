@@ -35,7 +35,6 @@
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 /* Supported modulation types */
-#define	OOK_PWM_D				1			// (Deprecated) Pulses are of the same length, the distance varies (PPM)
 #define	OOK_PULSE_MANCHESTER_ZEROBIT	3	// Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
 #define	OOK_PULSE_PCM_RZ		4			// Pulse Code Modulation with Return-to-Zero encoding, Pulse = 0, No pulse = 1
 #define	OOK_PULSE_PPM_RAW		5			// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
@@ -59,17 +58,6 @@ struct protocol_state {
 
     unsigned int modulation;
 
-    /* demod state */
-    unsigned int pulse_length;
-    int pulse_count;
-    int pulse_distance;
-    unsigned int sample_counter;
-    int start_c;
-
-    int packet_present;
-    int pulse_start;
-    int real_bits;
-    int start_bit;
     /* pwm limits */
     unsigned int short_limit;
     unsigned int long_limit;
