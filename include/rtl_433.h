@@ -16,10 +16,14 @@
 #ifndef _WIN32
 #include <unistd.h>
 #else
-#include <Windows.h>
+#include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+#ifndef __MINGW32__
 #include "getopt/getopt.h"
+#else
+#include <getopt.h>
+#endif
 #endif
 
 #define DEFAULT_SAMPLE_RATE     250000
