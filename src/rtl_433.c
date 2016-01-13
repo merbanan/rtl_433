@@ -989,13 +989,13 @@ int main(int argc, char **argv) {
 	}
 	if (!quiet_mode) {
 	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
-	    fprintf(stderr, "Input format: %s\n", demod->debug_mode?"cf32":"uint8");
+	    fprintf(stderr, "Input format: %s\n", (demod->debug_mode == 3) ? "cf32" : "uint8");
 	}
 	sample_file_pos = 0.0;
 
         int n_read, cf32_tmp;
         do {
-	    if (demod->debug_mode) {
+	    if (demod->debug_mode == 3) {
 		n_read = fread(test_mode_float_buf, sizeof(float), 131072, in_file);
 		for(int n = 0; n < n_read; n++) {
 		    cf32_tmp = test_mode_float_buf[n]*127 + 127;
