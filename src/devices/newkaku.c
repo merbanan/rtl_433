@@ -18,7 +18,7 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
     uint8_t bitcount = 0;
     uint32_t kakuid = 0;
 
-    if (bb[0][0] == 0xac) {//allways starts with ac
+    if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//allways starts with ac or b2
         // first bit is from startbit sequence, not part of payload!
         // check protocol if value is 10 or 01, else stop processing as it is no vallid KAKU packet!
         //get id=24bits, remember 1st 1 bit = startbit, no payload!
