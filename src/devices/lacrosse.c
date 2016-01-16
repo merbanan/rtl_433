@@ -44,6 +44,7 @@
 
 #include "rtl_433.h"
 #include "util.h"
+#include "data.h"
 
 #define LACROSSE_TX_BITLEN	44
 #define LACROSSE_NYBBLE_CNT	11
@@ -62,8 +63,6 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum, parity_bit, parity = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
-
 
 	// Actual Packet should start with 0x0A and be 6 bytes
 	// actual message is 44 bit, 11 x 4 bit nybbles.
@@ -109,10 +108,11 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
-			local_time_str(0, time_str);
+			if (debug_output) {
 			fprintf(stdout,
-				"%s LaCrosse Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
-				time_str, checksum, msg_nybbles[10], parity);
+				"LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
+				checksum, msg_nybbles[10], parity);
+			}
 			return 0;
 		}
 	} else {
@@ -137,9 +137,10 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 	uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
 	uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
 	int msg_value_int;
-	float msg_value = 0, temp_c = 0, temp_f = 0;
+	float msg_value = 0, temp_c = 0;
 	time_t time_now;
 	char time_str[LOCAL_TIME_BUFLEN];
+	data_t *data;
 
 	static float last_msg_value = 0.0;
 	static uint8_t last_sensor_id = 0;
@@ -179,18 +180,25 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 			// message integrity.
 			if (msg_nybbles[5] != msg_nybbles[8] || 
 			    msg_nybbles[6] != msg_nybbles[9]) {
+				if (debug_output) {
 			    fprintf(stderr,
-				    "%s LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
-				    time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				    "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+				    sensor_id, msg_type, msg_value, msg_value_int);
+				}
 			}
 
 			switch (msg_type) {
 			case 0x00:
 				temp_c = msg_value - 50.0;
-				temp_f = temp_c * 1.8 + 32;
-				printf("%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
-					time_str, sensor_id, temp_c, temp_f);
 				events++;
+
+				data = data_make("time",          "",            DATA_STRING, time_str,
+								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+								 "id",            "",            DATA_INT, sensor_id,
+								 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+								 NULL);
+				data_acquired_handler(data);
+
 				break;
 
 			case 0x0E:
@@ -217,6 +225,14 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 	return events;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    NULL
+};
+
 r_device lacrossetx = {
  .name           = "LaCrosse TX Temperature / Humidity Sensor",
  .modulation     = OOK_PULSE_PWM_RAW,
@@ -227,4 +243,5 @@ r_device lacrossetx = {
  .json_callback  = &lacrossetx_callback, 
  .disabled       = 0,
  .demod_arg      = 0, 	// No Startbit removal
+ .fields = output_fields,
 };
