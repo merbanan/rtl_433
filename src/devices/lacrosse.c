@@ -203,7 +203,7 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 				data = data_make("time",          "",            DATA_STRING, time_str,
 								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
 								 "id",            "",            DATA_INT, sensor_id,
-								 "humidity",      "Humidity", DATA_FORMAT, "%.1f C", DATA_DOUBLE, msg_value,
+								 "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
 								 NULL);
 				data_acquired_handler(data);
 				events++;
