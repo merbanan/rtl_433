@@ -190,20 +190,22 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 			switch (msg_type) {
 			case 0x00:
 				temp_c = msg_value - 50.0;
-				events++;
-
 				data = data_make("time",          "",            DATA_STRING, time_str,
 								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
 								 "id",            "",            DATA_INT, sensor_id,
 								 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
 								 NULL);
 				data_acquired_handler(data);
-
+				events++;
 				break;
 
 			case 0x0E:
-				printf("%s LaCrosse TX Sensor %02x: Humidity %3.1f %%\n",
-					time_str, sensor_id, msg_value);
+				data = data_make("time",          "",            DATA_STRING, time_str,
+								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+								 "id",            "",            DATA_INT, sensor_id,
+								 "humidity",      "Humidity", DATA_FORMAT, "%.1f C", DATA_DOUBLE, msg_value,
+								 NULL);
+				data_acquired_handler(data);
 				events++;
 				break;
 
@@ -230,6 +232,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "temperature_C",
+    "humidity",
     NULL
 };
 
