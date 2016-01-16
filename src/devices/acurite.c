@@ -113,11 +113,12 @@ static int acurite_raincounter = 0;
 // FIXME< this is a checksum, not a CRC
 static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
+    // also disregard a row of all zeros
     int i;
     int sum = 0;
     for ( i=0; i < cols; i++)
         sum += row[i];
-    if ( sum % 256 == row[cols] )
+    if (sum != 0 && (sum % 256 == row[cols]))
         return 1;
     else
         return 0;
