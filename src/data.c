@@ -319,9 +319,6 @@ void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 	fputc('\n', file);
 }
 
-/* JSON printer */
-static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file);
-
 static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_type_t type, void *value, char *format) {
 	switch (type) {
 	case DATA_FORMAT :
@@ -346,6 +343,7 @@ static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_ty
 	}
 }
 
+/* JSON printer */
 static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file) {
 	int element_size = dmt[array->type].array_element_size;
 	char buffer[element_size];
