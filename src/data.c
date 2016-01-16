@@ -458,10 +458,9 @@ static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, ch
 	++csv->data_recursion;
 	for (i = 0; fields[i]; ++i) {
 		const char *key = fields[i];
-		data_t *iter, *found = NULL;
+		data_t *found = NULL;
 		if (i) fprintf(file, "%s", csv->separator);
-		iter = data;
-		for (iter = data, found; !found && iter; iter = iter->next)
+		for (data_t *iter = data; !found && iter; iter = iter->next)
 			if (strcmp(iter->key, key) == 0)
 				found = iter;
 
