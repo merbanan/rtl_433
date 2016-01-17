@@ -40,7 +40,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 
 void bitbuffer_add_row(bitbuffer_t *bits) {
 	if(bits->num_rows == 0) bits->num_rows++;	// Add first row automatically
-	if(bits->num_rows < BITBUF_ROWS) {
+	if((bits->bits_per_row[bits->num_rows-1] > 0) && (bits->num_rows < BITBUF_ROWS)) {  // No empty rows
 		bits->num_rows++;
 	}
 	else {

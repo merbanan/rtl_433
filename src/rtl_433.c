@@ -112,7 +112,8 @@ void usage(r_device *devices) {
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
-            "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F] kv|json|csv|json-udp Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t\t specify host/port for udp with e.g. -F json-udp:127.0.0.1:1433\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -188,26 +189,30 @@ static unsigned int signal_pulse_counter = 0;
 typedef enum  {
     OUTPUT_KV,
     OUTPUT_JSON,
-    OUTPUT_CSV
+    OUTPUT_CSV,
+    OUTPUT_UDP
 } output_format_t;
 static output_format_t output_format;
 void *csv_aux_data;
+void *udp_aux_data;
 
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
     switch (output_format) {
-    case OUTPUT_KV: {
+    case OUTPUT_KV:
         data_print(data, stdout,  &data_kv_printer, NULL);
-    } break;
-    case OUTPUT_JSON: {
+        break;
+    case OUTPUT_JSON:
         data_print(data, stdout,  &data_json_printer, NULL);
-    } break;
-    case OUTPUT_CSV: {
+        break;
+    case OUTPUT_CSV:
         data_print(data, stdout,  &data_csv_printer, csv_aux_data);
-    } break;
+        break;
+    case OUTPUT_UDP:
+        data_print(data, NULL,  &data_udp_printer, udp_aux_data);
+        break;
     }
-    fflush(stdout);
     data_free(data);
 }
 
@@ -732,6 +737,8 @@ int main(int argc, char **argv) {
     int device_count;
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
+    char *udp_host = "localhost";
+    int udp_port = 1433;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -830,8 +837,19 @@ int main(int argc, char **argv) {
 		    output_format = OUTPUT_JSON;
 		} else if (strcmp(optarg, "csv") == 0) {
 		    output_format = OUTPUT_CSV;
-		} else if (strcmp(optarg, "kv") == 0) {
-		    output_format = OUTPUT_KV;
+        } else if (strcmp(optarg, "kv") == 0) {
+            output_format = OUTPUT_KV;
+        } else if (strncmp(optarg, "json-udp", 8) == 0) {
+            if (optarg[8] == ':') {
+                // e.g. "json-udp:127.0.0.1:1433"
+                udp_host = optarg + 9;
+                char *n = strchr(udp_host, ':');
+                if (n) {
+                    *n = '\0';
+                    udp_port = atoi(n + 1);
+                }
+            }
+		    output_format = OUTPUT_UDP;
 		} else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(devices);
@@ -859,6 +877,16 @@ int main(int argc, char **argv) {
             fprintf(stderr, "rtl_433: failed to allocate memory for CSV auxiliary data\n");
             exit(1);
         }
+    }
+
+    if (output_format == OUTPUT_UDP) {
+        udp_aux_data = data_udp_init(udp_host, udp_port);
+
+        if (!udp_aux_data) {
+            fprintf(stderr, "rtl_433: failed to allocate memory for UDP auxiliary data\n");
+            exit(1);
+        }
+        fprintf(stderr, "JSON UDP datagrams to: %s:%d\n", udp_host, udp_port);
     }
 
     for (i = 0; i < num_r_devices; i++) {

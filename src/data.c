@@ -24,6 +24,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <netinet/in.h>
 
 #include "data.h"
 
@@ -127,6 +130,19 @@ typedef struct {
 static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
 static void print_csv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 
+typedef struct {
+	struct sockaddr_in server;
+	int sock;
+	char *buf;
+	size_t size;
+} data_udp_aux_t;
+
+static void print_udp_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
+static void print_udp_array(data_printer_context_t *printer_ctx, data_array_t *data, char *format, FILE *file);
+static void print_udp_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
+static void print_udp_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
+static void print_udp_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
+
 data_printer_t data_json_printer = {
 	.print_data   = print_json_data,
 	.print_array  = print_json_array,
@@ -149,6 +165,14 @@ data_printer_t data_csv_printer = {
 	.print_string = print_csv_string,
 	.print_double = print_json_double,
 	.print_int    = print_json_int
+};
+
+data_printer_t data_udp_printer = {
+	.print_data   = print_udp_data,
+	.print_array  = print_udp_array,
+	.print_string = print_udp_string,
+	.print_double = print_udp_double,
+	.print_int    = print_udp_int
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -316,7 +340,10 @@ void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 		.aux     = aux
 	};
 	ctx.printer->print_data(&ctx, data, NULL, file);
-	fputc('\n', file);
+	if (file) {
+		fputc('\n', file);
+	    fflush(file);
+	}
 }
 
 static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_type_t type, void *value, char *format) {
@@ -563,4 +590,182 @@ void data_csv_free(void *aux)
 	data_csv_aux_t *csv = aux;
 	free(csv->fields);
 	free(csv);
+}
+
+/* UDP printer */
+static void append_buf(data_printer_context_t *printer_ctx, const char *str)
+{
+	data_udp_aux_t *udp = printer_ctx->aux;
+	size_t len = strlen(str);
+	if (udp->size >= len + 1) {
+		strcpy(udp->buf, str);
+		udp->buf += len;
+		udp->size -= len;
+	}
+}
+
+static void print_udp_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file)
+{
+//TODO
+	int element_size = dmt[array->type].array_element_size;
+	char buffer[element_size];
+	fprintf(file, "[");
+	for (int c = 0; c < array->num_values; ++c) {
+		if (c)
+			fprintf(file, ",");
+		if (!dmt[array->type].array_is_boxed) {
+			memcpy(buffer, (void**)(array->values + element_size * c), element_size);
+			print_value(printer_ctx, file, array->type, buffer, format);
+		} else {
+			print_value(printer_ctx, file, array->type, *(void**)(array->values + element_size * c), format);
+		}
+	}
+	fprintf(file, "]");
+}
+
+static void print_udp_data_buf(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+{
+	_Bool separator = false;
+	append_buf(printer_ctx, "{");
+	while (data) {
+		if (separator)
+			append_buf(printer_ctx, ",");
+		printer_ctx->printer->print_string(printer_ctx, data->key, NULL, file);
+		append_buf(printer_ctx, ":");
+		print_value(printer_ctx, file, data->type, data->value, data->format);
+		separator = true;
+		data = data->next;
+	}
+	append_buf(printer_ctx, "}");
+}
+
+static void print_udp_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+{
+	data_udp_aux_t *udp = printer_ctx->aux;
+
+	char message[512];
+	udp->buf = message;
+	udp->size = 512;
+
+	print_udp_data_buf(printer_ctx, data, format, file);
+
+    int slen = sizeof(udp->server);
+
+    if (sendto(udp->sock, message, strlen(message), 0, (struct sockaddr *) &udp->server, slen) == -1) {
+        perror("sendto");
+    }
+}
+
+static void print_udp_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+{
+	data_udp_aux_t *udp = printer_ctx->aux;
+	char *buf = udp->buf;
+	size_t size = udp->size;
+
+	if (size < strlen(str) + 3) {
+		return;
+	}
+
+	*buf = '\"';
+	++buf;
+	--size;
+	while (*str && size >= 3) {
+		if (*str == '"') {
+			*buf = '\\';
+			++buf;
+			--size;
+		}
+		*buf = *str;
+		++buf;
+		--size;
+		++str;
+	}
+	if (size >= 2) {
+		*buf = '\"';
+		++buf;
+		--size;
+	}
+	*buf = '\0';
+
+	udp->buf = buf;
+	udp->size = size;
+}
+
+static void print_udp_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+{
+	data_udp_aux_t *udp = printer_ctx->aux;
+	int ret = snprintf(udp->buf, udp->size, "%f", data);
+	if (ret > 0) {
+		udp->size -= ret;
+		udp->buf += ret;
+	}
+}
+
+static void print_udp_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+{
+	data_udp_aux_t *udp = printer_ctx->aux;
+	int ret = snprintf(udp->buf, udp->size, "%d", data);
+	if (ret > 0) {
+		udp->size -= ret;
+		udp->buf += ret;
+	}
+}
+
+void *data_udp_init(const char *host, int port)
+{
+    if (!host || !port)
+        return NULL;
+
+	data_udp_aux_t *udp = calloc(1, sizeof(data_udp_aux_t));
+
+    if (!udp) {
+        fprintf(stderr, "calloc() failed");
+        goto err;
+    }
+
+    if ((udp->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+        perror("socket");
+        goto err;
+    }
+
+	int broadcast = 1;
+	int ret = setsockopt(udp->sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+
+    memset(&udp->server, 0, sizeof(udp->server));
+    udp->server.sin_family = AF_INET;
+    udp->server.sin_port = htons(port);
+
+    struct addrinfo *result = NULL, hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+
+    int error;
+    if ( (error = getaddrinfo(host, NULL, &hints, &result)) ) {
+        fprintf(stderr, "%s\n", gai_strerror(error));
+        goto err;
+    }
+    memcpy(&(udp->server.sin_addr), &((struct sockaddr_in*)result->ai_addr)->sin_addr, sizeof(struct in_addr));
+    freeaddrinfo(result);
+
+    return udp;
+
+err:
+    if (udp) {
+        free(udp);
+    }
+
+    return NULL;
+}
+
+void data_udp_free(void *aux)
+{
+	data_udp_aux_t *udp = aux;
+
+    if (udp->sock != -1) {
+        close(udp->sock);
+        udp->sock = -1;
+    }
+
+	free(udp);
 }

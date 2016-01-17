@@ -50,6 +50,7 @@ struct data_printer;
 extern struct data_printer data_json_printer;
 extern struct data_printer data_kv_printer;
 extern struct data_printer data_csv_printer;
+extern struct data_printer data_udp_printer;
 
 /** Constructs a structured data object.
 
@@ -115,5 +116,11 @@ void *data_csv_init(const char **fields, int num_fields);
 
 /** Destructs auxiliary CSV data. */
 void data_csv_free(void *csv);
+
+/** Construct auxiliary data for UDP socket */
+void *data_udp_init(const char *host, int port);
+
+/** Destructs auxiliary UDP data. */
+void data_udp_free(void *udp);
 
 #endif // INCLUDE_DATA_H_
