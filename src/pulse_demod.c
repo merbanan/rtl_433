@@ -17,6 +17,11 @@
 #include <stdlib.h>
 
 
+static unsigned int absdiff(unsigned int a, unsigned int b)
+{
+	return a > b ? a - b : b - a;
+}
+
 int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
@@ -43,7 +48,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 
 		// Validate data
 		if ((device->short_limit != device->long_limit) 		// Only for RZ coding
-		 && (abs(pulses->pulse[n] - device->short_limit) > TOLERANCE)		// Pulse must be within tolerance
+		 && (absdiff(pulses->pulse[n], device->short_limit) > TOLERANCE)		// Pulse must be within tolerance
 		) {
 			// Data is corrupt
 			if (debug_output > 3) {
@@ -154,13 +159,13 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// 'Short' 1 pulse
-		if (abs(pulses->pulse[n] - device->short_limit) < p->pulse_tolerance) {
+		if (absdiff(pulses->pulse[n], device->short_limit) < p->pulse_tolerance) {
 			bitbuffer_add_bit(&bits, 1);
 		// 'Long' 0 pulse
-		} else if (abs(pulses->pulse[n] - device->long_limit) < p->pulse_tolerance) {
+		} else if (absdiff(pulses->pulse[n], device->long_limit) < p->pulse_tolerance) {
 			bitbuffer_add_bit(&bits, 0);
 		// Sync pulse
-		} else if (p->pulse_sync_width && (abs(pulses->pulse[n] - p->pulse_sync_width) < p->pulse_tolerance)) {
+		} else if (p->pulse_sync_width && (absdiff(pulses->pulse[n], p->pulse_sync_width) < p->pulse_tolerance)) {
 			bitbuffer_add_row(&bits);
 		} else {
 			return 0;	// Pulse outside specified timing
@@ -292,15 +297,15 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
    }
 
    for(n = 0; n < pulses->num_pulses * 2; ++n) {
-      if ( abs(symbol[n] - device->short_limit) < p->pulse_tolerance) {
+      if ( absdiff(symbol[n], device->short_limit) < p->pulse_tolerance) {
          // Short - 1
          bitbuffer_add_bit(&bits, 1);
-         if ( abs(symbol[++n] - device->short_limit) > p->pulse_tolerance) {
+         if ( absdiff(symbol[++n], device->short_limit) > p->pulse_tolerance) {
 /*            fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
                     device->name);
 */            return events;
          }
-      } else if ( abs(symbol[n] - device->long_limit) < p->pulse_tolerance) {
+      } else if ( absdiff(symbol[n], device->long_limit) < p->pulse_tolerance) {
          // Long - 0
          bitbuffer_add_bit(&bits, 0);
       } else if (symbol[n] >= device->reset_limit - p->pulse_tolerance ) {
