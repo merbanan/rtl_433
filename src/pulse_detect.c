@@ -52,7 +52,7 @@ typedef struct {
 	} state_fsk;
 
 	int fm_f1_est;			// Estimate for the F1 frequency for FSK
-	int fm_delta_est;		// Estimate for the delta |F2-F1| frequency for FSK
+	int fm_f2_est;			// Estimate for the F2 frequency for FSK
 
 } pulse_FSK_state_t;
 
@@ -60,46 +60,52 @@ typedef struct {
 /// Demodulate Frequency Shift Keying (FSK) sample by sample
 ///
 /// Function is stateful between calls
-/// Builds estimate for initial frequency (fm_f1_est). When frequency deviates more than a
-/// threshold value it will transition to other state (F1 or gap) and build an estimate of 
-/// the frequency delta (fm_delta_est).
-/// Includes some spurious suppression by coalescing pulses when pulse widths are too short.
-/// @param fm_sample: One single sample of FM data
+/// Builds estimate for initial frequency F1 (fm_f1_est). When frequency deviates more than a
+/// threshold value it will transition to other state (F2 or gap) and build an estimate of
+/// the F2 frequency (fm_f2_est). It will then transition back and forth when current
+/// frequency is closer to other frequency estimate.
+/// Includes spurious suppression by coalescing pulses when pulse widths are too short.
+/// @param fm_n: One single sample of FM data
 /// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @param *s: Internal state
 /// @return 0 if sample is correctly processed
 /// @return 2 if number of pulses is overflowing and package should be ended
-int pulse_FSK_detect(int16_t fm_sample, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
-	int fm_n = fm_sample;		// Get current FM sample
-	int fm_delta = abs(fm_n - s->fm_f1_est);	// Get delta from base frequency estimate
-	int fm_hyst = (s->fm_delta_est/2) / 8; 		// ±12% hysteresis on threshold
+int pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
+	const int fm_f1_delta = abs(fm_n - s->fm_f1_est);	// Get delta from F1 frequency estimate
+	const int fm_f2_delta = abs(fm_n - s->fm_f2_est);	// Get delta from F2 frequency estimate
 	s->fsk_pulse_length++;
 
 	switch(s->state_fsk) {
 		case PD_STATE_FSK_F1:		// Pulse high at initial frequency
-			// Initial samples in pulse?
-			if (fsk_pulses->num_pulses == 0 && s->fsk_pulse_length < PD_MIN_PULSE_SAMPLES) {
+			// First pulse and initial samples in pulse?
+			if ((fsk_pulses->num_pulses == 0) && (s->fsk_pulse_length < PD_MIN_PULSE_SAMPLES)) {
 				s->fm_f1_est = s->fm_f1_est/2 + fm_n/2;		// Quick initial estimator
-			// Freq offset above delta threshold?
-			} else if (fm_delta > (s->fm_delta_est/2 + fm_hyst)) {
+			// First pulse and above default frequency delta?
+			} else if ((fsk_pulses->num_pulses == 0) && (fm_f1_delta > (FSK_DEFAULT_FM_DELTA/2))) {
+				s->state_fsk = PD_STATE_FSK_F2;
+				s->fm_f2_est = fm_n;	// Prime F2 estimate
+				fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
+				s->fsk_pulse_length = 0;
+			// Not first pulse and closer to F2 than F1?
+			} else if ((fsk_pulses->num_pulses > 0) && (fm_f1_delta > fm_f2_delta)) {
 				s->state_fsk = PD_STATE_FSK_F2;
 				// Store if pulse is not too short (suppress spurious)
 				if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
 					fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
 					s->fsk_pulse_length = 0;
-				// Rewind if last gap was a good one (avoid rewinding too much)
-				} else if (fsk_pulses->gap[fsk_pulses->num_pulses-1] >= PD_MIN_PULSE_SAMPLES) {
+				// Else rewind to last gap (when not first pulse!)
+				} else {
 					s->fsk_pulse_length += fsk_pulses->gap[fsk_pulses->num_pulses-1];	// Restore counter
 					fsk_pulses->num_pulses--;		// Rewind one pulse
 				}
 			// Still below threshold
 			} else {
-				s->fm_f1_est = s->fm_f1_est - s->fm_f1_est/FSK_EST_RATIO + fm_n/FSK_EST_RATIO;	// Slow estimator
+				s->fm_f1_est += fm_n/FSK_EST_RATIO - s->fm_f1_est/FSK_EST_RATIO;	// Slow estimator
 			}
 			break;
-		case PD_STATE_FSK_F2:		// Pulse gap at delta frequency
-			// Freq offset below delta threshold?
-			if (fm_delta < (s->fm_delta_est/2 - fm_hyst)) {
+		case PD_STATE_FSK_F2:		// Pulse gap at F2 frequency
+			// Freq closer to F1 than F2 ?
+			if (fm_f2_delta > fm_f1_delta) {
 				s->state_fsk = PD_STATE_FSK_F1;
 				// Store if pulse is not too short (suppress spurious)
 				if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
@@ -110,13 +116,13 @@ int pulse_FSK_detect(int16_t fm_sample, pulse_data_t *fsk_pulses, pulse_FSK_stat
 					if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
 						return 2;	// FSK: End Of Package!!
 					}
-				// Rewind if last pulse was a good one (avoid rewinding too much)
-				} else if (fsk_pulses->pulse[fsk_pulses->num_pulses] >= PD_MIN_PULSE_SAMPLES) {
+				// Else rewind to last pulse
+				} else {
 					s->fsk_pulse_length += fsk_pulses->pulse[fsk_pulses->num_pulses];	// Restore counter
 				}
 			// Still above threshold
 			} else {
-				s->fm_delta_est = s->fm_delta_est - s->fm_delta_est/FSK_EST_RATIO + fm_delta/FSK_EST_RATIO;	// Slow estimator
+				s->fm_f2_est += fm_n/FSK_EST_RATIO - s->fm_f2_est/FSK_EST_RATIO;	// Slow estimator
 			}
 			break;
 		default:
@@ -173,7 +179,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					pulse_data_clear(fsk_pulses);
 					s->pulse_length = 0;
 					s->max_pulse = 0;
-					s->FSK_state = (pulse_FSK_state_t){0, .fm_delta_est = FSK_DEFAULT_FM_DELTA};
+					s->FSK_state = (pulse_FSK_state_t){0};
 					s->state = PD_STATE_PULSE;
 				} else {	// We are still idle..
 					// Estimate low (noise) level
