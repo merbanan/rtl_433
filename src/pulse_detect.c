@@ -39,7 +39,7 @@ void pulse_data_print(const pulse_data_t *data) {
 #define OOK_EST_RATIO		64			// Constant for slowness of OOK estimators
 
 // FSK adaptive frequency estimator constants
-#define FSK_DEFAULT_FM_DELTA	4000	// Default estimate for frequency delta
+#define FSK_DEFAULT_FM_DELTA	6000	// Default estimate for frequency delta
 #define FSK_EST_RATIO		32			// Constant for slowness of FSK estimators
 
 
