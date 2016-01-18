@@ -12,6 +12,7 @@
  * still unknown - rain, pressure
  */
 
+#include "data.h"
 #include "rtl_433.h"
 #include "util.h"
 
@@ -44,6 +45,10 @@ static float get_wind_speed(const uint8_t* br) {
 }
 
 static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
+
     if (bitbuffer->num_rows != 1) {
         return 0;
     }
@@ -67,16 +72,17 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
     const int humidity = get_humidity(br);
     const char* direction = get_wind_direction(br);
     const float speed = get_wind_speed(br);
+    const char device_id = br[1];
 
-    fprintf(stdout, "Temperature event:\n");
-    fprintf(stdout, "protocol      = Digitech XC0348 weather station\n");
-    fprintf(stdout, "device        = %02x\n", br[1]);
-    fprintf(stdout, "temp          = %.1f°C\n", temperature);
-    fprintf(stdout, "humidity      = %d%%\n", humidity);
-    fprintf(stdout, "direction     = %s\n", direction);
-    fprintf(stdout, "speed         = %.1f km/h\n", speed);
-    fprintf(stdout, "unknown       = %02x %02x %02x\n\n", br[6], br[7], br[8]);
-
+    data = data_make("time",          "",               DATA_STRING, time_str,
+                     "model",         "",               DATA_STRING, "Digitech XC0348 weather station",
+                     "id",            "",               DATA_INT,    device_id,
+                     "temperature_C", "Temperature",    DATA_DOUBLE, temperature,
+                     "humidity",      "Humidity",       DATA_INT,    humidity,
+                     "direction",     "Wind direction", DATA_STRING, direction,
+                     "speed",         "Wind speed",     DATA_DOUBLE, speed,
+                     NULL);
+    data_acquired_handler(data);
     return 1;
 }
 
