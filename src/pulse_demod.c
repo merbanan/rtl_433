@@ -56,7 +56,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 
 		// End of Message?
 		if (((n == pulses->num_pulses-1) 	// No more pulses? (FSK)
-		 || (pulses->gap[n] > (unsigned)device->reset_limit))	// Loong silence (OOK)
+		 || (pulses->gap[n] > device->reset_limit))	// Loong silence (OOK)
 		 && (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->callback) {
@@ -80,13 +80,13 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short gap
-		if(pulses->gap[n] < (unsigned)device->short_limit) {
+		if(pulses->gap[n] < device->short_limit) {
 			bitbuffer_add_bit(&bits, 0);
 		// Long gap
-		} else if(pulses->gap[n] < (unsigned)device->long_limit) {
+		} else if(pulses->gap[n] < device->long_limit) {
 			bitbuffer_add_bit(&bits, 1);
 		// Check for new packet in multipacket
-		} else if(pulses->gap[n] < (unsigned)device->reset_limit) {
+		} else if(pulses->gap[n] < device->reset_limit) {
 			bitbuffer_add_row(&bits);
 		// End of Message?
 		} else {
@@ -117,7 +117,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 			start_bit_detected = 1;
 		} else {
 			// Detect pulse width
-			if(pulses->pulse[n] <= (unsigned)device->short_limit) {
+			if(pulses->pulse[n] <= device->short_limit) {
 				bitbuffer_add_bit(&bits, 1);
 			} else {
 				bitbuffer_add_bit(&bits, 0);
@@ -125,7 +125,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 		}
 		// End of Message?
                 if (n == pulses->num_pulses - 1                           // No more pulses (FSK)
-		    || pulses->gap[n] > (unsigned)device->reset_limit) {  // Long silence (OOK)
+		    || pulses->gap[n] > device->reset_limit) {  // Long silence (OOK)
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
@@ -137,7 +137,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 			bitbuffer_clear(&bits);
 			start_bit_detected = 0;
 		// Check for new packet in multipacket
-		} else if(pulses->gap[n] > (unsigned)device->long_limit) {
+		} else if(pulses->gap[n] > device->long_limit) {
 			bitbuffer_add_row(&bits);
 			start_bit_detected = 0;
 		}
@@ -167,7 +167,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 		}
 
 		// End of Message?
-		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+		if(pulses->gap[n] > device->reset_limit) {
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
@@ -191,14 +191,14 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short pulse
-		if (pulses->pulse[n] < (unsigned)device->short_limit) {
+		if (pulses->pulse[n] < device->short_limit) {
 			if (sync_bit == 0) {
 				bitbuffer_add_row(&bits);
 			} else {
 				bitbuffer_add_bit(&bits, 0);
 			}
 		// Middle pulse
-		} else if (pulses->pulse[n] < (unsigned)device->long_limit) {
+		} else if (pulses->pulse[n] < device->long_limit) {
 			if (sync_bit == 0) {
 				bitbuffer_add_bit(&bits, 0);
 			} else if (sync_bit == 1) {
@@ -216,7 +216,7 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 		} 
 
 		// End of Message?
-		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+		if(pulses->gap[n] > device->reset_limit) {
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
@@ -234,7 +234,7 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
-	unsigned time_since_last = 0;
+	int time_since_last = 0;
 	bitbuffer_t bits = {0};
 
 	// First rising edge is allways counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
@@ -242,7 +242,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Falling edge is on end of pulse
-		if(pulses->pulse[n] + time_since_last > (unsigned)(device->short_limit + (device->short_limit>>1))) {
+		if(pulses->pulse[n] + time_since_last > (device->short_limit + (device->short_limit>>1))) {
 			// Last bit was recorded more than short_limit*1.5 samples ago 
 			// so this pulse start must be a data edge (falling data edge means bit = 1) 
 			bitbuffer_add_bit(&bits, 1);
@@ -252,7 +252,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		}
 
 		// End of Message?
-		if(pulses->gap[n] > (unsigned)device->reset_limit) {
+		if(pulses->gap[n] > device->reset_limit) {
 			int newevents = 0;
 			if (device->callback) {
 				events += device->callback(&bits);
@@ -266,7 +266,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
 		// Rising edge is on end of gap
-		} else if(pulses->gap[n] + time_since_last > (unsigned)(device->short_limit + (device->short_limit>>1))) {
+		} else if(pulses->gap[n] + time_since_last > (device->short_limit + (device->short_limit>>1))) {
 			// Last bit was recorded more than short_limit*1.5 samples ago 
 			// so this pulse end is a data edge (rising data edge means bit = 0) 
 			bitbuffer_add_bit(&bits, 0);
@@ -279,7 +279,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 }
 
 int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device) {
-   unsigned int symbol[PD_MAX_PULSES * 2];
+   int symbol[PD_MAX_PULSES * 2];
    unsigned int n;
 
    PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
@@ -303,7 +303,7 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
       } else if ( abs(symbol[n] - device->long_limit) < p->pulse_tolerance) {
          // Long - 0
          bitbuffer_add_bit(&bits, 0);
-      } else if (symbol[n] >= (unsigned int)device->reset_limit - p->pulse_tolerance ) {
+      } else if (symbol[n] >= device->reset_limit - p->pulse_tolerance ) {
          //END message ?
          if (device->callback) {
             events += device->callback(&bits);

@@ -28,8 +28,9 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 	// Validate package
 	if ((bits == 25)
-	 && (b[3] && 0x7F)	// Last bit is always 0
-	 && (b[0] != 0x00) && (b[1] != 0x00) && (b[2] != 0x00)	// Reduce false positives. ID 0x00000 not supported
+	 && (b[3] & 0x80)	// Last bit (MSB here) is always 1
+	 && (b[0] || b[1])	// Reduce false positives. ID 0x0000 not supported
+	 && (b[2])	// Reduce false positives. CMD 0x00 not supported
 	) {
 
 		uint32_t ID_16b = b[0] << 8 | b[1];

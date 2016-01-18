@@ -161,11 +161,11 @@ typedef struct {
 		PD_STATE_PULSE		= 1,
 		PD_STATE_GAP		= 2
 	} state;
-	unsigned int pulse_length;		// Counter for internal pulse detection
-	unsigned int max_pulse;			// Size of biggest pulse detected
+	int pulse_length;		// Counter for internal pulse detection
+	int max_pulse;			// Size of biggest pulse detected
 
-	unsigned int data_counter;		// Counter for how much of data chunck is processed
-	unsigned int lead_in_counter;	// Counter for allowing initial noise estimate to settle
+	int data_counter;		// Counter for how much of data chunck is processed
+	int lead_in_counter;	// Counter for allowing initial noise estimate to settle
 
 	int ook_low_estimate;		// Estimate for the OOK low level (base noise level) in the envelope data
 	int ook_high_estimate;		// Estimate for the OOK high level
@@ -176,8 +176,8 @@ typedef struct {
 static pulse_state_t pulse_state;
 
 
-int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, uint32_t len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
-	const unsigned int samples_per_ms = samp_rate / 1000;
+int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
+	const int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
 
@@ -300,10 +300,10 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 /// Histogram data for single bin
 typedef struct {
 	unsigned count;
-	unsigned sum;
-	unsigned mean;
-	unsigned min;
-	unsigned max;
+	int sum;
+	int mean;
+	int min;
+	int max;
 } hist_bin_t;
 
 /// Histogram data for all bins
@@ -314,7 +314,7 @@ typedef struct {
 
 
 /// Generate a histogram (unsorted)
-void histogram_sum(histogram_t *hist, const unsigned *data, unsigned len, float tolerance) {
+void histogram_sum(histogram_t *hist, const int *data, unsigned len, float tolerance) {
 	unsigned bin;	// Iterator will be used outside for!
 
 	for(unsigned n = 0; n < len; ++n) {
