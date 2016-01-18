@@ -86,6 +86,17 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
     return 1;
 }
 
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"temperature_C",
+	"humidity",
+	"direction",
+	"speed",
+	NULL
+};
+
 r_device digitech_ws = {
     .name           = "Digitech XC0348 Weather Station",
     .modulation     = OOK_PULSE_PWM_RAW,
@@ -95,4 +106,5 @@ r_device digitech_ws = {
     .json_callback  = &digitech_ws_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields,
 };
