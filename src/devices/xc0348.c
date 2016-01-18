@@ -1,17 +1,23 @@
 /*
  * Digitech XC0348 weather station
  * Reports 1 row, 88 pulses
- * Format: ff a8 XX XX YY ZZ 01 04 5d UU CC
- * - XX XX: temperature, likely in 0.1C steps (51 e7 == 8.7C, 51 ef == 9.5C)
+ * Format: ff ID ?X XX YY ZZ ?? ?? ?? UU CC
+ * - ID: device id
+ * - ?X XX: temperature, likely in 0.1C steps (.1 e7 == 8.7C, .1 ef == 9.5C)
  * - YY: percent in a single byte (for example 54 == 84%)
  * - ZZ: wind speed (00 == 0, 01 == 1.1km/s, ...)
  * - UU: wind direction: 00 is N, 02 is NE, 04 is E, etc. up to 0F is seems
- * - CC: unknown checksum (or less likely - part of wind direction)
+ * - CC: checksum
  *
  * still unknown - rain, pressure
  */
 
+#include "data.h"
 #include "rtl_433.h"
+#include "util.h"
+
+#define CRC_POLY 0x31
+#define CRC_INIT 0xff
 
 static const char* wind_directions[] = {
     "N", "NNE", "NE",
@@ -23,7 +29,7 @@ static const char* wind_directions[] = {
 
 static float get_temperature(const uint8_t* br) {
     const int temp_raw = (br[2] << 8) + br[3];
-    return (temp_raw - 0x5190) / 10.0;
+    return ((temp_raw & 0x0fff) - 0x190) / 10.0;
 }
 
 static int get_humidity(const uint8_t* br) {
@@ -39,6 +45,10 @@ static float get_wind_speed(const uint8_t* br) {
 }
 
 static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
+
     if (bitbuffer->num_rows != 1) {
         return 0;
     }
@@ -48,26 +58,31 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
 
 	const uint8_t *br = bitbuffer->bb[0];
 
-    if (br[0] != 0xff || br[1] != 0xa8) {
-        fprintf(stdout, "digitech header mismatch: 0x%02x 0x%02x\n", br[0], br[1]);
+    if (br[0] != 0xff) {
+        // preamble missing
         return 0;
     }
 
-    /* TODO: checksum validation */
+    if (br[10] != crc8(br, 10, CRC_POLY, CRC_INIT)) {
+        // crc mismatch
+        return 0;
+    }
 
     const float temperature = get_temperature(br);
     const int humidity = get_humidity(br);
     const char* direction = get_wind_direction(br);
     const float speed = get_wind_speed(br);
+    const char device_id = br[1];
 
-    fprintf(stdout, "Temperature event:\n");
-    fprintf(stdout, "protocol      = Digitech XC0348 weather station\n");
-    fprintf(stdout, "temp          = %.1f°C\n", temperature);
-    fprintf(stdout, "humidity      = %d%%\n", humidity);
-    fprintf(stdout, "direction     = %s\n", direction);
-    fprintf(stdout, "speed         = %.1f km/h\n", speed);
-    fprintf(stdout, "unknown       = %02x %02x %02x\n\n", br[6], br[7], br[8]);
-
+    data = data_make("time",          "",               DATA_STRING, time_str,
+                     "model",         "",               DATA_STRING, "Digitech XC0348 weather station",
+                     "id",            "",               DATA_INT,    device_id,
+                     "temperature_C", "Temperature",    DATA_DOUBLE, temperature,
+                     "humidity",      "Humidity",       DATA_INT,    humidity,
+                     "direction",     "Wind direction", DATA_STRING, direction,
+                     "speed",         "Wind speed",     DATA_DOUBLE, speed,
+                     NULL);
+    data_acquired_handler(data);
     return 1;
 }
 
