@@ -1,9 +1,9 @@
 /*
  * Digitech XC0348 weather station
  * Reports 1 row, 88 pulses
- * Format: ff ID XX XX YY ZZ 01 04 5d UU CC
+ * Format: ff ID ?X XX YY ZZ ?? ?? ?? UU CC
  * - ID: device id
- * - XX XX: temperature, likely in 0.1C steps (51 e7 == 8.7C, 51 ef == 9.5C)
+ * - ?X XX: temperature, likely in 0.1C steps (.1 e7 == 8.7C, .1 ef == 9.5C)
  * - YY: percent in a single byte (for example 54 == 84%)
  * - ZZ: wind speed (00 == 0, 01 == 1.1km/s, ...)
  * - UU: wind direction: 00 is N, 02 is NE, 04 is E, etc. up to 0F is seems
@@ -28,7 +28,7 @@ static const char* wind_directions[] = {
 
 static float get_temperature(const uint8_t* br) {
     const int temp_raw = (br[2] << 8) + br[3];
-    return (temp_raw - 0x5190) / 10.0;
+    return ((temp_raw & 0x0fff) - 0x190) / 10.0;
 }
 
 static int get_humidity(const uint8_t* br) {
