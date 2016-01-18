@@ -6,12 +6,16 @@
  * - YY: percent in a single byte (for example 54 == 84%)
  * - ZZ: wind speed (00 == 0, 01 == 1.1km/s, ...)
  * - UU: wind direction: 00 is N, 02 is NE, 04 is E, etc. up to 0F is seems
- * - CC: unknown checksum (or less likely - part of wind direction)
+ * - CC: checksum
  *
  * still unknown - rain, pressure
  */
 
 #include "rtl_433.h"
+#include "util.h"
+
+#define CRC_POLY 0x31
+#define CRC_INIT 0xff
 
 static const char* wind_directions[] = {
     "N", "NNE", "NE",
@@ -53,7 +57,10 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    /* TODO: checksum validation */
+    if (br[10] != crc8(br, 10, CRC_POLY, CRC_INIT)) {
+        // crc mismatch
+        return 0;
+    }
 
     const float temperature = get_temperature(br);
     const int humidity = get_humidity(br);
