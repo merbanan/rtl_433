@@ -21,6 +21,8 @@
 #ifndef INCLUDE_DATA_H_
 #define INCLUDE_DATA_H_
 
+#include <stdio.h>
+
 typedef enum {
 	DATA_DATA,		/* pointer to data is stored */
 	DATA_INT,		/* pointer to integer is stored */
