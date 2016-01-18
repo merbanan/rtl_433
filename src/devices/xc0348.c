@@ -1,7 +1,8 @@
 /*
  * Digitech XC0348 weather station
  * Reports 1 row, 88 pulses
- * Format: ff a8 XX XX YY ZZ 01 04 5d UU CC
+ * Format: ff ID XX XX YY ZZ 01 04 5d UU CC
+ * - ID: device id
  * - XX XX: temperature, likely in 0.1C steps (51 e7 == 8.7C, 51 ef == 9.5C)
  * - YY: percent in a single byte (for example 54 == 84%)
  * - ZZ: wind speed (00 == 0, 01 == 1.1km/s, ...)
@@ -52,8 +53,8 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
 
 	const uint8_t *br = bitbuffer->bb[0];
 
-    if (br[0] != 0xff || br[1] != 0xa8) {
-        fprintf(stdout, "digitech header mismatch: 0x%02x 0x%02x\n", br[0], br[1]);
+    if (br[0] != 0xff) {
+        // preamble missing
         return 0;
     }
 
@@ -69,6 +70,7 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
 
     fprintf(stdout, "Temperature event:\n");
     fprintf(stdout, "protocol      = Digitech XC0348 weather station\n");
+    fprintf(stdout, "device        = %02x\n", br[1]);
     fprintf(stdout, "temp          = %.1f°C\n", temperature);
     fprintf(stdout, "humidity      = %d%%\n", humidity);
     fprintf(stdout, "direction     = %s\n", direction);
