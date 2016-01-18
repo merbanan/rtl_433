@@ -220,6 +220,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 						// Store estimates
 						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
 						fsk_pulses->ook_high_estimate = s->ook_high_estimate;
+						s->state = PD_STATE_IDLE;	// Ensure everything is reset
 						return 2;	// FSK package detected!!!
 					}
 				} else {
