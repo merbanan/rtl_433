@@ -48,7 +48,8 @@ typedef struct {
 	unsigned int fsk_pulse_length;		// Counter for internal FSK pulse detection
 	enum {
 		PD_STATE_FSK_F1	= 0,	// High pulse
-		PD_STATE_FSK_F2	= 1		// Low pulse (gap)
+		PD_STATE_FSK_F2	= 1,	// Low pulse (gap)
+		PD_STATE_FSK_ERROR	= 2		// Error - stay here until cleared
 	} state_fsk;
 
 	int fm_f1_est;			// Estimate for the F1 frequency for FSK
@@ -68,9 +69,7 @@ typedef struct {
 /// @param fm_n: One single sample of FM data
 /// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @param *s: Internal state
-/// @return 0 if sample is correctly processed
-/// @return 2 if number of pulses is overflowing and package should be ended
-int pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
+void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
 	const int fm_f1_delta = abs(fm_n - s->fm_f1_est);	// Get delta from F1 frequency estimate
 	const int fm_f2_delta = abs(fm_n - s->fm_f2_est);	// Get delta from F2 frequency estimate
 	s->fsk_pulse_length++;
@@ -112,9 +111,10 @@ int pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *
 					fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store gap width
 					fsk_pulses->num_pulses++;	// Go to next pulse
 					s->fsk_pulse_length = 0;
-					// EOP if too many pulses
+					// When pulse buffer is full go to error state
 					if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-						return 2;	// FSK: End Of Package!!
+						fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+						s->state_fsk = PD_STATE_FSK_ERROR;
 					}
 				// Else rewind to last pulse
 				} else {
@@ -125,11 +125,32 @@ int pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *
 				s->fm_f2_est += fm_n/FSK_EST_RATIO - s->fm_f2_est/FSK_EST_RATIO;	// Slow estimator
 			}
 			break;
+		case PD_STATE_FSK_ERROR:		// Stay here until cleared
+			break;
 		default:
-			fprintf(stderr, "pulse_demod(): Unknown FSK state!!\n");
+			fprintf(stderr, "pulse_FSK_detect(): Unknown FSK state!!\n");
 			s->state_fsk = PD_STATE_FSK_F1;
 	} // switch(s->state_fsk)
-	return 0;
+	return;
+}
+
+
+/// Wrap up FSK modulation and store last data at End Of Package
+///
+/// @param fm_n: One single sample of FM data
+/// @param *fsk_pulses: Pulse_data_t structure for FSK demodulated data
+/// @param *s: Internal state
+void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
+	if (fsk_pulses->num_pulses < PD_MAX_PULSES) {	// Avoid overflow
+		s->fsk_pulse_length++;
+		if(s->state_fsk == PD_STATE_FSK_F1) {
+			fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store last pulse
+			fsk_pulses->gap[fsk_pulses->num_pulses] = 0;	// Zero gap at end
+		} else {
+			fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store last gap
+		}
+		fsk_pulses->num_pulses++;
+	}
 }
 
 
@@ -208,15 +229,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					// Determine if FSK modulation is detected
 					if(fsk_pulses->num_pulses > PD_MIN_PULSES) {
 						// Store last pulse/gap (FSK_state is manipulated directly...)
-						s->FSK_state.fsk_pulse_length++;
-						if(s->FSK_state.state_fsk == PD_STATE_FSK_F1) {
-							fsk_pulses->pulse[fsk_pulses->num_pulses] = s->FSK_state.fsk_pulse_length;	// Store last pulse
-							fsk_pulses->gap[fsk_pulses->num_pulses] = 0;	// Zero gap at end
-						} else {
-							fsk_pulses->gap[fsk_pulses->num_pulses] = s->FSK_state.fsk_pulse_length;	// Store last gap
-						}
-						fsk_pulses->num_pulses++;
-//fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
+						pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
 						// Store estimates
 						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
 						fsk_pulses->ook_high_estimate = s->ook_high_estimate;
@@ -231,12 +244,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 
 					// **** Start of FSK Demodulation ****
 					if(pulses->num_pulses == 0) {	// Only during first pulse
-						if(pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state) != 0) {
-							s->state = PD_STATE_IDLE;
-							// Store estimates
-							fsk_pulses->ook_low_estimate = s->ook_low_estimate;
-							fsk_pulses->ook_high_estimate = s->ook_high_estimate;
-						}
+						pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
 					}
 					// **** End of FSK Demodulation ****
 				} // if
@@ -269,7 +277,6 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, u
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Store last pulse
 					s->state = PD_STATE_IDLE;
-//fprintf(stderr, "Level estimate (low/high): %i , %i\n", s->ook_low_estimate, s->ook_high_estimate);
 					// Store estimates
 					pulses->ook_low_estimate = s->ook_low_estimate;
 					pulses->ook_high_estimate = s->ook_high_estimate;
