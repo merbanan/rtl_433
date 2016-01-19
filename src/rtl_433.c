@@ -28,6 +28,7 @@
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 #include "data.h"
+#include "util.h"
 
 
 static int do_exit = 0;
@@ -45,6 +46,12 @@ int debug_output = 0;
 int quiet_mode = 0;
 int overwrite_mode = 0;
 
+typedef enum  {
+    CONVERT_NATIVE,
+    CONVERT_SI,
+    CONVERT_CUSTOMARY
+} conversion_mode_t;
+static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
 int num_r_devices = 0;
 
@@ -113,6 +120,7 @@ void usage(r_device *devices) {
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -196,6 +204,33 @@ void *csv_aux_data;
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
+    if (conversion_mode == CONVERT_SI) {
+        for (data_t *d = data; d; d = d->next) {
+            if ((d->type == DATA_DOUBLE) &&
+                !strcmp(d->key, "temperature_F")) {
+                    *(double*)d->value = fahrenheit2celsius(*(double*)d->value);
+                    char *pos;
+                    if (d->format &&
+                        (pos = strrchr(d->format, 'F'))) {
+                        *pos = 'C';
+                    }
+            }
+        }
+    }
+    if (conversion_mode == CONVERT_CUSTOMARY) {
+        for (data_t *d = data; d; d = d->next) {
+            if ((d->type == DATA_DOUBLE) &&
+                !strcmp(d->key, "temperature_C")) {
+                    *(double*)d->value = celsius2fahrenheit(*(double*)d->value);
+                    char *pos;
+                    if (d->format &&
+                        (pos = strrchr(d->format, 'C'))) {
+                        *pos = 'F';
+                    }
+            }
+        }
+    }
+
     switch (output_format) {
     case OUTPUT_KV: {
         data_print(data, stdout,  &data_kv_printer, NULL);
@@ -752,7 +787,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:W")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:W")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -837,6 +872,18 @@ int main(int argc, char **argv) {
                     usage(devices);
 		}
 		break;
+        case 'C':
+        if (strcmp(optarg, "native") == 0) {
+            conversion_mode = CONVERT_NATIVE;
+        } else if (strcmp(optarg, "si") == 0) {
+            conversion_mode = CONVERT_SI;
+        } else if (strcmp(optarg, "customary") == 0) {
+            conversion_mode = CONVERT_CUSTOMARY;
+        } else {
+                    fprintf(stderr, "Invalid conversion mode %s\n", optarg);
+                    usage(devices);
+        }
+        break;
             case 'W':
 	        overwrite_mode = 1;
 		break;
