@@ -48,6 +48,21 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 	}
 }
 
+
+void bitbuffer_invert(bitbuffer_t *bits) {
+	for (unsigned row = 0; row < bits->num_rows; ++row) {
+		if (bits->bits_per_row[row] > 0) {
+			const unsigned last_col  = (bits->bits_per_row[row]-1) / 8;
+			const unsigned last_bits = ((bits->bits_per_row[row]-1) % 8) +1;
+			for (unsigned col = 0; col <= last_col; ++col) {
+				bits->bb[row][col] = ~bits->bb[row][col];	// Invert
+			}
+			bits->bb[row][last_col] ^= 0xFF >> last_bits;	// Re-invert unused bits in last byte
+		}
+	}
+}
+
+
 // If we make this an inline function instead of a macro, it means we don't
 // have to worry about using bit numbers with side-effects (bit++).
 static inline int bit(const uint8_t *bytes, unsigned bit)
@@ -159,6 +174,10 @@ int main(int argc, char **argv) {
 	for (int i=0; i <= BITBUF_COLS*8; ++i) {
 		bitbuffer_add_bit(&bits, i%2);
 	}
+	bitbuffer_print(&bits);
+
+	fprintf(stderr, "TEST: bitbuffer:: invert\n");
+	bitbuffer_invert(&bits);
 	bitbuffer_print(&bits);
 
 	fprintf(stderr, "TEST: bitbuffer:: Clear\n");

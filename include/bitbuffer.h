@@ -40,7 +40,7 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit);
 void bitbuffer_add_row(bitbuffer_t *bits);
 
 /// Invert all bits in the bitbuffer (do not invert the empty bits)
-//void bitbuffer_invert(bitbuffer_t *bits);
+void bitbuffer_invert(bitbuffer_t *bits);
 
 /// Print the content of the bitbuffer
 void bitbuffer_print(const bitbuffer_t *bits);
