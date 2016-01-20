@@ -47,9 +47,10 @@ void pulse_data_print(const pulse_data_t *data) {
 typedef struct {
 	unsigned int fsk_pulse_length;		// Counter for internal FSK pulse detection
 	enum {
-		PD_STATE_FSK_F1	= 0,	// High pulse
-		PD_STATE_FSK_F2	= 1,	// Low pulse (gap)
-		PD_STATE_FSK_ERROR	= 2		// Error - stay here until cleared
+		PD_STATE_FSK_INIT	= 0,	// Initial frequency estimation
+		PD_STATE_FSK_F1		= 1,	// High frequency (pulse)
+		PD_STATE_FSK_F2		= 2,	// Low frequency (gap)
+		PD_STATE_FSK_ERROR	= 3		// Error - stay here until cleared
 	} state_fsk;
 
 	int fm_f1_est;			// Estimate for the F1 frequency for FSK
@@ -75,27 +76,46 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 	s->fsk_pulse_length++;
 
 	switch(s->state_fsk) {
-		case PD_STATE_FSK_F1:		// Pulse high at initial frequency
-			// First pulse and initial samples in pulse?
-			if ((fsk_pulses->num_pulses == 0) && (s->fsk_pulse_length < PD_MIN_PULSE_SAMPLES)) {
+		case PD_STATE_FSK_INIT:		// Initial frequency - High or low?
+			// Initial samples?
+			if (s->fsk_pulse_length < PD_MIN_PULSE_SAMPLES) {
 				s->fm_f1_est = s->fm_f1_est/2 + fm_n/2;		// Quick initial estimator
-			// First pulse and above default frequency delta?
-			} else if ((fsk_pulses->num_pulses == 0) && (fm_f1_delta > (FSK_DEFAULT_FM_DELTA/2))) {
-				s->state_fsk = PD_STATE_FSK_F2;
-				s->fm_f2_est = fm_n;	// Prime F2 estimate
-				fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
-				s->fsk_pulse_length = 0;
-			// Not first pulse and closer to F2 than F1?
-			} else if ((fsk_pulses->num_pulses > 0) && (fm_f1_delta > fm_f2_delta)) {
+			// Above default frequency delta?
+			} else if (fm_f1_delta > (FSK_DEFAULT_FM_DELTA/2)) {
+				// Positive frequency delta - Initial frequency was low (gap)
+				if (fm_n > s->fm_f1_est) {
+					s->state_fsk = PD_STATE_FSK_F1;
+					s->fm_f2_est = s->fm_f1_est;	// Switch estimates
+					s->fm_f1_est = fm_n;			// Prime F1 estimate
+					fsk_pulses->pulse[0] = 0;		// Initial frequency was a gap...
+					fsk_pulses->gap[0] = s->fsk_pulse_length;		// Store gap width
+					fsk_pulses->num_pulses++;
+					s->fsk_pulse_length = 0;
+				// Negative Frequency delta - Initial frequency was high (pulse)
+				} else {
+					s->state_fsk = PD_STATE_FSK_F2;
+					s->fm_f2_est = fm_n;	// Prime F2 estimate
+					fsk_pulses->pulse[0] = s->fsk_pulse_length;	// Store pulse width
+					s->fsk_pulse_length = 0;
+				}
+			}
+			break;
+		case PD_STATE_FSK_F1:		// Pulse high at F1 frequency
+			// Closer to F2 than F1?
+			if (fm_f1_delta > fm_f2_delta) {
 				s->state_fsk = PD_STATE_FSK_F2;
 				// Store if pulse is not too short (suppress spurious)
 				if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
 					fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;	// Store pulse width
 					s->fsk_pulse_length = 0;
-				// Else rewind to last gap (when not first pulse!)
+				// Else rewind to last gap
 				} else {
 					s->fsk_pulse_length += fsk_pulses->gap[fsk_pulses->num_pulses-1];	// Restore counter
 					fsk_pulses->num_pulses--;		// Rewind one pulse
+					// Are we back to initial frequency? (Was initial frequency a gap?)
+					if ((fsk_pulses->num_pulses == 0) && (fsk_pulses->pulse[0] == 0)) {
+						s->state_fsk = PD_STATE_FSK_INIT;
+					}
 				}
 			// Still below threshold
 			} else {
@@ -119,6 +139,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 				// Else rewind to last pulse
 				} else {
 					s->fsk_pulse_length += fsk_pulses->pulse[fsk_pulses->num_pulses];	// Restore counter
+					// Are we back to initial frequency?
+					if (fsk_pulses->num_pulses == 0) {
+						s->state_fsk = PD_STATE_FSK_INIT;
+					}
 				}
 			// Still above threshold
 			} else {
@@ -129,7 +153,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 			break;
 		default:
 			fprintf(stderr, "pulse_FSK_detect(): Unknown FSK state!!\n");
-			s->state_fsk = PD_STATE_FSK_F1;
+			s->state_fsk = PD_STATE_FSK_ERROR;
 	} // switch(s->state_fsk)
 	return;
 }
