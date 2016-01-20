@@ -28,9 +28,9 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 r_device emontx = {
 	.name           = "emonTx OpenEnergyMonitor (stub driver)",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 50,	// NRZ decoding
-	.long_limit     = 50,	// Bit width
-	.reset_limit    = 3000, // 600 zeros...
+	.short_limit    = 5,	// NRZ decoding - Needs a sample frequency of 2500000!
+	.long_limit     = 5,	// Bit width
+	.reset_limit    = 300,	// 600 zeros...
 	.json_callback  = &emontx_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
