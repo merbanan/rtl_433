@@ -62,11 +62,13 @@ typedef struct {
 /// Demodulate Frequency Shift Keying (FSK) sample by sample
 ///
 /// Function is stateful between calls
-/// Builds estimate for initial frequency F1 (fm_f1_est). When frequency deviates more than a
-/// threshold value it will transition to other state (F2 or gap) and build an estimate of
-/// the F2 frequency (fm_f2_est). It will then transition back and forth when current
+/// Builds estimate for initial frequency. When frequency deviates more than a
+/// threshold value it will determine whether the deviation is positive or negative
+/// to classify it as a pulse or gap. It will then transition to other state (F1 or F2)
+/// and build an estimate of the other frequency. It will then transition back and forth when current
 /// frequency is closer to other frequency estimate.
-/// Includes spurious suppression by coalescing pulses when pulse widths are too short.
+/// Includes spurious suppression by coalescing pulses when pulse/gap widths are too short.
+/// Pulses equal higher frequency (F1) and Gaps equal lower frequency (F2)
 /// @param fm_n: One single sample of FM data
 /// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @param *s: Internal state
