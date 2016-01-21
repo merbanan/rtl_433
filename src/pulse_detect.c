@@ -100,6 +100,9 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 					fsk_pulses->pulse[0] = s->fsk_pulse_length;	// Store pulse width
 					s->fsk_pulse_length = 0;
 				}
+			// Still below threshold
+			} else {
+				s->fm_f1_est += fm_n/FSK_EST_RATIO - s->fm_f1_est/FSK_EST_RATIO;	// Slow estimator
 			}
 			break;
 		case PD_STATE_FSK_F1:		// Pulse high at F1 frequency
@@ -116,6 +119,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 					fsk_pulses->num_pulses--;		// Rewind one pulse
 					// Are we back to initial frequency? (Was initial frequency a gap?)
 					if ((fsk_pulses->num_pulses == 0) && (fsk_pulses->pulse[0] == 0)) {
+						s->fm_f1_est = s->fm_f2_est;	// Switch back estimates
 						s->state_fsk = PD_STATE_FSK_INIT;
 					}
 				}
@@ -146,7 +150,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 						s->state_fsk = PD_STATE_FSK_INIT;
 					}
 				}
-			// Still above threshold
+			// Still below threshold
 			} else {
 				s->fm_f2_est += fm_n/FSK_EST_RATIO - s->fm_f2_est/FSK_EST_RATIO;	// Slow estimator
 			}
