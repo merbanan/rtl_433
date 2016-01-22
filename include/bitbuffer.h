@@ -39,6 +39,10 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit);
 /// Add a new row to the bitbuffer
 void bitbuffer_add_row(bitbuffer_t *bits);
 
+/// Extract (potentially unaligned) bytes from the bit buffer. Len is bits.
+void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
+			     unsigned pos, uint8_t *out, unsigned len);
+
 /// Invert all bits in the bitbuffer (do not invert the empty bits)
 void bitbuffer_invert(bitbuffer_t *bits);
 

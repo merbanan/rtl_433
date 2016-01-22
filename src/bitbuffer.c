@@ -63,6 +63,30 @@ void bitbuffer_invert(bitbuffer_t *bits) {
 }
 
 
+void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
+			     unsigned pos, uint8_t *out, unsigned len)
+{
+	uint8_t *bits = bitbuffer->bb[row];
+
+	if ((pos & 7) == 0) {
+		memcpy(out, bits + (pos / 8), (len + 7) / 8);
+	} else {
+		unsigned shift = 8 - (pos & 7);
+		uint16_t word;
+
+		pos >>= 3; // Convert to bytes
+		len >>= 3;
+
+		word = bits[pos];
+
+		while (len--) {
+			word <<= 8;
+			word |= bits[++pos];
+			*(out++) = word >> shift;
+		}
+	}
+}
+
 // If we make this an inline function instead of a macro, it means we don't
 // have to worry about using bit numbers with side-effects (bit++).
 static inline int bit(const uint8_t *bytes, unsigned bit)

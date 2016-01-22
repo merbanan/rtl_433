@@ -61,6 +61,23 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
     return reverse8(crc);
 }
 
+uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init) {
+    uint16_t remainder = init;
+    unsigned byte, bit;
+
+    for (byte = 0; byte < nBytes; ++byte) {
+        remainder ^= message[byte];
+        for (bit = 0; bit < 8; ++bit) {
+            if (remainder & 1) {
+                remainder = (remainder >> 1) ^ polynomial;
+            }
+            else {
+                remainder = (remainder >> 1);
+            }
+        }
+    }
+    return remainder;
+}
 
 int byteParity(uint8_t inByte){
     inByte ^= inByte >> 4;
