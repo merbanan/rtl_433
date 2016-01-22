@@ -36,7 +36,8 @@ void pulse_data_print(const pulse_data_t *data) {
 #define OOK_MIN_HIGH_LEVEL	1000		// Minimum estimate of high level
 #define OOK_MAX_HIGH_LEVEL	(128*128)	// Maximum estimate for high level (A unit phasor is 128, anything above is overdrive)
 #define OOK_MAX_LOW_LEVEL	(OOK_MAX_HIGH_LEVEL/2)	// Maximum estimate for low level
-#define OOK_EST_RATIO		64			// Constant for slowness of OOK estimators
+#define OOK_EST_HIGH_RATIO	64			// Constant for slowness of OOK high level estimator
+#define OOK_EST_LOW_RATIO	1024		// Constant for slowness of OOK low level (noise) estimator (very slow)
 
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA	6000	// Default estimate for frequency delta
@@ -223,7 +224,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, i
 		switch (s->state) {
 			case PD_STATE_IDLE:
 				if (am_n > (ook_threshold + ook_hysteresis)	// Above threshold?
-				 && s->lead_in_counter > OOK_EST_RATIO		// Lead in counter to stabilize noise estimate
+				 && s->lead_in_counter > OOK_EST_LOW_RATIO	// Lead in counter to stabilize noise estimate
 				 ) {
 					// Initialize all data
 					pulse_data_clear(pulses);
@@ -234,12 +235,14 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					s->state = PD_STATE_PULSE;
 				} else {	// We are still idle..
 					// Estimate low (noise) level
-					s->ook_low_estimate += am_n / OOK_EST_RATIO - s->ook_low_estimate / OOK_EST_RATIO;
+					const int ook_low_delta = am_n - s->ook_low_estimate;
+					s->ook_low_estimate += ook_low_delta / OOK_EST_LOW_RATIO;
+					s->ook_low_estimate += ((ook_low_delta > 0) ? 1 : -1);	// Fixed-point hack to compensate for lack of scaling
 					// Calculate default OOK high level estimate
 					s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;	// Default is a ratio of low level
 					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
 					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
-					if (s->lead_in_counter <= OOK_EST_RATIO) s->lead_in_counter++;		// Allow inital estimate to settle
+					if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;		// Allow inital estimate to settle
 				}
 				break;
 			case PD_STATE_PULSE:
@@ -268,7 +271,7 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					}
 				} else {
 					// Calculate OOK high level estimate
-					s->ook_high_estimate += am_n / OOK_EST_RATIO - s->ook_high_estimate / OOK_EST_RATIO;	//  Slow estimator
+					s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
 					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
 					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
 
