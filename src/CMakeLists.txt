@@ -37,6 +37,7 @@ add_executable(rtl_433
 	devices/ec3k.c
 	devices/efergy_e2_classic.c
 	devices/elv.c
+	devices/emontx.c
 	devices/esperanza_ews.c
 	devices/fineoffset.c
 	devices/generic_remote.c

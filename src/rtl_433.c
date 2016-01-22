@@ -1034,8 +1034,8 @@ int main(int argc, char **argv) {
 		goto out;
 	    }
 	}
+	fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);	// Essential information (not quiet)
 	if (!quiet_mode) {
-	    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);
 	    fprintf(stderr, "Input format: %s\n", (demod->debug_mode == 3) ? "cf32" : "uint8");
 	}
 	sample_file_pos = 0.0;
