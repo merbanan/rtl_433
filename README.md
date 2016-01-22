@@ -113,6 +113,7 @@ Supported devices:
 	[41] HIDEKI TS04 Temperature and Humidity Sensor
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
+	[44] OpenEnergyMonitor emonTx v3
 ```
 
 
