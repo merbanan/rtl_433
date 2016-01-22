@@ -168,9 +168,9 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 r_device DSC = {
     .name		= "DSC Security Contact",
     .modulation		= OOK_PULSE_PCM_RZ,
-    .short_limit	= 62,	// Pulse length, 62.5 samples / 250 uS
-    .long_limit		= 125,	// Bit period, 125 samples / 500 uS
-    .reset_limit	= 1250, // Max gap, 
+    .short_limit	= 250,	// Pulse length, 250 µs
+    .long_limit		= 500,	// Bit period, 500 µs
+    .reset_limit	= 5000, // Max gap, 
     .json_callback	= &DSC_callback,
     .disabled		= 0,
     .demod_arg		= 0,

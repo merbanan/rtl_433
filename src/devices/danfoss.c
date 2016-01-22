@@ -28,9 +28,9 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 r_device danfoss_CFR = {
 	.name           = "Danfoss CFR Thermostat",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 25,	// NRZ decoding
-	.long_limit     = 25,	// Bit width
-	.reset_limit    = 250,	// 10 zeros...
+	.short_limit    = 100,	// NRZ decoding
+	.long_limit     = 100,	// Bit width
+	.reset_limit    = 1000,	// 10 zeros...
 	.json_callback  = &danfoss_CFR_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,

@@ -33,9 +33,9 @@ static int ec3k_callback(bitbuffer_t *bitbuffer) {
 r_device ec3k = {
 	.name           = "Energy Count 3000 (868.3 MHz)",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 12,	// NRZ decoding (it apparently 12.5 which is a problem!!)
-	.long_limit     = 12,	// Bit width
-	.reset_limit    = 192,	// 16 zeros (up to 12 seen)...
+	.short_limit    = 50,	// NRZ decoding
+	.long_limit     = 50, 	// Bit width
+	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
 	.json_callback  = &ec3k_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,

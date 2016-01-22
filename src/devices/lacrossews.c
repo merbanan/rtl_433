@@ -166,9 +166,9 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 r_device lacrossews = {
  .name           = "LaCrosse WS-2310 Weather Station",
  .modulation     = OOK_PULSE_PWM_RAW,
- .short_limit    = 238,
- .long_limit     = 750,
- .reset_limit    = 2000,
+ .short_limit    = 952,
+ .long_limit     = 3000,
+ .reset_limit    = 8000,
  .json_callback  = &lacrossews_callback, 
  .disabled       = 0,
  .demod_arg      = 0,

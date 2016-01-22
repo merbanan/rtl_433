@@ -28,9 +28,9 @@ static int intertechno_callback(bitbuffer_t *bitbuffer) {
 r_device intertechno = {
     .name           = "Intertechno 433",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 100,
-    .long_limit     = 350,
-    .reset_limit    = 2500,
+    .short_limit    = 400,
+    .long_limit     = 1400,
+    .reset_limit    = 10000,
     .json_callback  = &intertechno_callback,
     .disabled       = 0,
     .demod_arg      = 0,

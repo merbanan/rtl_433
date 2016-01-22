@@ -502,7 +502,7 @@ void pulse_analyzer(pulse_data_t *data)
 	}
 
 	if(device.modulation) {
-		fprintf(stderr, "Attempting demodulation... short_limit: %u, long_limit: %u, reset_limit: %u, demod_arg: %lu\n", 
+		fprintf(stderr, "Attempting demodulation... short_limit: %f, long_limit: %f, reset_limit: %f, demod_arg: %lu\n", 
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
 		data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 		switch(device.modulation) {

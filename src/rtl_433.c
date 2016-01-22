@@ -159,9 +159,9 @@ static void sighandler(int signum) {
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
-    p->short_limit = (float) t_dev->short_limit / ((float) DEFAULT_SAMPLE_RATE / (float) samp_rate);
-    p->long_limit = (float) t_dev->long_limit / ((float) DEFAULT_SAMPLE_RATE / (float) samp_rate);
-    p->reset_limit = (float) t_dev->reset_limit / ((float) DEFAULT_SAMPLE_RATE / (float) samp_rate);
+    p->short_limit = (float) t_dev->short_limit / ((float) 1000000 / (float) samp_rate);
+    p->long_limit = (float) t_dev->long_limit / ((float) 1000000 / (float) samp_rate);
+    p->reset_limit = (float) t_dev->reset_limit / ((float) 1000000 / (float) samp_rate);
     p->modulation = t_dev->modulation;
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;

@@ -74,9 +74,9 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
 r_device fineoffset_WH2 = {
     .name           = "Fine Offset Electronics, WH-2 Sensor",
     .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 200,	// Short pulse 136, long pulse 381, fixed gap 259
-    .long_limit     = 700,	// Maximum pulse period (long pulse + fixed gap)
-    .reset_limit    = 700,	// We just want 1 package
+    .short_limit    = 800,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_limit     = 2800,	// Maximum pulse period (long pulse + fixed gap)
+    .reset_limit    = 2800,	// We just want 1 package
     .json_callback  = &fineoffset_WH2_callback,
     .disabled       = 0,
     .demod_arg      = 0,

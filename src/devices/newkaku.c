@@ -118,9 +118,9 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
 r_device newkaku = {
     .name           = "KlikAanKlikUit Wireless Switch",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 200,
-    .long_limit     = 800,
-    .reset_limit    = 2500,
+    .short_limit    = 800,
+    .long_limit     = 3200,
+    .reset_limit    = 10000,
     .json_callback  = &newkaku_callback,
     .disabled       = 0,
     .demod_arg      = 0,

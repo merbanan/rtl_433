@@ -75,9 +75,9 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 r_device efergy_e2_classic = {
 	.name           = "Efergy e2 classic",
 	.modulation     = FSK_PULSE_PWM_RAW,
-	.short_limit    = 23,
-	.long_limit     = 100,
-	.reset_limit    = 100,
+	.short_limit    = 92,
+	.long_limit     = 400,
+	.reset_limit    = 400,
 	.json_callback  = &efergy_e2_classic_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
