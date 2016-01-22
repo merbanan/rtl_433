@@ -242,7 +242,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Falling edge is on end of pulse
-		if(pulses->pulse[n] + time_since_last > (device->short_limit + (device->short_limit>>1))) {
+		if(pulses->pulse[n] + time_since_last > (device->short_limit * 1.5)) {
 			// Last bit was recorded more than short_limit*1.5 samples ago 
 			// so this pulse start must be a data edge (falling data edge means bit = 1) 
 			bitbuffer_add_bit(&bits, 1);
@@ -266,7 +266,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
 		// Rising edge is on end of gap
-		} else if(pulses->gap[n] + time_since_last > (device->short_limit + (device->short_limit>>1))) {
+		} else if(pulses->gap[n] + time_since_last > (device->short_limit * 1.5)) {
 			// Last bit was recorded more than short_limit*1.5 samples ago 
 			// so this pulse end is a data edge (rising data edge means bit = 0) 
 			bitbuffer_add_bit(&bits, 0);

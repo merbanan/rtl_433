@@ -63,9 +63,9 @@ struct protocol_state {
     unsigned int modulation;
 
     /* pwm limits */
-    int short_limit;
-    int long_limit;
-    int reset_limit;
+    float short_limit;
+    float long_limit;
+    float reset_limit;
     char *name;
     unsigned long demod_arg;
 };
