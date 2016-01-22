@@ -34,7 +34,7 @@ static int valeo_callback(bitbuffer_t *bitbuffer) {
 r_device valeo = {
 	.name			= "Valeo Car Key",
 	.modulation		= OOK_PULSE_MANCHESTER_ZEROBIT,
-	.short_limit	= 104,  // Probably 106 (26.5*4)
+	.short_limit	= 106,
 	.long_limit		= 0,	// Not used
 	.reset_limit	= 400,
 	.json_callback	= &valeo_callback,
