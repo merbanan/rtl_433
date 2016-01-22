@@ -95,9 +95,9 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
 r_device rubicson = {
     .name           = "Rubicson Temperature Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = (244+485)/2,      // Gaps:  Short 244, Long 485, Sync 1000
-    .long_limit     = (485+1000)/2,     // Pulse: 125 (Initial pulse in each package is 97)
-    .reset_limit    = 1200,             // Two initial pulses and a gap of 2280 is filtered out
+    .short_limit    = (244+485)/2.0,      // Gaps:  Short 976µs, Long 1940µs, Sync 4000µs
+    .long_limit     = (485+1000)/2.0,     // Pulse: 500µs (Initial pulse in each package is 388µs)
+    .reset_limit    = 1200,             // Two initial pulses and a gap of 9120µs is filtered out
     .json_callback  = &rubicson_callback,
     .disabled       = 0,
     .demod_arg      = 0,
