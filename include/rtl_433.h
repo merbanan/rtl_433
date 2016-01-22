@@ -62,7 +62,7 @@ struct protocol_state {
 
     unsigned int modulation;
 
-    /* pwm limits */
+    /* pwm limits (provided by driver in µs and converted to samples) */
     float short_limit;
     float long_limit;
     float reset_limit;

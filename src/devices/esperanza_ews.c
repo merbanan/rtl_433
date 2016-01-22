@@ -100,9 +100,9 @@ static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
 r_device esperanza_ews = {
         .name          = "Esperanza EWS",
         .modulation    = OOK_PULSE_PPM_RAW,
-        .short_limit   = 700,
-        .long_limit    = 1100,
-        .reset_limit   = 2000,
+        .short_limit   = 2800,
+        .long_limit    = 4400,
+        .reset_limit   = 8000,
         .json_callback = &esperanza_ews_callback,
         .disabled      = 0,
         .demod_arg     = 0,

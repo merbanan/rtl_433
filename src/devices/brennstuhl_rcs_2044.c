@@ -172,9 +172,9 @@ static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
 r_device brennstuhl_rcs_2044 = {
   .name          = "Brennstuhl RCS 2044",
   .modulation    = OOK_PULSE_PWM_RAW,
-  .short_limit   = 150,
-  .long_limit    = 1000,
-  .reset_limit   = 1000,
+  .short_limit   = 600,
+  .long_limit    = 4000,
+  .reset_limit   = 4000,
   .json_callback = &brennstuhl_rcs_2044_callback,
   .disabled      = 0,
   .demod_arg     = 0,

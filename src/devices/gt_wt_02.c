@@ -128,9 +128,9 @@ static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
 r_device gt_wt_02 = {
   .name          = "GT-WT-02 Sensor",
   .modulation    = OOK_PULSE_PPM_RAW,
-  .short_limit   = 750,
-  .long_limit    = 1500,
-  .reset_limit   = 2500,
+  .short_limit   = 3000,
+  .long_limit    = 6000,
+  .reset_limit   = 10000,
   .json_callback = &gt_wt_02_callback,
   .disabled      = 0,
   .demod_arg     = 0,

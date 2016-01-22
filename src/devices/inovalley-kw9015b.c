@@ -64,9 +64,9 @@ static int kw9015b_callback(bitbuffer_t *bitbuffer) {
 r_device kw9015b = {
   .name          = "Inovalley kw9015b rain and Temperature weather station",
   .modulation    = OOK_PULSE_PPM_RAW,
-  .short_limit   = 875,
-  .long_limit    = 1200,
-  .reset_limit   = 2500,
+  .short_limit   = 3500,
+  .long_limit    = 4800,
+  .reset_limit   = 10000,
   .json_callback = &kw9015b_callback,
   .disabled      = 0,
   .demod_arg     = 0,
