@@ -52,9 +52,9 @@
 typedef struct {
 	char name[256];
 	unsigned int modulation;
-	unsigned int short_limit;
-	unsigned int long_limit;
-	unsigned int reset_limit;
+	float short_limit;
+	float long_limit;
+	float reset_limit;
 	int (*json_callback)(bitbuffer_t *bitbuffer);
 	unsigned int disabled;
 	unsigned long demod_arg;	// Decoder specific optional argument (may be pointer to struct)
