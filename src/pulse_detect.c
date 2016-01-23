@@ -469,13 +469,14 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance) {
 
 
 /// Print a histogram
-void histogram_print(const histogram_t *hist) {
+void histogram_print(const histogram_t *hist, uint32_t samp_rate) {
 	for(unsigned n = 0; n < hist->bins_count; ++n) {
-		fprintf(stderr, " [%2u] mean: %4u [%u;%u],\t count: %3u\n", n, 
+		fprintf(stderr, " [%2u] count: %4u,  width: %5u [%2u;%2u]\t(%4.0f us)\n", n,
+			hist->bins[n].count,
 			hist->bins[n].mean, 
 			hist->bins[n].min, 
 			hist->bins[n].max, 
-			hist->bins[n].count);
+			1E6f * hist->bins[n].mean / samp_rate);
 	}
 }
 
@@ -483,14 +484,17 @@ void histogram_print(const histogram_t *hist) {
 #define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
-void pulse_analyzer(pulse_data_t *data)
+void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 {
 	// Generate pulse period data
+	int pulse_total_period = 0;
 	pulse_data_t pulse_periods = {0};
 	pulse_periods.num_pulses = data->num_pulses;
 	for(unsigned n = 0; n < pulse_periods.num_pulses; ++n) {
 		pulse_periods.pulse[n] = data->pulse[n] + data->gap[n];
+		pulse_total_period += data->pulse[n] + data->gap[n];
 	}
+	pulse_total_period -= data->gap[pulse_periods.num_pulses-1];
 
 	histogram_t hist_pulses = {0};
 	histogram_t hist_gaps = {0};
@@ -507,14 +511,16 @@ void pulse_analyzer(pulse_data_t *data)
 	histogram_fuse_bins(&hist_periods, TOLERANCE);
 
 	fprintf(stderr, "Analyzing pulses...\n");
-	fprintf(stderr, "Total number of pulses: %u\n", data->num_pulses);
+	fprintf(stderr, "Total count: %4u,  width: %5i\t\t(%4.1f ms)\n",
+		data->num_pulses, pulse_total_period, 1000.0f*pulse_total_period/samp_rate);
 	fprintf(stderr, "Pulse width distribution:\n");
-	histogram_print(&hist_pulses);
+	histogram_print(&hist_pulses, samp_rate);
 	fprintf(stderr, "Gap width distribution:\n");
-	histogram_print(&hist_gaps);
+	histogram_print(&hist_gaps, samp_rate);
 	fprintf(stderr, "Pulse period distribution:\n");
-	histogram_print(&hist_periods);
-	fprintf(stderr, "Level estimates (signal / noise): %i / %i\n", data->ook_high_estimate, data->ook_low_estimate);
+	histogram_print(&hist_periods, samp_rate);
+	fprintf(stderr, "Level estimates [high, low]: %6i, %6i\n",
+		data->ook_high_estimate, data->ook_low_estimate);
 
 	fprintf(stderr, "Guessing modulation: ");
 	struct protocol_state device = { .name = "Analyzer Device", 0};
@@ -564,7 +570,7 @@ void pulse_analyzer(pulse_data_t *data)
 	}
 
 	if(device.modulation) {
-		fprintf(stderr, "Attempting demodulation... short_limit: %f, long_limit: %f, reset_limit: %f, demod_arg: %lu\n", 
+		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %lu\n", 
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
 		data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 		switch(device.modulation) {

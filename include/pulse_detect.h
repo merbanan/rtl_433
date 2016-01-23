@@ -54,7 +54,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 
 
 /// Analyze and print result
-void pulse_analyzer(pulse_data_t *data);
+void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */
