@@ -658,7 +658,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data);
+				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data, samp_rate);
 			} else if (package_type == 2) {
 				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {
@@ -683,7 +683,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->fsk_pulse_data);
+				if(demod->analyze_pulses) pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
 			}
 		}
 	}
