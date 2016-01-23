@@ -28,6 +28,8 @@ typedef struct {
 	int gap[PD_MAX_PULSES];		// Width of gaps between pulses (low)
 	int ook_low_estimate;				// Estimate for the OOK low level (base noise level) at beginning of package
 	int ook_high_estimate;				// Estimate for the OOK high level at end of package
+	int fsk_f1_est;				// Estimate for the F1 frequency for FSK
+	int fsk_f2_est;				// Estimate for the F2 frequency for FSK
 } pulse_data_t;
 
 

@@ -286,6 +286,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 						// Store last pulse/gap
 						pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
 						// Store estimates
+						fsk_pulses->fsk_f1_est = s->FSK_state.fm_f1_est;
+						fsk_pulses->fsk_f2_est = s->FSK_state.fm_f2_est;
 						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
 						fsk_pulses->ook_high_estimate = s->ook_high_estimate;
 						s->ook_state = PD_OOK_STATE_IDLE;	// Ensure everything is reset
@@ -521,6 +523,10 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 	histogram_print(&hist_periods, samp_rate);
 	fprintf(stderr, "Level estimates [high, low]: %6i, %6i\n",
 		data->ook_high_estimate, data->ook_low_estimate);
+	fprintf(stderr, "Frequency offsets [F1, F2]:  %6i, %6i\t(%+.1f kHz, %+.1f kHz)\n",
+		data->fsk_f1_est, data->fsk_f2_est,
+		(float)data->fsk_f1_est/INT16_MAX*samp_rate/2.0/1000.0,
+		(float)data->fsk_f2_est/INT16_MAX*samp_rate/2.0/1000.0);
 
 	fprintf(stderr, "Guessing modulation: ");
 	struct protocol_state device = { .name = "Analyzer Device", 0};
