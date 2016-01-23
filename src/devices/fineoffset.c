@@ -1,12 +1,13 @@
 /* Fine Offset Electronics sensor protocol
  *
- * The protocol is for the wireless Temperature/Humidity sensor 
+ * The protocol is for the wireless Temperature/Humidity sensor
  * Fine Offset Electronics WH2
  * aka Agimex Rosenborg 66796 (sold in Denmark)
  * aka ClimeMET CM9088 (Sold in UK)
+ * aka TFA Dostmann/Wertheim 30.3157 (Temperature only!) (sold in Germany)
  * aka ...
  *
- * The sensor sends two identical packages of 48 bits each ~50s. The bits are PWM modulated with On Off Keying
+ * The sensor sends two identical packages of 48 bits each ~48s. The bits are PWM modulated with On Off Keying
  *
  * The data is grouped in 6 bytes / 12 nibbles
  * [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
@@ -27,28 +28,41 @@
  * (at your option) any later version.
  */
 #include "rtl_433.h"
+#include "data.h"
 #include "util.h"
 
 static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    uint8_t ID;
+    data_t *data;
+
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    if (debug_output > 1) {
+       fprintf(stderr,"Possible fineoffset: ");
+       bitbuffer_print(bitbuffer);
+    }
+
+    uint8_t id;
+    int16_t temp;
     float temperature;
-    float humidity;
+    uint8_t humidity;
 
     const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] >= 48 &&         // Dont waste time on a short package
+    if (bitbuffer->bits_per_row[0] >= 48 &&         // Don't waste time on a short packages
         bb[0][0] == 0xFF &&             // Preamble
         bb[0][5] == crc8(&bb[0][1], 4, polynomial, 0)	// CRC (excluding preamble)
-    ) 
+    )
     {
-         // Nibble 3,4 contains ID
-        ID = ((bb[0][1]&0x0F) << 4) | ((bb[0][2]&0xF0) >> 4);
+        /* Get time now */
+        local_time_str(0, time_str);
 
-        // Nible 5,6,7 contains 12 bits of temperature
+         // Nibble 3,4 contains id
+        id = ((bb[0][1]&0x0F) << 4) | ((bb[0][2]&0xF0) >> 4);
+
+        // Nibble 5,6,7 contains 12 bits of temperature
         // The temperature is signed magnitude and scaled by 10
-        int16_t temp;
         temp = bb[0][3];
         temp |= (int16_t)(bb[0][2] & 0x0F) << 8;
         if(temp & 0x800) {
@@ -60,16 +74,45 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
         // Nibble 8,9 contains humidity
         humidity = bb[0][4];
 
-        fprintf(stdout, "Fine Offset Electronics, WH2:\n");
-        fprintf(stdout, "ID          = 0x%2X\n", ID);
-        fprintf(stdout, "temperature = %.1f C\n", temperature);
-        fprintf(stdout, "humidity    = %2.0f %%\n", humidity);
 
+        if (debug_output > 1) {
+           fprintf(stderr, "ID          = 0x%2X\n",  id);
+           fprintf(stderr, "temperature = %.1f C\n", temperature);
+           fprintf(stderr, "humidity    = %u %%\n",  humidity);
+        }
+
+        // Thermo
+        if (bb[0][0] == 0xFF) {
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "TFA 30.3157 Temperature sensor",
+                         "id",            "",            DATA_INT, id,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
+                          NULL);
+        data_acquired_handler(data);
+        }
+        // Thermo/Hygro
+        else {
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "Fine Offset Electronics, WH2 Temperature/Humidity sensor",
+                         "id",            "",            DATA_INT, id,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
+                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                          NULL);
+        data_acquired_handler(data);
+        }
         return 1;
     }
     return 0;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "humidity",
+    NULL
+};
 
 r_device fineoffset_WH2 = {
     .name           = "Fine Offset Electronics, WH-2 Sensor",
@@ -80,6 +123,7 @@ r_device fineoffset_WH2 = {
     .json_callback  = &fineoffset_WH2_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields
 };
 
 
