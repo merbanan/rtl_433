@@ -266,6 +266,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
 					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
 					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+					// Estimate pulse carrier frequency
+					pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;
 				}
 				// FSK Demodulation
 				if(pulses->num_pulses == 0) {	// Only during first pulse
