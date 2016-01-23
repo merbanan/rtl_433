@@ -623,7 +623,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 		// Detect a package and loop through demodulators with pulse data
 		int package_type = 1;	// Just to get us started
 		while(package_type) {
-			package_type = detect_pulse_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+			package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
 			if (package_type == 1) {
 				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
 				for (i = 0; i < demod->r_dev_num; i++) {

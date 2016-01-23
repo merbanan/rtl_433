@@ -50,7 +50,7 @@ void pulse_data_print(const pulse_data_t *data);
 /// @return 0 if all input sample data is processed
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
-int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
+int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 
 /// Analyze and print result
