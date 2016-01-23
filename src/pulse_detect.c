@@ -190,7 +190,8 @@ typedef struct {
 	enum {
 		PD_STATE_IDLE		= 0,
 		PD_STATE_PULSE		= 1,
-		PD_STATE_GAP		= 2
+		PD_STATE_GAP_START	= 2,
+		PD_STATE_GAP		= 3
 	} state;
 	int pulse_length;		// Counter for internal pulse detection
 	int max_pulse;			// Size of biggest pulse detected
@@ -257,11 +258,32 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, i
 						pulses->pulse[pulses->num_pulses] = s->pulse_length;	// Store pulse width
 						s->max_pulse = max(s->pulse_length, s->max_pulse);	// Find largest pulse
 						s->pulse_length = 0;
-						s->state = PD_STATE_GAP;
+						s->state = PD_STATE_GAP_START;
 					}
+				// Still pulse
+				} else {
+					// Calculate OOK high level estimate
+					s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
+					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+				}
+				// FSK Demodulation
+				if(pulses->num_pulses == 0) {	// Only during first pulse
+					pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+				}
+				break;
+			case PD_STATE_GAP_START:	// Beginning of gap - it might be a spurious gap
+				s->pulse_length++;
+				// Pulse detected again already? (This is a spurious short gap)
+				if (am_n  > (ook_threshold + ook_hysteresis)) {	// New pulse?
+					s->pulse_length += pulses->pulse[pulses->num_pulses];	// Restore counter
+					s->state = PD_STATE_PULSE;
+				// Or this gap is for real?
+				} else if (s->pulse_length >= PD_MIN_PULSE_SAMPLES) {
+					s->state = PD_STATE_GAP;
 					// Determine if FSK modulation is detected
 					if(fsk_pulses->num_pulses > PD_MIN_PULSES) {
-						// Store last pulse/gap (FSK_state is manipulated directly...)
+						// Store last pulse/gap
 						pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
 						// Store estimates
 						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
@@ -269,18 +291,11 @@ int detect_pulse_package(const int16_t *envelope_data, const int16_t *fm_data, i
 						s->state = PD_STATE_IDLE;	// Ensure everything is reset
 						return 2;	// FSK package detected!!!
 					}
-				} else {
-					// Calculate OOK high level estimate
-					s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
-					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
-					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
-
-					// **** Start of FSK Demodulation ****
-					if(pulses->num_pulses == 0) {	// Only during first pulse
-						pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
-					}
-					// **** End of FSK Demodulation ****
 				} // if
+				// FSK Demodulation (continue during short gap - we might return...)
+				if(pulses->num_pulses == 0) {	// Only during first pulse
+					pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+				}
 				break;
 			case PD_STATE_GAP:
 				s->pulse_length++;
