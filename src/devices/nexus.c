@@ -1,4 +1,7 @@
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
+
 extern int rubicson_crc_check(bitrow_t *bb);
 
 /* Currently this can decode the temperature and id from Nexus sensors
@@ -16,10 +19,19 @@ extern int rubicson_crc_check(bitrow_t *bb);
 
 static int nexus_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    int temperature_before_dec;
-    int temperature_after_dec;
-    int16_t temp;
-    int16_t humidity;
+    data_t *data;
+
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    if (debug_output > 1) {
+       fprintf(stderr,"Possible Nexus: ");
+       bitbuffer_print(bitbuffer);
+    }
+
+    int16_t temp2;
+    float temp;
+    uint8_t humidity;
+    uint8_t id;
 
     /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
       * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
@@ -32,25 +44,58 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         bb[4][4] == bb[5][4] && bb[5][4] == bb[6][4] && bb[6][4] == bb[7][4] && bb[7][4] == bb[8][4] &&
         bb[8][4] == bb[9][4] && (bb[5][2] != 0 && bb[5][3] != 0 ) && ((bb[5][4]&0x0F) == 0)))) {
 
+        /* Get time now */
+        local_time_str(0, time_str);
+
+        /* Nibble 0,1 contains id */
+        id = bb[5][0];
+
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
-        temp = (int16_t)((uint16_t)(bb[5][1] << 12) | (bb[5][2] << 4));
-        temp = temp >> 4;
+        temp2 = (int16_t)((uint16_t)(bb[5][1] << 12) | (bb[5][2] << 4));
+        temp2 = temp2 >> 4;
+        temp = temp2/10.;
+        humidity = (uint8_t)(((bb[5][3]&0x0F)<<4)|(bb[5][4]>>4));
 
-        temperature_before_dec = abs(temp / 10);
-        temperature_after_dec = abs(temp % 10);
-        humidity = (int16_t)(((bb[5][3]&0x0F)<<4)|(bb[5][4]>>4));
+        if (debug_output > 1) {
+            fprintf(stderr, "ID          = 0x%2X\n",  id);
+            fprintf(stdout, "Humidity    = %u\n", humidity);
+            fprintf(stdout, "Temperature = %.02f\n", temp);
+        }
 
-        fprintf(stdout, "Sensor temperature event:\n");
-        fprintf(stdout, "protocol: Nexus\n");
-        fprintf(stdout, "Temp    : %s%d.%d\n",temp<0?"-":"",temperature_before_dec,temperature_after_dec);
-        fprintf(stdout, "Humidity: %d\n", humidity);
-		fprintf(stdout, "%02x %02x %02x %02x %02x = %s%d.%d\n",bb[1][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4],temp<0?"-":"",temperature_before_dec, temperature_after_dec);
-
+        // Thermo
+        if (bb[5][3] == 0xF0) {
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "Nexus Temperature",
+                         "id",            "House Code",  DATA_INT, id,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                         NULL);
+        data_acquired_handler(data);
+        }
+        // Thermo/Hygro
+        else {
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
+                         "id",            "House Code",  DATA_INT, id,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                         NULL);
+        data_acquired_handler(data);
+        }
         return 1;
     }
     return 0;
 }
+
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "humidity",
+    NULL
+};
+
 
 // timings based on samp_rate=1024000
 r_device nexus = {
@@ -62,5 +107,6 @@ r_device nexus = {
     .json_callback  = &nexus_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields
 };
 
