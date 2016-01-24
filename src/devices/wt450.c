@@ -158,6 +158,6 @@ r_device wt450 = {
    .reset_limit   = 18000,
    .json_callback = &wt450_callback,
    .disabled      = 0,
-   .demod_arg     = (unsigned long)&clock_bits_parameters_generic,
+   .demod_arg     = (uintptr_t)&clock_bits_parameters_generic,
    .fields        = output_fields
 };
