@@ -82,7 +82,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
         }
 
         // Thermo
-        if (bb[0][0] == 0xFF) {
+        if (bb[0][4] == 0xFF) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "TFA 30.3157 Temperature sensor",
                          "id",            "",            DATA_INT, id,
