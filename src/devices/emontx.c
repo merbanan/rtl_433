@@ -53,7 +53,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 			struct emontx p;
 			uint8_t b[sizeof(struct emontx)];
 		} pkt;
-		uint16_t words[13];
+		uint16_t words[14];
 		double vrms;
 		unsigned i;
 
