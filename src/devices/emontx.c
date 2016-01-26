@@ -132,7 +132,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
 	"time", "model", "node", "ct1", "ct2", "ct3", "ct4", "Vrms/batt",
 	"temp1_C", "temp2_C", "temp3_C", "temp4_C", "temp5_C", "temp6_C",
-	"pulse"
+	"pulse", NULL
 };
 
 r_device emontx = {
