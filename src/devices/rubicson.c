@@ -66,6 +66,10 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
     int temperature_after_dec, i;
     int16_t temp;
     int8_t rh, csum, csum_calc, sum=0;
+    unsigned bits = bitbuffer->bits_per_row[0];
+
+    if (!(bits == 36))
+        return 0;
 
     if (rubicson_crc_check(bb)) {
 
