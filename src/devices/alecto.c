@@ -61,9 +61,14 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
     uint8_t humidity, csum = 0, csum2 = 0;
     int i;
 
-	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
-	local_time_str(0, time_str);
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+    unsigned bits = bitbuffer->bits_per_row[1];
+
+    if (bits != 36)
+        return 0;
+
+    local_time_str(0, time_str);
 
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
             && (bb[5][0] != 0 && bb[5][1] != 0)) {
