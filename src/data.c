@@ -409,17 +409,22 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 		/* put a : between the first non-labeled and labeled */
 		if (separator) {
 			if (labeled && !was_labeled && !written_title) {
-				fprintf(file, ": ");
+				fprintf(file, "\n");
 				written_title = true;
 				separator = false;
 			} else {
 				if (was_labeled)
-					fprintf(file, ", ");
+					fprintf(file, "\n");
 				else
 					fprintf(file, " ");
 			}
 		}
-		fprintf(file, "%s", data->pretty_key);
+		if (!strcmp(data->key, "time"))
+                    fprintf(file, "");
+                else if (!strcmp(data->key, "model"))
+                    fprintf(file, ":\t");
+                else
+                    fprintf(file, "\t%s:\t", data->pretty_key);
 		if (labeled)
 			fputc(' ', file);
 		print_value(printer_ctx, file, data->type, data->value, data->format);
