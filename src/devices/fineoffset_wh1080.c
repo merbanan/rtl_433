@@ -264,33 +264,33 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
 if (msg_type == 0) {
 	
-    data = data_make("time",			"",					DATA_STRING, time_str,
-                     "model",			"",					DATA_STRING, "Fine Offset WH1080 weather station",
-					 "msg_type",		"Msg type",			DATA_INT,	msg_type,	
-                     "id",				"StationID",		DATA_FORMAT, "%04X",	DATA_INT,    device_id,
-                     "temperature_C",	"Temperature",		DATA_FORMAT, "%.01f C",	DATA_DOUBLE, temperature,
-                     "humidity",		"Humidity",			DATA_FORMAT, "%u %%",	DATA_INT,    humidity,
-                     "w_direction_str",	"Wind string",		DATA_STRING, w_direction_str,
-					 "w_direction_deg",	"Wind degrees",		DATA_STRING, w_direction_deg,
-                     "w_avg_speed",			"Wind speed",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_avg_speed,
-                     "w_gust",			"Wind gust",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_gust,
-                     "rain",			"Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
-					 //"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
+    data = data_make("time",			"",			DATA_STRING, time_str,
+                	"model",		"",			DATA_STRING, "Fine Offset WH1080 weather station",
+			"msg_type",		"Msg type",		DATA_INT,	msg_type,	
+                	"id",			"StationID",		DATA_FORMAT, "%04X",	DATA_INT,    device_id,
+                	"temperature_C",	"Temperature",		DATA_FORMAT, "%.01f C",	DATA_DOUBLE, temperature,
+                	"humidity",		"Humidity",		DATA_FORMAT, "%u %%",	DATA_INT,    humidity,
+                	"w_direction_str",	"Wind string",		DATA_STRING, w_direction_str,
+			"w_direction_deg",	"Wind degrees",		DATA_STRING, w_direction_deg,
+                     	"w_avg_speed",		"Wind speed",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_avg_speed,
+                     	"w_gust",		"Wind gust",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_gust,
+                     	"rain",			"Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
+			//"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
                      NULL);
     data_acquired_handler(data);
     return 1; 
 	} else {
 		
-	data = data_make("time",        "",               	DATA_STRING, time_str,
-                     "model",       "",               	DATA_STRING, "Fine Offset WH1080 weather station",
-					 "msg_type",	"Msg type",			DATA_INT,    msg_type,	
-                     "id",          "StationID",      	DATA_FORMAT, "%04X",	DATA_INT,    device_id,
-                     "hours", 	  	"Hours",    		DATA_FORMAT, "%02d",	DATA_INT, 	 hours,
-                     "minutes",   	"Minutes",       	DATA_FORMAT, "%02d",	DATA_INT,    minutes,
-                     "seconds",   	"Seconds", 			DATA_FORMAT, "%02d",	DATA_INT,	 seconds,
-					 "year", 	  	"Year", 			DATA_FORMAT, "20%02d",	DATA_INT, 	 year,
-                     "month",     	"Month",     		DATA_FORMAT, "%02d",	DATA_INT,	 month,
-                     "day",       	"Day",      		DATA_FORMAT, "%02d",	DATA_INT, 	 day,
+	data = data_make("time",		""	            	DATA_STRING, time_str,
+                     	"model",      		""		        DATA_STRING, "Fine Offset WH1080 weather station",
+			"msg_type",		"Msg type",		DATA_INT,    msg_type,	
+                     	"id",			"StationID",      	DATA_FORMAT, "%04X",	DATA_INT,	device_id,
+                     	"hours",		"Hours",    		DATA_FORMAT, "%02d",	DATA_INT,	hours,
+                     	"minutes"	 	"Minutes",       	DATA_FORMAT, "%02d",	DATA_INT,	minutes,
+                     	"seconds",		"Seconds", 		DATA_FORMAT, "%02d",	DATA_INT,	seconds,
+			"year",		  	"Year",			DATA_FORMAT, "20%02d",	DATA_INT, 	year,
+                     	"month",	     	"Month",     		DATA_FORMAT, "%02d",	DATA_INT,	month,
+                     	"day"		     	"Day",      		DATA_FORMAT, "%02d",	DATA_INT, 	day,
                      NULL);
     data_acquired_handler(data);
     return 1; 
