@@ -44,6 +44,7 @@ add_executable(rtl_433
 	devices/generic_temperature_sensor.c
 	devices/gt_wt_02.c
 	devices/hideki.c
+	devices/ht680.c
 	devices/inovalley-kw9015b.c
 	devices/intertechno.c
 	devices/lacrosse.c

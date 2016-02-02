@@ -114,6 +114,7 @@ Supported devices:
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
 	[44] OpenEnergyMonitor emonTx v3
+	[45] HT680 Remote control
 ```
 
 
