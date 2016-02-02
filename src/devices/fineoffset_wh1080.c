@@ -224,8 +224,8 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
     const float temperature = get_temperature(br);
     const int humidity = get_humidity(br);
-    const char* direction_str = get_wind_direction_str(br);
-	const char* direction_deg = get_wind_direction_deg(br);	
+    const char* w_direction_str = get_wind_direction_str(br);
+	const char* w_direction_deg = get_wind_direction_deg(br);	
 	
 	
 	// Select which metric system for *wind avg speed* and *wind gust* :
@@ -234,7 +234,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
 	//const float speed = get_wind_avg_ms((br)   // <--- Data will be shown in Meters/sec.
 	//const float speed = get_wind_avg_mph((br)  // <--- Data will be shown in Mph
-	const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
+	const float w_avg_speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
 	//const float speed = get_wind_avg_knot((br) // <--- Data will be shown in Knots
 	
 	
@@ -242,7 +242,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
     //const float gust = get_wind_gust_ms(br);   // <--- Data will be shown in Meters/sec.
 	//const float gust = get_wind_gust_mph(br);  // <--- Data will be shown in Mph
-	const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
+	const float w_gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
 	//const float gust = get_wind_gust_knot(br); // <--- Data will be shown in Knots	
 	
     const float rain = get_rainfall(br);
@@ -252,45 +252,45 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 //---------------------------------------------------------------------------------------	
 //-------- GETTING TIME DATA ------------------------------------------------------------
 
-	const int the_hours = get_hours(br);
-	const int the_minutes =	get_minutes(br);
-	const int the_seconds = get_seconds(br);
-	const int the_year = get_year(br);
-	const int the_month = get_month(br);
-	const int the_day = get_day(br);
+	const int hours = get_hours(br);
+	const int minutes =	get_minutes(br);
+	const int seconds = get_seconds(br);
+	const int year = get_year(br);
+	const int month = get_month(br);
+	const int day = get_day(br);
 	
 
 //--------- PRESENTING DATA --------------------------------------------------------------
 	
 if (msg_type == 0) {
 	
-    data = data_make("time",          "",               DATA_STRING, time_str,
-                     "model",         "",               DATA_STRING, "Fine Offset WH1080 weather station",
-					 "msg_type",	  "Msg type",		DATA_INT,    msg_type,	
-                     "id",            "StationID",      DATA_FORMAT, "%04X",	DATA_INT,    device_id,
-                     "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",	DATA_DOUBLE, temperature,
-                     "humidity",      "Humidity",       DATA_FORMAT, "%u %%",	DATA_INT,    humidity,
-                     "direction_str", "Wind direction", DATA_STRING, direction_str,
-					 "direction_deg", "Wind degrees", 	DATA_STRING, direction_deg,
-                     "speed",         "Wind speed",     DATA_FORMAT, "%.02f",	DATA_DOUBLE, speed,
-                     "gust",          "Wind gust",      DATA_FORMAT, "%.02f",	DATA_DOUBLE, gust,
-                     "rain",          "Total rainfall", DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
+    data = data_make("time",			"",					DATA_STRING, time_str,
+                     "model",			"",					DATA_STRING, "Fine Offset WH1080 weather station",
+					 "msg_type",		"Msg type",			DATA_INT,	msg_type,	
+                     "id",				"StationID",		DATA_FORMAT, "%04X",	DATA_INT,    device_id,
+                     "temperature_C",	"Temperature",		DATA_FORMAT, "%.01f C",	DATA_DOUBLE, temperature,
+                     "humidity",		"Humidity",			DATA_FORMAT, "%u %%",	DATA_INT,    humidity,
+                     "w_direction_str",	"Wind string",		DATA_STRING, w_direction_str,
+					 "w_direction_deg",	"Wind degrees",		DATA_STRING, w_direction_deg,
+                     "w_avg_speed",			"Wind speed",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_avg_speed,
+                     "w_gust",			"Wind gust",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_gust,
+                     "rain",			"Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
 					 //"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
                      NULL);
     data_acquired_handler(data);
     return 1; 
 	} else {
 		
-	data = data_make("time",          "",               DATA_STRING, time_str,
-                     "model",         "",               DATA_STRING, "Fine Offset WH1080 weather station",
-					 "msg_type",	  "Msg type",		DATA_INT,    msg_type,	
-                     "id",            "StationID",      DATA_FORMAT, "%04X",	DATA_INT,    device_id,
-                     "the_hours", 	  "Hours",    		DATA_FORMAT, "%02d",	DATA_INT, 	 the_hours,
-                     "the_minutes",   "Minutes",       	DATA_FORMAT, "%02d",	DATA_INT,    the_minutes,
-                     "the_seconds",   "Seconds", 		DATA_FORMAT, "%02d",	DATA_INT,	 the_seconds,
-					 "the_year", 	  "Year", 			DATA_FORMAT, "20%02d",	DATA_INT, 	 the_year,
-                     "the_month",     "Month",     		DATA_FORMAT, "%02d",	DATA_INT,	 the_month,
-                     "the_day",       "Day",      		DATA_FORMAT, "%02d",	DATA_INT, 	 the_day,
+	data = data_make("time",        "",               	DATA_STRING, time_str,
+                     "model",       "",               	DATA_STRING, "Fine Offset WH1080 weather station",
+					 "msg_type",	"Msg type",			DATA_INT,    msg_type,	
+                     "id",          "StationID",      	DATA_FORMAT, "%04X",	DATA_INT,    device_id,
+                     "hours", 	  	"Hours",    		DATA_FORMAT, "%02d",	DATA_INT, 	 hours,
+                     "minutes",   	"Minutes",       	DATA_FORMAT, "%02d",	DATA_INT,    minutes,
+                     "seconds",   	"Seconds", 			DATA_FORMAT, "%02d",	DATA_INT,	 seconds,
+					 "year", 	  	"Year", 			DATA_FORMAT, "20%02d",	DATA_INT, 	 year,
+                     "month",     	"Month",     		DATA_FORMAT, "%02d",	DATA_INT,	 month,
+                     "day",       	"Day",      		DATA_FORMAT, "%02d",	DATA_INT, 	 day,
                      NULL);
     data_acquired_handler(data);
     return 1; 
@@ -303,18 +303,18 @@ static char *output_fields[] = {
 	"id",
 	"temperature_C",
 	"humidity",
-	"direction_str",
-	"direction_deg",
-	"speed",
-	"gust",
+	"w_direction_str",
+	"w_direction_deg",
+	"w_avg_speed",
+	"w_gust",
 	"rain",
 	"msg_type",
-	"the_hours",
-	"the_minutes",
-	"the_seconds",
-	"the_year",
-	"the_month",
-	"the_day",
+	"hours",
+	"minutes",
+	"seconds",
+	"year",
+	"month",
+	"day",
 	//"battery", // Unsure about Battery byte...
 	NULL
 };
