@@ -281,8 +281,8 @@ if (msg_type == 0) {
     return 1; 
 	} else {
 		
-	data = data_make("time",		""	            	DATA_STRING, time_str,
-                     	"model",      		""		        DATA_STRING, "Fine Offset WH1080 weather station",
+	data = data_make("time",		"",	            	DATA_STRING, time_str,
+                     	"model",      		"",		        DATA_STRING, "Fine Offset WH1080 weather station",
 			"msg_type",		"Msg type",		DATA_INT,    msg_type,	
                      	"id",			"StationID",      	DATA_FORMAT, "%04X",	DATA_INT,	device_id,
                      	"hours",		"Hours",    		DATA_FORMAT, "%02d",	DATA_INT,	hours,
