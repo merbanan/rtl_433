@@ -272,7 +272,7 @@ if (msg_type == 0) {
                 	"humidity",		"Humidity",		DATA_FORMAT, "%u %%",	DATA_INT,    humidity,
                 	"w_direction_str",	"Wind string",		DATA_STRING, w_direction_str,
 			"w_direction_deg",	"Wind degrees",		DATA_STRING, w_direction_deg,
-                     	"w_avg_speed",		"Wind speed",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_avg_speed,
+                     	"w_avg_speed",		"Wind avg speed",	DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_avg_speed,
                      	"w_gust",		"Wind gust",		DATA_FORMAT, "%.02f",	DATA_DOUBLE, w_gust,
                      	"rain",			"Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
 			//"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
