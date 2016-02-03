@@ -10,27 +10,50 @@
 
 static int ht680_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
-
-	for(uint8_t i=0;i < bitbuffer->num_rows+1;i++) {
-		if(bitbuffer->bits_per_row[i] == 41){ //Length of packet is 41
-			fprintf(stdout,"HT680: ");
-			for (uint16_t col = 0; col < (bitbuffer->bits_per_row[i]+7)/8; ++col) {
-				fprintf(stderr, "%02x ", bb[i][col]);
-			}
-			fprintf(stdout,"\n");
+	data_t *data;
+	
+	for (uint8_t row = 0;row < bitbuffer->num_rows;row++){
+		uint8_t *b = bb[row];
+		if(bitbuffer->bits_per_row[row] == 40 && //Length of packet is 40
+			(b[0] & 0x50) == 0x50 && //Sync mask 01010000
+			(b[1] & 0x0A) == 0x0A && //Address always mask 00001010
+			(b[3] & 0x82) == 0x82 && //Buttons(4,3) always mask 10000010
+			(b[4] & 0x0A) == 0x0A){  //Buttons(2,1) always mask 00001010
+			b[0] = b[0] & 0x0F; //Clear sync
+			
+			data = data_make("model",	"",				DATA_STRING,	"HT680 Remote control",
+							 "addres",	"Addres code",	DATA_FORMAT,	"%06X", DATA_INT, (b[0]<<16)+(b[1]<<8)+b[2],
+							 "button1",	"Button 1",		DATA_STRING,	(((b[4]>>4) & 0x03) == 3) ? "PRESSED" : "",
+							 "button2",	"Button 2",		DATA_STRING,	(((b[4]>>6) & 0x03) == 3) ? "PRESSED" : "",
+							 "button3",	"Button 3",		DATA_STRING,	((((b[3]&0x7D)>>2) & 0x03) == 3) ? "PRESSED" : "",
+							 "button4",	"Button 4",		DATA_STRING,	((((b[3]&0x7D)>>4) & 0x03) == 3) ? "PRESSED" : "",
+							 NULL);
+			data_acquired_handler(data);
+			
 			return 1;
 		}
 	}
 	return 0;
 }
 
+static char *output_fields[] = {
+	"model",
+	"adress",
+	"data",
+	"button1",
+	"button2",
+	"button3",
+	"button4",
+	NULL
+};
+
 r_device ht680 = {
   .name          = "HT680 Remote control",
   .modulation    = OOK_PULSE_PWM_RAW,
   .short_limit   = 400,
-  .long_limit    = 1100,
-  .reset_limit   = 2500,
+  .long_limit    = 1200,
+  .reset_limit   = 13000,
   .json_callback = &ht680_callback,
   .disabled      = 0,
-  .demod_arg     = 0
+  .demod_arg     = 1
 };
