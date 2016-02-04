@@ -36,26 +36,25 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
     int16_t temp2;
     float temp;
     uint8_t humidity;
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
-    /* FIXME validate the received message better */
-    if (((bb[1][0]&0xF0) == 0x90 && (bb[2][0]&0xF0) == 0x90 && (bb[3][0]&0xF0) == 0x90 && (bb[4][0]&0xF0) == 0x90 &&
-        (bb[5][0]&0xF0) == 0x90 && (bb[6][0]&0xF0) == 0x90) ||
-        ((bb[1][0]&0xF0) == 0x50 && (bb[2][0]&0xF0) == 0x50 && (bb[3][0]&0xF0) == 0x50 && (bb[4][0]&0xF0) == 0x50 &&
-        (bb[1][3] == bb[2][3]) && (bb[1][4] == bb[2][4]))) {
+    if (r >= 0 &&
+        ((bb[r][0]&0xF0) == 0x90 ||
+         (bb[r][0]&0xF0) == 0x50)) {
 
         /* Get time now */
         local_time_str(0, time_str);
 
         /* Prologue sensor */
-        id = (bb[1][0]&0xF0)>>4;
-        rid = ((bb[1][0]&0x0F)<<4) | ((bb[1][1]&0xF0)>>4);
-        battery = bb[1][1]&0x08;
-        channel = (bb[1][1]&0x03) + 1;
-        button = (bb[1][1]&0x04) >> 2;
-        temp2 = (int16_t)((uint16_t)(bb[1][2] << 8) | (bb[1][3]&0xF0));
+        id = (bb[r][0]&0xF0)>>4;
+        rid = ((bb[r][0]&0x0F)<<4) | ((bb[r][1]&0xF0)>>4);
+        battery = bb[r][1]&0x08;
+        channel = (bb[r][1]&0x03) + 1;
+        button = (bb[r][1]&0x04) >> 2;
+        temp2 = (int16_t)((uint16_t)(bb[r][2] << 8) | (bb[r][3]&0xF0));
         temp2 = temp2 >> 4;
         temp = temp2/10.;
-        humidity = ((bb[1][3]&0x0F)<<4) | (bb[1][4]>>4);
+        humidity = ((bb[r][3]&0x0F)<<4) | (bb[r][4]>>4);
 
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Prologue sensor",

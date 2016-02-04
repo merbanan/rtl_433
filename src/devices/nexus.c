@@ -32,30 +32,31 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     float temp;
     uint8_t humidity;
     uint8_t id;
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
     /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
       * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
       * So less then 0.5% which should be acceptable.
       */
-    if (!rubicson_crc_check(bb) && ((bb[1][0] == bb[2][0] && bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] &&
-        bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0] && bb[6][0] == bb[7][0] && bb[7][0] == bb[8][0] &&
-        bb[8][0] == bb[9][0] && (bb[5][0] != 0 && bb[5][1] != 0 && bb[5][2] != 0 && bb[12][1] != 0x80)) &&
-        (bb[1][4] == bb[2][4] && bb[2][4] == bb[3][4] && bb[3][4] == bb[4][4] &&
-        bb[4][4] == bb[5][4] && bb[5][4] == bb[6][4] && bb[6][4] == bb[7][4] && bb[7][4] == bb[8][4] &&
-        bb[8][4] == bb[9][4] && (bb[5][2] != 0 && bb[5][3] != 0 ) && ((bb[5][4]&0x0F) == 0)))) {
+    if (!rubicson_crc_check(bb) &&
+        r >= 0 &&
+        bb[r][0] != 0 &&
+        bb[r][1] != 0 &&
+        bb[r][2] != 0 &&
+        bb[r][3] != 0) {
 
         /* Get time now */
         local_time_str(0, time_str);
 
         /* Nibble 0,1 contains id */
-        id = bb[5][0];
+        id = bb[r][0];
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
-        temp2 = (int16_t)((uint16_t)(bb[5][1] << 12) | (bb[5][2] << 4));
+        temp2 = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
         temp2 = temp2 >> 4;
         temp = temp2/10.;
-        humidity = (uint8_t)(((bb[5][3]&0x0F)<<4)|(bb[5][4]>>4));
+        humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
 
         if (debug_output > 1) {
             fprintf(stderr, "ID          = 0x%2X\n",  id);
@@ -64,7 +65,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         }
 
         // Thermo
-        if (bb[5][3] == 0xF0) {
+        if (bb[r][3] == 0xF0) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Nexus Temperature",
                          "id",            "House Code",  DATA_INT, id,
@@ -109,4 +110,3 @@ r_device nexus = {
     .demod_arg      = 0,
     .fields         = output_fields
 };
-
