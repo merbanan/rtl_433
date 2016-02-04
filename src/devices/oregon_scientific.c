@@ -1,5 +1,5 @@
 #include "rtl_433.h"
-#include "data.h"
+#include "data.h" 
 #include "util.h"
 
 /// Documentation for Oregon Scientific protocols can be found here:
@@ -13,6 +13,7 @@
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
+#define ID_PCR800   0x2914 
 
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
@@ -24,12 +25,26 @@ float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   return temp_c;
 }
 
+float get_os_rain_rate(unsigned char *message, unsigned int sensor_id) {
+	float rain_rate = 0;	// Nibbles 11..8 rain rate, LSD = 0.01 inches per hour
+	rain_rate = (((message[5]&0x0f) * 1000) +((message[5]>>4)*100)+((message[4]&0x0f)*10) + ((message[4]>>4)&0x0f)) / 100.0F;
+	return rain_rate;
+}
+
+float get_os_total_rain(unsigned char *message, unsigned int sensor_id) {
+	float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 543210 = 012.345 inches
+	total_rain = (message[8]&0x0f) * 100.0F +((message[8]>>4)&0x0f)*10.0F +(message[7]&0x0f) 
+		+ ((message[7]>>4)&0x0f) / 10.0F + (message[6]&0x0f) / 100.0F + ((message[6]>>4)&0x0f)/1000.0F;
+	return total_rain;
+}
+
 unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with humidity in different position
   int humidity = 0;
   humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
   return humidity;
 }
+
 
 unsigned int get_os_uv(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with uv in different position
@@ -352,23 +367,39 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
 
     if ((msg[0] == 0xf8) && (msg[1] == 0x24))    {
       if (validate_os_checksum(msg, 15) == 0) {
-        int  channel = ((msg[2] >> 4)&0x0f);
+        int  channel = get_os_channel(msg, 0xf824);
         float temp_c = get_os_temperature(msg, 0xf824);
         int humidity = get_os_humidity(msg, 0xf824);
-        fprintf(stdout,"Weather Sensor THGR810  Channel %d Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
+	int battery = get_os_battery(msg, 0xf824);
+
+        fprintf(stdout,"Weather Sensor THGR810  Channel %d Battery %s Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", channel, battery ? "LOW":"OK", temp_c, ((temp_c*9)/5)+32, humidity);
       }
       return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
     } else if ((msg[0] == 0xd8) && (msg[1] == 0x74)) {
       if (validate_os_checksum(msg, 13) == 0) {   // ok
-        int  channel = ((msg[2] >> 4)&0x0f);
+        int  channel = get_os_channel(msg, 0xd874);
         int uvidx = get_os_uv(msg, 0xd874);
         fprintf(stdout, "Weather Sensor UVN800 Channel %d  UV index: %d \n", channel, uvidx);
       }
+    } else if ((msg[0] == 0x29) && (msg[1] == 0x14)) {
+      if (validate_os_checksum(msg, 18) == 0) {
+        int  channel = get_os_channel(msg, ID_PCR800);
+	int battery = get_os_battery(msg, ID_PCR800);
+	float rain_rate=get_os_rain_rate(msg, ID_PCR800);
+	float total_rain=get_os_total_rain(msg, ID_PCR800);
+	fprintf(stdout, "Weather Sensor PCR800 Rain Gauge Channel %d Battery %s Rate %3.1f in/hr Total %3.1f in\n", 
+		channel, battery?"LOW":"OK", rain_rate, total_rain);
+	}
+	return 1;
     } else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
       if (validate_os_checksum(msg, 17) == 0) {
-        float gustWindspeed = (msg[11]+msg[10])/100;
-        float quadrant = msg[8]*22.5;
-        fprintf(stdout, "Weather Sensor WGR800   Wind Gauge  Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", gustWindspeed, quadrant);
+	// 13..11 Current Speed, meters per second, LSD is 0.1 m/s
+	// 16..14 Average speed, meters per second, LSD is 0.1 m/s
+        float gustWindspeed = ((msg[7]>>4)&0x0f) *10.0F + (msg[6]&0x0f) *1.0F + ((msg[6]>>4)&0x0f) /10.0F;
+        float avgWindspeed = (msg[8]&0x0f) * 10.0F + ((msg[8]>>4)&0x0f) *1.0F + (msg[7]&0x0f) / 10.0F;
+	int battery = get_os_battery(msg, 0xf819);
+        float quadrant = (0x0f&(msg[5]>>4))*22.5;
+        fprintf(stdout, "Weather Sensor WGR800   Wind Gauge  Battery %s Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", battery?"LOW":"OK", gustWindspeed, quadrant);
       }
       return 1;
     } else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22)
