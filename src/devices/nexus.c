@@ -1,21 +1,28 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
-
-extern int rubicson_crc_check(bitrow_t *bb);
-
-/* Currently this can decode the temperature and id from Nexus sensors
+/* Nexus sensor protocol with ID, temperature and optional humidity
+ * also FreeTec NC-7345 sensors for FreeTec Weatherstation NC-7344.
  *
- * the sensor sends 36 bits 12 times pwm modulated
- * the data is grouped into 9 nibles
+ * the sensor sends 36 bits 12 times,
+ * the packets are ppm modulated (distance coding) with a pulse of ~500 us
+ * followed by a short gap of ~1000 us for a 0 bit or a long ~2000 us gap for a
+ * 1 bit, the sync gap is ~4000 us.
  *
- * The id changes when the battery is changed in the sensor.
- * unk0 is always 1 0 0 0, most likely 2 channel bits as the sensor can recevice 3 channels
- * unk1-3 changes and the meaning is unknown
+ * the data is grouped in 9 nibbles
+ * [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1]
+ *
+ * The 8-bit id changes when the battery is changed in the sensor.
+ * flags are 4 bits 1 0 C C, where CC is the channel: 0=CH1, 1=CH2, 2=CH3
  * temp is 12 bit signed scaled by 10
+ * const is always 1111 (0x0F)
+ * humiditiy is 8 bits
  *
  * The sensor can be bought at Clas Ohlsen
  */
+
+#include "rtl_433.h"
+#include "util.h"
+#include "data.h"
+
+extern int rubicson_crc_check(bitrow_t *bb);
 
 static int nexus_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
@@ -28,10 +35,10 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
        bitbuffer_print(bitbuffer);
     }
 
-    int16_t temp2;
-    float temp;
-    uint8_t humidity;
     uint8_t id;
+    uint8_t channel;
+    int16_t temp;
+    uint8_t humidity;
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
     /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
@@ -40,6 +47,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
       */
     if (!rubicson_crc_check(bb) &&
         r >= 0 &&
+        bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
         bb[r][0] != 0 &&
         bb[r][1] != 0 &&
         bb[r][2] != 0 &&
@@ -51,25 +59,21 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         /* Nibble 0,1 contains id */
         id = bb[r][0];
 
+        channel = (bb[r][1]&0x03) + 1;
+
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
-        temp2 = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
-        temp2 = temp2 >> 4;
-        temp = temp2/10.;
+        temp = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
+        temp = temp >> 4;
         humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
-
-        if (debug_output > 1) {
-            fprintf(stderr, "ID          = 0x%2X\n",  id);
-            fprintf(stdout, "Humidity    = %u\n", humidity);
-            fprintf(stdout, "Temperature = %.02f\n", temp);
-        }
 
         // Thermo
         if (bb[r][3] == 0xF0) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Nexus Temperature",
                          "id",            "House Code",  DATA_INT, id,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                         "channel",       "Channel",     DATA_INT, channel,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                          NULL);
         data_acquired_handler(data);
         }
@@ -78,7 +82,8 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
                          "id",            "House Code",  DATA_INT, id,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                         "channel",       "Channel",     DATA_INT, channel,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                          NULL);
         data_acquired_handler(data);
@@ -92,13 +97,12 @@ static char *output_fields[] = {
     "time",
     "model",
     "id",
+    "channel",
     "temperature_C",
     "humidity",
     NULL
 };
 
-
-// timings based on samp_rate=1024000
 r_device nexus = {
     .name           = "Nexus Temperature & Humidity Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
