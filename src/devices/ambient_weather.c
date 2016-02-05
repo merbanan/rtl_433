@@ -140,10 +140,11 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
     deviceID = get_device_id (bb[0]);
 
     data = data_make("time", "", DATA_STRING, time_str,
-		     "device", "", DATA_INT, deviceID,
-		     "channel", "", DATA_INT, channel,
-		     "temperature_F", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-		     "humidity", "", DATA_INT, humidity,
+			"model",	"",	DATA_STRING,	"Ambient Weather F007TH Thermo-Hygrometer",
+		     "device", "House Code", DATA_INT, deviceID,
+		     "channel", "Channel", DATA_INT, channel,
+		     "temperature_F", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+		     "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
 		     NULL);
     data_acquired_handler(data);
 
