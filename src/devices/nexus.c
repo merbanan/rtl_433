@@ -10,7 +10,8 @@
  * [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1]
  *
  * The 8-bit id changes when the battery is changed in the sensor.
- * flags are 4 bits 1 0 C C, where CC is the channel: 0=CH1, 1=CH2, 2=CH3
+ * flags are 4 bits B 0 C C, where B is the battery status: 1=OK, 0=LOW
+ * and CC is the channel: 0=CH1, 1=CH2, 2=CH3
  * temp is 12 bit signed scaled by 10
  * const is always 1111 (0x0F)
  * humiditiy is 8 bits
@@ -36,6 +37,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     }
 
     uint8_t id;
+    uint8_t battery;
     uint8_t channel;
     int16_t temp;
     uint8_t humidity;
@@ -48,7 +50,6 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     if (r >= 0 &&
         bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
         bb[r][0] != 0 &&
-        bb[r][1] != 0 &&
         bb[r][2] != 0 &&
         bb[r][3] != 0 &&
         !rubicson_crc_check(bb)) {
@@ -59,12 +60,16 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         /* Nibble 0,1 contains id */
         id = bb[r][0];
 
-        channel = (bb[r][1]&0x03) + 1;
+        /* Nibble 2 is battery and channel */
+        battery = bb[r][1]&0x80;
+        channel = ((bb[r][1]&0x30) >> 4) + 1;
 
         /* Nible 3,4,5 contains 12 bits of temperature
          * The temerature is signed and scaled by 10 */
         temp = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
         temp = temp >> 4;
+
+        /* Nibble 6,7 is humidity */
         humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
 
         // Thermo
@@ -72,6 +77,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Nexus Temperature",
                          "id",            "House Code",  DATA_INT, id,
+                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                          "channel",       "Channel",     DATA_INT, channel,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                          NULL);
@@ -82,6 +88,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
                          "id",            "House Code",  DATA_INT, id,
+                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                          "channel",       "Channel",     DATA_INT, channel,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -97,6 +104,7 @@ static char *output_fields[] = {
     "time",
     "model",
     "id",
+    "battery",
     "channel",
     "temperature_C",
     "humidity",
