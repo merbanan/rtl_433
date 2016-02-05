@@ -1,5 +1,5 @@
 #include "rtl_433.h"
-#include "data.h"
+#include "data.h" 
 #include "util.h"
 
 /// Documentation for Oregon Scientific protocols can be found here:
@@ -13,7 +13,9 @@
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
-
+#define ID_PCR800   0x2914 
+#define ID_THGR810	0xf824
+#define ID_WGR800	0x1984
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
@@ -24,12 +26,26 @@ float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   return temp_c;
 }
 
+float get_os_rain_rate(unsigned char *message, unsigned int sensor_id) {
+	float rain_rate = 0;	// Nibbles 11..8 rain rate, LSD = 0.01 inches per hour
+	rain_rate = (((message[5]&0x0f) * 1000) +((message[5]>>4)*100)+((message[4]&0x0f)*10) + ((message[4]>>4)&0x0f)) / 100.0F;
+	return rain_rate;
+}
+
+float get_os_total_rain(unsigned char *message, unsigned int sensor_id) {
+	float total_rain = 0.0F; // Nibbles 17..12 Total rain, LSD = 0.001, 543210 = 012.345 inches
+	total_rain = (message[8]&0x0f) * 100.0F +((message[8]>>4)&0x0f)*10.0F +(message[7]&0x0f) 
+		+ ((message[7]>>4)&0x0f) / 10.0F + (message[6]&0x0f) / 100.0F + ((message[6]>>4)&0x0f)/1000.0F;
+	return total_rain;
+}
+
 unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with humidity in different position
   int humidity = 0;
   humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
   return humidity;
 }
+
 
 unsigned int get_os_uv(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with uv in different position
@@ -298,6 +314,9 @@ return 0;
 
 static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
   bitrow_t *bb = bitbuffer->bb;
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
 
   // Check stream for possible Oregon Scientific v3 protocol data (skip part of first and last bytes to get past sync/startup bit errors)
   if ((((bb[0][0]&0xf) == 0x0f) && (bb[0][1] == 0xff) && ((bb[0][2]&0xc0) == 0xc0)) ||
@@ -352,23 +371,71 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
 
     if ((msg[0] == 0xf8) && (msg[1] == 0x24))    {
       if (validate_os_checksum(msg, 15) == 0) {
-        int  channel = ((msg[2] >> 4)&0x0f);
-        float temp_c = get_os_temperature(msg, 0xf824);
-        int humidity = get_os_humidity(msg, 0xf824);
-        fprintf(stdout,"Weather Sensor THGR810  Channel %d Temp: %3.1fC  %3.1fF   Humidity: %d%%\n", channel, temp_c, ((temp_c*9)/5)+32, humidity);
+        int  channel = get_os_channel(msg, ID_THGR810);
+        float temp_c = get_os_temperature(msg, ID_THGR810);
+        int humidity = get_os_humidity(msg, ID_THGR810);
+	int battery = get_os_battery(msg, ID_THGR810);
+        data = data_make("time",         "",            DATA_STRING, time_str,
+		"model",		"",		DATA_STRING, "Weather Sensor THGR810",
+		"id",			"House Code",	DATA_INT,	get_os_rollingcode(msg, ID_THGR810),
+		"channel",		"Channel",	DATA_INT,	channel,
+		"battery",		"Battery",	DATA_STRING,	battery?"LOW":"OK",
+		"temperature_C",	"Celcius",	DATA_FORMAT,	"%.02f C", DATA_DOUBLE, temp_c,
+		"temperature_F",	"Fahrenheit",	DATA_FORMAT,	"%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
+		"humidity",		"Humidity",	DATA_FORMAT,	"%u %%", DATA_INT, humidity,
+		NULL);
+
+        data_acquired_handler(data);
       }
       return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
     } else if ((msg[0] == 0xd8) && (msg[1] == 0x74)) {
       if (validate_os_checksum(msg, 13) == 0) {   // ok
-        int  channel = ((msg[2] >> 4)&0x0f);
+        int  channel = get_os_channel(msg, 0xd874);
         int uvidx = get_os_uv(msg, 0xd874);
         fprintf(stdout, "Weather Sensor UVN800 Channel %d  UV index: %d \n", channel, uvidx);
       }
+    } else if ((msg[0] == 0x29) && (msg[1] == 0x14)) {
+      if (validate_os_checksum(msg, 18) == 0) {
+        int  channel = get_os_channel(msg, ID_PCR800);
+	int battery = get_os_battery(msg, ID_PCR800);
+	float rain_rate=get_os_rain_rate(msg, ID_PCR800);
+	float total_rain=get_os_total_rain(msg, ID_PCR800);
+	data = data_make("time",	"",		DATA_STRING, time_str,
+		"model",		"",		DATA_STRING, "Weather Sensor PCR800 Rain Gauge",
+		"id",			"House Code",	DATA_INT,	get_os_rollingcode(msg,ID_PCR800),
+		"channel",		"Channel",	DATA_INT,	channel,
+		"battery",		"Battery",	DATA_STRING,	battery?"LOW":"OK",
+		"rain_rate",		"Rain Rate",	DATA_FORMAT,	"%3.1f in/hr", DATA_DOUBLE, rain_rate,
+		"total_rain",		"Total Rain",	DATA_FORMAT,	"%3.1f in", DATA_DOUBLE, total_rain,
+		NULL);
+	data_acquired_handler(data);
+	}
+	return 1;
     } else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
       if (validate_os_checksum(msg, 17) == 0) {
-        float gustWindspeed = (msg[11]+msg[10])/100;
-        float quadrant = msg[8]*22.5;
-        fprintf(stdout, "Weather Sensor WGR800   Wind Gauge  Gust Wind Speed : %2.0f m/s Wind direction %3.0f dgrs\n", gustWindspeed, quadrant);
+	// 13..11 Current Speed, meters per second, LSD is 0.1 m/s
+	// 16..14 Average speed, meters per second, LSD is 0.1 m/s
+/*
+	int i;
+	printf("13..11 current speed, 16..14 average speed\n");
+	for (i=0;i<34;i+=2) printf("%-2d ", i/10); printf("\n");
+	for (i=0;i<34;i+=2) printf("%-2d ",i%10);printf("\n");
+	for (i=0;i<17;i++) printf("%02x ", msg[i]); printf("\n");
+*/
+        float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
+        float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
+	int battery = get_os_battery(msg, ID_WGR800);
+        float quadrant = (0x0f&(msg[5]>>4))*22.5;
+	data = data_make("time",	"",		DATA_STRING, 	time_str,
+		"model",		"",		DATA_STRING,	"Weather Sensor WGR800 Wind Gauge",
+		"id",			"House Code",	DATA_INT,	get_os_rollingcode(msg, ID_WGR800),
+		"channel",		"Channel",	DATA_INT,	get_os_channel(msg, ID_WGR800),
+		"battery",		"Battery",	DATA_STRING,	battery?"LOW":"OK",
+		"gust",			"Gust",		DATA_FORMAT,	"%2.1f m/s",DATA_DOUBLE, gustWindspeed,
+		"average",		"Average",	DATA_FORMAT,	"%2.1f m/s",DATA_DOUBLE, avgWindspeed,
+		"direction",		"Direction",	DATA_FORMAT,	"%3.1f degrees",DATA_DOUBLE, quadrant,
+		NULL);
+	data_acquired_handler(data);
       }
       return 1;
     } else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22)
