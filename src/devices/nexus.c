@@ -45,13 +45,13 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
       * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
       * So less then 0.5% which should be acceptable.
       */
-    if (!rubicson_crc_check(bb) &&
-        r >= 0 &&
+    if (r >= 0 &&
         bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
         bb[r][0] != 0 &&
         bb[r][1] != 0 &&
         bb[r][2] != 0 &&
-        bb[r][3] != 0) {
+        bb[r][3] != 0 &&
+        !rubicson_crc_check(bb)) {
 
         /* Get time now */
         local_time_str(0, time_str);
