@@ -35,7 +35,7 @@
 		DECL(chuango) \
 		DECL(generic_remote) \
 		DECL(tfa_twin_plus_303049) \
-		DECL(digitech_ws) \
+		DECL(fineoffset_wh1080) \
 		DECL(wt450) \
 		DECL(lacrossews) \
 		DECL(esperanza_ews) \
