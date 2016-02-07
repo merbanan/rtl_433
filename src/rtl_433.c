@@ -128,6 +128,7 @@ void usage(r_device *devices) {
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t\tappend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
@@ -785,7 +786,31 @@ void *determine_csv_fields(r_device* devices, int num_devices)
     return csv_aux;
 }
 
-void add_json_output()
+char *arg_param(char *arg)
+{
+    char *p = strchr(arg, ':');
+    if (p) {
+        return ++p;
+    } else {
+        return p;
+    }
+}
+
+FILE *fopen_output(char *param)
+{
+    FILE *file;
+    if (!param || !*param) {
+        return stdout;
+    }
+    file = fopen(param, "a");
+    if (!file) {
+        fprintf(stderr, "rtl_433: failed to open output file\n");
+        exit(1);
+    }
+    return file;
+}
+
+void add_json_output(char *param)
 {
     output_handler_t *output = calloc(1, sizeof(output_handler_t));
     if (!output) {
@@ -793,12 +818,12 @@ void add_json_output()
         exit(1);
     }
     output->printer = &data_json_printer;
-    output->file = stdout;
+    output->file = fopen_output(param);
     *next_output_handler = output;
     next_output_handler = &output->next;
 }
 
-void add_csv_output(void *aux_data)
+void add_csv_output(char *param, void *aux_data)
 {
     if (!aux_data) {
         fprintf(stderr, "rtl_433: failed to allocate memory for CSV auxiliary data\n");
@@ -811,13 +836,13 @@ void add_csv_output(void *aux_data)
     }
     output->printer = &data_csv_printer;
     output->aux_free = &data_csv_free;
-    output->file = stdout;
+    output->file = fopen_output(param);
     output->aux = aux_data;
     *next_output_handler = output;
     next_output_handler = &output->next;
 }
 
-void add_kv_output()
+void add_kv_output(char *param)
 {
     output_handler_t *output = calloc(1, sizeof(output_handler_t));
     if (!output) {
@@ -825,7 +850,7 @@ void add_kv_output()
         exit(1);
     }
     output->printer = &data_kv_printer;
-    output->file = stdout;
+    output->file = fopen_output(param);
     *next_output_handler = output;
     next_output_handler = &output->next;
 }
@@ -950,12 +975,12 @@ int main(int argc, char **argv) {
 	        quiet_mode = 1;
 		break;
 	    case 'F':
-		if (strcmp(optarg, "json") == 0) {
-            add_json_output();
-		} else if (strcmp(optarg, "csv") == 0) {
-            add_csv_output(determine_csv_fields(devices, num_r_devices));
-		} else if (strcmp(optarg, "kv") == 0) {
-            add_kv_output();
+		if (strncmp(optarg, "json", 4) == 0) {
+            add_json_output(arg_param(optarg));
+		} else if (strncmp(optarg, "csv", 3) == 0) {
+            add_csv_output(arg_param(optarg), determine_csv_fields(devices, num_r_devices));
+		} else if (strncmp(optarg, "kv", 2) == 0) {
+            add_kv_output(arg_param(optarg));
 		} else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(devices);
@@ -1004,7 +1029,7 @@ int main(int argc, char **argv) {
     }
 
     if (!output_handler) {
-        add_kv_output();
+        add_kv_output(NULL);
     }
 
     for (i = 0; i < num_r_devices; i++) {
