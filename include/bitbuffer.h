@@ -66,6 +66,6 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
 
 /// Find a repeated row that has a minimum count of bits.
 /// Return the row index or -1.
-int bitbuffer_find_repeated_row(bitbuffer_t *bits, int min_repeats, int min_bits);
+int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
 #endif /* INCLUDE_BITBUFFER_H_ */
