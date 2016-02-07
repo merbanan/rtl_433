@@ -184,7 +184,7 @@ static unsigned count_repeats(bitbuffer_t *bits, unsigned row) {
 	return cnt;
 }
 
-int bitbuffer_find_repeated_row(bitbuffer_t *bits, int min_repeats, int min_bits) {
+int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits) {
 	for (int i = 0; i < bits->num_rows; ++i) {
 		if (bits->bits_per_row[i] >= min_bits &&
 			count_repeats(bits, i) >= min_repeats) {
