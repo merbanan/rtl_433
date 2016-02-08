@@ -316,7 +316,10 @@ void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 		.aux     = aux
 	};
 	ctx.printer->print_data(&ctx, data, NULL, file);
-	fputc('\n', file);
+	if (file) {
+		fputc('\n', file);
+		fflush(file);
+	}
 }
 
 static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_type_t type, void *value, char *format) {
