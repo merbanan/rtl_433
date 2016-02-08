@@ -78,7 +78,6 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     uint8_t sensor_id;
     uint16_t temperature_with_offset;
     float temperature_f;
-    float temperature_c;
 
     /* IIIIIIII ??CCTTTT TTTTTTTT HHHHHHHH XB?????? PP */
     humidity = (uint8_t)(((bb[1][3] & 0x0F) << 4) | ((bb[1][3] & 0xF0) >> 4));
@@ -89,7 +88,6 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
 
     temperature_with_offset = (uint16_t)(((bb[1][2] & 0x0F) << 8) | (bb[1][2] & 0xF0) | (bb[1][1] & 0x0F));
     temperature_f = (float)((temperature_with_offset - 900) / 10.0);
-    temperature_c = fahrenheit2celsius(temperature_f);
 
     if (debug_output) {
       bitbuffer_print(bitbuffer);
@@ -104,7 +102,6 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
       fprintf(stdout, "temp_with_offset HEX = %02x\n", temperature_with_offset);
       fprintf(stdout, "temp_with_offset     = %d\n",   temperature_with_offset);
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
-      fprintf(stdout, "TemperatureC         = %.1f\n", temperature_c);
     }
 
     data = data_make("time",          "",            DATA_STRING, time_str,
@@ -113,7 +110,7 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
                      "channel",       "Channel",     DATA_INT, channel,
                      "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
                      "button",        "Button",      DATA_INT, button,
-                     "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
+                     "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                       NULL);
 
