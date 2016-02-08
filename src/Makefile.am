@@ -49,7 +49,8 @@ rtl_433_SOURCES      = baseband.c \
                        devices/valeo.c \
                        devices/waveman.c \
                        devices/wt450.c \
-                       devices/x10_rf.c 
+                       devices/x10_rf.c \
+                       devices/s3318p.c
  
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
