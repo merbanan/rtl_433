@@ -119,8 +119,10 @@ static int validate_os_checksum(unsigned char *msg, int checksum_nibble_idx) {
   if (sum_of_nibbles == checksum) {
     return 0;
   } else {
-    fprintf(stderr, "Checksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);
-    fprintf(stderr, "Message: "); int i; for (i=0 ;i<((checksum_nibble_idx+4)>>1) ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+    if(debug_output) {
+      fprintf(stderr, "Checksum error in Oregon Scientific message.  Expected: %02x  Calculated: %02x\n", checksum, sum_of_nibbles);
+      fprintf(stderr, "Message: "); int i; for (i=0 ;i<((checksum_nibble_idx+4)>>1) ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+	}
     return 1;
   }
 }
@@ -131,8 +133,10 @@ static int validate_os_v2_message(unsigned char * msg, int bits_expected, int va
   if (bits_expected == valid_v2_bits_received) {
     return (validate_os_checksum(msg, nibbles_in_checksum));
   } else {
-    fprintf(stderr, "Bit validation error on Oregon Scientific message.  Expected %d bits, received error after bit %d \n",        bits_expected, valid_v2_bits_received);
-    fprintf(stderr, "Message: "); int i; for (i=0 ;i<(bits_expected+7)/8 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+    if(debug_output) {
+      fprintf(stderr, "Bit validation error on Oregon Scientific message.  Expected %d bits, received error after bit %d \n",        bits_expected, valid_v2_bits_received);
+      fprintf(stderr, "Message: "); int i; for (i=0 ;i<(bits_expected+7)/8 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n\n");
+	}
   }
   return 1;
 }
@@ -460,9 +464,11 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
         fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);  
 
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
-      fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-      fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
-      fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");    
+      if(debug_output) {
+        fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
+        fprintf(stderr, "Message: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout, "\n");
+        fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
+      }
     } else if (bb[0][3] != 0 ) {
       //fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
       //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
