@@ -797,7 +797,7 @@ int main(int argc, char **argv) {
     char *in_filename = NULL;
     FILE *in_file;
     int n_read;
-    int r, opt;
+    int r = 0, opt;
     int i, gain = 0;
     int sync_mode = 0;
     int ppm_error = 0;

@@ -423,7 +423,7 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 			}
 		}
 		if (!strcmp(data->key, "time"))
-                    fprintf(file, "");
+                    ;
                 else if (!strcmp(data->key, "model"))
                     fprintf(file, ":\t");
                 else
