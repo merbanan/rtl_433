@@ -417,6 +417,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
 	return 1;
     } else if ((msg[0] == 0x19) && (msg[1] == 0x84)) {
       if (validate_os_checksum(msg, 17) == 0) {
+	// 8 Direction, Not BCD – binary value from 0..15. Direction in degrees is value * 22.5 degrees.
 	// 13..11 Current Speed, meters per second, LSD is 0.1 m/s
 	// 16..14 Average speed, meters per second, LSD is 0.1 m/s
 /*
@@ -429,7 +430,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
 	int battery = get_os_battery(msg, ID_WGR800);
-        float quadrant = (0x0f&(msg[5]>>4))*22.5;
+        float quadrant = (0x0f&(msg[4]>>4))*22.5F;
 	data = data_make("time",	"",		DATA_STRING, 	time_str,
 		"model",		"",		DATA_STRING,	"Weather Sensor WGR800 Wind Gauge",
 		"id",			"House Code",	DATA_INT,	get_os_rollingcode(msg, ID_WGR800),
