@@ -22,18 +22,20 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 			b[0] = b[0] & 0x0F; //Clear sync
 						
 			// Tristate coding
-			char tristate[20] = "";
+			char tristate[21];
+			char *p = tristate;
 			for(uint8_t byte = 0; byte < 5; byte++){
 				for(int8_t bit = 7; bit > 0; bit -= 2){
 					switch ((b[byte] >> (bit-1)) & 0x03){
-						case 0x00:	strcat(tristate,"0"); break;
-						case 0x01:	strcat(tristate,"?"); break; //Invalid code 01
-						case 0x02:	strcat(tristate,"Z"); break; //Floating state Z is 10
-						case 0x03:	strcat(tristate,"1"); break;
-						default: strcat(tristate,"!"); break; //Unknown error
+						case 0x00:	*p++ = '0'; break;
+						case 0x01:	*p++ = '?'; break; //Invalid code 01
+						case 0x02:	*p++ = 'Z'; break; //Floating state Z is 10
+						case 0x03:	*p++ = '1'; break;
+						default: *p++ = '!'; break; //Unknown error
 					}
 				}
 			}
+			*p = '\0';
 			
 			data = data_make("model",	"",				DATA_STRING,	"HT680 Remote control",
 							 "tristate","Tristate code",DATA_STRING,	tristate,
