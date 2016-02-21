@@ -162,7 +162,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
 						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
 				else {
-					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed";
+					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
 					data = data_make("time",          "",           DATA_STRING, time_str,
 														"model",          "",           DATA_STRING, "LaCrosse WS",
