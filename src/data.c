@@ -302,6 +302,7 @@ void data_free(data_t *data) {
 		data_t *prev_data = data;
 		if (dmt[data->type].value_release)
 			dmt[data->type].value_release(data->value);
+		free(data->format);
 		free(data->pretty_key);
 		free(data->key);
 		data = data->next;

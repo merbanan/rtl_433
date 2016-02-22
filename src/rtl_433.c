@@ -212,6 +212,7 @@ void data_acquired_handler(data_t *data)
             if ((d->type == DATA_DOUBLE) &&
                 !strcmp(d->key, "temperature_F")) {
                     *(double*)d->value = fahrenheit2celsius(*(double*)d->value);
+					free(d->key);
                     d->key = strdup("temperature_C");
                     char *pos;
                     if (d->format &&
@@ -226,6 +227,7 @@ void data_acquired_handler(data_t *data)
             if ((d->type == DATA_DOUBLE) &&
                 !strcmp(d->key, "temperature_C")) {
                     *(double*)d->value = celsius2fahrenheit(*(double*)d->value);
+					free(d->key);
                     d->key = strdup("temperature_F");
                     char *pos;
                     if (d->format &&
