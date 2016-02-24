@@ -394,7 +394,7 @@ static void print_json_string(data_printer_context_t *printer_ctx, const char *s
 
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, "%f", data);
+	fprintf(file, "%.3f", data);
 }
 
 static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
@@ -440,7 +440,7 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 
 static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, format ? format : "%f", data);
+	fprintf(file, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
