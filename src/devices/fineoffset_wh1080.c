@@ -263,7 +263,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	const int the_hours = get_hours(br);
 	const int the_minutes =	get_minutes(br);
 	const int the_seconds = get_seconds(br);
-	const int the_year = get_year(br);
+	const int the_year = 2000 + get_year(br);
 	const int the_month = get_month(br);
 	const int the_day = get_day(br);
 	
@@ -296,7 +296,7 @@ if (msg_type == 0) {
                      "hours",		"Hours",	  DATA_FORMAT,	"%02d",	DATA_INT,	the_hours,
                      "minutes",		"Minutes",        DATA_FORMAT,	"%02d",	DATA_INT,	the_minutes,
                      "seconds",		"Seconds", 	  DATA_FORMAT,	"%02d",	DATA_INT,	the_seconds,
-		     "year",		"Year", 	  DATA_FORMAT,	"20%02d",	DATA_INT,	the_year,
+		     "year",		"Year", 	  DATA_FORMAT,	"%02d",	DATA_INT,	the_year,
                      "month",		"Month",     	  DATA_FORMAT,	"%02d",	DATA_INT,	the_month,
                      "day",		"Day",      	  DATA_FORMAT,	"%02d",	DATA_INT,	the_day,
                      NULL);
