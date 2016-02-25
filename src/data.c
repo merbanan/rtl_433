@@ -302,6 +302,7 @@ void data_free(data_t *data) {
 		data_t *prev_data = data;
 		if (dmt[data->type].value_release)
 			dmt[data->type].value_release(data->value);
+		free(data->format);
 		free(data->pretty_key);
 		free(data->key);
 		data = data->next;
@@ -316,7 +317,10 @@ void data_print(data_t* data, FILE *file, data_printer_t *printer, void *aux)
 		.aux     = aux
 	};
 	ctx.printer->print_data(&ctx, data, NULL, file);
-	fputc('\n', file);
+	if (file) {
+		fputc('\n', file);
+		fflush(file);
+	}
 }
 
 static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_type_t type, void *value, char *format) {
@@ -390,7 +394,7 @@ static void print_json_string(data_printer_context_t *printer_ctx, const char *s
 
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, "%f", data);
+	fprintf(file, "%.3f", data);
 }
 
 static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
@@ -420,7 +424,7 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 			}
 		}
 		if (!strcmp(data->key, "time"))
-                    fprintf(file, "");
+                    /* fprintf(file, "") */ ;
                 else if (!strcmp(data->key, "model"))
                     fprintf(file, ":\t");
                 else
@@ -436,7 +440,7 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
 
 static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, format ? format : "%f", data);
+	fprintf(file, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)

@@ -48,7 +48,8 @@
 		DECL(oil_watchman) \
 		DECL(current_cost) \
 		DECL(emontx) \
-		DECL(ht680)
+		DECL(ht680) \
+		DECL(s3318p)
 
 typedef struct {
 	char name[256];

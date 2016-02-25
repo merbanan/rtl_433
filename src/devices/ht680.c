@@ -20,9 +20,26 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 			(b[3] & 0x82) == 0x82 && //Buttons(4,3) always mask 10000010
 			(b[4] & 0x0A) == 0x0A){  //Buttons(2,1) always mask 00001010
 			b[0] = b[0] & 0x0F; //Clear sync
+						
+			// Tristate coding
+			char tristate[21];
+			char *p = tristate;
+			for(uint8_t byte = 0; byte < 5; byte++){
+				for(int8_t bit = 7; bit > 0; bit -= 2){
+					switch ((b[byte] >> (bit-1)) & 0x03){
+						case 0x00:	*p++ = '0'; break;
+						case 0x01:	*p++ = '?'; break; //Invalid code 01
+						case 0x02:	*p++ = 'Z'; break; //Floating state Z is 10
+						case 0x03:	*p++ = '1'; break;
+						default: *p++ = '!'; break; //Unknown error
+					}
+				}
+			}
+			*p = '\0';
 			
 			data = data_make("model",	"",				DATA_STRING,	"HT680 Remote control",
-							 "addres",	"Addres code",	DATA_FORMAT,	"%06X", DATA_INT, (b[0]<<16)+(b[1]<<8)+b[2],
+							 "tristate","Tristate code",DATA_STRING,	tristate,
+							 "address",	"Address",	DATA_FORMAT,	"0x%06X", DATA_INT, (b[0]<<16)+(b[1]<<8)+b[2],
 							 "button1",	"Button 1",		DATA_STRING,	(((b[4]>>4) & 0x03) == 3) ? "PRESSED" : "",
 							 "button2",	"Button 2",		DATA_STRING,	(((b[4]>>6) & 0x03) == 3) ? "PRESSED" : "",
 							 "button3",	"Button 3",		DATA_STRING,	((((b[3]&0x7D)>>2) & 0x03) == 3) ? "PRESSED" : "",
@@ -38,7 +55,8 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
 	"model",
-	"adress",
+	"tristate",
+	"address",
 	"data",
 	"button1",
 	"button2",

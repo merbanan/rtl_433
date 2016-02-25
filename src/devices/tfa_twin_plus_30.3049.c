@@ -1,5 +1,6 @@
 #include "rtl_433.h"
 #include "util.h"
+#include "data.h"
 
 /*
  * TFA-Twin-Plus-30.3049
@@ -55,6 +56,7 @@ inline static uint8_t reverse_byte(uint8_t byte)
 
 static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffer)
 {
+  data_t *data;
   const uint8_t *b      = bitbuffer->bb[row];
   const uint16_t length = bitbuffer->bits_per_row[row];
 
@@ -91,10 +93,15 @@ static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffe
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
 
-    /* @todo make temperature unit configurable, not printing both */
-    fprintf(stdout, "%s TFA-Twin-Plus-30.3049 Sensor %02x: battery %s, channel %d, temperature %3.1f C / %3.1f F, humidity %2d%%\n"
-            , time_str, sensor_id,  battery_low ? "low" : "OK", channel, tempC, celsius2fahrenheit(tempC), humidity
-    );
+    data = data_make("time",          "",            DATA_STRING, time_str,
+                     "model",         "",            DATA_STRING, "TFA-Twin-Plus-30.3049",
+                     "id",            "",            DATA_INT, sensor_id,
+                     "channel",       "",            DATA_INT, channel,
+                     "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+                     "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
+                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                     NULL);
+    data_acquired_handler(data);
   }
 
   return 1;
@@ -359,6 +366,17 @@ Passed 74/74 positive tests
 
 #endif
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "channel",
+    "battery",
+    "temperature_C",
+    "humidity",
+    NULL
+};
+
 r_device tfa_twin_plus_303049 = {
   .name          = "TFA-Twin-Plus-30.3049 and Ea2 BL999",
   .modulation    = OOK_PULSE_PPM_RAW,
@@ -368,4 +386,5 @@ r_device tfa_twin_plus_303049 = {
   .json_callback = &tfa_twin_plus_303049_callback,
   .disabled      = 0,
   .demod_arg     = 0,
+  .fields         = output_fields
 };
