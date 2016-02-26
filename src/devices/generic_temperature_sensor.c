@@ -18,8 +18,6 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
 	int i,device,battery;
-	//char buf[255];
-	char received_data[9];
 	float fTemp;
 
 
@@ -38,14 +36,12 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	device=(bb[1][0]);
 	battery=(bb[1][1]&0xF0)>>4;
 	fTemp=(float)((signed short)(((bb[1][1]&0x3f)*256+bb[1][2])<<2))/160.0;
-	snprintf(received_data,sizeof(received_data),"%02x %02x %02x", bb[1][0], bb[1][1], bb[1][2]);
-	
-	data = data_make("time", 	"", 			DATA_STRING, 								time_str,
+
+	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
                      "model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
-		     "id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,		device,
-                     "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,		fTemp,
-                     "battery",      	"Battery?",		DATA_INT,						battery,
-		     "rawdata",		"Raw data",		DATA_STRING,						received_data,
+		     "id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
+                     "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
+                     "battery",      	"Battery?",		DATA_INT,					battery,
                      NULL);
     data_acquired_handler(data);
 	
@@ -59,7 +55,6 @@ static char *output_fields[] = {
 	"id",
 	"temperature_C",
 	"battery",
-	"rawdata",
 	NULL
 };
 
