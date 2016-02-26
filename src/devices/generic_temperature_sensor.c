@@ -70,3 +70,4 @@ r_device generic_temperature_sensor = {
   .demod_arg     = 0,
   .fields        = output_fields,
 };
+
