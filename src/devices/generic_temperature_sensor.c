@@ -6,7 +6,6 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Switched to new data API by 'ovrheat' Nik
  */
 #include "data.h"
 #include "rtl_433.h"
@@ -41,21 +40,12 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	fTemp=(float)((signed short)(((bb[1][1]&0x3f)*256+bb[1][2])<<2))/160.0;
 	snprintf(received_data,sizeof(received_data),"%02x %02x %02x", bb[1][0], bb[1][1], bb[1][2]);
 	
-	
-	//fprintf(stdout, "\nSensor        = Temperature event\n");
-	//fprintf(stdout, "Device        = %d\n", device);
-	//fprintf(stdout, "Battery?      = %02X\n", battery);
-	//fprintf(stdout, "Temp          = %f\n",fTemp);
-	//fprintf(stdout, "Model         = Generic temperature sensor 1\n");
-	//fprintf(stdout, "Received Data = %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2]);
-	
-	
-	data = data_make("time", 			"", 			DATA_STRING, 								time_str,
-                     "model", 			"", 			DATA_STRING, 	"Generic temperature sensor 1",
-		             "id",          	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,		device,
-                     "temperature_C",	"Temperature",	DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
-                     "battery",      	"Battery?",		DATA_INT,    								battery,
-					 "rawdata",			"Raw data",		DATA_STRING,								received_data,
+	data = data_make("time", 	"", 			DATA_STRING, 								time_str,
+                     "model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
+		     "id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,		device,
+                     "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,		fTemp,
+                     "battery",      	"Battery?",		DATA_INT,						battery,
+		     "rawdata",		"Raw data",		DATA_STRING,						received_data,
                      NULL);
     data_acquired_handler(data);
 	
