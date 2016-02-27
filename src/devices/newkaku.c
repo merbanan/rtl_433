@@ -112,11 +112,11 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "KlikAanKlikUit Wireless Switch",
                          "id",            "",            DATA_INT, kakuid,
-                         "unit",          "",            DATA_INT, unit,
-                         "group_call",    "",            DATA_STRING, group_call,
-                         "command",       "",            DATA_STRING, command,
-                         "dim",           "",            DATA_STRING, dim,
-                         "dim_value",     "",            DATA_INT, dv,
+                         "unit",          "Unit",        DATA_INT, unit,
+                         "group_call",    "Group Call",  DATA_STRING, group_call,
+                         "command",       "Command",     DATA_STRING, command,
+                         "dim",           "Dim",         DATA_STRING, dim,
+                         "dim_value",     "Dim Value",   DATA_INT, dv,
                          NULL);
         data_acquired_handler(data);
 
