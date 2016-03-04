@@ -65,6 +65,7 @@ add_executable(rtl_433
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/s3318p.c
+	devices/quhwa.c
 
 )
 

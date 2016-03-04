@@ -49,7 +49,8 @@
 		DECL(current_cost) \
 		DECL(emontx) \
 		DECL(ht680) \
-		DECL(s3318p)
+		DECL(s3318p) \
+		DECL(quhwa)
 
 typedef struct {
 	char name[256];
