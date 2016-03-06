@@ -44,10 +44,10 @@ PWM_Precise_Parameters pwm_precise_parameters_quhwa = {
 r_device quhwa = {
 	.name			= "Quhwa",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
-	.short_limit	= 360,	// Pulse: Short 568µs, Long 1704µs 
-	.long_limit		= 1070,	// Gaps:  Short 568µs, Long 1696µs
-	.reset_limit	= 1200,	// Intermessage Gap 17200µs (individually for now)
-	.json_callback	= &quhwa_callback,
+	.short_limit            = 360,	// Pulse: Short 360µs, Long 1070µs 
+	.long_limit		= 1070,	// Gaps: Short 360µs, Long 1070µs 
+	.reset_limit	        = 1200,	// Intermessage Gap 5200µs 
+	.json_callback	        = &quhwa_callback,
 	.disabled		= 0,
 	.demod_arg		= (unsigned long)&pwm_precise_parameters_quhwa,
 };
