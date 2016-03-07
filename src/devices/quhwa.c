@@ -1,7 +1,8 @@
 /* Quhwa
  *
  * Tested devices:
- * QH-C-CE-3V (which should be compatible with QH-832AC)
+ * QH-C-CE-3V (which should be compatible with QH-832AC),
+ * also sold as "1 by One" wireless doorbell
  *
  * Copyright (C) 2016 Ask Jakobsen
  * This program is free software; you can redistribute it and/or modify
@@ -18,8 +19,6 @@
 static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 	    
 	b[0] = ~b[0];
 	b[1] = ~b[1];
@@ -28,22 +27,33 @@ static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	unsigned bits = bitbuffer->bits_per_row[0];
 
 	if ((bits == 18) &&
-	    (b[2]==0xFF) &&
-	    (b[1] & 1) && (b[1] & 2)) // Last two bits are one
+	    ((b[1] & 1) && (b[1] & 2))  && // Last two bits of second byte are one
+	    (b[2]==0xFF)) // Last two bits are one
 	  {
 	    uint32_t ID = (b[0] << 8) | b[1];
+	    data_t *data;
+
+	    char time_str[LOCAL_TIME_BUFLEN];
 	    local_time_str(0, time_str);
 	    
-	    data = data_make("model", NULL, DATA_STRING, "Quhwa doorbell",
-			     "time", "", DATA_STRING, time_str,
-			     "id", NULL, DATA_INT, ID,
-			     NULL);
+	    data = data_make("time", "", DATA_STRING, time_str,
+			     "model", "", DATA_STRING, "Quhwa doorbell",
+	    		     "id", "ID", DATA_INT, ID,
+	    		     NULL);
+
 	    data_acquired_handler(data);
-	    
+
 	    return 1;
 	}
 	return 0;
 }
+
+static char *output_fields[] = {
+  "time",
+  "model",
+  "id",
+  NULL
+};
 
 
 PWM_Precise_Parameters pwm_precise_parameters_quhwa = {
