@@ -50,8 +50,9 @@
 		DECL(emontx) \
 		DECL(ht680) \
 		DECL(s3318p) \
+		DECL(akhan_100F14) \
 		DECL(quhwa)
-
+	 
 typedef struct {
 	char name[256];
 	unsigned int modulation;

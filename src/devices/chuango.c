@@ -66,7 +66,7 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 
 
 PWM_Precise_Parameters pwm_precise_parameters = {
-	.pulse_tolerance	= 20,
+	.pulse_tolerance	= 35,
 	.pulse_sync_width	= 0,	// No sync bit used
 };
 

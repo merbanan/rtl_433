@@ -452,18 +452,31 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
         fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
       }
     } else if (msg[0] == 0x26) { //  Owl CM180 readings
-      int k;
-      for (k=0; k<BITBUF_COLS;k++) {  // Reverse nibbles
-        msg[k] = (msg[k] & 0xF0) >> 4 |  (msg[k] & 0x0F) << 4;
-      }
-      unsigned short int ipower = power(msg);
-      unsigned long long itotal = total(msg); 
-      float total_energy = itotal/3600/1000.0;
-      if (itotal) 
-        fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW, total: %lluW, Total Energy: %.3fkWh\n", msg[0], msg[1], ipower, itotal, total_energy);
-      else
-        fprintf(stdout,"Energy Sensor CM180 Id %x%x power: %dW\n", msg[0], msg[1], ipower);  
-
+        msg[0]=msg[0] & 0x0f;
+        int valid = validate_os_checksum(msg, 23);
+        int k;
+        for (k=0; k<BITBUF_COLS;k++) {  // Reverse nibbles
+            msg[k] = (msg[k] & 0xF0) >> 4 |  (msg[k] & 0x0F) << 4;
+        }
+        unsigned short int ipower = power(msg);
+        unsigned long long itotal = total(msg); 
+        float total_energy = itotal/3600/1000.0;
+        if (itotal && valid == 0) {
+            data = data_make("time",	"",		DATA_STRING, 	time_str,
+                    "model",		"",		DATA_STRING,	"Energy Sensor CM180",
+                    "id",		"House Code",	DATA_INT,	msg[1]&0x0F,
+                    "power",		"Power",	DATA_FORMAT,	"%d W",DATA_INT, ipower,
+                    "energy_kWh",	"Energy",	DATA_FORMAT,	"%2.1f kWh",DATA_DOUBLE, total_energy,
+                    NULL);
+            data_acquired_handler(data);
+        } else if (!itotal) { 
+            data = data_make("time",	"",		DATA_STRING, 	time_str,
+                    "model",		"",		DATA_STRING,	"Energy Sensor CM180",
+                    "id",		"House Code",	DATA_INT,	msg[1]&0x0F,
+                    "power",		"Power",	DATA_FORMAT,	"%d W",DATA_INT, ipower,
+                    NULL);
+            data_acquired_handler(data);
+        }
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
       if(debug_output) {
         fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
