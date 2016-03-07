@@ -11,11 +11,16 @@
  */
 #include "rtl_433.h"
 #include "pulse_demod.h"
+#include "data.h"
+#include "util.h"
 
 
 static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
+	data_t *data;
+	char time_str[LOCAL_TIME_BUFLEN];
+	    
 	b[0] = ~b[0];
 	b[1] = ~b[1];
 	b[2] = ~b[2];
@@ -27,9 +32,14 @@ static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	    (b[1] & 1) && (b[1] & 2)) // Last two bits are one
 	  {
 	    uint32_t ID = (b[0] << 8) | b[1];
+	    local_time_str(0, time_str);
 	    
-	    fprintf(stdout, "Quhwa\n");
-	    fprintf(stdout, "ID 14bit = 0x%04X\n", ID);
+	    data = data_make("model", NULL, DATA_STRING, "Quhwa doorbell",
+			     "time", "", DATA_STRING, time_str,
+			     "id", NULL, DATA_INT, ID,
+			     NULL);
+	    data_acquired_handler(data);
+	    
 	    return 1;
 	}
 	return 0;
