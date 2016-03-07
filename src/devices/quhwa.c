@@ -27,8 +27,8 @@ static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	unsigned bits = bitbuffer->bits_per_row[0];
 
 	if ((bits == 18) &&
-	    ((b[1] & 1) && (b[1] & 2))  && // Last two bits of second byte are one
-	    (b[2]==0xFF)) // Last two bits are one
+	    ((b[1] & 0x03) == 0x03) &&
+	    ((b[2] & 0xC0) == 0xC0))
 	  {
 	    uint32_t ID = (b[0] << 8) | b[1];
 	    data_t *data;
