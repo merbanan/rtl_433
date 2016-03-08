@@ -17,6 +17,8 @@
  */
 #include "rtl_433.h"
 #include "pulse_demod.h"
+#include "data.h"
+#include "util.h"
 
 
 static int chuango_callback(bitbuffer_t *bitbuffer) {
@@ -33,37 +35,53 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 	 && (b[3] & 0x80)	// Last bit (MSB here) is always 1
 	 && (b[0] || b[1] || (b[2] & 0xF0))	// Reduce false positives. ID 0x00000 not supported
 	) {
-		uint32_t ID = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
+	        uint32_t ID = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
 		char *CMD;
-		switch(b[2] & 0x0F) {
-			case 0xF:	CMD = "0xF (?)";	break;
-			case 0xE:	CMD = "0xE (?)";	break;
-			case 0xD:	CMD = "0xD (Low Battery)";	break;
-			case 0xC:	CMD = "0xC (?)";	break;
-			case 0xB:	CMD = "0xB (24H Zone)";	break;
-			case 0xA:	CMD = "0xA (Single Delay Zone)";	break;
-			case 0x9:	CMD = "0x9 (?)";	break;
-			case 0x8:	CMD = "0x8 (Arm)";	break;
-			case 0x7:	CMD = "0x7 (Normal Zone)";	break;
-			case 0x6:	CMD = "0x6 (Home Mode Zone)";	break; 
-			case 0x5:	CMD = "0x5 (?)";	break; 
-			case 0x4:	CMD = "0x4 (Home Mode)";	break; 
-			case 0x3:	CMD = "0x3 (Tamper)";	break;
-			case 0x2:	CMD = "0x2 (Alarm!)";	break;
-			case 0x1:	CMD = "0x1 (Disarm)";	break; 
-			case 0x0:	CMD = "0x0 (Test)";	break;
+		uint32_t CMD_ID = b[2] & 0x0F;
+		data_t *data;
+		char time_str[LOCAL_TIME_BUFLEN];
+
+		switch(CMD_ID) {
+		        case 0xF:	CMD = "?"; break;
+		        case 0xE:	CMD = "?"; break;
+			case 0xD:	CMD = "Low Battery"; break;
+			case 0xC:	CMD = "?"; break;
+			case 0xB:	CMD = "24H Zone"; break;
+			case 0xA:	CMD = "Single Delay Zone"; break;
+			case 0x9:	CMD = "?"; break;
+			case 0x8:	CMD = "Arm"; break;
+			case 0x7:	CMD = "Normal Zone"; break;
+			case 0x6:	CMD = "Home Mode Zone";	break;
+			case 0x5:	CMD = "?"; break;
+			case 0x4:	CMD = "Home Mode"; break;
+			case 0x3:	CMD = "Tamper";	break;
+			case 0x2:	CMD = "Alarm"; break;
+			case 0x1:	CMD = "Disarm";	break;
+			case 0x0:	CMD = "Test"; break;
 			default:	CMD = ""; break;
 		}
+		local_time_str(0, time_str);
+		data = data_make("time", "", DATA_STRING, time_str,
+				 "model", "", DATA_STRING, "Chuango Security Technology",
+				 "id", "ID", DATA_INT, ID,
+				 "cmd", "CMD", DATA_STRING, CMD,
+				 "cmd_id", "CMD_ID", DATA_INT, CMD_ID,
+				 NULL);
 
-		fprintf(stdout, "Chuango Security Technology\n");
-		fprintf(stdout, "ID 20bit = 0x%05X\n", ID);
-		fprintf(stdout, "CMD 4bit = %s\n", CMD);
-
+		data_acquired_handler(data);
 		return 1;
 	}
 	return 0;
 }
 
+static char *output_fields[] = {
+  "time",
+  "model",
+  "id",
+  "cmd",
+  "cmd_id",
+  NULL
+};
 
 PWM_Precise_Parameters pwm_precise_parameters = {
 	.pulse_tolerance	= 35,
