@@ -1,4 +1,4 @@
-/* Efergy e2 classic (electricity meter)
+/* Efergy Optical (electricity meter)
  *
  * This electricity meter periodically reports current power consumption
  * on frequency ~433.55 MHz. The data that is transmitted consists of 8
@@ -7,7 +7,7 @@
  * Byte 1-4: Start bits (0000), then static data (probably device id)
  * Byte 5-7: all zeros 
  * Byte 8: Pulse Count
- * Byte 9: sample frequency (15 seconds)
+ * Byte 9: Unknown (value is 15 but 16 for low pulses)
  * Byte 10: seconds
  * Byte 11: crc16 xmodem
  * Byte 12: crc16 xmodem
@@ -27,9 +27,9 @@
 static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
-	double energy, n_imp;
-	double pulsecount;
-	double seconds;
+	float energy, n_imp;
+	int pulsecount;
+	int seconds;
 	data_t *data;
         char time_str[LOCAL_TIME_BUFLEN];
 
@@ -61,42 +61,13 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		}
 	}
 
-//	unsigned checksum = 0;
-//	for (unsigned i = 0; i < 7; ++i) {
-//		checksum += bytes[i];
-//	}
-//	checksum &= 0xff;
-//	if (checksum != bytes[7]) {
-//		return 0;
-//	}
-
-//	const unsigned VOLTAGES[] = {110, 115, 120, 220, 230, 240, 0};
-
-//	double current_adc = 256 * bytes[4] + bytes[5];
-//	for (unsigned i = 0; VOLTAGES[i] != 0; ++i) {
-//		double power  = (VOLTAGES[i] * current_adc * (1 << bytes[6])) / 32768;
-//		fprintf(stderr, "Power consumption at %u volts: %.2f watts\n", VOLTAGES[i], power);
-//	}
-
 	n_imp = 3200;
         printf ("\nEfergy Optical\nPulse per KWH default is set to %2f \n", n_imp );
 
 	pulsecount =  bytes[8];
 	seconds = bytes[10];
-//	printf ("\nNumber of Pulses = %2f ", pulsecount);
-//	printf ("\nBytes 0  = %2d", bytes[0]);
-//    printf ("\nBytes 1, Fixed Code 1 = %2d", bytes[1]);
-//    printf ("\nBytes 2, Fixed Code 2 = %2d", bytes[2]);
-//    printf ("\nBytes 3, Fixed Code 3 = %2d", bytes[3]);
-//    printf ("\nBytes 4 = %2d", bytes[4]);
-//    printf ("\nBytes 5 = %2d", bytes[5]);
-//    printf ("\nBytes 6 = %2d", bytes[6]);
-//    printf ("\nBytes 7 = %2d", bytes[7]);
-//    printf ("\nBytes 8, Pulses = %2d", bytes[8]);
-//    printf ("\nBytes 9, = %2d", bytes[9]);
-//    printf ("\nBytes 10, seconds = %2d\n", bytes[10]);
 
-//some crazy logic for low pulse count not sure how I reached this formula
+       //some crazy logic for low pulse count not sure how I reached this formula
 	if (pulsecount < 3)
 	{
 	energy = ((pulsecount/n_imp) * (3600/seconds));
@@ -106,24 +77,23 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
          energy = ((pulsecount/n_imp) * (3600/30));
          }
  
-  //      printf ("\n%3.3f Kilo Watts per hour \n", energy );
         /* Get time now */
         local_time_str(0, time_str);
 
- data = data_make("time",          "",            DATA_STRING, time_str,
-                  "model",         "",            DATA_STRING, "Efergy Optical",
-                  "energy",       "Energy KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
-                  NULL);
- data_acquired_handler(data);
-return 1;
-}
+	 data = data_make("time",          "",            DATA_STRING, time_str,
+        	          "model",         "",            DATA_STRING, "Efergy Optical",
+                	  "energy",       "Energy KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
+	                  NULL);
+	 data_acquired_handler(data);
+	return 1;
+	}
 
-static char *output_fields[] = {
-    "time",
-    "model",
-    "energy",
-    NULL
-};
+	static char *output_fields[] = {
+	    "time",
+	    "model",
+	    "energy",
+	    NULL
+	};
 
 
 
