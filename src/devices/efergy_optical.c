@@ -82,7 +82,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 
 	 data = data_make("time",          "",            DATA_STRING, time_str,
         	          "model",         "",            DATA_STRING, "Efergy Optical",
-                	  "energy",       "Energy KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
+                	  "energy",       "Energy KWh",     DATA_FORMAT,"%.03f KWh", DATA_DATA, energy,
 	                  NULL);
 	 data_acquired_handler(data);
 	return 1;
