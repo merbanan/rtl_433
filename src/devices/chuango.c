@@ -8,6 +8,7 @@
  * PIR-900 PIR sensor (Default: Home Mode Zone)
  * RC-80 Remote Control (Arm, Disarm, Home Mode, Alarm!)
  * SMK-500 Smoke sensor (Default: 24H Zone)
+ * WI-200 Water sensor (Default: 24H Zone)
  *
  * Copyright (C) 2015 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
