@@ -27,8 +27,8 @@
 static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
-	float energy, n_imp;
-	int pulsecount;
+	float energy;
+	int pulsecount, n_imp;
 	int seconds;
 	data_t *data;
         char time_str[LOCAL_TIME_BUFLEN];
@@ -62,7 +62,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	}
 
 	n_imp = 3200;
-        printf ("\nEfergy Optical\nPulse per KWH default is set to %2f \n", n_imp );
+        printf ("\nEfergy Optical\nPulse per KWH default is set to %2d \n", n_imp );
 
 	pulsecount =  bytes[8];
 	seconds = bytes[10];
