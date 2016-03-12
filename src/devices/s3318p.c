@@ -86,8 +86,8 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     channel = (uint8_t)(((bb[1][1] & 0x30) >> 4) + 1);
     sensor_id = (uint8_t)(bb[1][0]);
 
-    temperature_with_offset = (uint16_t)(((bb[1][2] & 0x0F) << 8) | (bb[1][2] & 0xF0) | (bb[1][1] & 0x0F));
-    temperature_f = (float)((temperature_with_offset - 900) / 10.0);
+    temperature_with_offset = ((bb[1][2] & 0x0F) << 8) | (bb[1][2] & 0xF0) | (bb[1][1] & 0x0F);
+    temperature_f = (temperature_with_offset - 900) / 10.0;
 
     if (debug_output) {
       bitbuffer_print(bitbuffer);
