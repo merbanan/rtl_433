@@ -27,9 +27,9 @@
 /// The presence of a pulse is:
 /// - Presence of a pulse equals 1
 /// - Absence of a pulse equals 0
-/// @param device->short_limit: Nominal width of pulse [samples]
-/// @param device->long_limit:  Nominal width of bit period [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Nominal width of pulse [us]
+/// @param device->long_limit:  Nominal width of bit period [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
 int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -41,9 +41,9 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device);
 /// Gap between pulses determine the encoding:
 /// - Short gap will add a 0 bit
 /// - Long  gap will add a 1 bit
-/// @param device->short_limit: Threshold between short and long gap [samples]
-/// @param device->long_limit:  Maximum gap size before new row of bits [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Threshold between short and long gap [us]
+/// @param device->long_limit:  Maximum gap size before new row of bits [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
 int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -54,9 +54,9 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit
 /// - Long  pulse will add a 0 bit
-/// @param device->short_limit: Threshold between short and long pulse [samples]
-/// @param device->long_limit:  Maximum gap size before new row of bits [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Threshold between short and long pulse [us]
+/// @param device->long_limit:  Maximum gap size before new row of bits [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->demod_arg = 0: Do not remove any startbits
 /// @param device->demod_arg = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
@@ -77,9 +77,9 @@ typedef struct {
 /// - Short pulse will add a 1 bit
 /// - Long  pulse will add a 0 bit
 /// - Sync  pulse will add a new row to bitbuffer
-/// @param device->short_limit: Width in samples of '1' [samples]
-/// @param device->long_limit:  Width in samples of '0' [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Width in samples of '1' [us]
+/// @param device->long_limit:  Width in samples of '0' [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->demod_arg: pointer to PWM_Precise_Parameters
 /// @return number of events processed
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
@@ -90,9 +90,9 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, middle and long high pulses.
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// The sync bit will add a new row to the bitbuffer
-/// @param device->short_limit: Threshold between short and middle pulse [samples]
-/// @param device->long_limit:  Threshold between middle and long pulse [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Threshold between short and middle pulse [us]
+/// @param device->long_limit:  Threshold between middle and long pulse [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->demod_arg = 0: Short pulse is sync, middle is 0, long is 1
 /// @param device->demod_arg = 1: Short pulse is 0, middle is sync, long is 1
 /// @param device->demod_arg = 2: Short pulse is 0, middle is 1, long is sync
@@ -109,9 +109,9 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 /// than 1.5 times the clock half period (short_width) it is declared a data edge where:
 /// - Rising edge means bit = 0
 /// - Falling edge means bit = 1
-/// @param device->short_limit: Nominal width of clock half period [samples]
+/// @param device->short_limit: Nominal width of clock half period [us]
 /// @param device->long_limit:  Not used
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -128,9 +128,9 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 /// ^       ^       ^       ^       ^  clock cycle
 /// |   1   |   1   |   0   |   0   |  translates as
 ///
-/// @param device->short_limit: Width in samples of '1' [samples]
-/// @param device->long_limit:  Width in samples of '0' [samples]
-/// @param device->reset_limit: Maximum gap size before End Of Message [samples].
+/// @param device->short_limit: Width in samples of '1' [us]
+/// @param device->long_limit:  Width in samples of '0' [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->demod_arg: pointer to PWM_Precise_Parameters (only pulse_tolerance used)
 /// @return number of events processed
 int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device);
