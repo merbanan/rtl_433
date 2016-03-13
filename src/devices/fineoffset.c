@@ -63,8 +63,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
 
         // Nibble 5,6,7 contains 12 bits of temperature
         // The temperature is signed magnitude and scaled by 10
-        temp = bb[0][3];
-        temp |= (int16_t)(bb[0][2] & 0x0F) << 8;
+        temp = ((bb[0][2] & 0x0F) << 8) | bb[0][3];
         if(temp & 0x800) {
             temp &= 0x7FF;	// remove sign bit
             temp = -temp;	// reverse magnitude

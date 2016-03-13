@@ -80,7 +80,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 		else
 			// A depth reading of zero indicates no reading. Even with
 			// the sensor flat down on a table, it still reads about 13.
-			depth = b[6] | ((((uint16_t)b[5]) & 3) << 8);
+			depth = ((b[5] & 3) << 8) | b[6];
 
 		data = data_make("time", "", DATA_STRING, time_str,
 				 "model", "", DATA_STRING, "Oil Watchman",
