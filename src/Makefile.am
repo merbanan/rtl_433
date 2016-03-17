@@ -26,10 +26,12 @@ rtl_433_SOURCES      = baseband.c \
                        devices/emontx.c \
                        devices/esperanza_ews.c \
                        devices/fineoffset.c \
+                       devices/fineoffset_wh1080.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
                        devices/gt_wt_02.c \
                        devices/hideki.c \
+                       devices/ht680.c \
                        devices/inovalley-kw9015b.c \
                        devices/intertechno.c \
                        devices/lacrosse.c \
@@ -40,6 +42,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/oil_watchman.c \
                        devices/oregon_scientific.c \
                        devices/prologue.c \
+                       devices/quhwa.c \
                        devices/rubicson.c \
                        devices/silvercrest.c \
                        devices/steffen.c \
@@ -48,6 +51,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/waveman.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/xc0348.c
+                       devices/s3318p.c \
+                       devices/akhan_100F14.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

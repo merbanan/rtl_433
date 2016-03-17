@@ -39,6 +39,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	unsigned bitpos = 0;
 	unsigned bits = bitbuffer->bits_per_row[0];
+	int events = 0;
 
 	// Search for only 22 bits to cope with inverted frames and
 	// the missing final preamble bit with RFM69 transmissions.
@@ -53,7 +54,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 			struct emontx p;
 			uint8_t b[sizeof(struct emontx)];
 		} pkt;
-		uint16_t words[13];
+		uint16_t words[14];
 		double vrms;
 		unsigned i;
 
@@ -125,18 +126,19 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 				 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
 				 NULL);
 		data_acquired_handler(data);
+		events++;
 	}
-	return 0;
+	return events;
 }
 
 static char *output_fields[] = {
 	"time", "model", "node", "ct1", "ct2", "ct3", "ct4", "Vrms/batt",
 	"temp1_C", "temp2_C", "temp3_C", "temp4_C", "temp5_C", "temp6_C",
-	"pulse"
+	"pulse", NULL
 };
 
 r_device emontx = {
-	.name           = "emonTx OpenEnergyMonitor (stub driver)",
+	.name           = "emonTx OpenEnergyMonitor",
 	.modulation     = FSK_PULSE_PCM,
 	.short_limit    = 2000000.0 / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
 	.long_limit     = 2000000.0 / (49230 + 49261),

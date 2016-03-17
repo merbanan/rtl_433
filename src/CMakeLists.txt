@@ -40,10 +40,12 @@ add_executable(rtl_433
 	devices/emontx.c
 	devices/esperanza_ews.c
 	devices/fineoffset.c
+	devices/fineoffset_wh1080.c
 	devices/generic_remote.c
 	devices/generic_temperature_sensor.c
 	devices/gt_wt_02.c
 	devices/hideki.c
+	devices/ht680.c
 	devices/inovalley-kw9015b.c
 	devices/intertechno.c
 	devices/lacrosse.c
@@ -62,7 +64,10 @@ add_executable(rtl_433
 	devices/waveman.c
 	devices/wt450.c
 	devices/x10_rf.c
-	devices/xc0348.c
+	devices/s3318p.c
+	devices/akhan_100F14.c
+	devices/quhwa.c
+
 )
 
 add_library(data data.c)

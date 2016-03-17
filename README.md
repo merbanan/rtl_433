@@ -101,7 +101,7 @@ Supported devices:
 	[29] Chuango Security Technology
 	[30] Generic Remote SC226x EV1527
 	[31] TFA-Twin-Plus-30.3049 and Ea2 BL999
-	[32] Digitech XC0348 Weather Station
+	[32] Fine Offset WH1080 Weather Station
 	[33] WT450
 	[34] LaCrosse WS-2310 Weather Station
 	[35] Esperanza EWS
@@ -114,6 +114,7 @@ Supported devices:
 	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
 	[43] CurrentCost Current Sensor
 	[44] OpenEnergyMonitor emonTx v3
+	[45] HT680 Remote control
 ```
 
 

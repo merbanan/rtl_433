@@ -35,7 +35,7 @@
 		DECL(chuango) \
 		DECL(generic_remote) \
 		DECL(tfa_twin_plus_303049) \
-		DECL(digitech_ws) \
+		DECL(fineoffset_wh1080) \
 		DECL(wt450) \
 		DECL(lacrossews) \
 		DECL(esperanza_ews) \
@@ -47,7 +47,11 @@
 		DECL(hideki_ts04) \
 		DECL(oil_watchman) \
 		DECL(current_cost) \
-		DECL(emontx)
+		DECL(emontx) \
+		DECL(ht680) \
+		DECL(s3318p) \
+		DECL(akhan_100F14) \
+		DECL(quhwa)
 
 typedef struct {
 	char name[256];
