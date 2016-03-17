@@ -51,7 +51,8 @@
 		DECL(ht680) \
 		DECL(s3318p) \
 		DECL(akhan_100F14) \
-		DECL(quhwa)
+		DECL(quhwa) \
+		DECL(oregon_scientific_v1)
 
 typedef struct {
 	char name[256];

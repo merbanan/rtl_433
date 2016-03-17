@@ -41,6 +41,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/nexus.c \
                        devices/oil_watchman.c \
                        devices/oregon_scientific.c \
+                       devices/oregon_scientific_v1.c \
                        devices/prologue.c \
                        devices/quhwa.c \
                        devices/rubicson.c \

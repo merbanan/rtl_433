@@ -319,3 +319,75 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
 
    return events;
 }
+
+/*
+ * Oregon Scientific V1 Protocol
+ * Starts with a clean preamble of 12 pulses with
+ * consistent timing followed by an out of time Sync pulse.
+ * Data then follows with manchester encoding, but
+ * care must be taken with the gap after the sync pulse since it
+ * is outside of the normal clocking.  Because of this a data stream
+ * beginning with a 0 will have data in this gap.
+ * This code looks at pulse and gap width and clocks bits
+ * in from this.  Since this is manchester encoded every other
+ * bit is discarded.
+ */
+
+int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device) {
+	unsigned int n;
+	int preamble = 0;
+	int events = 0;
+	int manbit = 0;
+	bitbuffer_t bits = {0};
+
+	/* preamble */
+	for(n = 0; n < pulses->num_pulses; ++n) {
+		if(pulses->pulse[n] >= 350 && pulses->gap[n] >= 200) {
+			preamble++;
+			if(pulses->gap[n] >= 400)
+				break;
+		} else
+			return(events);
+	}
+	if(preamble != 12) {
+		printf("preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
+		return(events);
+	}
+
+	/* sync */
+	++n;
+	if(pulses->pulse[n] < 1000 || pulses->gap[n] < 1000) {
+		return(events);
+	}
+
+	/* data bits - manchester encoding */
+	
+	/* sync gap could be part of data when the first bit is 0 */
+	if(pulses->gap[n] > pulses->pulse[n]) {
+		manbit ^= 1;
+		if(manbit) bitbuffer_add_bit(&bits, 0);
+	}
+
+	/* remaining data bits */
+	for(n++; n < pulses->num_pulses; ++n) {
+		manbit ^= 1;
+		if(manbit) bitbuffer_add_bit(&bits, 1);
+		if(pulses->pulse[n] > 615) {
+			manbit ^= 1;
+			if(manbit) bitbuffer_add_bit(&bits, 1);
+		}
+		if (n == pulses->num_pulses - 1 || pulses->gap[n] > device->reset_limit) {
+			if((bits.bits_per_row[bits.num_rows-1] == 32) && device->callback) {
+				events += device->callback(&bits);
+			}
+			return(events);
+		}
+		manbit ^= 1;
+		if(manbit) bitbuffer_add_bit(&bits, 0);
+		if(pulses->gap[n] > 450) {
+			manbit ^= 1;
+			if(manbit) bitbuffer_add_bit(&bits, 0);
+		}
+	}
+	return events;
+}
