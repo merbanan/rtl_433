@@ -44,6 +44,7 @@ static int override_short = 0;
 static int override_long = 0;
 int debug_output = 0;
 int quiet_mode = 0;
+int utc_mode = 0;
 int overwrite_mode = 0;
 
 typedef enum  {
@@ -121,7 +122,8 @@ void usage(r_device *devices) {
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
-            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n", 
+            "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     fprintf(stderr, "Supported devices:\n");
@@ -834,7 +836,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:W")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:UW")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -931,9 +933,13 @@ int main(int argc, char **argv) {
                     usage(devices);
         }
         break;
+        case 'U':
+          utc_mode = setenv("TZ", "UTC", 1);
+          if(utc_mode != 0) fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
+        break;
             case 'W':
-	        overwrite_mode = 1;
-		break;
+            overwrite_mode = 1;
+        break;
 
             default:
                 usage(devices);
