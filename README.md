@@ -115,6 +115,10 @@ Supported devices:
 	[43] CurrentCost Current Sensor
 	[44] OpenEnergyMonitor emonTx v3
 	[45] HT680 Remote control
+        [46] S3318P Temperature & Humidity Sensor
+        [47] Akhan 100F14 remote keyless entry
+        [48] Quhwa
+	[49] Oregon Scientific v1 Temperature Sensor
 ```
 
 
