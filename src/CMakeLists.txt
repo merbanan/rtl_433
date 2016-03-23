@@ -68,6 +68,7 @@ add_executable(rtl_433
 	devices/s3318p.c
 	devices/akhan_100F14.c
 	devices/quhwa.c
+	devices/proove.c
 
 )
 
