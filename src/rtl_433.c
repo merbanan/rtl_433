@@ -1128,6 +1128,11 @@ int main(int argc, char **argv) {
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
     if (sync_mode) {
+        if (!demod->out_file) {
+            fprintf(stderr, "Specify an output file for sync mode.\n");
+            exit(0);
+        }
+
 	fprintf(stderr, "Reading samples in sync mode...\n");
 	uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
 
