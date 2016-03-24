@@ -55,6 +55,7 @@ add_executable(rtl_433
 	devices/nexus.c
 	devices/oil_watchman.c
 	devices/oregon_scientific.c
+	devices/oregon_scientific_v1.c
 	devices/prologue.c
 	devices/rubicson.c
 	devices/silvercrest.c
@@ -67,6 +68,7 @@ add_executable(rtl_433
 	devices/s3318p.c
 	devices/akhan_100F14.c
 	devices/quhwa.c
+	devices/proove.c
 
 )
 

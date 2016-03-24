@@ -41,6 +41,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/nexus.c \
                        devices/oil_watchman.c \
                        devices/oregon_scientific.c \
+                       devices/oregon_scientific_v1.c \
                        devices/prologue.c \
                        devices/quhwa.c \
                        devices/rubicson.c \
@@ -52,6 +53,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
                        devices/s3318p.c \
-                       devices/akhan_100F14.c
+                       devices/akhan_100F14.c \
+                       devices/proove.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
