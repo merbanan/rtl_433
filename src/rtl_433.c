@@ -35,6 +35,8 @@ static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
 uint32_t frequency[MAX_PROTOCOLS];
 time_t rawtime_old;
+int duration = 0;
+time_t stop_time;
 int flag;
 uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 float sample_file_pos = -1;
@@ -123,6 +125,7 @@ void usage(r_device *devices) {
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
+            "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
@@ -719,6 +722,11 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 			rtlsdr_cancel_async(dev);
 		}
 	}
+    if (duration > 0 && rawtime >= stop_time) {
+      do_exit_async = do_exit = 1;
+      fprintf(stderr, "Time expired, exiting!\n");
+      rtlsdr_cancel_async(dev);
+    }
 }
 
 // find the fields output for CSV
@@ -837,7 +845,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:UW")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UW")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -941,7 +949,15 @@ int main(int argc, char **argv) {
             case 'W':
             overwrite_mode = 1;
         break;
-
+        case 'T':
+          time(&stop_time);
+          duration = atoi(optarg);
+          if (duration < 1) {
+            fprintf(stderr, "Duration '%s' was not positive integer; will continue indefinitely\n", optarg);
+          } else {
+            stop_time += duration;
+          }
+          break;
             default:
                 usage(devices);
                 break;
@@ -1132,6 +1148,7 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "Reading samples in sync mode...\n");
 	uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
 
+      time_t timestamp;
         while (!do_exit) {
             r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
             if (r < 0) {
@@ -1153,6 +1170,14 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Short read, samples lost, exiting!\n");
                 break;
             }
+
+        if (duration > 0) {
+          time(&timestamp);
+          if (timestamp >= stop_time) {
+            do_exit = 1;
+            fprintf(stderr, "Time expired, exiting!\n");
+          }
+        }
 
             if (bytes_to_read > 0)
                 bytes_to_read -= n_read;
