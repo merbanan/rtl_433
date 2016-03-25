@@ -350,7 +350,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device) 
 			return(events);
 	}
 	if(preamble != 12) {
-		printf("preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
+		if(debug_output) fprintf(stderr, "preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
 		return(events);
 	}
 
