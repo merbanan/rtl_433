@@ -63,7 +63,7 @@ static int proove_callback(bitbuffer_t *bitbuffer) {
                      "model",         "",            DATA_STRING, "Proove",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel_code,
-                     "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",
+                     "state",         "State",       DATA_STRING, on_bit ? "OFF" : "ON",
                      "unit",          "Unit",        DATA_INT, unit_bit,
                       NULL);
 
