@@ -534,6 +534,9 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 	struct protocol_state device = { .name = "Analyzer Device", 0};
 	histogram_sort_mean(&hist_pulses);	// Easier to work with sorted data
 	histogram_sort_mean(&hist_gaps);
+	if(hist_pulses.bins[0].mean == 0) { histogram_delete_bin(&hist_pulses, 0); }	// Remove FSK initial zero-bin
+
+	// Attempt to find a matching modulation
 	if(data->num_pulses == 1) {
 		fprintf(stderr, "Single pulse detected. Probably Frequency Shift Keying or just noise...\n");
 	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count == 1) {
@@ -562,6 +565,18 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);		// Assume shortest pulse is half period
 		device.long_limit	= 0; // Not used
 		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
+	} else if((hist_pulses.bins_count >= 3 && hist_gaps.bins_count >= 3)
+		&& (abs(hist_pulses.bins[1].mean - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)	// Pulses are multiples of shortest pulse
+		&& (abs(hist_pulses.bins[2].mean - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
+		&& (abs(hist_gaps.bins[0].mean   -   hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)	// Gaps are multiples of shortest pulse
+		&& (abs(hist_gaps.bins[1].mean   - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
+		&& (abs(hist_gaps.bins[2].mean   - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
+	) {
+		fprintf(stderr, "Pulse Code Modulation (Not Return to Zero)\n");
+		device.modulation	= FSK_PULSE_PCM;
+		device.short_limit	= hist_pulses.bins[0].mean;			// Shortest pulse is bit width
+		device.long_limit	= hist_pulses.bins[0].mean;			// Bit period equal to pulse length (NRZ)
+		device.reset_limit	= hist_pulses.bins[0].mean*1024;	// No limit to run of zeros...
 	} else if(hist_pulses.bins_count == 3) {
 		fprintf(stderr, "Pulse Width Modulation with startbit/delimiter\n");
 		device.modulation	= OOK_PULSE_PWM_TERNARY;
@@ -577,24 +592,28 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		fprintf(stderr, "No clue...\n");
 	}
 
+	// Demodulate (if detected)
 	if(device.modulation) {
 		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %lu\n", 
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
-		data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 		switch(device.modulation) {
-//			case OOK_PULSE_PCM_RZ:
-//				pulse_demod_pcm(data, &device);
-//				break;
+			case FSK_PULSE_PCM:
+				pulse_demod_pcm(data, &device);
+				break;
 			case OOK_PULSE_PPM_RAW:
+				data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_ppm(data, &device);
 				break;
 			case OOK_PULSE_PWM_RAW:
+				data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_pwm(data, &device);
 				break;
 			case OOK_PULSE_PWM_TERNARY:
+				data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_pwm_ternary(data, &device);
 				break;
 			case OOK_PULSE_MANCHESTER_ZEROBIT:
+				data->gap[data->num_pulses-1] = device.reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_manchester_zerobit(data, &device);
 				break;
 			default:
