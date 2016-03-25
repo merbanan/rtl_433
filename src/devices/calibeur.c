@@ -82,7 +82,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 		local_time_str(0, time_str);
 		data = data_make("time",          "",            DATA_STRING, time_str,
 						"model",         "",            DATA_STRING, "Calibeur RF-104",
-						"id",            "",            DATA_INT, ID, // this should be named "id"
+						"id",            "ID",          DATA_INT, ID,
 						"temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
 						"humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
 						NULL);
