@@ -417,15 +417,24 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    tempc = acurite_txr_getTemp(bb[4], bb[5]);
 	    tempf = celsius2fahrenheit(tempc);
 
-	    printf("%s Acurite tower sensor 0x%04X Ch %c: %3.1F C %3.1F F %d %% RH\n",
-		   time_str, sensor_id, channel, tempc, tempf, humidity);
+        data_acquired_handler(data_make("time","",DATA_STRING, time_str,
+                                        "model", "",DATA_STRING,"Acurite Tower Sensor",
+                                        "id", "Sensor ID", DATA_FORMAT, "\"%#X\"", DATA_INT, sensor_id,
+                                        "channel", "Channel", DATA_FORMAT, "\"%c\"", DATA_INT, channel,
+                                        "temperature_C", "Temp ℃", DATA_DOUBLE, tempc,
+                                        "temperature_F", "Temp ℉", DATA_DOUBLE, tempf,
+                                        "relative_humidity", "Relative Humidity (%)", DATA_INT, humidity, NULL));
+
 
 	    // currently 0x44 seens to be a normal status and/or type
 	    // for tower sensors.  Battery OK/Normal == 0x40
-	    if (sensor_status != 0x44)
-		printf("%s Acurite tower sensor 0x%04X Ch %c, Status %02X\n",
-		       time_str, sensor_id, channel, sensor_status);
-
+        if (sensor_status != 0x44) {
+            data_acquired_handler(data_make("time","",DATA_STRING, time_str,
+                                            "model", "",DATA_STRING,"Acurite Tower Sensor",
+                                            "id", "Sensor ID", DATA_FORMAT, "\"%#X\"", DATA_INT, sensor_id,
+                                            "channel", "Channel", DATA_FORMAT, "\"%c\"", DATA_INT, channel,
+                                            "sensor_status", "Sensor Status", DATA_INT, sensor_status, NULL));
+        }
 	}
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
