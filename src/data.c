@@ -394,12 +394,28 @@ static void print_json_string(data_printer_context_t *printer_ctx, const char *s
 
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
 {
-	fprintf(file, "%.3f", data);
+    if(format == NULL) {
+	    fprintf(file, "%.3f", data);
+    } else {
+        int length = snprintf(NULL, 0, format, data) + 1; //add space for null byte
+        char *formatted_str = malloc(sizeof(char) * length);
+        sprintf(formatted_str, format, data);
+        print_json_string(printer_ctx, formatted_str, "", file);
+        free(formatted_str);
+    }
 }
 
 static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
 {
-	fprintf(file, "%d", data);
+    if(format == NULL) {
+	    fprintf(file, "%d", data);
+    } else {
+        int length = snprintf(NULL, 0, format, data) + 1; //add space for null byte
+        char *formatted_str = malloc(sizeof(char) * length);
+        sprintf(formatted_str, format, data);
+        print_json_string(printer_ctx, formatted_str, "", file);
+        free(formatted_str);
+    }
 }
 
 /* Key-Value printer */
