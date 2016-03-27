@@ -85,5 +85,5 @@ r_device akhan_100F14 = {
 	.reset_limit   = 1800,
 	.json_callback = &akhan_rke_callback,
 	.disabled      = 0,
-	.demod_arg     = (unsigned long)&pwm_precise_parameters_akhan,
+	.demod_arg     = (uintptr_t)&pwm_precise_parameters_akhan,
 };
