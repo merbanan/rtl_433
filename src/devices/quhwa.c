@@ -69,5 +69,5 @@ r_device quhwa = {
 	.reset_limit	        = 1200,	// Intermessage Gap 5200µs 
 	.json_callback	        = &quhwa_callback,
 	.disabled		= 0,
-	.demod_arg		= (unsigned long)&pwm_precise_parameters_quhwa,
+	.demod_arg		= (uintptr_t)&pwm_precise_parameters_quhwa,
 };
