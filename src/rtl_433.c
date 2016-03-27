@@ -935,8 +935,10 @@ int main(int argc, char **argv) {
         }
         break;
         case 'U':
+        #if !defined(__MINGW32__)
           utc_mode = setenv("TZ", "UTC", 1);
           if(utc_mode != 0) fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
+        #endif
         break;
             case 'W':
             overwrite_mode = 1;
