@@ -80,5 +80,5 @@ r_device generic_remote = {
 	.reset_limit	= 1800,
 	.json_callback	= &generic_remote_callback,
 	.disabled		= 0,
-	.demod_arg		= (unsigned long)&pwm_precise_parameters_generic,
+	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic,
 };

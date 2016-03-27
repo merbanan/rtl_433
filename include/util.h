@@ -15,8 +15,12 @@
 #include <time.h>
 
 // Helper macros
+#ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+#ifndef min
 #define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
 /// Reverse the bits in an 8 bit byte
 /// @param x: input byte

@@ -97,5 +97,5 @@ r_device chuango = {
 	.reset_limit	= 1800,	// Intermessage Gap 17200µs (individually for now)
 	.json_callback	= &chuango_callback,
 	.disabled		= 0,
-	.demod_arg		= (unsigned long)&pwm_precise_parameters,
+	.demod_arg		= (uintptr_t)&pwm_precise_parameters,
 };
