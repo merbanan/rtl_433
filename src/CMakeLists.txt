@@ -69,6 +69,7 @@ add_executable(rtl_433
 	devices/akhan_100F14.c
 	devices/quhwa.c
 	devices/proove.c
+	devices/bresser_3ch.c
 
 )
 
