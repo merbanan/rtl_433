@@ -1,13 +1,9 @@
-# Copyright 2012 OSMOCOM Project
-#
-# This file is part of rtl-sdr
-#
-# GNU Radio is free software; you can redistribute it and/or modify
+# rtl_433 is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3, or (at your option)
 # any later version.
 #
-# GNU Radio is distributed in the hope that it will be useful,
+# rtl_433 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
@@ -17,129 +13,82 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
+########################################################################
+# Build utility
+########################################################################
+add_executable(rtl_433 
+	baseband.c
+	bitbuffer.c
+	data.c
+	pulse_demod.c
+	pulse_detect.c
+	rtl_433.c
+	util.c
+	devices/acurite.c
+	devices/alecto.c
+	devices/ambient_weather.c
+	devices/brennstuhl_rcs_2044.c
+	devices/calibeur.c
+	devices/cardin.c
+	devices/chuango.c
+	devices/current_cost.c
+	devices/danfoss.c
+	devices/dsc.c
+	devices/ec3k.c
+	devices/efergy_e2_classic.c
+	devices/elv.c
+	devices/emontx.c
+	devices/esperanza_ews.c
+	devices/fineoffset.c
+	devices/fineoffset_wh1080.c
+	devices/generic_remote.c
+	devices/generic_temperature_sensor.c
+	devices/gt_wt_02.c
+	devices/hideki.c
+	devices/ht680.c
+	devices/inovalley-kw9015b.c
+	devices/intertechno.c
+	devices/lacrosse.c
+	devices/lacrossews.c
+	devices/mebus.c
+	devices/newkaku.c
+	devices/nexus.c
+	devices/oil_watchman.c
+	devices/oregon_scientific.c
+	devices/oregon_scientific_v1.c
+	devices/prologue.c
+	devices/rubicson.c
+	devices/silvercrest.c
+	devices/steffen.c
+	devices/tfa_twin_plus_30.3049.c
+	devices/valeo.c
+	devices/waveman.c
+	devices/wt450.c
+	devices/x10_rf.c
+	devices/s3318p.c
+	devices/akhan_100F14.c
+	devices/quhwa.c
+	devices/proove.c
+	devices/bresser_3ch.c
 
-########################################################################
-# Project setup
-########################################################################
-cmake_minimum_required(VERSION 2.6)
-project(rtlsdr C)
-
-#select the release build type by default to get optimization flags
-if(NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE "Release")
-   message(STATUS "Build type not specified: defaulting to release.")
-endif(NOT CMAKE_BUILD_TYPE)
-set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
-
-########################################################################
-# Compiler specific setup
-########################################################################
-if(CMAKE_COMPILER_IS_GNUCC AND NOT WIN32)
-    ADD_DEFINITIONS(-Wall)
-    ADD_DEFINITIONS(-Wextra)
-    ADD_DEFINITIONS(-Wno-unused)
-    ADD_DEFINITIONS(-Wsign-compare)
-    ADD_DEFINITIONS(-g3 -O0)
-    #http://gcc.gnu.org/wiki/Visibility
-    add_definitions(-fvisibility=hidden)
-endif()
-
-########################################################################
-# Find build dependencies
-########################################################################
-find_package(PkgConfig)
-find_package(LibUSB)
-set(THREADS_USE_PTHREADS_WIN32 true)
-find_package(Threads)
-
-if(NOT LIBUSB_FOUND)
-    message(FATAL_ERROR "LibUSB 1.0 required to compile rtl-sdr")
-endif()
-if(NOT THREADS_FOUND)
-    message(FATAL_ERROR "pthreads(-win32) required to compile rtl-sdr")
-endif()
-########################################################################
-# Setup the include and linker paths
-########################################################################
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${LIBUSB_INCLUDE_DIR}
-    ${THREADS_PTHREADS_INCLUDE_DIR}
 )
 
-#link_directories(
-#    ...
-#)
+add_library(data data.c)
 
-# Set component parameters
-#set(INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include CACHE INTERNAL "" FORCE)
-
-########################################################################
-# Create uninstall target
-########################################################################
-configure_file(
-    ${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
-@ONLY)
-
-add_custom_target(uninstall
-    ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+target_link_libraries(rtl_433
+	${LIBRTLSDR_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
 )
 
-########################################################################
-# Install udev rules
-########################################################################
-option(INSTALL_UDEV_RULES "Install udev rules for RTL-SDR" OFF)
-if (INSTALL_UDEV_RULES)
-    install (
-        FILES rtl-sdr.rules
-        DESTINATION "/etc/udev/rules.d"
-        COMPONENT "udev"
-        )
-else (INSTALL_UDEV_RULES)
-    message (STATUS "Udev rules not being installed, install them with -DINSTALL_UDEV_RULES=ON")
-endif (INSTALL_UDEV_RULES)
+	
+set(INSTALL_TARGETS rtl_433)
+if(UNIX)
+target_link_libraries(rtl_433 m)
+endif()
 
 ########################################################################
-# Add subdirectories
+# Install built library files & utilities
 ########################################################################
-add_subdirectory(include)
-add_subdirectory(src)
-
-########################################################################
-# Create Pkg Config File
-########################################################################
-FOREACH(inc ${LIBUSB_INCLUDE_DIR})
-    LIST(APPEND RTLSDR_PC_CFLAGS "-I${inc}")
-ENDFOREACH(inc)
-
-FOREACH(lib ${LIBUSB_LIBRARY_DIRS})
-    LIST(APPEND RTLSDR_PC_LIBS "-L${lib}")
-ENDFOREACH(lib)
-
-# use space-separation format for the pc file
-STRING(REPLACE ";" " " RTLSDR_PC_CFLAGS "${RTLSDR_PC_CFLAGS}")
-STRING(REPLACE ";" " " RTLSDR_PC_LIBS "${RTLSDR_PC_LIBS}")
-
-# unset these vars to avoid hard-coded paths to cross environment
-IF(CMAKE_CROSSCOMPILING)
-    UNSET(RTLSDR_PC_CFLAGS)
-    UNSET(RTLSDR_PC_LIBS)
-ENDIF(CMAKE_CROSSCOMPILING)
-
-set(prefix ${CMAKE_INSTALL_PREFIX})
-set(exec_prefix \${prefix})
-set(libdir \${exec_prefix}/lib)
-set(includedir \${prefix}/include)
-
-CONFIGURE_FILE(
-    ${CMAKE_CURRENT_SOURCE_DIR}/librtlsdr.pc.in
-    ${CMAKE_CURRENT_BINARY_DIR}/librtlsdr.pc
-@ONLY)
-
-INSTALL(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/librtlsdr.pc
-    DESTINATION lib/pkgconfig
+install(TARGETS ${INSTALL_TARGETS}
+    RUNTIME DESTINATION bin              # .dll file
 )
