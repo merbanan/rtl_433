@@ -1,8 +1,3 @@
-# rtl_433 is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3, or (at your option)
-# any later version.
-#
 # rtl_433 is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -13,82 +8,87 @@
 # the Free Software Foundation, Inc., 51 Franklin Street,
 # Boston, MA 02110-1301, USA.
 
+
 ########################################################################
-# Build utility
+# Project setup
 ########################################################################
-add_executable(rtl_433 
-	baseband.c
-	bitbuffer.c
-	data.c
-	pulse_demod.c
-	pulse_detect.c
-	rtl_433.c
-	util.c
-	devices/acurite.c
-	devices/alecto.c
-	devices/ambient_weather.c
-	devices/brennstuhl_rcs_2044.c
-	devices/calibeur.c
-	devices/cardin.c
-	devices/chuango.c
-	devices/current_cost.c
-	devices/danfoss.c
-	devices/dsc.c
-	devices/ec3k.c
-	devices/efergy_e2_classic.c
-	devices/elv.c
-	devices/emontx.c
-	devices/esperanza_ews.c
-	devices/fineoffset.c
-	devices/fineoffset_wh1080.c
-	devices/generic_remote.c
-	devices/generic_temperature_sensor.c
-	devices/gt_wt_02.c
-	devices/hideki.c
-	devices/ht680.c
-	devices/inovalley-kw9015b.c
-	devices/intertechno.c
-	devices/lacrosse.c
-	devices/lacrossews.c
-	devices/mebus.c
-	devices/newkaku.c
-	devices/nexus.c
-	devices/oil_watchman.c
-	devices/oregon_scientific.c
-	devices/oregon_scientific_v1.c
-	devices/prologue.c
-	devices/rubicson.c
-	devices/silvercrest.c
-	devices/steffen.c
-	devices/tfa_twin_plus_30.3049.c
-	devices/valeo.c
-	devices/waveman.c
-	devices/wt450.c
-	devices/x10_rf.c
-	devices/s3318p.c
-	devices/akhan_100F14.c
-	devices/quhwa.c
-	devices/proove.c
-	devices/bresser_3ch.c
+cmake_minimum_required(VERSION 2.6)
+project(rtl433 C)
+set (rtl433_VERSION_MAJOR 1)
+set (rtl433_VERSION_MINOR 0)
 
-)
+#select the release build type by default to get optimization flags
+if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE "Release")
+   message(STATUS "Build type not specified: defaulting to release.")
+endif(NOT CMAKE_BUILD_TYPE)
+set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
-add_library(data data.c)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 
-target_link_libraries(rtl_433
-	${LIBRTLSDR_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
-)
-
-	
-set(INSTALL_TARGETS rtl_433)
-if(UNIX)
-target_link_libraries(rtl_433 m)
+########################################################################
+# Compiler specific setup
+########################################################################
+if(CMAKE_COMPILER_IS_GNUCC AND NOT WIN32)
+    ADD_DEFINITIONS(-Wall)
+    ADD_DEFINITIONS(-Wextra)
+    ADD_DEFINITIONS(-Wno-unused)
+    ADD_DEFINITIONS(-Wsign-compare)
+    ADD_DEFINITIONS(-g3 -O0)
+    ADD_DEFINITIONS(-std=gnu99)
+    #http://gcc.gnu.org/wiki/Visibility
+    add_definitions(-fvisibility=hidden)
 endif()
 
 ########################################################################
-# Install built library files & utilities
+# Find build dependencies
 ########################################################################
-install(TARGETS ${INSTALL_TARGETS}
-    RUNTIME DESTINATION bin              # .dll file
+find_package(PkgConfig)
+find_package(LibRTLSDR)
+
+########################################################################
+# Setup the include and linker paths
+########################################################################
+include_directories(
+    ${CMAKE_SOURCE_DIR}/include
+	${LIBRTLSDR_INCLUDE_DIRS}
+)
+
+########################################################################
+# Create uninstall target
+########################################################################
+configure_file(
+    ${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+@ONLY)
+
+add_custom_target(uninstall
+    ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+)
+
+########################################################################
+# Add subdirectories
+########################################################################
+add_subdirectory(include)
+add_subdirectory(src)
+add_subdirectory(tests)
+
+# use space-separation format for the pc file
+STRING(REPLACE ";" " " RTL433_PC_CFLAGS "${RTL433_PC_CFLAGS}")
+STRING(REPLACE ";" " " RTL433_PC_LIBS "${RTL433_PC_LIBS}")
+
+# unset these vars to avoid hard-coded paths to cross environment
+IF(CMAKE_CROSSCOMPILING)
+    UNSET(RTL433_PC_CFLAGS)
+    UNSET(RTL433_PC_LIBS)
+ENDIF(CMAKE_CROSSCOMPILING)
+
+set(prefix ${CMAKE_INSTALL_PREFIX})
+set(exec_prefix \${prefix})
+set(libdir \${exec_prefix}/lib)
+set(includedir \${prefix}/include)
+
+INSTALL(
+    FILES
+    DESTINATION lib/pkgconfig
 )
