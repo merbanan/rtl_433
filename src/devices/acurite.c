@@ -641,7 +641,8 @@ r_device acurite_rain_gauge = {
     .long_limit     = 3500,
     .reset_limit    = 5000,
     .json_callback  = &acurite_rain_gauge_callback,
-    .disabled       = 0,
+// Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
