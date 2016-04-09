@@ -13,12 +13,17 @@
  */
 #include "rtl_433.h"
 #include "pulse_demod.h"
-
+#include "data.h"
+#include "util.h"
 
 static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	
+ 	data_t *data;
+ 	char time_str[LOCAL_TIME_BUFLEN];
+	char tristate[23];
+	char *p = tristate;
+
 	//invert bits, short pulse is 0, long pulse is 1
 	b[0] = ~b[0];
 	b[1] = ~b[1];
@@ -36,9 +41,9 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 		uint32_t ID_16b = b[0] << 8 | b[1];
 		unsigned char CMD_8b = b[2];
 
-		fprintf(stdout, "Generic remote keypress / sensor\n");
-		fprintf(stdout, "ID 16bit = 0x%04X\n", ID_16b);
-		fprintf(stdout, "CMD 8bit = 0x%02X\n", CMD_8b);
+//		fprintf(stdout, "Generic remote keypress / sensor\n");
+//		fprintf(stdout, "ID 16bit = 0x%04X\n", ID_16b);
+//		fprintf(stdout, "CMD 8bit = 0x%02X\n", CMD_8b);
 
 
 		// output tristate coding
@@ -46,7 +51,7 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 		uint32_t FULL = b[0] << 16 | b[1] << 8 | b[2];
 		char c;
 
-		fprintf(stdout, "TRISTATE = ");
+//		fprintf(stdout, "TRISTATE = ");
 		for (signed char i=22; i>=0; i-=2) {
 
 			switch ((FULL>>i) & 0x03) {
@@ -56,10 +61,28 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 				case 0x03:	c = '1'; break;
 				default:	c = '?'; break; // not possible anyway
 			}
+			*p++=c;
+                        *p = '\0';
 
-			fputc(c, stdout);
+
+			//fputc(c, stdout);
 		}
-		fprintf(stdout, "\n");
+//		fprintf(stdout, "\n");
+		local_time_str(0, time_str);
+
+//		fprintf(stdout, "ID 16bit = 0x%04X\n", ID_16b);
+//		fprintf(stdout, "CMD 8bit = 0x%02X\n", CMD_8b);
+
+		data = data_make(
+			"time",       	"",          	DATA_STRING, time_str,
+                	"model",      	"",           	DATA_STRING, "Generic Remote",
+                  	"id",         	"House Code", 	DATA_INT, ID_16b,
+                 	"cmd",       	"Command",   	DATA_INT, CMD_8b,
+                 	"tristate",    	"Tri-State", 	DATA_STRING, tristate,
+                      NULL);
+
+    		data_acquired_handler(data);
+
 
 		return 1;
 	}
