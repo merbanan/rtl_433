@@ -1096,7 +1096,7 @@ int main(int argc, char **argv) {
 	    in_file = stdin;
 	    in_filename = "<stdin>";
 	} else {
-	    in_file = fopen(in_filename, "r");
+	    in_file = fopen(in_filename, "rb");
 	    if (!in_file) {
 		fprintf(stderr, "Opening file: %s failed!\n", in_filename);
 		goto out;
