@@ -71,6 +71,7 @@ add_executable(rtl_433
 	devices/quhwa.c
 	devices/proove.c
 	devices/bresser_3ch.c
+	devices/oregon_scientific_sl109h.c
 
 )
 
