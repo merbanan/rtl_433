@@ -218,11 +218,11 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 	
-	if (br[0] == 0xff && br[1] == 0xa0) {
-	msg_type = 0;
-	} else if (br[0] == 0xff && br[1] == 0xb0) {
-	msg_type = 1;
-	}
+    if (br[0] == 0xff && (br[1] >> 4) == 0x0a) {
+    msg_type = 0;
+    } else if (br[0] == 0xff && (br[1] >> 4) == 0x0b) {
+    msg_type = 1;
+    }
 	
 
 
