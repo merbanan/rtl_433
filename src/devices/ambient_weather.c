@@ -5,7 +5,7 @@
 static float
 get_temperature (uint8_t * msg)
 {
-  int32_t temp_f = msg[4];
+  int temp_f = msg[4];
   temp_f <<= 4;
   temp_f |= ((msg[5] & 0xf0) >> 4);
   temp_f -= 400;
