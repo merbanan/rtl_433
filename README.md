@@ -127,7 +127,7 @@ Examples:
 | Command | Description
 |---------|------------
 | `rtl_433` | Default receive mode, attempt to decode all known devices
-| `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40 | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
+| `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40` | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
 | `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
