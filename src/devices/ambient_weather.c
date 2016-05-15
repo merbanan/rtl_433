@@ -5,13 +5,10 @@
 static float
 get_temperature (uint8_t * msg)
 {
-  uint32_t temp_f = msg[4] & 0x7f;
+  int temp_f = msg[4];
   temp_f <<= 4;
   temp_f |= ((msg[5] & 0xf0) >> 4);
   temp_f -= 400;
-  if (msg[4] & 0x80) {
-    temp_f = -temp_f;
-  }
   return (temp_f / 10.0f);
 }
 
