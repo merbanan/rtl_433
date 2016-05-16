@@ -16,6 +16,7 @@
 #include "rtl_433.h"
 #include "util.h"
 #include "pulse_demod.h"
+#include "data.h"
 
 // ** Acurite 5n1 functions **
 
@@ -623,6 +624,95 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
     return 0;
 }
 
+// Checksum code from
+// https://eclecticmusingsofachaoticmind.wordpress.com/2015/01/21/home-automation-temperature-sensors/
+// with modifications listed in
+// http://www.osengr.org/WxShield/Downloads/Weather-Sensor-RF-Protocols.pdf
+//
+// This is the same algorithm as used in ambient_weather.c
+//
+uint8_t Checksum(int length, uint8_t *buff) {
+  uint8_t mask = 0xd3;
+  uint8_t checksum = 0x00;
+  uint8_t data;
+  int byteCnt;
+
+  for (byteCnt = 0; byteCnt < length; byteCnt++) {
+    int bitCnt;
+    data = buff[byteCnt];
+
+    for (bitCnt = 7; bitCnt >= 0; bitCnt--) {
+      uint8_t bit;
+
+      // Rotate mask right
+      bit = mask & 1;
+      mask = (mask >> 1) | (mask << 7);
+      if (bit) {
+        mask ^= 0x18;
+      }
+
+      // XOR mask into checksum if data bit is 1
+      if (data & 0x80) {
+        checksum ^= mask;
+      }
+      data <<= 1;
+    }
+  }
+  return checksum;
+}
+
+
+static int acurite_606_callback(bitbuffer_t *bitbuf) {
+    data_t *data;
+    bitrow_t *bb = bitbuf->bb;
+    float temperature;	// temperature in C
+    int16_t temp;	// temperature as read from the data packet
+    int battery;        // the battery status: 1 is good, 0 is low
+    int8_t sensor_id;	// the sensor ID - basically a random number that gets reset whenever the battery is removed
+
+
+    local_time_str(0, time_str);
+
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_606\n");
+        bitbuffer_print(bitbuf);
+    }
+
+    // throw out all blank messages
+    if (bb[1][0] == 0 && bb[1][1] == 0 && bb[1][2] == 0 && bb[1][3] == 0)
+      return 0;
+
+    // do some basic checking to make sure we have a valid data record
+    if ((bb[0][0] == 0) && (bb[1][4] == 0) && (bb[7][0] == 0x00) && ((bb[1][1] & 0x70) == 0)) {
+        // calculate the checksum and only continue if we have a maching checksum
+        uint8_t chk = Checksum(3, &bb[1][0]);
+
+        if (chk == bb[1][3]) {
+	    // Processing the temperature: 
+            // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+            // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
+      	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | bb[1][2] << 4);
+      	    temp = temp >> 4;
+
+      	    temperature = temp / 10.0;
+	    sensor_id = bb[1][0];
+	    battery = bb[1][1] & 0x8f >> 7;
+
+	    fprintf(stderr, "%s Acurite 606TX sensor 0x%04X bat %d %3.1f C\n", time_str, sensor_id, battery, temperature);
+	    data = data_make("time",          "",            DATA_STRING, time_str,
+                             "model",         "",            DATA_STRING, "Acurite 606TX Sensor",
+                             "id",            "",            DATA_INT, sensor_id,
+			     "battery",	      "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+                             NULL);
+ 	    data_acquired_handler(data);
+
+	}
+    }
+
+    return 0;
+}
+
 r_device acurite5n1 = {
     .name           = "Acurite 5n1 Weather Station",
     .modulation     = OOK_PULSE_PWM_RAW,
@@ -717,4 +807,21 @@ r_device acurite_986 = {
     .json_callback  = &acurite_986_callback,
     .disabled       = 0,
     .demod_arg      = 2,
+};
+
+/*
+ * Acurite 00606TX Tower Sensor
+ *
+ * Temperature only
+ *
+ */
+r_device acurite_606 = {
+    .name           = "Acurite 606TX",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 3500,
+    .long_limit     = 7000,
+    .reset_limit    = 10000,
+    .json_callback  = &acurite_606_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };
