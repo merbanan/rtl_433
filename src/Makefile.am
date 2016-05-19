@@ -46,6 +46,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/quhwa.c \
                        devices/rubicson.c \
                        devices/silvercrest.c \
+                       devices/springfield.c \
                        devices/steffen.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/valeo.c \
