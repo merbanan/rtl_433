@@ -816,7 +816,11 @@ r_device acurite_986 = {
  *
  */
 r_device acurite_606 = {
+<<<<<<< HEAD
     .name           = "Acurite 606TX Temperature Sensor",
+=======
+    .name           = "Acurite 606TX",
+>>>>>>> a9058427b3e1545ee416f644f4c8365b9e9eeb35
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 3500,
     .long_limit     = 7000,
