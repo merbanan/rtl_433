@@ -252,6 +252,8 @@ void data_acquired_handler(data_t *data)
     for (output_handler_t *output = output_handler; output; output = output->next) {
         data_print(data, output->file, output->printer, output->aux);
     }
+
+#ifndef WIN32
     if (child_name)
     {
         
@@ -267,18 +269,19 @@ void data_acquired_handler(data_t *data)
             }
             args=malloc(sizeof(char*)*argc);
             if (!args)
-            {
-                perror("malloc");
-                _exit(EXIT_FAILURE);
-            }
+                goto fork_malloc_error;
             argc=0;
             args[argc++]=child_name;
             while(data != NULL)
             {
-                args[argc]=malloc(strlen(data->key)+2);
-                strcpy(args[argc],"-");
+                args[argc]=malloc(strlen(data->key)+3);
+                if (!args[argc])
+                    goto fork_malloc_error;
+                strcpy(args[argc],"--");
                 strcat(args[argc++],data->key);
                 args[argc]=malloc(ARG_MAX_LEN);
+                if (!args[argc])
+                    goto fork_malloc_error;
                 switch(data->type)
                 {
                 case DATA_INT:
@@ -302,8 +305,12 @@ void data_acquired_handler(data_t *data)
             execvp(child_name,args);
             perror(child_name);
             _exit(EXIT_FAILURE);
+fork_malloc_error:
+            perror("malloc");
+            _exit(EXIT_FAILURE);
         }
     }
+#endif
     data_free(data);
 }
 
