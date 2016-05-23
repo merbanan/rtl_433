@@ -816,7 +816,7 @@ r_device acurite_986 = {
  *
  */
 r_device acurite_606 = {
-    .name           = "Acurite 606TX",
+    .name           = "Acurite 606TX Temperature Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 3500,
     .long_limit     = 7000,
