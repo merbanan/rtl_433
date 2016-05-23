@@ -1,4 +1,6 @@
 #include <bitbuffer.h>
+#include "util.h"
+#include "data.h"
 #include "rtl_433.h"
 
 
@@ -64,26 +66,40 @@ static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
     uint8_t device_id;
     uint8_t channel;
     float temperature_f;
-    float temperature_c;
+
+    data_t *data;
+
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    local_time_str(0, time_str);
 
     humidity = (uint8_t)((b[3] << 6) | ((b[4] >> 2) & 0x0F) | ((b[3] >>2) & 0xF));
     temperature_with_offset = (uint16_t)(((b[2] << 10) | ((b[3] << 2) & 0x300) | ((b[3] << 2) & 0xF0) | ((b[1] << 2) & 0x0C) |  b[2] >> 6) & 0x0FFF);
     device_id = (uint8_t)(b[0] & 0x0F);
     channel = (uint8_t)((b[1] & 0x0C)+1);
     temperature_f = (float)((temperature_with_offset-900)/10.0);
-    temperature_c = (float)(((temperature_f)-32.0)/9.0*5.0);
 
-
-    fprintf(stdout, "Esperanza EWS: ");
-    fprintf(stdout, "TemperatureF=%.1f ", temperature_f);
-    fprintf(stdout, "TemperatureC=%.1f ", temperature_c);
-    fprintf(stdout, "Humidity=%u ", humidity);
-    fprintf(stdout, "Device_id=%u ", device_id);
-    fprintf(stdout, "Channel=%u \n", channel);
+    data = data_make("time",          "",            DATA_STRING, time_str,
+                     "model",         "",            DATA_STRING, "Esperanza EWS",
+                     "id",            "",            DATA_INT, device_id,
+                     "channel",       "Channel",     DATA_INT, channel,
+                     "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
+                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                      NULL);
+    data_acquired_handler(data);
 
     return 1;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "channel",
+    "temperature_F",
+    "humidity",
+    NULL
+};
 
 static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
 {
