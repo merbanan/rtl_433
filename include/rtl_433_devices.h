@@ -55,11 +55,8 @@
 		DECL(oregon_scientific_v1) \
 		DECL(proove) \
 		DECL(bresser_3ch) \
-<<<<<<< HEAD
 		DECL(springfield) \
 		DECL(oregon_scientific_sl109h) \
-=======
->>>>>>> a9058427b3e1545ee416f644f4c8365b9e9eeb35
 		DECL(acurite_606)
 
 typedef struct {
