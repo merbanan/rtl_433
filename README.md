@@ -119,6 +119,10 @@ Supported devices:
         [47] Akhan 100F14 remote keyless entry
         [48] Quhwa
 	[49] Oregon Scientific v1 Temperature Sensor
+        [50] Proove
+        [51] Bresser Thermo-/Hygro-Sensor 3CH
+	[52] Springfield PreciseTemp Temperature and Soil Moisture
+    [53] Oregon Scientific SL109H Temperature & Humidity Sensor
 ```
 
 

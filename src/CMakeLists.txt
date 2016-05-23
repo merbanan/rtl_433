@@ -59,6 +59,7 @@ add_executable(rtl_433
 	devices/prologue.c
 	devices/rubicson.c
 	devices/silvercrest.c
+	devices/springfield.c
 	devices/steffen.c
 	devices/tfa_twin_plus_30.3049.c
 	devices/valeo.c
@@ -70,6 +71,7 @@ add_executable(rtl_433
 	devices/quhwa.c
 	devices/proove.c
 	devices/bresser_3ch.c
+	devices/oregon_scientific_sl109h.c
 
 )
 

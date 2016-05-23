@@ -54,7 +54,9 @@
 		DECL(quhwa) \
 		DECL(oregon_scientific_v1) \
 		DECL(proove) \
-		DECL(bresser_3ch)
+		DECL(bresser_3ch) \
+		DECL(springfield) \
+		DECL(oregon_scientific_sl109h)
 
 typedef struct {
 	char name[256];
