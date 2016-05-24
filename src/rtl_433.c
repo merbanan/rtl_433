@@ -21,6 +21,8 @@
  */
 
 #include <stdbool.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
@@ -30,6 +32,7 @@
 #include "data.h"
 #include "util.h"
 
+#define ARG_MAX_LEN 256
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0, events = 0;
@@ -48,6 +51,7 @@ int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
 int overwrite_mode = 0;
+char *child_name=NULL;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -124,6 +128,7 @@ void usage(r_device *devices) {
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
             "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-e program] Execute program with the decoded data as arguments for each decode.\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
@@ -247,6 +252,65 @@ void data_acquired_handler(data_t *data)
     for (output_handler_t *output = output_handler; output; output = output->next) {
         data_print(data, output->file, output->printer, output->aux);
     }
+
+#ifndef WIN32
+    if (child_name)
+    {
+        
+        if (fork()==0)
+        {
+            char **args=NULL;
+            int argc=2;
+            struct data*next=data->next;
+            while(next != NULL)
+            {
+                next=next->next;
+                argc+=2;
+            }
+            args=malloc(sizeof(char*)*argc);
+            if (!args)
+                goto fork_malloc_error;
+            argc=0;
+            args[argc++]=child_name;
+            while(data != NULL)
+            {
+                args[argc]=malloc(strlen(data->key)+3);
+                if (!args[argc])
+                    goto fork_malloc_error;
+                strcpy(args[argc],"--");
+                strcat(args[argc++],data->key);
+                args[argc]=malloc(ARG_MAX_LEN);
+                if (!args[argc])
+                    goto fork_malloc_error;
+                switch(data->type)
+                {
+                case DATA_INT:
+                    snprintf(args[argc], ARG_MAX_LEN, data->format ? data->format : "%d", *(int*)data->value );
+                    break;
+                case DATA_DOUBLE:
+                    snprintf(args[argc], ARG_MAX_LEN, data->format ? data->format : "%.3f", *(double*)data->value );
+                    break;
+                case DATA_STRING:
+                    snprintf(args[argc], ARG_MAX_LEN, data->format ? data->format : "%s", (const char *)data->value );
+                    break;
+                default:
+                    strcpy(args[argc],"unknown");
+                    fprintf(stderr,"Error unsupported data format\n");
+                    break;
+                }
+                argc++;
+                data=data->next;
+            }
+            args[argc]=NULL;
+            execvp(child_name,args);
+            perror(child_name);
+            _exit(EXIT_FAILURE);
+fork_malloc_error:
+            perror("malloc");
+            _exit(EXIT_FAILURE);
+        }
+    }
+#endif
     data_free(data);
 }
 
@@ -845,7 +909,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UW")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:e:g:s:b:n:SR:F:C:T:UW")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -930,6 +994,9 @@ int main(int argc, char **argv) {
                     usage(devices);
 		}
 		break;
+            case 'e':
+                child_name=optarg;
+                break;
         case 'C':
         if (strcmp(optarg, "native") == 0) {
             conversion_mode = CONVERT_NATIVE;
@@ -1029,6 +1096,8 @@ int main(int argc, char **argv) {
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGQUIT, &sigact, NULL);
 	sigaction(SIGPIPE, &sigact, NULL);
+	/* explicitly setting this prevents child processes from becoming zombies */
+	signal(SIGCHLD, SIG_IGN);
 #else
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
