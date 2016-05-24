@@ -10,6 +10,7 @@
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
  * - "Th" temperature and humidity sensor (Model(s) ??)
  * - Acurite 986 Refrigerator / Freezer Thermometer
+ * - Acurite 606TX temperature sesor
  */
 
 
@@ -698,7 +699,6 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 	    sensor_id = bb[1][0];
 	    battery = bb[1][1] & 0x8f >> 7;
 
-	    fprintf(stderr, "%s Acurite 606TX sensor 0x%04X bat %d %3.1f C\n", time_str, sensor_id, battery, temperature);
 	    data = data_make("time",          "",            DATA_STRING, time_str,
                              "model",         "",            DATA_STRING, "Acurite 606TX Sensor",
                              "id",            "",            DATA_INT, sensor_id,
