@@ -58,6 +58,7 @@ static char *output_fields[] = {
 	"time",
 	"model",
 	"id",
+	"channel",
 	"temperature_C",
 	NULL
 };
