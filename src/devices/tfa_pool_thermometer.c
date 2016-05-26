@@ -1,4 +1,4 @@
-/* Generic temperature sensor 1
+/* TFA pool temperature sensor
  *
  * Copyright (C) 2015 Alexandre Coffignal
  * This program is free software; you can redistribute it and/or modify
