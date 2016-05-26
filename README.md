@@ -123,6 +123,7 @@ Supported devices:
         [51] Bresser Thermo-/Hygro-Sensor 3CH
 	[52] Springfield PreciseTemp Temperature and Soil Moisture
     [53] Oregon Scientific SL109H Temperature & Humidity Sensor
+	[54] TFA Pool thermometer
 ```
 
 
