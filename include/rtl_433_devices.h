@@ -35,7 +35,6 @@
 		DECL(chuango) \
 		DECL(generic_remote) \
 		DECL(tfa_twin_plus_303049) \
-		DECL(tfa_pool_thermometer) \
 		DECL(fineoffset_wh1080) \
 		DECL(wt450) \
 		DECL(lacrossews) \
@@ -58,7 +57,8 @@
 		DECL(bresser_3ch) \
 		DECL(springfield) \
 		DECL(oregon_scientific_sl109h) \
-		DECL(acurite_606)
+		DECL(acurite_606) \
+		DECL(tfa_pool_thermometer)
 
 typedef struct {
 	char name[256];
