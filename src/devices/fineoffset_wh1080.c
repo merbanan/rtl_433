@@ -90,8 +90,8 @@ static unsigned short get_device_id(const uint8_t* br) {
 	return (br[1] << 4 & 0xf0 ) | (br[2] >> 4);
 }
 
-static char* get_battery(const uint8_t* br) {  // Not enabled - Still unknown if it's right
-	if ((br[9] >> 4) == 0) {
+static char* get_battery(const uint8_t* br) { 
+	if ((br[9] >> 4) != 1) {
 		return "OK";
 	} else {
 		return "LOW";
@@ -230,42 +230,41 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 //---------------------------------------------------------------------------------------	
 //-------- GETTING WEATHER SENSORS DATA -------------------------------------------------
 	
-    const float temperature = get_temperature(br);
-    const int humidity = get_humidity(br);
-    const char* direction_str = get_wind_direction_str(br);
-	const char* direction_deg = get_wind_direction_deg(br);	
+const float temperature = get_temperature(br);
+const int humidity = get_humidity(br);
+const char* direction_str = get_wind_direction_str(br);
+const char* direction_deg = get_wind_direction_deg(br);	
+
+// Select which metric system for *wind avg speed* and *wind gust* :
+
+// Wind average speed :
+
+//const float speed = get_wind_avg_ms((br)   // <--- Data will be shown in Meters/sec.
+//const float speed = get_wind_avg_mph((br)  // <--- Data will be shown in Mph
+const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
+//const float speed = get_wind_avg_knot((br) // <--- Data will be shown in Knots
 	
 	
-	// Select which metric system for *wind avg speed* and *wind gust* :
+// Wind gust speed :
 	
-	// Wind average speed :
+//const float gust = get_wind_gust_ms(br);   // <--- Data will be shown in Meters/sec.
+//const float gust = get_wind_gust_mph(br);  // <--- Data will be shown in Mph
+const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
+//const float gust = get_wind_gust_knot(br); // <--- Data will be shown in Knots	
 	
-	//const float speed = get_wind_avg_ms((br)   // <--- Data will be shown in Meters/sec.
-	//const float speed = get_wind_avg_mph((br)  // <--- Data will be shown in Mph
-	const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
-	//const float speed = get_wind_avg_knot((br) // <--- Data will be shown in Knots
-	
-	
-	// Wind gust speed :
-	
-    //const float gust = get_wind_gust_ms(br);   // <--- Data will be shown in Meters/sec.
-	//const float gust = get_wind_gust_mph(br);  // <--- Data will be shown in Mph
-	const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
-	//const float gust = get_wind_gust_knot(br); // <--- Data will be shown in Knots	
-	
-    const float rain = get_rainfall(br);
-    const int device_id = get_device_id(br);
-	const char* battery = get_battery(br);
+const float rain = get_rainfall(br);
+const int device_id = get_device_id(br);
+const char* battery = get_battery(br);
 
 //---------------------------------------------------------------------------------------	
 //-------- GETTING TIME DATA ------------------------------------------------------------
 
-	const int the_hours = get_hours(br);
-	const int the_minutes =	get_minutes(br);
-	const int the_seconds = get_seconds(br);
-	const int the_year = 2000 + get_year(br);
-	const int the_month = get_month(br);
-	const int the_day = get_day(br);
+const int the_hours = get_hours(br);
+const int the_minutes =	get_minutes(br);
+const int the_seconds = get_seconds(br);
+const int the_year = 2000 + get_year(br);
+const int the_month = get_month(br);
+const int the_day = get_day(br);
 	
 
 //--------- PRESENTING DATA --------------------------------------------------------------
@@ -283,7 +282,7 @@ if (msg_type == 0) {
                      "speed",         "Wind avg speed",	DATA_FORMAT, "%.02f",	DATA_DOUBLE, speed,
                      "gust",          "Wind gust",	DATA_FORMAT, "%.02f",	DATA_DOUBLE, gust,
                      "rain",          "Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
-					 //"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
+		     "battery",       "Battery",	DATA_STRING, battery,
                      NULL);
     data_acquired_handler(data);
     return 1; 
@@ -323,7 +322,7 @@ static char *output_fields[] = {
 	"year",
 	"month",
 	"day",
-	//"battery", // Still unsure about Battery byte(s)...
+	"battery",
 	NULL
 };
 
