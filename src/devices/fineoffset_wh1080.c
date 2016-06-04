@@ -90,8 +90,8 @@ static unsigned short get_device_id(const uint8_t* br) {
 	return (br[1] << 4 & 0xf0 ) | (br[2] >> 4);
 }
 
-static char* get_battery(const uint8_t* br) {  // Not enabled - Still unknown if it's right
-	if ((br[9] >> 4) == 0) {
+static char* get_battery(const uint8_t* br) { 
+	if ((br[9] >> 4) != 1) {
 		return "OK";
 	} else {
 		return "LOW";
@@ -283,7 +283,7 @@ if (msg_type == 0) {
                      "speed",         "Wind avg speed",	DATA_FORMAT, "%.02f",	DATA_DOUBLE, speed,
                      "gust",          "Wind gust",	DATA_FORMAT, "%.02f",	DATA_DOUBLE, gust,
                      "rain",          "Total rainfall",	DATA_FORMAT, "%.01f",	DATA_DOUBLE, rain,
-					 //"battery",	  	  "Battery",		DATA_STRING, battery, // Unsure about Battery byte...
+		     "battery",       "Battery",	DATA_STRING, battery, // Unsure about Battery byte...
                      NULL);
     data_acquired_handler(data);
     return 1; 
@@ -323,7 +323,7 @@ static char *output_fields[] = {
 	"year",
 	"month",
 	"day",
-	//"battery", // Still unsure about Battery byte(s)...
+	"battery",
 	NULL
 };
 
