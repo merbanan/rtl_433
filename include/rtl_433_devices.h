@@ -58,7 +58,8 @@
 		DECL(springfield) \
 		DECL(oregon_scientific_sl109h) \
 		DECL(acurite_606) \
-		DECL(tfa_pool_thermometer)
+		DECL(tfa_pool_thermometer) \
+		DECL(kedsum)
 
 typedef struct {
 	char name[256];

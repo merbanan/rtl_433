@@ -34,6 +34,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/ht680.c \
                        devices/inovalley-kw9015b.c \
                        devices/intertechno.c \
+                       devices/kedsum.c \
                        devices/lacrosse.c \
                        devices/lacrossews.c \
                        devices/mebus.c \
