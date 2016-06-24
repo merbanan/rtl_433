@@ -13,6 +13,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/acurite.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
+                       devices/blyss.c \
                        devices/brennstuhl_rcs_2044.c \
                        devices/calibeur.c \
                        devices/cardin.c \
