@@ -60,7 +60,9 @@
 		DECL(acurite_606) \
 		DECL(tfa_pool_thermometer) \
 		DECL(kedsum) \
-		DECL(blyss)
+		DECL(blyss) \
+		DECL(steelmate)
+
 
 typedef struct {
 	char name[256];
