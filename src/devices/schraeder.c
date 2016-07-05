@@ -19,7 +19,7 @@
  * P = preamble (0xf)
  * U = unknown
  * I = id
- * C = CRC from nibble 1 to E
+ * C = CRC8 from nibble 1 to E
  */
 
 #include "rtl_433.h"
@@ -33,13 +33,25 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 	uint32_t serial_id = 0;
 	data_t *data;
 	char hexid[20] = {0};
+	uint8_t work_buffer[9];
+	int i;
 
 	/* Reject wrong amount of bits */
 	if ( bitbuffer->bits_per_row[0] != 68)
 		return 0;
 
+	/* shift the buffer 4 bits for the crc8 calculation */
+	for (i=0 ; i<8 ; i++)
+		work_buffer[i] = (bb[0][i]&0x0F)<<4 | (bb[0][i+1]&0xF0) >> 4;
+
+	/* Calculate the crc */
+	if (work_buffer[7] != crc8(work_buffer, 7, 0x07, 0xf0)) {
+		return 0;
+	}
+
 	local_time_str(0, time_str);
 
+	/* Get serial number id */
 	serial_id = (bb[0][2]&0x0F) << 20 | bb[0][3] << 12 | bb[0][4] << 4 | (bb[0][5]&0xF0) >> 4;
 	sprintf(hexid, "%X", serial_id);
 
@@ -47,12 +59,14 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 		fprintf(stdout, "Schraeder TPMS decoder\n");
 		bitbuffer_print(bitbuffer);
 		fprintf(stdout, "id = 0x%X\n", serial_id);
+		fprintf(stdout, "CRC = %x\n", crc8(work_buffer, 7, 0x07, 0xf0));
 	}
 
 	data = data_make("time", "", DATA_STRING, time_str,
 					"model", "", DATA_STRING, "Schraeder",
 					"type", "", DATA_STRING, "TPMS",
  					"id", "ID", DATA_STRING, hexid,
+					"crc", "", DATA_STRING, "OK",
 					NULL);
 
 	data_acquired_handler(data);
