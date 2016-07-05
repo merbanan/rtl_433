@@ -9,13 +9,17 @@
  */
 
 /**
- * Packet payload: 9 bytes
+ * Packet payload: 8,5 bytes, 17 nibbles
  *
- * [00] {68} 7f 67 03 a3 8b 20 04 94 90
- *           AA BB CI II II ID DD DD XX
- * 
+ *           01 23 45 67 89 AB CD EF 0
+ * [00] {68} 7f 67 03 a3 8b 20 04 94 9
+ *           SP UU UI II II IU UU UC C
+ *
+ * S = sync
+ * P = preamble (0xf)
+ * U = unknown
  * I = id
- * X = CRC ???
+ * C = CRC from nibble 1 to E
  */
 
 #include "rtl_433.h"
