@@ -77,6 +77,7 @@ add_executable(rtl_433
 	devices/bresser_3ch.c
 	devices/oregon_scientific_sl109h.c
 	devices/steelmate.c
+	devices/schraeder.c
 
 )
 
