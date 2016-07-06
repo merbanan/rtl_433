@@ -52,6 +52,7 @@ add_executable(rtl_433
 	devices/kedsum.c
 	devices/lacrosse.c
 	devices/lacrossews.c
+	devices/lightwave_rf.c
 	devices/mebus.c
 	devices/newkaku.c
 	devices/nexus.c

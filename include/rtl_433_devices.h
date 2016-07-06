@@ -61,7 +61,8 @@
 		DECL(tfa_pool_thermometer) \
 		DECL(kedsum) \
 		DECL(blyss) \
-		DECL(steelmate)
+		DECL(steelmate) \
+		DECL(lightwave_rf)
 
 
 typedef struct {
