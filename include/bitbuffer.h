@@ -68,4 +68,18 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
 /// Return the row index or -1.
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
+
+/// Return a single bit from a bitrow at bit_idx position
+static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
+{
+	return bitrow[bit_idx >> 3] >> (7 - (bit_idx & 7)) & 1;
+}
+
+/// Return a single byte from a bitrow at bit_idx position (which may be unaligned)
+static inline uint8_t bitrow_get_byte(const bitrow_t bitrow, unsigned bit_idx)
+{
+	return ((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
+			(bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
+}
+
 #endif /* INCLUDE_BITBUFFER_H_ */

@@ -62,7 +62,8 @@
 		DECL(kedsum) \
 		DECL(blyss) \
 		DECL(steelmate) \
-		DECL(schraeder)
+		DECL(schraeder) \
+		DECL(lightwave_rf)
 
 
 typedef struct {
