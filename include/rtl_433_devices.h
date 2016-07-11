@@ -63,7 +63,8 @@
 		DECL(blyss) \
 		DECL(steelmate) \
 		DECL(schraeder) \
-		DECL(lightwave_rf)
+		DECL(lightwave_rf) \
+		DECL(template)
 
 
 typedef struct {
