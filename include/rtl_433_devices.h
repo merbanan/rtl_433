@@ -64,8 +64,8 @@
 		DECL(steelmate) \
 		DECL(schraeder) \
 		DECL(lightwave_rf) \
+		DECL(elro_db286a) \
 		DECL(template)
-
 
 typedef struct {
 	char name[256];

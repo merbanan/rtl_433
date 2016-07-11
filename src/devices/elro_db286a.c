@@ -1,0 +1,104 @@
+/* Initial doorbell implementation for Elro DB286A devices
+ * 
+ * Note that each device seems to have two id patterns, which alternate
+ * for every other button press.
+ */
+ 
+#include "rtl_433.h"
+#include "pulse_demod.h"
+#include "data.h"
+#include "util.h"
+
+static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
+
+	//33 pulses per data pattern
+	const unsigned pulsecount = 33;
+	//One leading zero pulse + 15*33 data pattern - 1 missing trailing zero pulse 
+	const unsigned totalpulses = 33*15;
+	//Minimum data pattern repetitions (14 is maximum)
+	const unsigned minpattern = 5;
+	
+	char time_str[LOCAL_TIME_BUFLEN];
+	data_t *data;
+	bitrow_t *bb = bitbuffer->bb;
+	uint8_t *b = bb[0];
+	unsigned bits = bitbuffer->bits_per_row[0];
+
+	if (bits != totalpulses) {
+		return 0;
+	}
+	
+	//33 pulses + trailing null byte for C string
+	//Example pattern: 001101111111011000101010011011001
+	
+	char id_string[pulsecount + 1];
+	char *idsp = id_string;
+	
+	char bitrow_string[totalpulses + 1];
+	char *brp = bitrow_string;
+	
+	unsigned i;
+	
+	//Get binary string representation of bitrow
+	for (i = 0; i < bits; i++) {
+	    brp += sprintf(brp, "%d", bitrow_get_bit(bb[0], i));	
+	}
+	bitrow_string[totalpulses] = '\0';
+	
+	//Get first id pattern in transmission
+	strncpy(idsp, bitrow_string+1, pulsecount);
+	id_string[pulsecount] = '\0';
+	
+	//Check if pattern is received at least x times
+	
+	unsigned count = 0;
+	const char *tmp = bitrow_string;
+	
+	while((tmp = strstr(tmp, id_string))) {
+	   count++;
+	   tmp++;
+	}
+	
+	if (count < minpattern) {
+		return 0;
+	}
+	
+	local_time_str(0, time_str);
+	
+	data = data_make(
+				"time",			"",		DATA_STRING, time_str,
+				"model",		"",		DATA_STRING, "Elro DB286A",
+				"id",			"Code",	DATA_STRING, id_string,
+				NULL);
+	
+	data_acquired_handler(data);
+	    		
+	return 1;
+		
+}
+
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    NULL
+};
+
+
+static PWM_Precise_Parameters pwm_precise_parameters_generic = {
+	.pulse_tolerance	= 50,
+	.pulse_sync_width	= 0,	// No sync bit used
+};
+
+
+r_device elro_db286a = {
+	.name			= "Elro DB286A Doorbell",
+	.modulation		= OOK_PULSE_PWM_PRECISE,
+	.short_limit	= 450,
+	.long_limit		= 1500,
+	.reset_limit	= 8000,
+	.json_callback	= &doorbell_db286a_callback,
+	.disabled		= 0,
+    .fields         = output_fields,
+	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic
+};
