@@ -37,8 +37,11 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	char bitrow_string[totalpulses + 1];
 	char *brp = bitrow_string;
 	
-	unsigned i;
+	const char *brpcount = bitrow_string;
 	
+	unsigned i;
+	unsigned count = 0;
+
 	//Get binary string representation of bitrow
 	for (i = 0; i < bits; i++) {
 	    brp += sprintf(brp, "%d", bitrow_get_bit(bb[0], i));	
@@ -51,12 +54,9 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	
 	//Check if pattern is received at least x times
 	
-	unsigned count = 0;
-	const char *tmp = bitrow_string;
-	
-	while((tmp = strstr(tmp, id_string))) {
+	while((brpcount = strstr(brpcount, id_string))) {
 	   count++;
-	   tmp++;
+	   brpcount++;
 	}
 	
 	if (count < minpattern) {
