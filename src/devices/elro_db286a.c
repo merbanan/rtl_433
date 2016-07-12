@@ -1,9 +1,15 @@
 /* Initial doorbell implementation for Elro DB286A devices
  * 
- * Note that each device seems to have two id patterns, which alternate
+ * Note that each device seems to have two codes, which alternate
  * for every other button press.
  * 
- * Example pattern: 001101111111011000101010011011001
+ * Example code: 37f62a6c80
+ * 
+ * Copyright (C) 2016 Fabian Zaremba <fabian@youremail.eu>
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  */
  
 #include "rtl_433.h"
