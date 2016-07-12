@@ -67,6 +67,7 @@
 		DECL(elro_db286a) \
 		DECL(template)
 
+
 typedef struct {
 	char name[256];
 	unsigned int modulation;
