@@ -9,14 +9,14 @@
 #include "data.h"
 #include "util.h"
 
-static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
+//33 pulses per data pattern
+#define	DB286A_PULSECOUNT		33
+//One leading zero pulse + 15*33 data pattern - 1 missing trailing zero pulse
+#define	DB286A_TOTALPULSES		DB286A_PULSECOUNT*15
+//Minimum data pattern repetitions (14 is maximum)
+#define	DB286A_MINPATTERN		5
 
-	//33 pulses per data pattern
-	const unsigned pulsecount = 33;
-	//One leading zero pulse + 15*33 data pattern - 1 missing trailing zero pulse 
-	const unsigned totalpulses = 33*15;
-	//Minimum data pattern repetitions (14 is maximum)
-	const unsigned minpattern = 5;
+static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
@@ -24,17 +24,17 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	uint8_t *b = bb[0];
 	unsigned bits = bitbuffer->bits_per_row[0];
 
-	if (bits != totalpulses) {
+	if (bits != DB286A_TOTALPULSES) {
 		return 0;
 	}
 	
 	//33 pulses + trailing null byte for C string
 	//Example pattern: 001101111111011000101010011011001
 	
-	char id_string[pulsecount + 1];
+	char id_string[DB286A_PULSECOUNT + 1];
 	char *idsp = id_string;
 	
-	char bitrow_string[totalpulses + 1];
+	char bitrow_string[DB286A_TOTALPULSES + 1];
 	char *brp = bitrow_string;
 	
 	const char *brpcount = bitrow_string;
@@ -46,11 +46,11 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	for (i = 0; i < bits; i++) {
 	    brp += sprintf(brp, "%d", bitrow_get_bit(bb[0], i));	
 	}
-	bitrow_string[totalpulses] = '\0';
+	bitrow_string[DB286A_TOTALPULSES] = '\0';
 	
 	//Get first id pattern in transmission
-	strncpy(idsp, bitrow_string+1, pulsecount);
-	id_string[pulsecount] = '\0';
+	strncpy(idsp, bitrow_string+1, DB286A_PULSECOUNT);
+	id_string[DB286A_PULSECOUNT] = '\0';
 	
 	//Check if pattern is received at least x times
 	
@@ -59,7 +59,7 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	   brpcount++;
 	}
 	
-	if (count < minpattern) {
+	if (count < DB286A_MINPATTERN) {
 		return 0;
 	}
 	
