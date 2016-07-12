@@ -72,6 +72,7 @@ unsigned count_repeats(bitbuffer_t *bits, unsigned row);
 /// Return the row index or -1.
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
+
 /// Return a single bit from a bitrow at bit_idx position
 static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
 {
