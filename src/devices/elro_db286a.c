@@ -2,6 +2,8 @@
  * 
  * Note that each device seems to have two id patterns, which alternate
  * for every other button press.
+ * 
+ * Example pattern: 001101111111011000101010011011001
  */
  
 #include "rtl_433.h"
@@ -24,13 +26,6 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	uint8_t *b = bb[0];
 	unsigned bits = bitbuffer->bits_per_row[0];
 
-	if (bits != DB286A_TOTALPULSES) {
-		return 0;
-	}
-	
-	//33 pulses + trailing null byte for C string
-	//Example pattern: 001101111111011000101010011011001
-	
 	char id_string[DB286A_PULSECOUNT + 1];
 	char *idsp = id_string;
 	
@@ -41,7 +36,11 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	
 	unsigned i;
 	unsigned count = 0;
-
+	
+	if (bits != DB286A_TOTALPULSES) {
+		return 0;
+	}
+	
 	//Get binary string representation of bitrow
 	for (i = 0; i < bits; i++) {
 	    brp += sprintf(brp, "%d", bitrow_get_bit(bb[0], i));	
