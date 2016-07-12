@@ -64,10 +64,13 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
 				     bitbuffer_t *outbuf, unsigned max);
 
+// Function to compare bitbuffer rows and count repetitions
+int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b);
+unsigned count_repeats(bitbuffer_t *bits, unsigned row);
+
 /// Find a repeated row that has a minimum count of bits.
 /// Return the row index or -1.
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
-
 
 /// Return a single bit from a bitrow at bit_idx position
 static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
