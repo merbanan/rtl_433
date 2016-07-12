@@ -68,7 +68,7 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	data = data_make(
 				"time",			"",		DATA_STRING, time_str,
 				"model",		"",		DATA_STRING, "Elro DB286A",
-				"id",			"Code",	DATA_STRING, id_string,
+				"code",			"Code",	DATA_STRING, id_string,
 				NULL);
 	
 	data_acquired_handler(data);
@@ -80,7 +80,7 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "time",
     "model",
-    "id",
+    "code",
     NULL
 };
 
