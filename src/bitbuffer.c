@@ -168,13 +168,13 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 }
 
 
-static int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b) {
+int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b) {
 	return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b] &&
 		!memcmp(bits->bb[row_a], bits->bb[row_b],
 				(bits->bits_per_row[row_a] + 7) / 8));
 }
 
-static unsigned count_repeats(bitbuffer_t *bits, unsigned row) {
+unsigned count_repeats(bitbuffer_t *bits, unsigned row) {
 	unsigned cnt = 0;
 	for (int i = 0; i < bits->num_rows; ++i) {
 		if (compare_rows(bits, row, i)) {

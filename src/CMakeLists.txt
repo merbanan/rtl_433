@@ -78,6 +78,7 @@ add_executable(rtl_433
 	devices/oregon_scientific_sl109h.c
 	devices/steelmate.c
 	devices/schraeder.c
+	devices/elro_db286a.c
 	devices/new_template.c
 
 )
