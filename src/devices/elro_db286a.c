@@ -1,4 +1,4 @@
-/* Initial doorbell implementation for Elro DB286A devices
+/* Doorbell implementation for Elro DB286A devices
  * 
  * Note that each device seems to have two codes, which alternate
  * for every other button press.
@@ -44,15 +44,15 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 		return 0;
 	}
 	
+	if (count_repeats(bitbuffer, 1) < DB286A_MINPATTERN) {
+		return 0;
+	}
+	
 	//Get hex string representation of code pattern
 	for (i = 0; i <= DB286A_CODEBYTES; i++) {
 	    idsp += sprintf(idsp, "%02x", b[i]);	
 	}
 	id_string[DB286A_CODECHARS] = '\0';
-
-	if (count_repeats(bitbuffer, 1) < DB286A_MINPATTERN) {
-		return 0;
-	}
 	
 	local_time_str(0, time_str);
 	
