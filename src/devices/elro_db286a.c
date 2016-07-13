@@ -35,7 +35,7 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 	uint8_t *b = bb[1];
 	unsigned bits = bitbuffer->bits_per_row[1];
 
-	char id_string[DB286A_PULSECOUNT + 1];
+	char id_string[DB286A_CODECHARS+1];
 	char *idsp = id_string;
 	
 	unsigned i;
