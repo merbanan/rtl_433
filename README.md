@@ -122,8 +122,16 @@ Supported devices:
         [50] Proove
         [51] Bresser Thermo-/Hygro-Sensor 3CH
 	[52] Springfield PreciseTemp Temperature and Soil Moisture
-    [53] Oregon Scientific SL109H Temperature & Humidity Sensor
-	[54] TFA Pool thermometer
+        [53] Oregon Scientific SL109H Temperature & Humidity Sensor
+	[54] Acurite 606TX Temperature Sensor 
+        [55] TFA pool temperature sensor
+        [56] Kedsum Temperature & Humidity Sensor
+        [57] blyss DC5-UK-WH (433.92 MHz)
+        [58] Steelmate TPMS
+        [59] Schraeder TPMS
+        [60] LightwaveRF
+        [61] Elro DB286A Doorbell
+        [62] Efergy Optical
 ```
 
 
