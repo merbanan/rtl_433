@@ -59,6 +59,15 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 /// @return CRC value
 uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
+/// CRC-16 CCITT
+///
+/// @param message[]: array of bytes to check
+/// @param nBytes: number of bytes in message
+/// @param polynomial: CRC polynomial
+/// @param init: starting crc value
+/// @return CRC value
+uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
+
 /// compute bit parity of a single byte
 ///
 /// @param inByte: single byte to check

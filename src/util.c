@@ -79,6 +79,26 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
     return remainder;
 }
 
+uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init) {
+    uint16_t remainder = init;
+    unsigned byte, bit;
+
+    for (byte = 0; byte < nBytes; ++byte) {
+        remainder ^= message[byte] << 8;
+        for (bit = 0; bit < 8; ++bit) {
+            if (remainder & 0x8000) {
+                remainder = (remainder << 1) ^ polynomial;
+            }
+            else {
+                remainder = (remainder << 1);
+            }
+        }
+    }
+    return remainder;
+}
+
+
+
 int byteParity(uint8_t inByte){
     inByte ^= inByte >> 4;
     inByte &= 0xf;
