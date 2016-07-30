@@ -343,15 +343,26 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
       }
       return 1;
     } else if (num_valid_v2_bits > 16) {
-      fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
-      fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n\n");
+      if(debug_output) {
+        fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
+        fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n");
+      }
     } else {
-      //fprintf(stdout, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n"); fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
+      if(debug_output) {
+        fprintf(stdout, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n"); fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
+      }
     }
   } else {
-    //if (bb[0][3] != 0) int i; fprintf(stdout, "\nBadly formatted OS v2.1 message encountered."); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");}
+    if (bb[0][3] != 0) {
+      if(debug_output) {
+        int i; 
+        fprintf(stdout, "\nBadly formatted OS v2.1 message encountered.\n"); 
+        for (i=0 ; i<BITBUF_COLS ; i++) 
+          fprintf(stdout, "%02x ", bb[0][i]); 
+        fprintf(stdout,"\n\n");
+      }
+    }
 }
-
 return 0;
 }
 
@@ -544,12 +555,16 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
         fprintf(stderr, "    Raw: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
       }
     } else if (bb[0][3] != 0 ) {
-      //fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
-      //fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
+      if(debug_output) {
+        fprintf(stdout, "\nPossible Oregon Scientific v3 message, but sync nibble wasn't found\n"); 
+        fprintf(stdout, "Raw Data: "); for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n");
+      }
     }
   }
   else { // Based on first couple of bytes, either corrupt message or something other than an Oregon Scientific v3 message
-    //if (bb[0][3] != 0) { fprintf(stdout, "\nUnrecognized Msg in v3: "); int i; for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n"); }
+    if(debug_output) {
+      if (bb[0][3] != 0) { fprintf(stdout, "\nUnrecognized Msg in v3: "); int i; for (i=0 ; i<BITBUF_COLS ; i++) fprintf(stdout, "%02x ", bb[0][i]); fprintf(stdout,"\n\n"); }
+    }
   }
   return 0;
 }
