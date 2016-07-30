@@ -24,7 +24,7 @@ add_executable(rtl_433
 	pulse_detect.c
 	rtl_433.c
 	util.c
-	devices/acurite.c
+        devices/acurite.c
 	devices/alecto.c
 	devices/ambient_weather.c
 	devices/blyss.c
@@ -79,6 +79,7 @@ add_executable(rtl_433
 	devices/steelmate.c
 	devices/schraeder.c
 	devices/elro_db286a.c
+        devices/efergy_optical.c
 	devices/new_template.c
 
 )
