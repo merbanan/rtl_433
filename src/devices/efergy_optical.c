@@ -75,9 +75,9 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	// crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)         
 	// start of data, length of data=10, polynomic=0x1021, init=0x0000	  
 
-	  csum1 = ((bytes[11]<<8)|(bytes[12]));
+	  csum1 = ((bytes[10]<<8)|(bytes[11]));
 
-   	  crc = crc16_ccitt(bytes, 11, 0x1021, 0x0);
+   	  crc = crc16_ccitt(bytes, 10, 0x1021, 0x0);
 
 	  if (crc == csum1)
        		{ 
