@@ -37,7 +37,6 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		return 0;
 		}
 
-
 	// The bit buffer isn't always aligned to the transmitted data, so
 	// search for data start and shift out the bits which aren't part
 	// of the data. The data always starts with 0000 (or 1111 if
