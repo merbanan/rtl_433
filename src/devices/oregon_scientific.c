@@ -239,9 +239,20 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
         else if (forecast == 6)   forecast_str = "Partly Cloudy";
         else if (forecast == 0xc) forecast_str = "Sunny";
         float temp_c = get_os_temperature(msg, sensor_id);
-        //TODO: change to new output system
-        fprintf(stdout,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, 0x5d60));
-        fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
+        // fprintf(stdout,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, sensor_id));
+        // fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
+        data = data_make(
+            "time",       "",               DATA_STRING, time_str,
+            "model",      "",               DATA_STRING, "BHTR968",
+            "id",         "House Code",     DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "channel",    "Channel",        DATA_INT,    get_os_channel(msg, sensor_id),
+            "battery",    "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
+            "humidity",   "Humidity",       DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+            "pressure",   "Pressure",       DATA_FORMAT, "%d mbar",   DATA_INT,    ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856,
+            NULL);
+        data_acquired_handler(data);
       }
       return 1;
     } else if (sensor_id == ID_RGR968) {
@@ -394,9 +405,17 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
       return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
     } else if ((msg[0] == 0xd8) && (msg[1] == 0x74)) {
       if (validate_os_checksum(msg, 13) == 0) {   // ok
-        int  channel = get_os_channel(msg, 0xd874);
+        int channel = get_os_channel(msg, 0xd874);
         int uvidx = get_os_uv(msg, 0xd874);
-        fprintf(stdout, "Weather Sensor UVN800 Channel %d  UV index: %d \n", channel, uvidx);
+        data = data_make(
+          "time",           "",           DATA_STRING, time_str,
+          "model",          "",           DATA_STRING, "UV800",
+          "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, 0xd874),
+          "channel",        "Channel",    DATA_INT,    channel,
+          "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
+          "uv",             "UV Index",   DATA_FORMAT, "%u", DATA_INT, uvidx,
+          NULL);
+        data_acquired_handler(data);
       }
     } else if ((msg[0] == 0x29) && (msg[1] == 0x14)) {
       if (validate_os_checksum(msg, 18) == 0) {
@@ -448,8 +467,15 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
       msg[0]=msg[0] & 0x0f;
       if (validate_os_checksum(msg, 22) == 0) {
         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
-        fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
-        fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+        //fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
+        //fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+        data = data_make(
+            "time",   "",           DATA_STRING,  time_str,
+            "model",  "",           DATA_STRING,  "CM160",
+            "id",     "House Code", DATA_INT, msg[1]&0x0F,
+            "power",  "Power",      DATA_FORMAT,  "%.0f W", DATA_INT, (rawAmp /(0.27*230)*1000),
+            NULL);
+          data_acquired_handler(data);
       }
     } else if (msg[0] == 0x26) { //  Owl CM180 readings
         msg[0]=msg[0] & 0x0f;
