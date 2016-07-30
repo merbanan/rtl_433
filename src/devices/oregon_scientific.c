@@ -16,6 +16,7 @@
 #define ID_PCR800   0x2914 
 #define ID_THGR810	0xf824
 #define ID_WGR800	0x1984
+#define ID_WGR968   0x3d00
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
@@ -224,6 +225,25 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
+            NULL);
+        data_acquired_handler(data);
+      }
+      return 1;
+    } else if (sensor_id == ID_WGR968) {
+      if (validate_os_v2_message(msg, 189, num_valid_v2_bits, 17) == 0) {
+        float quadrant = (((msg[4] &0x0f)*100)+((msg[4]>>4)*10) + ((msg[5]>>4)&0x0f));
+        float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) / 10.0F;
+        float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) / 10.0F;
+        data = data_make(
+            "time",       "",           DATA_STRING, time_str,
+            "brand",      "",           DATA_STRING, "OS",
+            "model",      "",           DATA_STRING, "WGR968",
+            "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
+            "battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+            "gust",       "Gust",       DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
+            "average",    "Average",    DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
+            "direction",  "Direction",  DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
             NULL);
         data_acquired_handler(data);
       }
