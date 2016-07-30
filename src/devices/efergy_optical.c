@@ -9,8 +9,8 @@
  * Byte 10: seconds
  * Byte 11: bytes0-10 crc16 xmodem XOR with FF
  * Byte 12: ?crc16 xmodem
- * if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
- * else energy = ((pulsecount/n_imp) * (3600/seconds))
+ * if pulse count <3 then power =(( pulsecount/impulse-perkwh) * (3600/seconds))
+ * else  power= ((pulsecount/n_imp) * (3600/seconds))
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 static int efergy_optical_callback(bitbuffer_t *bitbuffer) { 
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
-	double energy, n_imp;
+	double power, n_imp;
 	double pulsecount;
 	double seconds;
 	data_t *data;
@@ -81,10 +81,11 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 
 	  if (crc == csum1)
        		{ 
-       		fprintf (stdout, "Checksum OK :) :)\n");
+       		if (debug_output) {
+		fprintf (stdout, "Checksum OK :) :)\n");
         	fprintf (stdout, "Calculated crc is 0x%02X\n", crc);
         	fprintf (stdout, "Received csum1 is 0x%02X\n", csum1);
-
+		}
 		// this setting depends on your electricity meter's optical output	
 		n_imp = 3200;
 
@@ -94,27 +95,30 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		//some logic for low pulse count not sure how I reached this formula
 		if (pulsecount < 3)
 			{
-			energy = ((pulsecount/n_imp) * (3600/seconds));
+			power = ((pulsecount/n_imp) * (3600/seconds));
         		}
          	else
          		{
-         		energy = ((pulsecount/n_imp) * (3600/30));
+         		power = ((pulsecount/n_imp) * (3600/30));
          		}
          	/* Get time now */
 	        local_time_str(0, time_str);
 
 		 data = data_make("time",          "",            DATA_STRING, time_str,
         			"model",         "",            DATA_STRING, "Efergy Optical",
-                 		"energy",       "Energy KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
+                 		"power",       "Power KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, power,
 	               		   NULL);
 	 	data_acquired_handler(data);
 		return 0;
 		}
 		else 
 			{
- 			fprintf (stdout, "Checksum not OK !!!\n");
-			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
-			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
+			if (debug_output)
+				{ 
+ 				fprintf (stdout, "Checksum not OK !!!\n");
+				fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
+				fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
+				}
 			}
 		return 0;
 		}
@@ -122,7 +126,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     	"time",
   	"model",
-  	"energy",
+  	"power",
  	NULL
 	};
 
