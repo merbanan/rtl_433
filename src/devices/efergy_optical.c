@@ -135,4 +135,5 @@ r_device efergy_optical = {
 	.json_callback  = &efergy_optical_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
+	.fields        = output_fields
 };
