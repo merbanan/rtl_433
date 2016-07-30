@@ -21,7 +21,6 @@
 #include "rtl_433.h"
 #include "util.h"
 #include "data.h"
-#include "lib_crc.h"
 
 static int efergy_optical_callback(bitbuffer_t *bitbuffer) { 
 	unsigned num_bits = bitbuffer->bits_per_row[0];
@@ -31,19 +30,13 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	double seconds;
 	data_t *data;
         char time_str[LOCAL_TIME_BUFLEN];
-        unsigned short crc_ccitt_0000;
-        uint8_t calcsum; 
-	unsigned short csum1;
-	uint8_t csum2;	
+ 	uint16_t crc;       
+	uint16_t csum1;
 
 	if (num_bits < 64 || num_bits > 100){ 
 		return 0;
 		}
 
-	 if (debug_output > 1){ 
-     		fprintf(stderr,"Possible Efergy Optical: ");
-     		bitbuffer_print(bitbuffer);
-		}
 
 	// The bit buffer isn't always aligned to the transmitted data, so
 	// search for data start and shift out the bits which aren't part
@@ -67,37 +60,33 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	// Sometimes pulses and gaps are mixed up. If this happens, invert
 	// all bytes to get correct interpretation.
 	if (bytes[0] & 0xf0){
-		for (unsigned i = 0; i < 11; ++i) 
+		for (unsigned i = 0; i < 12; ++i) 
 			{
 			bytes[i] = ~bytes[i];
 			}
 		}
 
+	 if (debug_output){ 
+     		fprintf(stdout,"Possible Efergy Optical: ");
+     		bitbuffer_print(bitbuffer);
+		}
+	
 	// Calculate checksum for bytes[0..10]
-	 crc_ccitt_0000 = 0;
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[0]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[1]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[2]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[3]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[4]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[5]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[6]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[7]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[8]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[9]   );
-	 crc_ccitt_0000 = update_crc_ccitt(  crc_ccitt_0000, bytes[10]   );
-         
-	  bytes[11] = (bytes[11] ^ 0xFF);
-	  csum1 = (bytes[11]<<8);
-       
-	  if (crc_ccitt_0000 == csum1)
-       		{ 
-       		printf ("Checksum OK :) :)\n");
-        	printf("Calculated crc_ccitt_0000 is 0x%02X\n", crc_ccitt_0000);
-        	printf("Received csum1 is 0x%02X\n", csum1);
+	// crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)         
+	// start of data, length of data=10, polynomic=0x1021, init=0x0000	  
 
+	  csum1 = ((bytes[11]<<8)|(bytes[12]));
+
+   	  crc = crc16_ccitt(bytes, 11, 0x1021, 0x0);
+
+	  if (crc == csum1)
+       		{ 
+       		fprintf (stdout, "Checksum OK :) :)\n");
+        	fprintf (stdout, "Calculated crc is 0x%02X\n", crc);
+        	fprintf (stdout, "Received csum1 is 0x%02X\n", csum1);
+
+		// this setting depends on your electricity meter's optical output	
 		n_imp = 3200;
-	        printf ("\nEfergy Optical\nPulse per KWH default is set to %2f \n", n_imp );
 
 		pulsecount =  bytes[8];
 		seconds = bytes[10];
@@ -123,9 +112,9 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		}
 		else 
 			{
- 			printf ("Checksum not OK !!!\n");
-			printf("Calculated crc_ccitt_0000 is 0x%02X\n", crc_ccitt_0000);
-			printf("Received csum1 is 0x%02X\n", csum1);
+ 			fprintf (stdout, "Checksum not OK !!!\n");
+			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
+			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
 			}
 		return 0;
 		}
