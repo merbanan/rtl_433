@@ -11,6 +11,7 @@
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
+#define ID_THGR810  0xf824
 #define ID_PCR800   0x2914 
 #define ID_THGR81   0xf824
 #define ID_WGR800   0x1984
