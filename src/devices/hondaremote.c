@@ -9,55 +9,67 @@
  * (at your option) any later version.
  */
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
+static const char* command_code[] ={"boot", "unlock" , "lock",};
+
+static const char* get_command_codes(const uint8_t* bytes) {
+	return command_code[bytes[46] - 0xAA];
+	}
 
 static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
         uint8_t *bytes = bitbuffer->bb[0];
-	char command;
+	char time_str[LOCAL_TIME_BUFLEN];
+	data_t *data;
+
+
 	// Validate package
 if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF)) 
 	 {
-		fprintf(stdout, "Honda Car Key:\n");
+	fprintf(stdout, "Honda Car Key:\n");
 	if (debug_output) {
-//			bitbuffer_print(bitbuffer);
 			for (unsigned n=40; n<(50); ++n) 
 				{
 				fprintf(stdout,"Byte %02d", n);
 				fprintf(stdout,"= %02X\n", bytes[n]);
 				}
 			}
-	if (bytes[46]==0xAA) 
-		{
-		fprintf(stdout,"Boot unlock command \n");
-		return 1;
-		}
-	if (bytes[46]==0xAB) 
-		{
-		fprintf(stdout,"Car unlock command \n");
-		return 1;
-		}
-	if (bytes[46]==0xAC)
-		{
-		fprintf(stdout,"Car lock command \n");
-		return 1;
-		}
-	}
-	return 0;
+
+//call function to lookup what button was pressed	
+	const char* code = get_command_codes(bytes);
+
+	 /* Get time now */
+	local_time_str(0, time_str);
+     data = data_make(
+                        "time",         "",     DATA_STRING, time_str,
+                        "model",        "",     DATA_STRING, "Honda Remote",
+                        "code",          "",    DATA_STRING, code,
+                      NULL);
+
+       data_acquired_handler(data);
+       return 1;
+        }
+return 1;
 }
+
+static char *output_fields[] = {
+        "time",
+        "model",
+        "code",
+        NULL
+        };
 
 
 r_device hondaremote = {
 	.name			= "Honda Car Key",
-//	.modulation		= OOK_PULSE_PWM_TERNARY,
-//	.modulation		= OOK_PULSE_MANCHESTER_ZEROBIT,
 	.modulation		= FSK_PULSE_PWM_RAW,
-//	.modulation	= FSK_PULSE_PCM,
-//	.modulation	= OOK_PULSE_PWM_PRECISE,
 	.short_limit	= 300,
 	.long_limit		= 800,	// Not used
 	.reset_limit	= 2000,
 	.json_callback	= &hondaremote_callback,
 	.disabled		= 0,
 	.demod_arg		= 0,
+        .fields		= output_fields	
 };
