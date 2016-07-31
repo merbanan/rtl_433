@@ -132,6 +132,7 @@ Supported devices:
         [60] LightwaveRF
         [61] Elro DB286A Doorbell
         [62] Efergy Optical
+	[63] Honda Remote
 ```
 
 
