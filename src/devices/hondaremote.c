@@ -14,24 +14,34 @@
 static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
         uint8_t *bytes = bitbuffer->bb[0];
-
-       if (debug_output){
-                      fprintf(stdout,"Possible Honda Remote Optical: ");
-                      bitbuffer_print(bitbuffer);
-                      }
+	char command;
 	// Validate package
-if (bytes[0] ==0xFF )
+if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF)) 
 	 {
 		fprintf(stdout, "Honda Car Key:\n");
-		fprintf(stdout, "code = ");
-		for (unsigned n=40; n<(40+9); ++n) {
-			fprintf(stdout, "%02X", bytes[n]);
-		}
-	fprintf(stdout, "\n");
-	if (bytes[46]==0xAA) fprintf(stdout,"Boot unlock command \n");
-	if (bytes[46]==0xAB) fprintf(stdout,"Car unlock command \n");
-	if (bytes[46]==0xAC) fprintf(stdout,"Car lock command \n");
+	if (debug_output) {
+//			bitbuffer_print(bitbuffer);
+			for (unsigned n=40; n<(50); ++n) 
+				{
+				fprintf(stdout,"Byte %02d", n);
+				fprintf(stdout,"= %02X\n", bytes[n]);
+				}
+			}
+	if (bytes[46]==0xAA) 
+		{
+		fprintf(stdout,"Boot unlock command \n");
 		return 1;
+		}
+	if (bytes[46]==0xAB) 
+		{
+		fprintf(stdout,"Car unlock command \n");
+		return 1;
+		}
+	if (bytes[46]==0xAC)
+		{
+		fprintf(stdout,"Car lock command \n");
+		return 1;
+		}
 	}
 	return 0;
 }
