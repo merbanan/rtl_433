@@ -1,8 +1,8 @@
 /* Honda Car Key
  *
- * Identifies event, but does not attempt to decrypt rolling code...
+ * Identifies button event, but does not attempt to decrypt rolling code...
  *
- * Copyright (C) 2015 Tommy Vestermark
+ * Copyright (C) 2016 Adrian Stevenson
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -24,11 +24,13 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 
-
+ for (int i = 0; i < bitbuffer->num_rows; i++)
+{
 	// Validate package
-if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF)) 
+	if (bitbuffer->bits_per_row[i] != 386)
+	continue;
+	if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF)) 
 	 {
-	fprintf(stdout, "Honda Car Key:\n");
 	if (debug_output) {
 			for (unsigned n=40; n<(50); ++n) 
 				{
@@ -36,7 +38,7 @@ if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF))
 				fprintf(stdout,"= %02X\n", bytes[n]);
 				}
 			}
-
+}
 //call function to lookup what button was pressed	
 	const char* code = get_command_codes(bytes);
 
@@ -51,7 +53,7 @@ if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF))
        data_acquired_handler(data);
        return 1;
         }
-return 1;
+return 0;
 }
 
 static char *output_fields[] = {
