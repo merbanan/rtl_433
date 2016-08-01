@@ -80,6 +80,7 @@ add_executable(rtl_433
 	devices/schraeder.c
 	devices/elro_db286a.c
         devices/efergy_optical.c
+        devices/hondaremote.c
 	devices/new_template.c
 
 )

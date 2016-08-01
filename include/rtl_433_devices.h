@@ -66,6 +66,7 @@
 		DECL(lightwave_rf) \
 		DECL(elro_db286a) \
                 DECL(efergy_optical) \
+                DECL(hondaremote) \
 		DECL(template)
 
 
