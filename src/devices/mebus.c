@@ -1,6 +1,7 @@
 #include "rtl_433.h"
 
-static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int mebus433_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
@@ -29,21 +30,18 @@ static int mebus433_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
         fprintf(stdout, "humidity       = %i%%\n", hum);
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;
 }
 
 r_device mebus433 = {
-    /* .id             = */ 10,
-    /* .name           = */ "Mebus 433",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 300,
-    /* .long_limit     = */ 600,
-    /* .reset_limit    = */ 1500,
-    /* .json_callback  = */ &mebus433_callback,
-    /* .json_callback  = */ //&debug_callback,
+    .name           = "Mebus 433",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 1200,
+    .long_limit     = 2400,
+    .reset_limit    = 6000,
+    .json_callback  = &mebus433_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

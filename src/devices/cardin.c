@@ -11,12 +11,13 @@
  * published by the Free Software Foundation.
  */
 
-static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int cardin_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bb;
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
 	// validate message as we can
-	if((bb[0][2] & 48) == 0 && bits_per_row[0] == 24 && (
+	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
 				(bb[0][2] & 3) == 3 ||
 				(bb[0][2] & 9) == 9 ||
 				(bb[0][2] & 12) == 12 ||
@@ -119,13 +120,12 @@ static int cardin_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_pe
 }
 
 r_device cardin = {
-    /* .id             = */ 12,
-    /* .name           = */ "Cardin S466-TX2",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 303,
-    /* .long_limit     = */ 400,
-    /* .reset_limit    = */ 8000,
-    /* .json_callback  = */ &cardin_callback,
-    /* .disabled       = */ 0,
-    /* .json_callback  = */ //&debug_callback,
+    .name           = "Cardin S466-TX2",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 1212,
+    .long_limit     = 1600,
+    .reset_limit    = 32000,
+    .json_callback  = &cardin_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

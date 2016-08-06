@@ -1,6 +1,8 @@
 #include "rtl_433.h"
+#include "util.h"
+#include "data.h"
 
-static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
     /*start pulse: 1T high, 10.44T low */
@@ -10,14 +12,20 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
     /*- 4  bit:  unit*/
     /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
     /*- stop pulse: 1T high, 40T low */
+    data_t *data;
+    bitrow_t *bb = bitbuffer->bb;
     int i;
     uint8_t tmp = 0;
     uint8_t unit = 0;
     uint8_t packet = 0;
     uint8_t bitcount = 0;
     uint32_t kakuid = 0;
+    uint8_t dv = 0;
+    char *group_call, *command, *dim;
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
 
-    if (bb[0][0] == 0xac) {//allways starts with ac
+    if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//allways starts with ac or b2
         // first bit is from startbit sequence, not part of payload!
         // check protocol if value is 10 or 01, else stop processing as it is no vallid KAKU packet!
         //get id=24bits, remember 1st 1 bit = startbit, no payload!
@@ -54,7 +62,6 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                 kakuid = kakuid << 1;
                 //add 0
             } else {
-                //fprintf(stdout, " Packet error, no newkaku!!\n", tmp << bitcount);
                 return 0; //00 and 11 indicates packet error. no valid packet! do exit
             }
         }
@@ -76,16 +83,12 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                 return 0; //00 and 11 indicates packet error. Do exit, no valid packet
             }
         }
-        fprintf(stdout, "NewKaku event:\n");
-        fprintf(stdout, "Model      = NewKaKu on/off/dimmer switch\n");
-        fprintf(stdout, "KakuId     = %d (H%.2X)\n", kakuid, kakuid);
-        fprintf(stdout, "Unit       = %d (H%.2X)\n", unit, unit);
-        fprintf(stdout, "Group Call = %s\n", (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No");
-        fprintf(stdout, "Command    = %s\n", (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off");
+        group_call = (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No";
+        command = (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off";
         if (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0x80)) {//11 indicates DIM command, 4 extra bits indicate DIM value
-            fprintf(stdout, "Dim        = Yes\n");
+            dim = "Yes";
             tmp = bb[0][8] << 1; // get packet, loose first bit
-            uint8_t dv = 0;
+
             if ((bb[0][9]&(1 << 7)) != 0) {// if bit is set Add to current packet
                 tmp++;
                 for (bitcount = 0; bitcount < 8; bitcount += 2) {//process last bit outside
@@ -102,26 +105,46 @@ static int newkaku_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_p
                     }
                 }
             }
-            fprintf(stdout, "Dim Value  = %d\n", dv);
         } else {
-            fprintf(stdout, "Dim        = No\n");
-            fprintf(stdout, "Dim Value  = 0\n");
+            dim = "No";
         }
-        fprintf(stdout, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-                bb[0][0], bb[0][1], bb[0][2], bb[0][3], bb[0][4], bb[0][5], bb[0][6], bb[0][7], bb[0][8]);
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
+
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "KlikAanKlikUit Wireless Switch",
+                         "id",            "",            DATA_INT, kakuid,
+                         "unit",          "Unit",        DATA_INT, unit,
+                         "group_call",    "Group Call",  DATA_STRING, group_call,
+                         "command",       "Command",     DATA_STRING, command,
+                         "dim",           "Dim",         DATA_STRING, dim,
+                         "dim_value",     "Dim Value",   DATA_INT, dv,
+                         NULL);
+        data_acquired_handler(data);
+
         return 1;
     }
     return 0;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "unit",
+    "group_call",
+    "command",
+    "dim",
+    "dim_value",
+    NULL
+};
+
 r_device newkaku = {
-    /* .id             = */ 11,
-    /* .name           = */ "KlikAanKlikUit Wireless Switch",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 200,
-    /* .long_limit     = */ 800,
-    /* .reset_limit    = */ 4000,
-    /* .json_callback  = */ &newkaku_callback,
+    .name           = "KlikAanKlikUit Wireless Switch",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 800,
+    .long_limit     = 3200,
+    .reset_limit    = 10000,
+    .json_callback  = &newkaku_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
+    .fields         = output_fields
 };

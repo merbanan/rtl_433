@@ -1,7 +1,14 @@
-/* LaCrosse TX Temperature and Humidity Sensors
+/* LaCrosse TX 433 Mhz Temperature and Humidity Sensors
  * Tested: TX-7U and TX-6U (Temperature only)
  *
  * Not Tested but should work: TX-3, TX-4
+ *
+ * Copyright (C) 2015 Robert C. Terzi
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
  * Protocol Documentation: http://www.f6fbb.org/domo/sensors/tx3_th.php
  *
@@ -13,65 +20,65 @@
  * - Zero Pulses are longer (1,400 uS High, 1,000 uS Low) = 2,400 uS
  * - One Pulses are shorter (  550 uS High, 1,000 uS Low) = 1,600 uS
  * - Sensor id changes when the battery is changed
- * - Values are BCD with one decimal place: vvv = 12.3
- * - Value is repeated integer only iv = 12
+ * - Primay Value are BCD with one decimal place: vvv = 12.3
+ * - Secondary value is integer only intval = 12, seems to be a repeat of primary
+ *   This may actually be an additional data check because the 4 bit checksum
+ *   and parity bit is  pretty week at detecting errors.
  * - Temperature is in Celsius with 50.0 added (to handle negative values)
+ * - Humidity values appear to be integer precision, decimal always 0.
  * - There is a 4 bit checksum and a parity bit covering the three digit value
  * - Parity check for TX-3 and TX-4 might be different.
  * - Msg sent with one repeat after 30 mS
  * - Temperature and humidity are sent as separate messages
  * - Frequency for each sensor may be could be off by as much as 50-75 khz
+ * - LaCrosse Sensors in other frequency ranges (915 Mhz) use FSK not OOK
+ *   so they can't be decoded by rtl_433 currently.
+ *
+ * TO DO:
+ * - Now that we have a demodulator that isn't stripping the first bit
+ *   the detect and decode could be collapsed into a single reasonably
+ *   readable function.
+ *
+ * - Make the time stamp output a generat utility function.
  */
 
 #include "rtl_433.h"
+#include "util.h"
+#include "data.h"
 
-// buffer to hold localized timestamp YYYY-MM-DD HH:MM:SS
-#define LOCAL_TIME_BUFLEN	32
+#define LACROSSE_TX_BITLEN	44
+#define LACROSSE_NYBBLE_CNT	11
 
-void local_time_str(time_t time_secs, char *buf) {
-	time_t etime;
-	struct tm *tm_info;
-
-	if (time_secs == 0) {
-		time(&etime);
-	} else {
-		etime = time_secs;
-	}
-
-	tm_info = localtime(&etime);
-
-	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
-}
-
-// Check for a valid LaCrosse Packet
+// Check for a valid LaCrosse TX Packet
 //
-// written for the version of pwm_p_decode() (OOK_PWM_P)
-// pulse width detector with two anomalys:
-// 1. bits are inverted
-// 2. The first bit is discarded as a start bit
+// Return message nybbles broken out into bytes
+// for clarity.  The LaCrosse protocol is based
+// on 4 bit nybbles.
+// 
+// Domodulation
+// Long bits = 0
+// short bits = 1
 //
-// If a fixed pulse width decoder is used this
-// routine will need to be changed.
-static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
+static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum, parity_bit, parity = 0;
 
 	// Actual Packet should start with 0x0A and be 6 bytes
 	// actual message is 44 bit, 11 x 4 bit nybbles.
-	if ((pRow[0] & 0xFE) == 0x14 && pRow[6] == 0 && pRow[7] == 0) {
+	if (rowlen == LACROSSE_TX_BITLEN && pRow[0] == 0x0a) {
 
-		for (i = 0; i < 11; i++) {
+		for (i = 0; i < LACROSSE_NYBBLE_CNT; i++) {
 			msg_nybbles[i] = 0;
 		}
 
 		// Move nybbles into a byte array
-		// shifted by one to compensate for loss of first bit.
-		for (i = 0; i < 43; i++) {
+		// Compute parity and checksum at the same time.
+		for (i = 0; i < 44; i++) {
 			rbyte_no = i / 8;
 			rbit_no = 7 - (i % 8);
-			mnybble_no = (i + 1) / 4;
-			mbit_no = 3 - ((i + 1) % 4);
+			mnybble_no = i / 4;
+			mbit_no = 3 - (i % 4);
 			bit = (pRow[rbyte_no] & (1 << rbit_no)) ? 1 : 0;
 			msg_nybbles[mnybble_no] |= (bit << mbit_no);
 
@@ -101,11 +108,19 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
+			if (debug_output) {
 			fprintf(stdout,
-					"LaCrosse Checksum/Parity error: %d != %d, Parity %d\n",
-					checksum, msg_nybbles[10], parity);
+				"LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
+				checksum, msg_nybbles[10], parity);
+			}
 			return 0;
 		}
+	} else {
+	    if (debug_output) {
+		// Debug: This is very noisy
+		//fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
+		//	pRow[0], rowlen);
+	    }
 	}
 
 	return 0;
@@ -113,17 +128,19 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles) {
 
 // LaCrosse TX-6u, TX-7u,  Temperature and Humidity Sensors
 // Temperature and Humidity are sent in different messages bursts.
-static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
-		int16_t bits_per_row[BITBUF_ROWS]) {
+static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
+	bitrow_t *bb = bitbuffer->bb;
 
 	int i, m, valid = 0;
+	int events = 0;
 	uint8_t *buf;
-	uint8_t msg_nybbles[11];
+	uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
 	uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
 	int msg_value_int;
-	float msg_value = 0, temp_c = 0, temp_f = 0;
+	float msg_value = 0, temp_c = 0;
 	time_t time_now;
-	char time_str[25];
+	char time_str[LOCAL_TIME_BUFLEN];
+	data_t *data;
 
 	static float last_msg_value = 0.0;
 	static uint8_t last_sensor_id = 0;
@@ -132,7 +149,8 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 
 	for (m = 0; m < BITBUF_ROWS; m++) {
 		valid = 0;
-		if (lacrossetx_detect(bb[m], msg_nybbles)) {
+		// break out the message nybbles into separate bytes
+		if (lacrossetx_detect(bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
 
 			msg_len = msg_nybbles[1];
 			msg_type = msg_nybbles[2];
@@ -149,30 +167,53 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			if (sensor_id == last_sensor_id && msg_type == last_msg_type
 					&& last_msg_value == msg_value
 					&& time_now - last_msg_time < 50) {
-				continue;
+			    if (debug_output) {
+				fprintf(stderr,"LaCrosse TX Sensor %02x, duplicate message suppressed\n",
+					sensor_id);
+			    }
+			    continue;
 			}
 
-			local_time_str(time_now, time_str);
+			local_time_str(0, time_str);
+
+			// Check Repeated data values as another way of verifying
+			// message integrity.
+			if (msg_nybbles[5] != msg_nybbles[8] || 
+			    msg_nybbles[6] != msg_nybbles[9]) {
+				if (debug_output) {
+			    fprintf(stderr,
+				    "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+				    sensor_id, msg_type, msg_value, msg_value_int);
+				}
+			}
 
 			switch (msg_type) {
 			case 0x00:
 				temp_c = msg_value - 50.0;
-				temp_f = temp_c * 1.8 + 32;
-				fprintf(stdout,
-						"%s LaCrosse TX Sensor %02x: Temperature %3.1f C / %3.1f F\n",
-						time_str, sensor_id, temp_c, temp_f);
+				data = data_make("time",          "",            DATA_STRING, time_str,
+								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+								 "id",            "",            DATA_INT, sensor_id,
+								 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+								 NULL);
+				data_acquired_handler(data);
+				events++;
 				break;
 
 			case 0x0E:
-				fprintf(stdout,
-						"%s LaCrosse TX Sensor %02x: Humidity %3.1f%%\n",
-						time_str, sensor_id, msg_value);
+				data = data_make("time",          "",            DATA_STRING, time_str,
+								 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+								 "id",            "",            DATA_INT, sensor_id,
+								 "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
+								 NULL);
+				data_acquired_handler(data);
+				events++;
 				break;
 
 			default:
-				fprintf(stdout,
-						"%s LaCrosse Sensor %02x: Unknown Reading % 3.1f (%d)\n",
-						time_str, sensor_id, msg_value, msg_value_int);
+				fprintf(stderr,
+					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+					time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				events++;
 			}
 
 			time(&last_msg_time);
@@ -180,21 +221,30 @@ static int lacrossetx_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],
 			last_msg_type = msg_type;
 			last_sensor_id = sensor_id;
 
-		} else {
-			return 0;
 		}
 	}
 
-	if (debug_output)
-		debug_callback(bb, bits_per_row);
-	return 1;
+	return events;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "humidity",
+    NULL
+};
+
 r_device lacrossetx = {
-/* .id             = */11,
-/* .name           = */"LaCrosse TX Temperature / Humidity Sensor",
-/* .modulation     = */OOK_PWM_P,
-/* .short_limit    = */238,
-/* .long_limit     = */750,
-/* .reset_limit    = */8000,
-/* .json_callback  = */&lacrossetx_callback, };
+ .name           = "LaCrosse TX Temperature / Humidity Sensor",
+ .modulation     = OOK_PULSE_PWM_RAW,
+ .short_limit    = 952,
+ .long_limit     = 3000,
+/// .reset_limit    = 32000,
+ .reset_limit    = 8000,
+ .json_callback  = &lacrossetx_callback, 
+ .disabled       = 0,
+ .demod_arg      = 0, 	// No Startbit removal
+ .fields = output_fields,
+};

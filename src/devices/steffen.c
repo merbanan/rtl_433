@@ -1,11 +1,12 @@
 #include "rtl_433.h"
 
-static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_per_row[BITBUF_ROWS]) {
+static int steffen_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
 
         fprintf(stdout, "Remote button event:\n");
-        fprintf(stdout, "model   = Steffan Switch Transmitter, %d bits\n",bits_per_row[1]);
+        fprintf(stdout, "model   = Steffan Switch Transmitter, %d bits\n",bitbuffer->bits_per_row[1]);
 	fprintf(stdout, "code    = %d%d%d%d%d\n", (bb[1][0]&0x80)>>7, (bb[1][0]&0x40)>>6, (bb[1][0]&0x20)>>5, (bb[1][0]&0x10)>>4, (bb[1][0]&0x08)>>3);
 
 	if ((bb[1][2]&0x0f)==0x0e)
@@ -27,20 +28,18 @@ static int steffen_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS],int16_t bits_pe
             fprintf(stdout, "state   = ON\n");
         }
 
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
         return 1;
     }
     return 0;
 }
 
 r_device steffen = {
-    /* .id             = */ 9,
-    /* .name           = */ "Steffen Switch Transmitter",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 140,
-    /* .long_limit     = */ 270,
-    /* .reset_limit    = */ 1500,
-    /* .json_callback  = */ &steffen_callback,
+    .name           = "Steffen Switch Transmitter",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 560,
+    .long_limit     = 1080,
+    .reset_limit    = 6000,
+    .json_callback  = &steffen_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
 };

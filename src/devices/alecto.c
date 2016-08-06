@@ -1,4 +1,6 @@
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 /* Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
  * Message Format: (9 nibbles, 36 bits):
@@ -46,23 +48,28 @@
  *   F = Checksum
  *********************************************************************************************
  */
-uint8_t reverse8(uint8_t x) {
-    x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
-    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
-    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
-    return x;
-}
 
 uint8_t bcd_decode8(uint8_t x) {
     return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
 }
 
-static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
+static int alectov1_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
     int temperature_before_dec;
     int temperature_after_dec;
     int16_t temp;
     uint8_t humidity, csum = 0, csum2 = 0;
     int i;
+
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+    unsigned bits = bitbuffer->bits_per_row[1];
+
+    if (bits != 36)
+        return 0;
+
+    local_time_str(0, time_str);
+
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
             && (bb[5][0] != 0 && bb[5][1] != 0)) {
 
@@ -81,22 +88,31 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
         csum2 = reverse8((csum2 & 0xf) << 4);
         /* Quit if checksup does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
-            fprintf(stdout, "\nAlectoV1 CRC error");
+            //fprintf(stdout, "\nAlectoV1 CRC error");
+            if(debug_output) {
+                fprintf(stderr,
+                "%s AlectoV1 Checksum/Parity error\n",
+                time_str);
+            }
             return 0;
         } //Invalid checksum
 
 
         uint8_t wind = 0;
+        uint8_t channel = (bb[1][0] & 0xc) >> 2;
+        uint8_t sensor_id = reverse8(bb[1][0]);
+        uint8_t battery_low = bb[1][1]&0x80;
 
         if ((bb[1][1] & 0xe0) == 0x60) {
             wind = ((bb[1][1] & 0xf) == 0xc) ? 0 : 1;
 
-            fprintf(stdout, "\nSensor        = %s event\n", wind ? "Wind" : "Rain gauge");
-            fprintf(stdout, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
-            fprintf(stdout, "Device        = %d\n", reverse8(bb[1][0]));
-            fprintf(stdout, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
-            fprintf(stdout, "Battery       = %s\n", bb[1][1]&0x80 ? "Low" : "OK");
+            //left out data (not needed):
+            //bb[1][1]&0x10 ? "timed event":"Button generated ");
+            //fprintf(stdout, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
+            //fprintf(stdout, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
+ 
             if (wind) {
+            	// Wind sensor
                 int skip = -1;
                 /* Untested code written according to the specification, may not decode correctly  */
                 if ((bb[1][1]&0xe) == 0x8 && bb[1][2] == 0) {
@@ -108,14 +124,30 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
                     double speed = reverse8(bb[1 + skip][3]);
                     double gust = reverse8(bb[5 + skip][3]);
                     int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
-                    fprintf(stdout, "Wind speed    = %.0f units = %.2f m/s\n", speed, speed * 0.2);
-                    fprintf(stdout, "Wind gust     = %.0f units = %.2f m/s\n", gust, gust * 0.2);
-                    fprintf(stdout, "Direction     = %.2i degrees\n", direction);
+
+            		data = data_make("time",          "",           DATA_STRING, time_str,
+									"model",          "",           DATA_STRING, "AlectoV1 Wind Sensor",
+									"id",             "House Code", DATA_INT,    sensor_id,
+									"channel",        "Channel",    DATA_INT,    channel,
+		  							"battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+		  							"wind_speed",     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
+									"wind_gust",      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
+									"wind_direction", "Direction",  DATA_INT,    direction,
+							 	   	NULL);
+			    	data_acquired_handler(data);
                 }
             } else {
-                /* Untested code written according to the specification, may not decode correctly  */
-                double rain_mm = (reverse8(bb[1][2]) + (reverse8(bb[1][3] << 8))) * 0.25;
-                fprintf(stdout, "Rainfall      = %f\n", rain_mm);
+                // Rain sensor
+                double rain_mm = ((reverse8(bb[1][3]) << 8)+reverse8(bb[1][2])) * 0.25F;
+
+            	data = data_make("time",         "",           DATA_STRING, time_str,
+								"model",         "",           DATA_STRING, "AlectoV1 Rain Sensor",
+								"id",            "House Code", DATA_INT,    sensor_id,
+								"channel",       "Channel",    DATA_INT,    channel,
+		  						"battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+							    "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+							    NULL);
+			    data_acquired_handler(data);
             }
         } else if (bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] && bb[4][0] == bb[5][0] &&
                 bb[5][0] == bb[6][0] && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
@@ -124,40 +156,56 @@ static int alectov1_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_
             if ((temp & 0x800) != 0) {
                 temp |= 0xf000;
             }
-            temperature_before_dec = abs(temp / 10);
-            temperature_after_dec = abs(temp % 10);
             humidity = bcd_decode8(reverse8(bb[1][3]));
-            fprintf(stdout, "\nSensor        = Temperature event\n");
-            fprintf(stdout, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
-            fprintf(stdout, "Device        = %d\n", reverse8(bb[1][0]));
-            fprintf(stdout, "Channel       = %d\n", (bb[1][0] & 0xc) >> 2);
-            fprintf(stdout, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
-            fprintf(stdout, "Battery       = %s\n", bb[1][1]&0x80 ? "Low" : "OK");
-            fprintf(stdout, "Temp          = %s%d.%d\n", temp < 0 ? "-" : "", temperature_before_dec, temperature_after_dec);
-            fprintf(stdout, "Humidity      = %d\n", humidity);
-        }
-        fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto            
 
-        fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
-        if (wind) fprintf(stdout, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
-        /*
+            data = data_make("time",         "",            DATA_STRING, time_str,
+							"model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
+							"id",            "House Code",  DATA_INT,    sensor_id,
+							"channel",       "Channel",     DATA_INT,    channel,
+							"battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
+							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
+							NULL);
+			data_acquired_handler(data);
+        }        
+        if (debug_output){
+           fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+           fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
+           if (wind) fprintf(stdout, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
+         /*
          * fprintf(stdout, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
          */
-        if (debug_output)
-            debug_callback(bb, bits_per_row);
-
+        }
         return 1;
     }
     return 0;
 }
 
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"channel",
+	"battery",
+	"temperature_C",
+	"humidity",
+	"rain_total",
+	"wind_speed",
+	"wind_gust",
+	"wind_direction",
+	NULL
+};
+
 //Timing based on 250000
 r_device alectov1 = {
-    /* .id             = */ 11,
-    /* .name           = */ "AlectoV1 Weather Sensor",
-    /* .modulation     = */ OOK_PWM_D,
-    /* .short_limit    = */ 3500 / 4, //875
-    /* .long_limit     = */ 7000 / 4, //1750
-    /* .reset_limit    = */ 15000 / 4, //3750
-    /* .json_callback  = */ &alectov1_callback,
+    .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 3500,
+    .long_limit     = 7000,
+    .reset_limit    = 10000,
+    .json_callback  = &alectov1_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
+    .fields         = output_fields
 };

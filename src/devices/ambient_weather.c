@@ -1,15 +1,14 @@
 #include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 static float
 get_temperature (uint8_t * msg)
 {
-  uint32_t temp_f = msg[4] & 0x7f;
+  int temp_f = msg[4];
   temp_f <<= 4;
   temp_f |= ((msg[5] & 0xf0) >> 4);
   temp_f -= 400;
-  if (msg[4] & 0x80) {
-    temp_f = -temp_f;
-  }
   return (temp_f / 10.0f);
 }
 
@@ -93,8 +92,21 @@ get_channel (uint8_t * msg)
 }
 
 static int
-ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
+  bitrow_t *bb = bitbuffer->bb;
+  float temperature;
+  uint8_t humidity;
+  uint16_t channel;
+  uint16_t deviceID;
+
+  char time_str[LOCAL_TIME_BUFLEN];
+  data_t *data;
+  local_time_str(0, time_str);
+
+  if(bitbuffer->bits_per_row[0] != 195)	// There seems to be 195 bits in a correct message
+    return 0;
+
   /* shift all the bits left 1 to align the fields */
   int i;
   for (i = 0; i < BITBUF_COLS-1; i++) {
@@ -114,42 +126,54 @@ ambient_weather_parser (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_r
   */
 
   if ( (bb[0][0] == 0x00) && (bb[0][1] == 0x14) && (bb[0][2] & 0x50) ) {
-    fprintf (stderr, "\nSensor Temperature Event:\n");
-    fprintf (stderr, "protocol      = Ambient Weather\n");
 
     if (validate_checksum (bb[0], BITBUF_COLS)) {
       return 0;
     }
-    
-    float temperature = get_temperature (bb[0]);
-    fprintf (stderr, "temp          = %.1f\n", temperature);
 
-    uint8_t humidity = get_humidity (bb[0]);
-    fprintf (stderr, "humidity      = %d\n", humidity);
-  
-    uint16_t channel = get_channel (bb[0]);
-    fprintf (stderr, "channel       = %d\n", channel);
+    temperature = get_temperature (bb[0]);
+    humidity = get_humidity (bb[0]);
+    channel = get_channel (bb[0]);
+    deviceID = get_device_id (bb[0]);
 
-    uint16_t deviceID = get_device_id (bb[0]);
-    fprintf (stderr, "id            = %d\n", deviceID);
+    data = data_make("time", "", DATA_STRING, time_str,
+			"model",	"",	DATA_STRING,	"Ambient Weather F007TH Thermo-Hygrometer",
+		     "device", "House Code", DATA_INT, deviceID,
+		     "channel", "Channel", DATA_INT, channel,
+		     "temperature_F", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+		     "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
+		     NULL);
+    data_acquired_handler(data);
 
-  } 
+    return 1;
+  }
 
   return 0;
 }
 
 static int
-ambient_weather_callback (uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS])
+ambient_weather_callback (bitbuffer_t *bitbuffer)
 {
-  return ambient_weather_parser (bb, bits_per_row);
+  return ambient_weather_parser (bitbuffer);
 }
 
+static char *output_fields[] = {
+	"time",
+	"device",
+	"channel",
+	"temperature_F",
+	"humidity",
+	NULL
+};
+
 r_device ambient_weather = {
-    /* .id             = */ 14,
-    /* .name           = */ "Ambient Weather Temperature Sensor",
-    /* .modulation     = */ OOK_MANCHESTER,
-    /* .short_limit    = */ 125,
-    /* .long_limit     = */ 0, // not used
-    /* .reset_limit    = */ 600,
-    /* .json_callback  = */ &ambient_weather_callback,
+    .name           = "Ambient Weather Temperature Sensor",
+    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = 500,
+    .long_limit     = 0, // not used
+    .reset_limit    = 2400,
+    .json_callback  = &ambient_weather_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
+    .fields	    = output_fields
 };
