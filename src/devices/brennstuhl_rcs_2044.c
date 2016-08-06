@@ -12,14 +12,14 @@
 
 /*
  * Receiver for the "RCS 2044 N Comfort Wireless Controller Set" sold under
- * the "Brennstuhl" brand.
+ * the "Brennenstuhl" brand.
  *
  * The protocol is also implemented for raspi controlled transmitter on 433.92 MHz:
  * https://github.com/xkonni/raspberry-remote
  */
 
 
-static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
+static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
 {
   const uint8_t *b = bitbuffer->bb[row];
   const int length = bitbuffer->bits_per_row[row];
