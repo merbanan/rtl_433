@@ -23,31 +23,35 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
         uint8_t *bytes = bitbuffer->bb[0];
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
+	uint16_t device_id;
 
  for (int i = 0; i < bitbuffer->num_rows; i++)
 {
 	// Validate package
-	if (bitbuffer->bits_per_row[i] != 386)
-	continue;
-	if ((bytes[0] ==0xFF ) && (bytes[38] == 0xFF)) 
+		if (((bitbuffer->bits_per_row[i] >385) && (bitbuffer->bits_per_row[i] <=394)) &&
+	 ((bytes[0] == 0xFF ) && (bytes[38] == 0xFF))) 
 	 {
+
 	if (debug_output) {
+	fprintf (stdout,"passed validation bits per row %02d\n",(bitbuffer->bits_per_row[i]));
 			for (unsigned n=40; n<(50); ++n) 
 				{
 				fprintf(stdout,"Byte %02d", n);
 				fprintf(stdout,"= %02X\n", bytes[n]);
 				}
 			}
-}
+
 //call function to lookup what button was pressed	
 	const char* code = get_command_codes(bytes);
-
-	 /* Get time now */
+	device_id = (bytes[44]>>8|bytes[45]);
+	
+ /* Get time now */
 	local_time_str(0, time_str);
      data = data_make(
                         "time",         "",     DATA_STRING, time_str,
                         "model",        "",     DATA_STRING, "Honda Remote",
-                        "code",          "",    DATA_STRING, code,
+                        "device id",    "",    DATA_INT, device_id,
+                        "code",         "",    DATA_STRING, code,
                       NULL);
 
        data_acquired_handler(data);
@@ -55,10 +59,12 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
         }
 return 0;
 }
-
+return 0;
+}
 static char *output_fields[] = {
         "time",
         "model",
+        "device id",
         "code",
         NULL
         };
