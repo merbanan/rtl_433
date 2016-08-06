@@ -93,7 +93,7 @@ Supported devices:
 	[21] Calibeur RF-104 Sensor
 	[22] X10 RF
 	[23] DSC Security Contact
-	[24] Brennstuhl RCS 2044
+	[24] Brennenstuhl RCS 2044
 	[25] GT-WT-02 Sensor
 	[26] Danfoss CFR Thermostat
 	[27] Energy Count 3000 (868.3 MHz)
