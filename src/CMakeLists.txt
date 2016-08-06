@@ -28,7 +28,7 @@ add_executable(rtl_433
 	devices/alecto.c
 	devices/ambient_weather.c
 	devices/blyss.c
-	devices/brennstuhl_rcs_2044.c
+	devices/brennenstuhl_rcs_2044.c
 	devices/calibeur.c
 	devices/cardin.c
 	devices/chuango.c
