@@ -293,7 +293,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "rain_rate",  "Rain Rate",  DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
-            "rain_total", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
+            "total_rain", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
             NULL);
         data_acquired_handler(data);
       }
@@ -491,7 +491,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
           "battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
           "rain_rate",  "Rain Rate",  DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
-          "total_rain", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+          "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
           NULL);
         data_acquired_handler(data);
         }
@@ -508,7 +508,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
       "channel",    "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
       "battery",    "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
       "rain_rate",  "Rain Rate",  DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
-      "total_rain", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+      "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
       NULL);
     data_acquired_handler(data);
     }
