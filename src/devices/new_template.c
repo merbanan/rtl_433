@@ -64,6 +64,6 @@ r_device template = {
 	.long_limit     = (56+33)*4,
 	.reset_limit    = (56+33)*2*4,
 	.json_callback	= &template_callback,
-	.disabled		= 1,
+	.disabled		= 0,//Set the enable flag for those modules so they need to be explicitly enabled via the -R parameter.
 	.fields			= csv_output_fields,
 };

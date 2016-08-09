@@ -472,10 +472,12 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 		tempf = acurite_getTemp(bb[4], bb[5]);
 		tempc = fahrenheit2celsius(tempf);
 		humidity = acurite_getHumidity(bb[6]);
-
+//remove all printf usage
+#if 0
 		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
 		       time_str, sensor_id, channel, message_type,
 		       wind_speed, wind_speedmph, tempc, tempf, humidity);
+#endif
 	    } else {
 		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
 			time_str, sensor_id, channel, bb[3], message_type);
@@ -595,8 +597,10 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	}
 
 	if ((status & 1) == 1) {
+            if (debug_output) {//All fprintf()'s must be under debug output guards.
 	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
 		    time_str, sensor_id, sensor_num, sensor_type, status);
+            }
 	}
 
 	// catch any status bits that haven't been decoded yet
