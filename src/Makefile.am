@@ -23,6 +23,8 @@ rtl_433_SOURCES      = baseband.c \
                        devices/dsc.c \
                        devices/ec3k.c \
                        devices/efergy_e2_classic.c \
+                       devices/efergy_optical.c \
+                       devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
                        devices/esperanza_ews.c \
@@ -32,12 +34,14 @@ rtl_433_SOURCES      = baseband.c \
                        devices/generic_temperature_sensor.c \
                        devices/gt_wt_02.c \
                        devices/hideki.c \
+                       devices/hondaremote.c \
                        devices/ht680.c \
                        devices/inovalley-kw9015b.c \
                        devices/intertechno.c \
                        devices/kedsum.c \
                        devices/lacrosse.c \
                        devices/lacrossews.c \
+                       devices/lightwave_rf.c \
                        devices/mebus.c \
                        devices/newkaku.c \
                        devices/nexus.c \
