@@ -91,6 +91,14 @@ get_channel (uint8_t * msg)
   return channel;
 }
 
+static uint8_t
+get_battery_status(uint8_t * msg)
+{
+  uint8_t status = (msg[3] & 8) != 0;
+  return status; // if not zero, battery is low
+
+}
+
 static int
 ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
@@ -99,6 +107,7 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
   uint8_t humidity;
   uint16_t channel;
   uint16_t deviceID;
+  uint8_t isBatteryLow;
 
   char time_str[LOCAL_TIME_BUFLEN];
   data_t *data;
@@ -135,11 +144,13 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
     humidity = get_humidity (bb[0]);
     channel = get_channel (bb[0]);
     deviceID = get_device_id (bb[0]);
+    isBatteryLow = get_battery_status(bb[0]);
 
     data = data_make("time", "", DATA_STRING, time_str,
 			"model",	"",	DATA_STRING,	"Ambient Weather F007TH Thermo-Hygrometer",
 		     "device", "House Code", DATA_INT, deviceID,
 		     "channel", "Channel", DATA_INT, channel,
+		     "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "Ok",
 		     "temperature_F", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
 		     "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
 		     NULL);
