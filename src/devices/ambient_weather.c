@@ -71,8 +71,10 @@ validate_checksum (uint8_t * msg, int len)
   if (expected == calculated)
     return 0;
   else {
-    fprintf(stderr, "Checksum error in Ambient Weather message.  Expected: %02x  Calculated: %02x\n", expected, calculated);
-    fprintf(stderr, "Message: "); int i; for (i=0; i<len; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n\n");
+    if(debug_output >= 1) {
+       fprintf(stderr, "Checksum error in Ambient Weather message.  Expected: %02x  Calculated: %02x\n", expected, calculated);
+       fprintf(stderr, "Message: "); int i; for (i=0; i<len; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n\n");
+    }
     return -1;
   }
 }
@@ -173,7 +175,7 @@ r_device ambient_weather = {
     .long_limit     = 0, // not used
     .reset_limit    = 2400,
     .json_callback  = &ambient_weather_callback,
-    .disabled       = 0,
+    .disabled       = 1,//Set the enable flag for this module so it need to be explicitly enabled via the -R parameter.
     .demod_arg      = 0,
     .fields	    = output_fields
 };

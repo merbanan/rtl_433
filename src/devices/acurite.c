@@ -245,11 +245,11 @@ int acurite5n1_callback(bitbuffer_t *bitbuffer) {
 
     if (buf) {
         // decode packet here
-        if (debug_output) {
-	    fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
+        if (debug_output >= 1) {
+	    fprintf(stderr, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
             for (i=0; i < 8; i++)
-                fprintf(stdout, "%02X ", buf[i]);
-            fprintf(stdout, "CRC OK\n");
+                fprintf(stderr, "%02X ", buf[i]);
+            fprintf(stderr, "CRC OK\n");
         }
 
         if ((buf[2] & 0x0F) == 1) {
@@ -264,21 +264,24 @@ int acurite5n1_callback(bitbuffer_t *bitbuffer) {
                 // capture starting counter
                 acurite_raincounter = raincounter;
             }
-
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "wind direction: %0.1f°, ",
-                acurite_getWindDirection(buf[4]));
-            fprintf(stdout, "rain gauge: %0.2f in.\n", rainfall);
+            if (debug_output >= 1) {	
+                fprintf(stderr, "wind speed: %d kph, ",
+            	    acurite_getWindSpeed(buf[3], buf[4]));
+                fprintf(stderr, "wind direction: %0.1f°, ",
+                    acurite_getWindDirection(buf[4]));
+                fprintf(stderr, "rain gauge: %0.2f in.\n", rainfall);
+            }
 
         } else if ((buf[2] & 0x0F) == 8) {
-            // wind speed, temp, RH
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "temp: %2.1f° F, ",
-                acurite_getTemp(buf[4], buf[5]));
-            fprintf(stdout, "humidity: %d%% RH\n",
-                acurite_getHumidity(buf[6]));
+            if (debug_output >= 1) {
+            	// wind speed, temp, RH
+            	fprintf(stderr, "wind speed: %d kph, ",
+                	acurite_getWindSpeed(buf[3], buf[4]));
+            	fprintf(stderr, "temp: %2.1f° F, ",
+                	acurite_getTemp(buf[4], buf[5]));
+            	fprintf(stderr, "humidity: %d%% RH\n",
+                	acurite_getHumidity(buf[6]));
+            }
         }
     } else {
     	return 0;
@@ -291,10 +294,12 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
  	bitrow_t *bb = bitbuffer->bb;
    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
-	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
-		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
-        fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
-		fprintf(stdout, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+	float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
+	total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
+	if (debug_output >= 1) {
+            fprintf(stderr, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
+	    fprintf(stderr, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+	}
         return 1;
     }
     return 0;
@@ -314,20 +319,22 @@ static float acurite_th_temperature(uint8_t *s){
 // @tdodo - determine which Acurite temp/humidity
 // sensors this acutally decodes
 static int acurite_th_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
+    bitrow_t *bb = bitbuffer->bb;
     uint8_t *buf = NULL;
     int i;
     for(i = 0; i < BITBUF_ROWS; i++){
 	if(acurite_th_detect(bb[i])){
-            buf = bb[i];
-            break;
+		buf = bb[i];
+		break;
         }
     }
     if(buf){
-        fprintf(stdout, "Temperature event:\n");
-        fprintf(stdout, "protocol      = Acurite Temp&Humidity\n");
-        fprintf(stdout, "temp          = %.1f°C\n", acurite_th_temperature(buf));
-        fprintf(stdout, "humidity      = %d%%\n\n", buf[3]);
+	if (debug_output >= 1) {	
+            fprintf(stderr, "Temperature event:\n");
+            fprintf(stderr, "protocol      = Acurite Temp&Humidity\n");
+            fprintf(stderr, "temp          = %.1f°C\n", acurite_th_temperature(buf));
+            fprintf(stderr, "humidity      = %d%%\n\n", buf[3]);
+	}
         return 1;
     }
 
@@ -365,7 +372,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
     local_time_str(0, time_str);
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
         fprintf(stderr,"acurite_txr\n");
         bitbuffer_print(bitbuf);
     }
@@ -374,12 +381,12 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
 	bb = bitbuf->bb[brow];
 
-	if (debug_output > 1)
+	if (debug_output >= 1)
 	    fprintf(stderr,"acurite_txr: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
 
 	if (bitbuf->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
 	    bitbuf->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1) {
-	    if (debug_output > 1 && bitbuf->bits_per_row[brow] > 16)
+	    if (debug_output >= 1 && bitbuf->bits_per_row[brow] > 16)
 		fprintf(stderr,"acurite_txr: skipping wrong len\n");
 	    continue;
 	}
@@ -390,7 +397,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    browlen--;
 
 	if (!acurite_crc(bb,browlen - 1)) {
-	    if (debug_output) {
+	    if (debug_output >= 1) {
 		fprintf(stderr, "%s Acurite bad checksum:", time_str);
 		for (uint8_t i = 0; i < browlen; i++)
 		    fprintf(stderr," 0x%02x",bb[i]);
@@ -399,7 +406,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    continue;
 	}
 
-	if (debug_output) {
+	if (debug_output >= 1) {
 	    fprintf(stderr, "acurite_txr Parity: ");
 	    for (uint8_t i = 0; i < browlen; i++) {
 		fprintf(stderr,"%d",byteParity(bb[i]));
@@ -418,16 +425,18 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    humidity = acurite_getHumidity(bb[3]);
 	    tempc = acurite_txr_getTemp(bb[4], bb[5]);
 	    tempf = celsius2fahrenheit(tempc);
-
-	    printf("%s Acurite tower sensor 0x%04X Ch %c: %3.1F C %3.1F F %d %% RH\n",
-		   time_str, sensor_id, channel, tempc, tempf, humidity);
-
+	    if (debug_output >= 1) {
+                fprintf(stderr, "%s Acurite tower sensor 0x%04X Ch %c: %3.1F C %3.1F F %d %% RH\n",
+                   time_str, sensor_id, channel, tempc, tempf, humidity);
+	    }
 	    // currently 0x44 seens to be a normal status and/or type
 	    // for tower sensors.  Battery OK/Normal == 0x40
-	    if (sensor_status != 0x44)
-		printf("%s Acurite tower sensor 0x%04X Ch %c, Status %02X\n",
-		       time_str, sensor_id, channel, sensor_status);
-
+	    if (sensor_status != 0x44) {
+	        if (debug_output >= 1) {
+                    fprintf(stderr, "%s Acurite tower sensor 0x%04X Ch %c, Status %02X\n",
+                       time_str, sensor_id, channel, sensor_status);
+	        }
+	    }
 	}
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
@@ -449,21 +458,26 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 		    // track rainfall difference after first run
 		    rainfall = ( raincounter - acurite_raincounter ) * 0.01;
 		    if (raincounter < acurite_raincounter) {
-			printf("%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
-			       time_str, sensor_id, channel, acurite_raincounter, raincounter);
+                        if (debug_output >= 1) {
+                            fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
+                               time_str, sensor_id, channel, acurite_raincounter, raincounter);
+                        }
 			acurite_raincounter = raincounter;
 		    }
 		} else {
 		    // capture starting counter
 		    acurite_raincounter = raincounter;
-		    printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
-			   time_str, sensor_id, channel, raincounter * 0.01);
+                    if (debug_output >= 1) {
+                        fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
+                           time_str, sensor_id, channel, raincounter * 0.01);
+                    }
 		}
-
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph %0.1f° %s (%d), rain gauge %0.2f in.\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph,
-		       wind_dird, wind_dirstr, bb[4] & 0x0f, rainfall);
+                if (debug_output >= 1) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph %0.1f° %s (%d), rain gauge %0.2f in.\n",
+                       time_str, sensor_id, channel, message_type,
+                       wind_speed, wind_speedmph,
+                       wind_dird, wind_dirstr, bb[4] & 0x0f, rainfall);
+               }
 
 	    } else if (message_type == 0x38) {
 		// Wind speed, temperature and humidity
@@ -472,15 +486,17 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 		tempf = acurite_getTemp(bb[4], bb[5]);
 		tempc = fahrenheit2celsius(tempf);
 		humidity = acurite_getHumidity(bb[6]);
-//remove all printf usage
-#if 0
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph, tempc, tempf, humidity);
-#endif
+                if (debug_output >= 1) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
+                       time_str, sensor_id, channel, message_type,
+                       wind_speed, wind_speedmph, tempc, tempf, humidity);
+               }
+
 	    } else {
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
-			time_str, sensor_id, channel, bb[3], message_type);
+                if (debug_output >= 1) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
+                      time_str, sensor_id, channel, bb[3], message_type);
+                }
 	    }
 	}
     }
@@ -533,7 +549,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 
     local_time_str(0, time_str);
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
         fprintf(stderr,"acurite_986\n");
         bitbuffer_print(bitbuf);
     }
@@ -542,12 +558,12 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
 	bb = bitbuf->bb[brow];
 
-	if (debug_output > 1)
+	if (debug_output >= 1)
 	    fprintf(stderr,"acurite_986: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
 
 	if (bitbuf->bits_per_row[brow] < 39 ||
 	    bitbuf->bits_per_row[brow] > 43 ) {
-	    if (debug_output > 1 && bitbuf->bits_per_row[brow] > 16)
+	    if (debug_output >= 1 && bitbuf->bits_per_row[brow] > 16)
 		fprintf(stderr,"acurite_986: skipping wrong len\n");
 	    continue;
 	}
@@ -568,10 +584,10 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	for (uint8_t i = 0; i < browlen; i++)
 	    br[i] = reverse8(bb[i]);
 
-	if (debug_output > 0) {
+	if (debug_output >= 1) {
 	    fprintf(stderr,"Acurite 986 reversed: ");
 	    for (uint8_t i = 0; i < browlen; i++)
-		fprintf(stderr," %02x",br[i]);
+                fprintf(stderr," %02x",br[i]);
 	    fprintf(stderr,"\n");
 	}
 
@@ -586,9 +602,9 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 
 	if ((crcc = crc8le(br, 5, 0x07, 0)) != 0) {
 	    // XXX make debug
-	    if (debug_output) {
+	    if (debug_output >= 1) {
 		fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
-			time_str, crc8le(br, 4, 0x07, 0));
+                  time_str, crc8le(br, 4, 0x07, 0));
 		for (uint8_t i = 0; i < browlen; i++)
 		    fprintf(stderr," %02x", br[i]);
 		fprintf(stderr,"\n");
@@ -597,16 +613,18 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	}
 
 	if ((status & 1) == 1) {
-            if (debug_output) {//All fprintf()'s must be under debug output guards.
-	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
-		    time_str, sensor_id, sensor_num, sensor_type, status);
+            if (debug_output >= 1) {//All fprintf()'s must be under debug output guards.
+	        fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
+                   time_str, sensor_id, sensor_num, sensor_type, status);
             }
 	}
 
 	// catch any status bits that haven't been decoded yet
 	if ((status & 0xFE) != 0) {
-	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
-		    time_str, sensor_id, sensor_num, sensor_type, status);
+            if (debug_output >= 1) {
+	        fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
+                   time_str, sensor_id, sensor_num, sensor_type, status);
+            }
 	}
 
 	if (tempf & 0x80) {
@@ -614,11 +632,11 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	}
 	tempc = fahrenheit2celsius(tempf);
 
-
-	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
+        if (debug_output >= 1) {
+	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
 	       time_str, sensor_id, sensor_num, sensor_type,
 	       tempc, tempf);
-
+        }
 	valid_cnt++;
 
     }
@@ -678,7 +696,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
     local_time_str(0, time_str);
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
         fprintf(stderr,"acurite_606\n");
         bitbuffer_print(bitbuf);
     }
@@ -826,6 +844,6 @@ r_device acurite_606 = {
     .long_limit     = 7000,
     .reset_limit    = 10000,
     .json_callback  = &acurite_606_callback,
-    .disabled       = 0,
+    .disabled       = 1,//Set the enable flag for this module so it need to be explicitly enabled via the -R parameter.
     .demod_arg      = 0,
 };

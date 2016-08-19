@@ -89,10 +89,8 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
         /* Quit if checksup does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
-            if(debug_output) {
-                fprintf(stderr,
-                "%s AlectoV1 Checksum/Parity error\n",
-                time_str);
+            if(debug_output >= 1) {
+                fprintf(stderr, "%s AlectoV1 Checksum/Parity error\n", time_str);
             }
             return 0;
         } //Invalid checksum
@@ -169,10 +167,10 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 							NULL);
 			data_acquired_handler(data);
         }        
-        if (debug_output){
-           fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
-           fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
-           if (wind) fprintf(stdout, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
+        if (debug_output >= 1){
+           fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+           fprintf(stderr, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
+           if (wind) fprintf(stderr, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
          /*
          * fprintf(stdout, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
          */
@@ -205,7 +203,7 @@ r_device alectov1 = {
     .long_limit     = 7000,
     .reset_limit    = 10000,
     .json_callback  = &alectov1_callback,
-    .disabled       = 0,
+    .disabled       = 1,//Set the enable flag for this module so it need to be explicitly enabled via the -R parameter.
     .demod_arg      = 0,
     .fields         = output_fields
 };

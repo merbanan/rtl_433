@@ -34,7 +34,7 @@ static int template_callback(bitbuffer_t *bitbuffer) {
 
 	if (debug_output >= 1) {
 		/* Place for random debug output */
-		fprintf(stdout, "Template decoder debug section\n");
+		fprintf(stderr, "Template decoder debug section\n");
 	}
 
 	local_time_str(0, time_str);
@@ -64,6 +64,6 @@ r_device template = {
 	.long_limit     = (56+33)*4,
 	.reset_limit    = (56+33)*2*4,
 	.json_callback	= &template_callback,
-	.disabled		= 0,//Set the enable flag for those modules so they need to be explicitly enabled via the -R parameter.
+	.disabled		= 1,//Set the enable flag for those modules so they need to be explicitly enabled via the -R parameter.
 	.fields			= csv_output_fields,
 };
