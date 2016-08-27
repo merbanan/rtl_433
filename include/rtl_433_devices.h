@@ -67,7 +67,8 @@
 		DECL(elro_db286a) \
                 DECL(efergy_optical) \
                 DECL(hondaremote) \
-		DECL(template)
+		DECL(template) \
+		DECL(fineoffset_XC0400)
 
 
 typedef struct {

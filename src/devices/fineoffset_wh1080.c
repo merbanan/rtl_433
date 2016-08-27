@@ -197,16 +197,26 @@ static int get_day(const uint8_t* br) {
 static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
+    const uint8_t *br;
+    uint8_t bbuf[12];
     local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
     }
-    if (bitbuffer->bits_per_row[0] != 88) {
+    if ((bitbuffer->bits_per_row[0] != 88) && (bitbuffer->bits_per_row[0] != 87)) {
         return 0;
     }
 
-    const uint8_t *br = bitbuffer->bb[0];
+    if(bitbuffer->bits_per_row[0] == 88) {
+        br = bitbuffer->bb[0];
+    } else {
+        /* 7 bits of preamble, bit shift the whole buffer and fix the bytestream */
+        bitbuffer_extract_bytes(bitbuffer, 0, 7,
+        (uint8_t *)&bbuf+1, 10*8);
+        br = bbuf;
+        bbuf[0] = 0xFF;
+    }
 
     if (br[0] != 0xff) {
         // preamble missing
@@ -337,4 +347,20 @@ r_device fineoffset_wh1080 = {
     .disabled       = 0,
     .demod_arg      = 0,
     .fields         = output_fields,
+};
+
+/**
+ * http://www.jaycar.com.au/mini-lcd-display-weather-station/p/XC0400
+ */
+
+r_device fineoffset_XC0400 = {
+    .name           = "Fine Offset Electronics, XC0400",
+    .modulation     = OOK_PULSE_PWM_RAW,
+    .short_limit    = 800,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_limit     = 2800,	// Maximum pulse period (long pulse + fixed gap)
+    .reset_limit    = 2800,	// We just want 1 package
+    .json_callback  = &fineoffset_wh1080_callback,
+    .disabled       = 0,
+    .demod_arg      = 0,
+    .fields         = output_fields
 };
