@@ -84,6 +84,6 @@ r_device akhan_100F14 = {
 	.long_limit    = 1020,
 	.reset_limit   = 1800,
 	.json_callback = &akhan_rke_callback,
-	.disabled      = 1,//Set the enable flag for this module so it need to be explicitly enabled via the -R parameter.
+	.disabled      = 0,
 	.demod_arg     = (uintptr_t)&pwm_precise_parameters_akhan,
 };
