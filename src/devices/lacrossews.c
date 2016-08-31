@@ -133,11 +133,12 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				break;
 			// Humidity
 			case 1:
-				if(msg_nybbles[7] == 0xA && msg_nybbles[8] == 0xA)
+				if(msg_nybbles[7] == 0xA && msg_nybbles[8] == 0xA) {
 					if(debug_output >= 1) {
 						fprintf(stderr, "%s LaCrosse WS %02X-%02X: Humidity Error\n",
 							time_str, ws_id, sensor_id);
 					}
+				}
 				else {
 					data = data_make("time",          "",            DATA_STRING, time_str,
 														"model",         "",            DATA_STRING, "LaCrosse WS",
@@ -166,11 +167,12 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			case 7:
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
-				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE)
+				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
 					if(debug_output >= 1) {
 						fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
 							time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
 					}
+				}
 				else {
 					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
