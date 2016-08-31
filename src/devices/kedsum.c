@@ -55,15 +55,15 @@ static int kedsum_callback(bitbuffer_t *bitbuffer) {
     temperature_with_offset =  (tnH<<8) | (tnM<<4) | tnL;
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
-    if (debug_output) {
-      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",b[0],b[1],b[2],b[3],b[4],b[5]);
-      fprintf(stdout, "Humidity HEX         = %02x\n", b[3]);
-      fprintf(stdout, "Humidity DEC         = %u\n",   humidity);
-      fprintf(stdout, "Channel HEX          = %02x\n", b[1]);
-      fprintf(stdout, "Channel              = %u\n",   channel);
-      fprintf(stdout, "temp_with_offset HEX = %02x\n", temperature_with_offset);
-      fprintf(stdout, "temp_with_offset     = %d\n",   temperature_with_offset);
-      fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
+    if (debug_output >= 1) {
+      fprintf(stderr, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",b[0],b[1],b[2],b[3],b[4],b[5]);
+      fprintf(stderr, "Humidity HEX         = %02x\n", b[3]);
+      fprintf(stderr, "Humidity DEC         = %u\n",   humidity);
+      fprintf(stderr, "Channel HEX          = %02x\n", b[1]);
+      fprintf(stderr, "Channel              = %u\n",   channel);
+      fprintf(stderr, "temp_with_offset HEX = %02x\n", temperature_with_offset);
+      fprintf(stderr, "temp_with_offset     = %d\n",   temperature_with_offset);
+      fprintf(stderr, "TemperatureF         = %.1f\n", temperature_f);
     }
 
     data = data_make("time",          "",            DATA_STRING, time_str,

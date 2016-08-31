@@ -32,6 +32,6 @@ r_device danfoss_CFR = {
 	.long_limit     = 100,	// Bit width
 	.reset_limit    = 1000,	// 10 zeros...
 	.json_callback  = &danfoss_CFR_callback,
-	.disabled       = 0,
+	.disabled       = 1,
 	.demod_arg      = 0,
 };

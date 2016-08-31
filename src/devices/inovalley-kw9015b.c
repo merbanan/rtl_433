@@ -68,6 +68,6 @@ r_device kw9015b = {
   .long_limit    = 4800,
   .reset_limit   = 10000,
   .json_callback = &kw9015b_callback,
-  .disabled      = 0,
+  .disabled      = 1,
   .demod_arg     = 0,
 };

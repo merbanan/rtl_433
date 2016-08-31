@@ -80,8 +80,10 @@ static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int ch
     actual_expected_comparison = (calculated_checksum == actual_checksum);
 
     if(debug_output & !actual_expected_comparison) {
-        fprintf(stderr, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", actual_checksum, calculated_checksum);
-        fprintf(stderr, "Message: ");
+	if(debug_output >= 1) {
+        	fprintf(stderr, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", actual_checksum, calculated_checksum);
+        	fprintf(stderr, "Message: ");
+	}
         bitbuffer_print(bitbuffer);
     }
 

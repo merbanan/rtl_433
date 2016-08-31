@@ -130,7 +130,7 @@ r_device lightwave_rf = {
 	.long_limit		= 1500,	//
 	.reset_limit	= 1500, // Gap between messages is unknown so let us get them individually
 	.json_callback	= &lightwave_rf_callback,
-	.disabled		= 0,
+	.disabled		= 1,
 	.demod_arg		= 0,
 };
 

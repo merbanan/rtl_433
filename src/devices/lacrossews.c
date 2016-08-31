@@ -62,13 +62,19 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 			return 1;
 		else {
 			local_time_str(0, time_str);
-			fprintf(stdout,
-				"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
-				time_str, checksum, msg_nybbles[12], parity);
-			for (i = 0; i < (LACROSSE_WS_BITLEN / 4); i++) {
-				fprintf(stderr, "%X", msg_nybbles[i]);
+			if(debug_output >= 1) {
+				fprintf(stderr,
+					"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
+					time_str, checksum, msg_nybbles[12], parity);
 			}
-			fprintf(stderr, "\n");
+			for (i = 0; i < (LACROSSE_WS_BITLEN / 4); i++) {
+				if(debug_output >= 1) {
+					fprintf(stderr, "%X", msg_nybbles[i]);
+				}
+			}
+			if(debug_output >= 1) {
+				fprintf(stderr, "\n");
+			}
 			return 0;
 		}
 	}
@@ -104,7 +110,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 
 			local_time_str(0, time_str);
 
-			if (debug_output)
+			if (debug_output >= 1)
 				fprintf(stderr, "%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X   ",
 									msg_nybbles[0], msg_nybbles[1], msg_nybbles[2], msg_nybbles[3],
 									msg_nybbles[4], msg_nybbles[5], msg_nybbles[6], msg_nybbles[7],
@@ -128,8 +134,10 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			// Humidity
 			case 1:
 				if(msg_nybbles[7] == 0xA && msg_nybbles[8] == 0xA)
-					fprintf(stderr, "%s LaCrosse WS %02X-%02X: Humidity Error\n",
-						time_str, ws_id, sensor_id);
+					if(debug_output >= 1) {
+						fprintf(stderr, "%s LaCrosse WS %02X-%02X: Humidity Error\n",
+							time_str, ws_id, sensor_id);
+					}
 				else {
 					data = data_make("time",          "",            DATA_STRING, time_str,
 														"model",         "",            DATA_STRING, "LaCrosse WS",
@@ -159,8 +167,10 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
 				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE)
-					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
-						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
+					if(debug_output >= 1) {
+						fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
+							time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
+					}
 				else {
 					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
@@ -175,9 +185,11 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				}
 				break;
 			default:
-				fprintf(stderr,
-					"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
-					time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
+				if(debug_output >= 1) {
+					fprintf(stderr,
+						"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
+						time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
+				}
 				events++;
 			}
 		}

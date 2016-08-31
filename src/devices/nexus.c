@@ -31,7 +31,7 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
 
     char time_str[LOCAL_TIME_BUFLEN];
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
        fprintf(stderr,"Possible Nexus: ");
        bitbuffer_print(bitbuffer);
     }

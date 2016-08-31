@@ -132,7 +132,7 @@ r_device gt_wt_02 = {
   .long_limit    = 6000,
   .reset_limit   = 10000,
   .json_callback = &gt_wt_02_callback,
-  .disabled      = 0,
+  .disabled      = 1,
   .demod_arg     = 0,
 };
 

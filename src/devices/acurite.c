@@ -678,7 +678,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
     local_time_str(0, time_str);
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
         fprintf(stderr,"acurite_606\n");
         bitbuffer_print(bitbuf);
     }
@@ -724,7 +724,7 @@ r_device acurite5n1 = {
     .long_limit     = 520,
     .reset_limit    = 800,
     .json_callback  = &acurite5n1_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
@@ -747,7 +747,7 @@ r_device acurite_th = {
     .long_limit     = 2200,
     .reset_limit    = 10000,
     .json_callback  = &acurite_th_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
@@ -767,7 +767,7 @@ r_device acurite_txr = {
     .long_limit     = 520,
     .reset_limit    = 4000,
     .json_callback  = &acurite_txr_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 
@@ -809,7 +809,7 @@ r_device acurite_986 = {
     .long_limit     = 1280,
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 

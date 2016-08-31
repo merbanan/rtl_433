@@ -209,7 +209,9 @@ int main()
     memcpy(bb.bb[0], b[i], 5);
     tests += tfa_twin_plus_303049_callback(&bb);
   }
-  fprintf(stderr, "Passed %d/%d positive tests\n", tests, 74); // there is one negative test
+  if(debug_output >= 1) {
+    fprintf(stderr, "Passed %d/%d positive tests\n", tests, 74); // there is one negative test
+  }
 }
 
 /*
