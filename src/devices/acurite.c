@@ -8,7 +8,7 @@
  * - 5-n-1 pro weather sensor, Model: 06014RM
  * - 896 Rain gauge, Model: 00896
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
- * - "Th" temperature and humidity sensor (Model(s) ??)
+ * - 609TXC "TH" temperature and humidity sensor (609A1TX)
  * - Acurite 986 Refrigerator / Freezer Thermometer
  * - Acurite 606TX temperature sesor
  */
@@ -300,36 +300,67 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
     return 0;
 }
 
-static int acurite_th_detect(uint8_t *buf){
-    if(buf[5] != 0) return 0;
-    uint8_t sum = (buf[0] + buf[1] + buf[2] + buf[3]) & 0xff;
-    if(sum == 0) return 0;
-    return sum == buf[4];
-}
+
+// Acurite 609TXC
+// Temperature in Celsius is encoded as a 12 bit integer value
+// multiplied by 10 using the 4th - 6th nybbles (bytes 1 & 2)
+// negative values are handled by treating it temporarily
+// as a 16 bit value to put the sign bit in a usable place.
+//
 static float acurite_th_temperature(uint8_t *s){
     uint16_t shifted = (((s[1] & 0x0f) << 8) | s[2]) << 4; // Logical left shift
     return (((int16_t)shifted) >> 4) / 10.0; // Arithmetic right shift
 }
 
-// @tdodo - determine which Acurite temp/humidity
-// sensors this acutally decodes
-static int acurite_th_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
-    uint8_t *buf = NULL;
-    int i;
-    for(i = 0; i < BITBUF_ROWS; i++){
-	if(acurite_th_detect(bb[i])){
-            buf = bb[i];
-            break;
-        }
+// Acurite 609 Temperature and Humidity Sensor
+// 5 byte messages
+// II XT TT HH CC
+// II - ID byte, changes at each power up
+// X - Unknown, usually 0x2, possible battery status
+// TTT - Temp in Celsius * 10, 12 bit with complement.
+// HH - Humidity
+// CC - Checksum
+//
+// @todo - see if the 3rd nybble is battery/status
+//
+static int acurite_th_callback(bitbuffer_t *bitbuf) {
+    uint8_t *bb = NULL;
+    int cksum, valid = 0;
+    float tempc;
+    uint8_t humidity;
+    data_t *data;
+
+    local_time_str(0, time_str);
+
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+        if (bitbuf->bits_per_row[brow] != 40) {
+	    continue;
+	}
+
+	bb = bitbuf->bb[brow];
+
+	cksum = (bb[0] + bb[1] + bb[2] + bb[3]);
+
+	if (cksum == 0 || ((cksum & 0xff) != bb[4])) {
+	    continue;
+	}
+
+	tempc = acurite_th_temperature(bb);
+	humidity = bb[3];
+
+	data = data_make(
+		     "time",		"",		DATA_STRING,	time_str,
+		     "model",		"",		DATA_STRING,	"Acurite 609TXC Sensor",
+		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+		     "humidity",	"Humidity",	DATA_INT,	humidity,
+		     NULL);
+
+	data_acquired_handler(data);
+	valid++;
     }
-    if(buf){
-        fprintf(stdout, "Temperature event:\n");
-        fprintf(stdout, "protocol      = Acurite Temp&Humidity\n");
-        fprintf(stdout, "temp          = %.1f°C\n", acurite_th_temperature(buf));
-        fprintf(stdout, "humidity      = %d%%\n\n", buf[3]);
+
+    if (valid)
         return 1;
-    }
 
     return 0;
 }
@@ -736,11 +767,12 @@ r_device acurite_rain_gauge = {
     .demod_arg      = 0,
 };
 
+
 r_device acurite_th = {
-    .name           = "Acurite Temperature and Humidity Sensor",
+    .name           = "Acurite 609TXC Temperature and Humidity Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1200,
-    .long_limit     = 2200,
+    .long_limit     = 3000,
     .reset_limit    = 10000,
     .json_callback  = &acurite_th_callback,
     .disabled       = 0,
