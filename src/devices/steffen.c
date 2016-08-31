@@ -40,6 +40,6 @@ r_device steffen = {
     .long_limit     = 1080,
     .reset_limit    = 6000,
     .json_callback  = &steffen_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };

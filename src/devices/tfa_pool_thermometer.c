@@ -16,7 +16,7 @@ static int pool_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
+    	local_time_str(0, time_str);
 	int i,device,channel;
 	float fTemp;
 
@@ -48,9 +48,9 @@ E: ?
 		     "channel",        	"Channel number",	DATA_FORMAT,	"\t %d",	DATA_INT,	channel,
                      "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.01f C",	DATA_DOUBLE,	fTemp,
                      NULL);
-    data_acquired_handler(data);
+    	data_acquired_handler(data);
 	
-    return 1; 
+    	return 1; 
 	
 }
 

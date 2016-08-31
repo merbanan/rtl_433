@@ -23,8 +23,8 @@ static int blyss_dc5_uk_wh(bitbuffer_t *bitbuffer)
 		if (((bb[i][0] == 0xce) && (bb[i][1] == 0x8e) && (bb[i][2] == 0x2a) && (bb[i][3] == 0x6c) && (bb[i][4] == 0x80)) || 
 			((bb[i][0] == 0xe7) && (bb[i][1] == 0x37) && (bb[i][2] == 0x7a) && (bb[i][3] == 0x2c) && (bb[i][4] == 0x80)))
 		{
-			if (debug_output) {
-				fprintf(stdout, "blyss DC5-UK-WH ringing\n");
+			if (debug_output >= 1) {
+				fprintf(stderr, "blyss DC5-UK-WH ringing\n");
 				bitbuffer_print(bitbuffer);
 			}
 

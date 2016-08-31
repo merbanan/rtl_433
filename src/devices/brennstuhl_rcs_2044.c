@@ -176,6 +176,6 @@ r_device brennstuhl_rcs_2044 = {
   .long_limit    = 4000,
   .reset_limit   = 4000,
   .json_callback = &brennstuhl_rcs_2044_callback,
-  .disabled      = 0,
+  .disabled      = 1,
   .demod_arg     = 0,
 };

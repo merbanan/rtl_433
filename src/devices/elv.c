@@ -135,7 +135,7 @@ r_device elv_em1000 = {
     .long_limit     = 7250,
     .reset_limit    = 30000,
     .json_callback  = &em1000_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
@@ -146,6 +146,6 @@ r_device elv_ws2000 = {
     .long_limit     = (1755635-1655517)/2, // no repetitions
     .reset_limit    = (1755635-1655517)*2,
     .json_callback  = &ws2000_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
