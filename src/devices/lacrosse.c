@@ -108,15 +108,15 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
-			if (debug_output) {
-			fprintf(stdout,
+			if (debug_output >= 1) {
+			fprintf(stderr,
 				"LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
 				checksum, msg_nybbles[10], parity);
 			}
 			return 0;
 		}
 	} else {
-	    if (debug_output) {
+	    if (debug_output >= 1) {
 		// Debug: This is very noisy
 		//fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
 		//	pRow[0], rowlen);
@@ -167,7 +167,7 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 			if (sensor_id == last_sensor_id && msg_type == last_msg_type
 					&& last_msg_value == msg_value
 					&& time_now - last_msg_time < 50) {
-			    if (debug_output) {
+			    if (debug_output >= 1) {
 				fprintf(stderr,"LaCrosse TX Sensor %02x, duplicate message suppressed\n",
 					sensor_id);
 			    }
@@ -180,10 +180,10 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 			// message integrity.
 			if (msg_nybbles[5] != msg_nybbles[8] || 
 			    msg_nybbles[6] != msg_nybbles[9]) {
-				if (debug_output) {
-			    fprintf(stderr,
-				    "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
-				    sensor_id, msg_type, msg_value, msg_value_int);
+				if (debug_output >= 1) {
+			    		fprintf(stderr,
+				    		"LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+				    		sensor_id, msg_type, msg_value, msg_value_int);
 				}
 			}
 
@@ -210,9 +210,11 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 				break;
 
 			default:
-				fprintf(stderr,
-					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
-					time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				if(debug_output >= 1) {
+					fprintf(stderr,
+						"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+						time_str, sensor_id, msg_type, msg_value, msg_value_int);
+				}
 				events++;
 			}
 

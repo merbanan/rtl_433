@@ -42,6 +42,6 @@ r_device mebus433 = {
     .long_limit     = 2400,
     .reset_limit    = 6000,
     .json_callback  = &mebus433_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };

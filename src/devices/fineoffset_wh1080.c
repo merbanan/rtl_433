@@ -219,9 +219,9 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     }
 	
     if (br[0] == 0xff && (br[1] >> 4) == 0x0a) {
-    msg_type = 0;
+   	msg_type = 0;
     } else if (br[0] == 0xff && (br[1] >> 4) == 0x0b) {
-    msg_type = 1;
+    	msg_type = 1;
     }
 	
 
@@ -233,7 +233,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     const float temperature = get_temperature(br);
     const int humidity = get_humidity(br);
     const char* direction_str = get_wind_direction_str(br);
-	const char* direction_deg = get_wind_direction_deg(br);	
+    const char* direction_deg = get_wind_direction_deg(br);	
 	
 	
 	// Select which metric system for *wind avg speed* and *wind gust* :
@@ -242,7 +242,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
 	//const float speed = get_wind_avg_ms((br)   // <--- Data will be shown in Meters/sec.
 	//const float speed = get_wind_avg_mph((br)  // <--- Data will be shown in Mph
-	const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
+    const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
 	//const float speed = get_wind_avg_knot((br) // <--- Data will be shown in Knots
 	
 	
@@ -250,22 +250,22 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
 	
     //const float gust = get_wind_gust_ms(br);   // <--- Data will be shown in Meters/sec.
 	//const float gust = get_wind_gust_mph(br);  // <--- Data will be shown in Mph
-	const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
+    const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
 	//const float gust = get_wind_gust_knot(br); // <--- Data will be shown in Knots	
 	
     const float rain = get_rainfall(br);
-    const int device_id = get_device_id(br);
-	const char* battery = get_battery(br);
+    const int device_id = get_device_id(br); 
+    const char* battery = get_battery(br);
 
 //---------------------------------------------------------------------------------------	
 //-------- GETTING TIME DATA ------------------------------------------------------------
 
-	const int the_hours = get_hours(br);
-	const int the_minutes =	get_minutes(br);
-	const int the_seconds = get_seconds(br);
-	const int the_year = 2000 + get_year(br);
-	const int the_month = get_month(br);
-	const int the_day = get_day(br);
+    const int the_hours = get_hours(br);
+    const int the_minutes =	get_minutes(br);
+    const int the_seconds = get_seconds(br);
+    const int the_year = 2000 + get_year(br);
+    const int the_month = get_month(br);
+    const int the_day = get_day(br);
 	
 
 //--------- PRESENTING DATA --------------------------------------------------------------
@@ -302,7 +302,7 @@ if (msg_type == 0) {
                      NULL);
     data_acquired_handler(data);
     return 1; 
-	}	
+       }	
 }
 
 static char *output_fields[] = {

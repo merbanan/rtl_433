@@ -155,7 +155,7 @@ static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
 	// TODO: sensor does not seem to be in kph, e.g.,
 	// a value of 49 here was registered as 41 kph on base unit
 	// value could be rpm, etc which may need (polynomial) scaling factor??
-	int highbits = ( highbyte & 0x1F) << 3;
+    int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
     int speed = highbits | lowbits;
     return speed;
@@ -176,7 +176,7 @@ static int acurite_getHumidity (uint8_t byte) {
 
 static int acurite_getRainfallCounter (uint8_t hibyte, uint8_t lobyte) {
     // range: 0 to 99.99 in, 0.01 in incr., rolling counter?
-	int raincounter = ((hibyte & 0x7f) << 7) | (lobyte & 0x7F);
+    int raincounter = ((hibyte & 0x7f) << 7) | (lobyte & 0x7F);
     return raincounter;
 }
 
@@ -471,8 +471,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 		wind_speedmph = kmph2mph((float) wind_speed);
 		tempf = acurite_getTemp(bb[4], bb[5]);
 		tempc = fahrenheit2celsius(tempf);
-		humidity = acurite_getHumidity(bb[6]);
-
+		humidity = acurite_getHumidity(bb[6]);	
+		
 		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
 		       time_str, sensor_id, channel, message_type,
 		       wind_speed, wind_speedmph, tempc, tempf, humidity);
@@ -674,7 +674,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
     local_time_str(0, time_str);
 
-    if (debug_output > 1) {
+    if (debug_output >= 1) {
         fprintf(stderr,"acurite_606\n");
         bitbuffer_print(bitbuf);
     }
@@ -720,7 +720,7 @@ r_device acurite5n1 = {
     .long_limit     = 520,
     .reset_limit    = 800,
     .json_callback  = &acurite5n1_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
@@ -743,7 +743,7 @@ r_device acurite_th = {
     .long_limit     = 2200,
     .reset_limit    = 10000,
     .json_callback  = &acurite_th_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };
 
@@ -763,7 +763,7 @@ r_device acurite_txr = {
     .long_limit     = 520,
     .reset_limit    = 4000,
     .json_callback  = &acurite_txr_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 
@@ -805,7 +805,7 @@ r_device acurite_986 = {
     .long_limit     = 1280,
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 
