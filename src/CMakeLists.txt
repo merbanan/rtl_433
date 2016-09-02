@@ -82,6 +82,7 @@ add_executable(rtl_433
         devices/efergy_optical.c
         devices/hondaremote.c
 	devices/new_template.c
+	devices/radiohead_ask.c
 
 )
 

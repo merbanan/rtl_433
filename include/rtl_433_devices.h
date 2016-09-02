@@ -68,7 +68,8 @@
                 DECL(efergy_optical) \
                 DECL(hondaremote) \
 		DECL(template) \
-		DECL(fineoffset_XC0400)
+		DECL(fineoffset_XC0400) \
+		DECL(radiohead_ask)
 
 
 typedef struct {
