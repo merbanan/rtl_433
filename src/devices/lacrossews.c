@@ -62,6 +62,7 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 			return 1;
 		else {
 			local_time_str(0, time_str);
+            if (debug_output) {
 			fprintf(stdout,
 				"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
 				time_str, checksum, msg_nybbles[12], parity);
@@ -69,6 +70,7 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 				fprintf(stderr, "%X", msg_nybbles[i]);
 			}
 			fprintf(stderr, "\n");
+            }
 			return 0;
 		}
 	}
@@ -158,10 +160,12 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 			case 7:
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
-				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE)
+				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
+                    if (debug_output) {
 					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
 						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
-				else {
+                    }
+                } else {
 					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
 					data = data_make("time",          "",           DATA_STRING, time_str,
@@ -175,9 +179,11 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				}
 				break;
 			default:
+                if (debug_output) {
 				fprintf(stderr,
 					"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
 					time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
+                }
 				events++;
 			}
 		}
