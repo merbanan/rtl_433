@@ -34,7 +34,7 @@ static int template_callback(bitbuffer_t *bitbuffer) {
 
 	if (debug_output >= 1) {
 		/* Place for random debug output */
-		fprintf(stdout, "Template decoder debug section\n");
+		fprintf(stderr, "Template decoder debug section\n");
 	}
 
 	local_time_str(0, time_str);
