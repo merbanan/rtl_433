@@ -103,6 +103,7 @@ void usage(r_device *devices) {
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
+            "\t[-G] Register all devices\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
@@ -178,7 +179,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     demod->r_dev_num++;
 
     if (!quiet_mode) {
-	fprintf(stderr, "Registering protocol \"%s\"\n", t_dev->name);
+	fprintf(stderr, "Registering protocol [%d] \"%s\"\n", demod->r_dev_num, t_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS)
@@ -831,6 +832,7 @@ int main(int argc, char **argv) {
     int device_count;
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
+    int register_all = 0;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -851,7 +853,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UW")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UWG")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -862,6 +864,9 @@ int main(int argc, char **argv) {
                 break;
             case 'g':
                 gain = (int) (atof(optarg) * 10); /* tenths of a dB */
+                break;
+            case 'G':
+                register_all = 1;
                 break;
             case 'p':
                 ppm_error = atoi(optarg);
@@ -983,7 +988,7 @@ int main(int argc, char **argv) {
     }
 
     for (i = 0; i < num_r_devices; i++) {
-        if (!devices[i].disabled) {
+        if (!devices[i].disabled || register_all) {
             register_protocol(demod, &devices[i]);
             if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
