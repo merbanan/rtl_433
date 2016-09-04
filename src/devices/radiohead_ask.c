@@ -54,6 +54,13 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     uint8_t row = 0; // we are considering only first row
     unsigned int len = bitbuffer->bits_per_row[row];
 
+    uint8_t msg_len = RH_ASK_MAX_MESSAGE_LEN;
+    unsigned int pos, nb_bytes;
+    uint8_t rxBits[2] = {0};
+
+    uint16_t crc, crc_recompute;
+    uint8_t data_len, header_to, header_from, header_id, header_flags;
+
     // Looking for preamble
     uint8_t init_pattern[] = {
       0x55, // 8
@@ -65,25 +72,21 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     // The first 0 is ignored by the decoder, so we look only for 28 bits of "01"
     // and not 32. Also "0x1CD" is 0xb38 (RH_ASK_START_SYMBOL) with LSBit first.
     uint8_t init_pattern_len = 40;
-    unsigned int start_pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
 
-    if(start_pos == len){
+    pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
+    if(pos == len){
         if (debug_output) {
             printf("RH ASK preamble not found\n");
         }
         return 0;
     }
 
-    start_pos += init_pattern_len;
     // read "bytes" of 12 bit
-    unsigned int pos;
-    uint8_t rxBits[2] = {0};
-    unsigned int nb_bytes=0;
-    uint8_t msg_len = RH_ASK_MAX_MESSAGE_LEN;
-    for(pos = start_pos; pos < len && nb_bytes < msg_len; pos += 12){
+    nb_bytes=0;
+    pos += init_pattern_len;
+    for(p; pos < len && nb_bytes < msg_len; pos += 12){
         bitbuffer_extract_bytes(bitbuffer, row, pos, rxBits, /*len=*/16);
         // ^ we should read 16 bits and not 12, elsewhere last 4bits are ignored
-        //printf("() %d %d %X-%X\n", start_pos, pos, rxBits[0], rxBits[1]);
         rxBits[0] = reverse8(rxBits[0]);
         rxBits[1] = reverse8(rxBits[1]);
         rxBits[1] = ((rxBits[1] & 0x0F)<<2) + (rxBits[0]>>6);
@@ -100,22 +103,22 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
         }
         uint8_t byte =  hi_nibble<<4 | lo_nibble;
         payload[nb_bytes] = byte;
-        if(nb_bytes == 0){
+        if(nb_bytes == 0)
             msg_len = byte;
         }
         nb_bytes++;
     }
 
     // Get header
-    uint8_t data_len = msg_len - RH_ASK_HEADER_LEN - 3;
-    uint8_t header_to = payload[1];
-    uint8_t header_from = payload[2];
-    uint8_t header_id = payload[3];
-    uint8_t header_flags = payload[4];
+    data_len = msg_len - RH_ASK_HEADER_LEN - 3;
+    header_to = payload[1];
+    header_from = payload[2];
+    header_id = payload[3];
+    header_flags = payload[4];
 
     // Check CRC
-    uint16_t crc = payload[5 + data_len] + (payload[5 + data_len + 1]<<8);
-    uint16_t crc_recompute = ~crc16(payload, msg_len-2, 0x8408, 0xFFFF);
+    crc = payload[5 + data_len] + (payload[5 + data_len + 1]<<8);
+    crc_recompute = ~crc16(payload, msg_len-2, 0x8408, 0xFFFF);
     if(crc_recompute != crc){
         printf("CRC error: %04X != %04X\n", crc_recompute, crc);
         return 0;
