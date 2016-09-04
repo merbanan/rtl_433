@@ -172,7 +172,7 @@ r_device DSC = {
     .long_limit		= 500,	// Bit period, 500 µs
     .reset_limit	= 5000, // Max gap, 
     .json_callback	= &DSC_callback,
-    .disabled		= 0,
+    .disabled		= 1,
     .demod_arg		= 0,
 };
 

@@ -89,7 +89,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
         /* Quit if checksup does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
-            if(debug_output) {
+            if(debug_output >= 1) {
                 fprintf(stderr,
                 "%s AlectoV1 Checksum/Parity error\n",
                 time_str);
@@ -169,10 +169,10 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 							NULL);
 			data_acquired_handler(data);
         }        
-        if (debug_output){
-           fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
-           fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
-           if (wind) fprintf(stdout, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
+        if (debug_output >= 1){
+           fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+           fprintf(stderr, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
+           if (wind) fprintf(stderr, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
          /*
          * fprintf(stdout, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
          */

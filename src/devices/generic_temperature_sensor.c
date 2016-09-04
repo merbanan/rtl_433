@@ -16,7 +16,7 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
+    	local_time_str(0, time_str);
 	int i,device,battery;
 	float fTemp;
 

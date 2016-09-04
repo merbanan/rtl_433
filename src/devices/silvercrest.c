@@ -28,6 +28,6 @@ r_device silvercrest = {
     .long_limit     = 5000,
     .reset_limit    = 15000,
     .json_callback  = &silvercrest_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 1,	// Remove startbit
 };

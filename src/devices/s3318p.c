@@ -89,19 +89,19 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     temperature_with_offset = ((bb[1][2] & 0x0F) << 8) | (bb[1][2] & 0xF0) | (bb[1][1] & 0x0F);
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
-    if (debug_output) {
+    if (debug_output >= 1) {
       bitbuffer_print(bitbuffer);
       fprintf(stderr, "Sensor ID            = %2x\n",  sensor_id);
-      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4],bb[1][5]);
-      fprintf(stdout, "Humidity HEX         = %02x\n", bb[1][3]);
-      fprintf(stdout, "Humidity DEC         = %u\n",   humidity);
-      fprintf(stdout, "Button               = %d\n",   button);
-      fprintf(stdout, "Battery Low          = %d\n",   battery_low);
-      fprintf(stdout, "Channel HEX          = %02x\n", bb[1][1]);
-      fprintf(stdout, "Channel              = %u\n",   channel);
-      fprintf(stdout, "temp_with_offset HEX = %02x\n", temperature_with_offset);
-      fprintf(stdout, "temp_with_offset     = %d\n",   temperature_with_offset);
-      fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
+      fprintf(stderr, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4],bb[1][5]);
+      fprintf(stderr, "Humidity HEX         = %02x\n", bb[1][3]);
+      fprintf(stderr, "Humidity DEC         = %u\n",   humidity);
+      fprintf(stderr, "Button               = %d\n",   button);
+      fprintf(stderr, "Battery Low          = %d\n",   battery_low);
+      fprintf(stderr, "Channel HEX          = %02x\n", bb[1][1]);
+      fprintf(stderr, "Channel              = %u\n",   channel);
+      fprintf(stderr, "temp_with_offset HEX = %02x\n", temperature_with_offset);
+      fprintf(stderr, "temp_with_offset     = %d\n",   temperature_with_offset);
+      fprintf(stderr, "TemperatureF         = %.1f\n", temperature_f);
     }
 
     data = data_make("time",          "",            DATA_STRING, time_str,
