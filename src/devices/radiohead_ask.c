@@ -2,9 +2,6 @@
 #include "pulse_demod.h"
 #include "util.h"
 
-// Note: some code here provide from RadioHead source code.
-// http://www.airspayce.com/mikem/arduino/RadioHead/index.html
-
 // Transmitter speed in bits per seconds
 #define RH_ASK_SPEED 2000
 #define RH_ASK_BIT_LEN (int)1e6/RH_ASK_SPEED
@@ -19,6 +16,9 @@
 
 uint8_t payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
 int data_payload[RH_ASK_MAX_MESSAGE_LEN];
+
+// Note: all tje "4to6 code" came from RadioHead source code.
+// see: http://www.airspayce.com/mikem/arduino/RadioHead/index.html
 
 // 4 bit to 6 bit symbol converter table
 // Used to convert the high and low nybbles of the transmitted data
@@ -44,17 +44,6 @@ uint8_t symbol_6to4(uint8_t symbol)
     return 0xFF; // Not found
 }
 
-#define lo8(x) ((x)&0xff)
-#define hi8(x) ((x)>>8)
-
-uint16_t RHcrc_ccitt_update (uint16_t crc, uint8_t data)
-{
-    data ^= lo8 (crc);
-    data ^= data << 4;
-    
-    return ((((uint16_t)data << 8) | hi8 (crc)) ^ (uint8_t)(data >> 4) 
-            ^ ((uint16_t)data << 3));
-}
 
 static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     // Get time
@@ -127,11 +116,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
 
     // Check CRC
     uint16_t crc = payload[5 + data_len] + (payload[5 + data_len + 1]<<8);
-    uint16_t crc_recompute = 0xFFFF;
-    for(int j=0; j<msg_len-2; j++){
-        crc_recompute = RHcrc_ccitt_update(crc_recompute, payload[j]);
-    }
-    crc_recompute = ~crc_recompute;
+    uint16_t crc_recompute = ~crc16(payload, msg_len-2, 0x8408, 0xFFFF);
     if(crc_recompute != crc){
         printf("CRC error: %04X != %04X\n", crc_recompute, crc);
         return 0;
