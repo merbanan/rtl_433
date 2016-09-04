@@ -76,7 +76,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
 
     pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
     if(pos == len){
-        if (debug_output) {
+        if(debug_output) {
             printf("RH ASK preamble not found\n");
         }
         return 0;
@@ -94,12 +94,16 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
         rxBits[0] &= 0x3F;
         uint8_t hi_nibble = symbol_6to4(rxBits[0]);
         if(hi_nibble > 0xF){
-            printf("Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
+            if(debug_output){
+                fprintf(stdout, "Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
+            }
             return 0;
         }
         uint8_t lo_nibble = symbol_6to4(rxBits[1]);
         if(lo_nibble > 0xF){
-            printf("Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
+            if(debug_output){
+                fprintf(stdout, "Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
+            }
             return 0;
         }
         uint8_t byte =  hi_nibble<<4 | lo_nibble;
@@ -121,7 +125,9 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     crc = payload[5 + data_len] + (payload[5 + data_len + 1]<<8);
     crc_recompute = ~crc16(payload, msg_len-2, 0x8408, 0xFFFF);
     if(crc_recompute != crc){
-        printf("CRC error: %04X != %04X\n", crc_recompute, crc);
+        if(debug_output){
+            fprintf(stdout, "CRC error: %04X != %04X\n", crc_recompute, crc);
+        }
         return 0;
     }
 
