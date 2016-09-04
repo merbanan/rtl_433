@@ -37,7 +37,7 @@ r_device ec3k = {
 	.long_limit     = 50, 	// Bit width
 	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
 	.json_callback  = &ec3k_callback,
-	.disabled       = 0,
+	.disabled       = 1,
 	.demod_arg      = 0,
 };
 
