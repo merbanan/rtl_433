@@ -61,6 +61,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     uint16_t crc, crc_recompute;
     uint8_t data_len, header_to, header_from, header_id, header_flags;
 
+
     // Looking for preamble
     uint8_t init_pattern[] = {
       0x55, // 8
@@ -84,7 +85,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     // read "bytes" of 12 bit
     nb_bytes=0;
     pos += init_pattern_len;
-    for(p; pos < len && nb_bytes < msg_len; pos += 12){
+    for(; pos < len && nb_bytes < msg_len; pos += 12){
         bitbuffer_extract_bytes(bitbuffer, row, pos, rxBits, /*len=*/16);
         // ^ we should read 16 bits and not 12, elsewhere last 4bits are ignored
         rxBits[0] = reverse8(rxBits[0]);
@@ -103,7 +104,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
         }
         uint8_t byte =  hi_nibble<<4 | lo_nibble;
         payload[nb_bytes] = byte;
-        if(nb_bytes == 0)
+        if(nb_bytes == 0){
             msg_len = byte;
         }
         nb_bytes++;
@@ -130,6 +131,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     }
     data = data_make("time", "",              DATA_STRING, time_str,
             "model",         "",              DATA_STRING, "RadioHead ASK",
+            "crc",           "",              DATA_STRING, "OK",
             "len",           "Data len",      DATA_INT, data_len,
             "to",            "To",            DATA_INT, header_to,
             "from",          "From",          DATA_INT, header_from,
@@ -145,6 +147,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "time",
     "model",
+    "crc",
     "len",
     "to",
     "from",
