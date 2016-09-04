@@ -81,30 +81,29 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     unsigned int nb_bytes=0;
     uint8_t msg_len = RH_ASK_MAX_MESSAGE_LEN;
     for(pos = start_pos; pos < len && nb_bytes < msg_len; pos += 12){
-      bitbuffer_extract_bytes(bitbuffer, row, pos, rxBits, /*len=*/16);
-      // ^ we should read 16 bits and not 12, elsewhere last 4bits are ignored
-      //printf("() %d %d %X-%X\n", start_pos, pos, rxBits[0], rxBits[1]);
-      rxBits[0] = reverse8(rxBits[0]);
-      rxBits[1] = reverse8(rxBits[1]);
-      rxBits[1] = ((rxBits[1] & 0x0F)<<2) + (rxBits[0]>>6);
-      rxBits[0] &= 0x3F;
-      uint8_t hi_nibble = symbol_6to4(rxBits[0]);
-      if(hi_nibble > 0xF){
-          printf("Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
-          return 0;
-      }
-      uint8_t lo_nibble = symbol_6to4(rxBits[1]);
-      if(lo_nibble > 0xF){
-          printf("Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
-          return 0;
-      }
-      uint8_t byte =  hi_nibble<<4 | lo_nibble;
-      payload[nb_bytes] = byte;
-      if(nb_bytes == 0){
-          msg_len = byte;
-      }
-      //printf("%2d) %2X-%2X ==> %X %d\n", nb_bytes, rxBits[1], rxBits[0], byte, byte);
-      nb_bytes++;
+        bitbuffer_extract_bytes(bitbuffer, row, pos, rxBits, /*len=*/16);
+        // ^ we should read 16 bits and not 12, elsewhere last 4bits are ignored
+        //printf("() %d %d %X-%X\n", start_pos, pos, rxBits[0], rxBits[1]);
+        rxBits[0] = reverse8(rxBits[0]);
+        rxBits[1] = reverse8(rxBits[1]);
+        rxBits[1] = ((rxBits[1] & 0x0F)<<2) + (rxBits[0]>>6);
+        rxBits[0] &= 0x3F;
+        uint8_t hi_nibble = symbol_6to4(rxBits[0]);
+        if(hi_nibble > 0xF){
+            printf("Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
+            return 0;
+        }
+        uint8_t lo_nibble = symbol_6to4(rxBits[1]);
+        if(lo_nibble > 0xF){
+            printf("Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
+            return 0;
+        }
+        uint8_t byte =  hi_nibble<<4 | lo_nibble;
+        payload[nb_bytes] = byte;
+        if(nb_bytes == 0){
+            msg_len = byte;
+        }
+        nb_bytes++;
     }
 
     // Get header
