@@ -199,6 +199,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     const uint8_t *br;
     uint8_t bbuf[12];
+    int i;
     local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
@@ -216,6 +217,12 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
         (uint8_t *)&bbuf+1, 10*8);
         br = bbuf;
         bbuf[0] = 0xFF;
+    }
+
+    if (debug_output) {
+        for (i=0 ; i<11 ; i++)
+            fprintf(stderr, "%02x ", bbuf[i]);
+        fprintf(stderr, "\n");
     }
 
     if (br[0] != 0xff) {
