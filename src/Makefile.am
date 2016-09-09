@@ -68,6 +68,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/steelmate.c \
                        devices/schraeder.c \
                        devices/new_template.c \
-                       devices/radiohead_ask.c
+                       devices/radiohead_ask.c \
+                       devices/kerui.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

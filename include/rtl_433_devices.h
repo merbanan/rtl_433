@@ -69,7 +69,8 @@
                 DECL(hondaremote) \
 		DECL(template) \
 		DECL(fineoffset_XC0400) \
-		DECL(radiohead_ask)
+		DECL(radiohead_ask) \
+		DECL(kerui)
 
 
 typedef struct {

@@ -10,7 +10,7 @@
 #include "util.h"
 #include "data.h"
 
-static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
+static int kerui_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
 
@@ -28,34 +28,31 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 
 		uint32_t ID = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
 		uint32_t dataBits = b[2] & 0x0F;
-		int isAkhan = 1;
+		int isKerui = 1;
 		char *CMD;
 
 		switch (dataBits) {
-			case 0x1:	CMD = "0x1 (Lock)"; break;
-			case 0x2:	CMD = "0x2 (Unlock)"; break;
-			case 0x4:	CMD = "0x4 (Mute)"; break;
-			case 0x8:	CMD = "0x8 (Alarm)"; break;
+			case 0xa:	CMD = "0xa (PIR)"; break;
 			default:
-				isAkhan = 0;
+				isKerui = 0;
 				break;
 		}
 
-		if (isAkhan == 1) {
+		if (isKerui == 1) {
 			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
+									"device",	"",				DATA_STRING,	"Kerui PIR Sensor",
 									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
 									"data",		"Data (4bit)",	DATA_STRING,	CMD,
 									NULL);
 
 		} else {
 			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
+									"device",	"",				DATA_STRING,	"Kerui PIR Sensor",
 									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
 									"data",		"Data (4bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, dataBits,
 									"other",		"Attention",	DATA_STRING,	"The data received is not used by the akham keyfob. This might be another device using a HS1527 OTP encoder with the same timing.",
 									NULL);
-			data_acquired_handler(data);
+            data_acquired_handler(data);
 			return 0;
 		}
 
@@ -74,18 +71,18 @@ static char *output_fields[] = {
     NULL
 };
 
-PWM_Precise_Parameters pwm_precise_parameters_akhan = {
+PWM_Precise_Parameters pwm_precise_parameters_kerui = {
 	.pulse_tolerance	= 20,
 	.pulse_sync_width	= 0,
 };
 
-r_device akhan_100F14 = {
-	.name          = "Akhan 100F14 remote keyless entry",
+r_device kerui = {
+	.name          = "Kerui PIR Sensor",
 	.modulation    = OOK_PULSE_PWM_PRECISE,
 	.short_limit   = 316,
 	.long_limit    = 1020,
 	.reset_limit   = 1800,
-	.json_callback = &akhan_rke_callback,
+	.json_callback = &kerui_callback,
 	.disabled      = 0,
-	.demod_arg     = (uintptr_t)&pwm_precise_parameters_akhan,
+	.demod_arg     = (uintptr_t)&pwm_precise_parameters_kerui,
 };
