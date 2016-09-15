@@ -13,7 +13,7 @@
 static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	
+
 	//invert bits, short pulse is 0, long pulse is 1
 	b[0] = ~b[0];
 	b[1] = ~b[1];
@@ -55,6 +55,8 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 									"data",		"Data (4bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, dataBits,
 									"other",		"Attention",	DATA_STRING,	"The data received is not used by the akham keyfob. This might be another device using a HS1527 OTP encoder with the same timing.",
 									NULL);
+			data_acquired_handler(data);
+			return 0;
 		}
 
 		data_acquired_handler(data);
@@ -79,7 +81,7 @@ PWM_Precise_Parameters pwm_precise_parameters_akhan = {
 
 r_device akhan_100F14 = {
 	.name          = "Akhan 100F14 remote keyless entry",
-	.modulation    = OOK_PULSE_PWM_PRECISE, 
+	.modulation    = OOK_PULSE_PWM_PRECISE,
 	.short_limit   = 316,
 	.long_limit    = 1020,
 	.reset_limit   = 1800,
