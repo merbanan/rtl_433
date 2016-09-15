@@ -1,10 +1,11 @@
-/* Akhan remote keyless entry system
+/* Kerui PIR sensor
 *
-*	This RKE system uses a HS1527 OTP encoder (http://sc-tech.cn/en/hs1527.pdf)
-*	Each message consists of a preamble, 20 bit id and 4 data bits.
+*	Code derrived from akhan_100F14.c
 *
-*	(code based on chuango.c and generic_remote.c)
+* Such as
+* http://www.ebay.co.uk/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xkerui+pir.TRS0&_nkw=kerui+pir&_sacat=0
 */
+
 #include "rtl_433.h"
 #include "pulse_demod.h"
 #include "util.h"
@@ -46,13 +47,6 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
 									NULL);
 
 		} else {
-			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Kerui PIR Sensor",
-									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
-									"data",		"Data (4bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, dataBits,
-									"other",		"Attention",	DATA_STRING,	"The data received is not used by the akham keyfob. This might be another device using a HS1527 OTP encoder with the same timing.",
-									NULL);
-            data_acquired_handler(data);
 			return 0;
 		}
 

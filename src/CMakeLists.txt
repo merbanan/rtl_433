@@ -16,7 +16,7 @@
 ########################################################################
 # Build utility
 ########################################################################
-add_executable(rtl_433
+add_executable(rtl_433 
 	baseband.c
 	bitbuffer.c
 	data.c
@@ -94,7 +94,7 @@ target_link_libraries(rtl_433
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
-
+	
 set(INSTALL_TARGETS rtl_433)
 if(UNIX)
 target_link_libraries(rtl_433 m)
