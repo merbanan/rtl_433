@@ -91,23 +91,24 @@ struct dm_state {
 
 void usage(r_device *devices) {
 	int i;
+	char disabledc;
 
 	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
             "Usage:\t= Tuner options =\n"
-            "\t[-d <device index>] (default: 0)\n"
+            "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
-            "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
-            "\t[-G] Register all devices\n"
+            "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
+            "\t[-G] Enable all device protocols, included those disabled by default\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
-            "\t[-n <value>]  Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
+            "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
@@ -131,11 +132,16 @@ void usage(r_device *devices) {
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
-    fprintf(stderr, "Supported devices:\n");
+    fprintf(stderr, "Supported device protocols:\n");
     for (i = 0; i < num_r_devices; i++) {
-        fprintf(stderr, "\t[%02d] %s\n", i + 1, devices[i].name);
+	if (devices[i].disabled)
+	    disabledc = '*';
+	else
+	    disabledc = ' ';
+
+        fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
     }
-    fprintf(stderr, "\n");
+    fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
 
     exit(1);
 }
@@ -182,8 +188,11 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
 	fprintf(stderr, "Registering protocol [%d] \"%s\"\n", demod->r_dev_num, t_dev->name);
     }
 
-    if (demod->r_dev_num > MAX_PROTOCOLS)
-        fprintf(stderr, "Max number of protocols reached %d\n", MAX_PROTOCOLS);
+    if (demod->r_dev_num > MAX_PROTOCOLS) {
+        fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
+	fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
+	exit(-1);
+    }
 }
 
 
@@ -995,6 +1004,10 @@ int main(int argc, char **argv) {
             }
         }
     }
+
+    if (!quiet_mode)
+	fprintf(stderr,"Registered %d out of %d device decoding protcols\n",
+		demod->r_dev_num, num_r_devices);
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {
