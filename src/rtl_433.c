@@ -482,7 +482,7 @@ static void classify_signal() {
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
-    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
+    int32_t threshold = (demod->level_limit ? demod->level_limit : 8000);	// Does not support auto level. Use old default instead.
 
     for (i = 0; i < len; i++) {
         if (buf[i] > threshold) {
