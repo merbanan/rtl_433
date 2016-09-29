@@ -105,7 +105,7 @@ void usage(r_device *devices) {
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
-            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: %i)\n"
+            "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
             "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
@@ -482,7 +482,7 @@ static void classify_signal() {
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
-    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
+    int32_t threshold = (demod->level_limit ? demod->level_limit : 8000);	// Does not support auto level. Use old default instead.
 
     for (i = 0; i < len; i++) {
         if (buf[i] > threshold) {
@@ -1063,7 +1063,7 @@ int main(int argc, char **argv) {
 	else
 	    fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
-	fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
+	fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
 	if (0 == gain) {
 	    /* Enable automatic gain */
