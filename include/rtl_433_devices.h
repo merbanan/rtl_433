@@ -70,7 +70,8 @@
 		DECL(template) \
 		DECL(fineoffset_XC0400) \
 		DECL(radiohead_ask) \
-		DECL(kerui)
+		DECL(kerui) \
+		DECL(fineoffset_wh1050)
 
 
 typedef struct {

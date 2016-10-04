@@ -69,6 +69,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/schraeder.c \
                        devices/new_template.c \
                        devices/radiohead_ask.c \
-                       devices/kerui.c
+                       devices/kerui.c \
+                       devices/fineoffset_wh1050.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
