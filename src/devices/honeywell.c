@@ -32,12 +32,19 @@ uint16_t crc16_buypass(const uint8_t *data){
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
   if(bitbuffer->num_rows == 0)
     return 0;
-  
+
   int good = 0;
   char time_str[LOCAL_TIME_BUFLEN];
-        local_time_str(0, time_str);
-
   const uint8_t *bb;
+  char device_id[6];
+  char hex[2];
+  char binary [65];
+  int heartbeat = 0;
+  uint16_t crc_calculated = 0;
+  uint16_t crc = 0;
+
+  local_time_str(0, time_str);
+
   if(bitbuffer->num_rows == 1 && bitbuffer->bits_per_row[0] == 64){
     good = 1;
     for(uint16_t i=0; i < 8; i++)
@@ -47,8 +54,6 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
   }
 
   if(good){
-    char device_id[6]; 
-    char hex[2];
     sprintf(hex, "%02x", bb[2]);
     device_id[0] = hex[1];
     sprintf(hex, "%02x", bb[3]);
@@ -60,7 +65,6 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
     device_id[5] = '\0';
 
     // Raw Binary
-    char binary [65];
     for (uint16_t bit = 0; bit < 64; ++bit) {
         if (bb[bit/8] & (0x80 >> (bit % 8))) {
                 binary[bit] = '1';
@@ -70,16 +74,16 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
     }
     binary[64] = '\0';
 
-    int heartbeat = 0;
-    uint16_t crc_calculated = crc16_buypass(bb);
-    uint16_t crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
+    crc_calculated = crc16_buypass(bb);
+    crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
 
-    data_t *data = data_make("time",     "", DATA_STRING, time_str,
-                     "time_unix","", DATA_INT, time(NULL),
+    data_t *data = data_make(
                      "id",       "", DATA_STRING, device_id,
                      "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
-                     "checksum", "", DATA_STRING, crc == crc_calculated? "ok":"bad",
                      "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
+                     "checksum", "", DATA_STRING, crc == crc_calculated? "ok":"bad",
+                     "time",     "", DATA_STRING, time_str,
+                     "time_unix","", DATA_INT, time(NULL),
                      "binary",   "", DATA_STRING, binary,
                             NULL);
 
@@ -91,12 +95,12 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-        "time",
-        "time_unix",
         "id",
         "state",
-        "checksum",
         "heartbeat",
+        "checksum",
+        "time",
+        "time_unix",
         "binary",
         NULL
 };
