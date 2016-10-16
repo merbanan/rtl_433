@@ -78,11 +78,11 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
     crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
 
     data_t *data = data_make(
+                     "time",     "", DATA_STRING, time_str,
                      "id",       "", DATA_STRING, device_id,
                      "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
                      "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
                      "checksum", "", DATA_STRING, crc == crc_calculated? "ok":"bad",
-                     "time",     "", DATA_STRING, time_str,
                      "time_unix","", DATA_INT, time(NULL),
                      "binary",   "", DATA_STRING, binary,
                             NULL);
@@ -95,11 +95,11 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
+        "time",
         "id",
         "state",
         "heartbeat",
         "checksum",
-        "time",
         "time_unix",
         "binary",
         NULL
