@@ -9,26 +9,6 @@
 #include "pulse_demod.h"
 #include "util.h"
 
-uint16_t crc16_buypass(const uint8_t *data){
-  uint16_t crc = 0xfffe;
-  int i;
-  size_t j;
-
-  for(j=0; j<6; j++){
-    crc ^= ((uint16_t) (data[j])) << 8;
-    
-    for(i=0; i<8; i++){
-      if( (crc & 0x8000) ){
-        crc <<= 1;
-        crc ^= 0x8005;
-      } else
-        crc <<= 1;
-    }
-  }
-
-  return (crc);
-}
-
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
   if(bitbuffer->num_rows == 0)
     return 0;
@@ -74,7 +54,7 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
     }
     binary[64] = '\0';
 
-    crc_calculated = crc16_buypass(bb);
+    crc_calculated = crc16_ccitt(bb, 6, 0x8005, 0xfffe);
     crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
 
     data_t *data = data_make(
