@@ -71,7 +71,8 @@
 		DECL(fineoffset_XC0400) \
 		DECL(radiohead_ask) \
 		DECL(kerui) \
-		DECL(fineoffset_wh1050)
+		DECL(fineoffset_wh1050) \
+		DECL(honeywell)
 
 
 typedef struct {
