@@ -1,5 +1,5 @@
 /*
-* *** Honeywell (Ademco) Door/Window Sensors ***
+* *** Honeywell (Ademco) Door/Window Sensors (345.0Mhz) ***
 *
 * Tested with the Honeywell 5811 Wireless Door/Window transmitters
 *
