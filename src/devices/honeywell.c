@@ -3,6 +3,16 @@
 *
 * Tested with the Honeywell 5811 Wireless Door/Window transmitters
 *
+* 64 bit packets, repeated multiple times per open/close event
+*
+* Protocol whitepaper: "DEFCON 22: Home Insecurity" by Logan Lamb
+*
+* 0xfffe Preamble and sync bit
+* 0x8 Unknown
+* 0xYYYYY Device serial number
+* 0xYY Event Information (Open/Close, Heartbeat, etc)
+* 0xYYYY CRC
+*
 */
 
 #include "rtl_433.h"
@@ -10,10 +20,6 @@
 #include "util.h"
 
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
-  if(bitbuffer->num_rows == 0)
-    return 0;
-
-  int good = 0;
   char time_str[LOCAL_TIME_BUFLEN];
   const uint8_t *bb;
   char device_id[6];
@@ -25,53 +31,51 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
 
   local_time_str(0, time_str);
 
-  if(bitbuffer->num_rows == 1 && bitbuffer->bits_per_row[0] == 64){
-    good = 1;
-    for(uint16_t i=0; i < 8; i++)
-      bitbuffer->bb[0][i] = ~bitbuffer->bb[0][i];
+  if(bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] != 64)
+    return 0; // Unrecognized data
 
-    bb = bitbuffer->bb[0];
+  for(uint16_t i=0; i < 8; i++)
+    bitbuffer->bb[0][i] = ~bitbuffer->bb[0][i];
+
+  bb = bitbuffer->bb[0];
+
+  crc_calculated = crc16_ccitt(bb, 6, 0x8005, 0xfffe);
+  crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
+  if(crc != crc_calculated)
+    return 0; // Not a valid packet
+
+  sprintf(hex, "%02x", bb[2]);
+  device_id[0] = hex[1];
+  sprintf(hex, "%02x", bb[3]);
+  device_id[1] = hex[0];
+  device_id[2] = hex[1];
+  sprintf(hex, "%02x", bb[4]);
+  device_id[3] = hex[0];
+  device_id[4] = hex[1];
+  device_id[5] = '\0';
+
+  // Raw Binary
+  for (uint16_t bit = 0; bit < 64; ++bit) {
+      if (bb[bit/8] & (0x80 >> (bit % 8))) {
+              binary[bit] = '1';
+      } else {
+              binary[bit] = '0';
+      }
   }
+  binary[64] = '\0';
 
-  if(good){
-    sprintf(hex, "%02x", bb[2]);
-    device_id[0] = hex[1];
-    sprintf(hex, "%02x", bb[3]);
-    device_id[1] = hex[0];
-    device_id[2] = hex[1];
-    sprintf(hex, "%02x", bb[4]);
-    device_id[3] = hex[0];
-    device_id[4] = hex[1];
-    device_id[5] = '\0';
+  data_t *data = data_make(
+                   "time",     "", DATA_STRING, time_str,
+                   "id",       "", DATA_STRING, device_id,
+                   "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
+                   "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
+                   "checksum", "", DATA_STRING, "ok",
+                   "time_unix","", DATA_INT, time(NULL),
+                   "binary",   "", DATA_STRING, binary,
+                          NULL);
 
-    // Raw Binary
-    for (uint16_t bit = 0; bit < 64; ++bit) {
-        if (bb[bit/8] & (0x80 >> (bit % 8))) {
-                binary[bit] = '1';
-        } else {
-                binary[bit] = '0';
-        }
-    }
-    binary[64] = '\0';
-
-    crc_calculated = crc16_ccitt(bb, 6, 0x8005, 0xfffe);
-    crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
-
-    data_t *data = data_make(
-                     "time",     "", DATA_STRING, time_str,
-                     "id",       "", DATA_STRING, device_id,
-                     "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
-                     "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
-                     "checksum", "", DATA_STRING, crc == crc_calculated? "ok":"bad",
-                     "time_unix","", DATA_INT, time(NULL),
-                     "binary",   "", DATA_STRING, binary,
-                            NULL);
-
-    data_acquired_handler(data);
-    return 1;
-  }
-
-  return 0; // Unrecognized data
+  data_acquired_handler(data);
+  return 1;
 }
 
 static char *output_fields[] = {
