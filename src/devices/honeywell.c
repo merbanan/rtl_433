@@ -69,7 +69,7 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
                    "id",       "", DATA_STRING, device_id,
                    "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
                    "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
-                   "checksum", "", DATA_STRING, "ok",
+                   "crc", "", DATA_STRING, "ok",
                    "time_unix","", DATA_INT, time(NULL),
                    "binary",   "", DATA_STRING, binary,
                           NULL);
@@ -83,7 +83,7 @@ static char *output_fields[] = {
         "id",
         "state",
         "heartbeat",
-        "checksum",
+        "crc",
         "time_unix",
         "binary",
         NULL
