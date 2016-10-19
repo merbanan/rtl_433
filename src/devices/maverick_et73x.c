@@ -52,36 +52,36 @@ static void convert_bitbuffer(bitbuffer_t *bitbuffer) {
 }
 
 static float get_temperature(unsigned int temp_start_index){
-	//default offset
-	float temp_c = -532.0;
-	int i;
-	
-	for(i=0; i < TEMPERATURE_BIT_COUNT; i++) {
-		temp_c += msg_converted[temp_start_index+i] * (1<<(2*(4-i)));
-	}
+    //default offset
+    float temp_c = -532.0;
+    int i;
+    
+    for(i=0; i < TEMPERATURE_BIT_COUNT; i++) {
+        temp_c += msg_converted[temp_start_index+i] * (1<<(2*(4-i)));
+    }
 
-	return temp_c;
+    return temp_c;
 }
 
 
 //changes when thermometer reset button is pushed or powered on.
 static char* get_status() {
     int stat = 0;
-	char* retval = "unknown";
-	
-	//nibble 6 - 7 used for status
+    char* retval = "unknown";
+    
+    //nibble 6 - 7 used for status
     stat += msg_converted[6] * (1<<(2*(1)));
     stat += msg_converted[7] * (1<<(2*(0)));
 
     if(stat == 2)
-		retval = "default";
+        retval = "default";
 
     if(stat == 7)
-		retval = "init";
+        retval = "init";
 
-	if(debug_output)
+    if(debug_output)
         fprintf(stderr, "device status: \"%s\" (%d)\n", retval, stat);
-	
+    
     return retval;
 }
 
@@ -105,7 +105,7 @@ static uint32_t checksum_data() {
 static uint32_t checksum_received() {
     uint32_t checksum = 0;
     int i;
-	
+    
     //nibble 18 - 25 checksum info from device
     for(i=0; i<=7; i++) {
          checksum |= msg_converted[18+i] << (14 - 2*i);
@@ -130,40 +130,40 @@ static uint32_t checksum_received() {
 }
 
 static uint16_t shiftreg(uint16_t currentValue) {
-	uint8_t msb = (currentValue >> 15) & 1;
-	currentValue <<= 1;
-	
-	// Toggle pattern for feedback bits
-	// Toggle, if MSB is 1
-	if (msb == 1)
-		currentValue ^= 0x1021;
-	
-	return currentValue;
+    uint8_t msb = (currentValue >> 15) & 1;
+    currentValue <<= 1;
+    
+    // Toggle pattern for feedback bits
+    // Toggle, if MSB is 1
+    if (msb == 1)
+        currentValue ^= 0x1021;
+    
+    return currentValue;
 }
 
 static uint16_t calculate_checksum(uint32_t data) {
-	//initial value of linear feedback shift register
-	uint16_t mask = 0x3331; 
-	uint16_t csum = 0x0;
-	int i;
-	for(i = 0; i < 24; ++i)	{
-		//data bit at current position is "1"
-		//do XOR with mask
-		if((data >> i) & 0x01)
-			csum ^= mask;
-		
-		mask = shiftreg(mask);
-	}
-	return csum;
+    //initial value of linear feedback shift register
+    uint16_t mask = 0x3331; 
+    uint16_t csum = 0x0;
+    int i;
+    for(i = 0; i < 24; ++i) {
+        //data bit at current position is "1"
+        //do XOR with mask
+        if((data >> i) & 0x01)
+            csum ^= mask;
+        
+        mask = shiftreg(mask);
+    }
+    return csum;
 }
 
 static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
-	double diff_t = 0.0;
-	int8_t b_use_message = 0;
-	int32_t chk_xor;
-	char* dev_state;
+    double diff_t = 0.0;
+    int8_t b_use_message = 0;
+    int32_t chk_xor;
+    char* dev_state;
 
     //we need an inverted bitbuffer
     bitbuffer_invert(bitbuffer);
@@ -178,41 +178,41 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     //check for correct header (0xAA9995)
     if((bitbuffer->bb[0][0] != 0xAA || bitbuffer->bb[0][0] != 0xaa ) || bitbuffer->bb[0][1] != 0x99 || bitbuffer->bb[0][2] != 0x95)
         return 0;
-	
-	//convert hex values into quardinary values
+    
+    //convert hex values into quardinary values
     convert_bitbuffer(bitbuffer);
-	
-	//checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done. 
-	chk_xor = (calculate_checksum(checksum_data()) & 0xffff) ^ checksum_received();
-	
-	
-	dev_state = get_status();
-	
-	//if the transmitter is in init state, we take the session_id for further checks. 
-	if(strncmp(dev_state, "init", 4) == 0)
-	{
-		//assuming that having two times the same checksum, means there was no error in sending first message
-		if(session_id != chk_xor)
-			b_use_message = 1;
-	}
+    
+    //checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done. 
+    chk_xor = (calculate_checksum(checksum_data()) & 0xffff) ^ checksum_received();
+    
+    
+    dev_state = get_status();
+    
+    //if the transmitter is in init state, we take the session_id for further checks. 
+    if(strncmp(dev_state, "init", 4) == 0)
+    {
+        //assuming that having two times the same checksum, means there was no error in sending first message
+        if(session_id != chk_xor)
+            b_use_message = 1;
+    }
 
-	//second message
-	if(session_id > 0) {
-		time(&time_now_t);
-		diff_t = difftime(time_now_t, last_time_t);
+    //second message
+    if(session_id > 0) {
+        time(&time_now_t);
+        diff_t = difftime(time_now_t, last_time_t);
 
-		//checksum error
-		if(session_id != chk_xor && b_use_message == 0 && diff_t > 8)
-			return 0;
-	}
-	
+        //checksum error
+        if(session_id != chk_xor && b_use_message == 0 && diff_t > 8)
+            return 0;
+    }
+    
 
-	//one message (of four) is enough for output
-	if (diff_t < 8 && session_id > 0 && b_use_message == 0)
-		return 0;
-	
-	session_id = chk_xor;
-	time(&last_time_t);
+    //one message (of four) is enough for output
+    if (diff_t < 8 && session_id > 0 && b_use_message == 0)
+        return 0;
+    
+    session_id = chk_xor;
+    time(&last_time_t);
 
     local_time_str(0, time_str);
 
