@@ -84,8 +84,8 @@ add_executable(rtl_433
 	devices/new_template.c
 	devices/radiohead_ask.c
 	devices/kerui.c
+    devices/maverick_et73x.c
 	devices/fineoffset_wh1050.c
-	devices/honeywell.c
 
 )
 

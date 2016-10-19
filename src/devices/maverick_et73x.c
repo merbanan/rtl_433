@@ -1,4 +1,4 @@
-//some hints from http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
+//for further information please refere to https://forums.adafruit.com/viewtopic.php?f=8&t=25414
 
 #include "rtl_433.h"
 #include "util.h"
