@@ -65,8 +65,8 @@
 		DECL(schraeder) \
 		DECL(lightwave_rf) \
 		DECL(elro_db286a) \
-		DECL(efergy_optical) \
-		DECL(hondaremote) \
+                DECL(efergy_optical) \
+                DECL(hondaremote) \
 		DECL(template) \
 		DECL(fineoffset_XC0400) \
 		DECL(radiohead_ask) \
