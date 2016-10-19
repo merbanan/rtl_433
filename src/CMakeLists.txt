@@ -76,7 +76,7 @@ add_executable(rtl_433
 	devices/proove.c
 	devices/bresser_3ch.c
 	devices/oregon_scientific_sl109h.c
-	devices/steelmate.c
+		devices/steelmate.c
 	devices/schraeder.c
 	devices/elro_db286a.c
         devices/efergy_optical.c
@@ -84,8 +84,9 @@ add_executable(rtl_433
 	devices/new_template.c
 	devices/radiohead_ask.c
 	devices/kerui.c
-    devices/maverick_et73x.c
 	devices/fineoffset_wh1050.c
+	devices/honeywell.c
+	devices/maverick_et73x.c
 
 )
 

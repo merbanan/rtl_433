@@ -1,4 +1,4 @@
-//for further information please refere to https://forums.adafruit.com/viewtopic.php?f=8&t=25414
+//for further information please referre to https://forums.adafruit.com/viewtopic.php?f=8&t=25414
 
 #include "rtl_433.h"
 #include "util.h"
