@@ -1,4 +1,43 @@
-//for further information please referre to https://forums.adafruit.com/viewtopic.php?f=8&t=25414
+/* Maverick ET-73x BBQ Sensor
+ *
+ * Copyright © 2016 Benjamin Larsson
+ * Credits to all users of mentioned forum below!
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+*/
+
+/**The thermometer transmits 4 identical messages every 12 seconds at 433.92 MHz,
+ * using on-off keying and 2000bps Manchester encoding,
+ * with each message preceded by 8 carrier pulses 230uS wide and 5ms apart.
+ *
+ * Each message consists of 26 nibbles (104 bits total),
+ * which can each only have the value of 0x5, 0x6, 0x9, or 0xA.
+ * For nibble 24 some devices are sending 0x1 or 0x2
+ *
+ * Assuming MSB first and falling edge = 1.
+ *
+ * quarternary conversion of message needed:
+ * 0x05 = 0
+ * 0x06 = 1
+ * 0x09 = 2
+ * 0x0A = 3
+ *
+ * Message looks like this:
+ * a = Header (0xAA9995)
+ * b = device state (2=default; 7=init)
+ * c = temp1 (need to substract 532)
+ * d = temp2 (need to substract 532)
+ * e = checksum (the checksum gets renewed on a device reset, and represents a kind of session_id)
+ *
+ * nibble: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
+ * msg:    a a a a a a b b c c c  c  c  d  d  d  d  d  e  e  e  e  e  e  e  e
+ *
+ * further information can be found here: https://forums.adafruit.com/viewtopic.php?f=8&t=25414
+**/
+
 
 #include "rtl_433.h"
 #include "util.h"
@@ -8,10 +47,6 @@
 #define TEMPERATURE_START_POSITION_S2 13
 #define TEMPERATURE_BIT_COUNT 5
 
-static unsigned int msg_converted[26];
-static char msg_hex_combined[26];
-static time_t time_now_t, last_time_t;
-static int32_t session_id;
 
 // quarternary convertion
 int quart(unsigned char param) {
@@ -30,7 +65,7 @@ int quart(unsigned char param) {
 }
 
 //here we extract bitbuffer values, for easy data handling
-static void convert_bitbuffer(bitbuffer_t *bitbuffer) {
+static void convert_bitbuffer(bitbuffer_t *bitbuffer, unsigned int *msg_converted, char *msg_hex_combined) {
         int i;
         for(i = 0; i < 13; i++) {
             char temp[2];
@@ -38,8 +73,9 @@ static void convert_bitbuffer(bitbuffer_t *bitbuffer) {
             msg_hex_combined[i*2] = temp[0];
             msg_hex_combined[i*2+1] = temp[1];
         }
-
-        for(i = 0; i <= 25; i++) {
+        msg_hex_combined[26] = '\0';
+        
+        for(i = 0; i <= 25; i++){
            msg_converted[i] = quart(msg_hex_combined[i]);
         }
 
@@ -51,7 +87,7 @@ static void convert_bitbuffer(bitbuffer_t *bitbuffer) {
         }
 }
 
-static float get_temperature(unsigned int temp_start_index){
+static float get_temperature(unsigned int *msg_converted, unsigned int temp_start_index){
     //default offset
     float temp_c = -532.0;
     int i;
@@ -65,7 +101,7 @@ static float get_temperature(unsigned int temp_start_index){
 
 
 //changes when thermometer reset button is pushed or powered on.
-static char* get_status() {
+static char* get_status(unsigned int *msg_converted) {
     int stat = 0;
     char* retval = "unknown";
     
@@ -86,7 +122,7 @@ static char* get_status() {
 }
 
 
-static uint32_t checksum_data() {
+static uint32_t checksum_data(unsigned int *msg_converted) {
     int32_t checksum = 0;
     int i;
 
@@ -102,7 +138,7 @@ static uint32_t checksum_data() {
 }
 
 
-static uint32_t checksum_received() {
+static uint32_t checksum_received(unsigned int *msg_converted, char *msg_hex_combined) {
     uint32_t checksum = 0;
     int i;
     
@@ -160,10 +196,9 @@ static uint16_t calculate_checksum(uint32_t data) {
 static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
-    double diff_t = 0.0;
-    int8_t b_use_message = 0;
-    int32_t chk_xor;
-    char* dev_state;
+    int32_t session_id;
+    char msg_hex_combined[26];
+    unsigned int msg_converted[25];
 
     //we need an inverted bitbuffer
     bitbuffer_invert(bitbuffer);
@@ -180,50 +215,21 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
         return 0;
     
     //convert hex values into quardinary values
-    convert_bitbuffer(bitbuffer);
-    
+    convert_bitbuffer(bitbuffer, msg_converted, msg_hex_combined);
+
     //checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done. 
-    chk_xor = (calculate_checksum(checksum_data()) & 0xffff) ^ checksum_received();
+    session_id = (calculate_checksum(checksum_data(msg_converted)) & 0xffff) ^ checksum_received(msg_converted, msg_hex_combined);
     
+    if(debug_output)
+        fprintf(stderr, "checksum xor: %x\n", session_id);
     
-    dev_state = get_status();
-    
-    //if the transmitter is in init state, we take the session_id for further checks. 
-    if(strncmp(dev_state, "init", 4) == 0)
-    {
-        //assuming that having two times the same checksum, means there was no error in sending first message
-        if(session_id != chk_xor)
-            b_use_message = 1;
-    }
-
-    //second message
-    if(session_id > 0) {
-        time(&time_now_t);
-        diff_t = difftime(time_now_t, last_time_t);
-
-        //checksum error
-        if(session_id != chk_xor && b_use_message == 0 && diff_t > 8)
-            return 0;
-    }
-    
-
-    //one message (of four) is enough for output
-    if (diff_t < 8 && session_id > 0 && b_use_message == 0)
-        return 0;
-    
-    session_id = chk_xor;
-    time(&last_time_t);
-
     local_time_str(0, time_str);
 
-    if(debug_output)
-        fprintf(stderr, "checksum xor: %x\n", chk_xor);
-
     data = data_make("time",           "",                      DATA_STRING,                         time_str,
-                     "id",             "Session_ID",            DATA_INT,                            chk_xor,
-                     "temperature_C1", "TemperatureSensor1",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(TEMPERATURE_START_POSITION_S1),
-                     "temperature_C2", "TemperatureSensor2",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(TEMPERATURE_START_POSITION_S2),
-                     "status",         "Status",                DATA_STRING,                         dev_state,
+                     "id",             "Session_ID",            DATA_INT,                            session_id,
+                     "temperature_C1", "TemperatureSensor1",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S1),
+                     "temperature_C2", "TemperatureSensor2",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S2),
+                     "status",         "Status",                DATA_STRING,                         get_status(msg_converted),
                      NULL);
     data_acquired_handler(data);
 
@@ -243,11 +249,11 @@ static char *output_fields[] = {
 r_device maverick_et73x = {
     .name           = "Maverick ET-732/733 BBQ Sensor",
     .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_limit    = 250,
-    .long_limit     = 500,
+    .short_limit    = 230,
+    .long_limit     = 0, //not used
     .reset_limit    = 4000,
     .json_callback  = &maverick_et73x_callback,
     .disabled       = 0,
-    .demod_arg     = 0,
+    .demod_arg      = 0,
     .fields         = output_fields
 };
