@@ -1,6 +1,6 @@
 /* Maverick ET-73x BBQ Sensor
  *
- * Copyright © 2016 Benjamin Larsson
+ * Copyright © 2016 gismo2004
  * Credits to all users of mentioned forum below!
  *
  * This program is free software; you can redistribute it and/or modify
@@ -48,43 +48,28 @@
 #define TEMPERATURE_BIT_COUNT 5
 
 
-// quarternary convertion
-int quart(unsigned char param) {
-    int retval = 0;
-
-    if (param=='5')
-        retval = 0;
-    if (param=='6')
-        retval = 1;
-    if (param=='9')
-        retval = 2;
-    if (param=='a' || param=='A')
-        retval = 3;
-
-    return retval;
-}
-
 //here we extract bitbuffer values, for easy data handling
 static void convert_bitbuffer(bitbuffer_t *bitbuffer, unsigned int *msg_converted, char *msg_hex_combined) {
-        int i;
-        for(i = 0; i < 13; i++) {
-            char temp[2];
-            sprintf(temp, "%02x", bitbuffer->bb[0][i]);
-            msg_hex_combined[i*2] = temp[0];
-            msg_hex_combined[i*2+1] = temp[1];
-        }
-        msg_hex_combined[26] = '\0';
+    //quarternary convertion
+    unsigned int quart_convert[16] ={0,0,0,0,0,0,1,0,0,2,3,0,0,0,0,0};
+    int i;
+    for(i = 0; i < 13; i++) {
+        char temp[2];
+        sprintf(temp, "%02x", bitbuffer->bb[0][i]);
+        msg_hex_combined[i*2] = temp[0];
+        msg_hex_combined[i*2+1] = temp[1];
         
-        for(i = 0; i <= 25; i++){
-           msg_converted[i] = quart(msg_hex_combined[i]);
-        }
+        msg_converted[i*2] = quart_convert[bitbuffer->bb[0][i] >> 4];
+        msg_converted[i*2+1] = quart_convert[bitbuffer->bb[0][i] & 0xF];
+    }
 
-        if(debug_output) {
-            fprintf(stderr, "final hex string: %s\n",msg_hex_combined);
-            fprintf(stderr, "final converted message: ");
-            for(i = 0; i <= 25; i++) fprintf(stderr, "%d",msg_converted[i]);
-            fprintf(stderr, "\n");
-        }
+    msg_hex_combined[26]='\0';
+    if(debug_output) {
+        fprintf(stderr, "final hex string: %s\n",msg_hex_combined);
+        fprintf(stderr, "final converted message: ");
+        for(i = 0; i <= 25; i++) fprintf(stderr, "%d",msg_converted[i]);
+        fprintf(stderr, "\n");
+    }
 }
 
 static float get_temperature(unsigned int *msg_converted, unsigned int temp_start_index){
@@ -197,8 +182,8 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     int32_t session_id;
-    char msg_hex_combined[26];
-    unsigned int msg_converted[25];
+    char msg_hex_combined[27];
+    unsigned int msg_converted[26];
 
     //we need an inverted bitbuffer
     bitbuffer_invert(bitbuffer);
