@@ -45,7 +45,7 @@
 #define MAV_MESSAGE_LENGTH 104
 #define TEMPERATURE_START_POSITION_S1 8
 #define TEMPERATURE_START_POSITION_S2 13
-#define TEMPERATURE_BIT_COUNT 5
+#define TEMPERATURE_NIBBLE_COUNT 5
 
 
 //here we extract bitbuffer values, for easy data handling
@@ -76,8 +76,8 @@ static float get_temperature(unsigned int *msg_converted, unsigned int temp_star
     //default offset
     float temp_c = -532.0;
     int i;
-    
-    for(i=0; i < TEMPERATURE_BIT_COUNT; i++) {
+
+    for(i=0; i < TEMPERATURE_NIBBLE_COUNT; i++) {
         temp_c += msg_converted[temp_start_index+i] * (1<<(2*(4-i)));
     }
 
@@ -211,10 +211,12 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
 
     data = data_make("time",           "",                      DATA_STRING,                         time_str,
+                     "brand",          "",                      DATA_STRING,                         "Maverick",
+                     "model",          "",                      DATA_STRING,                         "ET-732/ET-733",
                      "id",             "Session_ID",            DATA_INT,                            session_id,
+                     "status",         "Status",                DATA_STRING,                         get_status(msg_converted),
                      "temperature_C1", "TemperatureSensor1",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S1),
                      "temperature_C2", "TemperatureSensor2",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S2),
-                     "status",         "Status",                DATA_STRING,                         get_status(msg_converted),
                      NULL);
     data_acquired_handler(data);
 
@@ -223,10 +225,12 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "time",
-    "session_id"
+    "brand"
+    "model"
+    "id"
+    "status",
     "temperature_C1",
     "temperature_C2",
-    "status",
     NULL
 };
 
