@@ -410,7 +410,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
-    int wind_speed, raincounter, temp, valid = 0;
+    int wind_speed, raincounter, temp, battery_low;
     uint8_t strike_count, strike_distance;
     data_t *data;
 
@@ -470,21 +470,21 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    sensor_status = bb[2]; // @todo, uses parity? & 0x07f
 	    humidity = acurite_getHumidity(bb[3]);
 	    tempc = acurite_txr_getTemp(bb[4], bb[5]);
-        sprintf(channel_str, "%c", channel);
-
+            sprintf(channel_str, "%c", channel);
+            battery_low = sensor_status >>7;
+		
         data = data_make(
-                "time",		"",		DATA_STRING,	time_str,
+                "time",			"",		DATA_STRING,	time_str,
                 "model",		"",		DATA_STRING,	"Acurite tower sensor",
-                "id",		"",		DATA_INT,	sensor_id,
-                "channel",  "",     DATA_STRING, &channel_str,
+                "id",			"",		DATA_INT,	sensor_id,
+                "channel",  		"",     	DATA_STRING, 	&channel_str,
                 "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-                "humidity",	"Humidity",	DATA_INT,	humidity,
-                "status",		"",		DATA_FORMAT, 	"0x%x", 	DATA_INT,	sensor_status,
+                "humidity",		"Humidity",	DATA_INT,	humidity,
+                "battery",        	"Battery",    	DATA_STRING, 	battery_low ? "LOW" : "OK",
 
                 NULL);
 
         data_acquired_handler(data);
-        valid++;
 
         return 1;
 	}
