@@ -362,7 +362,7 @@ static int acurite_th_callback(bitbuffer_t *bitbuf) {
 		     "battery",		"",		DATA_STRING,	battery_low ? "LOW" : "OK",
 		     "status",		"",		DATA_INT,	status,
 		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-		     "humidity",	"Humidity",	DATA_INT,	humidity,
+		     "humidity",        "Humidity",	DATA_INT,	humidity,
 		     NULL);
 
 	data_acquired_handler(data);
@@ -479,9 +479,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                     "id",			"",		DATA_INT,	sensor_id,
                     "channel",  		"",     	DATA_STRING, 	&channel_str,
                     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-                    "humidity",		"Humidity",	DATA_INT,	humidity,
-                    "battery",        	"Battery",    	DATA_INT, 	battery_low,
-		     "status",		"",		DATA_INT,	sensor_status,
+                    "humidity",         "Humidity",	DATA_INT,	humidity,
+                    "battery",          "Battery",    	DATA_INT, 	battery_low,
+                    "status",		"",		DATA_INT,	sensor_status,
                     NULL);
 
             data_acquired_handler(data);
