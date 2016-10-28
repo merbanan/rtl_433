@@ -403,7 +403,7 @@ static float acurite_txr_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * - 6045M Lightning Detectur with Temperature and Humidity
  */
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
-    int browlen;
+    int browlen, valid = 0;
     uint8_t *bb;
     float tempc, tempf, wind_dird, rainfall = 0.0, wind_speedmph;
     uint8_t humidity, sensor_status, repeat_no, message_type;
@@ -473,20 +473,19 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
             sprintf(channel_str, "%c", channel);
             battery_low = sensor_status >>7;
 		
-        data = data_make(
-                "time",			"",		DATA_STRING,	time_str,
-                "model",		"",		DATA_STRING,	"Acurite tower sensor",
-                "id",			"",		DATA_INT,	sensor_id,
-                "channel",  		"",     	DATA_STRING, 	&channel_str,
-                "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-                "humidity",		"Humidity",	DATA_INT,	humidity,
-                "battery",        	"Battery",    	DATA_STRING, 	battery_low ? "LOW" : "OK",
+            data = data_make(
+                    "time",			"",		DATA_STRING,	time_str,
+                    "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
+                    "id",			"",		DATA_INT,	sensor_id,
+                    "channel",  		"",     	DATA_STRING, 	&channel_str,
+                    "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+                    "humidity",		"Humidity",	DATA_INT,	humidity,
+                    "battery",        	"Battery",    	DATA_INT, 	battery_low,
+		     "status",		"",		DATA_INT,	sensor_status,
+                    NULL);
 
-                NULL);
-
-        data_acquired_handler(data);
-
-        return 1;
+            data_acquired_handler(data);
+            valid++;
 	}
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
@@ -567,6 +566,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	}
 
     }
+
+    if (valid)
+        return 1;
 
     return 0;
 }
