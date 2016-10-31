@@ -2,7 +2,7 @@
 #include "util.h"
 
 /*
- * Brennstuhl RCS 2044 remote control on 433.92MHz
+ * Brennenstuhl RCS 2044 remote control on 433.92MHz
  *
  * Copyright (C) 2015 Paul Ortyl
  * This program is free software; you can redistribute it and/or modify
@@ -12,14 +12,14 @@
 
 /*
  * Receiver for the "RCS 2044 N Comfort Wireless Controller Set" sold under
- * the "Brennstuhl" brand.
+ * the "Brennenstuhl" brand.
  *
  * The protocol is also implemented for raspi controlled transmitter on 433.92 MHz:
  * https://github.com/xkonni/raspberry-remote
  */
 
 
-static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
+static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer)
 {
   const uint8_t *b = bitbuffer->bb[row];
   const int length = bitbuffer->bits_per_row[row];
@@ -32,7 +32,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
     // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    fprintf(stdout, "%s Brennstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
+    fprintf(stdout, "%s Brennenstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
     for(int i=0; i<4; i++)
     {
       for(int p=7; p>=0; p--)
@@ -41,7 +41,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
     }
     fprintf(stdout, "\n");
 
-    fprintf(stdout, "%s Brennstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
+    fprintf(stdout, "%s Brennenstuhl RCS 2044: received RAW bit sequence (%d bits): ", time_str, length);
     for(int i=0; i<4; i++)
     {
       for(int p=7; p>=0; p--)
@@ -69,7 +69,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
     // print raw bit sequence for debug purposes (before exclusion of invalid sequenced is executed)
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    fprintf(stdout, "%s Brennstuhl RCS 2044: received bit sequence: ", time_str);
+    fprintf(stdout, "%s Brennenstuhl RCS 2044: received bit sequence: ", time_str);
     for(int i=0; i<4; i++)
     {
       for(int p=6; p>=0; p-=2)
@@ -150,7 +150,7 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
     /* @todo: remove timestamp printing as soon as the controller takes this task */
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    fprintf(stdout, "%s Brennstuhl RCS 2044: system code: %d%d%d%d%d. key: %c, state: %s\n",
+    fprintf(stdout, "%s Brennenstuhl RCS 2044: system code: %d%d%d%d%d. key: %c, state: %s\n",
       time_str,
       system_code[0], system_code[1], system_code[2], system_code[3], system_code[4],
       key,
@@ -161,21 +161,21 @@ static int brennstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuffer
   return 1;
 }
 
-static int brennstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
+static int brennenstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
 {
   int counter = 0;
   for(int row=0; row<bitbuffer->num_rows; row++)
-    counter += brennstuhl_rcs_2044_process_row(row, bitbuffer);
+    counter += brennenstuhl_rcs_2044_process_row(row, bitbuffer);
   return counter;
 }
 
-r_device brennstuhl_rcs_2044 = {
-  .name          = "Brennstuhl RCS 2044",
+r_device brennenstuhl_rcs_2044 = {
+  .name          = "Brennenstuhl RCS 2044",
   .modulation    = OOK_PULSE_PWM_RAW,
   .short_limit   = 600,
   .long_limit    = 4000,
   .reset_limit   = 4000,
-  .json_callback = &brennstuhl_rcs_2044_callback,
+  .json_callback = &brennenstuhl_rcs_2044_callback,
   .disabled      = 1,
   .demod_arg     = 0,
 };
