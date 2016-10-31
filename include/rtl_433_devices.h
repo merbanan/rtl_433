@@ -27,7 +27,7 @@
 		DECL(calibeur_RF104) \
 		DECL(X10_RF) \
 		DECL(DSC) \
-		DECL(brennstuhl_rcs_2044) \
+		DECL(brennenstuhl_rcs_2044) \
 		DECL(gt_wt_02) \
 		DECL(danfoss_CFR) \
 		DECL(ec3k) \
