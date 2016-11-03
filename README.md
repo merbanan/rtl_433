@@ -14,6 +14,10 @@ Installation instructions:
 
 Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
 
+Depending on your system, you may also need to install the following libraries:
+
+    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr
+
 Installation using cmake:
 
     cd rtl_433/
@@ -30,6 +34,8 @@ Installation using autoconf:
     ./configure
     make
     make install
+
+The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
 
 
 Running:
@@ -195,3 +201,18 @@ Google Group
 
 Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433
+
+
+Troubleshooting
+---------------
+
+If you see this error:
+
+    Kernel driver is active, or device is claimed by second instance of librtlsdr.
+    In the first case, please either detach or blacklist the kernel module
+    (dvb_usb_rtl28xxu), or enable automatic detaching at compile time.
+
+then
+
+    sudo rmmod dvb_usb_rtl28xxu rtl2832
+    
