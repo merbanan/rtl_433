@@ -18,6 +18,7 @@ static int pool_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
 	int i,device,channel;
+	int iTemp;
 	float fTemp;
 
 
@@ -39,7 +40,8 @@ E: ?
 */
 
         device=(((bb[1][0]&0xF)<<4)+((bb[1][1]&0xF0)>>4));
-        fTemp=((signed short)(((bb[1][1]&0xF)<<8)+bb[1][2])/10.0);
+        iTemp=((bb[1][1]&0xF)<<8)+bb[1][2];
+        fTemp=(iTemp > 2048 ? iTemp - 4096 : iTemp) / 10.0;
 	channel=(signed short)((bb[1][3]&0xC0)>>6);
 
 	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
