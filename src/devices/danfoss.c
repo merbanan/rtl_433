@@ -132,6 +132,6 @@ r_device danfoss_CFR = {
 	.long_limit     = 100,	// Bit width
 	.reset_limit    = 500,	// Maximum run is 4 zeroes/ones
 	.json_callback  = &danfoss_CFR_callback,
-	.disabled       = 1,
+	.disabled       = 0,
 	.demod_arg      = 0,
 };
