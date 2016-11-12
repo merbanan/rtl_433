@@ -1,17 +1,17 @@
-/* Danfoss CFR thermostat sensor protocol
+/* Danfoss CFR Thermostat sensor protocol
  *
- * Stub driver
+ * Manual: http://na.heating.danfoss.com/PCMPDF/Vi.88.R1.22%20CFR%20Thrm.pdf
  *
- * Data consists of 21 nibbles of 4 bit, which are encoded with a 4B/6B encoder to an output of 126 bits (~16 encoded bytes) 
+ * Data consists of 21 nibbles of 4 bit, which are encoded with a 4B/6B encoder to an output of 126 bits (~16 encoded bytes)
  *
  * Nibble encoding:
  *  #0 -#2  -- Prefix - always <E02>
  *  #3 -#6  -- Sensor ID
  *  #7      -- Unknown
- *  #8      -- Switch setting -> 2="sun", 4="timer", 8="moon"
- *  #9 -#10 -- Temperature decimal <value>/128
+ *  #8      -- Switch setting -> 2="day", 4="timer", 8="night"
+ *  #9 -#10 -- Temperature decimal <value>/256
  *  #11-#12 -- Temperature integer (in Celcius)
- *  #13-#14 -- Set point decimal <value>/128
+ *  #13-#14 -- Set point decimal <value>/256
  *  #15-#16 -- Set point integer (in Celcius)
  *  #17-#20 -- Unknown (CRC??)
  *
@@ -57,56 +57,67 @@ uint8_t danfoss_decode_nibble(uint8_t byte) {
 
 static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
+	data_t *data;
+ 	char time_str[LOCAL_TIME_BUFLEN];
+
+	local_time_str(0, time_str);
 
 	// Validate package
 	unsigned bits = bitbuffer->bits_per_row[0];
 	if (bits >= 246 && bits <= 262) {	// Package is likely 254 always
-//		bitbuffer_print(bitbuffer);
-		fprintf(stdout, "Danfoss CFR Thermostat: ");
-
-		uint8_t *inbytes = bitbuffer->bb[0]+16;
+		uint8_t *inbytes = bitbuffer->bb[0]+16;	// TODO: Search for header and extract
 		uint8_t nibbles[NUM_NIBBLES];
 
 		// Decode input bytes to nibbles
 		for (unsigned n=0; n<NUM_NIBBLES; ++n) {
 			uint8_t nibble = danfoss_decode_nibble(bitrow_get_byte(inbytes, n*6) >> 2);
 			if (nibble > 0xF) {
-				fprintf(stderr, "6B/4B decoding error\n");
+				if(debug_output) fprintf(stderr, "Danfoss: 6B/4B decoding error\n");
 				return 0;
 			}
 			nibbles[n] = nibble & 0xF;
 		}
 
+		// Validate
 		if(nibbles[0] != 0xE || nibbles[1] != 0 || nibbles[2] != 2) {
-			fprintf(stderr, "Prefix error\n");
+			if(debug_output) fprintf(stderr, "Danfoss: Prefix error\n");
 			return 0;
 		}
 
+		// Decode data
 		unsigned id = (nibbles[3] << 12) | (nibbles[4] << 8) | (nibbles[5] << 4) | nibbles[6];
 
 		char *str_sw;
 		switch(nibbles[8]) {
-			case 2:	 str_sw = "DAY  "; break;
+			case 2:	 str_sw = "DAY"; break;
 			case 4:  str_sw = "TIMER"; break;
 			case 8:  str_sw = "NIGHT"; break;
 			default: str_sw = "ERROR";
 		}
 
 		float temp_meas, temp_setp;
-		temp_meas  = (float)(nibbles[ 9] << 4 | nibbles[10]) / 255.0;
+		temp_meas  = (float)(nibbles[ 9] << 4 | nibbles[10]) / 256.0;
 		temp_meas += (float)(nibbles[11] << 4 | nibbles[12]);
-		temp_setp  = (float)(nibbles[13] << 4 | nibbles[14]) / 255.0;
+		temp_setp  = (float)(nibbles[13] << 4 | nibbles[14]) / 256.0;
 		temp_setp += (float)(nibbles[15] << 4 | nibbles[16]);
 
-		fprintf(stdout, "ID = %04X, Temp = %5.2f, Setpoint = %5.2f, Switch = %s", id, temp_meas, temp_setp, str_sw);
-
-		// Print decoded output
-		fprintf(stdout, ", Raw = ");
+		// Add Raw nibble data - We need to find out about the unknown bits (CRC?, Battery status?, ...)
+		char str_raw[NUM_NIBBLES+4];	// Add some extra space for line end
 		for (unsigned n=0; n<NUM_NIBBLES; ++n) {
-			fprintf(stdout, "%01X", nibbles[n]);
+			sprintf(str_raw+n, "%01X", nibbles[n]);
 		}
 
-		fprintf(stdout, "\n");
+		// Output data
+		data = data_make(
+		     "time",		"",		DATA_STRING,	time_str,
+		     "model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
+		     "id",		"ID",		DATA_INT,	id,
+		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
+		     "setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
+		     "switch",		"Switch",	DATA_STRING,	str_sw,
+		     "raw",		"Raw",		DATA_STRING,	str_raw,	// Will be removed when more data is decoded
+		     NULL);
+		data_acquired_handler(data);
 
 		return 1;
 	}
