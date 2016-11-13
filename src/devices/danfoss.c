@@ -20,7 +20,7 @@
  * Nibble content:
  *  #0 -#2  -- Prefix - always 0xE02 (decoded)
  *  #3 -#6  -- Sensor ID
- *  #7      -- Unknown
+ *  #7      -- Message Count. Rolling counter incremented at each unique message.
  *  #8      -- Switch setting -> 2="day", 4="timer", 8="night"
  *  #9 -#10 -- Temperature decimal <value>/256
  *  #11-#12 -- Temperature integer (in Celcius)
