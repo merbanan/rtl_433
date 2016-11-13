@@ -91,10 +91,12 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		// Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes)
 		for (unsigned n=0; n<NUM_BYTES; ++n) {
 			uint8_t nibble_h = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset) >> 2);
-			uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+6+bit_offset) >> 2);
+			uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset+6) >> 2);
 			if (nibble_h > 0xF || nibble_l > 0xF) {
-				if (debug_output) fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
-				bitbuffer_print(bitbuffer);
+				if (debug_output) {
+					fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
+					bitbuffer_print(bitbuffer);
+				}
 				return 0;
 			}
 			bytes[n] = (nibble_h << 4) | nibble_l;
