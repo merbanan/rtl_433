@@ -2,21 +2,31 @@
  *
  * Manual: http://na.heating.danfoss.com/PCMPDF/Vi.88.R1.22%20CFR%20Thrm.pdf
  *
- * Data consists of 21 nibbles of 4 bit, which are encoded with a 4B/6B encoder to an output of 126 bits (~16 encoded bytes)
+ * No protocol information found, so protocol is reverse engineered.
+ * Sensor uses FSK modulation and Pulse Code Modulated (direct bit sequence) data.
  *
- * Nibble encoding:
- *  #0 -#2  -- Prefix - always <E02>
+ * Example received raw data package:
+ *   bitbuffer:: Number of rows: 1
+ *   [00] {255} 2a aa aa aa aa aa aa aa aa aa aa aa aa aa aa aa 36 5c a9 a6 93 6c 4d a6 a9 6a 6b 29 4f 19 72 b2
+ *
+ * The package starts with a long (~128 bit) synchronization preamble (0xaa).
+ * Sensor data consists of 21 nibbles of 4 bit, which are encoded with a 4b/6b encoder, resulting
+ * in an encoded sequence of 126 bits (~16 encoded bytes)
+ * The package may end with a noise bit or two.
+ *
+ * Example: <Received bits> | <6b/4b decoded nibbles>
+ *  365C A9A6 936C 4DA6 A96A 6B29 4F19 72B2 | E02 111E C4 6616 7C14 B02C
+ *
+ * Nibble content:
+ *  #0 -#2  -- Prefix - always 0xE02 (decoded)
  *  #3 -#6  -- Sensor ID
- *  #7      -- Unknown
+ *  #7      -- Message Count. Rolling counter incremented at each unique message.
  *  #8      -- Switch setting -> 2="day", 4="timer", 8="night"
  *  #9 -#10 -- Temperature decimal <value>/256
  *  #11-#12 -- Temperature integer (in Celcius)
  *  #13-#14 -- Set point decimal <value>/256
  *  #15-#16 -- Set point integer (in Celcius)
- *  #17-#20 -- Unknown (CRC??)
- *
- * Example: <Input bits> | <output nibbles>
- *  365C A9A6 936C 4DA6 A96A 6B29 4F19 72B2 | E02 111E C4 6616 7C14 B02C
+ *  #17-#20 -- CRC16, poly 0x1021, includes nibble #1-#16
  *
  * Copyright (C) 2016 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
@@ -27,12 +37,13 @@
 #include "rtl_433.h"
 #include "util.h"
 
-// Output contains 21 nibbles
-#define NUM_NIBBLES 21
+#define NUM_BYTES 10	// Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
+static const uint8_t HEADER[] = { 0x36, 0x5c };	// Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)
+static const uint16_t CRC_POLY = 0x1021;
 
 // Mapping from 6 bits to 4 bits
-uint8_t danfoss_decode_nibble(uint8_t byte) {
-	unsigned out = 0xFF;	// Error
+static uint8_t danfoss_decode_nibble(uint8_t byte) {
+	uint8_t out = 0xFF;	// Error
 	switch(byte) {
 		case 0x0B:	out = 0xD;	break;
 		case 0x0D:	out = 0xE;	break;
@@ -55,8 +66,9 @@ uint8_t danfoss_decode_nibble(uint8_t byte) {
 	return out;
 }
 
+
 static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
+	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
  	char time_str[LOCAL_TIME_BUFLEN];
 
@@ -64,48 +76,63 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 
 	// Validate package
 	unsigned bits = bitbuffer->bits_per_row[0];
-	if (bits >= 246 && bits <= 262) {	// Package is likely 254 always
-		uint8_t *inbytes = bitbuffer->bb[0]+16;	// TODO: Search for header and extract
-		uint8_t nibbles[NUM_NIBBLES];
+	if (bits >= 246 && bits <= 260) {	// Normal size is 255, but allow for some noise in preamble
+		// Find a package
+		unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 112, HEADER, sizeof(HEADER)*8);	// Normal index is 128, skip first 14 bytes to find faster
+		if (bits-bit_offset < 126) {	// Package should be at least 126 bits
+			if (debug_output) {
+				fprintf(stderr, "Danfoss: short package. Header index: %u\n", bit_offset);
+				bitbuffer_print(bitbuffer);
+			}
+			return 0;
+		}
+		bit_offset += 6;	// Skip first nibble 0xE to get byte alignment and remove from CRC calculation
 
-		// Decode input bytes to nibbles
-		for (unsigned n=0; n<NUM_NIBBLES; ++n) {
-			uint8_t nibble = danfoss_decode_nibble(bitrow_get_byte(inbytes, n*6) >> 2);
-			if (nibble > 0xF) {
-				if(debug_output) fprintf(stderr, "Danfoss: 6B/4B decoding error\n");
+		// Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes)
+		for (unsigned n=0; n<NUM_BYTES; ++n) {
+			uint8_t nibble_h = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset) >> 2);
+			uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset+6) >> 2);
+			if (nibble_h > 0xF || nibble_l > 0xF) {
+				if (debug_output) {
+					fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
+					bitbuffer_print(bitbuffer);
+				}
 				return 0;
 			}
-			nibbles[n] = nibble & 0xF;
+			bytes[n] = (nibble_h << 4) | nibble_l;
 		}
 
-		// Validate
-		if(nibbles[0] != 0xE || nibbles[1] != 0 || nibbles[2] != 2) {
-			if(debug_output) fprintf(stderr, "Danfoss: Prefix error\n");
+		// Output raw decoded data for debug
+		if (debug_output) {
+			char str_raw[NUM_BYTES*2+4];	// Add some extra space for line end
+			for (unsigned n=0; n<NUM_BYTES; ++n) {
+				sprintf(str_raw+n*2, "%02X", bytes[n]);
+			}
+			fprintf(stderr, "Danfoss: Raw 6b/4b decoded = %s\n", str_raw);
+		}
+
+		// Validate Prefix and CRC
+		uint16_t crc_calc = crc16_ccitt(bytes, NUM_BYTES-2, CRC_POLY, 0);
+		if (bytes[0] != 0x02		// Somewhat redundant to header search, but checks last bits
+		 || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
+		) {
+			if (debug_output) fprintf(stderr, "Danfoss: Prefix or CRC error.\n");
 			return 0;
 		}
 
 		// Decode data
-		unsigned id = (nibbles[3] << 12) | (nibbles[4] << 8) | (nibbles[5] << 4) | nibbles[6];
+		unsigned id = (bytes[1] << 8) | bytes[2];
 
 		char *str_sw;
-		switch(nibbles[8]) {
+		switch (bytes[3] & 0x0F) {
 			case 2:	 str_sw = "DAY"; break;
 			case 4:  str_sw = "TIMER"; break;
 			case 8:  str_sw = "NIGHT"; break;
 			default: str_sw = "ERROR";
 		}
 
-		float temp_meas, temp_setp;
-		temp_meas  = (float)(nibbles[ 9] << 4 | nibbles[10]) / 256.0;
-		temp_meas += (float)(nibbles[11] << 4 | nibbles[12]);
-		temp_setp  = (float)(nibbles[13] << 4 | nibbles[14]) / 256.0;
-		temp_setp += (float)(nibbles[15] << 4 | nibbles[16]);
-
-		// Add Raw nibble data - We need to find out about the unknown bits (CRC?, Battery status?, ...)
-		char str_raw[NUM_NIBBLES+4];	// Add some extra space for line end
-		for (unsigned n=0; n<NUM_NIBBLES; ++n) {
-			sprintf(str_raw+n, "%01X", nibbles[n]);
-		}
+		float temp_meas  = (float)bytes[5] + (float)bytes[4] / 256.0;
+		float temp_setp  = (float)bytes[7] + (float)bytes[6] / 256.0;
 
 		// Output data
 		data = data_make(
@@ -115,7 +142,6 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 		     "setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
 		     "switch",		"Switch",	DATA_STRING,	str_sw,
-		     "raw",		"Raw",		DATA_STRING,	str_raw,	// Will be removed when more data is decoded
 		     NULL);
 		data_acquired_handler(data);
 
