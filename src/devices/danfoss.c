@@ -142,6 +142,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 		     "setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
 		     "switch",		"Switch",	DATA_STRING,	str_sw,
+		     "crc", "", DATA_STRING, "ok",
 		     NULL);
 		data_acquired_handler(data);
 
@@ -150,6 +151,18 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 	return 0;
 }
 
+
+static char *output_fields[] = {
+    "time",
+    "brand"
+    "model"
+    "id"
+    "temperature_C",
+    "setpoint_C",
+    "switch",
+    "crc",
+    NULL
+};
 
 r_device danfoss_CFR = {
 	.name           = "Danfoss CFR Thermostat",
@@ -160,4 +173,5 @@ r_device danfoss_CFR = {
 	.json_callback  = &danfoss_CFR_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
+	.fields         = output_fields
 };
