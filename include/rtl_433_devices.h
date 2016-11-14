@@ -72,7 +72,8 @@
 		DECL(radiohead_ask) \
 		DECL(kerui) \
 		DECL(fineoffset_wh1050) \
-		DECL(honeywell)
+		DECL(honeywell) \
+		DECL(maverick_et73x)
 
 
 typedef struct {
