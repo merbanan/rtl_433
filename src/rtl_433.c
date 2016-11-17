@@ -1006,7 +1006,7 @@ int main(int argc, char **argv) {
     }
 
     if (!quiet_mode)
-	fprintf(stderr,"Registered %d out of %d device decoding protcols\n",
+	fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
 		demod->r_dev_num, num_r_devices);
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
