@@ -297,9 +297,16 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
          // Short - 1
          bitbuffer_add_bit(&bits, 1);
          if ( fabsf(symbol[++n] - device->short_limit) > p->pulse_tolerance) {
-/*            fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
-                    device->name);
-*/            return events;
+            if (symbol[n] >= device->reset_limit - p->pulse_tolerance ) {
+               // Don't expect another short gap at end of message
+               n--;
+            } else {
+/*
+               fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
+                       device->name);
+*/
+               return events;
+            }
          }
       } else if ( fabsf(symbol[n] - device->long_limit) < p->pulse_tolerance) {
          // Long - 0
