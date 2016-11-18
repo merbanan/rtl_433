@@ -73,7 +73,8 @@
 		DECL(kerui) \
 		DECL(fineoffset_wh1050) \
 		DECL(honeywell) \
-		DECL(maverick_et73x)
+		DECL(maverick_et73x) \
+		DECL(kangtai)
 
 
 typedef struct {

@@ -87,6 +87,7 @@ add_executable(rtl_433
 	devices/fineoffset_wh1050.c
 	devices/honeywell.c
 	devices/maverick_et73x.c
+	devices/kangtai.c
 
 )
 
