@@ -26,21 +26,7 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     int r;
 
-    /*
-     * Early debugging aid to see demodulated bits in buffer and
-     * to determine if your limit settings are matched and firing
-     * this callback.
-     *
-     * 1. Enable with -D -D (debug level of 2)
-     * 2. Delete this block when your decoder is working
-     */
-    if (debug_output > 1) {
-	fprintf(stderr,"new_tmplate callback:\n");
-        bitbuffer_print(bitbuffer);
-    }
-
     local_time_str(0, time_str);
-
 
     r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
