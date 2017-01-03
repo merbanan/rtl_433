@@ -119,9 +119,8 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
 	int i,j,k,nbytes,npacket,kmax;
     uint8_t id=0,status=0,battery_low=0,test=0,humidity=0,maxcount;
     uint16_t temp_raw=0;
-    float temp_c=0.0;
-    data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT];
-    memset(dnc,0,LACROSSE_TX141TH_PACKETCOUNT*sizeof(data_and_count));
+    float temp_f=0.0;
+    data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT] = {0};
     
     if (debug_output) {
         bitbuffer_print(bitbuffer);
@@ -177,10 +176,10 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     battery_low=(status & 0x80) >> 7;
     test=(status & 0x40) >> 6;
     temp_raw=((status & 0x0F) << 8) + bytes[2];
-    temp_c = (float)temp_raw/10.0-50.0;
+    temp_f = 9.0*((float)temp_raw)/50.0-58.0; // Temperature in F
     humidity = bytes[3];
 
-    if (0==id || 0==humidity || humidity > 100 || temp_c < -40.0 || temp_c > 60.0) {
+    if (0==id || 0==humidity || humidity > 100 || temp_f < -40.0 || temp_f > 140.0) {
         if (debug_output) {
             fprintf(stderr, "LaCrosse TX141TH-Bv2 data error\n");
         }
@@ -188,8 +187,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     }
 
     data = data_make("time",    "Date and time", DATA_STRING,    time_str,
-                     "temperature_C", "Temperature in deg C", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                     "temperature_F", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, 9.0*temp_c/5.0+32.0,
+                     "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
                      "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "quality", "Signal quality",   DATA_FORMAT, "%.1f %%", DATA_DOUBLE, 100.0*((float)dnc[kmax].count)/LACROSSE_TX141TH_PACKETCOUNT,
                      "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
@@ -205,14 +203,13 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
 	"time",
-    "temperature_C",
-    "temperature_F",
-    "humidity",
-    "quality",
-    "id",
+        "temperature",
+        "humidity",
+        "quality",
+        "id",
 	"model",
-    "battery",
-    "test",
+        "battery",
+        "test",
 	NULL
 };
 
