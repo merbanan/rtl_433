@@ -65,8 +65,8 @@
 		DECL(schraeder) \
 		DECL(lightwave_rf) \
 		DECL(elro_db286a) \
-                DECL(efergy_optical) \
-                DECL(hondaremote) \
+        DECL(efergy_optical) \
+        DECL(hondaremote) \
 		DECL(template) \
 		DECL(fineoffset_XC0400) \
 		DECL(radiohead_ask) \
@@ -74,7 +74,8 @@
 		DECL(fineoffset_wh1050) \
 		DECL(honeywell) \
 		DECL(maverick_et73x) \
-		DECL(rftech)
+		DECL(rftech) \
+        DECL(lacrosse_TX141TH_Bv2)
 
 
 typedef struct {
