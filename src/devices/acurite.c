@@ -492,7 +492,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "message_type", NULL,   DATA_INT,       message_type,
                 "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
-                "temperature", 	NULL,	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
+                "temperature_C", 	"temperature",	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
                 "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                 NULL);
             data_acquired_handler(data);
