@@ -61,14 +61,6 @@ static char time_str[LOCAL_TIME_BUFLEN];
 //     E,  7,  NNE,   22.5
 //     F,  C,    S,  180.0
 
-
-
-// original 5-n-1 wind direction values
-// from Jens/Helge
-const float acurite_winddirections[] =
-    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
-      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
-
 // From draythomp/Desert-home-rtl_433
 // matches acu-link internet bridge values
 // The mapping isn't circular, it jumps around.
@@ -103,7 +95,7 @@ const float acurite_5n1_winddirections[] =
       67.5,  // 8 - ENE
       135.0, // 9 - SE
       90.0,  // a - E
-      112.5, // b - 112.5
+      112.5, // b - ESE
       45.0,  // c - NE
       157.5, // d - SSE
       22.5,  // e - NNE
@@ -165,13 +157,6 @@ static float acurite_getWindSpeed_kph (uint8_t highbyte, uint8_t lowbyte) {
         speed_kph = rawspeed * 0.8278 + 1.0;
     }
     return speed_kph;
-}
-
-// For the 5n1 based on a linear/circular encoding.
-static float acurite_getWindDirection (uint8_t byte) {
-    // 16 compass points, ccw from (NNW) to 15 (N)
-    int direction = byte & 0x0F;
-    return acurite_winddirections[direction];
 }
 
 static int acurite_getHumidity (uint8_t byte) {
