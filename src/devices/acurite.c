@@ -153,15 +153,18 @@ static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     return temp;
 }
 
-static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
+static float acurite_getWindSpeed_kph (uint8_t highbyte, uint8_t lowbyte) {
     // range: 0 to 159 kph
-	// TODO: sensor does not seem to be in kph, e.g.,
-	// a value of 49 here was registered as 41 kph on base unit
-	// value could be rpm, etc which may need (polynomial) scaling factor??
+    // raw number is cup rotations per 4 seconds
+    // http://www.wxforum.net/index.php?topic=27244.0 (found from weewx driver)
 	int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
-    int speed = highbits | lowbits;
-    return speed;
+    int rawspeed = highbits | lowbits;
+    float speed_kph = 0;
+    if (rawspeed > 0) {
+        speed_kph = rawspeed * 0.8278 + 1.0;
+    }
+    return speed_kph;
 }
 
 // For the 5n1 based on a linear/circular encoding.
@@ -347,12 +350,12 @@ static float acurite_txr_getTemp (uint8_t highbyte, uint8_t lowbyte) {
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
-    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speedmph;
+    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
     uint8_t humidity, sensor_status, repeat_no, message_type;
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
-    int wind_speed, raincounter, temp, battery_low;
+    int raincounter, temp, battery_low;
     uint8_t strike_count, strike_distance;
     data_t *data;
 
@@ -441,7 +444,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	    if (message_type == 0x31) {
             // Wind speed, wind direction, and rain fall
-                wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
             wind_speedmph = kmph2mph(wind_speed);
             wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
             wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
@@ -468,9 +471,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
-                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",                
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed,
                 "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
                 "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
                 "rainfall",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
@@ -480,8 +483,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	    } else if (message_type == 0x38) {
             // Wind speed, temperature and humidity
-            wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-            wind_speedmph = kmph2mph((float) wind_speed);
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
             tempf = acurite_getTemp(bb[4], bb[5]);
             tempc = fahrenheit2celsius(tempf);
             humidity = acurite_getHumidity(bb[6]);
@@ -491,9 +494,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
-                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",                
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed,
                 "temperature_C", 	"temperature",	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
                 "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                 NULL);
