@@ -437,7 +437,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
 	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
-        
+        battery_low = bb[3] & 0x40 >> 6;
 
 	    if (message_type == 0x31) {
             // Wind speed, wind direction, and rain fall
@@ -468,6 +468,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",                
                 "message_type", NULL,   DATA_INT,       message_type,
                 "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
                 "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
@@ -490,6 +491,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",                
                 "message_type", NULL,   DATA_INT,       message_type,
                 "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
                 "temperature_C", 	"temperature",	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
