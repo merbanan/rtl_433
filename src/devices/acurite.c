@@ -26,6 +26,10 @@
 #define ACURITE_5N1_BITLEN		64
 #define ACURITE_6045_BITLEN		72
 
+// ** Acurite known message types
+#define ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL  0x31
+#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY     0x38
+
 static char time_str[LOCAL_TIME_BUFLEN];
 
 
@@ -431,7 +435,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    message_type = bb[2] & 0x3f;
         battery_low = (bb[2] & 0x40) >> 6;
 
-	    if (message_type == 0x31) {
+	    if (message_type == ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL) {
             // Wind speed, wind direction, and rain fall
             wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
             wind_speedmph = kmph2mph(wind_speed);
@@ -465,12 +469,13 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "wind_speed",   NULL,   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed,
                 "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
                 "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
-                "rainfall",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                "rainfall_accumulation",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                "raincounter_raw",  NULL,   DATA_INT,   raincounter,
                 NULL);
 
             data_acquired_handler(data);
 
-	    } else if (message_type == 0x38) {
+	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY) {
             // Wind speed, temperature and humidity
             wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
             wind_speedmph = kmph2mph(wind_speed);
