@@ -444,7 +444,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
 	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
-        battery_low = bb[3] & 0x40 >> 6;
+        battery_low = (bb[2] & 0x40) >> 6;
 
 	    if (message_type == 0x31) {
             // Wind speed, wind direction, and rain fall
