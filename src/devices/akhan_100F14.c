@@ -48,19 +48,10 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 									"data",		"Data (4bit)",	DATA_STRING,	CMD,
 									NULL);
 
-		} else {
-			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
-									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
-									"data",		"Data (4bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, dataBits,
-									"other",		"Attention",	DATA_STRING,	"The data received is not used by the akham keyfob. This might be another device using a HS1527 OTP encoder with the same timing.",
-									NULL);
 			data_acquired_handler(data);
-			return 0;
+			return 1;
 		}
 
-		data_acquired_handler(data);
-		return 1;
 	}
 	return 0;
 }
