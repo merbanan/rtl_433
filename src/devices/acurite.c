@@ -793,7 +793,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
                              "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                              NULL);
  	    data_acquired_handler(data);
-
+            return 1;
 	}
     }
 
