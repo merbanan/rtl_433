@@ -538,12 +538,13 @@ return 1;
         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
         //fprintf(stdout, "current measurement reading value   = %.0f\n", rawAmp);
         //fprintf(stdout, "current watts (230v)   = %.0f\n", rawAmp /(0.27*230)*1000);
+        unsigned short int ipower = (rawAmp /(0.27*230)*1000);
         data = data_make(
             "time",   "",           DATA_STRING,  time_str,
             "brand",  "",           DATA_STRING, "OS",
             "model",  "",           DATA_STRING,  "CM160",
             "id",     "House Code", DATA_INT, msg[1]&0x0F,
-            "power",  "Power",      DATA_FORMAT,  "%.0f W", DATA_INT, (rawAmp /(0.27*230)*1000),
+            "power",  "Power",      DATA_FORMAT,  "%.0f W", DATA_INT, ipower,
             NULL);
           data_acquired_handler(data);
       }
