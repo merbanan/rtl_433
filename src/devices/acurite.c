@@ -491,54 +491,73 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	// The 5-n-1 weather sensor messages are 8 bytes.
 	if (browlen == ACURITE_5N1_BITLEN / 8) {
 	    channel = acurite_getChannel(bb[0]);
+        sprintf(channel_str, "%c", channel);        
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
 	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
-
+        
 
 	    if (message_type == 0x31) {
-		// Wind speed, wind direction, and rain fall
-	        wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph(wind_speed);
-		wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
-		wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
-		raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
-		if (acurite_5n1t_raincounter > 0) {
-		    // track rainfall difference after first run
-		    // FIXME when converting to structured output, just output
-		    // the reading, let consumer track state/wrap around, etc. 
-		    rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
-		    if (raincounter < acurite_5n1t_raincounter) {
-			printf("%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
-			       time_str, sensor_id, channel, acurite_5n1t_raincounter, raincounter);
-			acurite_5n1t_raincounter = raincounter;
-		    }
-		} else {
-		    // capture starting counter
-		    acurite_5n1t_raincounter = raincounter;
-		    printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
-			   time_str, sensor_id, channel, raincounter * 0.01);
-		}
+            // Wind speed, wind direction, and rain fall
+                wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
+            wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
+            wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
+            raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
+            if (acurite_5n1t_raincounter > 0) {
+                // track rainfall difference after first run
+                // FIXME when converting to structured output, just output
+                // the reading, let consumer track state/wrap around, etc. 
+                rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
+                if (raincounter < acurite_5n1t_raincounter) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
+                        time_str, sensor_id, channel, acurite_5n1t_raincounter, raincounter);
+                    acurite_5n1t_raincounter = raincounter;
+                }
+            } else {
+                // capture starting counter
+                acurite_5n1t_raincounter = raincounter;
+                fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
+                time_str, sensor_id, channel, raincounter * 0.01);
+            }
+                
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
+                "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
+                "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
+                "rainfall",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                NULL);
 
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph %0.1f° %s (%d), rain gauge %0.2f in.\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph,
-		       wind_dird, wind_dirstr, bb[4] & 0x0f, rainfall);
+            data_acquired_handler(data);
 
 	    } else if (message_type == 0x38) {
-		// Wind speed, temperature and humidity
-		wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph((float) wind_speed);
-		tempf = acurite_getTemp(bb[4], bb[5]);
-		tempc = fahrenheit2celsius(tempf);
-		humidity = acurite_getHumidity(bb[6]);
+            // Wind speed, temperature and humidity
+            wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
+            wind_speedmph = kmph2mph((float) wind_speed);
+            tempf = acurite_getTemp(bb[4], bb[5]);
+            tempc = fahrenheit2celsius(tempf);
+            humidity = acurite_getHumidity(bb[6]);
 
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph, tempc, tempf, humidity);
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%d",   DATA_INT,       wind_speed,
+                "temperature", 	NULL,	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
+                "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                NULL);
+            data_acquired_handler(data);
+            
 	    } else {
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
-			time_str, sensor_id, channel, bb[3], message_type);
+            fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
+                time_str, sensor_id, channel, bb[3], message_type);
 	    }
 	}
 
