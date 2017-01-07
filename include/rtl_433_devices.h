@@ -12,7 +12,6 @@
 		DECL(elv_em1000) \
 		DECL(elv_ws2000) \
 		DECL(lacrossetx) \
-		DECL(acurite5n1) \
 		DECL(acurite_rain_gauge) \
 		DECL(acurite_th) \
 		DECL(oregon_scientific) \

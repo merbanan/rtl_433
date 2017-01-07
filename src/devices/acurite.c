@@ -232,64 +232,6 @@ static int acurite_5n1_getBatteryLevel(uint8_t byte){
 }
 
 
-int acurite5n1_callback(bitbuffer_t *bitbuffer) {
-    // acurite 5n1 weather sensor decoding for rtl_433
-    // Jens Jensen 2014
-    bitrow_t *bb = bitbuffer->bb;
-    int i;
-    uint8_t *buf = NULL;
-    // run through rows til we find one with good checksum (brute force)
-    for (i=0; i < BITBUF_ROWS; i++) {
-        if (acurite_detect(bb[i])) {
-            buf = bb[i];
-            break; // done
-        }
-    }
-
-    if (buf) {
-        // decode packet here
-        if (debug_output) {
-	    fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
-            for (i=0; i < 8; i++)
-                fprintf(stdout, "%02X ", buf[i]);
-            fprintf(stdout, "Checksum OK\n");
-        }
-
-        if ((buf[2] & 0x0F) == 1) {
-            // wind speed, wind direction, rainfall
-
-            float rainfall = 0.00;
-            int raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
-            if (acurite_5n1raincounter > 0) {
-                // track rainfall difference after first run
-                rainfall = ( raincounter - acurite_5n1raincounter ) * 0.01;
-            } else {
-                // capture starting counter
-                acurite_5n1raincounter = raincounter;
-            }
-
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "wind direction: %0.1f°, ",
-                acurite_getWindDirection(buf[4]));
-            fprintf(stdout, "rain gauge: %0.2f in.\n", rainfall);
-
-        } else if ((buf[2] & 0x0F) == 8) {
-            // wind speed, temp, RH
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "temp: %2.1f° F, ",
-                acurite_getTemp(buf[4], buf[5]));
-            fprintf(stdout, "humidity: %d%% RH\n",
-                acurite_getHumidity(buf[6]));
-        }
-    } else {
-    	return 0;
-    }
-
-    return 1;
-}
-
 static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
  	bitrow_t *bb = bitbuffer->bb;
    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
@@ -819,16 +761,6 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
     return 0;
 }
 
-r_device acurite5n1 = {
-    .name           = "Acurite 5n1 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 280,
-    .long_limit     = 520,
-    .reset_limit    = 800,
-    .json_callback  = &acurite5n1_callback,
-    .disabled       = 1,
-    .demod_arg      = 0,
-};
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
