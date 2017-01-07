@@ -435,6 +435,10 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
 	if (browlen == ACURITE_5N1_BITLEN / 8) {
+        if (debug_output) {
+            fprintf(stderr, "Acurite 5n1 raw msg: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+                bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], bb[6], bb[7]);
+        }
 	    channel = acurite_getChannel(bb[0]);
         sprintf(channel_str, "%c", channel);        
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
