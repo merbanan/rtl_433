@@ -771,7 +771,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
       return 0;
 
     // do some basic checking to make sure we have a valid data record
-    if ((bb[0][0] == 0) && (bb[1][4] == 0) && (bb[7][0] == 0x00) && ((bb[1][1] & 0x70) == 0)) {
+    if ((bb[0][0] == 0) && (bb[1][4] == 0)) {					//This test may need some more scrutiny...
         // calculate the checksum and only continue if we have a maching checksum
         uint8_t chk = Checksum(3, &bb[1][0]);
 
@@ -793,7 +793,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
                              "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                              NULL);
  	    data_acquired_handler(data);
-
+            return 1;
 	}
     }
 
