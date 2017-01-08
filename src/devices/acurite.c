@@ -145,8 +145,8 @@ static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     int highbits = (highbyte & 0x0F) << 7 ;
     int lowbits = lowbyte & 0x7F;
     int rawtemp = highbits | lowbits;
-    float temp = (rawtemp - 400) / 10.0;
-    return temp;
+    float temp_F = (rawtemp - 400) / 10.0;
+    return temp_F;
 }
 
 static float acurite_getWindSpeed_kph (uint8_t highbyte, uint8_t lowbyte) {
@@ -466,7 +466,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
                 "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
                 "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
                 "rainfall_accumulation",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
@@ -490,8 +490,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed,
-                "temperature_C", 	"temperature",	DATA_FORMAT,    "%.1f C", DATA_DOUBLE,    tempc,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                 "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                 NULL);
             data_acquired_handler(data);
