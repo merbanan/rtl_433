@@ -125,19 +125,6 @@ static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
         return 0;
 }
 
-static int acurite_detect(uint8_t *pRow) {
-    int i;
-    if ( pRow[0] != 0x00 ) {
-        // invert bits due to wierd issue
-        for (i = 0; i < 8; i++)
-            pRow[i] = ~pRow[i] & 0xFF;
-        pRow[0] |= pRow[8];  // fix first byte that has mashed leading bit
-
-        if (acurite_checksum(pRow, 7))
-            return 1;  // valid checksum
-    }
-    return 0;
-}
 
 // Temperature encoding for 5-n-1 sensor and possibly others
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
