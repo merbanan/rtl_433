@@ -327,7 +327,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
     float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
-    uint8_t humidity, sensor_status, repeat_no, message_type;
+    uint8_t humidity, sensor_status, sequence_num, message_type;
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
@@ -418,7 +418,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    channel = acurite_getChannel(bb[0]);
         sprintf(channel_str, "%c", channel);        
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
-	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
+	    sequence_num = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
         battery_low = (bb[2] & 0x40) >> 6;
 
@@ -451,6 +451,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
                 "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
@@ -475,6 +476,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
                 "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
                 "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
