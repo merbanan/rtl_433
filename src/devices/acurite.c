@@ -26,6 +26,10 @@
 #define ACURITE_5N1_BITLEN		64
 #define ACURITE_6045_BITLEN		72
 
+// ** Acurite known message types
+#define ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL  0x31
+#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY     0x38
+
 static char time_str[LOCAL_TIME_BUFLEN];
 
 
@@ -61,14 +65,6 @@ static char time_str[LOCAL_TIME_BUFLEN];
 //     E,  7,  NNE,   22.5
 //     F,  C,    S,  180.0
 
-
-
-// original 5-n-1 wind direction values
-// from Jens/Helge
-const float acurite_winddirections[] =
-    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
-      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
-
 // From draythomp/Desert-home-rtl_433
 // matches acu-link internet bridge values
 // The mapping isn't circular, it jumps around.
@@ -103,7 +99,7 @@ const float acurite_5n1_winddirections[] =
       67.5,  // 8 - ENE
       135.0, // 9 - SE
       90.0,  // a - E
-      112.5, // b - 112.5
+      112.5, // b - ESE
       45.0,  // c - NE
       157.5, // d - SSE
       22.5,  // e - NNE
@@ -129,19 +125,6 @@ static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
         return 0;
 }
 
-static int acurite_detect(uint8_t *pRow) {
-    int i;
-    if ( pRow[0] != 0x00 ) {
-        // invert bits due to wierd issue
-        for (i = 0; i < 8; i++)
-            pRow[i] = ~pRow[i] & 0xFF;
-        pRow[0] |= pRow[8];  // fix first byte that has mashed leading bit
-
-        if (acurite_checksum(pRow, 7))
-            return 1;  // valid checksum
-    }
-    return 0;
-}
 
 // Temperature encoding for 5-n-1 sensor and possibly others
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
@@ -149,26 +132,22 @@ static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     int highbits = (highbyte & 0x0F) << 7 ;
     int lowbits = lowbyte & 0x7F;
     int rawtemp = highbits | lowbits;
-    float temp = (rawtemp - 400) / 10.0;
-    return temp;
+    float temp_F = (rawtemp - 400) / 10.0;
+    return temp_F;
 }
 
-static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
+static float acurite_getWindSpeed_kph (uint8_t highbyte, uint8_t lowbyte) {
     // range: 0 to 159 kph
-	// TODO: sensor does not seem to be in kph, e.g.,
-	// a value of 49 here was registered as 41 kph on base unit
-	// value could be rpm, etc which may need (polynomial) scaling factor??
+    // raw number is cup rotations per 4 seconds
+    // http://www.wxforum.net/index.php?topic=27244.0 (found from weewx driver)
 	int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
-    int speed = highbits | lowbits;
-    return speed;
-}
-
-// For the 5n1 based on a linear/circular encoding.
-static float acurite_getWindDirection (uint8_t byte) {
-    // 16 compass points, ccw from (NNW) to 15 (N)
-    int direction = byte & 0x0F;
-    return acurite_winddirections[direction];
+    int rawspeed = highbits | lowbits;
+    float speed_kph = 0;
+    if (rawspeed > 0) {
+        speed_kph = rawspeed * 0.8278 + 1.0;
+    }
+    return speed_kph;
 }
 
 static int acurite_getHumidity (uint8_t byte) {
@@ -231,64 +210,6 @@ static int acurite_5n1_getBatteryLevel(uint8_t byte){
     return (byte & 0x40) >> 6;
 }
 
-
-int acurite5n1_callback(bitbuffer_t *bitbuffer) {
-    // acurite 5n1 weather sensor decoding for rtl_433
-    // Jens Jensen 2014
-    bitrow_t *bb = bitbuffer->bb;
-    int i;
-    uint8_t *buf = NULL;
-    // run through rows til we find one with good checksum (brute force)
-    for (i=0; i < BITBUF_ROWS; i++) {
-        if (acurite_detect(bb[i])) {
-            buf = bb[i];
-            break; // done
-        }
-    }
-
-    if (buf) {
-        // decode packet here
-        if (debug_output) {
-	    fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
-            for (i=0; i < 8; i++)
-                fprintf(stdout, "%02X ", buf[i]);
-            fprintf(stdout, "Checksum OK\n");
-        }
-
-        if ((buf[2] & 0x0F) == 1) {
-            // wind speed, wind direction, rainfall
-
-            float rainfall = 0.00;
-            int raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
-            if (acurite_5n1raincounter > 0) {
-                // track rainfall difference after first run
-                rainfall = ( raincounter - acurite_5n1raincounter ) * 0.01;
-            } else {
-                // capture starting counter
-                acurite_5n1raincounter = raincounter;
-            }
-
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "wind direction: %0.1f°, ",
-                acurite_getWindDirection(buf[4]));
-            fprintf(stdout, "rain gauge: %0.2f in.\n", rainfall);
-
-        } else if ((buf[2] & 0x0F) == 8) {
-            // wind speed, temp, RH
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "temp: %2.1f° F, ",
-                acurite_getTemp(buf[4], buf[5]));
-            fprintf(stdout, "humidity: %d%% RH\n",
-                acurite_getHumidity(buf[6]));
-        }
-    } else {
-    	return 0;
-    }
-
-    return 1;
-}
 
 static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
  	bitrow_t *bb = bitbuffer->bb;
@@ -405,12 +326,12 @@ static float acurite_txr_getTemp (uint8_t highbyte, uint8_t lowbyte) {
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
-    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speedmph;
-    uint8_t humidity, sensor_status, repeat_no, message_type;
+    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
+    uint8_t humidity, sensor_status, sequence_num, message_type;
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
-    int wind_speed, raincounter, temp, battery_low;
+    int raincounter, temp, battery_low;
     uint8_t strike_count, strike_distance;
     data_t *data;
 
@@ -490,55 +411,83 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
 	if (browlen == ACURITE_5N1_BITLEN / 8) {
+        if (debug_output) {
+            fprintf(stderr, "Acurite 5n1 raw msg: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+                bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], bb[6], bb[7]);
+        }
 	    channel = acurite_getChannel(bb[0]);
+        sprintf(channel_str, "%c", channel);        
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
-	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
+	    sequence_num = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
+        battery_low = (bb[2] & 0x40) >> 6;
 
+	    if (message_type == ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL) {
+            // Wind speed, wind direction, and rain fall
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
+            wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
+            wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
+            raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
+            if (acurite_5n1t_raincounter > 0) {
+                // track rainfall difference after first run
+                // FIXME when converting to structured output, just output
+                // the reading, let consumer track state/wrap around, etc. 
+                rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
+                if (raincounter < acurite_5n1t_raincounter) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
+                        time_str, sensor_id, channel, acurite_5n1t_raincounter, raincounter);
+                    acurite_5n1t_raincounter = raincounter;
+                }
+            } else {
+                // capture starting counter
+                acurite_5n1t_raincounter = raincounter;
+                fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
+                time_str, sensor_id, channel, raincounter * 0.01);
+            }
+                
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
+                "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
+                "rainfall_accumulation",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                "raincounter_raw",  NULL,   DATA_INT,   raincounter,
+                NULL);
 
-	    if (message_type == 0x31) {
-		// Wind speed, wind direction, and rain fall
-	        wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph(wind_speed);
-		wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
-		wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
-		raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
-		if (acurite_5n1t_raincounter > 0) {
-		    // track rainfall difference after first run
-		    // FIXME when converting to structured output, just output
-		    // the reading, let consumer track state/wrap around, etc. 
-		    rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
-		    if (raincounter < acurite_5n1t_raincounter) {
-			printf("%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
-			       time_str, sensor_id, channel, acurite_5n1t_raincounter, raincounter);
-			acurite_5n1t_raincounter = raincounter;
-		    }
-		} else {
-		    // capture starting counter
-		    acurite_5n1t_raincounter = raincounter;
-		    printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
-			   time_str, sensor_id, channel, raincounter * 0.01);
-		}
+            data_acquired_handler(data);
 
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph %0.1f° %s (%d), rain gauge %0.2f in.\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph,
-		       wind_dird, wind_dirstr, bb[4] & 0x0f, rainfall);
+	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY) {
+            // Wind speed, temperature and humidity
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
+            tempf = acurite_getTemp(bb[4], bb[5]);
+            tempc = fahrenheit2celsius(tempf);
+            humidity = acurite_getHumidity(bb[6]);
 
-	    } else if (message_type == 0x38) {
-		// Wind speed, temperature and humidity
-		wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph((float) wind_speed);
-		tempf = acurite_getTemp(bb[4], bb[5]);
-		tempc = fahrenheit2celsius(tempf);
-		humidity = acurite_getHumidity(bb[6]);
-
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph, tempc, tempf, humidity);
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                NULL);
+            data_acquired_handler(data);
+            
 	    } else {
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
-			time_str, sensor_id, channel, bb[3], message_type);
+            fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
+                time_str, sensor_id, channel, bb[3], message_type);
 	    }
 	}
 
@@ -800,16 +749,6 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
     return 0;
 }
 
-r_device acurite5n1 = {
-    .name           = "Acurite 5n1 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 280,
-    .long_limit     = 520,
-    .reset_limit    = 800,
-    .json_callback  = &acurite5n1_callback,
-    .disabled       = 1,
-    .demod_arg      = 0,
-};
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
