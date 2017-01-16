@@ -755,7 +755,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
     uint8_t *bb;
     data_t *data;
     char *model1 = "00275rm", *model2 = "00276rm";
-    float tempc, ptempc, tempf, ptempf;
+    float tempc, ptempc;
     uint8_t probe, humidity, phumidity, water;
 
     local_time_str(0, time_str);
@@ -778,7 +778,6 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
         model       = (bb[2] & 1);
         tempc       = 0.1 * ( (bb[4]<<4) | (bb[5]>>4) ) - 100;
         probe       = bb[5] & 3;
-        tempf       = 1.8*tempc + 32;
         humidity    = ((bb[6] & 0x1f) << 2) | (bb[7] >> 6);
         //  No probe
         if (probe==0) {
@@ -789,7 +788,6 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "id",          "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
                 "humidity",        "Humidity",     DATA_INT,       humidity,
                 NULL);
         //  Water probe (detects water leak)
@@ -802,14 +800,12 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "id",          "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
                 "humidity",        "Humidity",     DATA_INT,       humidity,
                 "water",           "",             DATA_INT,       water,
                 NULL);
         //  Soil probe (detects temperature)
         } else if (probe==2) {
             ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
-            ptempf    = 1.8*ptempc + 32;
             data = data_make(
                 "time",            "",             DATA_STRING,    time_str,
                 "model",           "",             DATA_STRING,    model ? model1 : model2,
@@ -817,15 +813,12 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "id",          "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
                 "humidity",        "Humidity",     DATA_INT,       humidity,
                 "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                "ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
                 NULL);
         //  Spot probe (detects temperature and humidity)
         } else if (probe==3) {
             ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
-            ptempf    = 1.8*ptempc + 32;
             phumidity = bb[9] & 0x7f;
             data = data_make(
                 "time",            "",             DATA_STRING,    time_str,
@@ -834,10 +827,8 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "id",          "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
                 "humidity",        "Humidity",     DATA_INT,       humidity,
                 "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                "ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
                 "phumidity",       "Humidity",     DATA_INT,       phumidity,
                 NULL);
         }
