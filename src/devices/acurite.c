@@ -751,102 +751,102 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
 
 static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
-	int browlen, battery_low, id, model, valid = 0;
-	uint8_t *bb;
-	data_t *data;
-	char *model1 = "00275rm", *model2 = "00276rm";
-	float tempc, ptempc, tempf, ptempf;
-	uint8_t probe, humidity, phumidity, water;
+    int browlen, battery_low, id, model, valid = 0;
+    uint8_t *bb;
+    data_t *data;
+    char *model1 = "00275rm", *model2 = "00276rm";
+    float tempc, ptempc, tempf, ptempf;
+    uint8_t probe, humidity, phumidity, water;
 
-	local_time_str(0, time_str);
+    local_time_str(0, time_str);
 
-	if (debug_output > 1) {
-		fprintf(stderr,"acurite_00275rm\n");
-		bitbuffer_print(bitbuf);
-	}
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_00275rm\n");
+        bitbuffer_print(bitbuf);
+    }
 
-	for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
-		if (bitbuf->bits_per_row[brow] != 88) continue;
-		bb = bitbuf->bb[brow];
-		if (debug_output) {
-		    fprintf(stderr,"acurite_00275rm: ");
-		    for (int i=0; i<11; i++) fprintf(stderr," %02x",bb[i]);
-		    fprintf(stderr,"\n");
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+        if (bitbuf->bits_per_row[brow] != 88) continue;
+        bb = bitbuf->bb[brow];
+        if (debug_output) {
+            fprintf(stderr,"acurite_00275rm: ");
+            for (int i=0; i<11; i++) fprintf(stderr," %02x",bb[i]);
+            fprintf(stderr,"\n");
                 }
-		id = (bb[0]<<16) | (bb[1]<<8) | bb[3];
-		battery_low = (bb[2] & 0x40)==0;
-		model       = (bb[2] & 1);
-		tempc       = 0.1 * ( (bb[4]<<4) | (bb[5]>>4) ) - 100;
-		probe       = bb[5] & 3;
-		tempf       = 1.8*tempc + 32;
-		humidity    = ((bb[6] & 0x1f) << 2) | (bb[7] >> 6);
-		//  No probe
-		if (probe==0) {
-			data = data_make(
-				"time",            "",             DATA_STRING,    time_str,
-				"model",           "",             DATA_STRING,    model ? model1 : model2,
-				"probe",           "",             DATA_INT,       probe,
-		     		"id",		   "",             DATA_INT,       id,
-		     		"battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-				"temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-				"temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
-				"humidity",        "Humidity",     DATA_INT,       humidity,
-				NULL);
-		//  Water probe (detects water leak)
-		} else if (probe==1) {
-			water = (bb[7] & 0x0f) == 15;
-			data = data_make(
-				"time",            "",             DATA_STRING,    time_str,
-				"model",           "",             DATA_STRING,    model ? model1 : model2,
-				"probe",           "",             DATA_INT,       probe,
-		     		"id",		   "",             DATA_INT,       id,
-		     		"battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-				"temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-				"temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
-				"humidity",        "Humidity",     DATA_INT,       humidity,
-				"water",           "",             DATA_INT,       water,
-				NULL);
-		//  Soil probe (detects temperature)
-		} else if (probe==2) {
-			ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
-			ptempf    = 1.8*ptempc + 32;
-			data = data_make(
-				"time",            "",             DATA_STRING,    time_str,
-				"model",           "",             DATA_STRING,    model ? model1 : model2,
-				"probe",           "",             DATA_INT,       probe,
-		     		"id",		   "",             DATA_INT,       id,
-		     		"battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-				"temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-				"temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
-				"humidity",        "Humidity",     DATA_INT,       humidity,
-				"ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-				"ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
-				NULL);
-		//  Spot probe (detects temperature and humidity)
-		} else if (probe==3) {
-			ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
-			ptempf    = 1.8*ptempc + 32;
-			phumidity = bb[9] & 0x7f;
-			data = data_make(
-				"time",            "",             DATA_STRING,    time_str,
-				"model",           "",             DATA_STRING,    model ? model1 : model2,
-				"probe",           "",             DATA_INT,       probe,
-		     		"id",		   "",             DATA_INT,       id,
-		     		"battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-				"temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-				"temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
-				"humidity",        "Humidity",     DATA_INT,       humidity,
-				"ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-				"ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
-				"phumidity",       "Humidity",     DATA_INT,       phumidity,
-				NULL);
-		}
+        id = (bb[0]<<16) | (bb[1]<<8) | bb[3];
+        battery_low = (bb[2] & 0x40)==0;
+        model       = (bb[2] & 1);
+        tempc       = 0.1 * ( (bb[4]<<4) | (bb[5]>>4) ) - 100;
+        probe       = bb[5] & 3;
+        tempf       = 1.8*tempc + 32;
+        humidity    = ((bb[6] & 0x1f) << 2) | (bb[7] >> 6);
+        //  No probe
+        if (probe==0) {
+            data = data_make(
+                "time",            "",             DATA_STRING,    time_str,
+                "model",           "",             DATA_STRING,    model ? model1 : model2,
+                "probe",           "",             DATA_INT,       probe,
+                    "id",          "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
+                "humidity",        "Humidity",     DATA_INT,       humidity,
+                NULL);
+        //  Water probe (detects water leak)
+        } else if (probe==1) {
+            water = (bb[7] & 0x0f) == 15;
+            data = data_make(
+                "time",            "",             DATA_STRING,    time_str,
+                "model",           "",             DATA_STRING,    model ? model1 : model2,
+                "probe",           "",             DATA_INT,       probe,
+                    "id",          "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
+                "humidity",        "Humidity",     DATA_INT,       humidity,
+                "water",           "",             DATA_INT,       water,
+                NULL);
+        //  Soil probe (detects temperature)
+        } else if (probe==2) {
+            ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
+            ptempf    = 1.8*ptempc + 32;
+            data = data_make(
+                "time",            "",             DATA_STRING,    time_str,
+                "model",           "",             DATA_STRING,    model ? model1 : model2,
+                "probe",           "",             DATA_INT,       probe,
+                    "id",          "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
+                "humidity",        "Humidity",     DATA_INT,       humidity,
+                "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                "ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
+                NULL);
+        //  Spot probe (detects temperature and humidity)
+        } else if (probe==3) {
+            ptempc    = 0.1 * ( ((0x0f&bb[7])<<8) | bb[8] ) - 100; 
+            ptempf    = 1.8*ptempc + 32;
+            phumidity = bb[9] & 0x7f;
+            data = data_make(
+                "time",            "",             DATA_STRING,    time_str,
+                "model",           "",             DATA_STRING,    model ? model1 : model2,
+                "probe",           "",             DATA_INT,       probe,
+                    "id",          "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "temperature_F",   "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, tempf,
+                "humidity",        "Humidity",     DATA_INT,       humidity,
+                "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                "ptemperature_F",  "Fahrenheit",   DATA_FORMAT,    "%.1f F",  DATA_DOUBLE, ptempf,
+                "phumidity",       "Humidity",     DATA_INT,       phumidity,
+                NULL);
+        }
 
-		data_acquired_handler(data);
-		valid++;
-	}
-	if (valid) return 1;
-	return 0;
+        data_acquired_handler(data);
+        valid++;
+    }
+    if (valid) return 1;
+    return 0;
 }
 
 
