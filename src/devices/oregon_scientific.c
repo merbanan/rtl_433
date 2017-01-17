@@ -364,7 +364,6 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             NULL);
         data_acquired_handler(data);
       }
