@@ -125,20 +125,6 @@ static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
         return 0;
 }
 
-static int acurite_crc8(uint8_t seed, uint8_t poly, uint8_t *bytes, int len) {
-    uint8_t crc = seed;
-    while ( len-- ) {
-        uint8_t extract = *bytes++;
-        for ( uint8_t tempI = 8; tempI; tempI-- ) {
-            uint8_t sum = (crc ^ extract) & 0x01;
-            crc >>= 1;
-            if (sum) crc ^= poly;
-            extract >>= 1;
-        }
-    }
-    return crc;
-}
-
 // Temperature encoding for 5-n-1 sensor and possibly others
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     // range -40 to 158 F
@@ -803,7 +789,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                 (signal[2][i] & signal[0][i]);
         }
         // CRC check fails?
-        if ((crc=acurite_crc8(0xd0, 0xb2, signal[0], 11)) != 0) {
+        if ((crc=crc16(&(signal[0][0]), 11/*len*/, 0xb2/*poly*/, 0xd0/*seed*/)) != 0) {
             if (debug_output) {
                 fprintf(stderr,"%s Acurite 00275rm sensor bad CRC: %02x -",
                     time_str, crc);
