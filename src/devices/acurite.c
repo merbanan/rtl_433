@@ -125,7 +125,6 @@ static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
         return 0;
 }
 
-
 // Temperature encoding for 5-n-1 sensor and possibly others
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     // range -40 to 158 F
@@ -750,6 +749,130 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 }
 
 
+static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
+    int crc, battery_low, id, model, valid = 0;
+    uint8_t *bb;
+    data_t *data;
+    char *model1 = "00275rm", *model2 = "00276rm";
+    float tempc, ptempc;
+    uint8_t probe, humidity, phumidity, water;
+    uint8_t signal[3][11];  //  Hold three copies of the signal
+    int     nsignal = 0;
+
+    local_time_str(0, time_str);
+
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_00275rm\n");
+        bitbuffer_print(bitbuf);
+    }
+
+    //  This sensor repeats signal three times.  Store each copy.
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+        if (bitbuf->bits_per_row[brow] != 88) continue;
+        if (nsignal>=3) continue;
+        memcpy(signal[nsignal], bitbuf->bb[brow], 11);
+        if (debug_output) {
+            fprintf(stderr,"acurite_00275rm: ");
+            for (int i=0; i<11; i++) fprintf(stderr," %02x",signal[nsignal][i]);
+            fprintf(stderr,"\n");
+        }
+        nsignal++;
+    }
+
+    //  All three signals were found
+    if (nsignal==3) {
+        //  Combine signal copies so that majority bit count wins
+        for (int i=0; i<11; i++) {
+            signal[0][i] = 
+                (signal[0][i] & signal[1][i]) |
+                (signal[1][i] & signal[2][i]) |
+                (signal[2][i] & signal[0][i]);
+        }
+        // CRC check fails?
+        if ((crc=crc16(&(signal[0][0]), 11/*len*/, 0xb2/*poly*/, 0xd0/*seed*/)) != 0) {
+            if (debug_output) {
+                fprintf(stderr,"%s Acurite 00275rm sensor bad CRC: %02x -",
+                    time_str, crc);
+                for (uint8_t i = 0; i < 11; i++)
+                    fprintf(stderr," %02x", signal[0][i]);
+                fprintf(stderr,"\n");
+            }
+        // CRC is OK
+        } else {
+            //  Decode the combined signal
+            id = (signal[0][0]<<16) | (signal[0][1]<<8) | signal[0][3];
+            battery_low = (signal[0][2] & 0x40)==0;
+            model       = (signal[0][2] & 1);
+            tempc       = 0.1 * ( (signal[0][4]<<4) | (signal[0][5]>>4) ) - 100;
+            probe       = signal[0][5] & 3;
+            humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
+            //  No probe
+            if (probe==0) {
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "crc",             "",             DATA_STRING,    "ok",
+
+                    NULL);
+            //  Water probe (detects water leak)
+            } else if (probe==1) {
+                water = (signal[0][7] & 0x0f) == 15;
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "water",           "",             DATA_INT,       water,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            //  Soil probe (detects temperature)
+            } else if (probe==2) {
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            //  Spot probe (detects temperature and humidity)
+            } else if (probe==3) {
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                phumidity = signal[0][9] & 0x7f;
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "phumidity",       "Humidity",     DATA_INT,       phumidity,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            }
+            data_acquired_handler(data);
+            valid=1;
+        }
+    }
+    if (valid) return 1;
+    return 0;
+}
+
+
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
     .modulation     = OOK_PULSE_PPM_RAW,
@@ -851,4 +974,16 @@ r_device acurite_606 = {
     .json_callback  = &acurite_606_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+};
+
+r_device acurite_00275rm = {
+    .name           = "Acurite 00275rm,00276rm Temp/Humidity with optional probe",
+    .modulation     = OOK_PULSE_PWM_TERNARY,
+    .short_limit    = 320,  // = 4* 80,  80  is reported by -G option
+    .long_limit     = 520,  // = 4*130, 130  "
+  //  .reset_limit    = 608,  // = 4*152, 152  "
+    .reset_limit    = 708,  // = 4*152, 152  "
+    .json_callback  = &acurite_00275rm_callback,
+    .disabled       = 0,
+    .demod_arg      = 2,
 };
