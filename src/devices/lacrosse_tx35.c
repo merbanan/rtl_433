@@ -1,15 +1,59 @@
+/*
+ * LaCrosse/StarMétéo/Conrad TX35DTH-IT, TX29-IT,  Temperature and Humidity Sensors.
+ * Tune to 868240000Hz
+ *
+*
+Protocol
+========
+Example Data (gfile-tx29.data) : 
+   a    a    2    d    d    4    9    2    8    4    4    8    6    a    e    c
+Bits :
+1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
+Bytes num :
+----1---- ----2---- ----3---- ----4---- ----5---- ----6---- ----7---- ----8----
+~~~~~~~~~ 1st byte
+preamble, always "0xaa"
+          ~~~~~~~~~~~~~~~~~~~ bytes 2 and 3
+brand identifier, always 0x2dd4
+                              ~~~~ 1st nibble of bytes 4
+datalength (always 9) in nibble, including this field and crc
+                                   ~~~~ ~~ 2nd nibble of bytes 4 and 1st and 2nd bits of byte 5
+Random device id (6 bits)
+                                          ~ 3rd bits of byte 5
+new battery indicator
+                                           ~ 4th bits of byte 5
+unkown, unused
+                                             ~~~~ ~~~~ ~~~~ 2nd nibble of byte 5 and byte 6
+temperature, in bcd *10 +40
+                                                            ~ 1st bit of byte 7
+weak battery
+                                                             ~~~ ~~~~ 2-8 bits of byte 7
+humidity, in%. If == 0x6a : no humidity sensor
+                                                                      ~~~~ ~~~~ byte 8
+crc8 of bytes
+
+
+Developer's comments
+====================
+I have noticed that depending of the device, the message received has different length.
+It seems some sensor send a long preamble (33 bits, 0 / 1 alternated), and some send only
+one byte as the preamble. I own 3 sensors TX29, and two of them send a long preamble.
+So this decoder synchronize on the 0xaa 0x2d 0xd4 preamble, so many 0xaa can occurs before.
+Also, I added 0x9 in the preamble (the weather data length), because this decoder only handle 
+this type of message.
+TX29 and TX35 sahre the same protocol, but pulse are different length.
+*/
 
 #include "rtl_433.h"
 #include "util.h"
 #include "data.h"
 
 #define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidty
-#define LACROSSE_TX29_CRC_POLY       0x31
-#define LACROSSE_TX29_CRC_INIT       0x00
+#define LACROSSE_TX35_CRC_POLY       0x31
+#define LACROSSE_TX35_CRC_INIT       0x00
 
-// LaCrosse TX29IT,  Temperature and Humidity Sensors. Weather station WS-9160IT
-// Temperature and Humidity are sent in different messages bursts.
-static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
+
+static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *bb;
     uint16_t brow, row_nbytes;
@@ -26,13 +70,12 @@ static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
     };
 	
 	uint8_t out[8] = {0}; // array of byte to decode
-	
 	local_time_str(0, time_str);
 	for (brow = 0; brow < bitbuffer->num_rows; ++brow) {
 		bb = bitbuffer->bb[brow];
 		
 		// Validate message and reject it as fast as possible : check for preamble
-		unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 28);		
+		unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 28);
 		if(start_pos == bitbuffer->bits_per_row[brow])
 			continue; // no preamble detected, move to the next row
 		if (debug_output >= 1)
@@ -47,7 +90,7 @@ static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
 		 * only on byte 3,4,5,6
 		 */		
 		r_crc = out[7];
-		c_crc = crc8(&out[3], 4, LACROSSE_TX29_CRC_POLY, LACROSSE_TX29_CRC_INIT);
+		c_crc = crc8(&out[3], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
 		if (r_crc != c_crc) {
 			// example debugging output
 			if (debug_output >= 1)
@@ -68,13 +111,13 @@ static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
 		temp_c = 10.0 * (out[4] & 0x0f) +  1.0 *((out[5]>>4) & 0x0f) + 0.1 * (out[5] & 0x0f) - 40.0;
 		newbatt = (out[4] >> 5) & 1;
 		battery_low = (out[6]>>7) & 1;
-		humidity = 1 * (out[6] & 0x7F);
-		if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) 
-			humidity = -1;
+		humidity = 1 * (out[6] & 0x7F); // Bit 1 to 7 of byte 6
+		//if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) 
+		//	humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
 		
 			data = data_make("time",          "",            DATA_STRING, time_str,
 							 "brand",         "",            DATA_STRING, "LaCrosse",
-							 "model",         "",            DATA_STRING, "TX29 Sensor",
+							 "model",         "",            DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
 							 "id",            "",            DATA_INT,    sensor_id,
 							 "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
 							 "newbattery",    "NewBattery",  DATA_INT,	  newbatt,
@@ -87,6 +130,14 @@ static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
 		events++;
 	}
 	return events;
+}
+
+static int lacrossetx29_callback(bitbuffer_t *bitbuffer) {
+	return lacrosse_it(bitbuffer, 29);
+}
+
+static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
+	return lacrosse_it(bitbuffer, 35);
 }
 
 static char *output_fields[] = {
@@ -102,15 +153,26 @@ static char *output_fields[] = {
 	"crc",
     NULL
 };
+r_device lacrosse_tx29 = {
+    .name           = "LaCrosse TX29IT Temperature snsor",
+	.modulation     = FSK_PULSE_PCM,
+	.short_limit    = 55,
+	.long_limit     = 55,
+	.reset_limit    = 4000,
+	.json_callback  = &lacrossetx29_callback,
+	.disabled       = 0,
+	.demod_arg      = 0,
+	.fields         = output_fields,
+};
 
 r_device lacrosse_tx35 = {
-    .name           = "LaCrosse TX35 Temperature / Humidity Sensor",
+    .name           = "LaCrosse TX35DTH-IT Temperature sensor",
 	.modulation     = FSK_PULSE_PCM,
 	//.short_limit    = 55,
 	//.long_limit     = 55,
-	.short_limit    = 55,
-	.long_limit     = 55,
-	.reset_limit    = 5000,
+	.short_limit    = 105,
+	.long_limit     = 105,
+	.reset_limit    = 4000,
 	.json_callback  = &lacrossetx35_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,

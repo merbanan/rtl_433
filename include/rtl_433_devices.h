@@ -77,7 +77,8 @@
 		DECL(rftech) \
 		DECL(lacrosse_TX141TH_Bv2) \
 		DECL(acurite_00275rm) \
-		DECL(lacrosse_tx35)
+		DECL(lacrosse_tx35) \
+		DECL(lacrosse_tx29)
 
 typedef struct {
 	char name[256];
