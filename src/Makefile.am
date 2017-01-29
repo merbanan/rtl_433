@@ -42,6 +42,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/lacrosse.c \
                        devices/lacrosse_TX141TH_Bv2.c \
                        devices/lacrossews.c \
+		       devices/lacrosse_tx35.c \
                        devices/lightwave_rf.c \
                        devices/mebus.c \
                        devices/newkaku.c \

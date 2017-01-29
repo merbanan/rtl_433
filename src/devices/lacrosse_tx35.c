@@ -42,6 +42,8 @@ So this decoder synchronize on the 0xaa 0x2d 0xd4 preamble, so many 0xaa can occ
 Also, I added 0x9 in the preamble (the weather data length), because this decoder only handle 
 this type of message.
 TX29 and TX35 sahre the same protocol, but pulse are different length.
+
+How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.html
 */
 
 #include "rtl_433.h"
