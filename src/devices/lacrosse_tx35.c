@@ -179,7 +179,7 @@ r_device lacrosse_tx29 = {
 	.fields         = output_fields,
 };
 
-// Receiver for the TX29 device
+// Receiver for the TX35 device
 r_device lacrosse_tx35 = {
 	.name           = "LaCrosse TX35DTH-IT Temperature sensor",
 	.modulation     = FSK_PULSE_PCM,
