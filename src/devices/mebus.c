@@ -1,34 +1,51 @@
 #include "rtl_433.h"
+#include "util.h"
 
 static int mebus433_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    int temperature_before_dec;
-    int temperature_after_dec;
+    char    time_str[LOCAL_TIME_BUFLEN];
     int16_t temp;
     int8_t  hum;
+    uint8_t address;
+    uint8_t channel;
+    uint8_t battery;
+    uint8_t unknown1;
+    uint8_t unknown2;
+    data_t *data;
 
     if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0b01100000) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
-	// Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
-	// upper 4 bits of nibble 1 are reserved for other usages.
-        temp = (int16_t)((uint16_t)(bb[1][1] << 12 ) | bb[1][2]<< 4);
+        local_time_str(0, time_str);
+
+        address = bb[1][0] & 0b00011111;
+
+        channel = ((bb[1][1] & 0b00110000) >> 4) + 1;
+        // Always 0?
+        unknown1 = (bb[1][1] & 0b01000000) >> 6;
+        battery = bb[1][1] & 0b10000000;
+
+        // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+        // upper 4 bits of nibble 1 are reserved for other usages.
+        temp = (int16_t)((uint16_t)(bb[1][1] << 12) | bb[1][2] << 4);
         temp = temp >> 4;
-	// lower 4 bits of nibble 3 and upper 4 bits of nibble 4 contains
-	// humidity as decimal value
-	hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
+        // lower 4 bits of nibble 3 and upper 4 bits of nibble 4 contains
+        // humidity as decimal value
+        hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
 
-        temperature_before_dec = abs(temp / 10);
-        temperature_after_dec = abs(temp % 10);
+        // Always 0b1111?
+        unknown2 = (bb[1][3] & 0b11110000) >> 4;
 
-        fprintf(stdout, "Sensor event:\n");
-        fprintf(stdout, "protocol       = Mebus/433\n");
-        fprintf(stdout, "address        = %i\n", bb[1][0] & 0b00011111);
-        fprintf(stdout, "channel        = %i\n",((bb[1][1] & 0b00110000) >> 4)+1);
-        fprintf(stdout, "battery        = %s\n", bb[1][1] & 0b10000000?"Ok":"Low");
-        fprintf(stdout, "unkown1        = %i\n",(bb[1][1] & 0b01000000) >> 6); // always 0?
-        fprintf(stdout, "unkown2        = %i\n",(bb[1][3] & 0b11110000) >> 4); // always 1111?
-        fprintf(stdout, "temperature    = %s%d.%d°C\n",temp<0?"-":"",temperature_before_dec, temperature_after_dec);
-        fprintf(stdout, "humidity       = %i%%\n", hum);
-        fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
+        data = data_make("time",          "",            DATA_STRING, time_str,
+                         "model",         "",            DATA_STRING, "Mebus/433",
+                         "id",            "Address",     DATA_INT, address,
+                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                         "channel",       "Channel",     DATA_INT, channel,
+                         "unknown1",      "Unknown 1",   DATA_INT, unknown1,
+                         "unknown2",      "Unknown 2",   DATA_INT, unknown2,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
+                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
+                         NULL);
+        data_acquired_handler(data);
+
 
         return 1;
     }
@@ -42,6 +59,6 @@ r_device mebus433 = {
     .long_limit     = 2400,
     .reset_limit    = 6000,
     .json_callback  = &mebus433_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .demod_arg      = 0,
 };
