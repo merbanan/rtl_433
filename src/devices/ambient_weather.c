@@ -136,7 +136,8 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
   fprintf (stderr,"\n\n");
   */
 
-  if ( (bb[0][0] == 0x00) && (bb[0][1] == 0x14) && (bb[0][2] & 0x50) ) {
+  if ( ((bb[0][0] == 0x00) && (bb[0][1] == 0x14) && (bb[0][2] & 0x50)) ||
+       ((bb[0][0] == 0xff) && (bb[0][1] == 0xd4) && (bb[0][2] & 0x50)) ) {
 
     if (validate_checksum (bb[0], BITBUF_COLS)) {
       return 0;
