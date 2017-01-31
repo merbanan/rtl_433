@@ -20,6 +20,7 @@
 #define ID_WGR968   0x3d00
 #define ID_UV800    0xd874
 #define ID_THN129   0xcc43  // THN129 Temp only
+#define ID_BTHGN129 0x5d53  // Baro, Temp, Hygro sensor
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
@@ -48,6 +49,23 @@ unsigned int get_os_humidity(unsigned char *message, unsigned int sensor_id) {
   int humidity = 0;
   humidity = ((message[6]&0x0f)*10)+(message[6]>>4);
   return humidity;
+}
+
+float get_os_pressure(unsigned char *message, unsigned int sensor_id) {
+  // sensor ID included to support sensors with pressure in different position/format
+  if (debug_output)
+  {
+    fprintf(stdout," raw pressure data : %02x %02x\n",(int)message[8],(int)message[7]);
+    /*int i;
+    for (i=0; message[i];i++)
+    {
+      fprintf(stdout,"%d %02x ",i,(int)message[i]);
+    }
+    fprintf(stdout,"\n");*/
+  }
+  float pressure = 0;
+  pressure = ((message[8]<<4)+message[7])/100.0F/0.0295299830714;
+  return pressure;
 }
 
 
@@ -369,7 +387,26 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
       }
        
       return 1;
-    } else if (num_valid_v2_bits > 16) {
+    } else if (sensor_id  == ID_BTHGN129) {
+      //if ((validate_os_v2_message(msg, 137, num_valid_v2_bits, 12) == 0)) {
+        float temp_c = get_os_temperature(msg, sensor_id);
+        float pressure = get_os_pressure(msg, sensor_id);
+        data = data_make(
+            "time",          "",            DATA_STRING, time_str,
+            "brand",         "",            DATA_STRING, "OS",
+            "model",         "",            DATA_STRING, "BTHGN129",
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+            "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg, sensor_id),
+            "pressure",       "Pressure",   DATA_FORMAT, "%.02f mbar", DATA_DOUBLE,pressure,
+            NULL);
+        data_acquired_handler(data);
+      //}
+       
+      return 1;
+    }else if (num_valid_v2_bits > 16) {
       if(debug_output) {
         fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
         fprintf(stdout, "Message: "); for (i=0 ; i<20 ; i++) fprintf(stdout, "%02x ", msg[i]); fprintf(stdout,"\n");
