@@ -54,8 +54,8 @@ How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.ht
 #define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidty
 #define LACROSSE_TX35_CRC_POLY       0x31
 #define LACROSSE_TX35_CRC_INIT       0x00
-#define LACROSSE_TX29_MODEL          29; // Model number
-#define LACROSSE_TX35_MODEL          35;
+#define LACROSSE_TX29_MODEL          29 // Model number
+#define LACROSSE_TX35_MODEL          35
 
 /**
  ** Generic decoder for LaCrosse "IT+" (instant transmission) protocol
