@@ -116,32 +116,6 @@ static float get_rainfall(const uint8_t* br) {
 }
 
 
-//----------------- TIME DECODING ----------------------------------------------------
-
-static int get_hours(const uint8_t* br) {
-	return ((br[3] >> 4 & 0x03) * 10) + (br[3] & 0x0F);
-}
-
-static int get_minutes(const uint8_t* br) {
-	return (((br[4] & 0xF0) >> 4) * 10) + (br[4] & 0x0F);
-}
-
-static int get_seconds(const uint8_t* br) {
-	return (((br[5] & 0xF0) >> 4) * 10) + (br[5] & 0x0F);
-}
-
-static int get_year(const uint8_t* br) {
-	return (((br[6] & 0xF0) >> 4) * 10) + (br[6] & 0x0F);
-}
-
-static int get_month(const uint8_t* br) {
-	return ((br[7] >> 4 & 0x01) * 10) + (br[7] & 0x0F);
-}
-
-static int get_day(const uint8_t* br) {
-	return (((br[8] & 0xF0) >> 4) * 10) + (br[8] & 0x0F);
-}
-
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
@@ -199,16 +173,6 @@ static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
 	const char* battery = get_battery(br);
 
 //---------------------------------------------------------------------------------------
-//-------- GETTING TIME DATA ------------------------------------------------------------
-
-	const int the_hours = get_hours(br);
-	const int the_minutes =	get_minutes(br);
-	const int the_seconds = get_seconds(br);
-	const int the_year = 2000 + get_year(br);
-	const int the_month = get_month(br);
-	const int the_day = get_day(br);
-
-
 //--------- PRESENTING DATA --------------------------------------------------------------
 
     data = data_make("time", 		"", 		DATA_STRING, time_str,
@@ -234,12 +198,6 @@ static char *output_fields[] = {
 	"speed",
 	"gust",
 	"rain",
-	"hours",
-	"minutes",
-	"seconds",
-	"year",
-	"month",
-	"day",
 	"battery",
 	NULL
 };
