@@ -166,7 +166,7 @@ static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
 	return lacrosse_it(bitbuffer, LACROSSE_TX35_MODEL);
 }
 
-static char *output_fields_TX35[] = {
+static char *output_fields[] = {
 	"time",
 	"brand",
 	"model",
@@ -180,23 +180,9 @@ static char *output_fields_TX35[] = {
 	NULL
 };
 
-static char *output_fields_TX29[] = {
-	"time",
-	"brand",
-	"model",
-	"id",
-	"battery",
-	"newbattery",
-	"status",
-	"temperature_C",
-	"crc",
-	NULL
-};
-
-
 // Receiver for the TX29 device
 r_device lacrosse_tx29 = {
-	.name           = "LaCrosse TX29IT Temperature snsor",
+	.name           = "LaCrosse TX29IT Temperature sensor",
 	.modulation     = FSK_PULSE_PCM,
 	.short_limit    = 55,
 	.long_limit     = 55,
@@ -204,7 +190,7 @@ r_device lacrosse_tx29 = {
 	.json_callback  = &lacrossetx29_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
-	.fields         = output_fields_TX29,
+	.fields         = output_fields,
 };
 
 // Receiver for the TX35 device
@@ -217,5 +203,5 @@ r_device lacrosse_tx35 = {
 	.json_callback  = &lacrossetx35_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
-	.fields         = output_fields_TX35,
+	.fields         = output_fields,
 };
