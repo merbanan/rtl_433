@@ -32,6 +32,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/fineoffset_wh1080.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
+                       devices/generic_temperature_sensor_2.c \
                        devices/gt_wt_02.c \
                        devices/hideki.c \
                        devices/hondaremote.c \

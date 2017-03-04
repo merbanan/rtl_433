@@ -42,6 +42,7 @@
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
 		DECL(generic_temperature_sensor) \
+        DECL(wg_pb12v1) \
 		DECL(acurite_txr) \
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \

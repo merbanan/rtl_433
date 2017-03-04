@@ -44,6 +44,7 @@ add_executable(rtl_433
 	devices/fineoffset_wh1080.c
 	devices/generic_remote.c
 	devices/generic_temperature_sensor.c
+    devices/wg_pb12v1.c
 	devices/gt_wt_02.c
 	devices/hideki.c
 	devices/ht680.c
