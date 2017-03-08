@@ -50,7 +50,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] >= 48 &&         // Don't waste time on a short packages
+    if (bitbuffer->bits_per_row[0] == 48 &&         // Match exact length to avoid false positives
         bb[0][0] == 0xFF &&             // Preamble
         bb[0][5] == crc8(&bb[0][1], 4, polynomial, 0)	// CRC (excluding preamble)
     )
