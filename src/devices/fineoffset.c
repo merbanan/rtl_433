@@ -104,12 +104,89 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     return 0;
 }
 
+
+/* Fine Offset Electronics WH25 Temperature/Humidity/Pressure sensor protocol
+ *
+ * The sensor sends a package each ~64 s with a width of ~28 ms. The bits are PCM modulated with Frequency Shift Keying
+ *
+ * Example:
+ * [00] {500} 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2a aa aa aa aa aa 8b 75 39 40 9c 8a 09 c8 72 6e ea aa aa 80 10 
+ * Reading: 22.6 C, 40 %, 1001.7 hPa
+ *
+ * Extracted data:
+ *                   TT TT HH PP PP
+ * aa aa aa 2d d4 e5 02 72 28 27 21 c9 bb aa aa aa
+ */
+static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    uint8_t buffer[16];
+    uint16_t id = 0;
+    float temperature = 0;
+    uint8_t humidity = 0;
+    float pressure = 0;
+
+    // Validate package
+    if (bitbuffer->bits_per_row[0] < 400 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 500 bit periods
+        return 0;
+    }
+
+    /* Get time now */
+    local_time_str(0, time_str);
+
+    // Find a data package
+    static const uint8_t HEADER[] = { 0xAA, 0xAA, 0xAA, 0x2D };
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 320, HEADER, sizeof(HEADER)*8);    // Normal index is 361, skip some bytes to find faster
+    if (bit_offset + sizeof(buffer)*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
+        if (debug_output) {
+            fprintf(stderr, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
+            bitbuffer_print(bitbuffer);
+        }
+        return 0;
+    }
+
+    // Extract relevant bytes
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, buffer, sizeof(buffer)*8);
+
+    id = (uint16_t)buffer[4] << 8 | buffer[5];     // Somewhat guesswork... (Based on 1 sensor)
+    temperature = (float)((uint16_t)buffer[6] << 8 | buffer[7]) / 10 - 40.0;
+    humidity = buffer[8];
+    pressure = (float)((uint16_t)buffer[9] << 8 | buffer[10]) / 10;
+
+    char raw_str[128];
+    for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
+
+    data = data_make("time",          "",            DATA_STRING, time_str,
+                     "model",         "",            DATA_STRING, "Fine Offset Electronics, WH25",
+                     "id",            "ID",          DATA_INT, id,
+                     "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                     "pressure",      "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+                     "raw",           "raw",         DATA_STRING, raw_str,
+                      NULL);
+    data_acquired_handler(data);
+
+    return 1;
+}
+
 static char *output_fields[] = {
     "time",
     "model",
     "id",
     "temperature_C",
     "humidity",
+    NULL
+};
+
+static char *output_fields_WH25[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "humidity",
+    "pressure",
+    "raw",
     NULL
 };
 
@@ -126,4 +203,15 @@ r_device fineoffset_WH2 = {
 };
 
 
+r_device fineoffset_WH25 = {
+    .name           = "Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor",
+    .modulation     = FSK_PULSE_PCM,
+    .short_limit    = 56,	// Bit width = 56µs
+    .long_limit     = 56,	// NRZ encoding (bit width = pulse width)
+    .reset_limit    = 20000,	// Package starts with a huge gap of ~18900 us
+    .json_callback  = &fineoffset_WH25_callback,
+    .disabled       = 1,
+    .demod_arg      = 0,
+    .fields         = output_fields_WH25
+};
 
