@@ -544,8 +544,8 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1) {
 		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
 		device.modulation	= OOK_PULSE_PPM_RAW;
-		device.short_limit	= (hist_gaps.bins[hist_gaps.bins_count-3].mean + hist_gaps.bins[hist_gaps.bins_count-2].mean) / 2;	// Set limit between two lowest gaps
-		device.long_limit	= hist_gaps.bins[hist_gaps.bins_count-2].max + 1;			// Counting down may help ignore extraneous short pulses					// Set limit above next lower gap
+		device.short_limit	= (hist_gaps.bins[0].mean + hist_gaps.bins[1].mean) / 2;	// Set limit between two lowest gaps
+		device.long_limit	= hist_gaps.bins[1].max + 1;								// Set limit above next lower gap
 		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;			// Set limit above biggest gap
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
