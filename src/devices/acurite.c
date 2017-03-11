@@ -727,12 +727,12 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 	    // Processing the temperature: 
             // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
             // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-      	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | bb[1][2] << 4);
+      	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | (bb[1][2] << 4));
       	    temp = temp >> 4;
 
       	    temperature = temp / 10.0;
 	    sensor_id = bb[1][0];
-	    battery = bb[1][1] & 0x8f >> 7;
+	    battery = (bb[1][1] & 0x80) >> 7;
 
 	    data = data_make("time",          "",            DATA_STRING, time_str,
                              "model",         "",            DATA_STRING, "Acurite 606TX Sensor",
