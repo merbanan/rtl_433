@@ -44,6 +44,7 @@ static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
+int include_only = 0;	// Option -I
 int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
@@ -112,6 +113,7 @@ void usage(r_device *devices) {
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
+            "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
             "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
@@ -594,6 +596,7 @@ err:
 static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
+    char time_str[LOCAL_TIME_BUFLEN];
 
 	if (do_exit || do_exit_async)
 		return;
@@ -637,50 +640,53 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 		// Detect a package and loop through demodulators with pulse data
 		int package_type = 1;	// Just to get us started
 		while(package_type) {
+			int p_events = 0;	// Sensor events successfully detected per package
 			package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
 			if (package_type == 1) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						case OOK_PULSE_PCM_RZ:
-							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PPM_RAW:
-							pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_PRECISE:
-							pulse_demod_pwm_precise(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm_precise(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_RAW:
-							pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_TERNARY:
-							pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_CLOCK_BITS:
-							pulse_demod_clock_bits(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_clock_bits(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_OSV1:
-							pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						// FSK decoders
 						case FSK_PULSE_PCM:
 						case FSK_PULSE_PWM_RAW:
 							break;
 						case FSK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data, samp_rate);
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+					pulse_analyzer(&demod->pulse_data, samp_rate);
+				}
 			} else if (package_type == 2) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						// OOK decoders
@@ -694,23 +700,25 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 						case OOK_PULSE_PWM_OSV1:
 							break;
 						case FSK_PULSE_PCM:
-							pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						case FSK_PULSE_PWM_RAW:
-							pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						case FSK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
-			}
-		}
-	}
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+					pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
+				}
+			} // if (package_type == ...
+		} // while(package_type)...
+	} // if (demod->analyze...
 
 	if (demod->out_file) {
 		uint8_t* out_buf = iq_buf;				// Default is to dump IQ samples
@@ -862,7 +870,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UWG")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:g:s:b:n:SR:F:C:T:UWG")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -897,6 +905,9 @@ int main(int argc, char **argv) {
                 break;
             case 'A':
                 demod->analyze_pulses = 1;
+                break;
+            case 'I':
+                include_only = atoi(optarg);
                 break;
             case 'r':
                 in_filename = optarg;

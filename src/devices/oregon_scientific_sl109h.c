@@ -130,9 +130,10 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
                          "status",        "Status",                             DATA_INT,    status,
                          NULL);
         data_acquired_handler(data);
+        return 1;
     }
 
-    return bitbuffer->num_rows;
+    return 0;
 }
 
 static char *output_fields[] = {

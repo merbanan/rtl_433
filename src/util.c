@@ -106,7 +106,7 @@ int byteParity(uint8_t inByte){
 }
 
 
-void local_time_str(time_t time_secs, char *buf) {
+char* local_time_str(time_t time_secs, char *buf) {
 	time_t etime;
 	struct tm *tm_info;
 
@@ -124,6 +124,7 @@ void local_time_str(time_t time_secs, char *buf) {
 	tm_info = localtime(&etime);
 
 	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+	return buf;
 }
 
 float celsius2fahrenheit(float celsius)
