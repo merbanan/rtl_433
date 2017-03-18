@@ -151,7 +151,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 		   time_str, esn, status, crc);
 
 	    valid_cnt++; // Have a valid packet.
-	} else {
+	} else if (debug_output) {
 	    fprintf(stderr,"%s DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
 		   time_str, esn, status, crc);
 	}
