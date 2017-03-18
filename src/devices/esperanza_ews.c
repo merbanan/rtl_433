@@ -108,8 +108,9 @@ static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
             if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row+2], sizeof(bitbuffer->bb[row])) != 0 || bitbuffer->bits_per_row[row] != 42) return 0;
         }
         esperanza_ews_process_row(bitbuffer, 2);
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 
