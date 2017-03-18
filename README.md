@@ -158,6 +158,7 @@ Supported device protocols:
     [74]  LaCrosse TX35DTH-IT Temperature sensor
     [75]  LaCrosse TX29IT Temperature sensor
     [76]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [77]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
 
 * Disabled by default, use -R n or -G
 ```

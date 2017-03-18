@@ -9,6 +9,7 @@
 #include "rtl_433.h"
 #include "data.h"
 #include "util.h"
+#include "pulse_demod.h"
 
 
 /*
@@ -186,6 +187,77 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
 }
 
 
+/* Fine Offset Electronics WH0530 Temperature/Rain sensor protocol
+ * aka Agimex Rosenborg 35926 (sold in Denmark)
+ * aka ...
+ *
+ * The sensor sends two identical packages of 71 bits each ~48s. The bits are PWM modulated with On Off Keying
+ * Data consists of 9 bytes with first bit missing
+ *
+ * Extracted data:
+ * 7f 38 a2 8f 02 00 ff e7 51
+ * hh hI IT TT RR RR ?? CC CC
+ *
+ * hh h = Header (first bit is not received and must be added)
+ * II = Sensor ID (guess). Does not change at battery change.
+ * T TT = Temperature (+40*10)
+ * RR RR = Rain count (each count = 0.3mm, LSB first)
+ * ?? = Always 0xFF (maybe reserved for humidity?)
+ * CC = CRC8 with polynomium 0x31
+ * CC = Checksum of previous 7 bytes (binary sum truncated to 8 bit)
+ */
+static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
+    data_t *data;
+
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    // Validate package
+    if (bitbuffer->bits_per_row[0] != 71        // Match exact length to avoid false positives
+        || (bb[0][0]>>1) != 0x7F                // Check header (two upper nibbles)
+        || (bb[0][1]>>5) != 0x3                 // Check header (third nibble)
+    ) {
+        return 0;
+    }
+
+    // Get time now
+    local_time_str(0, time_str);
+
+    uint8_t buffer[8];
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, buffer, sizeof(buffer)*8);     // Skip first 7 bits
+
+    if (debug_output) {
+        char raw_str[128];
+        for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
+        fprintf(stderr, "Fineoffset_WH0530: Raw %s\n", raw_str);
+    }
+
+    // Verify checksum
+    const uint8_t crc = crc8(buffer, 6, 0x31, 0);
+    const uint8_t checksum = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6];
+    if (crc != buffer[6] || checksum != buffer[7]) {
+        if (debug_output) {
+            fprintf(stderr, "Fineoffset_WH0530: Checksum error: %02x %02x\n", crc, checksum);
+        }
+        return 0;
+    }
+
+    const uint8_t id = (buffer[0]<<4) | (buffer[0]>>4);
+    const float temperature = (float)((uint16_t)(buffer[1] & 0xF)<< 8 | buffer[2]) / 10.0 - 40.0;
+    const float rain = 0.3 * (((uint16_t)buffer[4] << 8) | buffer[3]);
+
+    data = data_make("time",          "",            DATA_STRING, time_str,
+                     "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
+                     "id",            "ID",          DATA_INT, id,
+                     "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+                     "rain",          "Rain",        DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
+                     NULL);
+    data_acquired_handler(data);
+
+    return 1;
+}
+
+
 static char *output_fields[] = {
     "time",
     "model",
@@ -204,6 +276,16 @@ static char *output_fields_WH25[] = {
     "humidity",
     "pressure",
 //    "raw",
+    NULL
+};
+
+
+static char *output_fields_WH0530[] = {
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "rain",
     NULL
 };
 
@@ -233,3 +315,20 @@ r_device fineoffset_WH25 = {
     .fields         = output_fields_WH25
 };
 
+
+PWM_Precise_Parameters pwm_precise_parameters_fo_wh0530 = {
+    .pulse_tolerance    = 40,
+    .pulse_sync_width   = 0,    // No sync bit used
+};
+
+r_device fineoffset_WH0530 = {
+    .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 504,	// Short pulse 504µs
+    .long_limit     = 1480, // Long pulse 1480µs
+    .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)
+    .json_callback  = &fineoffset_WH0530_callback,
+    .disabled       = 0,
+    .demod_arg      = (uintptr_t)&pwm_precise_parameters_fo_wh0530,
+    .fields         = output_fields_WH0530
+};
