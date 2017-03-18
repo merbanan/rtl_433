@@ -596,6 +596,7 @@ err:
 static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
+    char time_str[LOCAL_TIME_BUFLEN];
 
 	if (do_exit || do_exit_async)
 		return;
@@ -642,7 +643,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 			int p_events = 0;	// Sensor events successfully detected per package
 			package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
 			if (package_type == 1) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						case OOK_PULSE_PCM_RZ:
@@ -685,7 +686,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					pulse_analyzer(&demod->pulse_data, samp_rate);
 				}
 			} else if (package_type == 2) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						// OOK decoders
