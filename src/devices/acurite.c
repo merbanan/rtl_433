@@ -11,7 +11,7 @@
  * - 609TXC "TH" temperature and humidity sensor (609A1TX)
  * - Acurite 986 Refrigerator / Freezer Thermometer
  * - Acurite 606TX temperature sesor
- * - Acurite 6045M Lightning Detector (preliminary)
+ * - Acurite 6045M Lightning Detector (Work in Progress)
  */
 
 
@@ -314,6 +314,22 @@ static float acurite_txr_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     return temp;
 }
 
+
+/*
+ * Acurite 06045 Lightning sensor Temperature encoding
+ * 12 bits of temperature after removing parity and status bits.
+ * Message native format appears to be in 1/10 of a degree Fahrenheit
+ * Device Specification: -40 to 158 F  / -40 to 70 C
+ * Available range given encoding with 12 bits -150.0 F to +259.6 F
+ */
+static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
+    int rawtemp = ((highbyte & 0x1F) << 7) | (lowbyte & 0x7F);
+    float temp = (rawtemp - 1500) / 10.0;
+    return temp;
+}
+
+
+
 /*
  * This callback handles several Acurite devices that use a very
  * similar RF encoding and data format:
@@ -326,7 +342,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
     float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
-    uint8_t humidity, sensor_status, sequence_num, message_type;
+    uint8_t humidity, sensor_status, sequence_num, message_type, l_status;
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
@@ -494,17 +510,18 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    channel = acurite_getChannel(bb[0]);  // same as TXR
 	    sensor_id = (bb[1] << 8) | bb[2];     // TBD 16 bits or 20?
 	    humidity = acurite_getHumidity(bb[3]);  // same as TXR
-	    message_type = bb[4] & 0x7f;
-	    temp = bb[5] & 0x7f; // TBD Not sure if this is the temp.
+	    message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD batttery? 
+	    tempf = acurite_6045_getTemp(bb[4], bb[5]);
 	    strike_count = bb[6] & 0x7f;
-	    strike_distance = bb[7] & 0x7f;
+	    strike_distance = bb[7] & 0x1f;
+	    l_status = (bb[7] & 0x60) >> 5;
 
 
-	    printf("%s Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %d C %d %% RH Strikes %d Distance %d -",
-		   time_str, sensor_id, channel, message_type, temp, humidity, strike_count, strike_distance);
+	    printf("%s Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",
+		   time_str, sensor_id, channel, message_type, tempf, humidity, strike_count, strike_distance, l_status);
 
-	    // FIXME Temporarily dump message data until the decoding improves.
-	    // Include parity indicator.
+	    // FIXME Temporarily dump raw message data until the
+	    // decoding improves.  Includes parity indicator(*).
 	    for (int i=0; i < browlen; i++) {
 		char pc;
 		pc = byteParity(bb[i]) == 0 ? ' ' : '*';
