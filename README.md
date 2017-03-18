@@ -61,6 +61,7 @@ Usage:	= Tuner options =
 	= Analyze/Debug options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
+	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
