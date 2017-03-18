@@ -79,7 +79,8 @@
 		DECL(acurite_00275rm) \
 		DECL(lacrosse_tx35) \
 		DECL(lacrosse_tx29) \
-		DECL(fineoffset_WH25)
+		DECL(fineoffset_WH25) \
+		DECL(fineoffset_WH0530)
 
 typedef struct {
 	char name[256];
