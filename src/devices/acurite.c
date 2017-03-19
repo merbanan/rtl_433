@@ -443,7 +443,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
     float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
-    uint8_t humidity, sensor_status, sequence_num, message_type, l_status;
+    uint8_t humidity, sensor_status, sequence_num, message_type;
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
