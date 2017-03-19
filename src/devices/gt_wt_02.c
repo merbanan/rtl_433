@@ -53,6 +53,7 @@
 
 static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 {
+  data_t *data;  /*JF*/
   const uint8_t *b = bitbuffer->bb[row];
   const int length = bitbuffer->bits_per_row[row];
 
@@ -92,7 +93,6 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   else
     return 0;  // very unlikely, but the humidity is outside of valid range
 
-
   const int sensor_id      =  b[0];                    /* 8 x A */
   const int battery_low    = (b[1] >> 7 & 1);          /* 1 x B */
   const int button_pressed = (b[1] >> 6 & 1);          /* 1 x C */
@@ -100,20 +100,33 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
   const int negative_sign  = (b[1] >> 3 & 1);          /* 1 x E */
   const int temp           = (((b[1] & 15) << 8) | b[2]); /* E + 11 X G */
 
-
   float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
-  {
-    /* @todo: remove timestamp printing as soon as the controller takes this task */
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
-    /* @todo make temperature unit configurable, not printing both */
-    fprintf(stdout, "%s GT-WT-02 Sensor %02x: battery %s, channel %d, button %d, temperature %3.1f C / %3.1f F, humidity %s%%\n"
-        , time_str, sensor_id, battery_low ? "low" : "OK", channel+1, button_pressed
-        , tempC, celsius2fahrenheit(tempC), humidity_str
-        );
-  }
-  return 1;
+  char time_str[LOCAL_TIME_BUFLEN];
+  local_time_str(0, time_str);
+
+  data = data_make(
+    "time",		"",		DATA_STRING,	time_str,
+    "model",		"",		DATA_STRING,	"GT_WT_02 sensor",
+    "rc",		"Rolling Code",		DATA_INT,	sensor_id,
+    "channel",		"Channel",	DATA_INT,	channel+1,
+    "battery",		"Battery",	DATA_STRING,	battery_low ? "LOW" : "OK",
+    "button",		"Button ",	DATA_INT,	button_pressed,
+    "temperature_C",	"Temperature",	DATA_FORMAT,	"%.01f C",DATA_DOUBLE,tempC,
+    "humidity",		"Humidity",	DATA_STRING,	humidity_str,
+    NULL);
+    data_acquired_handler(data);
+    return 1;
+//# {
+//    /* @todo: remove timestamp printing as soon as the controller takes this task */
+//  char time_str[LOCAL_TIME_BUFLEN];
+//   local_time_str(0, time_str);
+//
+//   /* @todo make temperature unit configurable, not printing both */
+//  fprintf(stdout, "%s, GT-WT-02 Sensor %02x, battery %s, channel %d, button %d, temperature %3.1f C, humidity %s%%\n"
+//      , time_str, sensor_id, battery_low ? "LOW" : "OK", channel+1, button_pressed, tempC, humidity_str);
+//}
+//return 1; */
 }
 
 static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
@@ -125,6 +138,18 @@ static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
   return counter;
 }
 
+static char *output_fields[] = {
+  "time",
+  "model",
+  "rc",
+  "channel",
+  "battery",
+  "button",
+  "temperature_C",
+  "humidity",
+  NULL
+};
+
 r_device gt_wt_02 = {
   .name          = "GT-WT-02 Sensor",
   .modulation    = OOK_PULSE_PPM_RAW,
@@ -132,8 +157,9 @@ r_device gt_wt_02 = {
   .long_limit    = 6000,
   .reset_limit   = 10000,
   .json_callback = &gt_wt_02_callback,
-  .disabled      = 1,
+  .disabled      = 0,
   .demod_arg     = 0,
+  .fields        = output_fields,
 };
 
 // Test code
