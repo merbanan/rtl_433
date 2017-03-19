@@ -126,6 +126,6 @@ r_device cardin = {
     .long_limit     = 1600,
     .reset_limit    = 32000,
     .json_callback  = &cardin_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };

@@ -79,6 +79,6 @@ r_device efergy_e2_classic = {
 	.long_limit     = 400,
 	.reset_limit    = 400,
 	.json_callback  = &efergy_e2_classic_callback,
-	.disabled       = 0,
+	.disabled       = 1,
 	.demod_arg      = 0,
 };

@@ -210,9 +210,11 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 				break;
 
 			default:
+                if (debug_output) {
 				fprintf(stderr,
 					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
 					time_str, sensor_id, msg_type, msg_value, msg_value_int);
+                }
 				events++;
 			}
 

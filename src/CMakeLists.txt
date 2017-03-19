@@ -24,11 +24,11 @@ add_executable(rtl_433
 	pulse_detect.c
 	rtl_433.c
 	util.c
-        devices/acurite.c
+	devices/acurite.c
 	devices/alecto.c
 	devices/ambient_weather.c
 	devices/blyss.c
-	devices/brennstuhl_rcs_2044.c
+	devices/brennenstuhl_rcs_2044.c
 	devices/calibeur.c
 	devices/cardin.c
 	devices/chuango.c
@@ -51,6 +51,7 @@ add_executable(rtl_433
 	devices/intertechno.c
 	devices/kedsum.c
 	devices/lacrosse.c
+	devices/lacrosse_TX141TH_Bv2.c
 	devices/lacrossews.c
 	devices/lightwave_rf.c
 	devices/mebus.c
@@ -79,9 +80,16 @@ add_executable(rtl_433
 	devices/steelmate.c
 	devices/schraeder.c
 	devices/elro_db286a.c
-        devices/efergy_optical.c
-        devices/hondaremote.c
+	devices/efergy_optical.c
+	devices/hondaremote.c
 	devices/new_template.c
+	devices/radiohead_ask.c
+	devices/kerui.c
+	devices/fineoffset_wh1050.c
+	devices/honeywell.c
+	devices/maverick_et73x.c
+	devices/rftech.c
+	devices/lacrosse_tx35.c
 
 )
 

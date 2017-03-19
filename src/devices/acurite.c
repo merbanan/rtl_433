@@ -8,9 +8,10 @@
  * - 5-n-1 pro weather sensor, Model: 06014RM
  * - 896 Rain gauge, Model: 00896
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
- * - "Th" temperature and humidity sensor (Model(s) ??)
+ * - 609TXC "TH" temperature and humidity sensor (609A1TX)
  * - Acurite 986 Refrigerator / Freezer Thermometer
  * - Acurite 606TX temperature sesor
+ * - Acurite 6045M Lightning Detector (preliminary)
  */
 
 
@@ -23,6 +24,11 @@
 
 #define ACURITE_TXR_BITLEN		56
 #define ACURITE_5N1_BITLEN		64
+#define ACURITE_6045_BITLEN		72
+
+// ** Acurite known message types
+#define ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL  0x31
+#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY     0x38
 
 static char time_str[LOCAL_TIME_BUFLEN];
 
@@ -59,14 +65,6 @@ static char time_str[LOCAL_TIME_BUFLEN];
 //     E,  7,  NNE,   22.5
 //     F,  C,    S,  180.0
 
-
-
-// original 5-n-1 wind direction values
-// from Jens/Helge
-const float acurite_winddirections[] =
-    { 337.5, 315.0, 292.5, 270.0, 247.5, 225.0, 202.5, 180,
-      157.5, 135.0, 112.5, 90.0, 67.5, 45.0, 22.5, 0.0 };
-
 // From draythomp/Desert-home-rtl_433
 // matches acu-link internet bridge values
 // The mapping isn't circular, it jumps around.
@@ -101,7 +99,7 @@ const float acurite_5n1_winddirections[] =
       67.5,  // 8 - ENE
       135.0, // 9 - SE
       90.0,  // a - E
-      112.5, // b - 112.5
+      112.5, // b - ESE
       45.0,  // c - NE
       157.5, // d - SSE
       22.5,  // e - NNE
@@ -109,11 +107,12 @@ const float acurite_5n1_winddirections[] =
     };
 
 
+// 5n1 keep state for how much rain has been seen so far
+static int acurite_5n1raincounter = 0;  // for 5n1 decoder
+static int acurite_5n1t_raincounter = 0;  // for combined 5n1/TXR decoder
 
-static int acurite_raincounter = 0;
 
-// FIXME< this is a checksum, not a CRC
-static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
+static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
     // also disregard a row of all zeros
     int i;
@@ -126,46 +125,28 @@ static int acurite_crc(uint8_t row[BITBUF_COLS], int cols) {
         return 0;
 }
 
-static int acurite_detect(uint8_t *pRow) {
-    int i;
-    if ( pRow[0] != 0x00 ) {
-        // invert bits due to wierd issue
-        for (i = 0; i < 8; i++)
-            pRow[i] = ~pRow[i] & 0xFF;
-        pRow[0] |= pRow[8];  // fix first byte that has mashed leading bit
-
-        if (acurite_crc(pRow, 7))
-            return 1;  // passes crc check
-    }
-    return 0;
-}
-
 // Temperature encoding for 5-n-1 sensor and possibly others
 static float acurite_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     // range -40 to 158 F
     int highbits = (highbyte & 0x0F) << 7 ;
     int lowbits = lowbyte & 0x7F;
     int rawtemp = highbits | lowbits;
-    float temp = (rawtemp - 400) / 10.0;
-    return temp;
+    float temp_F = (rawtemp - 400) / 10.0;
+    return temp_F;
 }
 
-static int acurite_getWindSpeed (uint8_t highbyte, uint8_t lowbyte) {
+static float acurite_getWindSpeed_kph (uint8_t highbyte, uint8_t lowbyte) {
     // range: 0 to 159 kph
-	// TODO: sensor does not seem to be in kph, e.g.,
-	// a value of 49 here was registered as 41 kph on base unit
-	// value could be rpm, etc which may need (polynomial) scaling factor??
+    // raw number is cup rotations per 4 seconds
+    // http://www.wxforum.net/index.php?topic=27244.0 (found from weewx driver)
 	int highbits = ( highbyte & 0x1F) << 3;
     int lowbits = ( lowbyte & 0x70 ) >> 4;
-    int speed = highbits | lowbits;
-    return speed;
-}
-
-// For the 5n1 based on a linear/circular encoding.
-static float acurite_getWindDirection (uint8_t byte) {
-    // 16 compass points, ccw from (NNW) to 15 (N)
-    int direction = byte & 0x0F;
-    return acurite_winddirections[direction];
+    int rawspeed = highbits | lowbits;
+    float speed_kph = 0;
+    if (rawspeed > 0) {
+        speed_kph = rawspeed * 0.8278 + 1.0;
+    }
+    return speed_kph;
 }
 
 static int acurite_getHumidity (uint8_t byte) {
@@ -229,64 +210,6 @@ static int acurite_5n1_getBatteryLevel(uint8_t byte){
 }
 
 
-int acurite5n1_callback(bitbuffer_t *bitbuffer) {
-    // acurite 5n1 weather sensor decoding for rtl_433
-    // Jens Jensen 2014
-    bitrow_t *bb = bitbuffer->bb;
-    int i;
-    uint8_t *buf = NULL;
-    // run through rows til we find one with good crc (brute force)
-    for (i=0; i < BITBUF_ROWS; i++) {
-        if (acurite_detect(bb[i])) {
-            buf = bb[i];
-            break; // done
-        }
-    }
-
-    if (buf) {
-        // decode packet here
-        if (debug_output) {
-	    fprintf(stdout, "Detected Acurite 5n1 sensor, %d bits\n",bitbuffer->bits_per_row[1]);
-            for (i=0; i < 8; i++)
-                fprintf(stdout, "%02X ", buf[i]);
-            fprintf(stdout, "CRC OK\n");
-        }
-
-        if ((buf[2] & 0x0F) == 1) {
-            // wind speed, wind direction, rainfall
-
-            float rainfall = 0.00;
-            int raincounter = acurite_getRainfallCounter(buf[5], buf[6]);
-            if (acurite_raincounter > 0) {
-                // track rainfall difference after first run
-                rainfall = ( raincounter - acurite_raincounter ) * 0.01;
-            } else {
-                // capture starting counter
-                acurite_raincounter = raincounter;
-            }
-
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "wind direction: %0.1f°, ",
-                acurite_getWindDirection(buf[4]));
-            fprintf(stdout, "rain gauge: %0.2f in.\n", rainfall);
-
-        } else if ((buf[2] & 0x0F) == 8) {
-            // wind speed, temp, RH
-            fprintf(stdout, "wind speed: %d kph, ",
-                acurite_getWindSpeed(buf[3], buf[4]));
-            fprintf(stdout, "temp: %2.1f° F, ",
-                acurite_getTemp(buf[4], buf[5]));
-            fprintf(stdout, "humidity: %d%% RH\n",
-                acurite_getHumidity(buf[6]));
-        }
-    } else {
-    	return 0;
-    }
-
-    return 1;
-}
-
 static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
  	bitrow_t *bb = bitbuffer->bb;
    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
@@ -300,36 +223,74 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
     return 0;
 }
 
-static int acurite_th_detect(uint8_t *buf){
-    if(buf[5] != 0) return 0;
-    uint8_t sum = (buf[0] + buf[1] + buf[2] + buf[3]) & 0xff;
-    if(sum == 0) return 0;
-    return sum == buf[4];
-}
+
+// Acurite 609TXC
+// Temperature in Celsius is encoded as a 12 bit integer value
+// multiplied by 10 using the 4th - 6th nybbles (bytes 1 & 2)
+// negative values are handled by treating it temporarily
+// as a 16 bit value to put the sign bit in a usable place.
+//
 static float acurite_th_temperature(uint8_t *s){
     uint16_t shifted = (((s[1] & 0x0f) << 8) | s[2]) << 4; // Logical left shift
     return (((int16_t)shifted) >> 4) / 10.0; // Arithmetic right shift
 }
 
-// @tdodo - determine which Acurite temp/humidity
-// sensors this acutally decodes
-static int acurite_th_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
-    uint8_t *buf = NULL;
-    int i;
-    for(i = 0; i < BITBUF_ROWS; i++){
-	if(acurite_th_detect(bb[i])){
-            buf = bb[i];
-            break;
-        }
+// Acurite 609 Temperature and Humidity Sensor
+// 5 byte messages
+// II ST TT HH CC
+// II - ID byte, changes at each power up
+// S - Status bitmask, normally 0x2,
+//     0xa - battery low (bit 0x80)
+// TTT - Temp in Celsius * 10, 12 bit with complement.
+// HH - Humidity
+// CC - Checksum
+//
+// @todo - see if the 3rd nybble is battery/status
+//
+static int acurite_th_callback(bitbuffer_t *bitbuf) {
+    uint8_t *bb = NULL;
+    int cksum, battery_low, valid = 0;
+    float tempc;
+    uint8_t humidity, id, status;
+    data_t *data;
+
+    local_time_str(0, time_str);
+
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+        if (bitbuf->bits_per_row[brow] != 40) {
+	    continue;
+	}
+
+	bb = bitbuf->bb[brow];
+
+	cksum = (bb[0] + bb[1] + bb[2] + bb[3]);
+
+	if (cksum == 0 || ((cksum & 0xff) != bb[4])) {
+	    continue;
+	}
+
+	tempc = acurite_th_temperature(bb);
+	id = bb[0];
+	status = (bb[1] & 0xf0) >> 4;
+	battery_low = status & 0x8;
+	humidity = bb[3];
+
+	data = data_make(
+		     "time",		"",		DATA_STRING,	time_str,
+		     "model",		"",		DATA_STRING,	"Acurite 609TXC Sensor",
+		     "id",		"",		DATA_INT,	id,
+		     "battery",		"",		DATA_STRING,	battery_low ? "LOW" : "OK",
+		     "status",		"",		DATA_INT,	status,
+		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+		     "humidity",        "Humidity",	DATA_INT,	humidity,
+		     NULL);
+
+	data_acquired_handler(data);
+	valid++;
     }
-    if(buf){
-        fprintf(stdout, "Temperature event:\n");
-        fprintf(stdout, "protocol      = Acurite Temp&Humidity\n");
-        fprintf(stdout, "temp          = %.1f°C\n", acurite_th_temperature(buf));
-        fprintf(stdout, "humidity      = %d%%\n\n", buf[3]);
+
+    if (valid)
         return 1;
-    }
 
     return 0;
 }
@@ -353,14 +314,25 @@ static float acurite_txr_getTemp (uint8_t highbyte, uint8_t lowbyte) {
     return temp;
 }
 
+/*
+ * This callback handles several Acurite devices that use a very
+ * similar RF encoding and data format:
+ *:
+ * - 592TXR temperature and humidity sensor
+ * - 5-n-1 weather station
+ * - 6045M Lightning Detectur with Temperature and Humidity
+ */
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
-    int browlen;
+    int browlen, valid = 0;
     uint8_t *bb;
-    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speedmph;
-    uint8_t humidity, sensor_status, repeat_no, message_type;
+    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
+    uint8_t humidity, sensor_status, sequence_num, message_type;
     char channel, *wind_dirstr = "";
+    char channel_str[2];
     uint16_t sensor_id;
-    int wind_speed, raincounter;
+    int raincounter, temp, battery_low;
+    uint8_t strike_count, strike_distance;
+    data_t *data;
 
 
     local_time_str(0, time_str);
@@ -377,8 +349,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	if (debug_output > 1)
 	    fprintf(stderr,"acurite_txr: row %d bits %d, bytes %d \n", brow, bitbuf->bits_per_row[brow], browlen);
 
-	if (bitbuf->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
-	    bitbuf->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1) {
+	if ((bitbuf->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
+	     bitbuf->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1) &&
+	    bitbuf->bits_per_row[brow] != ACURITE_6045_BITLEN) {
 	    if (debug_output > 1 && bitbuf->bits_per_row[brow] > 16)
 		fprintf(stderr,"acurite_txr: skipping wrong len\n");
 	    continue;
@@ -389,7 +362,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	if (bb[browlen - 1] == 0)
 	    browlen--;
 
-	if (!acurite_crc(bb,browlen - 1)) {
+	if (!acurite_checksum(bb,browlen - 1)) {
 	    if (debug_output) {
 		fprintf(stderr, "%s Acurite bad checksum:", time_str);
 		for (uint8_t i = 0; i < browlen; i++)
@@ -417,71 +390,133 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    sensor_status = bb[2]; // @todo, uses parity? & 0x07f
 	    humidity = acurite_getHumidity(bb[3]);
 	    tempc = acurite_txr_getTemp(bb[4], bb[5]);
-	    tempf = celsius2fahrenheit(tempc);
+            sprintf(channel_str, "%c", channel);
+            battery_low = sensor_status >>7;
+		
+            data = data_make(
+                    "time",			"",		DATA_STRING,	time_str,
+                    "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
+                    "id",			"",		DATA_INT,	sensor_id,
+                    "channel",  		"",     	DATA_STRING, 	&channel_str,
+                    "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+                    "humidity",         "Humidity",	DATA_INT,	humidity,
+                    "battery",          "Battery",    	DATA_INT, 	battery_low,
+                    "status",		"",		DATA_INT,	sensor_status,
+                    NULL);
 
-	    printf("%s Acurite tower sensor 0x%04X Ch %c: %3.1F C %3.1F F %d %% RH\n",
-		   time_str, sensor_id, channel, tempc, tempf, humidity);
-
-	    // currently 0x44 seens to be a normal status and/or type
-	    // for tower sensors.  Battery OK/Normal == 0x40
-	    if (sensor_status != 0x44)
-		printf("%s Acurite tower sensor 0x%04X Ch %c, Status %02X\n",
-		       time_str, sensor_id, channel, sensor_status);
-
+            data_acquired_handler(data);
+            valid++;
 	}
 
 	// The 5-n-1 weather sensor messages are 8 bytes.
 	if (browlen == ACURITE_5N1_BITLEN / 8) {
+        if (debug_output) {
+            fprintf(stderr, "Acurite 5n1 raw msg: %02X %02X %02X %02X %02X %02X %02X %02X\n",
+                bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], bb[6], bb[7]);
+        }
 	    channel = acurite_getChannel(bb[0]);
+        sprintf(channel_str, "%c", channel);        
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
-	    repeat_no = acurite_5n1_getMessageCaught(bb[0]);
+	    sequence_num = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
+        battery_low = (bb[2] & 0x40) >> 6;
 
+	    if (message_type == ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL) {
+            // Wind speed, wind direction, and rain fall
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
+            wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
+            wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
+            raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
+            if (acurite_5n1t_raincounter > 0) {
+                // track rainfall difference after first run
+                // FIXME when converting to structured output, just output
+                // the reading, let consumer track state/wrap around, etc. 
+                rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
+                if (raincounter < acurite_5n1t_raincounter) {
+                    fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
+                        time_str, sensor_id, channel, acurite_5n1t_raincounter, raincounter);
+                    acurite_5n1t_raincounter = raincounter;
+                }
+            } else {
+                // capture starting counter
+                acurite_5n1t_raincounter = raincounter;
+                fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
+                time_str, sensor_id, channel, raincounter * 0.01);
+            }
+                
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
+                "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
+                "rainfall_accumulation",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                "raincounter_raw",  NULL,   DATA_INT,   raincounter,
+                NULL);
 
-	    if (message_type == 0x31) {
-		// Wind speed, wind direction, and rain fall
-	        wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph(wind_speed);
-		wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
-		wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
-		raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
-		if (acurite_raincounter > 0) {
-		    // track rainfall difference after first run
-		    rainfall = ( raincounter - acurite_raincounter ) * 0.01;
-		    if (raincounter < acurite_raincounter) {
-			printf("%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
-			       time_str, sensor_id, channel, acurite_raincounter, raincounter);
-			acurite_raincounter = raincounter;
-		    }
-		} else {
-		    // capture starting counter
-		    acurite_raincounter = raincounter;
-		    printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
-			   time_str, sensor_id, channel, raincounter * 0.01);
-		}
+            data_acquired_handler(data);
 
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph %0.1f° %s (%d), rain gauge %0.2f in.\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph,
-		       wind_dird, wind_dirstr, bb[4] & 0x0f, rainfall);
+	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY) {
+            // Wind speed, temperature and humidity
+            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speedmph = kmph2mph(wind_speed);
+            tempf = acurite_getTemp(bb[4], bb[5]);
+            tempc = fahrenheit2celsius(tempf);
+            humidity = acurite_getHumidity(bb[6]);
 
-	    } else if (message_type == 0x38) {
-		// Wind speed, temperature and humidity
-		wind_speed = acurite_getWindSpeed(bb[3], bb[4]);
-		wind_speedmph = kmph2mph((float) wind_speed);
-		tempf = acurite_getTemp(bb[4], bb[5]);
-		tempc = fahrenheit2celsius(tempf);
-		humidity = acurite_getHumidity(bb[6]);
-
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Msg %02x, Wind %d kmph / %0.1f mph, %3.1F C %3.1F F %d %% RH\n",
-		       time_str, sensor_id, channel, message_type,
-		       wind_speed, wind_speedmph, tempc, tempf, humidity);
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                NULL);
+            data_acquired_handler(data);
+            
 	    } else {
-		printf("%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
-			time_str, sensor_id, channel, bb[3], message_type);
+            fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
+                time_str, sensor_id, channel, bb[3], message_type);
 	    }
 	}
+
+	if (browlen == ACURITE_6045_BITLEN / 8) {
+	    channel = acurite_getChannel(bb[0]);  // same as TXR
+	    sensor_id = (bb[1] << 8) | bb[2];     // TBD 16 bits or 20?
+	    humidity = acurite_getHumidity(bb[3]);  // same as TXR
+	    message_type = bb[4] & 0x7f;
+	    temp = bb[5] & 0x7f; // TBD Not sure if this is the temp.
+	    strike_count = bb[6] & 0x7f;
+	    strike_distance = bb[7] & 0x7f;
+
+
+	    printf("%s Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %d C %d %% RH Strikes %d Distance %d -",
+		   time_str, sensor_id, channel, message_type, temp, humidity, strike_count, strike_distance);
+
+	    // FIXME Temporarily dump message data until the decoding improves.
+	    // Include parity indicator.
+	    for (int i=0; i < browlen; i++) {
+		char pc;
+		pc = byteParity(bb[i]) == 0 ? ' ' : '*';
+		fprintf(stdout, " %02x%c", bb[i], pc);
+	    }
+	    printf("\n");
+	}
+
     }
+
+    if (valid)
+        return 1;
 
     return 0;
 }
@@ -684,7 +719,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
       return 0;
 
     // do some basic checking to make sure we have a valid data record
-    if ((bb[0][0] == 0) && (bb[1][4] == 0) && (bb[7][0] == 0x00) && ((bb[1][1] & 0x70) == 0)) {
+    if ((bb[0][0] == 0) && (bb[1][4] == 0)) {					//This test may need some more scrutiny...
         // calculate the checksum and only continue if we have a maching checksum
         uint8_t chk = Checksum(3, &bb[1][0]);
 
@@ -692,12 +727,12 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 	    // Processing the temperature: 
             // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
             // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-      	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | bb[1][2] << 4);
+      	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | (bb[1][2] << 4));
       	    temp = temp >> 4;
 
       	    temperature = temp / 10.0;
 	    sensor_id = bb[1][0];
-	    battery = bb[1][1] & 0x8f >> 7;
+	    battery = (bb[1][1] & 0x80) >> 7;
 
 	    data = data_make("time",          "",            DATA_STRING, time_str,
                              "model",         "",            DATA_STRING, "Acurite 606TX Sensor",
@@ -706,23 +741,137 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
                              "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                              NULL);
  	    data_acquired_handler(data);
-
+            return 1;
 	}
     }
 
     return 0;
 }
 
-r_device acurite5n1 = {
-    .name           = "Acurite 5n1 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 280,
-    .long_limit     = 520,
-    .reset_limit    = 800,
-    .json_callback  = &acurite5n1_callback,
-    .disabled       = 0,
-    .demod_arg      = 0,
-};
+
+static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
+    int crc, battery_low, id, model, valid = 0;
+    uint8_t *bb;
+    data_t *data;
+    char *model1 = "00275rm", *model2 = "00276rm";
+    float tempc, ptempc;
+    uint8_t probe, humidity, phumidity, water;
+    uint8_t signal[3][11];  //  Hold three copies of the signal
+    int     nsignal = 0;
+
+    local_time_str(0, time_str);
+
+    if (debug_output > 1) {
+        fprintf(stderr,"acurite_00275rm\n");
+        bitbuffer_print(bitbuf);
+    }
+
+    //  This sensor repeats signal three times.  Store each copy.
+    for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
+        if (bitbuf->bits_per_row[brow] != 88) continue;
+        if (nsignal>=3) continue;
+        memcpy(signal[nsignal], bitbuf->bb[brow], 11);
+        if (debug_output) {
+            fprintf(stderr,"acurite_00275rm: ");
+            for (int i=0; i<11; i++) fprintf(stderr," %02x",signal[nsignal][i]);
+            fprintf(stderr,"\n");
+        }
+        nsignal++;
+    }
+
+    //  All three signals were found
+    if (nsignal==3) {
+        //  Combine signal copies so that majority bit count wins
+        for (int i=0; i<11; i++) {
+            signal[0][i] = 
+                (signal[0][i] & signal[1][i]) |
+                (signal[1][i] & signal[2][i]) |
+                (signal[2][i] & signal[0][i]);
+        }
+        // CRC check fails?
+        if ((crc=crc16(&(signal[0][0]), 11/*len*/, 0xb2/*poly*/, 0xd0/*seed*/)) != 0) {
+            if (debug_output) {
+                fprintf(stderr,"%s Acurite 00275rm sensor bad CRC: %02x -",
+                    time_str, crc);
+                for (uint8_t i = 0; i < 11; i++)
+                    fprintf(stderr," %02x", signal[0][i]);
+                fprintf(stderr,"\n");
+            }
+        // CRC is OK
+        } else {
+            //  Decode the combined signal
+            id = (signal[0][0]<<16) | (signal[0][1]<<8) | signal[0][3];
+            battery_low = (signal[0][2] & 0x40)==0;
+            model       = (signal[0][2] & 1);
+            tempc       = 0.1 * ( (signal[0][4]<<4) | (signal[0][5]>>4) ) - 100;
+            probe       = signal[0][5] & 3;
+            humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
+            //  No probe
+            if (probe==0) {
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "crc",             "",             DATA_STRING,    "ok",
+
+                    NULL);
+            //  Water probe (detects water leak)
+            } else if (probe==1) {
+                water = (signal[0][7] & 0x0f) == 15;
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "water",           "",             DATA_INT,       water,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            //  Soil probe (detects temperature)
+            } else if (probe==2) {
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            //  Spot probe (detects temperature and humidity)
+            } else if (probe==3) {
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                phumidity = signal[0][9] & 0x7f;
+                data = data_make(
+                    "time",            "",             DATA_STRING,    time_str,
+                    "model",           "",             DATA_STRING,    model ? model1 : model2,
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "phumidity",       "Humidity",     DATA_INT,       phumidity,
+                    "crc",             "",             DATA_STRING,    "ok",
+                    NULL);
+            }
+            data_acquired_handler(data);
+            valid=1;
+        }
+    }
+    if (valid) return 1;
+    return 0;
+}
+
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
@@ -736,11 +885,12 @@ r_device acurite_rain_gauge = {
     .demod_arg      = 0,
 };
 
+
 r_device acurite_th = {
-    .name           = "Acurite Temperature and Humidity Sensor",
+    .name           = "Acurite 609TXC Temperature and Humidity Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1200,
-    .long_limit     = 2200,
+    .long_limit     = 3000,
     .reset_limit    = 10000,
     .json_callback  = &acurite_th_callback,
     .disabled       = 0,
@@ -757,13 +907,13 @@ r_device acurite_th = {
  */
 
 r_device acurite_txr = {
-    .name           = "Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station",
+    .name           = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning",
     .modulation     = OOK_PULSE_PWM_TERNARY,
     .short_limit    = 320,
     .long_limit     = 520,
     .reset_limit    = 4000,
     .json_callback  = &acurite_txr_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 
@@ -805,7 +955,7 @@ r_device acurite_986 = {
     .long_limit     = 1280,
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 2,
 };
 
@@ -824,4 +974,16 @@ r_device acurite_606 = {
     .json_callback  = &acurite_606_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+};
+
+r_device acurite_00275rm = {
+    .name           = "Acurite 00275rm,00276rm Temp/Humidity with optional probe",
+    .modulation     = OOK_PULSE_PWM_TERNARY,
+    .short_limit    = 320,  // = 4* 80,  80  is reported by -G option
+    .long_limit     = 520,  // = 4*130, 130  "
+  //  .reset_limit    = 608,  // = 4*152, 152  "
+    .reset_limit    = 708,  // = 4*152, 152  "
+    .json_callback  = &acurite_00275rm_callback,
+    .disabled       = 0,
+    .demod_arg      = 2,
 };

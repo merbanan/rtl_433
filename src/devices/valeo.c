@@ -38,6 +38,6 @@ r_device valeo = {
 	.long_limit		= 0,	// Not used
 	.reset_limit	= 400,
 	.json_callback	= &valeo_callback,
-	.disabled		= 0,
+	.disabled		= 1,
 	.demod_arg		= 0,
 };

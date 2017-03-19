@@ -56,10 +56,10 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 	sprintf(hexid, "%X", serial_id);
 
 	if (debug_output >= 1) {
-		fprintf(stdout, "Schraeder TPMS decoder\n");
+		fprintf(stderr, "Schraeder TPMS decoder\n");
 		bitbuffer_print(bitbuffer);
-		fprintf(stdout, "id = 0x%X\n", serial_id);
-		fprintf(stdout, "CRC = %x\n", crc8(work_buffer, 7, 0x07, 0xf0));
+		fprintf(stderr, "id = 0x%X\n", serial_id);
+		fprintf(stderr, "CRC = %x\n", crc8(work_buffer, 7, 0x07, 0xf0));
 	}
 
 	data = data_make("time", "", DATA_STRING, time_str,

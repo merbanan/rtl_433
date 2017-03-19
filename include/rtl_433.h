@@ -32,10 +32,17 @@
 #define DEFAULT_HOP_EVENTS      2
 #define DEFAULT_ASYNC_BUF_NUMBER    32
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
-#define DEFAULT_LEVEL_LIMIT     8000		// Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
+
+/*
+ * Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
+ * 0 = automatic adaptive level limit, else fixed level limit
+ * 8000 = previous fixed default
+ */
+#define DEFAULT_LEVEL_LIMIT     0
+
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
-#define MAX_PROTOCOLS           62
+#define MAX_PROTOCOLS           77
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 /* Supported modulation types */

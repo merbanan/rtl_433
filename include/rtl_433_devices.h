@@ -12,7 +12,7 @@
 		DECL(elv_em1000) \
 		DECL(elv_ws2000) \
 		DECL(lacrossetx) \
-		DECL(acurite5n1) \
+		DECL(template) \
 		DECL(acurite_rain_gauge) \
 		DECL(acurite_th) \
 		DECL(oregon_scientific) \
@@ -27,7 +27,7 @@
 		DECL(calibeur_RF104) \
 		DECL(X10_RF) \
 		DECL(DSC) \
-		DECL(brennstuhl_rcs_2044) \
+		DECL(brennenstuhl_rcs_2044) \
 		DECL(gt_wt_02) \
 		DECL(danfoss_CFR) \
 		DECL(ec3k) \
@@ -65,10 +65,22 @@
 		DECL(schraeder) \
 		DECL(lightwave_rf) \
 		DECL(elro_db286a) \
-                DECL(efergy_optical) \
-                DECL(hondaremote) \
-		DECL(template)
-
+		DECL(efergy_optical) \
+		DECL(hondaremote) \
+		DECL(template) \
+		DECL(fineoffset_XC0400) \
+		DECL(radiohead_ask) \
+		DECL(kerui) \
+		DECL(fineoffset_wh1050) \
+		DECL(honeywell) \
+		DECL(maverick_et73x) \
+		DECL(rftech) \
+		DECL(lacrosse_TX141TH_Bv2) \
+		DECL(acurite_00275rm) \
+		DECL(lacrosse_tx35) \
+		DECL(lacrosse_tx29) \
+		DECL(fineoffset_WH25) \
+		DECL(fineoffset_WH0530)
 
 typedef struct {
 	char name[256];

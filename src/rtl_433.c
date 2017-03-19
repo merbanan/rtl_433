@@ -44,6 +44,7 @@ static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
+int include_only = 0;	// Option -I
 int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
@@ -91,25 +92,28 @@ struct dm_state {
 
 void usage(r_device *devices) {
 	int i;
+	char disabledc;
 
 	fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
             "Usage:\t= Tuner options =\n"
-            "\t[-d <device index>] (default: 0)\n"
+            "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
-            "\t[-R <device>] Listen only for the specified remote device (can be used multiple times)\n"
-            "\t[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: %i)\n"
+            "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
+            "\t[-G] Enable all device protocols, included those disabled by default\n"
+            "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
-            "\t[-n <value>]  Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
+            "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
             "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
+            "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
             "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
@@ -130,11 +134,16 @@ void usage(r_device *devices) {
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
-    fprintf(stderr, "Supported devices:\n");
+    fprintf(stderr, "Supported device protocols:\n");
     for (i = 0; i < num_r_devices; i++) {
-        fprintf(stderr, "\t[%02d] %s\n", i + 1, devices[i].name);
+	if (devices[i].disabled)
+	    disabledc = '*';
+	else
+	    disabledc = ' ';
+
+        fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
     }
-    fprintf(stderr, "\n");
+    fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
 
     exit(1);
 }
@@ -178,11 +187,14 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     demod->r_dev_num++;
 
     if (!quiet_mode) {
-	fprintf(stderr, "Registering protocol \"%s\"\n", t_dev->name);
+	fprintf(stderr, "Registering protocol [%d] \"%s\"\n", demod->r_dev_num, t_dev->name);
     }
 
-    if (demod->r_dev_num > MAX_PROTOCOLS)
-        fprintf(stderr, "Max number of protocols reached %d\n", MAX_PROTOCOLS);
+    if (demod->r_dev_num > MAX_PROTOCOLS) {
+        fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
+	fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
+	exit(-1);
+    }
 }
 
 
@@ -472,7 +484,7 @@ static void classify_signal() {
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
-    int32_t threshold = (demod->level_limit ? demod->level_limit : DEFAULT_LEVEL_LIMIT);	// Fix for auto level
+    int32_t threshold = (demod->level_limit ? demod->level_limit : 8000);	// Does not support auto level. Use old default instead.
 
     for (i = 0; i < len; i++) {
         if (buf[i] > threshold) {
@@ -584,6 +596,7 @@ err:
 static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
+    char time_str[LOCAL_TIME_BUFLEN];
 
 	if (do_exit || do_exit_async)
 		return;
@@ -627,50 +640,53 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 		// Detect a package and loop through demodulators with pulse data
 		int package_type = 1;	// Just to get us started
 		while(package_type) {
+			int p_events = 0;	// Sensor events successfully detected per package
 			package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
 			if (package_type == 1) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						case OOK_PULSE_PCM_RZ:
-							pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PPM_RAW:
-							pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_PRECISE:
-							pulse_demod_pwm_precise(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm_precise(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_RAW:
-							pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_TERNARY:
-							pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm_ternary(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_CLOCK_BITS:
-							pulse_demod_clock_bits(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_clock_bits(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						case OOK_PULSE_PWM_OSV1:
-							pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						// FSK decoders
 						case FSK_PULSE_PCM:
 						case FSK_PULSE_PWM_RAW:
 							break;
 						case FSK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->pulse_data, samp_rate);
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+					pulse_analyzer(&demod->pulse_data, samp_rate);
+				}
 			} else if (package_type == 2) {
-				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\n");
+				if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
 				for (i = 0; i < demod->r_dev_num; i++) {
 					switch (demod->r_devs[i]->modulation) {
 						// OOK decoders
@@ -684,23 +700,25 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 						case OOK_PULSE_PWM_OSV1:
 							break;
 						case FSK_PULSE_PCM:
-							pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						case FSK_PULSE_PWM_RAW:
-							pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						case FSK_PULSE_MANCHESTER_ZEROBIT:
-							pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);
+							p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);
 							break;
 						default:
 							fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-				if(demod->analyze_pulses) pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
-			}
-		}
-	}
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+					pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
+				}
+			} // if (package_type == ...
+		} // while(package_type)...
+	} // if (demod->analyze...
 
 	if (demod->out_file) {
 		uint8_t* out_buf = iq_buf;				// Default is to dump IQ samples
@@ -831,6 +849,7 @@ int main(int argc, char **argv) {
     int device_count;
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
+    int register_all = 0;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -851,7 +870,7 @@ int main(int argc, char **argv) {
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAqm:r:l:d:f:g:s:b:n:SR:F:C:T:UW")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:g:s:b:n:SR:F:C:T:UWG")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -862,6 +881,9 @@ int main(int argc, char **argv) {
                 break;
             case 'g':
                 gain = (int) (atof(optarg) * 10); /* tenths of a dB */
+                break;
+            case 'G':
+                register_all = 1;
                 break;
             case 'p':
                 ppm_error = atoi(optarg);
@@ -883,6 +905,9 @@ int main(int argc, char **argv) {
                 break;
             case 'A':
                 demod->analyze_pulses = 1;
+                break;
+            case 'I':
+                include_only = atoi(optarg);
                 break;
             case 'r':
                 in_filename = optarg;
@@ -983,13 +1008,17 @@ int main(int argc, char **argv) {
     }
 
     for (i = 0; i < num_r_devices; i++) {
-        if (!devices[i].disabled) {
+        if (!devices[i].disabled || register_all) {
             register_protocol(demod, &devices[i]);
             if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
         }
     }
+
+    if (!quiet_mode)
+	fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
+		demod->r_dev_num, num_r_devices);
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1045,7 +1074,7 @@ int main(int argc, char **argv) {
 	else
 	    fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
 
-	fprintf(stderr, "Bit detection level set to %d.\n", demod->level_limit);
+	fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
 	if (0 == gain) {
 	    /* Enable automatic gain */

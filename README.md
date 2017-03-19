@@ -14,6 +14,10 @@ Installation instructions:
 
 Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
 
+Depending on your system, you may also need to install the following libraries:
+
+    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr
+
 Installation using cmake:
 
     cd rtl_433/
@@ -31,6 +35,8 @@ Installation using autoconf:
     make
     make install
 
+The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
+
 
 Running:
 --------
@@ -39,20 +45,23 @@ Running:
 
 ```
 Usage:	= Tuner options =
-	[-d <device index>] (default: 0)
+	[-d <RTL-SDR USB device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	[-S] Force sync output (default: async)
 	= Demodulator options =
-	[-R <device>] Listen only for the specified remote device (can be used multiple times)
-	[-l <level>] Change detection level used to determine pulses [0-32767] (0 = auto) (default: 8000)
+	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
+	[-G] Enable all device protocols, included those disabled by default
+	[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
 	[-z <value>] Override short value in data decoder
 	[-x <value>] Override long value in data decoder
+	[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
 	= Analyze/Debug options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
+	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
@@ -67,71 +76,91 @@ Usage:	= Tuner options =
 		 3 = Raw I/Q samples (cf32, 2 channel)
 		 Note: If output file is specified, input will always be I/Q
 	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
+	[-C] native|si|customary Convert units in decoded output.
+	[-T] specify number of seconds to run
+	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
-Supported devices:
-	[01] Silvercrest Remote Control
-	[02] Rubicson Temperature Sensor
-	[03] Prologue Temperature Sensor
-	[04] Waveman Switch Transmitter
-	[05] Steffen Switch Transmitter
-	[06] ELV EM 1000
-	[07] ELV WS 2000
-	[08] LaCrosse TX Temperature / Humidity Sensor
-	[09] Acurite 5n1 Weather Station
-	[10] Acurite 896 Rain Gauge
-	[11] Acurite Temperature and Humidity Sensor
-	[12] Oregon Scientific Weather Sensor
-	[13] Mebus 433
-	[14] Intertechno 433
-	[15] KlikAanKlikUit Wireless Switch
-	[16] AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
-	[17] Cardin S466-TX2
-	[18] Fine Offset Electronics, WH-2 Sensor
-	[19] Nexus Temperature & Humidity Sensor
-	[20] Ambient Weather Temperature Sensor
-	[21] Calibeur RF-104 Sensor
-	[22] X10 RF
-	[23] DSC Security Contact
-	[24] Brennstuhl RCS 2044
-	[25] GT-WT-02 Sensor
-	[26] Danfoss CFR Thermostat
-	[27] Energy Count 3000 (868.3 MHz)
-	[28] Valeo Car Key
-	[29] Chuango Security Technology
-	[30] Generic Remote SC226x EV1527
-	[31] TFA-Twin-Plus-30.3049 and Ea2 BL999
-	[32] Fine Offset WH1080 Weather Station
-	[33] WT450
-	[34] LaCrosse WS-2310 Weather Station
-	[35] Esperanza EWS
-	[36] Efergy e2 classic
-	[37] Inovalley kw9015b rain and Temperature weather station
-	[38] Generic temperature sensor 1
-	[39] Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
-	[40] Acurite 986 Refrigerator / Freezer Thermometer
-	[41] HIDEKI TS04 Temperature and Humidity Sensor
-	[42] Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
-	[43] CurrentCost Current Sensor
-	[44] OpenEnergyMonitor emonTx v3
-	[45] HT680 Remote control
-        [46] S3318P Temperature & Humidity Sensor
-        [47] Akhan 100F14 remote keyless entry
-        [48] Quhwa
-	[49] Oregon Scientific v1 Temperature Sensor
-        [50] Proove
-        [51] Bresser Thermo-/Hygro-Sensor 3CH
-	[52] Springfield PreciseTemp Temperature and Soil Moisture
-        [53] Oregon Scientific SL109H Temperature & Humidity Sensor
-	[54] Acurite 606TX Temperature Sensor 
-        [55] TFA pool temperature sensor
-        [56] Kedsum Temperature & Humidity Sensor
-        [57] blyss DC5-UK-WH (433.92 MHz)
-        [58] Steelmate TPMS
-        [59] Schraeder TPMS
-        [60] LightwaveRF
-        [61] Elro DB286A Doorbell
-        [62] Efergy Optical
+Supported device protocols:
+    [01]* Silvercrest Remote Control
+    [02]  Rubicson Temperature Sensor
+    [03]  Prologue Temperature Sensor
+    [04]  Waveman Switch Transmitter
+    [05]* Steffen Switch Transmitter
+    [06]* ELV EM 1000
+    [07]* ELV WS 2000
+    [08]  LaCrosse TX Temperature / Humidity Sensor
+    [09]* Template decoder
+    [10]* Acurite 896 Rain Gauge
+    [11]  Acurite 609TXC Temperature and Humidity Sensor
+    [12]  Oregon Scientific Weather Sensor
+    [13]  Mebus 433
+    [14]* Intertechno 433
+    [15]  KlikAanKlikUit Wireless Switch
+    [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
+    [17]* Cardin S466-TX2
+    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
+    [19]  Nexus Temperature & Humidity Sensor
+    [20]  Ambient Weather Temperature Sensor
+    [21]  Calibeur RF-104 Sensor
+    [22]* X10 RF
+    [23]* DSC Security Contact
+    [24]* Brennenstuhl RCS 2044
+    [25]* GT-WT-02 Sensor
+    [26]  Danfoss CFR Thermostat
+    [27]* Energy Count 3000 (868.3 MHz)
+    [28]* Valeo Car Key
+    [29]  Chuango Security Technology
+    [30]  Generic Remote SC226x EV1527
+    [31]  TFA-Twin-Plus-30.3049 and Ea2 BL999
+    [32]  Fine Offset WH1080 Weather Station
+    [33]  WT450
+    [34]  LaCrosse WS-2310 Weather Station
+    [35]  Esperanza EWS
+    [36]* Efergy e2 classic
+    [37]* Inovalley kw9015b rain and Temperature weather station
+    [38]  Generic temperature sensor 1
+    [39]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+    [40]* Acurite 986 Refrigerator / Freezer Thermometer
+    [41]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
+    [42]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
+    [43]  CurrentCost Current Sensor
+    [44]  emonTx OpenEnergyMonitor
+    [45]  HT680 Remote control
+    [46]  S3318P Temperature & Humidity Sensor
+    [47]  Akhan 100F14 remote keyless entry
+    [48]  Quhwa
+    [49]  OSv1 Temperature Sensor
+    [50]  Proove
+    [51]  Bresser Thermo-/Hygro-Sensor 3CH
+    [52]  Springfield Temperature and Soil Moisture
+    [53]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
+    [54]  Acurite 606TX Temperature Sensor
+    [55]  TFA pool temperature sensor
+    [56]  Kedsum Temperature & Humidity Sensor
+    [57]  blyss DC5-UK-WH (433.92 MHz)
+    [58]  Steelmate TPMS
+    [59]  Schraeder TPMS
+    [60]* LightwaveRF
+    [61]  Elro DB286A Doorbell
+    [62]  Efergy Optical
+    [63]  Honda Car Key
+    [64]* Template decoder
+    [65]  Fine Offset Electronics, XC0400
+    [66]  Radiohead ASK
+    [67]  Kerui PIR Sensor
+    [68]  Fine Offset WH1050 Weather Station
+    [69]  Honeywell Door/Window Sensor
+    [70]  Maverick ET-732/733 BBQ Sensor
+    [71]* RF-tech
+    [72]  LaCrosse TX141TH-Bv2 sensor
+    [73]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
+    [74]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX29IT Temperature sensor
+    [76]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [77]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
+
+* Disabled by default, use -R n or -G
 ```
 
 
@@ -139,19 +168,23 @@ Examples:
 
 | Command | Description
 |---------|------------
-| `rtl_433` | Default receive mode, attempt to decode all known devices
+| `rtl_433 -G` | Default receive mode, attempt to decode all known devices
 | `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40` | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
 | `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
 | `rtl_433 -r file_name` | Play back a saved data file. 
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
+| `rtl_433 -F json -U | mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
 
 This software is mostly useable for developers right now.
 
 
 Supporting Additional Devices and Test Data
 -------------------------------------------
+
+Note: Not all device protocol decoders are enabled by default. When testing to see if your device
+is decoded by rtl_433, use `-G` to enable all device protocols.
 
 The first step in decoding new devices is to record the signals using `-a -t`. The signals will be
 stored individually in files named gfileNNN.data that can be played back with `rtl_433 -r gfileNNN.data`.
@@ -180,3 +213,18 @@ Google Group
 
 Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433
+
+
+Troubleshooting
+---------------
+
+If you see this error:
+
+    Kernel driver is active, or device is claimed by second instance of librtlsdr.
+    In the first case, please either detach or blacklist the kernel module
+    (dvb_usb_rtl28xxu), or enable automatic detaching at compile time.
+
+then
+
+    sudo rmmod dvb_usb_rtl28xxu rtl2832
+    
