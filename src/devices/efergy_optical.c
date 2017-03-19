@@ -1,4 +1,4 @@
-/* Efergy IR is a devices that periodically reports current power consumption
+/* Efergy IR is a devices that periodically reports current energy consumption
  * on frequency ~433.55 MHz. The data that is transmitted consists of 8
  * bytes:
  *
@@ -9,8 +9,8 @@
  * Byte 10: seconds
  * Byte 11: bytes0-10 crc16 xmodem XOR with FF
  * Byte 12: ?crc16 xmodem
- * if pulse count <3 then power =(( pulsecount/impulse-perkwh) * (3600/seconds))
- * else  power= ((pulsecount/n_imp) * (3600/seconds))
+ * if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
+ * else  energy= ((pulsecount/n_imp) * (3600/seconds))
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,18 +22,18 @@
 #include "util.h"
 #include "data.h"
 
-static int efergy_optical_callback(bitbuffer_t *bitbuffer) { 
+static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
-	double power, n_imp;
+	double energy, n_imp;
 	double pulsecount;
 	double seconds;
 	data_t *data;
         char time_str[LOCAL_TIME_BUFLEN];
- 	uint16_t crc;       
+ 	uint16_t crc;
 	uint16_t csum1;
 
-	if (num_bits < 64 || num_bits > 100){ 
+	if (num_bits < 64 || num_bits > 100){
 		return 0;
 		}
 
@@ -41,7 +41,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	// search for data start and shift out the bits which aren't part
 	// of the data. The data always starts with 0000 (or 1111 if
 	// gaps/pulses are mixed up).
-	while ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00) 
+	while ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00)
 		{
 		num_bits -= 1;
 		if (num_bits < 64)
@@ -49,7 +49,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 			return 0;
 			}
 
-		for (unsigned i = 0; i < (num_bits + 7) / 8; ++i) 
+		for (unsigned i = 0; i < (num_bits + 7) / 8; ++i)
 			{
 			bytes[i] <<= 1;
 			bytes[i] |= (bytes[i + 1] & 0x80) >> 7;
@@ -94,22 +94,35 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		//some logic for low pulse count not sure how I reached this formula
 		if (pulsecount < 3)
 			{
-			power = ((pulsecount/n_imp) * (3600/seconds));
+			energy = ((pulsecount/n_imp) * (3600/seconds));
         		}
          	else
          		{
-         		power = ((pulsecount/n_imp) * (3600/30));
+         		energy = ((pulsecount/n_imp) * (3600/30));
          		}
-         	/* Get time now */
-	        local_time_str(0, time_str);
-
-		 data = data_make("time",          "",            DATA_STRING, time_str,
-        			"model",         "",            DATA_STRING, "Efergy Optical",
-                 		"power",       "Power KWh",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, power,
-	               		   NULL);
-	 	data_acquired_handler(data);
-		return 0;
+         	//New code for calculating varous energy values for differing pulse-kwh values
+			const int imp_kwh[] = {3200, 2000, 1000, 500, 0};
+			for (unsigned i=0; imp_kwh[i] !=0; ++i) {
+				if (pulsecount < 3)
+					{
+					energy = ((pulsecount/imp_kwh[i]) * (3600/seconds));
+					}
+				else
+					{
+				        energy = ((pulsecount/imp_kwh[i]) * (3600/30));
+                        	        }
+				local_time_str(0, time_str);
+				data = data_make(
+						"time",          "Time",            DATA_STRING, time_str,
+		                                "model",         "Model",            DATA_STRING, "Efergy Optical", 
+						"pulses",	"Pulse-rate",	DATA_FORMAT,"%i", DATA_INT, imp_kwh[i],
+                                		"energy",       "Energy",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
+		                                   NULL);
+		                data_acquired_handler(data);
+				}
+				return 0;
 		}
+		
 		else 
 			{
 			if (debug_output)
@@ -125,7 +138,8 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     	"time",
   	"model",
-  	"power",
+	"pulses",
+  	"energy",
  	NULL
 	};
 
