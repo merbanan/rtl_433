@@ -108,19 +108,13 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 		if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
 			return 1;
 		} else {
-			if (debug_output) {
+			if (debug_output > 1) {
 			fprintf(stdout,
 				"LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
 				checksum, msg_nybbles[10], parity);
 			}
 			return 0;
 		}
-	} else {
-	    if (debug_output) {
-		// Debug: This is very noisy
-		//fprintf(stderr,"LaCrosse TX Invalid packet: Start %02x, bit count %d\n",
-		//	pRow[0], rowlen);
-	    }
 	}
 
 	return 0;
@@ -142,11 +136,6 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 
-	static float last_msg_value = 0.0;
-	static uint8_t last_sensor_id = 0;
-	static uint8_t last_msg_type = 0;
-	static time_t last_msg_time = 0;
-
 	for (m = 0; m < BITBUF_ROWS; m++) {
 		valid = 0;
 		// break out the message nybbles into separate bytes
@@ -163,28 +152,18 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 
 			time(&time_now);
 
-			// suppress duplicates
-			if (sensor_id == last_sensor_id && msg_type == last_msg_type
-					&& last_msg_value == msg_value
-					&& time_now - last_msg_time < 50) {
-			    if (debug_output) {
-				fprintf(stderr,"LaCrosse TX Sensor %02x, duplicate message suppressed\n",
-					sensor_id);
-			    }
-			    continue;
-			}
-
 			local_time_str(0, time_str);
 
 			// Check Repeated data values as another way of verifying
 			// message integrity.
 			if (msg_nybbles[5] != msg_nybbles[8] || 
 			    msg_nybbles[6] != msg_nybbles[9]) {
-				if (debug_output) {
-			    fprintf(stderr,
-				    "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
-				    sensor_id, msg_type, msg_value, msg_value_int);
-				}
+			    if (debug_output) {
+				fprintf(stderr,
+					"LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
+					sensor_id, msg_type, msg_value, msg_value_int);
+			    }
+			    continue;
 			}
 
 			switch (msg_type) {
@@ -210,19 +189,13 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 				break;
 
 			default:
-                if (debug_output) {
+			    // @todo this should be reported/counted as exception, not considered debug
+			    if (debug_output) {
 				fprintf(stderr,
 					"%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
 					time_str, sensor_id, msg_type, msg_value, msg_value_int);
-                }
-				events++;
+			    }
 			}
-
-			time(&last_msg_time);
-			last_msg_value = msg_value;
-			last_msg_type = msg_type;
-			last_sensor_id = sensor_id;
-
 		}
 	}
 
