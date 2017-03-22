@@ -114,7 +114,7 @@ char* local_time_str(time_t time_secs, char *buf) {
 		extern float sample_file_pos;
 		if (sample_file_pos != -1.0) {
 			snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
-			return 0;
+			return buf;
 		}
 		time(&etime);
 	} else {
