@@ -388,7 +388,7 @@ if (msg_type == 0) {
 
     data = data_make(
 			"time", 	"", 		DATA_STRING,					time_str,
-			"model", 	"", 		DATA_STRING,	"Fine Offset WH1080/WH3080 weather station",
+			"model", 	"", 		DATA_STRING,	"Fine Offset Electronics WH1080/WH3080 weather station",
 			"msg_type",	"Msg type",	DATA_INT,					msg_type,
 			"id",		"Station ID",	DATA_FORMAT,	"%d",		DATA_INT,	device_id,
 			"temperature_C","Temperature",	DATA_FORMAT,	"%.01f C",	DATA_DOUBLE,	temperature,
