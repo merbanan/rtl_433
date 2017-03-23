@@ -388,7 +388,7 @@ if (msg_type == 0) {
 
     data = data_make(
 			"time", 	"", 		DATA_STRING,					time_str,
-			"model", 	"", 		DATA_STRING,	"Fine Offset Electronics WH1080/WH3080 weather station",
+			"model", 	"", 		DATA_STRING,	"Fine Offset Electronics WH1080/WH3080 Weather Station",
 			"msg_type",	"Msg type",	DATA_INT,					msg_type,
 			"id",		"Station ID",	DATA_FORMAT,	"%d",		DATA_INT,	device_id,
 			"temperature_C","Temperature",	DATA_FORMAT,	"%.01f C",	DATA_DOUBLE,	temperature,
@@ -407,7 +407,7 @@ if (msg_type == 0) {
 
     data = data_make(
 			"time",		"",		DATA_STRING,		time_str,
-			"model",	"",		DATA_STRING,	"Fine Offset WH1080/WH3080 weather station",
+			"model",	"",		DATA_STRING,	"Fine Offset Electronics WH1080/WH3080 Weather Station",
 			"msg_type",	"Msg type",	DATA_INT,				msg_type,
 			"id",		"Station ID",	DATA_FORMAT,	"%d",	DATA_INT,	device_id,
 			"signal",	"Signal Type",	DATA_STRING,				signal,
@@ -425,7 +425,7 @@ if (msg_type == 0) {
 
     data = data_make(
 			"time",		"",		DATA_STRING,				time_str,
-			"model",	"",		DATA_STRING,	"Fine Offset WH3080 weather station",
+			"model",	"",		DATA_STRING,	"Fine Offset Electronics WH3080 Weather Station",
 			"msg_type",	"Msg type",	DATA_INT,				msg_type,
 			"uv_sensor_id",	"UV Sensor ID",	DATA_FORMAT,	"%d",	DATA_INT,	uv_sensor_id,
 			"uv_status",	"Sensor Status",DATA_STRING,				uv_status,
@@ -469,7 +469,7 @@ static char *output_fields[] = {
 };
 
 r_device fineoffset_wh1080_wh3080 = {
-    .name           = "Fine Offset WH1080/WH3080 Weather Station",
+    .name           = "Fine Offset Electronics WH1080/WH3080 Weather Station",
     .modulation     = OOK_PULSE_PWM_RAW,
     .short_limit    = 800,
     .long_limit     = 2800,
