@@ -91,7 +91,7 @@ static int wg_pb12v1_callback(bitbuffer_t *bitbuffer) {
                 io[bit] = 48; // 0
                 }
             }
-        io[49] = 0; // terminate string array.
+        io[48] = 0; // terminate string array.
         
         if (debug_output > 1) {
            fprintf(stderr, "ID          = 0x%2X\n",  id);
