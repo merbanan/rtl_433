@@ -98,15 +98,9 @@ PWM_Precise_Parameters pwm_precise_parameters_generic = {
 r_device generic_remote = {
 	.name			= "Generic Remote SC226x EV1527",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
-#if 1
 	.short_limit	= 464,
 	.long_limit		= 1404,
 	.reset_limit	= 1800,
-#else
-	.short_limit	= 273,
-	.long_limit		= 819,
-	.reset_limit	= 8190,
-#endif
 	.json_callback	= &generic_remote_callback,
 	.disabled		= 0,
 	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic,
