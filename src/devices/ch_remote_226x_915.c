@@ -1,4 +1,5 @@
 /* Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
+ * Adapted for chinese PT226x-based lamp remote working on 913.3MHz
  *
  * Tested devices:
  * SC2260
@@ -6,6 +7,7 @@
  *
  * Copyright (C) 2015 Tommy Vestermark
  * Copyright (C) 2015 nebman
+ * Copyright (C) 2017 Yuriy Shestakov
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -16,7 +18,7 @@
 #include "data.h"
 #include "util.h"
 
-static int generic_remote_callback(bitbuffer_t *bitbuffer) {
+static int ch_remote_226x_915_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
  	data_t *data;
@@ -75,11 +77,11 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 		data = data_make(
 			"time",       	"",          	DATA_STRING, time_str,
-                	"model",      	"",           	DATA_STRING, "Generic Remote",
-                  	"id",         	"House Code", 	DATA_INT, ID_16b,
-                 	"cmd",       	"Command",   	DATA_INT, CMD_8b,
-                 	"tristate",    	"Tri-State", 	DATA_STRING, tristate,
-                      NULL);
+            "model",      	"",           	DATA_STRING, "Chinese Lamp Remote SC226x",
+            "id",         	"House Code", 	DATA_INT, ID_16b,
+            "cmd",       	"Command",   	DATA_INT, CMD_8b,
+            "tristate",    	"Tri-State", 	DATA_STRING, tristate,
+            NULL);
 
     		data_acquired_handler(data);
 
@@ -90,24 +92,18 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 }
 
 
-PWM_Precise_Parameters pwm_precise_parameters_generic = {
+static PWM_Precise_Parameters pwm_precise_parameters_generic_913 = {
 	.pulse_tolerance	= 50,
 	.pulse_sync_width	= 0,	// No sync bit used
 };
 
-r_device generic_remote = {
-	.name			= "Generic Remote SC226x EV1527",
+r_device ch_remote_226x_915 = {
+	.name			= "Chinese Lamp Remote SC226x @ 913.3MHz",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
-#if 1
-	.short_limit	= 464,
-	.long_limit		= 1404,
-	.reset_limit	= 1800,
-#else
 	.short_limit	= 273,
 	.long_limit		= 819,
 	.reset_limit	= 8190,
-#endif
-	.json_callback	= &generic_remote_callback,
+	.json_callback	= &ch_remote_226x_915_callback,
 	.disabled		= 0,
-	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic,
+	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic_913,
 };

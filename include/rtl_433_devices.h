@@ -80,7 +80,8 @@
 		DECL(lacrosse_tx35) \
 		DECL(lacrosse_tx29) \
 		DECL(fineoffset_WH25) \
-		DECL(fineoffset_WH0530)
+		DECL(fineoffset_WH0530) \
+		DECL(ch_remote_226x_915)
 
 typedef struct {
 	char name[256];
