@@ -116,7 +116,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  * Reading: 22.6 C, 40 %, 1001.7 hPa
  *
  * Extracted data:
- *           I IT TT HH PP PP CC ??
+ *          ?I IT TT HH PP PP CC BB
  * aa 2d d4 e5 02 72 28 27 21 c9 bb aa
  *
  * II = Sensor ID (based on 2 different sensors). Does not change at battery change.
@@ -124,7 +124,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  * HH = Humidity
  * PP PP = Pressure (*10)
  * CC = Checksum of previous 6 bytes (binary sum truncated to 8 bit)
- * ?? = Some additional checksum?
+ * BB = Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
  *
  */
 static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
@@ -132,7 +132,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 400 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 500 bit periods
+    if (bitbuffer->bits_per_row[0] < 440 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 488 bit periods
         return 0;
     }
 
@@ -142,7 +142,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     // Find a data package and extract data buffer
     static const uint8_t HEADER[] = { 0xAA, 0x2D, 0xD4 };
     uint8_t buffer[12];
-    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 320, HEADER, sizeof(HEADER)*8);    // Normal index is 361, skip some bytes to find faster
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 320, HEADER, sizeof(HEADER)*8);    // Normal index is 367, skip some bytes to find faster
     if (bit_offset + sizeof(buffer)*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (debug_output) {
             fprintf(stderr, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
@@ -155,14 +155,19 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     if (debug_output) {
         char raw_str[128];
         for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
-        fprintf(stderr, "Fineoffset_WH25: Raw %s\n", raw_str);
+        fprintf(stderr, "Fineoffset_WH25: Raw: %s @ bit_offset [%u]\n", raw_str, bit_offset);
     }
 
     // Verify checksum
-    uint8_t checksum = buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7] + buffer[8];
-    if (checksum != buffer[9]) {
+    uint8_t checksum = 0, bitsum = 0;
+    for (size_t n=3; n<=8; ++n) {
+        checksum += buffer[n];
+        bitsum ^= buffer[n];
+    }
+    bitsum = (bitsum << 4) | (bitsum >> 4);     // Swap nibbles
+    if (checksum != buffer[9] || bitsum != buffer[10]) {
         if (debug_output) {
-            fprintf(stderr, "Fineoffset_WH25: checksum error: %02x\n", checksum);
+            fprintf(stderr, "Fineoffset_WH25: Checksum error: %02x %02x\n", checksum, bitsum);
             bitbuffer_print(bitbuffer);
         }
         return 0;
