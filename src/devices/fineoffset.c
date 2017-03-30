@@ -116,11 +116,11 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  * Reading: 22.6 C, 40 %, 1001.7 hPa
  *
  * Extracted data:
- *          II TT TT HH PP PP CC ??
+ *           I IT TT HH PP PP CC ??
  * aa 2d d4 e5 02 72 28 27 21 c9 bb aa
  *
- * II = Sensor ID (guess). Does not change at battery change.
- * TT TT = Temperature (+40*10)
+ * II = Sensor ID (based on 2 different sensors). Does not change at battery change.
+ * T TT = Temperature (+40*10)
  * HH = Humidity
  * PP PP = Pressure (*10)
  * CC = Checksum of previous 6 bytes (binary sum truncated to 8 bit)
@@ -169,8 +169,8 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     }
 
     // Decode data
-    uint8_t id = buffer[3];     // Somewhat guesswork... (Based on 1 sensor)
-    float   temperature = (float)((uint16_t)buffer[4] << 8 | buffer[5]) / 10.0 - 40.0;
+    uint8_t id = (buffer[3] << 4) | (buffer[4] >> 4);
+    float   temperature = (float)((uint16_t)(buffer[4] & 0xF) << 8 | buffer[5]) / 10.0 - 40.0;
     uint8_t humidity = buffer[6];
     float   pressure = (float)((uint16_t)buffer[7] << 8 | buffer[8]) / 10.0;
 
