@@ -72,6 +72,7 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
     char* types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "!KS200/KS300"};
+    uint8_t length[16]={8, 8, 5, 8, 12, 9, 8, 8, 8};
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;
     uint8_t stopbit;
@@ -80,27 +81,28 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-//fprintf(stdout, "!stopbit\n");
+        if(debug_output) fprintf(stdout, "!stopbit\n");
         return 0;
     }
     check_calculated ^= dec[0];
     sum_calculated   += dec[0];
 
     // read nibbles with stopbit ...
-    for (i = 1; i <= (dec[0]==4?12:8); i++) {
+    for (i = 1; i <= length[dec[0]]; i++) {
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-//fprintf(stdout, "!stopbit %i\n", i);
+            if(debug_output) fprintf(stdout, "!stopbit %i\n", bit);
             return 0;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
+    if(debug_output) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
 
     if (check_calculated) {
-//fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
+        if(debug_output) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
         return 0;
     }
 
@@ -109,11 +111,10 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-//fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        if(debug_output) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
         return 0;
     }
 
-//for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
 
     fprintf(stdout, "Weather station sensor event:\n");
     fprintf(stdout, "protocol      = ELV WS 2000, %d bits\n",bitbuffer->bits_per_row[1]);
@@ -141,10 +142,10 @@ r_device elv_em1000 = {
 
 r_device elv_ws2000 = {
     .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 602+(1155-602)/2,
-    .long_limit     = (1755635-1655517)/2, // no repetitions
-    .reset_limit    = (1755635-1655517)*2,
+    .modulation     = OOK_PULSE_PWM_RAW,
+    .short_limit    = (854+366)/2,  // 0 => 854us, 1 => 366us according to link in top
+    .long_limit     = 1000, // no repetitions
+    .reset_limit    = 1000, // Longest pause is 854us according to link
     .json_callback  = &ws2000_callback,
     .disabled       = 1,
     .demod_arg      = 0,
