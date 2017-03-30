@@ -243,7 +243,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    const uint8_t id = (buffer[0]<<4) | (buffer[0]>>4);
+    const uint8_t id = (buffer[0]<<4) | (buffer[1]>>4);
     const float temperature = (float)((uint16_t)(buffer[1] & 0xF)<< 8 | buffer[2]) / 10.0 - 40.0;
     const float rain = 0.3 * (((uint16_t)buffer[4] << 8) | buffer[3]);
 
