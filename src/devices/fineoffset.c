@@ -152,6 +152,12 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, buffer, sizeof(buffer)*8);
 
+    if (debug_output) {
+        char raw_str[128];
+        for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
+        fprintf(stderr, "Fineoffset_WH25: Raw %s\n", raw_str);
+    }
+
     // Verify checksum
     uint8_t checksum = buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7] + buffer[8];
     if (checksum != buffer[9]) {
@@ -168,10 +174,6 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     uint8_t humidity = buffer[6];
     float   pressure = (float)((uint16_t)buffer[7] << 8 | buffer[8]) / 10.0;
 
-    // Include raw string (To be deleted when all data is figured out...)
-//    char raw_str[128];
-//    for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
-
     // Output data
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH25",
@@ -179,7 +181,6 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "pressure",      "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
-//                     "raw",           "Raw",         DATA_STRING, raw_str,
                       NULL);
     data_acquired_handler(data);
 
