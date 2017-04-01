@@ -69,6 +69,7 @@ add_executable(rtl_433
 	devices/tfa_pool_thermometer.c
 	devices/valeo.c
 	devices/waveman.c
+	devices/wg_pb12v1.c
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/s3318p.c
