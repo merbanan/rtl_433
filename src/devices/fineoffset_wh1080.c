@@ -84,11 +84,6 @@
  * as received from externals sensors (exception made for some rounding while converting values from lux to watts/m and fc), 
  * so you can see -sometimes- some little difference between module's output and LCD console's values.
  *
- * NOTE: while working on this module I believe I found a bug on my WH3080: on April 02, 2017 at 02:04:52 AM 
- * I was testing datetime signal receiving, and the module decoded April 14 instead of April 02.
- * I thought the module was unexpectedly wrong somewhere, BUT... THE LCD CONSOLE ALSO was incredibly showing April 14 as date!
- * So remember: don't blame this module or rtl_433... :)
- *
  *
  * 2016-2017 Nicola Quiriti ('ovrheat' - 'seven')
  *
