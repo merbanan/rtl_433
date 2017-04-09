@@ -32,7 +32,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/fineoffset_wh1080.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
-                       devices/generic_temperature_sensor_2.c \
                        devices/gt_wt_02.c \
                        devices/hideki.c \
                        devices/hondaremote.c \
@@ -76,6 +75,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/fineoffset_wh1050.c \
                        devices/honeywell.c \
                        devices/maverick_et73x.c \
-                       devices/rftech.c
+                       devices/rftech.c \
+                       devices/wg_pb12v1.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
