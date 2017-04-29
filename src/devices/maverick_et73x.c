@@ -54,7 +54,7 @@ static void convert_bitbuffer(bitbuffer_t *bitbuffer, unsigned int *msg_converte
     unsigned int quart_convert[16] ={0,0,0,0,0,0,1,0,0,2,3,0,0,0,0,0};
     int i;
     for(i = 0; i < 13; i++) {
-        char temp[2];
+        char temp[3];
         sprintf(temp, "%02x", bitbuffer->bb[0][i]);
         msg_hex_combined[i*2] = temp[0];
         msg_hex_combined[i*2+1] = temp[1];
