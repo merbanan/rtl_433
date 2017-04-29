@@ -23,7 +23,7 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
   char time_str[LOCAL_TIME_BUFLEN];
   const uint8_t *bb;
   char device_id[6];
-  char hex[2];
+  char hex[3];
   char binary [65];
   int heartbeat = 0;
   uint16_t crc_calculated = 0;
