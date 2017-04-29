@@ -7,11 +7,12 @@
 *
 * Protocol whitepaper: "DEFCON 22: Home Insecurity" by Logan Lamb
 *
-* 0xfffe Preamble and sync bit
-* 0x8 Unknown
-* 0xYYYYY Device serial number
-* 0xYY Event Information (Open/Close, Heartbeat, etc)
-* 0xYYYY CRC
+* PP PP C IIIII EE SS SS
+* P: 16bit Preamble and sync bit (always ff fe)
+* C: 4bit Channel
+* I: 20bit Device serial number / or counter value
+* E: 8bit Event, where 0x80 = Open/Close, 0x04 = Heartbeat / or id
+* S: 16bit CRC
 *
 */
 
@@ -22,14 +23,13 @@
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
   char time_str[LOCAL_TIME_BUFLEN];
   const uint8_t *bb;
-  char device_id[6];
-  char hex[2];
-  char binary [65];
-  int heartbeat = 0;
-  uint16_t crc_calculated = 0;
-  uint16_t crc = 0;
-
-  local_time_str(0, time_str);
+  int channel;
+  int device_id;
+  int event;
+  int state;
+  int heartbeat;
+  uint16_t crc_calculated;
+  uint16_t crc;
 
   if(bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] != 64)
     return 0; // Unrecognized data
@@ -44,34 +44,22 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
   if(crc != crc_calculated)
     return 0; // Not a valid packet
 
-  sprintf(hex, "%02x", bb[2]);
-  device_id[0] = hex[1];
-  sprintf(hex, "%02x", bb[3]);
-  device_id[1] = hex[0];
-  device_id[2] = hex[1];
-  sprintf(hex, "%02x", bb[4]);
-  device_id[3] = hex[0];
-  device_id[4] = hex[1];
-  device_id[5] = '\0';
+  channel = bb[2] >> 4;
+  device_id = ((bb[2] & 0xf) << 16) | (bb[3] << 8)| bb[4];
+  event = bb[5];
+  state = (event & 0x80) >> 7;
+  heartbeat = (event & 0x04) >> 2;
 
-  // Raw Binary
-  for (uint16_t bit = 0; bit < 64; ++bit) {
-      if (bb[bit/8] & (0x80 >> (bit % 8))) {
-              binary[bit] = '1';
-      } else {
-              binary[bit] = '0';
-      }
-  }
-  binary[64] = '\0';
+  local_time_str(0, time_str);
 
   data_t *data = data_make(
                    "time",     "", DATA_STRING, time_str,
-                   "id",       "", DATA_STRING, device_id,
-                   "state",    "", DATA_STRING, ( (bb[5] & 0x80) == 0x00)? "closed":"open",
-                   "heartbeat" , "", DATA_STRING, ( (bb[5] & 0x04) == 0x04)? "yes" : "no",
-                   "crc", "", DATA_STRING, "ok",
-                   "time_unix","", DATA_INT, time(NULL),
-                   "binary",   "", DATA_STRING, binary,
+                   "model", "", DATA_STRING, "Honeywell Door/Window Sensor",
+                   "id",       "", DATA_FORMAT, "%05x", DATA_INT, device_id,
+                   "channel","", DATA_INT, channel,
+                   "event","", DATA_FORMAT, "%02x", DATA_INT, event,
+                   "state",    "", DATA_STRING, state ? "open" : "closed",
+                   "heartbeat" , "", DATA_STRING, heartbeat ? "yes" : "no",
                           NULL);
 
   data_acquired_handler(data);
@@ -80,12 +68,12 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
         "time",
+        "model",
         "id",
+        "channel",
+        "event",
         "state",
         "heartbeat",
-        "crc",
-        "time_unix",
-        "binary",
         NULL
 };
 
