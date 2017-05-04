@@ -106,7 +106,7 @@ Supported device protocols:
     [22]* X10 RF
     [23]* DSC Security Contact
     [24]* Brennenstuhl RCS 2044
-    [25]* GT-WT-02 Sensor
+    [25]  GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
     [27]* Energy Count 3000 (868.3 MHz)
     [28]* Valeo Car Key
