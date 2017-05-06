@@ -1186,7 +1186,7 @@ int main(int argc, char **argv) {
             if (n_read == 0) break;	// rtlsdr_callback() will Segmentation Fault with len=0
             rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
-	    sample_file_pos = (float)i * n_read / samp_rate;
+	    sample_file_pos = (float)i * n_read / samp_rate / 2;
         } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
