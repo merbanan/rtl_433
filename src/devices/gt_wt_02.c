@@ -8,6 +8,7 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
  * published by the Free Software Foundation.
+ * New Output 2017-03 ludwich
  */
 
  /* Example and frame description provided by https://github.com/ludwich66
