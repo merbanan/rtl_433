@@ -187,10 +187,10 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     }
 
     data = data_make("time",    "Date and time", DATA_STRING,    time_str,
+                     "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
+                     "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
                      "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
                      "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                     "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                     "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
                      "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
                      "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
                       NULL);
@@ -202,10 +202,10 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
 	"time",
+	"model",
+        "id",
         "temperature",
         "humidity",
-        "id",
-	"model",
         "battery",
         "test",
 	NULL
