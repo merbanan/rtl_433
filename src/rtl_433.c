@@ -599,6 +599,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
 
+#ifndef _WIN32
+	alarm(1); // require callback to run at least every second, abort otherwise
+#endif
+
 	if (do_exit || do_exit_async)
 		return;
 
@@ -1268,8 +1272,15 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "WARNING: Failed to set center freq.\n");
             else
                 fprintf(stderr, "Tuned to %u Hz.\n", rtlsdr_get_center_freq(dev));
+#ifndef _WIN32
+            signal(SIGALRM, sighandler);
+            alarm(1); // require callback to run at least every second, abort otherwise
+#endif
             r = rtlsdr_read_async(dev, rtlsdr_callback, (void *) demod,
                     DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+#ifndef _WIN32
+            alarm(0); // cancel the watchdog timer
+#endif
             do_exit_async = 0;
             frequency_current++;
             if (frequency_current > frequencies - 1) frequency_current = 0;
