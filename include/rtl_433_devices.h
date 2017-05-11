@@ -80,6 +80,7 @@
 		DECL(acurite_00275rm) \
 		DECL(lacrosse_tx35) \
 		DECL(lacrosse_tx29) \
+		DECL(vaillant_vrt340f) \
 		DECL(fineoffset_WH25) \
 		DECL(fineoffset_WH0530)
 
