@@ -2,6 +2,7 @@
  *
  * The protocol is for the wireless Temperature/Humidity sensor
  * Bresser Thermo-/Hygro-Sensor 3CH
+ * also works for Renkforce DM-7511
  *
  * The sensor sends 15 identical packages of 40 bits each ~60s.
  * The bits are PWM modulated with On Off Keying.
@@ -39,7 +40,7 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
        1 1 1 1 41 1 1 1 1 41 1 1 1 1 41 1 1 1 1 41 1 1 1 1 491
      */
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
-    if (r < 0 || bitbuffer->bits_per_row[r] > 41) {
+    if (r < 0 || bitbuffer->bits_per_row[r] > 42) {
         return 0;
     }
 
