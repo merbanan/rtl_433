@@ -33,9 +33,8 @@ static int blyss_dc5_uk_wh(bitbuffer_t *bitbuffer)
 			local_time_str(0, time_str);
 
 			data = data_make("time", "", DATA_STRING, time_str,
+				"model", "", DATA_STRING, "blyss dc5-uk-wh",
 				"type", "", DATA_STRING, "doorbell",
-				"make", "", DATA_STRING, "blyss",
-				"model", "", DATA_STRING, "dc5-uk-wh",
 				"mode", "", DATA_STRING, "ringing",
 				NULL);
 			data_acquired_handler(data);
@@ -50,9 +49,8 @@ static int blyss_dc5_uk_wh(bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
 	"time",
-	"type",
-	"make",
 	"model",
+	"type",
 	"mode",
 	NULL
 };

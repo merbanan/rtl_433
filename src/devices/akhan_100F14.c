@@ -43,7 +43,7 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 
 		if (isAkhan == 1) {
 			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
+									"model",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
 									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
 									"data",		"Data (4bit)",	DATA_STRING,	CMD,
 									NULL);
@@ -58,10 +58,9 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "time",
-    "device",
+    "model",
     "id",
     "data",
-    "other",
     NULL
 };
 

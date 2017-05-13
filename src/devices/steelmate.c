@@ -87,7 +87,7 @@ static int steelmate_callback(bitbuffer_t *bitbuffer) {
 
 		data = data_make("time", "", DATA_STRING, time_str,
 			"type", "", DATA_STRING, "TPMS",
-			"make", "", DATA_STRING, "Steelmate",
+			"model", "", DATA_STRING, "Steelmate",
 			"id", "", DATA_STRING, sensorIDhex,
 			"pressure_PSI", "", DATA_DOUBLE, pressurePSI,
 			"temperature_F", "", DATA_DOUBLE, (float)tempFahrenheit,
@@ -106,7 +106,7 @@ static int steelmate_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
 	"time",
 	"type",
-	"make",
+	"model",
 	"id",
 	"pressure_PSI",
 	"temperature_F",
