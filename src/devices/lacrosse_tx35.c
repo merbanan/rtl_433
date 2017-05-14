@@ -128,7 +128,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 							 "battery",	   "Battery",	 DATA_STRING, battery_low ? "LOW" : "OK",
 							 "newbattery",	"NewBattery",  DATA_INT,	  newbatt,
 							 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-							 "crc",		   "CRC",		 DATA_STRING, "OK",
+							 "mic",		   "Integrity",		 DATA_STRING, "CRC",
 							 NULL);
         }
         else {
@@ -140,7 +140,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 							 "newbattery",	"NewBattery",  DATA_INT,	  newbatt,
 							 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
 							 "humidity",	  "Humidity",	DATA_FORMAT, "%u %%", DATA_INT, humidity,
-							 "crc",		   "CRC",		 DATA_STRING, "OK",
+							 "mic",		   "Integrity",		 DATA_STRING, "CRC",
 							 NULL);
         }
 		//	humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
@@ -176,7 +176,7 @@ static char *output_fields[] = {
 	"status",
 	"temperature_C",
 	"humidity",
-	"crc",
+	"mic",
 	NULL
 };
 

@@ -98,7 +98,7 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
                         "channel",       "Channel",     DATA_INT,    channel,
                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                         "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                        "crc",           "CRC",         DATA_STRING, "OK",
+                        "mic",           "Integrity",   DATA_STRING, "CRC",
                         NULL);
 	data_acquired_handler(data);
 
@@ -114,7 +114,7 @@ static char *output_fields[] = {
 	"channel",
 	"battery",
 	"temperature_C",
-        "crc",
+	"mic",
 	NULL
 };
 

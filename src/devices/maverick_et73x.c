@@ -217,7 +217,7 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
                      "status",         "Status",                DATA_STRING,                         get_status(msg_converted),
                      "temperature_C1", "TemperatureSensor1",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S1),
                      "temperature_C2", "TemperatureSensor2",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S2),
-                     "crc", "", DATA_STRING, "ok",
+                     "mic", "Integrity", DATA_STRING, "CHECKSUM",
                      NULL);
     data_acquired_handler(data);
 
@@ -232,7 +232,7 @@ static char *output_fields[] = {
     "status",
     "temperature_C1",
     "temperature_C2",
-    "crc",
+    "mic",
     NULL
 };
 

@@ -137,13 +137,13 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     }
     data = data_make("time", "",              DATA_STRING, time_str,
             "model",         "",              DATA_STRING, "RadioHead ASK",
-            "crc",           "",              DATA_STRING, "OK",
             "len",           "Data len",      DATA_INT, data_len,
             "to",            "To",            DATA_INT, header_to,
             "from",          "From",          DATA_INT, header_from,
             "id",            "Id",            DATA_INT, header_id,
             "flags",         "Flags",         DATA_INT, header_flags,
             "payload",       "Payload",       DATA_ARRAY, data_array(data_len, DATA_INT, data_payload),
+            "mic",           "Integrity",     DATA_STRING, "CRC",
     NULL);
     data_acquired_handler(data);
 
@@ -153,13 +153,13 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "time",
     "model",
-    "crc",
     "len",
     "to",
     "from",
     "id",
     "flags",
     "payload",
+    "mic",
     NULL
 };
 

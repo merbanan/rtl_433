@@ -85,6 +85,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 						"id",            "ID",          DATA_INT, ID,
 						"temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
 						"humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
+						"mic",           "Integrity",   DATA_STRING,    "CRC",
 						NULL);
 		data_acquired_handler(data);
 		return 1;
@@ -98,6 +99,7 @@ static char *output_fields[] = {
 	"id",
 	"temperature_C",
 	"humidity",
+	"mic",
 	NULL
 };
 

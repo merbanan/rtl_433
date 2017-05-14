@@ -133,6 +133,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 		  							"wind_speed",     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
 									"wind_gust",      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
 									"wind_direction", "Direction",  DATA_INT,    direction,
+									"mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
 							 	   	NULL);
 			    	data_acquired_handler(data);
                 }
@@ -146,6 +147,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 								"channel",       "Channel",    DATA_INT,    channel,
 		  						"battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
 							    "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+								"mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
 							    NULL);
 			    data_acquired_handler(data);
             }
@@ -166,6 +168,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 							"battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
 							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
 							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
+							"mic",           "",            DATA_STRING,    "CHECKSUM",
 							NULL);
 			data_acquired_handler(data);
         }        
@@ -194,6 +197,7 @@ static char *output_fields[] = {
 	"wind_speed",
 	"wind_gust",
 	"wind_direction",
+	"mic",
 	NULL
 };
 
