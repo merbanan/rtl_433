@@ -915,7 +915,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                     "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
-                    "crc",             "",             DATA_STRING,    "ok",
+                    "mic",             "Integrity",    DATA_STRING,    "CRC",
 
                     NULL);
             //  Water probe (detects water leak)
@@ -930,7 +930,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
                     "water",           "",             DATA_INT,       water,
-                    "crc",             "",             DATA_STRING,    "ok",
+                    "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
             //  Soil probe (detects temperature)
             } else if (probe==2) {
@@ -944,7 +944,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
                     "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                    "crc",             "",             DATA_STRING,    "ok",
+                    "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
             //  Spot probe (detects temperature and humidity)
             } else if (probe==3) {
@@ -960,7 +960,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "humidity",        "Humidity",     DATA_INT,       humidity,
                     "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                     "phumidity",       "Humidity",     DATA_INT,       phumidity,
-                    "crc",             "",             DATA_STRING,    "ok",
+                    "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
             }
             data_acquired_handler(data);

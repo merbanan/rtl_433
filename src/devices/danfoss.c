@@ -142,7 +142,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 		     "setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
 		     "switch",		"Switch",	DATA_STRING,	str_sw,
-		     "crc", "", DATA_STRING, "ok",
+			"mic",           "Integrity",            DATA_STRING,    "CRC",
 		     NULL);
 		data_acquired_handler(data);
 
@@ -160,7 +160,7 @@ static char *output_fields[] = {
     "temperature_C",
     "setpoint_C",
     "switch",
-    "crc",
+    "mic",
     NULL
 };
 

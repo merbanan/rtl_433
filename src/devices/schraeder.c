@@ -66,7 +66,7 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 					"model", "", DATA_STRING, "Schraeder",
 					"type", "", DATA_STRING, "TPMS",
  					"id", "ID", DATA_STRING, hexid,
-					"crc", "", DATA_STRING, "OK",
+					"mic", "Integrity", DATA_STRING, "CRC",
 					NULL);
 
 	data_acquired_handler(data);
@@ -76,11 +76,9 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
 	"time",
 	"model",
+	"type",
 	"id",
-	"flags",
-	"pressure",
-	"temperature_C",
-	"depth",
+	"mic",
 	NULL
 };
 
