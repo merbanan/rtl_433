@@ -56,7 +56,7 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-	const uint8_t *br = bitbuffer->bb[0];
+    const uint8_t *br = bitbuffer->bb[0];
 
     if (br[0] != 0xff) {
         // preamble missing
@@ -87,14 +87,14 @@ static int digitech_ws_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"id",
-	"temperature_C",
-	"humidity",
-	"direction",
-	"speed",
-	NULL
+    "time",
+    "model",
+    "id",
+    "temperature_C",
+    "humidity",
+    "direction",
+    "speed",
+    NULL
 };
 
 r_device digitech_ws = {

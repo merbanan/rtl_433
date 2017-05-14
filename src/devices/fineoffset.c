@@ -40,8 +40,8 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     if (debug_output > 1) {
-       fprintf(stderr,"Possible fineoffset: ");
-       bitbuffer_print(bitbuffer);
+        fprintf(stderr,"Possible fineoffset: ");
+        bitbuffer_print(bitbuffer);
     }
 
     uint8_t id;
@@ -77,9 +77,9 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
 
 
         if (debug_output > 1) {
-           fprintf(stderr, "ID          = 0x%2X\n",  id);
-           fprintf(stderr, "temperature = %.1f C\n", temperature);
-           fprintf(stderr, "humidity    = %u %%\n",  humidity);
+            fprintf(stderr, "ID          = 0x%2X\n",  id);
+            fprintf(stderr, "temperature = %.1f C\n", temperature);
+            fprintf(stderr, "humidity    = %u %%\n",  humidity);
         }
 
         // Thermo

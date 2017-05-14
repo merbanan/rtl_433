@@ -45,17 +45,17 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 
 
     for (byte = 0; byte < nBytes; ++byte) {
-	for (i = 0x01; i & 0xff; i <<= 1) {
-	    bit = (crc & 0x80) == 0x80;
-	    if (message[byte] & i) {
-		bit = !bit;
-	    }
-	    crc <<= 1;
-	    if (bit) {
-		crc ^= polynomial;
-	    }
-	}
-	crc &= 0xff;
+    for (i = 0x01; i & 0xff; i <<= 1) {
+        bit = (crc & 0x80) == 0x80;
+        if (message[byte] & i) {
+        bit = !bit;
+        }
+        crc <<= 1;
+        if (bit) {
+        crc ^= polynomial;
+        }
+    }
+    crc &= 0xff;
     }
 
     return reverse8(crc);
@@ -107,24 +107,24 @@ int byteParity(uint8_t inByte){
 
 
 char* local_time_str(time_t time_secs, char *buf) {
-	time_t etime;
-	struct tm *tm_info;
+    time_t etime;
+    struct tm *tm_info;
 
-	if (time_secs == 0) {
-		extern float sample_file_pos;
-		if (sample_file_pos != -1.0) {
-			snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
-			return buf;
-		}
-		time(&etime);
-	} else {
-		etime = time_secs;
-	}
+    if (time_secs == 0) {
+        extern float sample_file_pos;
+        if (sample_file_pos != -1.0) {
+            snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
+            return buf;
+        }
+        time(&etime);
+    } else {
+        etime = time_secs;
+    }
 
-	tm_info = localtime(&etime);
+    tm_info = localtime(&etime);
 
-	strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
-	return buf;
+    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
 }
 
 float celsius2fahrenheit(float celsius)
@@ -154,13 +154,13 @@ float mph2kmph(float mph)
 // gcc -I include/ -std=gnu99 -D _TEST src/util.c
 #ifdef _TEST
 int main(int argc, char **argv) {
-	fprintf(stderr, "util:: test\n");
+    fprintf(stderr, "util:: test\n");
 
-	uint8_t msg[] = {0x08, 0x0a, 0xe8, 0x80};
+    uint8_t msg[] = {0x08, 0x0a, 0xe8, 0x80};
 
-	fprintf(stderr, "util::crc8(): odd parity:  %02X\n", crc8(msg, 3, 0x80));
-	fprintf(stderr, "util::crc8(): even parity: %02X\n", crc8(msg, 4, 0x80));
+    fprintf(stderr, "util::crc8(): odd parity:  %02X\n", crc8(msg, 3, 0x80));
+    fprintf(stderr, "util::crc8(): even parity: %02X\n", crc8(msg, 4, 0x80));
 
-	return 0;
+    return 0;
 }
 #endif /* _TEST */

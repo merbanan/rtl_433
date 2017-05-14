@@ -15,22 +15,21 @@
 #include "pulse_demod.h"
 #include "util.h"
 
-
 static int rftech_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
-    bitrow_t *bb = bitbuffer->bb;
-    uint16_t sensor_id = 0;
-    uint8_t button;
-    uint8_t battery;
-    double value;
-    data_t *data;
-    int r;
+	char time_str[LOCAL_TIME_BUFLEN];
+	bitrow_t *bb = bitbuffer->bb;
+	uint16_t sensor_id = 0;
+	uint8_t button;
+	uint8_t battery;
+	double value;
+	data_t *data;
+	int r;
 
-    local_time_str(0, time_str);
+	local_time_str(0, time_str);
 
-    r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
+	r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
-    if(r >= 0 && bitbuffer->bits_per_row[r] == 24) {
+	if(r >= 0 && bitbuffer->bits_per_row[r] == 24) {
 	/* Example of message:
 	 * 01001001 00011010 00000100
 	 *
@@ -68,9 +67,9 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
 	data_acquired_handler(data);
 
 	return 1;
-    }
+	}
 
-    return 0;
+	return 0;
 }
 
 /*

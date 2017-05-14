@@ -138,7 +138,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 														"ws_id",         "",            DATA_INT, ws_id,
 														"id",            "",            DATA_INT, sensor_id,
 														"humidity",      "Humidity",    DATA_INT, msg_value_bcd2,
-								 						NULL);
+														NULL);
 					data_acquired_handler(data);
 					events++;
 				}
@@ -161,11 +161,11 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
 				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
-                    if (debug_output) {
+					if (debug_output) {
 					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
 						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
-                    }
-                } else {
+					}
+				} else {
 					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
 					data = data_make("time",          "",           DATA_STRING, time_str,
@@ -179,11 +179,11 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 				}
 				break;
 			default:
-                if (debug_output) {
+			if (debug_output) {
 				fprintf(stderr,
 					"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
 					time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
-                }
+				}
 				events++;
 			}
 		}
@@ -193,27 +193,27 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-		"time",
-		"model",
-		"ws_id",
-		"id",
-		"temperature_C",
-		"humidity",
-		"rainfall_mm",
-		"wind_speed_ms",
-		"gust_speed_ms",
-		"wind_direction",
-		NULL
+	"time",
+	"model",
+	"ws_id",
+	"id",
+	"temperature_C",
+	"humidity",
+	"rainfall_mm",
+	"wind_speed_ms",
+	"gust_speed_ms",
+	"wind_direction",
+	NULL
 };
 
 r_device lacrossews = {
- .name           = "LaCrosse WS-2310 Weather Station",
- .modulation     = OOK_PULSE_PWM_RAW,
- .short_limit    = 952,
- .long_limit     = 3000,
- .reset_limit    = 8000,
- .json_callback  = &lacrossews_callback,
- .disabled       = 0,
- .demod_arg      = 0,
- .fields = output_fields
+	.name           = "LaCrosse WS-2310 Weather Station",
+	.modulation     = OOK_PULSE_PWM_RAW,
+	.short_limit    = 952,
+	.long_limit     = 3000,
+	.reset_limit    = 8000,
+	.json_callback  = &lacrossews_callback,
+	.disabled       = 0,
+	.demod_arg      = 0,
+	.fields = output_fields
 };

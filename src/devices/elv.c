@@ -21,8 +21,8 @@ static int em1000_callback(bitbuffer_t *bitbuffer) {
     char* types[] = {"S", "?", "GZ"};
     uint8_t checksum_calculated = 0;
     uint8_t i;
-	uint8_t stopbit;
-	uint8_t checksum_received;
+    uint8_t stopbit;
+    uint8_t checksum_received;
 
     // check and combine the 3 repetitions
     for (i = 0; i < 14; i++) {
@@ -76,7 +76,7 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     uint8_t check_calculated=0, sum_calculated=0;
     uint8_t i;
     uint8_t stopbit;
-	uint8_t sum_received;
+    uint8_t sum_received;
 
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;

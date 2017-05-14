@@ -57,11 +57,11 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
-    "model",
-    "id",
-    "data",
-    NULL
+	"time",
+	"model",
+	"id",
+	"data",
+	NULL
 };
 
 PWM_Precise_Parameters pwm_precise_parameters_kerui = {

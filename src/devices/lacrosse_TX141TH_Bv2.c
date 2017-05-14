@@ -1,4 +1,4 @@
-/* LaCrosse Color Forecast Station (model C85845), or other LaCrosse product 
+/* LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
  * utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
  * in the 433.92 MHz band. Product pages:
  * http://www.lacrossetechnology.com/c85845-color-weather-station/
@@ -107,16 +107,16 @@
 #define LACROSSE_TX141TH_PACKETCOUNT 12
 
 typedef struct {
-    int32_t	data;	// First 4 data bytes compressed into 32-bit integer
-    int8_t count;	// Count
+    int32_t data;  // First 4 data bytes compressed into 32-bit integer
+    int8_t count;  // Count
 } data_and_count;
 
 static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
-	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
+    bitrow_t *bb = bitbuffer->bb;
+    data_t *data;
+    char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-	int i,j,k,nbytes,npacket,kmax;
+    int i,j,k,nbytes,npacket,kmax;
     uint8_t id=0,status=0,battery_low=0,test=0,humidity=0,maxcount;
     uint16_t temp_raw=0;
     float temp_f=0.0;
@@ -201,24 +201,24 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-        "id",
-        "temperature",
-        "humidity",
-        "battery",
-        "test",
-	NULL
+    "time",
+    "model",
+    "id",
+    "temperature",
+    "humidity",
+    "battery",
+    "test",
+    NULL
 };
 
 r_device lacrosse_TX141TH_Bv2 = {
-  .name          = "LaCrosse TX141TH-Bv2 sensor",
-  .modulation    = OOK_PULSE_PWM_TERNARY,
-  .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
-  .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
-  .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-  .json_callback = &lacrosse_tx141th_bv2_callback,
-  .disabled      = 0,
-  .demod_arg     = 2,       // Longest pulses are startbits
-  .fields        = output_fields,
+    .name          = "LaCrosse TX141TH-Bv2 sensor",
+    .modulation    = OOK_PULSE_PWM_TERNARY,
+    .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
+    .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
+    .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
+    .json_callback = &lacrosse_tx141th_bv2_callback,
+    .disabled      = 0,
+    .demod_arg     = 2,       // Longest pulses are startbits
+    .fields        = output_fields,
 };

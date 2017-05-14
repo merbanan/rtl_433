@@ -13,12 +13,12 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
 
     uint8_t init_pattern[] = {
-      0b11001100, //8
-      0b11001100, //16
-      0b11001100, //24
-      0b11001110, //32
-      0b10010001, //40
-      0b01011101, //45 (! last 3 bits is not init)
+        0b11001100, //8
+        0b11001100, //16
+        0b11001100, //24
+        0b11001110, //32
+        0b10010001, //40
+        0b01011101, //45 (! last 3 bits is not init)
     };
     unsigned int start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern, 45);
 
@@ -34,7 +34,7 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
     uint8_t *packet = packet_bits.bb[0];
     // Read data
     if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 0) ){
-		    uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
+        uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
 
         uint16_t watt0 = (packet[2] & 0x7F) << 8 | packet[3] ;
         uint16_t watt1 = (packet[4] & 0x7F) << 8 | packet[5] ;
@@ -42,7 +42,7 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
         data = data_make("time",          "",       DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "CurrentCost TX", //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
-								"dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+                "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                 "power0",       "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
                 "power1",       "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
                 "power2",       "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
