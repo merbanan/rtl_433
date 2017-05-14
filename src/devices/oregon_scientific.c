@@ -381,7 +381,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             NULL);
         data_acquired_handler(data);
       }
-       
+
       return 1;
     } else if (sensor_id  == ID_BTHGN129) {
       //if ((validate_os_v2_message(msg, 137, num_valid_v2_bits, 12) == 0)) {
@@ -400,7 +400,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             NULL);
         data_acquired_handler(data);
       //}
-       
+
       return 1;
     }else if (num_valid_v2_bits > 16) {
       if(debug_output) {

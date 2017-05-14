@@ -81,7 +81,7 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
 
    if ( bitbuffer->bits_per_row[0] != 36 )
    {
-      if (debug_output) 
+      if (debug_output)
          fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
                  time_str, bitbuffer->bits_per_row[0] );
 

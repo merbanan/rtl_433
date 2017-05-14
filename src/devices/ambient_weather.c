@@ -19,13 +19,13 @@ get_humidity (uint8_t * msg)
   return humidity;
 }
 
-static uint8_t 
+static uint8_t
 calculate_checksum (uint8_t *buff, int length)
 {
   uint8_t mask = 0x7C;
   uint8_t checksum = 0x64;
   uint8_t data;
-  int byteCnt;	
+  int byteCnt;
 
   for (byteCnt=0; byteCnt < length; byteCnt++)
   {
@@ -44,12 +44,12 @@ calculate_checksum (uint8_t *buff, int length)
 	mask ^= 0x18;
       }
 
-      // XOR mask into checksum if data bit is 1	
+      // XOR mask into checksum if data bit is 1
       if ( data & 0x80 )
       {
 	checksum ^= mask;
       }
-      data <<= 1; 
+      data <<= 1;
     }
   }
   return checksum;
@@ -59,7 +59,7 @@ static int
 validate_checksum (uint8_t * msg, int len)
 {
   uint8_t expected = ((msg[6] & 0x0f) << 4) | ((msg[7] & 0xf0) >> 4);
-  
+
   uint8_t pkt[5];
   pkt[0] = ((msg[1] & 0x0f) << 4) | ((msg[2] & 0xf0) >> 4);
   pkt[1] = ((msg[2] & 0x0f) << 4) | ((msg[3] & 0xf0) >> 4);

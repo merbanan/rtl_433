@@ -22,10 +22,10 @@ int data_payload[RH_ASK_MAX_MESSAGE_LEN];
 
 // 4 bit to 6 bit symbol converter table
 // Used to convert the high and low nybbles of the transmitted data
-// into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s 
+// into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s
 // with at most 3 consecutive identical bits
 static uint8_t symbols[] = {
-    0xd,  0xe,  0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c, 
+    0xd,  0xe,  0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c,
     0x23, 0x25, 0x26, 0x29, 0x2a, 0x2c, 0x32, 0x34
 };
 

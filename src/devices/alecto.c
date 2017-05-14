@@ -110,7 +110,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
             //bb[1][1]&0x10 ? "timed event":"Button generated ");
             //fprintf(stdout, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
             //fprintf(stdout, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
- 
+
             if (wind) {
             	// Wind sensor
                 int skip = -1;
@@ -159,7 +159,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
                 temp |= 0xf000;
             }
             humidity = bcd_decode8(reverse8(bb[1][3]));
-            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto            
+            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
 
             data = data_make("time",         "",            DATA_STRING, time_str,
 							"model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
@@ -171,7 +171,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 							"mic",           "",            DATA_STRING,    "CHECKSUM",
 							NULL);
 			data_acquired_handler(data);
-        }        
+        }
         if (debug_output){
            fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
            fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);

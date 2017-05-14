@@ -1,6 +1,6 @@
 /**
  * Various utility functions for use by device drivers
- * 
+ *
  * Copyright (C) 2015 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ uint8_t reverse8(uint8_t x) {
 
 
 uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
-    uint8_t remainder = init;	
+    uint8_t remainder = init;
     unsigned byte, bit;
 
     for (byte = 0; byte < nBytes; ++byte) {
@@ -39,14 +39,14 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 
 
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
-    uint8_t crc = init, i;	
+    uint8_t crc = init, i;
     unsigned byte;
     uint8_t bit;
 
 
     for (byte = 0; byte < nBytes; ++byte) {
 	for (i = 0x01; i & 0xff; i <<= 1) {
-	    bit = (crc & 0x80) == 0x80;	    
+	    bit = (crc & 0x80) == 0x80;
 	    if (message[byte] & i) {
 		bit = !bit;
 	    }

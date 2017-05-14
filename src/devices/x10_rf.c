@@ -39,6 +39,3 @@ r_device X10_RF = {
 	.disabled		= 1,
 	.demod_arg		= 0,
 };
-
-
-

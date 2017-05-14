@@ -687,7 +687,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
 					pulse_analyzer(&demod->pulse_data, samp_rate);
 				}
 			} else if (package_type == 2) {
@@ -718,7 +718,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 					}
 				} // for demodulators
 				if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) { 
+				if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
 					pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
 				}
 			} // if (package_type == ...

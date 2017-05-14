@@ -143,4 +143,3 @@ r_device s3318p = {
     .demod_arg      = 0,
     .fields         = output_fields
 };
-

@@ -47,7 +47,7 @@ static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
 	// Transmitted pulses are always 72
 	// Pulse 72 (delimiting "1" is not demodulated, as gap becomes End-Of-Message - thus expected length is 71
 	if ((bitbuffer->bits_per_row[0] == 71)
-		&& (bitbuffer->num_rows == 1))		// There should be only one message (and we use the rest...) 
+		&& (bitbuffer->num_rows == 1))		// There should be only one message (and we use the rest...)
 	{
 		// Polarity is inverted
 		bitbuffer_invert(bitbuffer);
@@ -133,6 +133,3 @@ r_device lightwave_rf = {
 	.disabled		= 1,
 	.demod_arg		= 0,
 };
-
-
-

@@ -19,11 +19,11 @@
 static int quhwa_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	    
+
 	b[0] = ~b[0];
 	b[1] = ~b[1];
 	b[2] = ~b[2];
-	
+
 	unsigned bits = bitbuffer->bits_per_row[0];
 
 	if ((bits == 18) &&
@@ -35,7 +35,7 @@ static int quhwa_callback(bitbuffer_t *bitbuffer) {
 
 	    char time_str[LOCAL_TIME_BUFLEN];
 	    local_time_str(0, time_str);
-	    
+
 	    data = data_make("time", "", DATA_STRING, time_str,
 			     "model", "", DATA_STRING, "Quhwa doorbell",
 	    		     "id", "ID", DATA_INT, ID,
@@ -64,9 +64,9 @@ PWM_Precise_Parameters pwm_precise_parameters_quhwa = {
 r_device quhwa = {
 	.name			= "Quhwa",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
-	.short_limit            = 360,	// Pulse: Short 360µs, Long 1070µs 
-	.long_limit		= 1070,	// Gaps: Short 360µs, Long 1070µs 
-	.reset_limit	        = 1200,	// Intermessage Gap 5200µs 
+	.short_limit            = 360,	// Pulse: Short 360µs, Long 1070µs
+	.long_limit		= 1070,	// Gaps: Short 360µs, Long 1070µs
+	.reset_limit	        = 1200,	// Intermessage Gap 5200µs
 	.json_callback	        = &quhwa_callback,
 	.disabled		= 0,
 	.demod_arg		= (uintptr_t)&pwm_precise_parameters_quhwa,

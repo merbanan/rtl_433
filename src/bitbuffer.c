@@ -1,6 +1,6 @@
 /**
  * Bit buffer
- * 
+ *
  * A two-dimensional bit buffer consisting of bytes
  *
  * Copyright (C) 2015 Tommy Vestermark
@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
 
 	fprintf(stderr, "TEST: bitbuffer:: The empty buffer\n");
 	bitbuffer_print(&bits);
-	
+
 	fprintf(stderr, "TEST: bitbuffer:: Add 1 bit\n");
 	bitbuffer_add_bit(&bits, 1);
 	bitbuffer_print(&bits);

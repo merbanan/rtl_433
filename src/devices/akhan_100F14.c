@@ -13,7 +13,7 @@
 static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	
+
 	//invert bits, short pulse is 0, long pulse is 1
 	b[0] = ~b[0];
 	b[1] = ~b[1];
@@ -71,7 +71,7 @@ PWM_Precise_Parameters pwm_precise_parameters_akhan = {
 
 r_device akhan_100F14 = {
 	.name          = "Akhan 100F14 remote keyless entry",
-	.modulation    = OOK_PULSE_PWM_PRECISE, 
+	.modulation    = OOK_PULSE_PWM_PRECISE,
 	.short_limit   = 316,
 	.long_limit    = 1020,
 	.reset_limit   = 1800,

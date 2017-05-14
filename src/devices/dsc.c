@@ -11,7 +11,7 @@
  * (at your option) any later version.
  *
  * DSC - Digital Security Controls 433 Mhz Wireless Security Contacts
- *       doors, windows, smoke, CO2, water, 
+ *       doors, windows, smoke, CO2, water,
  *
  * Protcol Description available in this FCC Report for FCC ID F5300NB912
  *  https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=100988
@@ -46,7 +46,7 @@
  *
  #    SSSS         S         S         S         S           Synb bit positions
  *        ssss ssss ttt teeee ee eeeeee e eeeeeee  cccccccc  type
- *        tttt tttt yyy y1111 22 223333 4 4445555  rrrrrrrr  
+ *        tttt tttt yyy y1111 22 223333 4 4445555  rrrrrrrr
  *
  *  Bits: 0,1,2,3,12,21,30,39 should == 1
  *
@@ -55,7 +55,7 @@
  *  ESN (e1-5)  = 20 bits, Electronic Serial Number: Sensor ID.
  *  CRC (cr)    = 8 bits, CRC, type/polynom to be determined
  *
- * The ESN in practice is 24 bits, The type + remaining 5 nybbles, 
+ * The ESN in practice is 24 bits, The type + remaining 5 nybbles,
  *
  * The CRC is 8 bit, "little endian", Polynomial 0xf5, Inital value 0x3d
  *
@@ -69,7 +69,7 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define DSC_CT_MSGLEN		5	
+#define DSC_CT_MSGLEN		5
 #define DSC_CT_CRC_POLY		0xf5
 #define DSC_CT_CRC_INIT		0x3d
 
@@ -86,18 +86,18 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
 	if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0 ) {
-	    fprintf(stderr,"row %d bit count %d\n", row, 
+	    fprintf(stderr,"row %d bit count %d\n", row,
 		    bitbuffer->bits_per_row[row]);
 	}
 
-	// Number of bits in the packet should be 48 but due to the 
-	// encoding of trailing zeros is a guess based on reset_limit / 
+	// Number of bits in the packet should be 48 but due to the
+	// encoding of trailing zeros is a guess based on reset_limit /
 	// long_limit (bit period).  With current values up to 10 zero
 	// bits could be added, so it is normal to get a 58 bit packet.
 	//
 	// If the limits are changed for some reason, the max number of bits
 	// will need to be changed as there may be more zero bit padding
-	if (bitbuffer->bits_per_row[row] < 48 || 
+	if (bitbuffer->bits_per_row[row] < 48 ||
 	    bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
 	    if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0) {
 		fprintf(stderr,"DSC row %d invalid bit count %d\n",
@@ -136,12 +136,12 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
 	bytes[4] = ((bb[row][5]));
 
 	// XXX change to debug_output
-	if (debug_output) 
+	if (debug_output)
 	    fprintf(stdout, "DSC Contact Raw Data: %02X %02X %02X %02X %02X\n",
 		bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
 
 	status = bytes[0];
-	esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]; 
+	esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
 	crc = bytes[4];
 
 	local_time_str(0, time_str);
@@ -170,11 +170,8 @@ r_device DSC = {
     .modulation		= OOK_PULSE_PCM_RZ,
     .short_limit	= 250,	// Pulse length, 250 µs
     .long_limit		= 500,	// Bit period, 500 µs
-    .reset_limit	= 5000, // Max gap, 
+    .reset_limit	= 5000, // Max gap,
     .json_callback	= &DSC_callback,
     .disabled		= 1,
     .demod_arg		= 0,
 };
-
-
-

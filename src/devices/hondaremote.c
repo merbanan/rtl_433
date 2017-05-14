@@ -29,22 +29,22 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 {
 	// Validate package
 		if (((bitbuffer->bits_per_row[i] >385) && (bitbuffer->bits_per_row[i] <=394)) &&
-	 ((bytes[0] == 0xFF ) && (bytes[38] == 0xFF))) 
+	 ((bytes[0] == 0xFF ) && (bytes[38] == 0xFF)))
 	 {
 
 	if (debug_output) {
 	fprintf (stdout,"passed validation bits per row %02d\n",(bitbuffer->bits_per_row[i]));
-			for (unsigned n=40; n<(50); ++n) 
+			for (unsigned n=40; n<(50); ++n)
 				{
 				fprintf(stdout,"Byte %02d", n);
 				fprintf(stdout,"= %02X\n", bytes[n]);
 				}
 			}
 
-//call function to lookup what button was pressed	
+//call function to lookup what button was pressed
 	const char* code = get_command_codes(bytes);
 	device_id = (bytes[44]>>8|bytes[45]);
-	
+
  /* Get time now */
 	local_time_str(0, time_str);
      data = data_make(
@@ -79,5 +79,5 @@ r_device hondaremote = {
 	.json_callback	= &hondaremote_callback,
 	.disabled		= 0,
 	.demod_arg		= 0,
-        .fields		= output_fields	
+        .fields		= output_fields
 };
