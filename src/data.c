@@ -290,7 +290,7 @@ void data_array_free(data_array_t *array) {
 	array_element_release_fn release = dmt[array->type].array_element_release;
 	if (release) {
 		int element_size = dmt[array->type].array_element_size;
-		for (int i = 0; i < array->num_values; ++i) 
+		for (int i = 0; i < array->num_values; ++i)
 			release(*(void**)(array->values + element_size * i));
 	}
 	free(array->values);

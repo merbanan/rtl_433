@@ -3,7 +3,7 @@
  * bytes:
  *
  * Byte 1-4: Start bits (0000), then static data (probably device id)
- * Byte 5-7: all zeros 
+ * Byte 5-7: all zeros
  * Byte 8: Pulse Count
  * Byte 9: sample frequency (15 seconds)
  * Byte 10: seconds
@@ -59,33 +59,33 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	// Sometimes pulses and gaps are mixed up. If this happens, invert
 	// all bytes to get correct interpretation.
 	if (bytes[0] & 0xf0){
-		for (unsigned i = 0; i < 12; ++i) 
+		for (unsigned i = 0; i < 12; ++i)
 			{
 			bytes[i] = ~bytes[i];
 			}
 		}
 
-	 if (debug_output){ 
+	 if (debug_output){
      		fprintf(stdout,"Possible Efergy Optical: ");
      		bitbuffer_print(bitbuffer);
 		}
-	
+
 	// Calculate checksum for bytes[0..10]
-	// crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)         
-	// start of data, length of data=10, polynomic=0x1021, init=0x0000	  
+	// crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)
+	// start of data, length of data=10, polynomic=0x1021, init=0x0000
 
 	  csum1 = ((bytes[10]<<8)|(bytes[11]));
 
    	  crc = crc16_ccitt(bytes, 10, 0x1021, 0x0);
 
 	  if (crc == csum1)
-       		{ 
+       		{
        		if (debug_output) {
 		fprintf (stdout, "Checksum OK :) :)\n");
         	fprintf (stdout, "Calculated crc is 0x%02X\n", crc);
         	fprintf (stdout, "Received csum1 is 0x%02X\n", csum1);
 		}
-		// this setting depends on your electricity meter's optical output	
+		// this setting depends on your electricity meter's optical output
 		n_imp = 3200;
 
 		pulsecount =  bytes[8];
@@ -114,7 +114,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 				local_time_str(0, time_str);
 				data = data_make(
 						"time",          "Time",            DATA_STRING, time_str,
-		                                "model",         "Model",            DATA_STRING, "Efergy Optical", 
+		                                "model",         "Model",            DATA_STRING, "Efergy Optical",
 						"pulses",	"Pulse-rate",	DATA_FORMAT,"%i", DATA_INT, imp_kwh[i],
                                 		"energy",       "Energy",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
 		                                   NULL);
@@ -122,11 +122,11 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 				}
 				return 0;
 		}
-		
-		else 
+
+		else
 			{
 			if (debug_output)
-				{ 
+				{
  				fprintf (stdout, "Checksum not OK !!!\n");
 				fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
 				fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
@@ -134,7 +134,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 			}
 		return 0;
 		}
-		
+
 static char *output_fields[] = {
     	"time",
   	"model",

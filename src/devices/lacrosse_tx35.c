@@ -39,7 +39,7 @@ I have noticed that depending of the device, the message received has different 
 It seems some sensor send a long preamble (33 bits, 0 / 1 alternated), and some send only
 one byte as the preamble. I own 3 sensors TX29, and two of them send a long preamble.
 So this decoder synchronize on the 0xaa 0x2d 0xd4 preamble, so many 0xaa can occurs before.
-Also, I added 0x9 in the preamble (the weather data length), because this decoder only handle 
+Also, I added 0x9 in the preamble (the weather data length), because this decoder only handle
 this type of message.
 TX29 and TX35 share the same protocol, but pulse are different length, thus this decoder
 handle the two signal and we use two r_device struct (only differing by the pulse width)
@@ -71,20 +71,20 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 	float temp_c; // in °C
 	int valid = 0;
 	data_t *data;
-	int events = 0;	
-	
+	int events = 0;
+
 	static const uint8_t preamble[] = {
 	  0xaa, // preamble
 	  0x2d, // brand identifer
 	  0xd4, // brand identifier
 	  0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
 	};
-	
+
 	uint8_t out[8] = {0}; // array of byte to decode
 	local_time_str(0, time_str);
 	for (brow = 0; brow < bitbuffer->num_rows; ++brow) {
 		bb = bitbuffer->bb[brow];
-		
+
 		// Validate message and reject it as fast as possible : check for preamble
 		unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 28);
 		if(start_pos == bitbuffer->bits_per_row[brow])
@@ -99,7 +99,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 		 * Normally, it is computed on the whole message, from byte 0 (preamble) to byte 6,
 		 * but preamble is always the same, so we can speed the process by doing a crc check
 		 * only on byte 3,4,5,6
-		 */		
+		 */
 		r_crc = out[7];
 		c_crc = crc8(&out[3], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
 		if (r_crc != c_crc) {
@@ -144,7 +144,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 							 NULL);
         }
 		//	humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
-		
+
 
 		data_acquired_handler(data);
 		events++;

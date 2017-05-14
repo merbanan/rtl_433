@@ -428,7 +428,7 @@ void histogram_sort_mean(histogram_t *hist) {
 		for(unsigned m = n+1; m < hist->bins_count; ++m) {
 			if (hist->bins[m].mean < hist->bins[n].mean) {
 				histogram_swap_bins(hist, m, n);
-			} // if 
+			} // if
 		} // for m
 	} // for n
 }
@@ -442,7 +442,7 @@ void histogram_sort_count(histogram_t *hist) {
 		for(unsigned m = n+1; m < hist->bins_count; ++m) {
 			if (hist->bins[m].count < hist->bins[n].count) {
 				histogram_swap_bins(hist, m, n);
-			} // if 
+			} // if
 		} // for m
 	} // for n
 }
@@ -477,9 +477,9 @@ void histogram_print(const histogram_t *hist, uint32_t samp_rate) {
 	for(unsigned n = 0; n < hist->bins_count; ++n) {
 		fprintf(stderr, " [%2u] count: %4u,  width: %5u [%2u;%2u]\t(%4.0f us)\n", n,
 			hist->bins[n].count,
-			hist->bins[n].mean, 
-			hist->bins[n].min, 
-			hist->bins[n].max, 
+			hist->bins[n].mean,
+			hist->bins[n].min,
+			hist->bins[n].max,
 			1E6f * hist->bins[n].mean / samp_rate);
 	}
 }
@@ -594,7 +594,7 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 
 	// Demodulate (if detected)
 	if(device.modulation) {
-		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %lu\n", 
+		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %lu\n",
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
 		switch(device.modulation) {
 			case FSK_PULSE_PCM:
@@ -623,4 +623,3 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 
 	fprintf(stderr, "\n");
 }
-

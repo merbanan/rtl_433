@@ -5,7 +5,7 @@
 
 // Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
 //     http://wiki.kainhofer.com/hardware/vaillantvrt340f
-// The data is sent differential Manchester encoded (OOK_PULSE_CLOCK_BITS in 
+// The data is sent differential Manchester encoded (OOK_PULSE_CLOCK_BITS in
 // rtl_433 terms) with bit-stuffing (after five 1 bits an extra 0 bit is inserted)
 //
 // All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)

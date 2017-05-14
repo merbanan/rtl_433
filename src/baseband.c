@@ -1,11 +1,11 @@
 /**
  * Baseband
- * 
+ *
  * Various functions for baseband sample processing
  *
  * Copyright (C) 2012 by Benjamin Larsson <benjamin@southpole.se>
  * Copyright (C) 2015 Tommy Vestermark
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -129,7 +129,7 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 	xlp_old = state->xlp; ylp_old = state->ylp;
 
 	for (unsigned n = 0; n < num_samples; n++) {
-		// delay old sample 
+		// delay old sample
 		br = ar;
 		bi = ai;
 		// get new sample
@@ -137,7 +137,7 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_sample
 		ai = x_buf[2*n+1]-128;
 		// Calculate phase difference vector: x[n] * conj(x[n-1])
 		pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
-		pi = ai*br-ar*bi; 
+		pi = ai*br-ar*bi;
 //		xlp = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Floating point implementation
 		xlp = atan2_int16(pi, pr);	// Integer implementation
 //		xlp = pi;					// Cheat and use only imaginary part (works OK, but is amplitude sensitive)
@@ -164,7 +164,7 @@ void baseband_dumpfile(const uint8_t *buf, uint32_t len) {
 	if (dumpfile == NULL) {
 		dumpfile = fopen("dumpfile.dat", "wb");
 	}
-	
+
 	if (dumpfile == NULL) {
 		fprintf(stderr, "Error: could not open dumpfile.dat\n");
 	} else {

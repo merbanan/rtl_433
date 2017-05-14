@@ -81,9 +81,9 @@ static char *output_fields[] = {
 
 r_device oregon_scientific_v1 = {
   .name           = "OSv1 Temperature Sensor",
-  .modulation     = OOK_PULSE_PWM_OSV1, 
+  .modulation     = OOK_PULSE_PWM_OSV1,
   .short_limit        = 300,
-  .long_limit         = 430, 
+  .long_limit         = 430,
   .reset_limit        = 14000,
   .json_callback  = &oregon_scientific_callback_v1,
   .disabled       = 0,

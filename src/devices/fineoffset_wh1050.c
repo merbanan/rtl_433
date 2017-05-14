@@ -1,4 +1,3 @@
-
 /*
  * *** Fine Offset WH1050 Weather Station ***
  * (aka )

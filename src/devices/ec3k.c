@@ -1,12 +1,12 @@
 /* EC3k Energy Count Control
- * 
+ *
  * "Voltcraft Energy Count 3000" sensor sold by Conrad
- * aka “Velleman NETBSEM4” 
+ * aka “Velleman NETBSEM4”
  * aka “La Crosse Techology Remote Cost Control Monitor – RS3620”.
  * aka "ELV Cost Control"
  *
  * Stub driver
- * 
+ *
  * Copyright (C) 2015 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,3 @@ r_device ec3k = {
 	.disabled       = 1,
 	.demod_arg      = 0,
 };
-
-
-

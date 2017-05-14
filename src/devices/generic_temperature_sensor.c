@@ -44,9 +44,9 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
                      "battery",      	"Battery?",		DATA_INT,					battery,
                      NULL);
     data_acquired_handler(data);
-	
-    return 1; 
-	
+
+    return 1;
+
 }
 
 static char *output_fields[] = {
@@ -70,4 +70,3 @@ r_device generic_temperature_sensor = {
   .demod_arg     = 0,
   .fields        = output_fields,
 };
-

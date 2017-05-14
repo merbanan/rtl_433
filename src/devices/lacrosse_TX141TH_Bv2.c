@@ -23,21 +23,21 @@
  * A logical 0 is 208 us of high followed by 417 us of low.
  * Thus, in the pictorial example above the bits are 1 0 0 1 1 0 1 ....
  *
- * The TX141TH-Bv2 sensor sends 12 of identical packets, one immediately following 
- * the other, in a single burst. These 12-packet bursts repeat every 50 seconds. At 
+ * The TX141TH-Bv2 sensor sends 12 of identical packets, one immediately following
+ * the other, in a single burst. These 12-packet bursts repeat every 50 seconds. At
  * the end of the last packet there are two 833 us pulses ("post-amble"?).
  *
  * The data is grouped in 5 bytes / 10 nybbles
  * [id] [id] [flags] [temp] [temp] [temp] [humi] [humi] [chk] [chk]
  *
- * The "id" is an 8 bit random integer generated when the sensor powers up for the 
- * first time; "flags" are 4 bits for battery low indicator, test button press, 
+ * The "id" is an 8 bit random integer generated when the sensor powers up for the
+ * first time; "flags" are 4 bits for battery low indicator, test button press,
  * and channel; "temp" is 12 bit unsigned integer which encodes temperature in degrees
  * Celsius as follows:
- * temp_c = temp/10 - 50 
- * to account for the -40 C -- 60 C range; "humi" is 8 bit integer indicating 
+ * temp_c = temp/10 - 50
+ * to account for the -40 C -- 60 C range; "humi" is 8 bit integer indicating
  * relative humidity in %. The method of calculating "chk", the presumed 8-bit checksum
- * remains a complete mystery at the moment of this writing, and I am not totally sure 
+ * remains a complete mystery at the moment of this writing, and I am not totally sure
  * if the last is any kind of CRC. I've run reveng 1.4.4 on exemplary data with all
  * available CRC algorithms and found no match. Be my guest if you want to
  * solve it - for example, if you figure out why the following two pairs have identical
@@ -121,11 +121,11 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     uint16_t temp_raw=0;
     float temp_f=0.0;
     data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT] = {0};
-    
+
     if (debug_output) {
         bitbuffer_print(bitbuffer);
     }
-    
+
     npacket=0; // Number of unique packets
     for(i=0; i<BITBUF_ROWS; ++i) {
         j=bitbuffer->bits_per_row[i];
@@ -149,7 +149,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
             }
         }
     }
- 
+
     if (debug_output) {
         fprintf(stderr, "%d unique packet(s)\n", npacket);
         for(k=0;k<npacket;++k) {
@@ -168,7 +168,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
             }
         }
     }
-    
+
     // Unpack the data bytes back to eliminate dependence on the platform endiannes!
     uint8_t *bytes=(uint8_t*)(&(dnc[kmax].data));
     id=bytes[0];
@@ -195,9 +195,9 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
                      "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
                       NULL);
     data_acquired_handler(data);
-	
-    return 1; 
-	
+
+    return 1;
+
 }
 
 static char *output_fields[] = {
@@ -222,4 +222,3 @@ r_device lacrosse_TX141TH_Bv2 = {
   .demod_arg     = 2,       // Longest pulses are startbits
   .fields        = output_fields,
 };
-

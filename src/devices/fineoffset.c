@@ -29,7 +29,7 @@
  * id is a random id that is generated when the sensor starts
  * temp is 12 bit signed magnitude scaled by 10 celcius
  * humi is 8 bit relative humidity percentage
- * 
+ *
  * Based on reverse engineering with gnu-radio and the nice article here:
  *  http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
  */
@@ -112,7 +112,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  * The sensor sends a package each ~64 s with a width of ~28 ms. The bits are PCM modulated with Frequency Shift Keying
  *
  * Example:
- * [00] {500} 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2a aa aa aa aa aa 8b 75 39 40 9c 8a 09 c8 72 6e ea aa aa 80 10 
+ * [00] {500} 80 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 2a aa aa aa aa aa 8b 75 39 40 9c 8a 09 c8 72 6e ea aa aa 80 10
  * Reading: 22.6 C, 40 %, 1001.7 hPa
  *
  * Extracted data:

@@ -51,9 +51,9 @@ E: ?
                      "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.01f C",	DATA_DOUBLE,	fTemp,
                      NULL);
     data_acquired_handler(data);
-	
-    return 1; 
-	
+
+    return 1;
+
 }
 
 static char *output_fields[] = {
@@ -77,4 +77,3 @@ r_device tfa_pool_thermometer = {
   .demod_arg     = 0,
   .fields        = output_fields,
 };
-

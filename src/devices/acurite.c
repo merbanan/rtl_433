@@ -532,7 +532,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 bb[0], bb[1], bb[2], bb[3], bb[4], bb[5], bb[6], bb[7]);
         }
 	    channel = acurite_getChannel(bb[0]);
-        sprintf(channel_str, "%c", channel);        
+        sprintf(channel_str, "%c", channel);
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
 	    sequence_num = acurite_5n1_getMessageCaught(bb[0]);
 	    message_type = bb[2] & 0x3f;
@@ -548,7 +548,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
             if (acurite_5n1t_raincounter > 0) {
                 // track rainfall difference after first run
                 // FIXME when converting to structured output, just output
-                // the reading, let consumer track state/wrap around, etc. 
+                // the reading, let consumer track state/wrap around, etc.
                 rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
                 if (raincounter < acurite_5n1t_raincounter) {
                     fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
@@ -561,11 +561,11 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
                 time_str, sensor_id, channel, raincounter * 0.01);
             }
-                
+
             data = data_make(
                 "time",         "",   DATA_STRING,    time_str,
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
-                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -590,7 +590,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
             data = data_make(
                 "time",         "",   DATA_STRING,    time_str,
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
-                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,   
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -600,7 +600,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                 NULL);
             data_acquired_handler(data);
-            
+
 	    } else {
             fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
                 time_str, sensor_id, channel, bb[3], message_type);
@@ -823,7 +823,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
         uint8_t chk = Checksum(3, &bb[1][0]);
 
         if (chk == bb[1][3]) {
-	    // Processing the temperature: 
+	    // Processing the temperature:
             // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
             // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
       	    temp = (int16_t)((uint16_t)(bb[1][1] << 12) | (bb[1][2] << 4));
@@ -882,7 +882,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
     if (nsignal==3) {
         //  Combine signal copies so that majority bit count wins
         for (int i=0; i<11; i++) {
-            signal[0][i] = 
+            signal[0][i] =
                 (signal[0][i] & signal[1][i]) |
                 (signal[1][i] & signal[2][i]) |
                 (signal[2][i] & signal[0][i]);
@@ -934,7 +934,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     NULL);
             //  Soil probe (detects temperature)
             } else if (probe==2) {
-                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100;
                 data = data_make(
                     "time",            "",             DATA_STRING,    time_str,
                     "model",           "",             DATA_STRING,    model ? model1 : model2,
@@ -948,7 +948,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     NULL);
             //  Spot probe (detects temperature and humidity)
             } else if (probe==3) {
-                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100; 
+                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100;
                 phumidity = signal[0][9] & 0x7f;
                 data = data_make(
                     "time",            "",             DATA_STRING,    time_str,
