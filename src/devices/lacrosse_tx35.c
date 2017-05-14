@@ -74,10 +74,10 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 	int events = 0;
 
 	static const uint8_t preamble[] = {
-	  0xaa, // preamble
-	  0x2d, // brand identifer
-	  0xd4, // brand identifier
-	  0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
+		0xaa, // preamble
+		0x2d, // brand identifer
+		0xd4, // brand identifier
+		0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
 	};
 
 	uint8_t out[8] = {0}; // array of byte to decode
@@ -130,20 +130,20 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 							 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
 							 "mic",		   "Integrity",		 DATA_STRING, "CRC",
 							 NULL);
-        }
-        else {
+		}
+		else {
 			data = data_make("time",		  "",			DATA_STRING, time_str,
-							 "brand",		 "",			DATA_STRING, "LaCrosse",
-							 "model",		 "",			DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
-							 "id",			"",			DATA_INT,	sensor_id,
-							 "battery",	   "Battery",	 DATA_STRING, battery_low ? "LOW" : "OK",
-							 "newbattery",	"NewBattery",  DATA_INT,	  newbatt,
-							 "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-							 "humidity",	  "Humidity",	DATA_FORMAT, "%u %%", DATA_INT, humidity,
-							 "mic",		   "Integrity",		 DATA_STRING, "CRC",
-							 NULL);
-        }
-		//	humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
+							"brand",		 "",			DATA_STRING, "LaCrosse",
+							"model",		 "",			DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
+							"id",			"",			DATA_INT,	sensor_id,
+							"battery",	   "Battery",	 DATA_STRING, battery_low ? "LOW" : "OK",
+							"newbattery",	"NewBattery",  DATA_INT,	  newbatt,
+							"temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+							"humidity",	  "Humidity",	DATA_FORMAT, "%u %%", DATA_INT, humidity,
+							"mic",		   "Integrity",		 DATA_STRING, "CRC",
+							NULL);
+		}
+		// humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
 
 
 		data_acquired_handler(data);

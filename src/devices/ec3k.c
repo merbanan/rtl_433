@@ -29,7 +29,6 @@ static int ec3k_callback(bitbuffer_t *bitbuffer) {
 	return 0;
 }
 
-
 r_device ec3k = {
 	.name           = "Energy Count 3000 (868.3 MHz)",
 	.modulation     = FSK_PULSE_PCM,

@@ -71,12 +71,12 @@ static char *output_fields[] = {
 };
 
 r_device ht680 = {
-  .name          = "HT680 Remote control",
-  .modulation    = OOK_PULSE_PWM_RAW,
-  .short_limit   = 400,
-  .long_limit    = 1200,
-  .reset_limit   = 13000,
-  .json_callback = &ht680_callback,
-  .disabled      = 0,
-  .demod_arg     = 1
+	.name          = "HT680 Remote control",
+	.modulation    = OOK_PULSE_PWM_RAW,
+	.short_limit   = 400,
+	.long_limit    = 1200,
+	.reset_limit   = 13000,
+	.json_callback = &ht680_callback,
+	.disabled      = 0,
+	.demod_arg     = 1
 };

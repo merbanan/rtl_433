@@ -83,14 +83,14 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 			depth = ((b[5] & 3) << 8) | b[6];
 
 		data = data_make("time", "", DATA_STRING, time_str,
-				 "model", "", DATA_STRING, "Oil Watchman",
-				 "id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
-				 "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
-				 "maybetemp", "", DATA_INT, maybetemp,
-				 "temperature_C", "", DATA_DOUBLE, temperature,
-				 "binding_countdown", "", DATA_INT, binding_countdown,
-				 "depth", "", DATA_INT, depth,
-				 NULL);
+			"model", "", DATA_STRING, "Oil Watchman",
+			"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
+			"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
+			"maybetemp", "", DATA_INT, maybetemp,
+			"temperature_C", "", DATA_DOUBLE, temperature,
+			"binding_countdown", "", DATA_INT, binding_countdown,
+			"depth", "", DATA_INT, depth,
+			NULL);
 		data_acquired_handler(data);
 		events++;
 	}

@@ -97,25 +97,25 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
 unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 			  const uint8_t *pattern, unsigned pattern_bits_len)
 {
-    uint8_t *bits = bitbuffer->bb[row];
-    unsigned len = bitbuffer->bits_per_row[row];
-    unsigned ipos = start;
-    unsigned ppos = 0;  // cursor on init pattern
+	uint8_t *bits = bitbuffer->bb[row];
+	unsigned len = bitbuffer->bits_per_row[row];
+	unsigned ipos = start;
+	unsigned ppos = 0;  // cursor on init pattern
 
-    while (ipos < len && ppos < pattern_bits_len) {
-	    if (bit(bits, ipos) == bit(pattern, ppos)) {
-		    ppos++;
-		    ipos++;
-		    if (ppos == pattern_bits_len)
-			    return ipos - pattern_bits_len;
-	    } else {
-		    ipos += -ppos + 1;
-		    ppos = 0;
-	    }
-    }
+	while (ipos < len && ppos < pattern_bits_len) {
+		if (bit(bits, ipos) == bit(pattern, ppos)) {
+			ppos++;
+			ipos++;
+			if (ppos == pattern_bits_len)
+				return ipos - pattern_bits_len;
+		} else {
+			ipos += -ppos + 1;
+			ppos = 0;
+		}
+	}
 
-    // Not found
-    return len;
+	// Not found
+	return len;
 }
 
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,

@@ -69,10 +69,10 @@ static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
-    "model",
-    "code",
-    NULL
+	"time",
+	"model",
+	"code",
+	NULL
 };
 
 r_device elro_db286a = {
@@ -83,5 +83,5 @@ r_device elro_db286a = {
 	.reset_limit    = 2000*4,
 	.json_callback	= &doorbell_db286a_callback,
 	.disabled		= 0,
-    .fields         = output_fields
+	.fields         = output_fields
 };

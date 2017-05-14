@@ -35,15 +35,15 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
             nb[i] |= ((b[i]&0x03)==0x03) ? 0x00 : 0x08;
         }
 
-	id_str[0] = 'A'+nb[0];
-	id_str[1] = 0;
-	data = data_make("model", NULL,   DATA_STRING, "Waveman Switch Transmitter",
-		         "id", NULL,      DATA_STRING, id_str,
-		         "channel", NULL, DATA_INT, (nb[1]>>2)+1,
-		         "button", NULL,  DATA_INT, (nb[1]&3)+1,
-		         "state", NULL,   DATA_STRING, (nb[2]==0xe) ? "on" : "off",
-		         NULL);
-	data_acquired_handler(data);
+    id_str[0] = 'A'+nb[0];
+    id_str[1] = 0;
+    data = data_make("model", NULL,   DATA_STRING, "Waveman Switch Transmitter",
+        "id", NULL,      DATA_STRING, id_str,
+        "channel", NULL, DATA_INT, (nb[1]>>2)+1,
+        "button", NULL,  DATA_INT, (nb[1]&3)+1,
+        "state", NULL,   DATA_STRING, (nb[2]==0xe) ? "on" : "off",
+        NULL);
+    data_acquired_handler(data);
 
         return 1;
     }
@@ -51,12 +51,12 @@ static int waveman_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"model",
-	"id",
-	"channel",
-	"button",
-	"state",
-	NULL
+    "model",
+    "id",
+    "channel",
+    "button",
+    "state",
+    NULL
 };
 
 
