@@ -17,8 +17,8 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 	int moisture, uk1;
 	int checksum;
 	data_t *data;
-	long tmpData;
-	long savData = 0;
+	unsigned tmpData;
+	unsigned savData = 0;
 
 	local_time_str(0, time_str);
 
@@ -26,6 +26,9 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 		if(bitbuffer->bits_per_row[row] == NUM_BITS || bitbuffer->bits_per_row[row] == NUM_BITS + 1) {
 			cs = 0;
 			tmpData = (bitbuffer->bb[row][0] << 24) + (bitbuffer->bb[row][1] << 16) + (bitbuffer->bb[row][2] << 8) + bitbuffer->bb[row][3];
+			if (tmpData == 0xffffffff) {
+				continue; // prevent false positive checksum
+			}
 			for(i = 0; i < (NUM_BITS/4); i++) {
 				if((i & 0x01) == 0x01)
 					nibble[i] = bitbuffer->bb[row][i >> 1] & 0x0f;
@@ -81,9 +84,9 @@ static char *output_fields[] = {
 r_device springfield = {
 	.name           = "Springfield Temperature and Soil Moisture",
 	.modulation     = OOK_PULSE_PPM_RAW,
-	.short_limit    = 500 * 4,
-	.long_limit     = 1000 * 4,
-	.reset_limit    = 2300 * 4,
+	.short_limit    = 2000,
+	.long_limit     = 4000,
+	.reset_limit    = 9200,
 	.json_callback  = &springfield_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
