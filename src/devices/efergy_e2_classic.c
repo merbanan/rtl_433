@@ -18,10 +18,18 @@
  */
 
 #include "rtl_433.h"
+#include "util.h"
+#include "data.h"
+#include "math.h"
 
 static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
+	signed char fact = 0;
+	data_t *data;
+	char time_str[LOCAL_TIME_BUFLEN];
+	
+	local_time_str(0, time_str);
 
 	if (num_bits < 64 || num_bits > 80) {
 		return 0;
@@ -60,16 +68,50 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 		return 0;
 	}
 
-	const unsigned VOLTAGES[] = {110, 115, 120, 220, 230, 240, 0};
-
-	double current_adc = 256 * bytes[4] + bytes[5];
-	for (unsigned i = 0; VOLTAGES[i] != 0; ++i) {
-		double power  = (VOLTAGES[i] * current_adc * (1 << bytes[6])) / 32768;
-		fprintf(stderr, "Power consumption at %u volts: %.2f watts\n", VOLTAGES[i], power);
+	if (bytes[6] > 0x80)
+	{
+	    fact = ((0xff - bytes[6]) + 1) * -1; /* Make a negative from a signed byte */
+	}
+	else
+	{
+	    fact = bytes[6];
 	}
 
+	uint8_t learn = (bytes[3] & 0x80)>>7;
+	uint8_t interval = (((bytes[3] & 0x30)>>4)+1)*6;
+	uint8_t battery = (bytes[3] & 0x40)>>6;
+	float current_adc = ((float)(256 * bytes[4] + bytes[5]) * pow(2,fact))/ 32768;
+	uint16_t address = bytes[1] + (bytes[2] << 8);
+	//fprintf(stdout, "Addr: %02X%02X,Amps: %.2f A, inter: %d s, bat: %d, learn: %d\n",bytes[1],bytes[2],current_adc,interval,battery,learn);
+	//fprintf(stdout, "%04X,%.2f,%d,%d,%d\n",address,current_adc,interval,battery,learn);
+
+	// Output data
+	data = data_make(
+		"time",			"Time",		DATA_STRING,	time_str,
+		"model",		"",			DATA_STRING,	"Efergy e2 Sensor",
+		"id",			"ID",		DATA_INT,		address,
+		"current",		"",			DATA_FORMAT,	"%.2f", 	DATA_DOUBLE, current_adc,
+		"interval", 	"",			DATA_INT,		interval,
+		"battery",      "Battery",  DATA_STRING, 	battery ? "OK" : "LOW",
+		"learn",		"",			DATA_STRING, 	battery ? "NO" : "YES",
+		NULL
+	); 
+
+	data_acquired_handler(data);
+	
 	return 1;
 }
+
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"current",
+	"interval",
+	"battery",
+	"learn",
+	NULL
+};
 
 r_device efergy_e2_classic = {
 	.name           = "Efergy e2 classic",
@@ -78,6 +120,7 @@ r_device efergy_e2_classic = {
 	.long_limit     = 400,
 	.reset_limit    = 400,
 	.json_callback  = &efergy_e2_classic_callback,
-	.disabled       = 1,
+	.disabled       = 0,
 	.demod_arg      = 0,
+	.fields         = output_fields
 };
