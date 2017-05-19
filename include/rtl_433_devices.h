@@ -82,7 +82,8 @@
 		DECL(lacrosse_tx29) \
 		DECL(vaillant_vrt340f) \
 		DECL(fineoffset_WH25) \
-		DECL(fineoffset_WH0530)
+		DECL(fineoffset_WH0530) \
+		DECL(ibis_beacon)
 
 typedef struct {
 	char name[256];
