@@ -120,12 +120,12 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 }
 
 r_device cardin = {
-    .name           = "Cardin S466-TX2",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1212,
-    .long_limit     = 1600,
-    .reset_limit    = 32000,
-    .json_callback  = &cardin_callback,
-    .disabled       = 1,
-    .demod_arg      = 0,
+	.name           = "Cardin S466-TX2",
+	.modulation     = OOK_PULSE_PPM_RAW,
+	.short_limit    = 1212,
+	.long_limit     = 1600,
+	.reset_limit    = 32000,
+	.json_callback  = &cardin_callback,
+	.disabled       = 1,
+	.demod_arg      = 0,
 };

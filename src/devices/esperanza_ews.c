@@ -108,18 +108,19 @@ static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
             if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row+2], sizeof(bitbuffer->bb[row])) != 0 || bitbuffer->bits_per_row[row] != 42) return 0;
         }
         esperanza_ews_process_row(bitbuffer, 2);
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 
 r_device esperanza_ews = {
-        .name          = "Esperanza EWS",
-        .modulation    = OOK_PULSE_PPM_RAW,
-        .short_limit   = 2800,
-        .long_limit    = 4400,
-        .reset_limit   = 8000,
-        .json_callback = &esperanza_ews_callback,
-        .disabled      = 0,
-        .demod_arg     = 0,
+    .name          = "Esperanza EWS",
+    .modulation    = OOK_PULSE_PPM_RAW,
+    .short_limit   = 2800,
+    .long_limit    = 4400,
+    .reset_limit   = 8000,
+    .json_callback = &esperanza_ews_callback,
+    .disabled      = 0,
+    .demod_arg     = 0,
 };

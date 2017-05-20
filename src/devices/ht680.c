@@ -7,11 +7,13 @@
  * (at your option) any later version.
  */
 #include "rtl_433.h"
+#include "util.h"
 
 static int ht680_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
+	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
-	
+
 	for (uint8_t row = 0;row < bitbuffer->num_rows;row++){
 		uint8_t *b = bb[row];
 		if(bitbuffer->bits_per_row[row] == 40 && //Length of packet is 40
@@ -20,7 +22,7 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 			(b[3] & 0x82) == 0x82 && //Buttons(4,3) always mask 10000010
 			(b[4] & 0x0A) == 0x0A){  //Buttons(2,1) always mask 00001010
 			b[0] = b[0] & 0x0F; //Clear sync
-						
+
 			// Tristate coding
 			char tristate[21];
 			char *p = tristate;
@@ -36,8 +38,11 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 				}
 			}
 			*p = '\0';
-			
-			data = data_make("model",	"",				DATA_STRING,	"HT680 Remote control",
+
+			local_time_str(0, time_str);
+			data = data_make(
+							 "time",         "",     DATA_STRING, time_str,
+							 "model",	"",				DATA_STRING,	"HT680 Remote control",
 							 "tristate","Tristate code",DATA_STRING,	tristate,
 							 "address",	"Address",	DATA_FORMAT,	"0x%06X", DATA_INT, (b[0]<<16)+(b[1]<<8)+b[2],
 							 "button1",	"Button 1",		DATA_STRING,	(((b[4]>>4) & 0x03) == 3) ? "PRESSED" : "",
@@ -46,7 +51,7 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 							 "button4",	"Button 4",		DATA_STRING,	((((b[3]&0x7D)>>4) & 0x03) == 3) ? "PRESSED" : "",
 							 NULL);
 			data_acquired_handler(data);
-			
+
 			return 1;
 		}
 	}
@@ -66,12 +71,12 @@ static char *output_fields[] = {
 };
 
 r_device ht680 = {
-  .name          = "HT680 Remote control",
-  .modulation    = OOK_PULSE_PWM_RAW,
-  .short_limit   = 400,
-  .long_limit    = 1200,
-  .reset_limit   = 13000,
-  .json_callback = &ht680_callback,
-  .disabled      = 0,
-  .demod_arg     = 1
+	.name          = "HT680 Remote control",
+	.modulation    = OOK_PULSE_PWM_RAW,
+	.short_limit   = 400,
+	.long_limit    = 1200,
+	.reset_limit   = 13000,
+	.json_callback = &ht680_callback,
+	.disabled      = 0,
+	.demod_arg     = 1
 };

@@ -1,11 +1,11 @@
 /**
  * Baseband
- * 
+ *
  * Various functions for baseband sample processing
  *
  * Copyright (C) 2012 by Benjamin Larsson <benjamin@southpole.se>
  * Copyright (C) 2015 Tommy Vestermark
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -88,25 +88,25 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
 /// @param x: Denominator (real value of complex vector)
 /// @return angle in radians (Pi equals INT16_MAX)
 int16_t atan2_int16(int16_t y, int16_t x) {
-	static const int32_t I_PI_4 = INT16_MAX/4;		// M_PI/4
-	static const int32_t I_3_PI_4 = 3*INT16_MAX/4;	// 3*M_PI/4
-	const int32_t abs_y = abs(y);
-	int32_t r, angle;
+    static const int32_t I_PI_4 = INT16_MAX/4;      // M_PI/4
+    static const int32_t I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
+    const int32_t abs_y = abs(y);
+    int32_t r, angle;
 
-	if (x >= 0) {	// Quadrant I and IV
-		int32_t denom = (abs_y + x);
-		if (denom == 0) denom = 1;	// Prevent divide by zero
-		r = ((x - abs_y) << 16) / denom;
-		angle = I_PI_4;
-	} else {		// Quadrant II and III
-		int32_t denom = (abs_y - x);
-		if (denom == 0) denom = 1;	// Prevent divide by zero
-		r = ((x + abs_y) << 16) / denom;
-		angle = I_3_PI_4;
-	}
-	angle -= (I_PI_4 * r) >> 16;	// Error max 0.07 radians
-	if (y < 0) angle = -angle;	// Negate if in III or IV
-	return angle;
+    if (x >= 0) {    // Quadrant I and IV
+        int32_t denom = (abs_y + x);
+        if (denom == 0) denom = 1;  // Prevent divide by zero
+        r = ((x - abs_y) << 16) / denom;
+        angle = I_PI_4;
+    } else {        // Quadrant II and III
+        int32_t denom = (abs_y - x);
+        if (denom == 0) denom = 1;  // Prevent divide by zero
+        r = ((x + abs_y) << 16) / denom;
+        angle = I_3_PI_4;
+    }
+    angle -= (I_PI_4 * r) >> 16;  // Error max 0.07 radians
+    if (y < 0) angle = -angle;    // Negate if in III or IV
+    return angle;
 }
 
 
@@ -118,57 +118,57 @@ static int alp[2] = {FIX(1.00000), FIX(0.50953)};
 static int blp[2] = {FIX(0.24524), FIX(0.24524)};
 
 void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_samples, DemodFM_State *state) {
-	int16_t ar, ai;		// New IQ sample: x[n]
-	int16_t br, bi;		// Old IQ sample: x[n-1]
-	int32_t pr, pi;		// Phase difference vector
-	int16_t angle;		// Phase difference angle
-	int16_t xlp, ylp, xlp_old, ylp_old;	// Low Pass filter variables
+    int16_t ar, ai;  // New IQ sample: x[n]
+    int16_t br, bi;  // Old IQ sample: x[n-1]
+    int32_t pr, pi;  // Phase difference vector
+    int16_t angle;   // Phase difference angle
+    int16_t xlp, ylp, xlp_old, ylp_old;  // Low Pass filter variables
 
-	// Pre-feed old sample
-	ar = state->br; ai = state->bi;
-	xlp_old = state->xlp; ylp_old = state->ylp;
+    // Pre-feed old sample
+    ar = state->br; ai = state->bi;
+    xlp_old = state->xlp; ylp_old = state->ylp;
 
-	for (unsigned n = 0; n < num_samples; n++) {
-		// delay old sample 
-		br = ar;
-		bi = ai;
-		// get new sample
-		ar = x_buf[2*n]-128;
-		ai = x_buf[2*n+1]-128;
-		// Calculate phase difference vector: x[n] * conj(x[n-1])
-		pr = ar*br+ai*bi;	// May exactly overflow an int16_t (-128*-128 + -128*-128)
-		pi = ai*br-ar*bi; 
-//		xlp = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);	// Floating point implementation
-		xlp = atan2_int16(pi, pr);	// Integer implementation
-//		xlp = pi;					// Cheat and use only imaginary part (works OK, but is amplitude sensitive)
-		// Low pass filter
-		ylp = ((alp[1] * ylp_old >> 1) + (blp[0] * xlp >> 1) + (blp[1] * xlp_old >> 1)) >> (F_SCALE - 1);
-		ylp_old = ylp; xlp_old = xlp;
-		y_buf[n] = ylp;
-	}
+    for (unsigned n = 0; n < num_samples; n++) {
+        // delay old sample
+        br = ar;
+        bi = ai;
+        // get new sample
+        ar = x_buf[2*n]-128;
+        ai = x_buf[2*n+1]-128;
+        // Calculate phase difference vector: x[n] * conj(x[n-1])
+        pr = ar*br+ai*bi;  // May exactly overflow an int16_t (-128*-128 + -128*-128)
+        pi = ai*br-ar*bi;
+//        xlp = (int16_t)((atan2f(pi, pr) / M_PI) * INT16_MAX);    // Floating point implementation
+        xlp = atan2_int16(pi, pr);  // Integer implementation
+//        xlp = pi;                    // Cheat and use only imaginary part (works OK, but is amplitude sensitive)
+        // Low pass filter
+        ylp = ((alp[1] * ylp_old >> 1) + (blp[0] * xlp >> 1) + (blp[1] * xlp_old >> 1)) >> (F_SCALE - 1);
+        ylp_old = ylp; xlp_old = xlp;
+        y_buf[n] = ylp;
+    }
 
-	// Store newest sample for next run
-	state->br = ar; state->bi = ai;
-	state->xlp = xlp_old; state->ylp = ylp_old;
+    // Store newest sample for next run
+    state->br = ar; state->bi = ai;
+    state->xlp = xlp_old; state->ylp = ylp_old;
 }
 
 
 void baseband_init(void) {
-	calc_squares();
+    calc_squares();
 }
 
 
 static FILE *dumpfile = NULL;
 
 void baseband_dumpfile(const uint8_t *buf, uint32_t len) {
-	if (dumpfile == NULL) {
-		dumpfile = fopen("dumpfile.dat", "wb");
-	}
-	
-	if (dumpfile == NULL) {
-		fprintf(stderr, "Error: could not open dumpfile.dat\n");
-	} else {
-		fwrite(buf, 1, len, dumpfile);
-		fflush(dumpfile);		// Flush as file is not closed cleanly...
-	}
+    if (dumpfile == NULL) {
+        dumpfile = fopen("dumpfile.dat", "wb");
+    }
+
+    if (dumpfile == NULL) {
+        fprintf(stderr, "Error: could not open dumpfile.dat\n");
+    } else {
+        fwrite(buf, 1, len, dumpfile);
+        fflush(dumpfile);  // Flush as file is not closed cleanly...
+    }
 }

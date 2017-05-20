@@ -54,11 +54,11 @@ static void convert_bitbuffer(bitbuffer_t *bitbuffer, unsigned int *msg_converte
     unsigned int quart_convert[16] ={0,0,0,0,0,0,1,0,0,2,3,0,0,0,0,0};
     int i;
     for(i = 0; i < 13; i++) {
-        char temp[2];
+        char temp[3];
         sprintf(temp, "%02x", bitbuffer->bb[0][i]);
         msg_hex_combined[i*2] = temp[0];
         msg_hex_combined[i*2+1] = temp[1];
-        
+
         msg_converted[i*2] = quart_convert[bitbuffer->bb[0][i] >> 4];
         msg_converted[i*2+1] = quart_convert[bitbuffer->bb[0][i] & 0xF];
     }
@@ -89,7 +89,7 @@ static float get_temperature(unsigned int *msg_converted, unsigned int temp_star
 static char* get_status(unsigned int *msg_converted) {
     int stat = 0;
     char* retval = "unknown";
-    
+
     //nibble 6 - 7 used for status
     stat += msg_converted[6] * (1<<(2*(1)));
     stat += msg_converted[7] * (1<<(2*(0)));
@@ -102,7 +102,7 @@ static char* get_status(unsigned int *msg_converted) {
 
     if(debug_output)
         fprintf(stderr, "device status: \"%s\" (%d)\n", retval, stat);
-    
+
     return retval;
 }
 
@@ -126,7 +126,7 @@ static uint32_t checksum_data(unsigned int *msg_converted) {
 static uint32_t checksum_received(unsigned int *msg_converted, char *msg_hex_combined) {
     uint32_t checksum = 0;
     int i;
-    
+
     //nibble 18 - 25 checksum info from device
     for(i=0; i<=7; i++) {
          checksum |= msg_converted[18+i] << (14 - 2*i);
@@ -153,18 +153,18 @@ static uint32_t checksum_received(unsigned int *msg_converted, char *msg_hex_com
 static uint16_t shiftreg(uint16_t currentValue) {
     uint8_t msb = (currentValue >> 15) & 1;
     currentValue <<= 1;
-    
+
     // Toggle pattern for feedback bits
     // Toggle, if MSB is 1
     if (msb == 1)
         currentValue ^= 0x1021;
-    
+
     return currentValue;
 }
 
 static uint16_t calculate_checksum(uint32_t data) {
     //initial value of linear feedback shift register
-    uint16_t mask = 0x3331; 
+    uint16_t mask = 0x3331;
     uint16_t csum = 0x0;
     int i;
     for(i = 0; i < 24; ++i) {
@@ -172,7 +172,7 @@ static uint16_t calculate_checksum(uint32_t data) {
         //do XOR with mask
         if((data >> i) & 0x01)
             csum ^= mask;
-        
+
         mask = shiftreg(mask);
     }
     return csum;
@@ -198,16 +198,16 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     //check for correct header (0xAA9995)
     if((bitbuffer->bb[0][0] != 0xAA || bitbuffer->bb[0][0] != 0xaa ) || bitbuffer->bb[0][1] != 0x99 || bitbuffer->bb[0][2] != 0x95)
         return 0;
-    
+
     //convert hex values into quardinary values
     convert_bitbuffer(bitbuffer, msg_converted, msg_hex_combined);
 
-    //checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done. 
+    //checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done.
     session_id = (calculate_checksum(checksum_data(msg_converted)) & 0xffff) ^ checksum_received(msg_converted, msg_hex_combined);
-    
+
     if(debug_output)
         fprintf(stderr, "checksum xor: %x\n", session_id);
-    
+
     local_time_str(0, time_str);
 
     data = data_make("time",           "",                      DATA_STRING,                         time_str,
@@ -217,7 +217,7 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
                      "status",         "Status",                DATA_STRING,                         get_status(msg_converted),
                      "temperature_C1", "TemperatureSensor1",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S1),
                      "temperature_C2", "TemperatureSensor2",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_temperature(msg_converted,TEMPERATURE_START_POSITION_S2),
-                     "crc", "", DATA_STRING, "ok",
+                     "mic", "Integrity", DATA_STRING, "CHECKSUM",
                      NULL);
     data_acquired_handler(data);
 
@@ -232,7 +232,7 @@ static char *output_fields[] = {
     "status",
     "temperature_C1",
     "temperature_C2",
-    "crc",
+    "mic",
     NULL
 };
 

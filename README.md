@@ -61,6 +61,7 @@ Usage:	= Tuner options =
 	= Analyze/Debug options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
 	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
+	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
@@ -89,39 +90,39 @@ Supported device protocols:
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
-    [09]* Acurite 5n1 Weather Station
+    [09]* Template decoder
     [10]* Acurite 896 Rain Gauge
-    [11]* Acurite 609TXC Temperature and Humidity Sensor
+    [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
-    [13]* Mebus 433
+    [13]  Mebus 433
     [14]* Intertechno 433
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]* Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH-2 Sensor
+    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
     [23]* DSC Security Contact
     [24]* Brennenstuhl RCS 2044
-    [25]* GT-WT-02 Sensor
-    [26]* Danfoss CFR Thermostat
+    [25]  GT-WT-02 Sensor
+    [26]  Danfoss CFR Thermostat
     [27]* Energy Count 3000 (868.3 MHz)
     [28]* Valeo Car Key
     [29]  Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
     [31]  TFA-Twin-Plus-30.3049 and Ea2 BL999
-    [32]  Fine Offset WH1080 Weather Station
+    [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
     [33]  WT450
     [34]  LaCrosse WS-2310 Weather Station
     [35]  Esperanza EWS
     [36]* Efergy e2 classic
     [37]* Inovalley kw9015b rain and Temperature weather station
     [38]  Generic temperature sensor 1
-    [39]* Acurite 592TXR Temperature/Humidity Sensor and 5n1 Weather Station
+    [39]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
     [40]* Acurite 986 Refrigerator / Freezer Thermometer
-    [41]  HIDEKI TS04 Temperature and Humidity Sensor
+    [41]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [42]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
     [43]  CurrentCost Current Sensor
     [44]  emonTx OpenEnergyMonitor
@@ -148,6 +149,16 @@ Supported device protocols:
     [65]  Fine Offset Electronics, XC0400
     [66]  Radiohead ASK
     [67]  Kerui PIR Sensor
+    [68]  Fine Offset WH1050 Weather Station
+    [69]  Honeywell Door/Window Sensor
+    [70]  Maverick ET-732/733 BBQ Sensor
+    [71]* RF-tech
+    [72]  LaCrosse TX141TH-Bv2 sensor
+    [73]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
+    [74]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX29IT Temperature sensor
+    [76]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [77]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
 
 * Disabled by default, use -R n or -G
 ```
@@ -164,6 +175,7 @@ Examples:
 | `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
 | `rtl_433 -r file_name` | Play back a saved data file. 
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
+| `rtl_433 -F json -U | mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
 
 This software is mostly useable for developers right now.
 

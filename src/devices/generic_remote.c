@@ -19,8 +19,8 @@
 static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
- 	data_t *data;
- 	char time_str[LOCAL_TIME_BUFLEN];
+	data_t *data;
+	char time_str[LOCAL_TIME_BUFLEN];
 	char tristate[23];
 	char *p = tristate;
 
@@ -62,7 +62,7 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 				default:	c = '?'; break; // not possible anyway
 			}
 			*p++=c;
-                        *p = '\0';
+			*p = '\0';
 
 
 			//fputc(c, stdout);
@@ -75,13 +75,13 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 		data = data_make(
 			"time",       	"",          	DATA_STRING, time_str,
-                	"model",      	"",           	DATA_STRING, "Generic Remote",
-                  	"id",         	"House Code", 	DATA_INT, ID_16b,
-                 	"cmd",       	"Command",   	DATA_INT, CMD_8b,
-                 	"tristate",    	"Tri-State", 	DATA_STRING, tristate,
-                      NULL);
+			"model",      	"",           	DATA_STRING, "Generic Remote",
+			"id",         	"House Code", 	DATA_INT, ID_16b,
+			"cmd",       	"Command",   	DATA_INT, CMD_8b,
+			"tristate",    	"Tri-State", 	DATA_STRING, tristate,
+			NULL);
 
-    		data_acquired_handler(data);
+		data_acquired_handler(data);
 
 
 		return 1;

@@ -81,7 +81,8 @@ int byteParity(uint8_t inByte);
 ///
 /// @param time_secs: 0 for now, or seconds since the epoch
 /// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
-void local_time_str(time_t time_secs, char *buf);
+/// @return buf pointer (for short hand use as operator)
+char* local_time_str(time_t time_secs, char *buf);
 
 /// Convert Celsius to Fahrenheit
 ///

@@ -12,7 +12,7 @@
 #include "rtl_433.h"
 
 static int X10_RF_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
+	bitrow_t *bb = bitbuffer->bb;
 	// Row [0] is sync pulse
 	// Validate package
 	if ((bitbuffer->bits_per_row[1] == 32)		// Dont waste time on a short package
@@ -39,6 +39,3 @@ r_device X10_RF = {
 	.disabled		= 1,
 	.demod_arg		= 0,
 };
-
-
-

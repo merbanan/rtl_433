@@ -16,7 +16,7 @@
 ########################################################################
 # Build utility
 ########################################################################
-add_executable(rtl_433 
+add_executable(rtl_433
 	baseband.c
 	bitbuffer.c
 	data.c
@@ -24,7 +24,7 @@ add_executable(rtl_433
 	pulse_detect.c
 	rtl_433.c
 	util.c
-        devices/acurite.c
+	devices/acurite.c
 	devices/alecto.c
 	devices/ambient_weather.c
 	devices/blyss.c
@@ -69,6 +69,7 @@ add_executable(rtl_433
 	devices/tfa_pool_thermometer.c
 	devices/valeo.c
 	devices/waveman.c
+	devices/wg_pb12v1.c
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/s3318p.c
@@ -80,8 +81,8 @@ add_executable(rtl_433
 	devices/steelmate.c
 	devices/schraeder.c
 	devices/elro_db286a.c
-        devices/efergy_optical.c
-        devices/hondaremote.c
+	devices/efergy_optical.c
+	devices/hondaremote.c
 	devices/new_template.c
 	devices/radiohead_ask.c
 	devices/kerui.c
@@ -89,6 +90,9 @@ add_executable(rtl_433
 	devices/honeywell.c
 	devices/maverick_et73x.c
 	devices/rftech.c
+	devices/lacrosse_tx35.c
+	devices/vaillant_vrt340f.c
+	devices/ibis_beacon.c
 
 )
 
@@ -99,7 +103,7 @@ target_link_libraries(rtl_433
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
-	
+
 set(INSTALL_TARGETS rtl_433)
 if(UNIX)
 target_link_libraries(rtl_433 m)

@@ -32,8 +32,8 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     if (debug_output > 1) {
-       fprintf(stderr,"Possible Nexus: ");
-       bitbuffer_print(bitbuffer);
+        fprintf(stderr,"Possible Nexus: ");
+        bitbuffer_print(bitbuffer);
     }
 
     uint8_t id;
@@ -44,9 +44,9 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
     /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
-      * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
-      * So less then 0.5% which should be acceptable.
-      */
+     * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
+     * So less then 0.5% which should be acceptable.
+     */
     if (r >= 0 &&
         bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
         bb[r][0] != 0 &&

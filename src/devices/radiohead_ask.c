@@ -22,10 +22,10 @@ int data_payload[RH_ASK_MAX_MESSAGE_LEN];
 
 // 4 bit to 6 bit symbol converter table
 // Used to convert the high and low nybbles of the transmitted data
-// into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s 
+// into 6 bit symbols for transmission. Each 6-bit symbol has 3 1s and 3 0s
 // with at most 3 consecutive identical bits
 static uint8_t symbols[] = {
-    0xd,  0xe,  0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c, 
+    0xd,  0xe,  0x13, 0x15, 0x16, 0x19, 0x1a, 0x1c,
     0x23, 0x25, 0x26, 0x29, 0x2a, 0x2c, 0x32, 0x34
 };
 
@@ -137,13 +137,13 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
     }
     data = data_make("time", "",              DATA_STRING, time_str,
             "model",         "",              DATA_STRING, "RadioHead ASK",
-            "crc",           "",              DATA_STRING, "OK",
             "len",           "Data len",      DATA_INT, data_len,
             "to",            "To",            DATA_INT, header_to,
             "from",          "From",          DATA_INT, header_from,
             "id",            "Id",            DATA_INT, header_id,
             "flags",         "Flags",         DATA_INT, header_flags,
             "payload",       "Payload",       DATA_ARRAY, data_array(data_len, DATA_INT, data_payload),
+            "mic",           "Integrity",     DATA_STRING, "CRC",
     NULL);
     data_acquired_handler(data);
 
@@ -153,13 +153,13 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "time",
     "model",
-    "crc",
     "len",
     "to",
     "from",
     "id",
     "flags",
     "payload",
+    "mic",
     NULL
 };
 

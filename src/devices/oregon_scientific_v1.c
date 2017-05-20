@@ -70,23 +70,23 @@ static int oregon_scientific_callback_v1(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-  "time",
-  "model",
-  "id",
-  "channel",
-  "battery",
-  "temperature_C",
-  NULL
+	"time",
+	"model",
+	"id",
+	"channel",
+	"battery",
+	"temperature_C",
+	NULL
 };
 
 r_device oregon_scientific_v1 = {
-  .name           = "OSv1 Temperature Sensor",
-  .modulation     = OOK_PULSE_PWM_OSV1, 
-  .short_limit        = 300,
-  .long_limit         = 430, 
-  .reset_limit        = 14000,
-  .json_callback  = &oregon_scientific_callback_v1,
-  .disabled       = 0,
-  .demod_arg      = 0,
-  .fields         = output_fields
+	.name           = "OSv1 Temperature Sensor",
+	.modulation     = OOK_PULSE_PWM_OSV1,
+	.short_limit        = 300,
+	.long_limit         = 430,
+	.reset_limit        = 14000,
+	.json_callback  = &oregon_scientific_callback_v1,
+	.disabled       = 0,
+	.demod_arg      = 0,
+	.fields         = output_fields
 };

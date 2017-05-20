@@ -6,7 +6,7 @@
  *
  * Update (LED flash) each 2:53
  *
- * Pulse Width Modulation with fixed rate and startbit 
+ * Pulse Width Modulation with fixed rate and startbit
  * Startbit     = 390 samples = 1560 µs
  * Short pulse  = 190 samples =  760 µs = Logic 0
  * Long pulse   = 560 samples = 2240 µs = Logic 1
@@ -15,10 +15,10 @@
  *
  * Sequence of 5 times 21 bit separated by start bit (total of 111 pulses)
  * S 21 S 21 S 21 S 21 S 21 S
- * 
+ *
  * Channel number is encoded into fractional temperature
  * Temperature is oddly arranged and offset for negative temperatures = <6543210> - 41 C
- * Allways an odd number of 1s (odd parity) 
+ * Allways an odd number of 1s (odd parity)
  *
  * Encoding legend:
  * f = fractional temperature + <ch no> * 10
@@ -46,8 +46,8 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 
 	// Validate package (row [0] is empty due to sync bit)
 	if ((bitbuffer->bits_per_row[1] == 21)			// Dont waste time on a long/short package
-	 && (crc8(bb[1], 3, 0x80, 0) != 0)		// It should be odd parity
-	 && (memcmp(bb[1], bb[2], 3) == 0)	// We want at least two messages in a row
+		&& (crc8(bb[1], 3, 0x80, 0) != 0)		// It should be odd parity
+		&& (memcmp(bb[1], bb[2], 3) == 0)	// We want at least two messages in a row
 	)
 	{
 		uint8_t bits;
@@ -85,6 +85,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 						"id",            "ID",          DATA_INT, ID,
 						"temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
 						"humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
+						"mic",           "Integrity",   DATA_STRING,    "CRC",
 						NULL);
 		data_acquired_handler(data);
 		return 1;
@@ -98,6 +99,7 @@ static char *output_fields[] = {
 	"id",
 	"temperature_C",
 	"humidity",
+	"mic",
 	NULL
 };
 

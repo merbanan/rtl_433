@@ -59,105 +59,104 @@
 #include "data.h"
 
 static int wt450_callback(bitbuffer_t *bitbuffer) {
+    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b = bb[0];
 
-   bitrow_t *bb = bitbuffer->bb;
-   uint8_t *b = bb[0];
+    uint8_t humidity = 0;
+    uint8_t temp_whole = 0;
+    uint8_t temp_fraction = 0;
+    uint8_t house_code = 0;
+    uint8_t channel = 0;
+    uint8_t battery_low = 0;
+    float temp = 0;
+    uint8_t bit;
+    uint8_t parity = 0;
 
-   uint8_t humidity = 0;
-   uint8_t temp_whole = 0;
-   uint8_t temp_fraction = 0;
-   uint8_t house_code = 0;
-   uint8_t channel = 0;
-   uint8_t battery_low = 0;
-   float temp = 0;
-   uint8_t bit;
-   uint8_t parity = 0;
-
-   char time_str[LOCAL_TIME_BUFLEN];
-   data_t *data;
-   local_time_str(0, time_str);
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+    local_time_str(0, time_str);
 
 //bitbuffer_print(bitbuffer);
 
-   if ( bitbuffer->bits_per_row[0] != 36 )
-   {
-      if (debug_output) 
-         fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
-                 time_str, bitbuffer->bits_per_row[0] );
+    if ( bitbuffer->bits_per_row[0] != 36 )
+    {
+        if (debug_output)
+            fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
+                    time_str, bitbuffer->bits_per_row[0]);
 
-      return 0;
-   }
+        return 0;
+    }
 
-   if ( b[0]>>4 != 0xC )
-   {
-      if (debug_output)
-      {
-         fprintf(stderr, "%s wt450_callback: wrong preamble\n", time_str);
-         bitbuffer_print(bitbuffer);
-      }
-      return 0;
-   }
+    if ( b[0]>>4 != 0xC )
+    {
+        if (debug_output)
+        {
+            fprintf(stderr, "%s wt450_callback: wrong preamble\n", time_str);
+            bitbuffer_print(bitbuffer);
+        }
+        return 0;
+    }
 
-   for ( bit = 0; bit < bitbuffer->bits_per_row[0]; bit++ )
-   {
-      parity ^= (b[bit/8] & (0x80 >> (bit % 8))) ? 1 : 0;
-   }
+    for ( bit = 0; bit < bitbuffer->bits_per_row[0]; bit++ )
+    {
+        parity ^= (b[bit/8] & (0x80 >> (bit % 8))) ? 1 : 0;
+    }
 
-   if ( parity )
-   {
-      if (debug_output)
-      {
-         fprintf(stderr, "%s wt450_callback: wrong parity\n", time_str);
-         bitbuffer_print(bitbuffer);
-      }
-      return 0;
-   }
+    if ( parity )
+    {
+        if (debug_output)
+        {
+            fprintf(stderr, "%s wt450_callback: wrong parity\n", time_str);
+            bitbuffer_print(bitbuffer);
+        }
+        return 0;
+    }
 
-   house_code = b[0] & 0xF;
-   channel = (b[1] >> 6) + 1;
-   battery_low = b[1] & 0x8;
-   humidity = ((b[1] & 0x7) << 4) + (b[2] >> 4);
-   temp_whole = (b[2] << 4) + (b[3] >> 4);
-   temp_fraction = ((b[3] & 0xF) << 3) + (b[4] >> 5);
-   temp = (temp_whole - 50) + (temp_fraction/100.0);
+    house_code = b[0] & 0xF;
+    channel = (b[1] >> 6) + 1;
+    battery_low = b[1] & 0x8;
+    humidity = ((b[1] & 0x7) << 4) + (b[2] >> 4);
+    temp_whole = (b[2] << 4) + (b[3] >> 4);
+    temp_fraction = ((b[3] & 0xF) << 3) + (b[4] >> 5);
+    temp = (temp_whole - 50) + (temp_fraction/100.0);
 
-   data = data_make("time",          "",	   DATA_STRING, time_str,
-		    "model",         "",	   DATA_STRING, "WT450 sensor",
-		    "id",            "House Code", DATA_INT, house_code,
-		    "channel",       "Channel",    DATA_INT, channel,
-		    "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-		    "temperature_C", "Temperature",DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
-		    "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
-		    NULL);
-   data_acquired_handler(data);
+    data = data_make("time",          "",  DATA_STRING, time_str,
+        "model",         "",	   DATA_STRING, "WT450 sensor",
+        "id",            "House Code", DATA_INT, house_code,
+        "channel",       "Channel",    DATA_INT, channel,
+        "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+        "temperature_C", "Temperature",DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+        "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
+        NULL);
+    data_acquired_handler(data);
 
-   return 1;
+    return 1;
 }
 
 PWM_Precise_Parameters clock_bits_parameters_generic = {
-   .pulse_tolerance	= 20,
-   .pulse_sync_width	= 0,	// No sync bit used
+    .pulse_tolerance	= 20,
+    .pulse_sync_width	= 0,	// No sync bit used
 };
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"id",
-	"channel",
-	"battery",
-	"temperature_C",
-	"humidity",
-	NULL
+    "time",
+    "model",
+    "id",
+    "channel",
+    "battery",
+    "temperature_C",
+    "humidity",
+    NULL
 };
 
 r_device wt450 = {
-   .name          = "WT450",
-   .modulation    = OOK_PULSE_CLOCK_BITS,
-   .short_limit   = 980,
-   .long_limit    = 1952,
-   .reset_limit   = 18000,
-   .json_callback = &wt450_callback,
-   .disabled      = 0,
-   .demod_arg     = (uintptr_t)&clock_bits_parameters_generic,
-   .fields        = output_fields
+    .name          = "WT450",
+    .modulation    = OOK_PULSE_CLOCK_BITS,
+    .short_limit   = 980,
+    .long_limit    = 1952,
+    .reset_limit   = 18000,
+    .json_callback = &wt450_callback,
+    .disabled      = 0,
+    .demod_arg     = (uintptr_t)&clock_bits_parameters_generic,
+    .fields        = output_fields
 };

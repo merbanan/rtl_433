@@ -16,7 +16,7 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
+	local_time_str(0, time_str);
 	int i,device,battery;
 	float fTemp;
 
@@ -38,15 +38,15 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	fTemp=(float)((signed short)(((bb[1][1]&0x3f)*256+bb[1][2])<<2))/160.0;
 
 	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
-                     "model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
-		     "id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
-                     "temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
-                     "battery",      	"Battery?",		DATA_INT,					battery,
-                     NULL);
-    data_acquired_handler(data);
-	
-    return 1; 
-	
+		"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
+		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
+		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
+		"battery",      	"Battery?",		DATA_INT,					battery,
+		NULL);
+	data_acquired_handler(data);
+
+	return 1;
+
 }
 
 static char *output_fields[] = {
@@ -59,15 +59,13 @@ static char *output_fields[] = {
 };
 
 r_device generic_temperature_sensor = {
-
-  .name          = "Generic temperature sensor 1",
-  .modulation    = OOK_PULSE_PPM_RAW,
-  .short_limit   = 3500,
-  .long_limit    = 4800,
-  .reset_limit   = 10000,
-  .json_callback = &generic_temperature_sensor_callback,
-  .disabled      = 0,
-  .demod_arg     = 0,
-  .fields        = output_fields,
+	.name          = "Generic temperature sensor 1",
+	.modulation    = OOK_PULSE_PPM_RAW,
+	.short_limit   = 3500,
+	.long_limit    = 4800,
+	.reset_limit   = 10000,
+	.json_callback = &generic_temperature_sensor_callback,
+	.disabled      = 0,
+	.demod_arg     = 0,
+	.fields        = output_fields,
 };
-

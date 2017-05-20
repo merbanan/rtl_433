@@ -42,6 +42,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/lacrosse.c \
                        devices/lacrosse_TX141TH_Bv2.c \
                        devices/lacrossews.c \
+		       devices/lacrosse_tx35.c \
                        devices/lightwave_rf.c \
                        devices/mebus.c \
                        devices/newkaku.c \
@@ -74,6 +75,9 @@ rtl_433_SOURCES      = baseband.c \
                        devices/fineoffset_wh1050.c \
                        devices/honeywell.c \
                        devices/maverick_et73x.c \
-                       devices/rftech.c
+                       devices/rftech.c \
+                       devices/vaillant_vrt340f.c \
+                       devices/wg_pb12v1.c \
+                       devices/ibis_beacon.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

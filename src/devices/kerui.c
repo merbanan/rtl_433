@@ -41,7 +41,7 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
 
 		if (isKerui == 1) {
 			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Kerui PIR Sensor",
+									"model",	"",				DATA_STRING,	"Kerui PIR Sensor",
 									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
 									"data",		"Data (4bit)",	DATA_STRING,	CMD,
 									NULL);
@@ -57,12 +57,11 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
-    "device",
-    "id",
-    "data",
-    "other",
-    NULL
+	"time",
+	"model",
+	"id",
+	"data",
+	NULL
 };
 
 PWM_Precise_Parameters pwm_precise_parameters_kerui = {

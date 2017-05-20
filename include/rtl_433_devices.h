@@ -42,6 +42,7 @@
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
 		DECL(generic_temperature_sensor) \
+        DECL(wg_pb12v1) \
 		DECL(acurite_txr) \
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \
@@ -76,8 +77,13 @@
 		DECL(maverick_et73x) \
 		DECL(rftech) \
 		DECL(lacrosse_TX141TH_Bv2) \
-		DECL(acurite_00275rm)
-
+		DECL(acurite_00275rm) \
+		DECL(lacrosse_tx35) \
+		DECL(lacrosse_tx29) \
+		DECL(vaillant_vrt340f) \
+		DECL(fineoffset_WH25) \
+		DECL(fineoffset_WH0530) \
+		DECL(ibis_beacon)
 
 typedef struct {
 	char name[256];

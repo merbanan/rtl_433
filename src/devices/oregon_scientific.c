@@ -81,7 +81,7 @@ unsigned int get_os_channel(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with channel in different position
   int channel = 0;
   channel = ((message[2] >> 4)&0x0f);
-  if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318)
+  if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318 && sensor_id != ID_THGR810)
     channel = 3; // sensor 3 channel number is 0x04
   return channel;
 }
@@ -253,7 +253,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
       return 1;
     } else if (sensor_id == ID_WGR968) {
       if (validate_os_v2_message(msg, 189, num_valid_v2_bits, 17) == 0) {
-        float quadrant = (((msg[4] &0x0f)*100)+((msg[4]>>4)*10) + ((msg[5]>>4)&0x0f));
+        float quadrant = (((msg[4] &0x0f)*10) + ((msg[4]>>4)&0x0f) + (((msg[5]>>4)&0x0f) * 100));
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) / 10.0F;
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) / 10.0F;
         data = data_make(
@@ -293,7 +293,6 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",    "Channel",        DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",    "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             "humidity",   "Humidity",       DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             "pressure",   "Pressure",       DATA_FORMAT, "%d mbar",   DATA_INT,    ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856,
             NULL);
@@ -330,7 +329,6 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             NULL);
         data_acquired_handler(data);
       }
@@ -347,7 +345,6 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             NULL);
         data_acquired_handler(data);
       }
@@ -363,7 +360,6 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
         data_acquired_handler(data);
@@ -386,7 +382,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             NULL);
         data_acquired_handler(data);
       }
-       
+
       return 1;
     } else if (sensor_id  == ID_BTHGN129) {
       //if ((validate_os_v2_message(msg, 137, num_valid_v2_bits, 12) == 0)) {
@@ -498,7 +494,6 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
           "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
           "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-          "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
           "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
           NULL);
         data_acquired_handler(data);
@@ -515,7 +510,6 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
             "channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-            "temperature_F",  "Fahrenheit", DATA_FORMAT, "%.02f F", DATA_DOUBLE, ((temp_c*9)/5)+32,
             NULL);
           data_acquired_handler(data);
         }

@@ -13,7 +13,7 @@
 static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint8_t *b = bb[0];
-	
+
 	//invert bits, short pulse is 0, long pulse is 1
 	b[0] = ~b[0];
 	b[1] = ~b[1];
@@ -43,7 +43,7 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 
 		if (isAkhan == 1) {
 			data = data_make(	"time",		"",				DATA_STRING,	time_str,
-									"device",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
+									"model",	"",				DATA_STRING,	"Akhan 100F14 remote keyless entry",
 									"id",			"ID (20bit)",	DATA_FORMAT, 	"0x%x", 	DATA_INT, ID,
 									"data",		"Data (4bit)",	DATA_STRING,	CMD,
 									NULL);
@@ -57,12 +57,11 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
-    "device",
-    "id",
-    "data",
-    "other",
-    NULL
+	"time",
+	"model",
+	"id",
+	"data",
+	NULL
 };
 
 PWM_Precise_Parameters pwm_precise_parameters_akhan = {
@@ -72,7 +71,7 @@ PWM_Precise_Parameters pwm_precise_parameters_akhan = {
 
 r_device akhan_100F14 = {
 	.name          = "Akhan 100F14 remote keyless entry",
-	.modulation    = OOK_PULSE_PWM_PRECISE, 
+	.modulation    = OOK_PULSE_PWM_PRECISE,
 	.short_limit   = 316,
 	.long_limit    = 1020,
 	.reset_limit   = 1800,

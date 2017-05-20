@@ -71,7 +71,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
 
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
-            && (bb[5][0] != 0 && bb[5][1] != 0)) {
+        && (bb[5][0] != 0 && bb[5][1] != 0)) {
 
         for (i = 0; i < 4; i++) {
             uint8_t tmp = reverse8(bb[1][i]);
@@ -110,9 +110,9 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
             //bb[1][1]&0x10 ? "timed event":"Button generated ");
             //fprintf(stdout, "Protocol      = AlectoV1 bpr1: %d bpr2: %d\n", bits_per_row[1], bits_per_row[5]);
             //fprintf(stdout, "Button        = %d\n", bb[1][1]&0x10 ? 1 : 0);
- 
+
             if (wind) {
-            	// Wind sensor
+                // Wind sensor
                 int skip = -1;
                 /* Untested code written according to the specification, may not decode correctly  */
                 if ((bb[1][1]&0xe) == 0x8 && bb[1][2] == 0) {
@@ -125,29 +125,31 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
                     double gust = reverse8(bb[5 + skip][3]);
                     int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
-            		data = data_make("time",          "",           DATA_STRING, time_str,
-									"model",          "",           DATA_STRING, "AlectoV1 Wind Sensor",
-									"id",             "House Code", DATA_INT,    sensor_id,
-									"channel",        "Channel",    DATA_INT,    channel,
-		  							"battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-		  							"wind_speed",     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
-									"wind_gust",      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
-									"wind_direction", "Direction",  DATA_INT,    direction,
-							 	   	NULL);
-			    	data_acquired_handler(data);
+                    data = data_make("time",          "",           DATA_STRING, time_str,
+                                    "model",          "",           DATA_STRING, "AlectoV1 Wind Sensor",
+                                    "id",             "House Code", DATA_INT,    sensor_id,
+                                    "channel",        "Channel",    DATA_INT,    channel,
+                                    "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+                                    "wind_speed",     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
+                                    "wind_gust",      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
+                                    "wind_direction", "Direction",  DATA_INT,    direction,
+                                    "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
+                                    NULL);
+                    data_acquired_handler(data);
                 }
             } else {
                 // Rain sensor
                 double rain_mm = ((reverse8(bb[1][3]) << 8)+reverse8(bb[1][2])) * 0.25F;
 
-            	data = data_make("time",         "",           DATA_STRING, time_str,
-								"model",         "",           DATA_STRING, "AlectoV1 Rain Sensor",
-								"id",            "House Code", DATA_INT,    sensor_id,
-								"channel",       "Channel",    DATA_INT,    channel,
-		  						"battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-							    "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
-							    NULL);
-			    data_acquired_handler(data);
+                data = data_make("time",         "",           DATA_STRING, time_str,
+                                "model",         "",           DATA_STRING, "AlectoV1 Rain Sensor",
+                                "id",            "House Code", DATA_INT,    sensor_id,
+                                "channel",       "Channel",    DATA_INT,    channel,
+                                "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+                                "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+                                "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
+                                NULL);
+                data_acquired_handler(data);
             }
         } else if (bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] && bb[4][0] == bb[5][0] &&
                 bb[5][0] == bb[6][0] && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
@@ -157,18 +159,19 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
                 temp |= 0xf000;
             }
             humidity = bcd_decode8(reverse8(bb[1][3]));
-            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto            
+            if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
 
             data = data_make("time",         "",            DATA_STRING, time_str,
-							"model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
-							"id",            "House Code",  DATA_INT,    sensor_id,
-							"channel",       "Channel",     DATA_INT,    channel,
-							"battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-							"temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
-							"humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
-							NULL);
-			data_acquired_handler(data);
-        }        
+                            "model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
+                            "id",            "House Code",  DATA_INT,    sensor_id,
+                            "channel",       "Channel",     DATA_INT,    channel,
+                            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+                            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
+                            "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
+                            "mic",           "",            DATA_STRING,    "CHECKSUM",
+                            NULL);
+            data_acquired_handler(data);
+        }
         if (debug_output){
            fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
            fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
@@ -183,18 +186,19 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"id",
-	"channel",
-	"battery",
-	"temperature_C",
-	"humidity",
-	"rain_total",
-	"wind_speed",
-	"wind_gust",
-	"wind_direction",
-	NULL
+    "time",
+    "model",
+    "id",
+    "channel",
+    "battery",
+    "temperature_C",
+    "humidity",
+    "rain_total",
+    "wind_speed",
+    "wind_gust",
+    "wind_direction",
+    "mic",
+    NULL
 };
 
 //Timing based on 250000

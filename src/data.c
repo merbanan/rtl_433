@@ -32,7 +32,7 @@ typedef void* (*array_element_release_fn)(void*);
 typedef void* (*value_release_fn)(void*);
 
 typedef struct {
-	 /* what is the element size when put inside an array? */
+	/* what is the element size when put inside an array? */
 	int			    array_element_size;
 
 	/* is the element boxed (ie. behind a pointer) when inside an array?
@@ -290,7 +290,7 @@ void data_array_free(data_array_t *array) {
 	array_element_release_fn release = dmt[array->type].array_element_release;
 	if (release) {
 		int element_size = dmt[array->type].array_element_size;
-		for (int i = 0; i < array->num_values; ++i) 
+		for (int i = 0; i < array->num_values; ++i)
 			release(*(void**)(array->values + element_size * i));
 	}
 	free(array->values);

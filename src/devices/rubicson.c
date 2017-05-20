@@ -58,7 +58,7 @@ int rubicson_crc_check(bitrow_t *bb) {
 //      printf ("\ncrc fail: %x\n", crc);
         ret = 0;
 
-	return ret;
+    return ret;
 };
 
 static int rubicson_callback(bitbuffer_t *bitbuffer) {
@@ -98,9 +98,9 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
                         "channel",       "Channel",     DATA_INT,    channel,
                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                         "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                        "crc",           "CRC",         DATA_STRING, "OK",
+                        "mic",           "Integrity",   DATA_STRING, "CRC",
                         NULL);
-	data_acquired_handler(data);
+        data_acquired_handler(data);
 
         return 1;
     }
@@ -108,14 +108,14 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"id",
-	"channel",
-	"battery",
-	"temperature_C",
-        "crc",
-	NULL
+    "time",
+    "model",
+    "id",
+    "channel",
+    "battery",
+    "temperature_C",
+    "mic",
+    NULL
 };
 
 
@@ -131,4 +131,3 @@ r_device rubicson = {
     .demod_arg      = 0,
     .fields         = output_fields,
 };
-

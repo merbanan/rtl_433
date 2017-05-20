@@ -70,7 +70,7 @@ static uint8_t danfoss_decode_nibble(uint8_t byte) {
 static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
- 	char time_str[LOCAL_TIME_BUFLEN];
+	char time_str[LOCAL_TIME_BUFLEN];
 
 	local_time_str(0, time_str);
 
@@ -136,14 +136,14 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 
 		// Output data
 		data = data_make(
-		     "time",		"",		DATA_STRING,	time_str,
-		     "model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
-		     "id",		"ID",		DATA_INT,	id,
-		     "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
-		     "setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
-		     "switch",		"Switch",	DATA_STRING,	str_sw,
-		     "crc", "", DATA_STRING, "ok",
-		     NULL);
+			"time",		"",		DATA_STRING,	time_str,
+			"model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
+			"id",		"ID",		DATA_INT,	id,
+			"temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
+			"setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
+			"switch",		"Switch",	DATA_STRING,	str_sw,
+			"mic",           "Integrity",            DATA_STRING,    "CRC",
+			NULL);
 		data_acquired_handler(data);
 
 		return 1;
@@ -153,15 +153,15 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 
 
 static char *output_fields[] = {
-    "time",
-    "brand"
-    "model"
-    "id"
-    "temperature_C",
-    "setpoint_C",
-    "switch",
-    "crc",
-    NULL
+	"time",
+	"brand"
+	"model"
+	"id"
+	"temperature_C",
+	"setpoint_C",
+	"switch",
+	"mic",
+	NULL
 };
 
 r_device danfoss_CFR = {
