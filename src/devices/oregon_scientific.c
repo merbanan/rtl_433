@@ -64,6 +64,7 @@ float get_os_pressure(unsigned char *message, unsigned int sensor_id) {
     fprintf(stdout,"\n");*/
   }
   float pressure = 0;
+  // Get message in value inHg, and convert to hPa
   pressure = ((message[8]<<4)+message[7])/100.0F/0.0295299830714;
   return pressure;
 }
