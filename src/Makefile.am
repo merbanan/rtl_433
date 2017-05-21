@@ -78,6 +78,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/rftech.c \
                        devices/vaillant_vrt340f.c \
                        devices/wg_pb12v1.c \
-                       devices/ibis_beacon.c
+                       devices/ibis_beacon.c \
+                       devices/oil_standard.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

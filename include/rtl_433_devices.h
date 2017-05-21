@@ -83,7 +83,8 @@
 		DECL(vaillant_vrt340f) \
 		DECL(fineoffset_WH25) \
 		DECL(fineoffset_WH0530) \
-		DECL(ibis_beacon)
+		DECL(ibis_beacon) \
+		DECL(oil_standard)
 
 typedef struct {
 	char name[256];
