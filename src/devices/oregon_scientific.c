@@ -64,6 +64,7 @@ float get_os_pressure(unsigned char *message, unsigned int sensor_id) {
     fprintf(stdout,"\n");*/
   }
   float pressure = 0;
+  // Get message in value inHg, and convert to hPa
   pressure = ((message[8]<<4)+message[7])/100.0F/0.0295299830714;
   return pressure;
 }
@@ -400,7 +401,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             NULL);
         data_acquired_handler(data);
       //}
-
+       
       return 1;
     }else if (num_valid_v2_bits > 16) {
       if(debug_output) {
