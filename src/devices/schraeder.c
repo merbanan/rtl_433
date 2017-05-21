@@ -75,7 +75,7 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 					"type", "", DATA_STRING, "TPMS",
 					"flags", "", DATA_STRING, flags_str,
  					"id", "ID", DATA_STRING, id_str,
-					"pressure",      "Pressure",    DATA_FORMAT, "%.03f bar", DATA_DOUBLE, (double)pressure/1000.0,
+					"pressure_bar",  "Pressure",    DATA_FORMAT, "%.03f bar", DATA_DOUBLE, (double)pressure/1000.0,
 					"temperature_C", "Temperature", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature,
 					"mic", "Integrity", DATA_STRING, "CRC",
 					NULL);
@@ -90,7 +90,7 @@ static char *output_fields[] = {
 	"type",
 	"id",
 	"flags",
-	"pressure",
+	"pressure_bar",
 	"temperature_C",
 	"mic",
 	NULL
