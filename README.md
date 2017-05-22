@@ -48,6 +48,7 @@ Usage:	= Tuner options =
 	[-d <RTL-SDR USB device index>] (default: 0)
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
+	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	[-S] Force sync output (default: async)
@@ -76,6 +77,7 @@ Usage:	= Tuner options =
 		 3 = Raw I/Q samples (cf32, 2 channel)
 		 Note: If output file is specified, input will always be I/Q
 	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
+		append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
@@ -117,50 +119,55 @@ Supported device protocols:
     [33]  WT450
     [34]  LaCrosse WS-2310 Weather Station
     [35]  Esperanza EWS
-    [36]* Efergy e2 classic
+    [36]  Efergy e2 classic
     [37]* Inovalley kw9015b rain and Temperature weather station
     [38]  Generic temperature sensor 1
-    [39]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
-    [40]* Acurite 986 Refrigerator / Freezer Thermometer
-    [41]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
-    [42]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
-    [43]  CurrentCost Current Sensor
-    [44]  emonTx OpenEnergyMonitor
-    [45]  HT680 Remote control
-    [46]  S3318P Temperature & Humidity Sensor
-    [47]  Akhan 100F14 remote keyless entry
-    [48]  Quhwa
-    [49]  OSv1 Temperature Sensor
-    [50]  Proove
-    [51]  Bresser Thermo-/Hygro-Sensor 3CH
-    [52]  Springfield Temperature and Soil Moisture
-    [53]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [54]  Acurite 606TX Temperature Sensor
-    [55]  TFA pool temperature sensor
-    [56]  Kedsum Temperature & Humidity Sensor
-    [57]  blyss DC5-UK-WH (433.92 MHz)
-    [58]  Steelmate TPMS
-    [59]  Schraeder TPMS
-    [60]* LightwaveRF
-    [61]  Elro DB286A Doorbell
-    [62]  Efergy Optical
-    [63]  Honda Car Key
-    [64]* Template decoder
-    [65]  Fine Offset Electronics, XC0400
-    [66]  Radiohead ASK
-    [67]  Kerui PIR Sensor
-    [68]  Fine Offset WH1050 Weather Station
-    [69]  Honeywell Door/Window Sensor
-    [70]  Maverick ET-732/733 BBQ Sensor
-    [71]* RF-tech
-    [72]  LaCrosse TX141TH-Bv2 sensor
-    [73]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [74]  LaCrosse TX35DTH-IT Temperature sensor
-    [75]  LaCrosse TX29IT Temperature sensor
-    [76]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
-    [77]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
+    [39]  WG-PB12V1
+    [40]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+    [41]* Acurite 986 Refrigerator / Freezer Thermometer
+    [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
+    [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
+    [44]  CurrentCost Current Sensor
+    [45]  emonTx OpenEnergyMonitor
+    [46]  HT680 Remote control
+    [47]  S3318P Temperature & Humidity Sensor
+    [48]  Akhan 100F14 remote keyless entry
+    [49]  Quhwa
+    [50]  OSv1 Temperature Sensor
+    [51]  Proove
+    [52]  Bresser Thermo-/Hygro-Sensor 3CH
+    [53]  Springfield Temperature and Soil Moisture
+    [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
+    [55]  Acurite 606TX Temperature Sensor
+    [56]  TFA pool temperature sensor
+    [57]  Kedsum Temperature & Humidity Sensor
+    [58]  blyss DC5-UK-WH (433.92 MHz)
+    [59]  Steelmate TPMS
+    [60]  Schrader TPMS
+    [61]* LightwaveRF
+    [62]  Elro DB286A Doorbell
+    [63]  Efergy Optical
+    [64]  Honda Car Key
+    [65]* Template decoder
+    [66]  Fine Offset Electronics, XC0400
+    [67]  Radiohead ASK
+    [68]  Kerui PIR Sensor
+    [69]  Fine Offset WH1050 Weather Station
+    [70]  Honeywell Door/Window Sensor
+    [71]  Maverick ET-732/733 BBQ Sensor
+    [72]* RF-tech
+    [73]  LaCrosse TX141TH-Bv2 sensor
+    [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
+    [75]  LaCrosse TX35DTH-IT Temperature sensor
+    [76]  LaCrosse TX29IT Temperature sensor
+    [77]  Vaillant calorMatic 340f Central Heating Control
+    [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
+    [80]  IBIS beacon
+    [81]  Oil Ultrasonic STANDARD
 
 * Disabled by default, use -R n or -G
+
 ```
 
 
@@ -176,6 +183,7 @@ Examples:
 | `rtl_433 -r file_name` | Play back a saved data file. 
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
 | `rtl_433 -F json -U | mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
+| `rtl_433 -f 433535000 -f 434019000 -H 15` | `Will poll two frequencies with 15 seconds interval`.
 
 This software is mostly useable for developers right now.
 
