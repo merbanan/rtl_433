@@ -4,7 +4,9 @@
  * on frequency ~433.55 MHz. The data that is transmitted consists of 8
  * bytes:
  *
- * Byte 1-4: Start bits (0000), then static data (probably device id)
+ * Byte 1: Start bits (00)
+ * Byte 2-3: Device id
+ * Byte 4: Learn mode, sending interval and battery status
  * Byte 5-7: Current power consumption
  * Byte 8: Checksum
  *
