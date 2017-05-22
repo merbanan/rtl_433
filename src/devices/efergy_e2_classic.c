@@ -28,8 +28,6 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	signed char fact = 0;
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
-	
-	local_time_str(0, time_str);
 
 	if (num_bits < 64 || num_bits > 80) {
 		return 0;
@@ -81,10 +79,12 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	uint8_t interval = (((bytes[3] & 0x30)>>4)+1)*6;
 	uint8_t battery = (bytes[3] & 0x40)>>6;
 	float current_adc = ((float)(256 * bytes[4] + bytes[5]) * pow(2,fact))/ 32768;
-	uint16_t address = bytes[1] + (bytes[2] << 8);
+	uint16_t address = bytes[2] << 8 | bytes[1];
 	//fprintf(stdout, "Addr: %02X%02X,Amps: %.2f A, inter: %d s, bat: %d, learn: %d\n",bytes[1],bytes[2],current_adc,interval,battery,learn);
 	//fprintf(stdout, "%04X,%.2f,%d,%d,%d\n",address,current_adc,interval,battery,learn);
 
+	local_time_str(0, time_str);
+	
 	// Output data
 	data = data_make(
 		"time",			"Time",		DATA_STRING,	time_str,
