@@ -25,7 +25,6 @@
 static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
-	signed char fact = 0;
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
 
