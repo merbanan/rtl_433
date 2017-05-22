@@ -78,7 +78,7 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	uint8_t learn = (bytes[3] & 0x80)>>7;
 	uint8_t interval = (((bytes[3] & 0x30)>>4)+1)*6;
 	uint8_t battery = (bytes[3] & 0x40)>>6;
-	float current_adc = (float)((bytes[4] << 8 | bytes[5]) << fact) / 0x8000;
+	float current_adc = (float)((bytes[4] << 8 | bytes[5]) * pow(2,fact)) / 0x8000;
 	uint16_t address = bytes[2] << 8 | bytes[1];
 	//fprintf(stdout, "Addr: %02X%02X,Amps: %.2f A, inter: %d s, bat: %d, learn: %d\n",bytes[1],bytes[2],current_adc,interval,battery,learn);
 	//fprintf(stdout, "%04X,%.2f,%d,%d,%d\n",address,current_adc,interval,battery,learn);
