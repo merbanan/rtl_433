@@ -4,7 +4,9 @@
  * on frequency ~433.55 MHz. The data that is transmitted consists of 8
  * bytes:
  *
- * Byte 1-4: Start bits (0000), then static data (probably device id)
+ * Byte 1: Start bits (00)
+ * Byte 2-3: Device id
+ * Byte 4: Learn mode, sending interval and battery status
  * Byte 5-7: Current power consumption
  * Byte 8: Checksum
  *
@@ -18,10 +20,15 @@
  */
 
 #include "rtl_433.h"
+#include "util.h"
+#include "data.h"
+#include "math.h"
 
 static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
+	data_t *data;
+	char time_str[LOCAL_TIME_BUFLEN];
 
 	if (num_bits < 64 || num_bits > 80) {
 		return 0;
@@ -60,16 +67,42 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 		return 0;
 	}
 
-	const unsigned VOLTAGES[] = {110, 115, 120, 220, 230, 240, 0};
+	uint16_t address = bytes[2] << 8 | bytes[1];
+	uint8_t learn = (bytes[3] & 0x80) >> 7;
+	uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
+	uint8_t battery = (bytes[3] & 0x40) >> 6;
+	int8_t fact = (int8_t)bytes[6] - 15;
+	double current_adc = (double)((bytes[4] << 8 | bytes[5]) * pow(2,fact));
 
-	double current_adc = 256 * bytes[4] + bytes[5];
-	for (unsigned i = 0; VOLTAGES[i] != 0; ++i) {
-		double power  = (VOLTAGES[i] * current_adc * (1 << bytes[6])) / 32768;
-		fprintf(stderr, "Power consumption at %u volts: %.2f watts\n", VOLTAGES[i], power);
-	}
+	local_time_str(0, time_str);
+	
+	// Output data
+	data = data_make(
+		"time",			"Time",		DATA_STRING,	time_str,
+		"model",		"",			DATA_STRING,	"Efergy e2 Sensor",
+		"id",			"ID",		DATA_INT,		address,
+		"current",		"",			DATA_FORMAT,	"%.2f", 	DATA_DOUBLE, current_adc,
+		"interval", 	"",			DATA_INT,		interval,
+		"battery",      "Battery",  DATA_STRING, 	battery ? "OK" : "LOW",
+		"learn",		"",			DATA_STRING, 	battery ? "NO" : "YES",
+		NULL
+	); 
 
+	data_acquired_handler(data);
+	
 	return 1;
 }
+
+static char *output_fields[] = {
+	"time",
+	"model",
+	"id",
+	"current",
+	"interval",
+	"battery",
+	"learn",
+	NULL
+};
 
 r_device efergy_e2_classic = {
 	.name           = "Efergy e2 classic",
@@ -78,6 +111,7 @@ r_device efergy_e2_classic = {
 	.long_limit     = 400,
 	.reset_limit    = 400,
 	.json_callback  = &efergy_e2_classic_callback,
-	.disabled       = 1,
+	.disabled       = 0,
 	.demod_arg      = 0,
+	.fields         = output_fields
 };
