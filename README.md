@@ -165,6 +165,7 @@ Supported device protocols:
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD
+    [82]  Citroen TPMS
 
 * Disabled by default, use -R n or -G
 
@@ -180,7 +181,7 @@ Examples:
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
 | `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
-| `rtl_433 -r file_name` | Play back a saved data file. 
+| `rtl_433 -r file_name` | Play back a saved data file.
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
 | `rtl_433 -F json -U \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
 | `rtl_433 -f 433535000 -f 434019000 -H 15` | Will poll two frequencies with 15 seconds interval.
@@ -235,4 +236,3 @@ If you see this error:
 then
 
     sudo rmmod dvb_usb_rtl28xxu rtl2832
-    
