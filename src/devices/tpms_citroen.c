@@ -31,7 +31,7 @@ static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
-    bitbuffer_t packet_bits;
+    bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int state;
     char state_str[3];
