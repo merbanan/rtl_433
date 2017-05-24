@@ -161,7 +161,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 		} else if (fabsf(pulses->pulse[n] - device->long_limit) < p->pulse_tolerance) {
 			bitbuffer_add_bit(&bits, 0);
 		// Sync pulse
-		} else if (p->pulse_sync_width && (fabsf(pulses->pulse[n] - p->pulse_sync_width) < p->pulse_tolerance)) {
+		} else if (p->pulse_sync_width && (abs(pulses->pulse[n] - p->pulse_sync_width) < p->pulse_tolerance)) {
 			bitbuffer_add_row(&bits);
 		// Ignore spurious short pulses
 		} else if (pulses->pulse[n] < (device->short_limit - p->pulse_tolerance)) {
