@@ -164,8 +164,9 @@ Supported device protocols:
     [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
-    [81]  Oil Ultrasonic STANDARD
+    [81]  Oil Ultrasonic STANDARD FSK
     [82]  Citroen TPMS
+    [83]  Oil Ultrasonic STANDARD ASK
 
 * Disabled by default, use -R n or -G
 

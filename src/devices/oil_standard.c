@@ -1,8 +1,9 @@
-/* Oil tank monitor using manchester encoded FSK protocol
+/* Oil tank monitor using manchester encoded FSK/ASK protocol
  *
  * Tested devices:
- *  APOLLO ULTRASONIC STANDARD (maybe also VISUAL but not SMART)
- * Should apply to similar Watchman and Beckett devices too.
+ *  APOLLO ULTRASONIC STANDARD (maybe also VISUAL but not SMART, FSK)
+ *  Beckett Rocket TEK377A (915MHz, ASK)
+ * Should apply to similar Watchman, Beckett, and Apollo devices too.
  *
  * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
  * based on code Copyright (C) 2015 David Woodhouse
@@ -44,8 +45,6 @@ static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
 	uint8_t alarm;
 	bitbuffer_t databits = {0};
 
-	local_time_str(0, time_str);
-
 	bitpos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 33);
 
 	if (databits.bits_per_row[0] != 32)
@@ -79,6 +78,7 @@ static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
 		// A depth reading of zero indicates no reading.
 		depth = ((b[2] & 0x02) << 7) | b[3];
 
+	local_time_str(0, time_str);
 	data = data_make(
 		"time",		"",				DATA_STRING,	time_str,
 		"model",	"",				DATA_STRING,	"Oil Ultrasonic STANDARD",
@@ -125,8 +125,19 @@ static char *output_fields[] = {
 };
 
 r_device oil_standard = {
-	.name			= "Oil Ultrasonic STANDARD",
+	.name			= "Oil Ultrasonic STANDARD FSK",
 	.modulation		= FSK_PULSE_PCM,
+	.short_limit	= 500,
+	.long_limit		= 500,
+	.reset_limit	= 2000,
+	.json_callback	= &oil_standard_callback,
+	.disabled		= 0,
+	.fields			= output_fields,
+};
+
+r_device oil_standard_ask = {
+	.name			= "Oil Ultrasonic STANDARD ASK",
+	.modulation		= OOK_PULSE_PCM_RZ,
 	.short_limit	= 500,
 	.long_limit		= 500,
 	.reset_limit	= 2000,

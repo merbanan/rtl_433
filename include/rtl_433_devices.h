@@ -85,7 +85,8 @@
 		DECL(fineoffset_WH0530) \
 		DECL(ibis_beacon) \
 		DECL(oil_standard) \
-		DECL(tpms_citroen)
+		DECL(tpms_citroen) \
+		DECL(oil_standard_ask)
 
 typedef struct {
 	char name[256];
