@@ -15,8 +15,13 @@
 static const char* command_code[] ={"boot", "unlock" , "lock",};
 
 static const char* get_command_codes(const uint8_t* bytes) {
-	return command_code[bytes[46] - 0xAA];
+	unsigned char command = bytes[46] - 0xAA;
+	if(command < (sizeof(command_code)/sizeof(command_code[0]))) {
+		return  command_code[command];
+	} else {
+		return "unknown";
 	}
+}
 
 static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
