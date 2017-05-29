@@ -8,6 +8,9 @@
  * Byte 2-3: Device id
  * Byte 4: Learn mode, sending interval and battery status
  * Byte 5-7: Current power consumption
+ *    Byte 5: Integer value (High byte)
+ *    Byte 6: integer value (Low byte)
+ *    Byte 7: exponent (values between -3 and 3)
  * Byte 8: Checksum
  *
  * Power calculations come from Nathaniel Elijah's program EfergyRPI_001.
@@ -22,7 +25,6 @@
 #include "rtl_433.h"
 #include "util.h"
 #include "data.h"
-#include "math.h"
 
 static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
@@ -71,8 +73,8 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	uint8_t learn = (bytes[3] & 0x80) >> 7;
 	uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
 	uint8_t battery = (bytes[3] & 0x40) >> 6;
-	int8_t fact = (int8_t)bytes[6] - 15;
-	double current_adc = (double)((bytes[4] << 8 | bytes[5]) * pow(2,fact));
+	uint8_t fact = (-(int8_t)bytes[6] + 15);
+	float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
 
 	local_time_str(0, time_str);
 	
