@@ -185,7 +185,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                     "pressure",      "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+                     "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
                       NULL);
     data_acquired_handler(data);
 
@@ -280,7 +280,7 @@ static char *output_fields_WH25[] = {
     "id",
     "temperature_C",
     "humidity",
-    "pressure",
+    "pressure_hPa",
 //    "raw",
     NULL
 };
