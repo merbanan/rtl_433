@@ -74,7 +74,7 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
 	uint8_t battery = (bytes[3] & 0x40) >> 6;
 	uint8_t fact = (-(int8_t)bytes[6] + 15);
-	double current_adc = (double)((bytes[4] << 8 | bytes[5])) / (1 << fact);
+	float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
 
 	local_time_str(0, time_str);
 	
