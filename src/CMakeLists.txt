@@ -92,6 +92,9 @@ add_executable(rtl_433
 	devices/rftech.c
 	devices/lacrosse_tx35.c
 	devices/vaillant_vrt340f.c
+	devices/ibis_beacon.c
+	devices/oil_standard.c
+	devices/tpms_citroen.c
 
 )
 

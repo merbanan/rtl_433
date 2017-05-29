@@ -82,7 +82,11 @@
 		DECL(lacrosse_tx29) \
 		DECL(vaillant_vrt340f) \
 		DECL(fineoffset_WH25) \
-		DECL(fineoffset_WH0530)
+		DECL(fineoffset_WH0530) \
+		DECL(ibis_beacon) \
+		DECL(oil_standard) \
+		DECL(tpms_citroen) \
+		DECL(oil_standard_ask)
 
 typedef struct {
 	char name[256];

@@ -74,6 +74,7 @@ struct dm_state {
     int analyze;
     int analyze_pulses;
     int debug_mode;
+    int hop_time;
 
     /* Signal grabber variables */
     int signal_grabber;
@@ -100,6 +101,7 @@ void usage(r_device *devices) {
             "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
+	    "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
@@ -133,7 +135,7 @@ void usage(r_device *devices) {
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
-            DEFAULT_FREQUENCY, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
+            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     fprintf(stderr, "Supported device protocols:\n");
     for (i = 0; i < num_r_devices; i++) {
@@ -744,7 +746,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         time_t rawtime;
         time(&rawtime);
     if (frequencies > 1) {
-        if (difftime(rawtime, rawtime_old) > DEFAULT_HOP_TIME || events >= DEFAULT_HOP_EVENTS) {
+        if (difftime(rawtime, rawtime_old) > demod->hop_time || events >= DEFAULT_HOP_EVENTS) {
             rawtime_old = rawtime;
             events = 0;
             do_exit_async = 1;
@@ -898,8 +900,9 @@ int main(int argc, char **argv) {
     num_r_devices = sizeof(devices)/sizeof(*devices);
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:g:s:b:n:SR:F:C:T:UWG")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:F:C:T:UWG")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -908,6 +911,9 @@ int main(int argc, char **argv) {
                 if (frequencies < MAX_PROTOCOLS) frequency[frequencies++] = (uint32_t) atof(optarg);
                 else fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
                 break;
+            case 'H':
+                demod->hop_time = atoi(optarg);
+		break;
             case 'g':
                 gain = (int) (atof(optarg) * 10); /* tenths of a dB */
                 break;
