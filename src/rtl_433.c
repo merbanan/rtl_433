@@ -1284,6 +1284,10 @@ int main(int argc, char **argv) {
 #endif
             r = rtlsdr_read_async(dev, rtlsdr_callback, (void *) demod,
                     DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+            if (r < 0) {
+                fprintf(stderr, "WARNING: async read failed.\n");
+                break;
+            }
 #ifndef _WIN32
             alarm(0); // cancel the watchdog timer
 #endif
