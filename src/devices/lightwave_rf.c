@@ -106,7 +106,7 @@ static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
 		// Print out generic decode
 		// Decoded nibbles are in row 3
 		fprintf(stdout, "LightwaveRF:\n");
-		fprintf(stdout, "ID = 0x%X%X%X\n", bb[3][2], bb[3][3], bb[3][4]);
+		fprintf(stdout, "ID = 0x%02X%02X%02X\n", bb[3][2], bb[3][3], bb[3][4]);
 		fprintf(stdout, "Subunit = %u\n", (bb[3][1] & 0xF0) >> 4);
 		fprintf(stdout, "Command = %u\n", bb[3][1] & 0x0F);
 		fprintf(stdout, "Parameter = %u\n", bb[3][0]);
