@@ -60,6 +60,7 @@
 		DECL(oregon_scientific_sl109h) \
 		DECL(acurite_606) \
 		DECL(tfa_pool_thermometer) \
+		DECL(thermopro_tp11) \
 		DECL(kedsum) \
 		DECL(blyss) \
 		DECL(steelmate) \
