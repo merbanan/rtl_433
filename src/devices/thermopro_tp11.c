@@ -44,7 +44,7 @@ static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
     int good = -1;
 
     // Compare first four bytes of rows that have 32 or 33 bits.
-    for (int i = 0; good < 0 && i < bitbuffer->num_rows - 2; i++) {
+    for (int i = 0; good < 0 && i + 2 < bitbuffer->num_rows; i++) {
         int equal_rows = 0;
         if ((bitbuffer->bits_per_row[i] & ~1) != 32) continue;
 
