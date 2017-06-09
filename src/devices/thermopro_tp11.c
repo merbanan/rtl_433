@@ -39,21 +39,18 @@ static int valid(unsigned data, unsigned check) {
 }
 
 static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
+    if (bitbuffer->num_rows < 3) return 0;
     bitrow_t *bb = bitbuffer->bb;
-    data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
     int good = -1;
 
-    for (int i = 0; good < 0 && i < 4; i++) {
+    // Compare first four bytes of rows that have 32 or 33 bits.
+    for (int i = 0; good < 0 && i < bitbuffer->num_rows - 2; i++) {
         int equal_rows = 0;
-        if (bitbuffer->bits_per_row[i] < 32
-            || bitbuffer->bits_per_row[i] > 33) continue;
+        if ((bitbuffer->bits_per_row[i] & ~1) != 32) continue;
 
-        for (int j = i+1; good < 0 && j < 4; j++) {
-            if (bitbuffer->bits_per_row[j] < 32
-                || bitbuffer->bits_per_row[j] > 33) continue;
-            if (bb[i][0] == bb[j][0]
+        for (int j = i+1; good < 0 && j < bitbuffer->num_rows; j++) {
+            if ((bitbuffer->bits_per_row[j] & ~1) == 32
+                && bb[i][0] == bb[j][0]
                 && bb[i][1] == bb[j][1]
                 && bb[i][2] == bb[j][2]
                 && bb[i][3] == bb[j][3]
@@ -70,6 +67,9 @@ static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
     int iTemp = value & 0xfff;
     float fTemp = (iTemp - 200) / 10.;
 
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
+    data_t *data;
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, MODEL,
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
