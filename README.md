@@ -167,6 +167,7 @@ Supported device protocols:
     [81]  Oil Ultrasonic STANDARD FSK
     [82]  Citroen TPMS
     [83]  Oil Ultrasonic STANDARD ASK
+    [84]  Thermopro TP11 Thermometer
 
 * Disabled by default, use -R n or -G
 

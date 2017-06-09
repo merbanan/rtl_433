@@ -58,7 +58,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/steffen.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/tfa_pool_thermometer.c \
-                       devices/thermopro_tp11.c \
                        devices/valeo.c \
                        devices/waveman.c \
                        devices/wt450.c \
@@ -81,6 +80,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/wg_pb12v1.c \
                        devices/ibis_beacon.c \
                        devices/oil_standard.c \
-                       devices/tpms_citroen.c
+                       devices/tpms_citroen.c \
+                       devices/thermopro_tp11.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
