@@ -39,16 +39,19 @@ static int valid(unsigned data, unsigned check) {
 }
 
 static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
-    if (bitbuffer->num_rows < 3) return 0;
+    int i, j, iTemp, good = -1;
+    float fTemp;
     bitrow_t *bb = bitbuffer->bb;
-    int good = -1;
+    unsigned int device, value;
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
 
     // Compare first four bytes of rows that have 32 or 33 bits.
-    for (int i = 0; good < 0 && i + 2 < bitbuffer->num_rows; i++) {
+    for (i = 0; good < 0 && i + 2 < bitbuffer->num_rows; i++) {
         int equal_rows = 0;
         if ((bitbuffer->bits_per_row[i] & ~1) != 32) continue;
 
-        for (int j = i+1; good < 0 && j < bitbuffer->num_rows; j++) {
+        for (j = i+1; good < 0 && j < bitbuffer->num_rows; j++) {
             if ((bitbuffer->bits_per_row[j] & ~1) == 32
                 && bb[i][0] == bb[j][0]
                 && bb[i][1] == bb[j][1]
@@ -58,18 +61,17 @@ static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
         }
     }
     if (good < 0) return 0;
+
     // bb[good] is equal to at least two other rows, decode.
-    unsigned value = (bb[good][0] << 16) + (bb[good][1] << 8) + bb[good][2];
-    unsigned device = value >> 12;
+    value = (bb[good][0] << 16) + (bb[good][1] << 8) + bb[good][2];
+    device = value >> 12;
     // Validate code for known devices.
     if ((device == 0xb34 || device == 0xdb4 ) && !valid(value, bb[good][3]))
         return 0;
-    int iTemp = value & 0xfff;
-    float fTemp = (iTemp - 200) / 10.;
+    iTemp = value & 0xfff;
+    fTemp = (iTemp - 200) / 10.;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    data_t *data;
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, MODEL,
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
