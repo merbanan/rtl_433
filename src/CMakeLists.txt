@@ -96,6 +96,7 @@ add_executable(rtl_433
 	devices/oil_standard.c
 	devices/tpms_citroen.c
 	devices/thermopro_tp11.c
+	devices/solight_te44.c
 
 )
 
