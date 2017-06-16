@@ -168,6 +168,8 @@ Supported device protocols:
     [82]  Citroen TPMS
     [83]  Oil Ultrasonic STANDARD ASK
     [84]  Thermopro TP11 Thermometer
+    [85]  Solight TE44
+    [86]  Wireless Smoke and Heat Detector GS 558
 
 * Disabled by default, use -R n or -G
 
