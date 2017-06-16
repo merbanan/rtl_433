@@ -88,7 +88,8 @@
 		DECL(tpms_citroen) \
 		DECL(oil_standard_ask) \
 		DECL(thermopro_tp11) \
-		DECL(solight_te44)
+		DECL(solight_te44) \
+		DECL(smoke_gs558)
 
 typedef struct {
 	char name[256];
