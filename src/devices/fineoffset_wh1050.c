@@ -6,7 +6,7 @@
  * This module is a cut-down version of the WH1080 decoder.
  * The WH1050 sensor unit is like the WH1080 unit except it has no
  * wind direction sensor or time receiver.
- * Other than omitting the ynused code, the differences are the message length
+ * Other than omitting the unused code, the differences are the message length
  * and the location of the battery-low bit.
  *
  * The original module was by
@@ -28,7 +28,7 @@
  * That's why it's NOT possible to get pressure data by wireless communication. If you need pressure data you should try
  * an Arduino/Raspberry solution wired with a BMP180 or BMP085 sensor.
  *
- * Data are trasmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
+ * Data are transmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
  *
  * The 'Total rainfall' field is a cumulative counter, increased by 0.3 millimeters of rain at once.
  *
