@@ -90,7 +90,8 @@
 		DECL(thermopro_tp11) \
 		DECL(solight_te44) \
 		DECL(smoke_gs558) \
-		DECL(generic_motion)
+		DECL(generic_motion) \
+		DECL(ge_coloreffects)
 
 typedef struct {
 	char name[256];
