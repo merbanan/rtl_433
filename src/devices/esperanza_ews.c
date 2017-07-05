@@ -1,9 +1,3 @@
-#include <bitbuffer.h>
-#include "util.h"
-#include "data.h"
-#include "rtl_433.h"
-
-
 /*
     Esperanza EWS-103 sensor on 433.92Mhz
 
@@ -57,6 +51,9 @@
     [13] {0} :
     Test mode file issued 4 packets
 */
+#include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
 {
@@ -119,7 +116,7 @@ r_device esperanza_ews = {
     .modulation    = OOK_PULSE_PPM_RAW,
     .short_limit   = 2800,
     .long_limit    = 4400,
-    .reset_limit   = 8000,
+    .reset_limit   = 9000,
     .json_callback = &esperanza_ews_callback,
     .disabled      = 0,
     .demod_arg     = 0,
