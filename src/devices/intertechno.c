@@ -15,9 +15,9 @@ static int intertechno_callback(bitbuffer_t *bitbuffer) {
         fprintf(stdout, "rid            = %x\n",bb[1][5]);
         fprintf(stdout, "rid            = %x\n",bb[1][6]);
         fprintf(stdout, "rid            = %x\n",bb[1][7]);
-        fprintf(stdout, "ADDR Slave     = %i\n",bb[1][7] & 0b00001111);
-        fprintf(stdout, "ADDR Master    = %i\n",(bb[1][7] & 0b11110000) >> 4);
-        fprintf(stdout, "command        = %i\n",(bb[1][6] & 0b00000111));
+        fprintf(stdout, "ADDR Slave     = %i\n",bb[1][7] & 0x0f);
+        fprintf(stdout, "ADDR Master    = %i\n",(bb[1][7] & 0xf0) >> 4);
+        fprintf(stdout, "command        = %i\n",(bb[1][6] & 0x07));
         fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
 
         return 1;

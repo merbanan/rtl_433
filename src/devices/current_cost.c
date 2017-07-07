@@ -13,12 +13,12 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
 
     uint8_t init_pattern[] = {
-        0b11001100, //8
-        0b11001100, //16
-        0b11001100, //24
-        0b11001110, //32
-        0b10010001, //40
-        0b01011101, //45 (! last 3 bits is not init)
+        0xcc, //8
+        0xcc, //16
+        0xcc, //24
+        0xce, //32
+        0x91, //40
+        0x5d, //45 (! last 3 bits is not init)
     };
     unsigned int start_pos = bitbuffer_search(bitbuffer, 0, 0, init_pattern, 45);
 
