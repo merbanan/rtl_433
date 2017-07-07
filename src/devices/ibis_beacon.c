@@ -22,7 +22,7 @@ static int ibis_beacon_callback(bitbuffer_t *bitbuffer) {
 	uint8_t msg[32];
 	unsigned len;
 	unsigned pos;
-	int i;
+	unsigned i;
 	int id;
 	int counter;
 	int crc;

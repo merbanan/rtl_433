@@ -64,6 +64,9 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	for (unsigned i = 0; i < 7; ++i) {
 		checksum += bytes[i];
 	}
+	if (checksum == 0) {
+		return 0; // reduce false positives
+	}
 	checksum &= 0xff;
 	if (checksum != bytes[7]) {
 		return 0;
@@ -77,7 +80,7 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 	float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
 
 	local_time_str(0, time_str);
-	
+
 	// Output data
 	data = data_make(
 		"time",			"Time",		DATA_STRING,	time_str,
@@ -86,12 +89,12 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
 		"current",		"",			DATA_FORMAT,	"%.2f", 	DATA_DOUBLE, current_adc,
 		"interval", 	"",			DATA_INT,		interval,
 		"battery",      "Battery",  DATA_STRING, 	battery ? "OK" : "LOW",
-		"learn",		"",			DATA_STRING, 	battery ? "NO" : "YES",
+		"learn",		"",			DATA_STRING, 	learn ? "NO" : "YES",
 		NULL
-	); 
+	);
 
 	data_acquired_handler(data);
-	
+
 	return 1;
 }
 
