@@ -962,6 +962,8 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "phumidity",       "Humidity",     DATA_INT,       phumidity,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
+            } else { // suppress compiler warning
+                return 0;
             }
             data_acquired_handler(data);
             valid=1;

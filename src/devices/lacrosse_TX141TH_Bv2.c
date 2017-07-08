@@ -107,8 +107,8 @@
 #define LACROSSE_TX141TH_PACKETCOUNT 12
 
 typedef struct {
-    int32_t data;  // First 4 data bytes compressed into 32-bit integer
-    int8_t count;  // Count
+    uint32_t data;  // First 4 data bytes compressed into 32-bit integer
+    uint8_t count;  // Count
 } data_and_count;
 
 static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
