@@ -169,6 +169,11 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
         }
     }
 
+    // reduce false positives, require at least 5 out of 12 repeats.
+    if (dnc[kmax].count < 5) {
+        return 0;
+    }
+
     // Unpack the data bytes back to eliminate dependence on the platform endiannes!
     uint8_t *bytes=(uint8_t*)(&(dnc[kmax].data));
     id=bytes[0];
