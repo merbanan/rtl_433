@@ -99,6 +99,7 @@ add_executable(rtl_433
 	devices/solight_te44.c
 	devices/smoke_gs558.c
 	devices/generic_motion.c
+	devices/tpms_toyota.c
 
 )
 

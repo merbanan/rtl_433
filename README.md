@@ -171,6 +171,7 @@ Supported device protocols:
     [85]  Solight TE44
     [86]  Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
+    [88]  Toyota TPMS
 
 * Disabled by default, use -R n or -G
 

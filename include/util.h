@@ -27,6 +27,15 @@
 /// @return bit reversed byte
 uint8_t reverse8(uint8_t x);
 
+/// CRC-7
+///
+/// @param message[]: array of bytes to check
+/// @param nBytes: number of bytes in message
+/// @param polynomial: CRC polynomial
+/// @param init: starting crc value
+/// @return CRC value
+uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
+
 /// Generic Cyclic Redundancy Check CRC-8
 ///
 /// Example polynomial: 0x31 = x8 + x5 + x4 + 1	(x8 is implicit)
