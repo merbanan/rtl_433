@@ -174,6 +174,7 @@ Supported device protocols:
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
     [89]  Ford TPMS
+    [90]  Renault TPMS
 
 * Disabled by default, use -R n or -G
 
