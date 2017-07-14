@@ -100,6 +100,7 @@ add_executable(rtl_433
 	devices/smoke_gs558.c
 	devices/generic_motion.c
 	devices/tpms_toyota.c
+	devices/tpms_ford.c
 
 )
 
