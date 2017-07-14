@@ -138,4 +138,14 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
 
 int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device);
 
+
+/// Simulate demodulation using a given signal code string
+///
+/// The (optionally "0x" prefixed) hex code is processed into a bitbuffer_t.
+/// Each row is optionally prefixed with a length enclosed in braces "{}" or
+/// separated with a slash "/" character. Whitespace is ignored.
+/// Device params are disregarded.
+/// @return number of events processed
+int pulse_demod_string(const char *code, struct protocol_state *device);
+
 #endif /* INCLUDE_PULSE_DEMOD_H_ */

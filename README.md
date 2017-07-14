@@ -66,6 +66,7 @@ Usage:	= Tuner options =
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
+	[-y <code>] Verify decoding of raw data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files

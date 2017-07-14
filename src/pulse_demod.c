@@ -401,3 +401,68 @@ int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device) 
 	}
 	return events;
 }
+
+
+int pulse_demod_string(const char *code, struct protocol_state *device)
+{
+	int events = 0;
+	bitbuffer_t bits = {0};
+	const char *c;
+	int data = 0;
+	int width = -1;
+
+	for(c = code; *c; ++c) {
+
+		if (*c == ' ') {
+			continue;
+
+		} else if (*c == '0' && (*(c+1) == 'x' || *(c+1) == 'X')) {
+			++c;
+			continue;
+
+		} else if (*c == '{') {
+			if (bits.num_rows > 0) {
+				if (width >= 0) {
+					bits.bits_per_row[bits.num_rows - 1] = width;
+				}
+				bitbuffer_add_row(&bits);
+			}
+
+			width = strtol(c+1, (char **)&c, 0);
+			continue;
+
+		} else if (*c == '/') {
+			bitbuffer_add_row(&bits);
+			if (width >= 0) {
+				bits.bits_per_row[bits.num_rows - 2] = width;
+				width = -1;
+			}
+			continue;
+
+		} else if (*c >= '0' && *c <= '9') {
+			data = *c - '0';
+		} else if (*c >= 'A' && *c <= 'F') {
+			data = *c - 'A' + 10;
+		} else if (*c >= 'a' && *c <= 'f') {
+			data = *c - 'a' + 10;
+		}
+		bitbuffer_add_bit(&bits, data >> 3 & 0x01);
+		bitbuffer_add_bit(&bits, data >> 2 & 0x01);
+		bitbuffer_add_bit(&bits, data >> 1 & 0x01);
+		bitbuffer_add_bit(&bits, data >> 0 & 0x01);
+	}
+	if (width >= 0 && bits.num_rows > 0) {
+		bits.bits_per_row[bits.num_rows - 1] = width;
+	}
+
+	if (device->callback) {
+		events += device->callback(&bits);
+	}
+	// Debug printout
+	if(!device->callback || (debug_output && events > 0)) {
+		fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
+		bitbuffer_print(&bits);
+	}
+
+	return events;
+}
