@@ -101,6 +101,7 @@ add_executable(rtl_433
 	devices/generic_motion.c
 	devices/tpms_toyota.c
 	devices/tpms_ford.c
+	devices/tpms_renault.c
 
 )
 
