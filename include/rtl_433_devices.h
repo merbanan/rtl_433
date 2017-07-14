@@ -91,7 +91,8 @@
 		DECL(solight_te44) \
 		DECL(smoke_gs558) \
 		DECL(generic_motion) \
-		DECL(tpms_toyota)
+		DECL(tpms_toyota) \
+		DECL(tpms_ford)
 
 typedef struct {
 	char name[256];

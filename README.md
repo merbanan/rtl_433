@@ -173,6 +173,7 @@ Supported device protocols:
     [86]  Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
+    [89]  Ford TPMS
 
 * Disabled by default, use -R n or -G
 
