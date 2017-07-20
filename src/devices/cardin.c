@@ -22,10 +22,10 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 
 	// validate message as we can
 	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
-				(bb[0][2] & 3) == 3 ||
-				(bb[0][2] & 9) == 9 ||
-				(bb[0][2] & 12) == 12 ||
-				(bb[0][2] & 6) == 6) ) {
+				(bb[0][2] & 0x0f) == 3 ||
+				(bb[0][2] & 0x0f) == 9 ||
+				(bb[0][2] & 0x0f) == 12 ||
+				(bb[0][2] & 0x0f) == 6) ) {
 
 /*
 		fprintf(stdout, "------------------------------\n");
