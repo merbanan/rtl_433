@@ -16,8 +16,7 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
-	char rbuttonJ1[64] = { 0 };
-	char rbuttonJ2[64] = { 0 };
+	char *rbutton[4] = { "11R", "10R", "01R", "00L?" };
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
 
@@ -99,31 +98,12 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 				dip[8]='+';
 		}
 
-		// Jumpers for the right button
-		if((bb[0][2] & 3) == 3) {
-			strcpy(rbuttonJ2, "--o (this is right button)");
-			strcpy(rbuttonJ1, "--o");
-		}
-		if((bb[0][2] & 9) == 9) {
-			strcpy(rbuttonJ2, "--o (this is right button)");
-			strcpy(rbuttonJ1, "o--");
-		}
-		if((bb[0][2] & 12) == 12) {
-			strcpy(rbuttonJ2, "o-- (this is left button or two buttons on same channel)");
-			strcpy(rbuttonJ1, "o--");
-		}
-		if((bb[0][2] & 6) == 6) {
-			strcpy(rbuttonJ2, "o-- (this is right button)");
-			strcpy(rbuttonJ1, "--o");
-		}
-
 		local_time_str(0, time_str);
 		data = data_make(
-			"time",       "",                 DATA_STRING, time_str,
-			"model",      "",                 DATA_STRING, "Cardin S466",
-			"dipswitch",  "dipswitch",        DATA_STRING, dip,
-			"rbuttonJ2",  "right button j2",  DATA_STRING, rbuttonJ2,
-			"rbuttonJ1",  "right button j1",  DATA_STRING, rbuttonJ1,
+			"time",       "",                       DATA_STRING, time_str,
+			"model",      "",                       DATA_STRING, "Cardin S466",
+			"dipswitch",  "dipswitch",              DATA_STRING, dip,
+			"rbutton",    "right button switches",  DATA_STRING, rbutton[((bb[0][2] & 15) / 3)-1],
 			NULL);
 
 		data_acquired_handler(data);
@@ -133,12 +113,11 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 	return 0;
 }
 
-static char *csv_output_fields[] = {
+static char *output_fields[] = {
 	"time",
 	"model",
 	"dipswitch",
-	"rbuttonJ2",
-	"rbuttonJ1",
+	"rbutton",
 	NULL
 };
 
@@ -151,5 +130,5 @@ r_device cardin = {
 	.json_callback  = &cardin_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
-	.fields        = csv_output_fields,
+	.fields        = output_fields,
 };
