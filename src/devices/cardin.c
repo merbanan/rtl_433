@@ -16,6 +16,13 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
+
+	/*
+	 * "11R"  = on-on    Right button used
+	 * "10R"  = on-off   Right button used
+	 * "01R"  = off-on   Right button used
+	 * "00L?" = off-off  Left button used or right button does the same as the left
+	 */
 	char *rbutton[4] = { "11R", "10R", "01R", "00L?" };
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
