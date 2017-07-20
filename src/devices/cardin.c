@@ -1,4 +1,6 @@
 #include "rtl_433.h"
+#include "pulse_demod.h"
+#include "util.h"
 
 /*
  * Cardin S466-TX2 generic garage door remote control on 27.195 Mhz
@@ -15,6 +17,12 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
+	char rbuttonJ1[64] = { 0 };
+	char rbuttonJ2[64] = { 0 };
+	data_t *data;
+	char time_str[LOCAL_TIME_BUFLEN];
+
+	local_time_str(0, time_str);
 
 	// validate message as we can
 	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
@@ -23,6 +31,7 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 				(bb[0][2] & 12) == 12 ||
 				(bb[0][2] & 6) == 6) ) {
 
+/*
 		fprintf(stdout, "------------------------------\n");
 		fprintf(stdout, "protocol       = Cardin S466\n");
 		fprintf(stdout, "message        = ");
@@ -36,6 +45,7 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 			fprintf(stdout, " ");
 		}
 		fprintf(stdout, "\n\n");
+*/
 
 		// Dip 1
 		if(bb[0][0] & 8) {
@@ -92,32 +102,47 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 				dip[8]='+';
 		}
 
-		fprintf(stdout, "                 123456789\n");
-		fprintf(stdout, "dipswitch      = %s\n\n",dip);
-
-		fprintf(stdout, "                 -->ON\n");
-		fprintf(stdout, "right button   = ");
+		// Jumpers for the right button
 		if((bb[0][2] & 3) == 3) {
-			fprintf(stdout,                  "2 --o (this is right button)\n");
-			fprintf(stdout, "                 1 --o\n");
+			strcpy(rbuttonJ2, "--o (this is right button)");
+			strcpy(rbuttonJ1, "--o");
 		}
 		if((bb[0][2] & 9) == 9) {
-			fprintf(stdout,                  "2 --o (this is right button)\n");
-			fprintf(stdout, "                 1 o--\n");
+			strcpy(rbuttonJ2, "--o (this is right button)");
+			strcpy(rbuttonJ1, "o--");
 		}
 		if((bb[0][2] & 12) == 12) {
-			fprintf(stdout,                  "2 o-- (this is left button or two buttons on same channel)\n");
-			fprintf(stdout, "                 1 o--\n");
+			strcpy(rbuttonJ2, "o-- (this is left button or two buttons on same channel)");
+			strcpy(rbuttonJ1, "o--");
 		}
 		if((bb[0][2] & 6) == 6) {
-			fprintf(stdout,                  "2 o-- (this is right button)\n");
-			fprintf(stdout, "                 1 --o\n");
+			strcpy(rbuttonJ2, "o-- (this is right button)");
+			strcpy(rbuttonJ1, "--o");
 		}
+
+		data = data_make(
+			"time",       "",                 DATA_STRING, time_str,
+			"model",      "",                 DATA_STRING, "Cardin S466",
+			"dipswitch",  "dipswitch",        DATA_STRING, dip,
+			"rbuttonJ2",  "right button j2",  DATA_STRING, rbuttonJ2,
+			"rbuttonJ1",  "right button j1",  DATA_STRING, rbuttonJ1,
+			NULL);
+
+		data_acquired_handler(data);
 
 		return 1;
 	}
 	return 0;
 }
+
+static char *csv_output_fields[] = {
+	"time",
+	"model",
+	"dipswitch",
+	"rbuttonJ2",
+	"rbuttonJ1",
+	NULL
+};
 
 r_device cardin = {
 	.name           = "Cardin S466-TX2",
@@ -126,6 +151,7 @@ r_device cardin = {
 	.long_limit     = 1600,
 	.reset_limit    = 32000,
 	.json_callback  = &cardin_callback,
-	.disabled       = 1,
+	.disabled       = 0,
 	.demod_arg      = 0,
+	.fields        = csv_output_fields,
 };
