@@ -1,5 +1,4 @@
 #include "rtl_433.h"
-#include "pulse_demod.h"
 #include "util.h"
 
 /*
@@ -21,8 +20,6 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 	char rbuttonJ2[64] = { 0 };
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
-
-	local_time_str(0, time_str);
 
 	// validate message as we can
 	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
@@ -120,6 +117,7 @@ static int cardin_callback(bitbuffer_t *bitbuffer) {
 			strcpy(rbuttonJ1, "--o");
 		}
 
+		local_time_str(0, time_str);
 		data = data_make(
 			"time",       "",                 DATA_STRING, time_str,
 			"model",      "",                 DATA_STRING, "Cardin S466",
