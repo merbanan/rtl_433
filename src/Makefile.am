@@ -87,6 +87,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/generic_motion.c \
                        devices/tpms_toyota.c \
                        devices/tpms_ford.c \
-                       devices/tpms_renault.c
+                       devices/tpms_renault.c \
+                       devices/infactory.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
