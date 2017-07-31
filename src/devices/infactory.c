@@ -37,7 +37,7 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
       //bitbuffer_print(bitbuffer);
 
       uint8_t id = b[0];
-      uint8_t test = b[1];
+      //uint8_t test = b[1];
 
       uint hum1 = b[3] & 0xF;
       uint hum2 = b[4] >> 4;
@@ -56,7 +56,6 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
           "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
           "temperature_c", "Temperature",DATA_FORMAT, "%.02f °C", DATA_DOUBLE, temp_c,
           "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
-          "test",      "test",   DATA_FORMAT, "%u", DATA_INT, test,
           NULL);
       data_acquired_handler(data);
 
@@ -72,7 +71,6 @@ static char *output_fields[] = {
     "id",
     "temperature_c",
     "humidity",
-    "test",
     NULL
 };
 
