@@ -602,10 +602,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
 
-#ifndef _WIN32
-    alarm(1); // require callback to run at least every second, abort otherwise
-#endif
-
     if (do_exit || do_exit_async)
         return;
 
@@ -614,6 +610,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         do_exit = 1;
         rtlsdr_cancel_async(dev);
     }
+
+#ifndef _WIN32
+    alarm(1); // require callback to run at least every second, abort otherwise
+#endif
 
     if (demod->signal_grabber) {
         //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
@@ -751,13 +751,19 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             rawtime_old = rawtime;
             events = 0;
             do_exit_async = 1;
+#ifndef _WIN32
+            alarm(0); // cancel the watchdog timer
+#endif
             rtlsdr_cancel_async(dev);
         }
     }
     if (duration > 0 && rawtime >= stop_time) {
-      do_exit_async = do_exit = 1;
-      fprintf(stderr, "Time expired, exiting!\n");
-      rtlsdr_cancel_async(dev);
+        do_exit_async = do_exit = 1;
+        fprintf(stderr, "Time expired, exiting!\n");
+#ifndef _WIN32
+        alarm(0); // cancel the watchdog timer
+#endif
+        rtlsdr_cancel_async(dev);
     }
 }
 
