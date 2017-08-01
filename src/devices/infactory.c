@@ -1,4 +1,12 @@
 /*
+ * Copyright (C) 2017 Sirius Weiß <siriuz@gmx.net>
+ * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ *
+ *
  * Outdoor sensor transmits data temperature, humidity.
  * Transmissions also includes an id. The sensor transmits
  * every 60 seconds 6 packets.
@@ -32,7 +40,7 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
     uint8_t id;
     uint humidity;
     uint16_t temp;
-    double temp_f;
+    float temp_f;
 
     if (bitbuffer->bits_per_row[0] != 40) {
       return 0;
@@ -41,7 +49,7 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
     id = b[0];
     humidity = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD
     temp = (b[2] << 4) | (b[3] >> 4);
-    temp_f = (double)temp / 10 - 90;
+    temp_f = (float)temp / 10 - 90;
 
     local_time_str(0, time_str);
 
