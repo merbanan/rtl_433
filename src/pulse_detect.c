@@ -565,6 +565,12 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		device.short_limit	= min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean);		// Assume shortest pulse is half period
 		device.long_limit	= 0; // Not used
 		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
+	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count >= 3) {
+		fprintf(stderr, "Pulse Width Modulation with multiple packets\n");
+		device.modulation	= OOK_PULSE_PWM_RAW;
+		device.short_limit	= (hist_pulses.bins[0].mean + hist_pulses.bins[1].mean) / 2;	// Set limit between two pulse widths
+		device.long_limit	= hist_gaps.bins[1].max + 1;									// Set limit above second gap
+		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
 	} else if((hist_pulses.bins_count >= 3 && hist_gaps.bins_count >= 3)
 		&& (abs(hist_pulses.bins[1].mean - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)	// Pulses are multiples of shortest pulse
 		&& (abs(hist_pulses.bins[2].mean - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
