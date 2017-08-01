@@ -28,23 +28,21 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
     uint8_t *b = bb[0];
     data_t *data;
 
+    char time_str[LOCAL_TIME_BUFLEN];
+    uint8_t id;
+    uint humidity;
+    uint16_t temp;
+    double temp_f;
+
     if (bitbuffer->bits_per_row[0] != 40) {
       return 0;
     }
 
-    uint8_t id = b[0];
+    id = b[0];
+    humidity = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD
+    temp = (b[2] << 4) | (b[3] >> 4);
+    temp_f = (double)temp / 10 - 90;
 
-    uint hum1 = b[3] & 0xF;
-    uint hum2 = b[4] >> 4;
-    uint humidity = hum1 * 10 + hum2;
-
-    uint8_t temp1 = b[2];
-    uint temp2 = b[3] >> 4;
-    uint16_t temp = (temp1 << 4) | temp2;
-
-    double temp_f = (double)temp / 10 - 90;
-
-    char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
 
     data = data_make( "time",		"",				DATA_STRING,	time_str,
