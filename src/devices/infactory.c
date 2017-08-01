@@ -37,13 +37,13 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
 
     char time_str[LOCAL_TIME_BUFLEN];
-    uint8_t id;
-    uint humidity;
-    uint16_t temp;
+    int id;
+    int humidity;
+    int temp;
     float temp_f;
 
     if (bitbuffer->bits_per_row[0] != 40) {
-      return 0;
+        return 0;
     }
 
     id = b[0];
@@ -60,7 +60,6 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
         "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
         NULL);
     data_acquired_handler(data);
-
 
     return 1;
 }
