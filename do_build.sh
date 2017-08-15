@@ -5,6 +5,7 @@ cd build
 cmake ../
 make
 # make install
+cd ..
 set -x
 git clone https://github.com/merbanan/rtl_433_tests.git
 cd rtl_433_tests
