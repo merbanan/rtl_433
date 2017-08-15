@@ -1,0 +1,12 @@
+language: c
+dist: xenial
+addons:
+    apt:
+        packages:
+            - libtool
+            - libusb-1.0.0-dev
+            - librtlsdr-dev
+            - rtl-sdr
+            - cmake
+            - make
+script: ./do_build.sh
