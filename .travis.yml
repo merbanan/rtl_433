@@ -9,4 +9,4 @@ addons:
             - rtl-sdr
             - cmake
             - make
-script: ./do_build.sh
+script: bash -e ./do_build.sh
