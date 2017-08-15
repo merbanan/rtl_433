@@ -1,10 +1,10 @@
-sudo: true
-dist: xenial
+sudo: required
+dist: trusty
 language: c
 addons:
   apt:
     sources:
-    - xenial
+    - trusty
     packages:
       - libtool
       - libusb-1.0.0-dev
