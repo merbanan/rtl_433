@@ -1,6 +1,13 @@
 sudo: required
 dist: trusty
-language: c
+# language: c
+language: python
+python:
+    - "2.7"
+    - "3.3"
+    - "3.4"
+install:
+    - pip install deepdiff
 addons:
   apt:
     sources:
