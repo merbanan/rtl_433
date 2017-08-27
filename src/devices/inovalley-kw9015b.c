@@ -59,7 +59,7 @@ static int kw9015b_callback(bitbuffer_t *bitbuffer) {
 				local_time_str(0, time_str);
 
 				data = data_make("time", "", DATA_STRING, time_str,
-					"model", "", DATA_STRING, "Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)",
+					"model", "", DATA_STRING, "Inovalley kw9015b",
 					"id", "", DATA_INT, device,
 					"temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp,
 					"rain","Rain Count", DATA_INT, iRain,
