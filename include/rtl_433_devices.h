@@ -94,7 +94,8 @@
 		DECL(tpms_toyota) \
 		DECL(tpms_ford) \
 		DECL(tpms_renault) \
-		DECL(infactory)
+		DECL(infactory) \
+		DECL(beurer_bg64)
 
 typedef struct {
 	char name[256];
