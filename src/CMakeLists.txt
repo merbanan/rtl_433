@@ -103,7 +103,7 @@ add_executable(rtl_433
 	devices/tpms_ford.c
 	devices/tpms_renault.c
 	devices/infactory.c
-
+	devices/beurer_bg64.c
 )
 
 add_library(data data.c)
