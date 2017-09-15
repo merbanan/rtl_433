@@ -103,6 +103,7 @@ add_executable(rtl_433
 	devices/tpms_ford.c
 	devices/tpms_renault.c
 	devices/infactory.c
+	devices/thermopro_tp12.c
 
 )
 
