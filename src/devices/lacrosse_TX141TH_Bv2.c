@@ -182,6 +182,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     if (0==id || 0==humidity || humidity > 100 || temp_f < -40.0 || temp_f > 140.0) {
         if (debug_output) {
             fprintf(stderr, "LaCrosse TX141TH-Bv2 data error\n");
+            fprintf(stderr, "id: %i, humidity:%i, temp_f:%f\n", id, humidity, temp_f);
         }
         return 0;
     }
@@ -190,6 +191,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
                      "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
                      "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
                      "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
+                     "temperature_C", "Temperature in deg C", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_f,
                      "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
                      "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
@@ -205,6 +207,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "temperature",
+    "temperature_C",
     "humidity",
     "battery",
     "test",
