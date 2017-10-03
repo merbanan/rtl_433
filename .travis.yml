@@ -1,0 +1,22 @@
+sudo: required
+dist: trusty
+# language: c
+language: python
+python:
+    - "2.7"
+      #    - "3.3"
+      #    - "3.4"
+install:
+    - pip install deepdiff
+addons:
+  apt:
+    sources:
+    - trusty
+    packages:
+      - libtool
+      - libusb-1.0.0-dev
+      - librtlsdr-dev
+      - rtl-sdr
+      - cmake
+      - make
+script: bash -e ./do_build.sh

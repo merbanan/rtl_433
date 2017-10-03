@@ -35,75 +35,73 @@
  */
 static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[40] = {0};
     data_t *data;
-
     char time_str[LOCAL_TIME_BUFLEN];
-
-    if (debug_output > 1) {
-        fprintf(stderr,"Possible fineoffset: ");
-        bitbuffer_print(bitbuffer);
-    }
 
     uint8_t id;
     int16_t temp;
     float temperature;
     uint8_t humidity;
 
-    const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
+    if (bitbuffer->bits_per_row[0] == 48 &&
+            bb[0][0] == 0xFF) // WH2
+        bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
+
+    else if (bitbuffer->bits_per_row[0] == 47 &&
+            bb[0][0] == 0xFE) // WH5
+        bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
+
+    else
+        return 0;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] == 48 &&         // Match exact length to avoid false positives
-        bb[0][0] == 0xFF &&             // Preamble
-        bb[0][5] == crc8(&bb[0][1], 4, polynomial, 0)	// CRC (excluding preamble)
-    )
-    {
-        /* Get time now */
-        local_time_str(0, time_str);
+    if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
+        return 0;
 
-         // Nibble 3,4 contains id
-        id = ((bb[0][1]&0x0F) << 4) | ((bb[0][2]&0xF0) >> 4);
+    // Nibble 3,4 contains id
+    id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
 
-        // Nibble 5,6,7 contains 12 bits of temperature
+    // Nibble 5,6,7 contains 12 bits of temperature
+    temp = ((b[1] & 0x0F) << 8) | b[2];
+    if (bb[0][0] == 0xFF) { // WH2
         // The temperature is signed magnitude and scaled by 10
-        temp = ((bb[0][2] & 0x0F) << 8) | bb[0][3];
-        if(temp & 0x800) {
+        if (temp & 0x800) {
             temp &= 0x7FF;	// remove sign bit
             temp = -temp;	// reverse magnitude
         }
-        temperature = (float)temp / 10;
+    } else { // WH5
+        // The temperature is unsigned offset by 40 C and scaled by 10
+        temp -= 400;
+    }
+    temperature = (float)temp / 10;
 
-        // Nibble 8,9 contains humidity
-        humidity = bb[0][4];
+    // Nibble 8,9 contains humidity
+    humidity = b[3];
 
+    /* Get time now */
+    local_time_str(0, time_str);
 
-        if (debug_output > 1) {
-            fprintf(stderr, "ID          = 0x%2X\n",  id);
-            fprintf(stderr, "temperature = %.1f C\n", temperature);
-            fprintf(stderr, "humidity    = %u %%\n",  humidity);
-        }
-
-        // Thermo
-        if (bb[0][4] == 0xFF) {
+    // Thermo
+    if (b[3] == 0xFF) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "TFA 30.3157 Temperature sensor",
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                           NULL);
         data_acquired_handler(data);
-        }
-        // Thermo/Hygro
-        else {
+    }
+    // Thermo/Hygro
+    else {
         data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "Fine Offset Electronics, WH2 Temperature/Humidity sensor",
+                         "model",         "",            DATA_STRING, (bb[0][0] == 0xFF) ? "Fine Offset Electronics, WH2 Temperature/Humidity sensor" : "Fine Offset WH5 sensor",
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                           NULL);
         data_acquired_handler(data);
-        }
-        return 1;
     }
-    return 0;
+    return 1;
 }
 
 

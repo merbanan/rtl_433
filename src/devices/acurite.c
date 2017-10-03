@@ -216,8 +216,25 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
     if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
 	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
 		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
-        fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
-		fprintf(stdout, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+
+		if (debug_output > 1) {
+			fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
+			fprintf(stdout, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+		}
+
+		uint8_t id = bb[0][0];
+		data_t *data;
+		local_time_str(0, time_str);
+
+		data = data_make(
+			"time",	"",		DATA_STRING,	time_str,
+			"model",	"",		DATA_STRING,	"Acurite Rain Gague",
+			"id",		"",		DATA_INT,	id,
+			"rain", 	"Total Rain",	DATA_FORMAT,	"%.1f mm", DATA_DOUBLE, total_rain,
+			NULL);
+
+		data_acquired_handler(data);
+
         return 1;
     }
     return 0;
@@ -962,6 +979,8 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "phumidity",       "Humidity",     DATA_INT,       phumidity,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
+            } else { // suppress compiler warning
+                return 0;
             }
             data_acquired_handler(data);
             valid=1;

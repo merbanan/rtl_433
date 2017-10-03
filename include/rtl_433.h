@@ -30,7 +30,7 @@
 #define DEFAULT_FREQUENCY       433920000
 #define DEFAULT_HOP_TIME        (60*10)
 #define DEFAULT_HOP_EVENTS      2
-#define DEFAULT_ASYNC_BUF_NUMBER    32
+#define DEFAULT_ASYNC_BUF_NUMBER    0 // Force use of default value (was : 32)
 #define DEFAULT_BUF_LENGTH      (16 * 16384)
 
 /*
@@ -42,7 +42,7 @@
 
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
-#define MAX_PROTOCOLS           83
+#define MAX_PROTOCOLS           91
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 /* Supported modulation types */

@@ -95,6 +95,14 @@ add_executable(rtl_433
 	devices/ibis_beacon.c
 	devices/oil_standard.c
 	devices/tpms_citroen.c
+	devices/thermopro_tp11.c
+	devices/solight_te44.c
+	devices/smoke_gs558.c
+	devices/generic_motion.c
+	devices/tpms_toyota.c
+	devices/tpms_ford.c
+	devices/tpms_renault.c
+	devices/infactory.c
 
 )
 

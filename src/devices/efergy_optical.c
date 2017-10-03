@@ -33,7 +33,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
  	uint16_t crc;
 	uint16_t csum1;
 
-	if (num_bits < 64 || num_bits > 100) {
+	if (num_bits < 96 || num_bits > 100) {
 		return 0;
 	}
 
@@ -44,7 +44,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	while ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00)
 	{
 		num_bits -= 1;
-		if (num_bits < 64)
+		if (num_bits < 96)
 		{
 			return 0;
 		}
@@ -70,7 +70,12 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		bitbuffer_print(bitbuffer);
 	}
 
-	// Calculate checksum for bytes[0..10]
+	// reject false positives
+	if ((bytes[8] == 0) && (bytes[9] == 0) && (bytes[10] == 0) && (bytes[11] == 0)) {
+		return 0;
+	}
+
+	// Calculate checksum for bytes[0..9]
 	// crc16 xmodem with start value of 0x00 and polynomic of 0x1021 is same as CRC-CCITT (0x0000)
 	// start of data, length of data=10, polynomic=0x1021, init=0x0000
 
@@ -81,15 +86,15 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	if (crc == csum1)
 	{
 		if (debug_output) {
-			fprintf (stdout, "Checksum OK :) :)\n");
-			fprintf (stdout, "Calculated crc is 0x%02X\n", crc);
-			fprintf (stdout, "Received csum1 is 0x%02X\n", csum1);
+			fprintf(stdout, "Checksum OK :) :)\n");
+			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
+			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
 		}
 		// this setting depends on your electricity meter's optical output
 		n_imp = 3200;
 
 		pulsecount =  bytes[8];
-		seconds = bytes[10];
+		seconds = bytes[9];
 
 		//some logic for low pulse count not sure how I reached this formula
 		if (pulsecount < 3)
@@ -120,14 +125,14 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 				NULL);
 			data_acquired_handler(data);
 		}
-		return 0;
+		return 1;
 	}
 
 	else
 	{
 		if (debug_output)
 		{
-			fprintf (stdout, "Checksum not OK !!!\n");
+			fprintf(stdout, "Checksum not OK !!!\n");
 			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
 			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
 		}

@@ -1,7 +1,3 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
-
 /* Kedsum temperature and humidity sensor (http://amzn.to/25IXeng)
    My models transmit at a bit lower freq. Around ~433.71 Mhz
 
@@ -24,17 +20,29 @@
    hhhh humidity low nibble
    HHHH humidity high nibble
 */
-
+#include "rtl_433.h"
+#include "data.h"
+#include "util.h"
 
 static int kedsum_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-
     char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
-    int r = bitbuffer_find_repeated_row(bitbuffer, 6, 42);
-    if (r<0 || bitbuffer->bits_per_row[r] != 42 || bitbuffer->num_rows != 14)
+    // the signal should start with 15 sync pulses (empty rows)
+    // require at least 5 received syncs
+    if (bitbuffer->num_rows < 5
+            || bitbuffer->bits_per_row[0] != 0
+            || bitbuffer->bits_per_row[1] != 0
+            || bitbuffer->bits_per_row[2] != 0
+            || bitbuffer->bits_per_row[3] != 0
+            || bitbuffer->bits_per_row[4] != 0)
+        return 0;
+
+    // the signal should have 6 repeats with a sync pulse between
+    // require at least 4 received repeats
+    int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
+    if (r<0 || bitbuffer->bits_per_row[r] != 42)
         return 0;
 
     uint8_t *b = bb[r];
@@ -66,6 +74,7 @@ static int kedsum_callback(bitbuffer_t *bitbuffer) {
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
     }
 
+    local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Kedsum Temperature & Humidity Sensor",
                      "channel",       "Channel",     DATA_INT, channel,
@@ -91,7 +100,7 @@ r_device kedsum = {
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 2800,
     .long_limit     = 4400,
-    .reset_limit    = 8000,
+    .reset_limit    = 9000,
     .json_callback  = &kedsum_callback,
     .disabled       = 0,
     .demod_arg      = 0,

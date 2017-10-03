@@ -44,6 +44,7 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 		bits->num_rows++;
 	}
 	else {
+		bits->bits_per_row[bits->num_rows-1] = 0;	// Clear last row to handle overflow somewhat gracefully
 //		fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");	// Some decoders may add many rows...
 	}
 }
@@ -164,6 +165,9 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 			}
 		}
 		fprintf(stderr, "\n");
+	}
+	if(bits->num_rows >= BITBUF_ROWS) {
+		fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
 	}
 }
 

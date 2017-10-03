@@ -101,7 +101,7 @@ void usage(r_device *devices) {
             "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
-	    "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
+            "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t[-S] Force sync output (default: async)\n"
@@ -119,6 +119,7 @@ void usage(r_device *devices) {
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
             "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
+            "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
@@ -601,10 +602,6 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
 
-#ifndef _WIN32
-    alarm(1); // require callback to run at least every second, abort otherwise
-#endif
-
     if (do_exit || do_exit_async)
         return;
 
@@ -613,6 +610,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         do_exit = 1;
         rtlsdr_cancel_async(dev);
     }
+
+#ifndef _WIN32
+    alarm(1); // require callback to run at least every second, abort otherwise
+#endif
 
     if (demod->signal_grabber) {
         //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
@@ -750,13 +751,19 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             rawtime_old = rawtime;
             events = 0;
             do_exit_async = 1;
+#ifndef _WIN32
+            alarm(0); // cancel the watchdog timer
+#endif
             rtlsdr_cancel_async(dev);
         }
     }
     if (duration > 0 && rawtime >= stop_time) {
-      do_exit_async = do_exit = 1;
-      fprintf(stderr, "Time expired, exiting!\n");
-      rtlsdr_cancel_async(dev);
+        do_exit_async = do_exit = 1;
+        fprintf(stderr, "Time expired, exiting!\n");
+#ifndef _WIN32
+        alarm(0); // cancel the watchdog timer
+#endif
+        rtlsdr_cancel_async(dev);
     }
 }
 
@@ -865,6 +872,7 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
 #endif
+    char *test_data = NULL;
     char *out_filename = NULL;
     char *in_filename = NULL;
     FILE *in_file;
@@ -902,7 +910,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:F:C:T:UWG")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:F:C:T:UWGy:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -1026,6 +1034,9 @@ int main(int argc, char **argv) {
             stop_time += duration;
           }
           break;
+            case 'y':
+                test_data = optarg;
+                break;
             default:
                 usage(devices);
                 break;
@@ -1064,6 +1075,16 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
         out_block_size = DEFAULT_BUF_LENGTH;
+    }
+
+    if (test_data) {
+        r = 0;
+        for (i = 0; i < demod->r_dev_num; i++) {
+            if (!quiet_mode)
+                fprintf(stderr, "Verifing test data with device %s.\n", demod->r_devs[i]->name);
+            r += pulse_demod_string(test_data, demod->r_devs[i]);
+        }
+        exit(!r);
     }
 
     if (!in_filename) {
@@ -1285,7 +1306,7 @@ int main(int argc, char **argv) {
             r = rtlsdr_read_async(dev, rtlsdr_callback, (void *) demod,
                     DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
             if (r < 0) {
-                fprintf(stderr, "WARNING: async read failed.\n");
+                fprintf(stderr, "WARNING: async read failed (%i).\n", r);
                 break;
             }
 #ifndef _WIN32

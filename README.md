@@ -66,6 +66,7 @@ Usage:	= Tuner options =
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
+	[-y <code>] Verify decoding of raw data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
@@ -167,6 +168,13 @@ Supported device protocols:
     [81]  Oil Ultrasonic STANDARD FSK
     [82]  Citroen TPMS
     [83]  Oil Ultrasonic STANDARD ASK
+    [84]  Thermopro TP11 Thermometer
+    [85]  Solight TE44
+    [86]  Wireless Smoke and Heat Detector GS 558
+    [87]  Generic wireless motion sensor
+    [88]  Toyota TPMS
+    [89]  Ford TPMS
+    [90]  Renault TPMS
 
 * Disabled by default, use -R n or -G
 

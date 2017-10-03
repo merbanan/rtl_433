@@ -13,15 +13,15 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
     uint8_t unknown2;
     data_t *data;
 
-    if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0b01100000) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
+    if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0x60) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
         local_time_str(0, time_str);
 
-        address = bb[1][0] & 0b00011111;
+        address = bb[1][0] & 0x1f;
 
-        channel = ((bb[1][1] & 0b00110000) >> 4) + 1;
+        channel = ((bb[1][1] & 0x30) >> 4) + 1;
         // Always 0?
-        unknown1 = (bb[1][1] & 0b01000000) >> 6;
-        battery = bb[1][1] & 0b10000000;
+        unknown1 = (bb[1][1] & 0x40) >> 6;
+        battery = bb[1][1] & 0x80;
 
         // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
         // upper 4 bits of nibble 1 are reserved for other usages.
@@ -32,7 +32,7 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
         hum  = (bb[1][3] << 4 | bb[1][4] >> 4);
 
         // Always 0b1111?
-        unknown2 = (bb[1][3] & 0b11110000) >> 4;
+        unknown2 = (bb[1][3] & 0xf0) >> 4;
 
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, "Mebus/433",

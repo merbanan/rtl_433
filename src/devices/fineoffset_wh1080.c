@@ -318,6 +318,8 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     msg_type = 1; // WH1080/3080 Datetime msg
     } else if (br[0] == 0xff && (br[1] >> 4) == 0x07) {
     msg_type = 2; // WH3080 UV/Light msg
+    } else {
+        msg_type = -1;
     }
 
 
