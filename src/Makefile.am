@@ -30,6 +30,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/esperanza_ews.c \
                        devices/fineoffset.c \
                        devices/fineoffset_wh1080.c \
+                       devices/ft004b.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
                        devices/gt_wt_02.c \
