@@ -42,7 +42,7 @@
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
 		DECL(generic_temperature_sensor) \
-        DECL(wg_pb12v1) \
+		DECL(wg_pb12v1) \
 		DECL(acurite_txr) \
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \
@@ -77,6 +77,7 @@
 		DECL(maverick_et73x) \
 		DECL(rftech) \
 		DECL(lacrosse_TX141TH_Bv2) \
+		DECL(lacrosse_TX019T_Bv0) \
 		DECL(acurite_00275rm) \
 		DECL(lacrosse_tx35) \
 		DECL(lacrosse_tx29) \

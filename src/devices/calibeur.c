@@ -44,39 +44,39 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	float humidity;
 	bitrow_t *bb = bitbuffer->bb;
 
-	// Validate package (row [0] is empty due to sync bit)
-	if ((bitbuffer->bits_per_row[1] == 21)			// Dont waste time on a long/short package
-		&& (crc8(bb[1], 3, 0x80, 0) != 0)		// It should be odd parity
-		&& (memcmp(bb[1], bb[2], 3) == 0)	// We want at least two messages in a row
-	)
+	// Validate package
+	int r = bitbuffer_find_repeated_row( bitbuffer, 2, 21 );// We want at least two consistent messages
+	if ( r >= 0
+	     && bitbuffer->bits_per_row[r] == 21		// Dont waste time on a long/short package
+	     && crc8(bb[r], 3, 0x80, 0) != 0 )			// It should be odd parity
 	{
 		uint8_t bits;
 
-		bits  = ((bb[1][0] & 0x80) >> 7);	// [0]
-		bits |= ((bb[1][0] & 0x40) >> 5);	// [1]
-		bits |= ((bb[1][0] & 0x20) >> 3);	// [2]
-		bits |= ((bb[1][0] & 0x10) >> 1);	// [3]
-		bits |= ((bb[1][0] & 0x08) << 1);	// [4]
-		bits |= ((bb[1][0] & 0x04) << 3);	// [5]
+		bits  = ((bb[r][0] & 0x80) >> 7);	// [0]
+		bits |= ((bb[r][0] & 0x40) >> 5);	// [1]
+		bits |= ((bb[r][0] & 0x20) >> 3);	// [2]
+		bits |= ((bb[r][0] & 0x10) >> 1);	// [3]
+		bits |= ((bb[r][0] & 0x08) << 1);	// [4]
+		bits |= ((bb[r][0] & 0x04) << 3);	// [5]
 		ID = bits / 10;
 		temperature = (float)(bits % 10) / 10.0;
 
-		bits  = ((bb[1][0] & 0x02) << 3);	// [4]
-		bits |= ((bb[1][0] & 0x01) << 5);	// [5]
-		bits |= ((bb[1][1] & 0x80) >> 7);	// [0]
-		bits |= ((bb[1][1] & 0x40) >> 5);	// [1]
-		bits |= ((bb[1][1] & 0x20) >> 3);	// [2]
-		bits |= ((bb[1][1] & 0x10) >> 1);	// [3]
-		bits |= ((bb[1][1] & 0x08) << 3);	// [6]
+		bits  = ((bb[r][0] & 0x02) << 3);	// [4]
+		bits |= ((bb[r][0] & 0x01) << 5);	// [5]
+		bits |= ((bb[r][1] & 0x80) >> 7);	// [0]
+		bits |= ((bb[r][1] & 0x40) >> 5);	// [1]
+		bits |= ((bb[r][1] & 0x20) >> 3);	// [2]
+		bits |= ((bb[r][1] & 0x10) >> 1);	// [3]
+		bits |= ((bb[r][1] & 0x08) << 3);	// [6]
 		temperature += (float)bits - 41.0;
 
-		bits  = ((bb[1][1] & 0x02) << 4);	// [5]
-		bits |= ((bb[1][1] & 0x01) << 6);	// [6]
-		bits |= ((bb[1][2] & 0x80) >> 7);	// [0]
-		bits |= ((bb[1][2] & 0x40) >> 5);	// [1]
-		bits |= ((bb[1][2] & 0x20) >> 3);	// [2]
-		bits |= ((bb[1][2] & 0x10) >> 1);	// [3]
-		bits |= ((bb[1][2] & 0x08) << 1);	// [4]
+		bits  = ((bb[r][1] & 0x02) << 4);	// [5]
+		bits |= ((bb[r][1] & 0x01) << 6);	// [6]
+		bits |= ((bb[r][2] & 0x80) >> 7);	// [0]
+		bits |= ((bb[r][2] & 0x40) >> 5);	// [1]
+		bits |= ((bb[r][2] & 0x20) >> 3);	// [2]
+		bits |= ((bb[r][2] & 0x10) >> 1);	// [3]
+		bits |= ((bb[r][2] & 0x08) << 1);	// [4]
 		humidity = bits;
 
 		local_time_str(0, time_str);

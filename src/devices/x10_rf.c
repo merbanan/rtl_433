@@ -18,20 +18,20 @@ static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 	uint8_t arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x87};
 	uint8_t bKnownConstFlag = 1;
 
-	// Row [0] is sync pulse
 	// Validate package
-	if ((bitbuffer->bits_per_row[1] == 32)		// Dont waste time on a short package
-	// && (bb[1][0] == (uint8_t)(~bb[1][1]))		// Check integrity - apparently some chips may use both bytes..
-	 && (bb[1][2] == ((0xff & (~bb[1][3]))))		// Check integrity
+	int r = bitbuffer_find_repeated_row( bitbuffer, 1, 32 );// at least 1 32-bit row
+	if ( r >= 0 && (bitbuffer->bits_per_row[r] == 32)	// Dont waste time on a short/long package
+		 // && (bb[r][0] == (uint8_t)(~bb[r][1]))		// Check integrity - apparently some chips may use both bytes..
+		 && (bb[r][2] == ((0xff & (~bb[r][3]))))		// Check integrity
 	)
 	{
 		fprintf(stdout, "X10 RF:\n");
-		fprintf(stdout, "data    = %02X %02X %02X %02X", bb[1][0], bb[1][1], bb[1][2], bb[1][3]);
+		fprintf(stdout, "data    = %02X %02X %02X %02X", bb[r][0], bb[r][1], bb[r][2], bb[r][3]);
 
 		// For the CR12A X10 Remote, with the exception of the SCAN buttons, some bits are constant.
 		for (int8_t bIdx = 0; bIdx < 4; bIdx++)
 		{
-			uint8_t bTest = arrbKnownConstBitMask[bIdx] & bb[1][bIdx];  // Mask the appropriate bits
+			uint8_t bTest = arrbKnownConstBitMask[bIdx] & bb[r][bIdx];  // Mask the appropriate bits
 
 			if (bTest != arrbKnownConstBitValue[bIdx])  // If resulting bits are incorrectly set
 			{
@@ -46,10 +46,10 @@ static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 			uint8_t arrbHouseBits[4] = {0, 0, 0, 0};
 
 			// Extract House bits
-			arrbHouseBits[0] = (bb[1][0] & 0x80) >> 7;
-			arrbHouseBits[1] = (bb[1][0] & 0x40) >> 6;
-			arrbHouseBits[2] = (bb[1][0] & 0x20) >> 5;
-			arrbHouseBits[3] = (bb[1][0] & 0x10) >> 4;
+			arrbHouseBits[0] = (bb[r][0] & 0x80) >> 7;
+			arrbHouseBits[1] = (bb[r][0] & 0x40) >> 6;
+			arrbHouseBits[2] = (bb[r][0] & 0x20) >> 5;
+			arrbHouseBits[3] = (bb[r][0] & 0x10) >> 4;
 
 			// Convert bits into integer
 			bHouseCode   = (~(arrbHouseBits[0] ^ arrbHouseBits[1])  & 0x01) << 3;
@@ -58,14 +58,14 @@ static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 			bHouseCode  |=    arrbHouseBits[3]                      & 0x01;
 
 			// Extract and convert Unit bits to integer
-			bDeviceCode  = (bb[1][0] & 0x04) << 1;
-			bDeviceCode |= (bb[1][2] & 0x40) >> 4;
-			bDeviceCode |= (bb[1][2] & 0x08) >> 2;
-			bDeviceCode |= (bb[1][2] & 0x10) >> 4;
+			bDeviceCode  = (bb[r][0] & 0x04) << 1;
+			bDeviceCode |= (bb[r][2] & 0x40) >> 4;
+			bDeviceCode |= (bb[r][2] & 0x08) >> 2;
+			bDeviceCode |= (bb[r][2] & 0x10) >> 4;
 
 			fprintf(stdout, "\t%c:%d", bHouseCode + 'A', bDeviceCode + 1);
 
-			if ((bb[1][2] & 0x20) == 0x00)
+			if ((bb[r][2] & 0x20) == 0x00)
 			{
 				fprintf(stdout, " ON");
 			}

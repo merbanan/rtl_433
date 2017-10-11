@@ -13,7 +13,15 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
     uint8_t unknown2;
     data_t *data;
 
-    if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0x60) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
+    // Validate that we have sufficient data to (at least) execute the following tests.  This
+    // validator is not correct; its accessing the 6th and 13th rows without checking that they
+    // exist, and doesn't decode its own test data in rtl_433_test/test/mebus_te204nl...  The
+    // protocol seems to carry at least 48 (or more) bits per row (perhaps 56?), even though we're
+    // only using the first 40 here.  However, ensure at least that amount exists, to avoid some
+    // false-positives with other protocols.  This needs serious work; disabled by default, below.
+    if ( bitbuffer->num_rows >= 2
+	 && bitbuffer->bits_per_row[1] >= 40
+	 && (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0x60) /* && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4] */)){
         local_time_str(0, time_str);
 
         address = bb[1][0] & 0x1f;
@@ -59,6 +67,6 @@ r_device mebus433 = {
     .long_limit     = 2400,
     .reset_limit    = 6000,
     .json_callback  = &mebus433_callback,
-    .disabled       = 0,
+    .disabled       = 1,
     .demod_arg      = 0,
 };

@@ -81,7 +81,19 @@
  * only one startbit, and (2) bitbuffer_add_row() not adding rows beyond BITBUF_ROWS. This is
  * OK because the data is clearly processable and the unique pattern minimizes the chance of
  * confusion with other sensors, particularly Bresser 3CH.
- *
+ * 
+ * 2017-10-12 This waste of rows is no longer a problem.  Even in the face of multiple start-bits,
+ * the underlying bitbuffer_add_row will not advance past an empty (unused) row.  Also -- the defect
+ * wherein the first row [0] was *always* skipped by bitbuffer_add_row has been corrected.  Now, we
+ * see:
+ * 
+ *  [00] {40} 87 02 67 39 f6
+ *  [01] {40} 87 02 67 39 f6
+ *  [02] {40} 87 02 67 39 f6
+ *  [03] {40} 87 02 67 39 f6
+ *  [04] {40} 87 02 67 39 f6
+ *  ...
+ * 
  * Developer's comment 2: with unknown CRC (see above) the obvious way of checking the data
  * integrity is making use of the 12 packet repetition. In principle, transmission errors are
  * be relatively rare, thus the most frequent packet (statistical mode) should represent
@@ -90,7 +102,30 @@
  * count is small, no sophisticated mode algorithm is necessary; a simple array of <data,count>
  * structures is sufficient. The added bonus is that relative count enables us to determine
  * the quality of radio transmission.
- *
+ * 
+ * Developer's comment 3: The TX019_Bv0 sends 15 x 37 bits, in the same protocol as the TX141.  The
+ * last (37th) bit is perhaps a stop bit indicating the end of the final data bit period.  Thus, the
+ * data packet is 1 nibble shorter, but doesn't include the 8-bit humidity field.  I am unsure what
+ * data the extra un-accounted for nibble contains.  Also, the battery level field doesn't appear to
+ * be valid.
+ *                            iiiiiiii sssstttt tttttttt ???????? ?????
+ * [00] {37} 0b 92 e9 dd c0 : 00001011 10010010 11101001 11011101 11000  : After battery replaced
+ * [00] {37} 0b 92 ed d1 c0 : 00001011 10010010 11101101 11010001 11000  : Subsequent transmission
+ * [00] {37} 0b 92 e9 dd c0 : 00001011 10010010 11101001 11011101 11000  : ''
+ * 
+ * [00] {37} 0b 92 e9 dd c0 : 00001011 10010010 11101001 11011101 11000  : Battery replaced again (not long enough)
+ * [00] {37} 0b 92 e9 dd c0 : 00001011 10010010 11101001 11011101 11000  : Subsequent transmission
+ * 
+ * [00] {37} 75 92 ea 49 c0 : 01110101 10010010 11101010 01001001 11000  : After battery replaced
+ * [00] {37} 75 92 eb 4a c0 : 01110101 10010010 11101011 01001010 11000  : Subsequent transmission
+ * 
+ * [00] {37} 75 92 e9 48 c0 : 01110101 10010010 11101001 01001000 11000  : Spontaneous transmission
+ * [00] {37} 75 d2 e9 88 c0 : 01110101 11010010 11101001 10001000 11000  : Test button pushed immediatly
+ *                                      ^- test button
+ * 
+ * [00] {37} 9d 52 f2 39 b0 : 10011101 01010010 11110010 00111001 10110  : Put in bad batteries
+ *                                     ^- battery is bad (opposite polarity vs. TX141TH!)
+ * 
  * Copyright (C) 2017 Robert Fraczkiewicz   (aromring@gmail.com)
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,80 +137,27 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define LACROSSE_TX141TH_BITLEN 40
+#define LACROSSE_TX141TH_BITLEN 40 // Temp + Hygro
+#define LACROSSE_TX019T_BITLEN 37 // Temp only
 #define LACROSSE_TX141TH_BYTELEN 5  // = LACROSSE_TX141TH_BITLEN / 8
-#define LACROSSE_TX141TH_PACKETCOUNT 12
 
-typedef struct {
-    uint32_t data;  // First 4 data bytes compressed into 32-bit integer
-    uint8_t count;  // Count
-} data_and_count;
-
-static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
+static int lacrosse_tx_general_callback(bitbuffer_t *bitbuffer, int version ) {
     bitrow_t *bb = bitbuffer->bb;
-    data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    int i,j,k,nbytes,npacket,kmax;
-    uint8_t id=0,status=0,battery_low=0,test=0,humidity=0,maxcount;
+    uint8_t id=0,status=0,battery_low=0,test=0,humidity=0;
     uint16_t temp_raw=0;
     float temp_f,temp_c=0.0;
-    data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT] = {0};
 
-    if (debug_output) {
-        bitbuffer_print(bitbuffer);
-    }
-
-    npacket=0; // Number of unique packets
-    for(i=0; i<BITBUF_ROWS; ++i) {
-        j=bitbuffer->bits_per_row[i];
-        if(j>=LACROSSE_TX141TH_BITLEN) {
-            nbytes=j/8;
-            for(j=0;j<nbytes;j+=LACROSSE_TX141TH_BYTELEN) {
-                uint32_t *d=(uint32_t *)(bb[i]+j);
-                uint8_t not_found=1;
-                for(k=0;k<npacket;++k) {
-                    if(*d==dnc[k].data) {
-                        ++(dnc[k].count);
-                        not_found=0;
-                        break;
-                    }
-                }
-                if(not_found) {
-                    dnc[npacket].data=*d;
-                    dnc[npacket].count=1;
-                    if(npacket+1<LACROSSE_TX141TH_PACKETCOUNT) ++npacket;
-                }
-            }
-        }
-    }
-
-    if (debug_output) {
-        fprintf(stderr, "%d unique packet(s)\n", npacket);
-        for(k=0;k<npacket;++k) {
-            fprintf(stderr, "%08x \t %d \n", dnc[k].data,dnc[k].count);
-        }
-    }
-
-    // Find the most frequent data packet, if necessary
-    kmax=0;
-    maxcount=0;
-    if(npacket>1) {
-        for(k=0;k<npacket;++k) {
-            if(dnc[k].count>maxcount) {
-                maxcount=dnc[k].count;
-                kmax=k;
-            }
-        }
-    }
-
-    // reduce false positives, require at least 5 out of 12 repeats.
-    if (dnc[kmax].count < 5) {
+    // reduce false positives, require at least 5 out of 12/15 repeats.  Locates the
+    // most frequent matching row(s), meeting the min_row and min_bit thresholds.
+    int bitlength = version == 141 ? LACROSSE_TX141TH_BITLEN : LACROSSE_TX019T_BITLEN;
+    int r = bitbuffer_find_repeated_row( bitbuffer, 5, bitlength );
+    if ( r < 0 || bitbuffer->bits_per_row[r] > bitlength+1 ) // allow an extra stop-bit
         return 0;
-    }
 
-    // Unpack the data bytes back to eliminate dependence on the platform endiannes!
-    uint8_t *bytes=(uint8_t*)(&(dnc[kmax].data));
+    // Unpack the data bytes
+    uint8_t *bytes = bitbuffer->bb[r];
     id=bytes[0];
     status=bytes[1];
     battery_low=(status & 0x80) >> 7;
@@ -183,32 +165,50 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     temp_raw=((status & 0x0F) << 8) + bytes[2];
     temp_f = 9.0*((float)temp_raw)/50.0-58.0; // Temperature in F
     temp_c = ((float)temp_raw)/10.0-50.0; // Temperature in C
-    humidity = bytes[3];
+    if ( bitbuffer->bits_per_row[r] >= LACROSSE_TX141TH_BITLEN )
+        humidity = bytes[3];
 
-    if (0==id || 0==humidity || humidity > 100 || temp_f < -40.0 || temp_f > 140.0) {
+    if (0==id || ( 141 == version && 0 == humidity ) || humidity > 100 || temp_f < -40.0 || temp_f > 140.0) {
         if (debug_output) {
             fprintf(stderr, "LaCrosse TX141TH-Bv2 data error\n");
             fprintf(stderr, "id: %i, humidity:%i, temp_f:%f\n", id, humidity, temp_f);
         }
-        return 0;
+	return 0;
     }
 
-    data = data_make("time",    "Date and time", DATA_STRING,    time_str,
-                     "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
-                     "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                     "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-                     "temperature_C", "Temperature in deg C", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                     "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                     "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
-                     "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
-                      NULL);
+    if ( debug_output )
+        fprintf( stdout, "LaCrosse %s: data    = %02X %02X %02X %02X %2X; raw temp: %d\n",
+		 141 == version ? "TX141TH-Bv2" : "TX019T-Bv0",
+                 bb[r][0], bb[r][1], bb[r][2], bb[r][3], bb[r][4], temp_raw );
+
+    data_t *data;
+    if ( 141 == version )
+        data = data_make("time",        "Date and time",        DATA_STRING, time_str,
+                         "model",       "",                     DATA_STRING, "LaCrosse TX141TH-Bv2 sensor",
+                         "id",          "Sensor ID",            DATA_FORMAT, "%02x", DATA_INT, id,
+                         "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
+                         "temperature_C","Temperature in deg C",DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                         "humidity",    "Humidity",             DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                         "battery",     "Battery",              DATA_STRING, battery_low ? "LOW" : "OK",
+                         "test",        "Test?",                DATA_STRING, test ? "Yes" : "No",
+                         NULL);
+    else
+        data = data_make("time",        "Date and time",        DATA_STRING, time_str,
+                         "model",       "",                     DATA_STRING, "LaCrosse TX019T-Bv0 sensor",
+                         "id",          "Sensor ID",            DATA_FORMAT, "%02x", DATA_INT, id,
+                         "temperature", "Temperature in deg F", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
+                         "temperature_C","Temperature in deg C",DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                         "battery",     "Battery",              DATA_STRING, battery_low ? "OK" : "LOW", // reverse of TX141
+                         "test",        "Test?",                DATA_STRING, test ? "Yes" : "No",
+                         NULL);
+
     data_acquired_handler(data);
 
     return 1;
 
 }
 
-static char *output_fields[] = {
+static char *output_fields_TX141TH_Bv2[] = {
     "time",
     "model",
     "id",
@@ -220,14 +220,45 @@ static char *output_fields[] = {
     NULL
 };
 
+static char *output_fields_TX019TH_Bv0[] = {
+    "time",
+    "model",
+    "id",
+    "temperature",
+    "temperature_C",
+    "battery",
+    "test",
+    NULL
+};
+
+static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
+    return lacrosse_tx_general_callback(bitbuffer, 141 );
+}
+
+static int lacrosse_tx019t_bv0_callback(bitbuffer_t *bitbuffer) {
+    return lacrosse_tx_general_callback(bitbuffer, 19 );
+}
+
 r_device lacrosse_TX141TH_Bv2 = {
     .name          = "LaCrosse TX141TH-Bv2 sensor",
     .modulation    = OOK_PULSE_PWM_TERNARY,
     .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
     .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
-    .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
+    .reset_limit   = 2000,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
     .json_callback = &lacrosse_tx141th_bv2_callback,
     .disabled      = 0,
     .demod_arg     = 2,       // Longest pulses are startbits
-    .fields        = output_fields,
+    .fields        = output_fields_TX141TH_Bv2,
+};
+
+r_device lacrosse_TX019T_Bv0 = {
+    .name          = "LaCrosse TX019T-Bv0 sensor",
+    .modulation    = OOK_PULSE_PWM_TERNARY,
+    .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
+    .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
+    .reset_limit   = 2000,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
+    .json_callback = &lacrosse_tx019t_bv0_callback,
+    .disabled      = 0,
+    .demod_arg     = 2,       // Longest pulses are startbits
+    .fields        = output_fields_TX019TH_Bv0,
 };
