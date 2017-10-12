@@ -1,4 +1,5 @@
 #include "rtl_433.h"
+#include "data.h"
 #include "util.h"
 
 /*
@@ -26,6 +27,7 @@ static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuff
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     int i;
     uint8_t nb[3] = {0};
+    data_t *data;
 
 #if 0
     {
@@ -136,30 +138,43 @@ static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuff
         if (! (on ^ off ) )
             return 0;  /* Pressing simultaneously ON and OFF key is not useful either */
     }
-
+/*
     char key = 0;
     if      (control_key[0]) key = 'A';
     else if (control_key[1]) key = 'B';
     else if (control_key[2]) key = 'C';
     else if (control_key[3]) key = 'D';
     else if (control_key[4]) key = 'E';
-    else return 0; /* None of the keys has been pressed and we still received a message.
-                      Skip it. It happens sometimes as the last code repetition */
+    else return 0; 
+ 
+    None of the keys has been pressed and we still received a message.
+    Skip it. It happens sometimes as the last code repetition */
 
     {
-        /* @todo: remove timestamp printing as soon as the controller takes this task */
         char time_str[LOCAL_TIME_BUFLEN];
         local_time_str(0, time_str);
-        fprintf(stdout, "%s Brennenstuhl RCS 2044: system code: %d%d%d%d%d. key: %c, state: %s\n",
-            time_str,
-            system_code[0], system_code[1], system_code[2], system_code[3], system_code[4],
-            key,
-            on ? "ON" : ( off ? "OFF" : "BOTH" ) /* "BOTH" is excluded above, but leave it here for debug purposes */
-        );
-    }
+         data = data_make(
+                "time",          "Time",        DATA_STRING, time_str,
+                "model",         "Model",       DATA_STRING, "Brennenstuhl RCS 2044",
+                "type",         "Type",         DATA_STRING, "Remote Control Set",
+		"id",		"id",		DATA_INT, system_code,
+		"key",		"key",		DATA_STRING, control_key[0] ? "A" : (control_key[1] ? "B" : (control_key[2] ? "C" : (control_key[3] ? "D" : "E" ))), 
+	        "state",	"state",        DATA_STRING, (on ? "ON" : (off ? "OFF" : "BOTH")),  
+                NULL);
+        data_acquired_handler(data);
+        return 1;
 
-    return 1;
+	static char *output_fields[] = {
+        	"time",
+	        "model",
+	        "type",
+	        "state", 
+	        NULL
+	};
+	}
 }
+
+
 
 static int brennenstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
 {
@@ -168,6 +183,8 @@ static int brennenstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
         counter += brennenstuhl_rcs_2044_process_row(row, bitbuffer);
     return counter;
 }
+
+
 
 r_device brennenstuhl_rcs_2044 = {
     .name          = "Brennenstuhl RCS 2044",
