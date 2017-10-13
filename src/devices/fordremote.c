@@ -1,14 +1,14 @@
 
-/* Honda Car Key
+/* Ford Car Key
  *
  * Identifies event, but does not attempt to decrypt rolling code...
  *
- * Copyright (C) 2015 Tommy Vestermark
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
-
+ *           dd dd dd 
  * [00] {60} 74 28 c1 06 a4 1a 05 20
  * [00] {60} 74 28 c1 06 a4 1a 05 20
  * [00] {60} 74 28 c1 06 a4 1a 05 20
@@ -29,11 +29,9 @@ static int fordremote_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
     	local_time_str(0, time_str);
-	int i,j,k,nbytes,npacket,kmax;
+	int i;
 	uint8_t id=0;
-    	uint32_t device_id =0 , car ;
-	float temp_f=0.0;
-	int r;
+    	uint32_t device_id =0;
 
 	unsigned bits = bitbuffer->bits_per_row[0];
 
