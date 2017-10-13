@@ -13,6 +13,11 @@
 
 static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
+
+	uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x87, 0x87};
+	uint8_t arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x87};
+	uint8_t bKnownConstFlag = 1;
+
 	// Row [0] is sync pulse
 	// Validate package
 	if ((bitbuffer->bits_per_row[1] == 32)		// Dont waste time on a short package
@@ -21,8 +26,56 @@ static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 	)
 	{
 		fprintf(stdout, "X10 RF:\n");
-		fprintf(stdout, "data    = %02X %02X %02X %02X\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3]);
+		fprintf(stdout, "data    = %02X %02X %02X %02X", bb[1][0], bb[1][1], bb[1][2], bb[1][3]);
 
+		// For the CR12A X10 Remote, with the exception of the SCAN buttons, some bits are constant.
+		for (int8_t bIdx = 0; bIdx < 4; bIdx++)
+		{
+			uint8_t bTest = arrbKnownConstBitMask[bIdx] & bb[1][bIdx];  // Mask the appropriate bits
+
+			if (bTest != arrbKnownConstBitValue[bIdx])  // If resulting bits are incorrectly set
+			{
+				bKnownConstFlag = 0;  // Set flag to 0, so decoding doesn't occur
+			}
+		}
+
+		if (bKnownConstFlag == 1)  // If constant bits are appropriately set
+		{
+			uint8_t bHouseCode  = 0;
+			uint8_t bDeviceCode = 0;
+			uint8_t arrbHouseBits[4] = {0, 0, 0, 0};
+
+			// Extract House bits
+			arrbHouseBits[0] = (bb[1][0] & 0x80) >> 7;
+			arrbHouseBits[1] = (bb[1][0] & 0x40) >> 6;
+			arrbHouseBits[2] = (bb[1][0] & 0x20) >> 5;
+			arrbHouseBits[3] = (bb[1][0] & 0x10) >> 4;
+
+			// Convert bits into integer
+			bHouseCode   = (~(arrbHouseBits[0] ^ arrbHouseBits[1])  & 0x01) << 3;
+			bHouseCode  |= ( ~arrbHouseBits[1]                      & 0x01) << 2;
+			bHouseCode  |= ( (arrbHouseBits[1] ^ arrbHouseBits[2])  & 0x01) << 1;
+			bHouseCode  |=    arrbHouseBits[3]                      & 0x01;
+
+			// Extract and convert Unit bits to integer
+			bDeviceCode  = (bb[1][0] & 0x04) << 1;
+			bDeviceCode |= (bb[1][2] & 0x40) >> 4;
+			bDeviceCode |= (bb[1][2] & 0x08) >> 2;
+			bDeviceCode |= (bb[1][2] & 0x10) >> 4;
+
+			fprintf(stdout, "\t%c:%d", bHouseCode + 'A', bDeviceCode + 1);
+
+			if ((bb[1][2] & 0x20) == 0x00)
+			{
+				fprintf(stdout, " ON");
+			}
+			else
+			{
+				fprintf(stdout, " OFF");
+			}
+		}
+
+		fprintf(stdout, "\n");
 		return 1;
 	}
 	return 0;
