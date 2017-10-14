@@ -175,6 +175,9 @@ Supported device protocols:
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
+    [91]  Infactory
+    [92]  Ft004b	
+    [93]  Ford car remote
 
 * Disabled by default, use -R n or -G
 

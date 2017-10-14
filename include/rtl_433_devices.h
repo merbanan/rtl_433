@@ -95,7 +95,9 @@
 		DECL(tpms_ford) \
 		DECL(tpms_renault) \
 		DECL(infactory) \
-		DECL(ft004b)
+		DECL(ft004b) \
+		DECL(fordremote)
+
 
 typedef struct {
 	char name[256];
