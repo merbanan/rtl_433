@@ -605,7 +605,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     if (do_exit || do_exit_async)
         return;
 
-    if ((bytes_to_read > 0) && (bytes_to_read < len)) {
+    if ((bytes_to_read > 0) && (bytes_to_read <= len)) {
         len = bytes_to_read;
         do_exit = 1;
         rtlsdr_cancel_async(dev);
