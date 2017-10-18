@@ -756,11 +756,11 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 	}
     if (duration > 0 && rawtime >= stop_time) {
         do_exit_async = do_exit = 1;
-        fprintf(stderr, "Time expired, exiting!\n");
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
         rtlsdr_cancel_async(dev);
+        fprintf(stderr, "Time expired, exiting!\n");
     }
 }
 
