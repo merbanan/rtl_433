@@ -32,7 +32,7 @@
 
 
 static int do_exit = 0;
-static int do_exit_async = 0, frequencies = 0, events = 0;
+static int do_exit_async = 0, frequencies = 0;
 uint32_t frequency[MAX_PROTOCOLS];
 time_t rawtime_old;
 int duration = 0;
@@ -746,17 +746,14 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
         time_t rawtime;
         time(&rawtime);
-    if (frequencies > 1) {
-        if (difftime(rawtime, rawtime_old) > demod->hop_time || events >= DEFAULT_HOP_EVENTS) {
-            rawtime_old = rawtime;
-            events = 0;
-            do_exit_async = 1;
+	if (frequencies > 1 && difftime(rawtime, rawtime_old) > demod->hop_time) {
+	  rawtime_old = rawtime;
+	  do_exit_async = 1;
 #ifndef _WIN32
-            alarm(0); // cancel the watchdog timer
+	  alarm(0); // cancel the watchdog timer
 #endif
-            rtlsdr_cancel_async(dev);
-        }
-    }
+	  rtlsdr_cancel_async(dev);
+	}
     if (duration > 0 && rawtime >= stop_time) {
         do_exit_async = do_exit = 1;
         fprintf(stderr, "Time expired, exiting!\n");
@@ -1313,8 +1310,7 @@ int main(int argc, char **argv) {
             alarm(0); // cancel the watchdog timer
 #endif
             do_exit_async = 0;
-            frequency_current++;
-            if (frequency_current > frequencies - 1) frequency_current = 0;
+            frequency_current = (frequency_current + 1) % frequencies;
         }
     }
 
