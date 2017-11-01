@@ -96,7 +96,8 @@
 		DECL(tpms_renault) \
 		DECL(infactory) \
 		DECL(ft004b) \
-		DECL(fordremote)
+		DECL(fordremote) \
+		DECL(philips)
 
 
 typedef struct {

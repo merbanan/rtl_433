@@ -105,6 +105,7 @@ add_executable(rtl_433
 	devices/tpms_renault.c
 	devices/infactory.c
 	devices/fordremote.c
+	devices/philips.c
 
 )
 
