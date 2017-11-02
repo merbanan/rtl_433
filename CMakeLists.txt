@@ -36,6 +36,8 @@ if(CMAKE_COMPILER_IS_GNUCC AND NOT WIN32)
     ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-g3 -O0)
     ADD_DEFINITIONS(-std=gnu99)
+    # for strdup
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
 endif()
