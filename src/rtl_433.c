@@ -49,6 +49,9 @@ int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
 int overwrite_mode = 0;
+int have_opt_i = 0;
+char *dev_serial_number;
+int device_specified = 0;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -99,6 +102,7 @@ void usage(r_device *devices) {
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
             "Usage:\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
+            "\t[-i <RTL-SDR USB device serial number (can be set with rtl_eeprom -s)>]\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
@@ -909,11 +913,15 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:F:C:T:UWGy:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:i:f:H:g:s:b:n:SR:F:C:T:UWGy:")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
-                have_opt_d = dev_index > -1;
+                have_opt_d = device_specified = dev_index > -1;
+                break;
+            case 'i':
+                have_opt_i = device_specified = 1;
+                dev_serial_number = optarg;
                 break;
             case 'f':
                 if (frequencies < MAX_PROTOCOLS) frequency[frequencies++] = (uint32_t) atof(optarg);
@@ -1096,16 +1104,24 @@ int main(int argc, char **argv) {
     }
 
     if (!quiet_mode) fprintf(stderr, "Found %d device(s)\n\n", device_count);
-    for (i = have_opt_d ? dev_index : 0;
-         //cast quiets -Wsign-compare
-         i < (have_opt_d ? (unsigned)dev_index + 1 : device_count);
-         i++) {
-        if (!quiet_mode) {
-            rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
-            fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
-                    i, vendor, product, serial);
+    if (have_opt_i) {
+        dev_index = rtlsdr_get_index_by_serial(dev_serial_number);
+        if(dev_index < 0) {
+            if(!quiet_mode) fprintf(stderr, "Could not find device with serial #:%s (err %d)",
+                                    dev_serial_number, dev_index);
+            exit(1);
         }
+    }
+    for (i = device_specified ? dev_index : 0;
+         //cast quiets -Wsign-compare; if dev_index were < 0, would have exited above
+         i < (device_specified ? (unsigned)dev_index + 1 : device_count);
+         i++) {
+        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+        
+        if (!quiet_mode) fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
+                                 i, vendor, product, serial);
+
         r = rtlsdr_open(&dev, i);
         if (r < 0) {
             if (!quiet_mode) fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n",
