@@ -57,7 +57,7 @@ typedef enum  {
 } conversion_mode_t;
 static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
-int num_r_devices = 0;
+uint16_t num_r_devices = 0;
 
 struct dm_state {
     FILE *out_file;
@@ -84,7 +84,7 @@ struct dm_state {
 
 
     /* Protocol states */
-    int r_dev_num;
+    uint16_t r_dev_num;
     struct protocol_state *r_devs[MAX_PROTOCOLS];
 
     pulse_data_t    pulse_data;
@@ -875,14 +875,16 @@ int main(int argc, char **argv) {
     FILE *in_file;
     int n_read;
     int r = 0, opt;
-    int i, gain = 0;
+    int gain = 0;
+    uint32_t i = 0;
     int sync_mode = 0;
     int ppm_error = 0;
     struct dm_state* demod;
-    uint32_t dev_index = 0;
+    int dev_index = 0;
+    int have_opt_d = 0;
     int frequency_current = 0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
-    int device_count;
+    uint16_t device_count;
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
@@ -911,6 +913,7 @@ int main(int argc, char **argv) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
+                have_opt_d = dev_index > -1;
                 break;
             case 'f':
                 if (frequencies < MAX_PROTOCOLS) frequency[frequencies++] = (uint32_t) atof(optarg);
@@ -1092,23 +1095,32 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
-    if (!quiet_mode) {
-        fprintf(stderr, "Found %d device(s):\n", device_count);
-        for (i = 0; i < device_count; i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+    if (!quiet_mode) fprintf(stderr, "Found %d device(s)\n\n", device_count);
+    for (i = have_opt_d ? dev_index : 0;
+         //cast quiets -Wsign-compare
+         i < (have_opt_d ? (unsigned)dev_index + 1 : device_count);
+         i++) {
+        if (!quiet_mode) {
+            rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+
+            fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
+                    i, vendor, product, serial);
         }
-        fprintf(stderr, "\n");
-
-        fprintf(stderr, "Using device %d: %s\n",
-            dev_index, rtlsdr_get_device_name(dev_index));
+        r = rtlsdr_open(&dev, i);
+        if (r < 0) {
+            if (!quiet_mode) fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n",
+                                     i);
+        } else {
+            if (!quiet_mode) fprintf(stderr, "Using device %d: %s\n",
+                                     i, rtlsdr_get_device_name(i));
+            break;
+        }
     }
-
-    r = rtlsdr_open(&dev, dev_index);
-    if (r < 0) {
-        fprintf(stderr, "Failed to open rtlsdr device #%d.\n", dev_index);
+    if(r < 0) {
+        if(!quiet_mode) fprintf(stderr, "Unable to open a device\n");
         exit(1);
     }
+
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
