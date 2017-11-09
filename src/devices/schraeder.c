@@ -109,14 +109,14 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 	uint flags;
 	char flags_str[9];
 	int pressure;		// mbar
-	int temperature;	// Fahrenheit
+	int temperature;	// degree Fahrenheit
 	int checksum;
 
-	/* Reject wrong amount of bits */
-	if ( bitbuffer->bits_per_row[0] != 120)
+	/* Check for incorrect number of bits received */
+	if (bitbuffer->bits_per_row[0] != 120)
 		return 0;
 		
-	/* shift the buffer 40 bits to remove the sync bits */
+	/* Discard the first 40 bits */
 	bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
 
 	/* Calculate the checksum */
@@ -127,14 +127,17 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 
 	local_time_str(0, time_str);
 
-	/* Get serial number id */
+	/* Get sensor id */
 	serial_id = (b[4] << 16) | (b[5] << 8) | b[6];
 	sprintf(id_str, "%06X", serial_id);
 	
 	flags = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 	sprintf(flags_str, "%08x", flags);
 
+	/* Get pressure value */
 	pressure = b[7] * 25;
+	
+	/* Get temperature value */
 	temperature = b[8];
 
 	if (debug_output >= 1) {
@@ -150,7 +153,7 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 					"flags", "", DATA_STRING, flags_str,
  					"id", "ID", DATA_STRING, id_str,
 					"pressure_bar",  "Pressure",    DATA_FORMAT, "%.03f bar", DATA_DOUBLE, ((double)pressure)/1000.0,
-					"temperature_C", "Temperature", DATA_FORMAT, "%.0f C", DATA_DOUBLE, fahrenheit2celsius((double)temperature),
+					"temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature,
 					"mic", "Integrity", DATA_STRING, "CHECKSUM",
 					NULL);
 
@@ -166,6 +169,18 @@ static char *output_fields[] = {
 	"flags",
 	"pressure_bar",
 	"temperature_C",
+	"mic",
+	NULL
+};
+
+static char *output_fields_EG53MA4[] = {
+	"time",
+	"model",
+	"type",
+	"id",
+	"flags",
+	"pressure_bar",
+	"temperature_F",
 	"mic",
 	NULL
 };
@@ -189,5 +204,5 @@ r_device schrader_EG53MA4 = {
 	.reset_limit    = 236,
 	.json_callback	= &schrader_EG53MA4_callback,
 	.disabled		= 0,
-	.fields			= output_fields,
+	.fields			= output_fields_EG53MA4,
 };
