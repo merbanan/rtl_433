@@ -41,9 +41,9 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 	int temperature; // deg C
 
 	/* Reject wrong amount of bits */
-	if ( bitbuffer->bits_per_row[0] != 68)
+	if (bitbuffer->bits_per_row[0] != 68)
 		return 0;
-	
+
 	/* shift the buffer 4 bits to remove the sync bits */
 	bitbuffer_extract_bytes(bitbuffer, 0, 4, b, 64);
 
@@ -115,7 +115,7 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 	/* Check for incorrect number of bits received */
 	if (bitbuffer->bits_per_row[0] != 120)
 		return 0;
-		
+	
 	/* Discard the first 40 bits */
 	bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
 
