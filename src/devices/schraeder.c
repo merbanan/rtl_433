@@ -121,9 +121,9 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 
 	/* Calculate the checksum */
 	checksum = (b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]) & 0xff; 
-    if (checksum != b[9]) {
-        return 0;
-    }
+	if (checksum != b[9]) {
+	    return 0;
+	}
 
 	local_time_str(0, time_str);
 
@@ -151,7 +151,7 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 					"model", "", DATA_STRING, "Schrader Electronics EG53MA4",
 					"type", "", DATA_STRING, "TPMS",
 					"flags", "", DATA_STRING, flags_str,
- 					"id", "ID", DATA_STRING, id_str,
+					"id", "ID", DATA_STRING, id_str,
 					"pressure_bar",  "Pressure",    DATA_FORMAT, "%.03f bar", DATA_DOUBLE, ((double)pressure)/1000.0,
 					"temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature,
 					"mic", "Integrity", DATA_STRING, "CHECKSUM",
