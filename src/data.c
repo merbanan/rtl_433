@@ -382,14 +382,16 @@ static void print_json_data(data_printer_context_t *printer_ctx, data_t *data, c
 }
 
 static void print_json_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file) {
-	fprintf(file, "\"");
+    int should_quote = strcmp("true", str) && strcmp("false", str);
+
+	if(should_quote) fprintf(file, "\"");
 	while (*str) {
 		if (*str == '"')
 			fputc('\\', file);
 		fputc(*str, file);
 		++str;
 	}
-	fprintf(file, "\"");
+	if(should_quote) fprintf(file, "\"");
 }
 
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
