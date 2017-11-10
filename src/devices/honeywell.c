@@ -14,20 +14,38 @@
 * E: 8bit Event, where 0x80 = Open/Close, 0x04 = Heartbeat / or id
 * S: 16bit CRC
 *
+* additional help from https://github.com/jhaines0/HoneywellSecurity/blob/18a4ac82e79cca532b1eadb33327d49a73ce7df1/rpi/digitalDecoder.cpp
 */
 
 #include "rtl_433.h"
 #include "pulse_demod.h"
 #include "util.h"
 
+#define DEVICE_NAME "Honeywell/Ademco Portal/Motion Sensor"
+
+static uint8_t motion_detector_count = 0;
+static uint32_t motion_detectors[0xFF];
+
+static int is_motion_detector(uint32_t id) {
+    for(uint8_t i = 0; i < motion_detector_count; i++) {
+        if(motion_detectors[i] == id) return 1;
+    }
+    return 0;
+}
+static void add_motion_detector(int id) {
+    if(!is_motion_detector(id)) motion_detectors[motion_detector_count++] = id;
+}
+
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     const uint8_t *bb;
-    int channel;
-    int device_id;
-    int event;
-    int state;
-    int heartbeat;
+    uint8_t channel;
+    uint32_t device_id;
+    uint8_t event;
+    uint8_t state;
+    uint8_t heartbeat;
+    uint8_t tamper;
+    uint8_t low_batt;
     uint16_t crc_calculated;
     uint16_t crc;
 
@@ -46,20 +64,28 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
 
     channel = bb[2] >> 4;
     device_id = ((bb[2] & 0xf) << 16) | (bb[3] << 8)| bb[4];
+
     event = bb[5];
-    state = (event & 0x80) >> 7;
-    heartbeat = (event & 0x04) >> 2;
+
+    if(event == 0x20) add_motion_detector(device_id);
+
+    state = event & (is_motion_detector(device_id) ?  0x80 : 0x20);
+    heartbeat = (event & 0x04);
+    low_batt = (event & 0x02);
+    tamper = (event & 0x40);
 
     local_time_str(0, time_str);
 
     data_t *data = data_make(
           "time",     "", DATA_STRING, time_str,
-          "model", "", DATA_STRING, "Honeywell Door/Window Sensor",
-          "id",       "", DATA_FORMAT, "%05x", DATA_INT, device_id,
-          "channel","", DATA_INT, channel,
-          "event","", DATA_FORMAT, "%02x", DATA_INT, event,
-          "state",    "", DATA_STRING, state ? "open" : "closed",
-          "heartbeat" , "", DATA_STRING, heartbeat ? "yes" : "no",
+          "model", "", DATA_STRING, DEVICE_NAME,
+          "id", "ID", DATA_FORMAT, "%05d", DATA_INT, device_id,
+          "channel", "Channel", DATA_INT, channel,
+          "event", "Event", DATA_FORMAT, "%02x", DATA_INT, event,
+          "triggered", "Triggered", DATA_STRING, state ? "true" : "false",
+          "heartbeat" , "Hearbeat", DATA_STRING, heartbeat ? "true" : "false",
+          "battery","Low Battery", DATA_STRING, low_batt ? "true" : "false",
+          "tamper","Tampering Detected", DATA_STRING, tamper ? "true" : "false",
           NULL);
 
     data_acquired_handler(data);
@@ -72,13 +98,15 @@ static char *output_fields[] = {
     "id",
     "channel",
     "event",
-    "state",
+    "triggered",
     "heartbeat",
+    "battery",
+    "tamper",
     NULL
 };
 
 r_device honeywell = {
-    .name                   = "Honeywell Door/Window Sensor",
+    .name                   = DEVICE_NAME,
     .modulation             = OOK_PULSE_MANCHESTER_ZEROBIT,
     .short_limit    =   39 * 4,
     .long_limit             = 0,
