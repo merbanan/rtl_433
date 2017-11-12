@@ -33,7 +33,7 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	uint8_t b[8];
-	uint32_t serial_id;
+	int serial_id;
 	char id_str[9];
 	int flags;
 	char flags_str[3];
@@ -104,9 +104,9 @@ static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	uint8_t b[10];
-	uint32_t serial_id;
+	int serial_id;
 	char id_str[9];
-	uint flags;
+	int flags;
 	char flags_str[9];
 	int pressure;		// mbar
 	int temperature;	// degree Fahrenheit
