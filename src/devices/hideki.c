@@ -118,7 +118,7 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
 }
 
 PWM_Precise_Parameters hideki_ts04_clock_bits_parameters = {
-    .pulse_tolerance    = 60,
+    .pulse_tolerance    = 240, // us
     .pulse_sync_width    = 0,    // No sync bit used
 };
 

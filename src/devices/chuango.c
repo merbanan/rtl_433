@@ -85,7 +85,7 @@ static char *output_fields[] = {
 };
 
 PWM_Precise_Parameters pwm_precise_parameters = {
-	.pulse_tolerance	= 40,
+	.pulse_tolerance	= 160, // us
 	.pulse_sync_width	= 0,	// No sync bit used
 };
 

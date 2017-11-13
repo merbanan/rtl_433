@@ -91,7 +91,7 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 
 PWM_Precise_Parameters pwm_precise_parameters_generic = {
-	.pulse_tolerance	= 50,
+	.pulse_tolerance	= 200, // us
 	.pulse_sync_width	= 0,	// No sync bit used
 };
 

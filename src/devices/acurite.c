@@ -1039,8 +1039,8 @@ r_device acurite_txr = {
 // with a range of signal levels
 //
 // PWM_Precise_Parameters pwm_precise_param_acurite_txr = {
-// 	.pulse_tolerance	= 50,
-// 	.pulse_sync_width	= 170,
+// 	.pulse_tolerance	= 200, // us
+// 	.pulse_sync_width	= 680, // us
 // };
 
 //r_device acurite_txr = {

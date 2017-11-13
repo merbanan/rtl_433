@@ -65,7 +65,7 @@ static char *output_fields[] = {
 };
 
 PWM_Precise_Parameters pwm_precise_parameters_akhan = {
-	.pulse_tolerance	= 20,
+	.pulse_tolerance	= 80, // us
 	.pulse_sync_width	= 0,
 };
 
