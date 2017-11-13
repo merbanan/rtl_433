@@ -202,7 +202,7 @@ vaillant_vrt340_callback (bitbuffer_t *bitbuffer)
 }
 
 PWM_Precise_Parameters vaillant_vrt340_clock_bits_parameters = {
-    .pulse_tolerance    = 30,
+    .pulse_tolerance    = 120, // us
     .pulse_sync_width    = 0,    // No sync bit used
 };
 

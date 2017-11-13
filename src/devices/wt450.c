@@ -134,7 +134,7 @@ static int wt450_callback(bitbuffer_t *bitbuffer) {
 }
 
 PWM_Precise_Parameters clock_bits_parameters_generic = {
-    .pulse_tolerance	= 20,
+    .pulse_tolerance	= 80, // us
     .pulse_sync_width	= 0,	// No sync bit used
 };
 

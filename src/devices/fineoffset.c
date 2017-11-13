@@ -321,7 +321,7 @@ r_device fineoffset_WH25 = {
 
 
 PWM_Precise_Parameters pwm_precise_parameters_fo_wh0530 = {
-    .pulse_tolerance    = 40,
+    .pulse_tolerance    = 160, // us
     .pulse_sync_width   = 0,    // No sync bit used
 };
 
