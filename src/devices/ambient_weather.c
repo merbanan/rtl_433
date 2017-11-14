@@ -154,7 +154,7 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
             "device", "House Code", DATA_INT, deviceID,
             "channel", "Channel", DATA_INT, channel,
             "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "Ok",
-            "temperature_F", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
             "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
             NULL);
         data_acquired_handler(data);
