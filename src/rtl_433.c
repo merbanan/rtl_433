@@ -144,11 +144,7 @@ void usage(r_device *devices) {
 
     fprintf(stderr, "Supported device protocols:\n");
     for (i = 0; i < num_r_devices; i++) {
-    if (devices[i].disabled)
-        disabledc = '*';
-    else
-        disabledc = ' ';
-
+        disabledc = devices[i].disabled ? '*' : ' ';
         fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
     }
     fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
@@ -752,8 +748,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     if (bytes_to_read > 0)
         bytes_to_read -= len;
 
-        time_t rawtime;
-        time(&rawtime);
+    time_t rawtime;
+    time(&rawtime);
 	if (frequencies > 1 && difftime(rawtime, rawtime_old) > demod->hop_time) {
 	  rawtime_old = rawtime;
 	  do_exit_async = 1;
@@ -1121,7 +1117,7 @@ int main(int argc, char **argv) {
          i < (device_specified ? (unsigned)dev_index + 1 : device_count);
          i++) {
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-        
+
         if (!quiet_mode) fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
                                  i, vendor, product, serial);
 
