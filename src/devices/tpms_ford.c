@@ -41,7 +41,7 @@ static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpo
     }
     b = packet_bits.bb[0];
 
-    if ((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6] & 0xff) != b[7]) {
+    if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
         return 0;
     }
 
