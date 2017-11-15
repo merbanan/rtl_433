@@ -38,15 +38,29 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit) {
 }
 
 
+// 
+// bitbuffer_add_row -- prepare a fresh row to accept decoded bits
+// 
+//    This function collapses "empty" rows (eg., due to multiple "start" bits), by detecting if the
+// current row is still empty.
+// 
+//     NOTE: After commit b005d441 "Clean up bitbuffer a bit", it would *always* increment twice on
+// first call (incorrectly), thus always leaving the first row empty.  This wrecked some of the
+// older decoder implementations (pre-2015), which assumed the old behaviour (first data in bb[0]).
+// Some of the newer decoders (post-2015) were built to assume that bits->bb[0] was always empty,
+// and bb[1] always contained the first row.  Sometimes this is correct (ie. if the protocol
+// contains repeated packets), but for some implementations this has caused some serious problems;
+// both causing old decoders to fail, and newly written ones which always assume the first message
+// is in row 1.  Others assumed multiple start-bits produce an unknown number of empty rows.  This
+// implementation addresses these issues.
+// 
 void bitbuffer_add_row(bitbuffer_t *bits) {
-	if(bits->num_rows == 0) bits->num_rows++;	// Add first row automatically
-	if(bits->num_rows < BITBUF_ROWS) {
+	if( bits->num_rows == 0  							// Add first row automatically
+		|| ( bits->num_rows < BITBUF_ROWS				//   or, if we still have rows available
+			 && bits->bits_per_row[bits->num_rows-1] > 0 )) // and the current row isn't empty
 		bits->num_rows++;
-	}
-	else {
-		bits->bits_per_row[bits->num_rows-1] = 0;	// Clear last row to handle overflow somewhat gracefully
-//		fprintf(stderr, "ERROR: bitbuffer:: Could not add more rows\n");	// Some decoders may add many rows...
-	}
+	// Either more rows available, or current row (still) empty, or last row re-used: prepare for data
+	bits->bits_per_row[bits->num_rows-1] = 0; // Clears last row to handle overflow somewhat gracefully
 }
 
 
@@ -172,8 +186,14 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 }
 
 
+// 
+// compare_rows -- compares a bit row vs. one of (at least) same length
+// 
+//     Will find a match even if the target row_b contains additional (eg. noise, extra "stop" bits)
+// compared to the source row_a.
+// 
 int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b) {
-	return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b] &&
+	return ( bits->bits_per_row[row_a] <= bits->bits_per_row[row_b] &&
 		!memcmp(bits->bb[row_a], bits->bb[row_b],
 				(bits->bits_per_row[row_a] + 7) / 8));
 }
@@ -188,14 +208,23 @@ unsigned count_repeats(bitbuffer_t *bits, unsigned row) {
 	return cnt;
 }
 
+// 
+// bitbuffer_find_repeated_row -- find the "best" (most frequent) repeated rows at least min_bits long.
+// 
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits) {
+	unsigned best_c = 0;
+	int best = -1;
 	for (int i = 0; i < bits->num_rows; ++i) {
-		if (bits->bits_per_row[i] >= min_bits &&
-			count_repeats(bits, i) >= min_repeats) {
-			return i;
+		if ( bits->bits_per_row[i] >= min_bits ) {
+			unsigned c = count_repeats(bits, i);
+			if ( c >= min_repeats && c > best_c ) {
+				// This is a better match, and also meets min_repeats threshold
+				best_c = c;
+				best = i;
+			}
 		}
 	}
-	return -1;
+	return best;
 }
 
 

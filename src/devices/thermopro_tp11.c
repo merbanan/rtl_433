@@ -39,28 +39,18 @@ static int valid(unsigned data, unsigned check) {
 }
 
 static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
-    int i, j, iTemp, good = -1;
+    int i, j, iTemp;
     float fTemp;
     bitrow_t *bb = bitbuffer->bb;
     unsigned int device, value;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    // Compare first four bytes of rows that have 32 or 33 bits.
-    for (i = 0; good < 0 && i + 2 < bitbuffer->num_rows; i++) {
-        int equal_rows = 0;
-        if ((bitbuffer->bits_per_row[i] & ~1) != 32) continue;
-
-        for (j = i+1; good < 0 && j < bitbuffer->num_rows; j++) {
-            if ((bitbuffer->bits_per_row[j] & ~1) == 32
-                && bb[i][0] == bb[j][0]
-                && bb[i][1] == bb[j][1]
-                && bb[i][2] == bb[j][2]
-                && bb[i][3] == bb[j][3]
-                && ++equal_rows >= 2) good = i;
-        }
-    }
-    if (good < 0) return 0;
+    // Find at least 2 matching rows
+    int good = bitbuffer_find_repeated_row( bitbuffer, 2, 32 );
+    if ( good < 0 // less than 2 duplicate 32-bit records found
+         || bitbuffer->bits_per_row[good] > 33 ) // Row may be 32 or 33 bits
+        return 0;
 
     // bb[good] is equal to at least two other rows, decode.
     value = (bb[good][0] << 16) + (bb[good][1] << 8) + bb[good][2];
