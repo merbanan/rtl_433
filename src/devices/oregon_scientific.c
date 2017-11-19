@@ -11,6 +11,7 @@
 #define ID_THR228N  0xec40
 #define ID_THN132N  0xec40 // same as THR228N but different packet size
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
+#define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
 #define ID_THGR810  0xf824
 #define ID_THN802   0xc844
 #define ID_PCR800   0x2914
@@ -184,15 +185,20 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
       unsigned int pattern  = (unsigned int)(0x55990000>>pattern_index);
       unsigned int pattern2 = (unsigned int)(0xaa990000>>pattern_index);
 
-      //fprintf(stdout, "OS v2.1 sync byte search - test_val=%08x pattern=%08x  mask=%08x\n", sync_test_val, pattern, mask);
+      if(debug_output) {
+        fprintf(stdout, "OS v2.1 sync byte search - test_val=%08x pattern=%08x  mask=%08x\n", sync_test_val, pattern, mask);
+      }
 
       if (((sync_test_val & mask) == pattern) ||
           ((sync_test_val & mask) == pattern2)) {
+
         //  Found sync byte - start working on decoding the stream data.
         // pattern_index indicates  where sync nibble starts, so now we can find the start of the payload
         int start_byte = 5 + (pattern_index>>3);
         int start_bit = pattern_index & 0x07;
-        //fprintf(stdout, "OS v2.1 Sync test val %08x found, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
+        if(debug_output) {
+          fprintf(stdout, "OS v2.1 Sync test val %08x found, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
+        }
         int bits_processed = 0;
         unsigned char last_bit_val = 0;
         j=start_bit;
@@ -346,6 +352,22 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            NULL);
+        data_acquired_handler(data);
+      }
+      return 1;
+    } else if ((sensor_id & 0x0fff) == ID_RTGN129 && num_valid_v2_bits==161) {
+      if (validate_os_v2_message(msg, 161, num_valid_v2_bits, 15) == 0) {
+        float temp_c = get_os_temperature(msg, sensor_id);
+        data = data_make(
+            "time",          "",            DATA_STRING, time_str,
+            "brand",         "",            DATA_STRING, "OS",
+            "model",         "",            DATA_STRING, "RTGN129",
+            "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
+            "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+            "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
+            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
         data_acquired_handler(data);
       }
