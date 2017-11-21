@@ -106,7 +106,7 @@ add_executable(rtl_433
 	devices/infactory.c
 	devices/fordremote.c
 	devices/philips.c
-
+	devices/nexa.c
 )
 
 add_library(data data.c)
