@@ -92,6 +92,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/infactory.c \
                        devices/fordremote.c \
                        devices/philips.c \
-                       devices/nexa.c
+                       devices/nexa.c \
+                       devices/telldus.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
