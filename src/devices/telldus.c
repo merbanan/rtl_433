@@ -6,7 +6,7 @@
  *      1-bit starter bit
  *      48-bit data packet 
  *
- * 48-bit data packet format:
+ * 48-bit data packet format (non-inverted):
  *
  * 00000000 AAAAABBB CCCCDDDD DDDDDDDD EEEEEEEE FFFFFFFF 
  *
@@ -45,7 +45,6 @@ static int telldus_callback(bitbuffer_t *bitbuffer)
 	uint8_t r_crc, c_crc;
 	uint8_t channel;
 	uint8_t humidity;
-	uint8_t message[PACKETLEN-1];
 	int tmp;
 	float temperature;
 	data_t *data;
@@ -87,14 +86,9 @@ static int telldus_callback(bitbuffer_t *bitbuffer)
 		fprintf(stderr, "\n");
 	}
 
-	/* Read message for crc calculation */
-	for (i = 0; i < PACKETLEN-1; i++) {
-		message[i] = bb[i];
-	}
-
 	/* Correct CRC? */
 	r_crc = bb[PACKETLEN - 1]; /* Last byte in the data */
-	c_crc = crc8(message, PACKETLEN-1, 0x31, INIT_CRC);
+	c_crc = crc8(bb, PACKETLEN-1, 0x31, INIT_CRC);
 
 	if (r_crc != c_crc) {
 		if (debug_output) {
@@ -112,10 +106,10 @@ static int telldus_callback(bitbuffer_t *bitbuffer)
 
 	/* Sensor id */
 	sensor_id = (bb[2] >> 4) & 0x0f;
-	/* Let's rename sensor 0111 to 1, and 1000 to 2 */
-	if(sensor_id == 0x07)
+	/* Let's rename sensor 0111 to 1, and 1000 to 2. */
+	if(sensor_id == 0x07) /* Devices that have one sensor, it is always 0111. */
 		sensor_id = 0x01;
-	else
+	else /* Devices that have two sensors, the second one is 1000. */
 		sensor_id = 0x02;
 
 	/* Channel */
@@ -151,7 +145,6 @@ static int telldus_callback(bitbuffer_t *bitbuffer)
 						 "channel",			"Channel",		DATA_INT,		channel,
 						 "sensor", 			"Sensor id",	DATA_INT,		sensor_id,
 						 "temperature_C",	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, temperature,
-						 "humidity",		"Humidity",		DATA_STRING,	"N/A",
 						 NULL);
 	}
 	data_acquired_handler(data);
