@@ -31,134 +31,113 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define BITLEN 				48
-#define PACKETLEN    		6
-#define STARTBYTE	  		0x00
-#define INIT_CRC			0x2e
-
-/** telldus_crc8_bit():
- * Compute CRC-8 for a byte sequence, one bit at a time.
- *
- * This function was generated using crcany (https://github.com/madler/crcany)
- * License information: "This code is under the zlib license, permitting free
- * commercial use."
- */
-static unsigned telldus_crc8_bit(unsigned crc, void const *mem, size_t len) {
-    unsigned char const *data = mem;
-    if (data == NULL)
-        return 0x2e;
-    while (len--) {
-        crc ^= *data++;
-        for (unsigned k = 0; k < 8; k++)
-            crc = crc & 0x80 ? (crc << 1) ^ 0x31 : crc << 1;
-    }
-    crc &= 0xff;
-    return crc;
-}
-
+#define BITLEN		48
+#define PACKETLEN	6
+#define STARTBYTE	0x00
+#define INIT_CRC	0x2e
 
 static int telldus_callback(bitbuffer_t *bitbuffer) 
 {
-    char time_str[LOCAL_TIME_BUFLEN];
-    uint8_t *bb;
-    unsigned int i;
+	char time_str[LOCAL_TIME_BUFLEN];
+	uint8_t *bb;
+	unsigned int i;
 	uint8_t sensor_id;
-    uint8_t r_crc, c_crc;
-    uint8_t channel;
+	uint8_t r_crc, c_crc;
+	uint8_t channel;
 	uint8_t humidity;
-    int tmp;
-    float temperature;
-    data_t *data;
+	uint8_t message[PACKETLEN-1];
+	int tmp;
+	float temperature;
+	data_t *data;
 
-    /* Get the time */
-    local_time_str(0, time_str);
-
-    /* Correct number of rows? */
-    if (bitbuffer->num_rows != 2) {
-        if (debug_output) {
-            fprintf(stderr, "%s %s: wrong number of rows (%d)\n", 
-                    time_str, __func__, bitbuffer->num_rows);
-        }
-        return 0;
-    }
-
-    /* Correct bit length? */
-    if (bitbuffer->bits_per_row[1] != BITLEN) {
-        if (debug_output) {
-            fprintf(stderr, "%s %s: wrong number of bits (%d)\n", 
-                    time_str, __func__, bitbuffer->bits_per_row[0]);
-        }
-        return 0;
-    }
-
-    bb = bitbuffer->bb[1];
-
-    /* Correct start sequence? */
-    if (bb[0] != STARTBYTE) {
-        if (debug_output) {
-            fprintf(stderr, "%s %s: wrong start byte\n", time_str, __func__);
+	/* Correct number of rows? */
+	if (bitbuffer->num_rows != 2) {
+		if (debug_output) {
+			fprintf(stderr, "%s %s: wrong number of rows (%d)\n", 
+				time_str, __func__, bitbuffer->num_rows);
 		}
-        return 0;
-    }
+		return 0;
+	}
 
-    /* If debug enabled, print the raw information */
-    if (debug_output) {
-        fprintf(stderr, "%s %s: recieved data = ", time_str, __func__);
-        for (i = 0; i < PACKETLEN; i++) {
-            fprintf(stderr, "%02x ",bb[i]);
-        }
-        fprintf(stderr, "\n");
-    }
+	/* Correct bit length? */
+	if (bitbuffer->bits_per_row[1] != BITLEN) {
+		if (debug_output) {
+			fprintf(stderr, "%s %s: wrong number of bits (%d)\n", 
+				time_str, __func__, bitbuffer->bits_per_row[0]);
+		}
+		return 0;
+	}
 
-    /* Correct CRC? */
-    r_crc = bb[PACKETLEN - 1]; /* Last byte in the data */
-    c_crc = telldus_crc8_bit(INIT_CRC, bb, PACKETLEN - 1); /* First five bytes */
-	
-    if (r_crc != c_crc) {
-        if (debug_output) {
-            fprintf(stderr, "%s %s: CRC failed, calculated %x, received %x\n",
-                    time_str, __func__, c_crc, r_crc);
-        }
-        return 0;
-    }
+	bb = bitbuffer->bb[1];
 
-    /* Message validated, now parse the data */
+	/* Correct start sequence? */
+	if (bb[0] != STARTBYTE) {
+		if (debug_output) {
+			fprintf(stderr, "%s %s: wrong start byte\n", time_str, __func__);
+		}
+		return 0;
+	}
+
+	/* If debug enabled, print the raw information */
+	if (debug_output) {
+		fprintf(stderr, "%s %s: recieved data = ", time_str, __func__);
+		for (i = 0; i < PACKETLEN; i++) {
+			fprintf(stderr, "%02x ",bb[i]);
+		}
+		fprintf(stderr, "\n");
+	}
+
+	/* Read message for crc calculation */
+	for (i = 0; i < PACKETLEN-1; i++) {
+		message[i] = bb[i];
+	}
+
+	/* Correct CRC? */
+	r_crc = bb[PACKETLEN - 1]; /* Last byte in the data */
+	c_crc = crc8(message, PACKETLEN-1, 0x31, INIT_CRC);
+
+	if (r_crc != c_crc) {
+		if (debug_output) {
+			fprintf(stderr, "%s %s: CRC failed, calculated %x, received %x\n",
+				time_str, __func__, c_crc, r_crc);
+		}
+		return 0;
+	}
+
+	/* Message validated, now parse the data */
+
+	/* Invert bitbuffer */
+	bitbuffer_invert(bitbuffer);
+	bb = bitbuffer->bb[1];
 
 	/* Sensor id */
 	sensor_id = (bb[2] >> 4) & 0x0f;
-	/* Let's rename sensor 1000 to 1, and 0111 to 2 */
-	if(sensor_id == 0x08)
+	/* Let's rename sensor 0111 to 1, and 1000 to 2 */
+	if(sensor_id == 0x07)
 		sensor_id = 0x01;
 	else
 		sensor_id = 0x02;
 
-    /* Channel */
-    channel = bb[1] & 0x07;
-	channel = (~channel & 0x07) + 1;
+	/* Channel */
+	channel = (bb[1] & 0x07) + 1;
 
-    /* Temperature */
-    tmp = bb[PACKETLEN-4] & 0x0f;
-    tmp <<= 8;
-    tmp |= bb[PACKETLEN-3];
-    tmp = ~tmp & 0xfff;
+	/* Temperature */
+	tmp = bb[PACKETLEN-4] & 0x0f;
+	tmp <<= 8;
+	tmp |= bb[PACKETLEN-3];
 	if(tmp & 0x800) { /* if sign bit is 1 */
 		tmp &= 0x7ff;
 		tmp = ~tmp + 1;
 	}
-    temperature = tmp / 10.0f;
+	temperature = tmp / 10.0f;
 
-    /* Humidity */
+	/* Humidity */
 	humidity = bb[PACKETLEN-2];
-	if (humidity == 0x00) { /* if there is no humidity sensor */
-		data = data_make("time",			"",				DATA_STRING,	time_str,
-						 "model",			"",				DATA_STRING,	"Telldus/Proove thermometer",
-						 "channel",			"Channel",		DATA_INT,		channel,
-						 "sensor", 			"Sensor id",	DATA_INT,		sensor_id,
-						 "temperature_C",	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, temperature,
-						 "humidity",		"Humidity",		DATA_STRING,	"N/A",
-						 NULL);
-	} else {
-		humidity = ~humidity;
+
+	/* Get the time */
+	local_time_str(0, time_str);
+
+	if (humidity != 0xff) { /* if there is humidity sensor */
 		data = data_make("time",			"",				DATA_STRING,	time_str,
 						 "model",			"",				DATA_STRING,	"Telldus/Proove thermometer",
 						 "channel",			"Channel",		DATA_INT,		channel,
@@ -166,30 +145,38 @@ static int telldus_callback(bitbuffer_t *bitbuffer)
 						 "temperature_C",	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, temperature,
 						 "humidity",		"Humidity",		DATA_FORMAT,	"%i%%", DATA_INT, humidity,
 						 NULL);
+	} else {
+		data = data_make("time",			"",				DATA_STRING,	time_str,
+						 "model",			"",				DATA_STRING,	"Telldus/Proove thermometer",
+						 "channel",			"Channel",		DATA_INT,		channel,
+						 "sensor", 			"Sensor id",	DATA_INT,		sensor_id,
+						 "temperature_C",	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, temperature,
+						 "humidity",		"Humidity",		DATA_STRING,	"N/A",
+						 NULL);
 	}
-    data_acquired_handler(data);
+	data_acquired_handler(data);
 
-    return 1;
+	return 1;
 }
 
 static char *telldus_output_fields[] = {
-    "time",
-    "model",
-    "channel",
+	"time",
+	"model",
+	"channel",
 	"sensor",
-    "temperature_C",
-    "humidity",
-    NULL
+	"temperature_C",
+	"humidity",
+	NULL
 };
 
 r_device telldus = {
-    .name          = "Telldus/Proove thermometer",
-    .modulation    = OOK_PULSE_PWM_TERNARY,
-    .short_limit   = 520,
-    .long_limit    = 1000,
-    .reset_limit   = 1100,
-    .json_callback = &telldus_callback,
-    .disabled      = 0,
-    .demod_arg     = 1,
-    .fields        = telldus_output_fields,
+	.name			= "Telldus/Proove thermometer",
+	.modulation		= OOK_PULSE_PWM_TERNARY,
+	.short_limit	= 520,
+	.long_limit		= 1000,
+	.reset_limit	= 1100,
+	.json_callback	= &telldus_callback,
+	.disabled		= 0,
+	.demod_arg		= 1,
+	.fields			= telldus_output_fields,
 };
