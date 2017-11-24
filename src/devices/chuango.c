@@ -53,7 +53,7 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
 			case 0x8:	CMD = "Arm"; break;
 			case 0x7:	CMD = "Normal Zone"; break;
 			case 0x6:	CMD = "Home Mode Zone";	break;
-			case 0x5:	CMD = "?"; break;
+			case 0x5:	CMD = "On"; break;
 			case 0x4:	CMD = "Home Mode"; break;
 			case 0x3:	CMD = "Tamper";	break;
 			case 0x2:	CMD = "Alarm"; break;
