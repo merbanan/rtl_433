@@ -38,6 +38,7 @@ time_t rawtime_old;
 int duration = 0;
 time_t stop_time;
 int flag;
+int stop_after_successful_events_flag = 0;
 uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
@@ -139,6 +140,7 @@ void usage(r_device *devices) {
             "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\t[-E] Stop after outputting successful event(s)\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -651,8 +653,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     } else {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
+        int p_events = 0;  // Sensor events successfully detected per package
         while(package_type) {
-            int p_events = 0;  // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
                 if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
@@ -730,6 +732,11 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 }
             } // if (package_type == ...
         } // while(package_type)...
+
+        if (stop_after_successful_events_flag && (p_events > 0)) {
+            do_exit = do_exit_async = 1;
+            rtlsdr_cancel_async(dev);
+        }
     } // if (demod->analyze...
 
     if (demod->out_file) {
@@ -913,7 +920,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:i:f:H:g:s:b:n:SR:F:C:T:UWGy:")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:i:f:H:g:s:b:n:SR:F:C:T:UWGy:E")) != -1) {
         switch (opt) {
             case 'd':
                 dev_index = atoi(optarg);
@@ -929,7 +936,7 @@ int main(int argc, char **argv) {
                 break;
             case 'H':
                 demod->hop_time = atoi(optarg);
-		break;
+                break;
             case 'g':
                 gain = (int) (atof(optarg) * 10); /* tenths of a dB */
                 break;
@@ -997,53 +1004,56 @@ int main(int argc, char **argv) {
 
                 devices[i - 1].disabled = 0;
                 break;
-         case 'q':
-            quiet_mode = 1;
-        break;
-        case 'F':
-        if (strncmp(optarg, "json", 4) == 0) {
-            add_json_output(arg_param(optarg));
-        } else if (strncmp(optarg, "csv", 3) == 0) {
-            add_csv_output(arg_param(optarg), determine_csv_fields(devices, num_r_devices));
-        } else if (strncmp(optarg, "kv", 2) == 0) {
-            add_kv_output(arg_param(optarg));
-        } else {
+            case 'q':
+                quiet_mode = 1;
+                break;
+            case 'F':
+                if (strncmp(optarg, "json", 4) == 0) {
+                    add_json_output(arg_param(optarg));
+                } else if (strncmp(optarg, "csv", 3) == 0) {
+                    add_csv_output(arg_param(optarg), determine_csv_fields(devices, num_r_devices));
+                } else if (strncmp(optarg, "kv", 2) == 0) {
+                    add_kv_output(arg_param(optarg));
+                } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(devices);
-        }
-        break;
-        case 'C':
-        if (strcmp(optarg, "native") == 0) {
-            conversion_mode = CONVERT_NATIVE;
-        } else if (strcmp(optarg, "si") == 0) {
-            conversion_mode = CONVERT_SI;
-        } else if (strcmp(optarg, "customary") == 0) {
-            conversion_mode = CONVERT_CUSTOMARY;
-        } else {
+                }
+                break;
+            case 'C':
+                if (strcmp(optarg, "native") == 0) {
+                    conversion_mode = CONVERT_NATIVE;
+                } else if (strcmp(optarg, "si") == 0) {
+                    conversion_mode = CONVERT_SI;
+                } else if (strcmp(optarg, "customary") == 0) {
+                    conversion_mode = CONVERT_CUSTOMARY;
+                } else {
                     fprintf(stderr, "Invalid conversion mode %s\n", optarg);
                     usage(devices);
-        }
-        break;
-        case 'U':
-        #if !defined(__MINGW32__)
-          utc_mode = setenv("TZ", "UTC", 1);
-          if(utc_mode != 0) fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
-        #endif
-        break;
+                }
+                break;
+            case 'U':
+#if !defined(__MINGW32__)
+                utc_mode = setenv("TZ", "UTC", 1);
+                if(utc_mode != 0) fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
+#endif
+                break;
             case 'W':
-            overwrite_mode = 1;
-        break;
-        case 'T':
-          time(&stop_time);
-          duration = atoi(optarg);
-          if (duration < 1) {
-            fprintf(stderr, "Duration '%s' was not positive integer; will continue indefinitely\n", optarg);
-          } else {
-            stop_time += duration;
-          }
-          break;
+                overwrite_mode = 1;
+                break;
+            case 'T':
+                time(&stop_time);
+                duration = atoi(optarg);
+                if (duration < 1) {
+                    fprintf(stderr, "Duration '%s' was not positive integer; will continue indefinitely\n", optarg);
+                } else {
+                    stop_time += duration;
+                }
+                break;
             case 'y':
                 test_data = optarg;
+                break;
+            case 'E':
+                stop_after_successful_events_flag = 1;
                 break;
             default:
                 usage(devices);
