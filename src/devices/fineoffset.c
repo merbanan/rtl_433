@@ -51,7 +51,9 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-
+    else if (bitbuffer->bits_per_row[0] == 49 &&
+            bb[0][0] == 0xFF) // Telldus
+        bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
     else
         return 0;
 
