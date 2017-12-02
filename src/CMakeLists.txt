@@ -107,6 +107,7 @@ add_executable(rtl_433
 	devices/fordremote.c
 	devices/philips.c
 	devices/nexa.c
+	devices/telldus.c
 )
 
 add_library(data data.c)
