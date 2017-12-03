@@ -183,6 +183,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  NEXA LMST-606
+    [97]  Thermopro TP12 Thermometer
 
 * Disabled by default, use -R n or -G
 

@@ -99,7 +99,8 @@
 		DECL(fordremote) \
 		DECL(philips) \
 		DECL(schrader_EG53MA4) \
-		DECL(nexa)
+		DECL(nexa) \
+		DECL(thermopro_tp12)
 
 typedef struct {
 	char name[256];
