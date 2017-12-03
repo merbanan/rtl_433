@@ -187,7 +187,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;
     p->demod_arg = t_dev->demod_arg;
-    if (p->modulation == OOK_PULSE_PWM_PRECISE) {
+    if (p->modulation == OOK_PULSE_PWM_PRECISE || p->modulation == OOK_PULSE_CLOCK_BITS) {
         PWM_Precise_Parameters *pwm_precise_parameters = (PWM_Precise_Parameters *)p->demod_arg;
         pwm_precise_parameters->pulse_tolerance = (float)pwm_precise_parameters->pulse_tolerance / ((float)1000000 / (float)samp_rate);
     }
