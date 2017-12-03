@@ -43,6 +43,7 @@ add_executable(rtl_433
 	devices/fineoffset.c
 	devices/fineoffset_wh1080.c
 	devices/ft004b.c
+	devices/ge_coloreffects.c
 	devices/generic_remote.c
 	devices/generic_temperature_sensor.c
 	devices/gt_wt_02.c
