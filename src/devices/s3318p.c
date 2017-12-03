@@ -55,20 +55,25 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
-    /* Get time now */
-    local_time_str(0, time_str);
-
-    /* Reject codes of wrong length */
-    if ( 42 != bitbuffer->bits_per_row[1])
+    // ignore if two leading sync pulses (Esperanza EWS)
+    if (bitbuffer->bits_per_row[0] == 0 && bitbuffer->bits_per_row[1] == 0)
       return 0;
+
+    // the signal should have 6 repeats with a sync pulse between
+    // require at least 4 received repeats
+    int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
+    if (r < 0 || bitbuffer->bits_per_row[r] != 42)
+      return 0;
+
+    uint8_t *b = bb[r];
 
     /* shift all the bits left 2 to align the fields */
     int i;
     for (i = 0; i < BITBUF_COLS-1; i++) {
-      uint8_t bits1 = bb[1][i] << 2;
-      uint8_t bits2 = (bb[1][i+1] & 0xC0) >> 6;
+      uint8_t bits1 = b[i] << 2;
+      uint8_t bits2 = (b[i+1] & 0xC0) >> 6;
       bits1 |= bits2;
-      bb[1][i] = bits1;
+      b[i] = bits1;
     }
 
     uint8_t humidity;
@@ -80,30 +85,31 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     float temperature_f;
 
     /* IIIIIIII ??CCTTTT TTTTTTTT HHHHHHHH XB?????? PP */
-    humidity = (uint8_t)(((bb[1][3] & 0x0F) << 4) | ((bb[1][3] & 0xF0) >> 4));
-    button = (uint8_t)(bb[1][4] >> 7);
-    battery_low = (uint8_t)((bb[1][4] & 0x40) >> 6);
-    channel = (uint8_t)(((bb[1][1] & 0x30) >> 4) + 1);
-    sensor_id = (uint8_t)(bb[1][0]);
+    humidity = (uint8_t)(((b[3] & 0x0F) << 4) | ((b[3] & 0xF0) >> 4));
+    button = (uint8_t)(b[4] >> 7);
+    battery_low = (uint8_t)((b[4] & 0x40) >> 6);
+    channel = (uint8_t)(((b[1] & 0x30) >> 4) + 1);
+    sensor_id = (uint8_t)(b[0]);
 
-    temperature_with_offset = ((bb[1][2] & 0x0F) << 8) | (bb[1][2] & 0xF0) | (bb[1][1] & 0x0F);
+    temperature_with_offset = ((b[2] & 0x0F) << 8) | (b[2] & 0xF0) | (b[1] & 0x0F);
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
     if (debug_output) {
       bitbuffer_print(bitbuffer);
       fprintf(stderr, "Sensor ID            = %2x\n",  sensor_id);
-      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4],bb[1][5]);
-      fprintf(stdout, "Humidity HEX         = %02x\n", bb[1][3]);
+      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",b[0],b[1],b[2],b[3],b[4],b[5]);
+      fprintf(stdout, "Humidity HEX         = %02x\n", b[3]);
       fprintf(stdout, "Humidity DEC         = %u\n",   humidity);
       fprintf(stdout, "Button               = %d\n",   button);
       fprintf(stdout, "Battery Low          = %d\n",   battery_low);
-      fprintf(stdout, "Channel HEX          = %02x\n", bb[1][1]);
+      fprintf(stdout, "Channel HEX          = %02x\n", b[1]);
       fprintf(stdout, "Channel              = %u\n",   channel);
       fprintf(stdout, "temp_with_offset HEX = %02x\n", temperature_with_offset);
       fprintf(stdout, "temp_with_offset     = %d\n",   temperature_with_offset);
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
     }
 
+    local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "S3318P Temperature & Humidity Sensor",
                      "id",            "House Code",  DATA_INT, sensor_id,
@@ -126,7 +132,7 @@ static char *output_fields[] = {
     "channel",
     "battery",
     "button",
-    "temperature_C",
+    "temperature_F",
     "humidity",
     NULL
 };
@@ -137,7 +143,7 @@ r_device s3318p = {
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 2800,
     .long_limit     = 4400,
-    .reset_limit    = 8000,
+    .reset_limit    = 9400,
     .json_callback  = &s3318p_callback,
     .disabled       = 0,
     .demod_arg      = 0,
