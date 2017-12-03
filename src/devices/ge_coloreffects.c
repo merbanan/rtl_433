@@ -25,7 +25,7 @@ static const unsigned char preamble_pattern[3] = {0xcc, 0xff, 0x00};
 // Helper to access single bit (copied from bitbuffer.c)
 static inline int bit(const uint8_t *bytes, unsigned bit)
 {
-	return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
 }
 
 
@@ -34,50 +34,49 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
  * 10 = 0
 *  1100 = 1
  */
-unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
-             bitbuffer_t *outbuf)
+unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
-  uint8_t *bits = inbuf->bb[row];
-  unsigned int len = inbuf->bits_per_row[row];
-  unsigned int ipos = start;
+    uint8_t *bits = inbuf->bb[row];
+    unsigned int len = inbuf->bits_per_row[row];
+    unsigned int ipos = start;
 
-  while (ipos < len) {
-    uint8_t bit1, bit2;
+    while (ipos < len) {
+        uint8_t bit1, bit2;
 
-    bit1 = bit(bits, ipos++);
-    bit2 = bit(bits, ipos++);
+        bit1 = bit(bits, ipos++);
+        bit2 = bit(bits, ipos++);
 
-    if (bit1 == 1 && bit2 == 0) {
-      bitbuffer_add_bit(outbuf, 0);
-    } else if (bit1 == 1 && bit2 == 1) {
-      // Get two more bits
-      bit1 = bit(bits, ipos++);
-      bit2 = bit(bits, ipos++);
-      if (bit1 == 0 && bit2 == 0) {
-        bitbuffer_add_bit(outbuf, 1);
-      } else {
-        break;
-      }
-    } else {
-      break;
+        if (bit1 == 1 && bit2 == 0) {
+            bitbuffer_add_bit(outbuf, 0);
+        } else if (bit1 == 1 && bit2 == 1) {
+            // Get two more bits
+            bit1 = bit(bits, ipos++);
+            bit2 = bit(bits, ipos++);
+            if (bit1 == 0 && bit2 == 0) {
+                bitbuffer_add_bit(outbuf, 1);
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
     }
-  }
 
-  return ipos;
+    return ipos;
 }
 
 char * ge_command_name(uint8_t command) {
-  char * out = "0xxx";
+    char * out = "0xxx";
   
-  switch(command) {    
-    case 0x5a:  return "change";  break;
-    case 0xaa:  return "on";      break;
-    case 0x55:  return "off";     break;
-    default:
-      sprintf(out, "0x%x", command);
-      return out;
-      break;
-  }
+    switch(command) {    
+        case 0x5a:  return "change";  break;
+        case 0xaa:  return "on";      break;
+        case 0x55:  return "off";     break;
+        default:
+            sprintf(out, "0x%x", command);
+            return out;
+            break;
+    }
 }
 
 static int ge_coloreffects_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos) {
@@ -100,19 +99,16 @@ static int ge_coloreffects_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned
      */
     
     // Frame should be 17 decoded bits (not including preamble)
-    if (packet_bits.bits_per_row[0] != 17) {
-      return 0;
-    }
+    if (packet_bits.bits_per_row[0] != 17)
+        return 0;
     
     // First two bits must be 0
-    if (*packet_bits.bb[0] & 0xc0) {
-      return 0;
-    }
+    if (*packet_bits.bb[0] & 0xc0)
+        return 0;
     
     // Last bit must be 0
-    if (bit(packet_bits.bb[0], 16) != 0) {
-      return 0;
-    }
+    if (bit(packet_bits.bb[0], 16) != 0)
+        return 0;
     
     // Extract device ID
     // We want bits [2..8]. Since the first two bits are zero, we'll just take the entire first byte
