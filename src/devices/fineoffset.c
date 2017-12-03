@@ -39,22 +39,28 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
+    char *model;
     uint8_t id;
     int16_t temp;
     float temperature;
     uint8_t humidity;
 
     if (bitbuffer->bits_per_row[0] == 48 &&
-            bb[0][0] == 0xFF) // WH2
+            bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
+        model = "Fine Offset Electronics, WH2 Temperature/Humidity sensor";
 
-    else if (bitbuffer->bits_per_row[0] == 47 &&
-            bb[0][0] == 0xFE) // WH5
+    } else if (bitbuffer->bits_per_row[0] == 47 &&
+            bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-    else if (bitbuffer->bits_per_row[0] == 49 &&
-            bb[0][0] == 0xFF) // Telldus
+        model = "Fine Offset WH5 sensor";
+
+    } else if (bitbuffer->bits_per_row[0] == 49 &&
+            bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
-    else
+        model = "Telldus/Proove thermometer";
+
+    } else
         return 0;
 
     // Validate package
@@ -87,7 +93,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Thermo
     if (b[3] == 0xFF) {
         data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "TFA 30.3157 Temperature sensor",
+                         "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                           NULL);
@@ -96,7 +102,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Thermo/Hygro
     else {
         data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, (bb[0][0] == 0xFF) ? "Fine Offset Electronics, WH2 Temperature/Humidity sensor" : "Fine Offset WH5 sensor",
+                         "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
