@@ -29,13 +29,16 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 ########################################################################
 # Compiler specific setup
 ########################################################################
-if(CMAKE_COMPILER_IS_GNUCC AND NOT WIN32)
+if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wno-unused)
+    ADD_DEFINITIONS(-Wno-unused-parameter)
+    ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-g3 -O0)
-    ADD_DEFINITIONS(-std=gnu99)
+    ADD_DEFINITIONS(-std=c99)
+    ADD_DEFINITIONS(-pedantic)
     # for strdup
     ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
