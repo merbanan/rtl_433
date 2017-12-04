@@ -156,11 +156,11 @@ static _Bool import_values(void* dst, void* src, int num_values, data_type_t typ
 	array_elementwise_import_fn import = dmt[type].array_elementwise_import;
 	if (import) {
 		for (int i = 0; i < num_values; ++i) {
-			void *copy = import(*(void**)(src + element_size * i));
+			void *copy = import(*(void**)((char*)src + element_size * i));
 			if (!copy) {
 				--i;
 				while (i >= 0) {
-					free(*(void**)(dst + element_size * i));
+					free(*(void**)((char*)dst + element_size * i));
 					--i;
 				}
 				return false;
@@ -291,7 +291,7 @@ void data_array_free(data_array_t *array) {
 	if (release) {
 		int element_size = dmt[array->type].array_element_size;
 		for (int i = 0; i < array->num_values; ++i)
-			release(*(void**)(array->values + element_size * i));
+			release(*(void**)((char*)array->values + element_size * i));
 	}
 	free(array->values);
 	free(array);
@@ -356,10 +356,10 @@ static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *
 		if (c)
 			fprintf(file, ", ");
 		if (!dmt[array->type].array_is_boxed) {
-			memcpy(buffer, (void**)(array->values + element_size * c), element_size);
+			memcpy(buffer, (void**)((char*)array->values + element_size * c), element_size);
 			print_value(printer_ctx, file, array->type, buffer, format);
 		} else {
-			print_value(printer_ctx, file, array->type, *(void**)(array->values + element_size * c), format);
+			print_value(printer_ctx, file, array->type, *(void**)((char*)array->values + element_size * c), format);
 		}
 	}
 	fprintf(file, "]");
@@ -490,9 +490,9 @@ static void print_csv_string(data_printer_context_t *printer_ctx, const char *st
 	}
 }
 
-static int compare_strings(char** a, char** b)
+static int compare_strings(const void* a, const void* b)
 {
-    return strcmp(*a, *b);
+	return strcmp(*(char **)a, *(char **)b);
 }
 
 void *data_csv_init(const char **fields, int num_fields)
@@ -511,7 +511,7 @@ void *data_csv_init(const char **fields, int num_fields)
 	allowed = calloc(num_fields, sizeof(const char*));
 	memcpy(allowed, fields, sizeof(const char*) * num_fields);
 
-	qsort(allowed, num_fields, sizeof(char*), (void*) compare_strings);
+	qsort(allowed, num_fields, sizeof(char*), compare_strings);
 
 	// overwrite duplicates
 	i = 0;
@@ -540,7 +540,7 @@ void *data_csv_init(const char **fields, int num_fields)
 
 	for (i = 0; i < num_fields; ++i) {
 		const char **field = bsearch(&fields[i], allowed, num_unique_fields, sizeof(const char*),
-					     (void*) compare_strings);
+					     compare_strings);
 		int *field_use_count = use_count + (field - allowed);
 		if (field && !*field_use_count) {
 			csv->fields[csv_fields] = fields[i];
