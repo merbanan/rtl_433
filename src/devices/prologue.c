@@ -39,7 +39,10 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
     uint8_t channel;
     int16_t temp;
     uint8_t humidity;
-    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
+
+    if (bitbuffer->bits_per_row[0] <= 8)
+        return 0; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
+    int r = bitbuffer_find_repeated_row(bitbuffer, 4, 36); // only 3 repeats will give false positives for Alecto/Auriol-v2
 
     if (r >= 0 &&
         bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
