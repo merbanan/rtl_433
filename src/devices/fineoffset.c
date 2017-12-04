@@ -96,6 +96,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
                          "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+                         "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
         data_acquired_handler(data);
     }
@@ -106,6 +107,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                         "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
         data_acquired_handler(data);
     }
@@ -192,6 +194,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+                     "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                       NULL);
     data_acquired_handler(data);
 
@@ -263,6 +266,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "rain",          "Rain",        DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
+                     "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
     data_acquired_handler(data);
 
@@ -276,6 +280,7 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
+    "mic",
     NULL
 };
 
@@ -287,7 +292,7 @@ static char *output_fields_WH25[] = {
     "temperature_C",
     "humidity",
     "pressure_hPa",
-//    "raw",
+    "mic",
     NULL
 };
 
@@ -298,6 +303,7 @@ static char *output_fields_WH0530[] = {
     "id",
     "temperature_C",
     "rain",
+    "mic",
     NULL
 };
 
