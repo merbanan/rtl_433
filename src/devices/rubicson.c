@@ -59,7 +59,7 @@ int rubicson_crc_check(bitrow_t *bb) {
         ret = 0;
 
     return ret;
-};
+}
 
 static int rubicson_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;

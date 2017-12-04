@@ -490,7 +490,7 @@ static void classify_signal() {
         signal_distance_data[i] = 0;
     }
 
-};
+}
 
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
