@@ -11,7 +11,6 @@
 #include "util.h"
 #include "pulse_demod.h"
 
-
 /*
  * Fine Offset Electronics WH2 Temperature/Humidity sensor protocol
  * aka Agimex Rosenborg 66796 (sold in Denmark)
@@ -40,6 +39,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     char *model;
+    int type;
     uint8_t id;
     int16_t temp;
     float temperature;
@@ -66,6 +66,15 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Validate package
     if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
         return 0;
+
+    // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
+    type = b[0] >> 4;
+    if (type != 4) {
+        if (debug_output) {
+            fprintf(stderr, "%s: Unknown type: %d\n", model, type);
+        }
+        return 0;
+    }
 
     // Nibble 3,4 contains id
     id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
