@@ -1215,8 +1215,13 @@ int main(int argc, char **argv) {
 
     if (in_filename) {
         int i = 0;
-        unsigned char test_mode_buf[DEFAULT_BUF_LENGTH];
-        float test_mode_float_buf[DEFAULT_BUF_LENGTH];
+        unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
+        float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(float));
+        if (!test_mode_buf || !test_mode_float_buf)
+        {
+            fprintf(stderr, "Couldn't allocate read buffers!\n");
+            exit(1);
+        }
     if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
         in_file = stdin;
         in_filename = "<stdin>";
@@ -1236,7 +1241,7 @@ int main(int argc, char **argv) {
         int n_read, cf32_tmp;
         do {
         if (demod->debug_mode == 3) {
-        n_read = fread(test_mode_float_buf, sizeof(float), 131072, in_file);
+        n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH, in_file);
         for(int n = 0; n < n_read; n++) {
             cf32_tmp = test_mode_float_buf[n]*127 + 127;
             if (cf32_tmp < 0)
@@ -1246,7 +1251,7 @@ int main(int argc, char **argv) {
             test_mode_buf[n] = (uint8_t)cf32_tmp;
         }
             } else {
-                n_read = fread(test_mode_buf, 1, 131072, in_file);
+                n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
             }
             if (n_read == 0) break;  // rtlsdr_callback() will Segmentation Fault with len=0
             rtlsdr_callback(test_mode_buf, n_read, demod);
@@ -1256,13 +1261,15 @@ int main(int argc, char **argv) {
 
         // Call a last time with cleared samples to ensure EOP detection
         memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
-        rtlsdr_callback(test_mode_buf, 131072, demod);  // Why the magic value 131072?
+        rtlsdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
 
         //Always classify a signal at the end of the file
         classify_signal();
     if (!quiet_mode) {
         fprintf(stderr, "Test mode file issued %d packets\n", i);
     }
+        free(test_mode_buf);
+        free(test_mode_float_buf);
         exit(0);
     }
 
