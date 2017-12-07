@@ -1032,9 +1032,13 @@ int main(int argc, char **argv) {
                 }
                 break;
             case 'U':
-#if !defined(__MINGW32__)
+#ifdef _WIN32
+                putenv("TZ=UTC+0");
+                _tzset();
+#else
                 utc_mode = setenv("TZ", "UTC", 1);
-                if(utc_mode != 0) fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
+                if(utc_mode != 0)
+                    fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
 #endif
                 break;
             case 'W':

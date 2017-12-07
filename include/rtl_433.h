@@ -13,17 +13,18 @@
 #include "bitbuffer.h"
 #include "data.h"
 
-#ifndef _WIN32
-#include <unistd.h>
-#else
+#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
-#ifndef __MINGW32__
+#ifdef _MSC_VER
 #include "getopt/getopt.h"
-#else
-#include <getopt.h>
+#define F_OK 0
 #endif
+#endif
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <getopt.h>
 #endif
 
 #define DEFAULT_SAMPLE_RATE     250000
