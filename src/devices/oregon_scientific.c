@@ -1,3 +1,11 @@
+/* Fine Offset Electronics sensor protocol
+ *
+ * Copyright (C) 2015 Helge Weissig
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ */
 #include "rtl_433.h"
 #include "data.h"
 #include "util.h"
