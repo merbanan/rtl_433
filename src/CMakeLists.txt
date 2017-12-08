@@ -25,6 +25,7 @@ add_executable(rtl_433
 	rtl_433.c
 	optparse.c
 	util.c
+	devices/gdecode.c
 	devices/acurite.c
 	devices/alecto.c
 	devices/ambient_weather.c
