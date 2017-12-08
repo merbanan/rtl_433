@@ -129,6 +129,7 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
                          "temperature_C", "Celcius",	DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                          "humidity",      "Humidity",	DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                          "status",        "Status",                             DATA_INT,    status,
+                         "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                          NULL);
         data_acquired_handler(data);
         return 1;
@@ -145,6 +146,7 @@ static char *output_fields[] = {
     "status",
     "temperature_C",
     "humidity",
+    "mic",
     NULL
 };
 

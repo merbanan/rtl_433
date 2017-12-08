@@ -95,7 +95,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 		events++;
 	}
 	return events;
-};
+}
 
 static char *output_fields[] = {
 	"time",

@@ -46,7 +46,7 @@ Running:
 ```
 Usage:	= Tuner options =
 	[-d <RTL-SDR USB device index>] (default: 0)
-    [-i <RTL-SDR USB device serial number (can be set with rtl_eeprom -s)>]
+	[-i <RTL-SDR USB device serial number (can be set with rtl_eeprom -s)>]
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
@@ -83,6 +83,7 @@ Usage:	= Tuner options =
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
+	[-E] Stop after outputting successful event(s)
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported device protocols:
@@ -182,6 +183,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  NEXA LMST-606
+    [97]  Thermopro TP12 Thermometer
 
 * Disabled by default, use -R n or -G
 

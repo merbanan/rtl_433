@@ -13,17 +13,18 @@
 #include "bitbuffer.h"
 #include "data.h"
 
-#ifndef _WIN32
-#include <unistd.h>
-#else
+#ifdef _WIN32
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
-#ifndef __MINGW32__
+#ifdef _MSC_VER
 #include "getopt/getopt.h"
-#else
-#include <getopt.h>
+#define F_OK 0
 #endif
+#endif
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <getopt.h>
 #endif
 
 #define DEFAULT_SAMPLE_RATE     250000
@@ -42,7 +43,7 @@
 
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
-#define MAX_PROTOCOLS           96
+#define MAX_PROTOCOLS           98
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 /* Supported modulation types */

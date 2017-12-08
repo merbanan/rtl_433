@@ -11,7 +11,6 @@
 #include "util.h"
 #include "pulse_demod.h"
 
-
 /*
  * Fine Offset Electronics WH2 Temperature/Humidity sensor protocol
  * aka Agimex Rosenborg 66796 (sold in Denmark)
@@ -39,25 +38,43 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
+    char *model;
+    int type;
     uint8_t id;
     int16_t temp;
     float temperature;
     uint8_t humidity;
 
     if (bitbuffer->bits_per_row[0] == 48 &&
-            bb[0][0] == 0xFF) // WH2
+            bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
+        model = "Fine Offset Electronics, WH2 Temperature/Humidity sensor";
 
-    else if (bitbuffer->bits_per_row[0] == 47 &&
-            bb[0][0] == 0xFE) // WH5
+    } else if (bitbuffer->bits_per_row[0] == 47 &&
+            bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
+        model = "Fine Offset WH5 sensor";
 
-    else
+    } else if (bitbuffer->bits_per_row[0] == 49 &&
+            bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
+        bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
+        model = "Telldus/Proove thermometer";
+
+    } else
         return 0;
 
     // Validate package
     if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
         return 0;
+
+    // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
+    type = b[0] >> 4;
+    if (type != 4) {
+        if (debug_output) {
+            fprintf(stderr, "%s: Unknown type: %d\n", model, type);
+        }
+        return 0;
+    }
 
     // Nibble 3,4 contains id
     id = ((b[0]&0x0F) << 4) | ((b[1]&0xF0) >> 4);
@@ -85,19 +102,21 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Thermo
     if (b[3] == 0xFF) {
         data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "TFA 30.3157 Temperature sensor",
+                         "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+                         "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
         data_acquired_handler(data);
     }
     // Thermo/Hygro
     else {
         data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, (bb[0][0] == 0xFF) ? "Fine Offset Electronics, WH2 Temperature/Humidity sensor" : "Fine Offset WH5 sensor",
+                         "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                         "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
         data_acquired_handler(data);
     }
@@ -184,6 +203,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+                     "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                       NULL);
     data_acquired_handler(data);
 
@@ -255,6 +275,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "rain",          "Rain",        DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
+                     "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
     data_acquired_handler(data);
 
@@ -268,6 +289,7 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
+    "mic",
     NULL
 };
 
@@ -279,7 +301,7 @@ static char *output_fields_WH25[] = {
     "temperature_C",
     "humidity",
     "pressure_hPa",
-//    "raw",
+    "mic",
     NULL
 };
 
@@ -290,6 +312,7 @@ static char *output_fields_WH0530[] = {
     "id",
     "temperature_C",
     "rain",
+    "mic",
     NULL
 };
 

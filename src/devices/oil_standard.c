@@ -91,7 +91,7 @@ static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
 	data_acquired_handler(data);
 
 	return 1;
-};
+}
 
 static int oil_standard_callback(bitbuffer_t *bitbuffer) {
 	unsigned bitpos = 0;

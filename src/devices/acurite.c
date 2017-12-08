@@ -213,13 +213,13 @@ static int acurite_5n1_getBatteryLevel(uint8_t byte){
 static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
  	bitrow_t *bb = bitbuffer->bb;
    // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
-    if ((bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
+    if ((bitbuffer->bits_per_row[0] >= 24) && (bb[0][0] != 0) && (bb[0][1] != 0) && (bb[0][2]!=0) && (bb[0][3] == 0) && (bb[0][4] == 0)) {
 	    float total_rain = ((bb[0][1]&0xf)<<8)+ bb[0][2];
 		total_rain /= 2; // Sensor reports number of bucket tips.  Each bucket tip is .5mm
 
 		if (debug_output > 1) {
 			fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
-			fprintf(stdout, "Raw Message: %02x %02x %02x %02x %02x\n",bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+			fprintf(stdout, "Raw Message (%d bits): %02x %02x %02x %02x %02x\n",bitbuffer->bits_per_row[0],bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
 		}
 
 		uint8_t id = bb[0][0];
