@@ -46,7 +46,7 @@ Running:
 ```
 Usage:	= Tuner options =
 	[-d <RTL-SDR USB device index>] (default: 0)
-	[-i <RTL-SDR USB device serial number (can be set with rtl_eeprom -s)>]
+	[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	[-g <gain>] (default: 0 for auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
@@ -67,7 +67,7 @@ Usage:	= Tuner options =
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
 	[-W] Overwrite mode, disable checks to prevent files from being overwritten
-	[-y <code>] Verify decoding of raw data (e.g. "{25}fb2dd58") with enabled devices
+	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
@@ -99,11 +99,11 @@ Supported device protocols:
     [10]* Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
-    [13]  Mebus 433
+    [13]* Mebus 433
     [14]* Intertechno 433
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
-    [17]* Cardin S466-TX2
+    [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
@@ -123,7 +123,7 @@ Supported device protocols:
     [34]  LaCrosse WS-2310 Weather Station
     [35]  Esperanza EWS
     [36]  Efergy e2 classic
-    [37]* Inovalley kw9015b rain and Temperature weather station
+    [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1
     [40]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
@@ -177,13 +177,14 @@ Supported device protocols:
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
-    [91]  Infactory
-    [92]  Ft004b	
-    [93]  Ford car remote
+    [91]* inFactory
+    [92]  FT-004-B Temperature Sensor
+    [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
-    [96]  NEXA LMST-606
+    [96]  Nexa
     [97]  Thermopro TP12 Thermometer
+    [98]  GE Color Effects
 
 * Disabled by default, use -R n or -G
 
