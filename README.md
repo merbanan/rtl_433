@@ -199,7 +199,7 @@ Examples:
 | `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40` | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
 | `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
 | `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
-| `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (gfile###.data). Format is uint8, 2 channels.
+| `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (`g###_###M_###k.cu8`). Format is uint8, 2 channels.
 | `rtl_433 -r file_name` | Play back a saved data file.
 | `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files wint `rtl_433 -a -t` is preferred.
 | `rtl_433 -F json -U \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
@@ -215,10 +215,10 @@ Note: Not all device protocol decoders are enabled by default. When testing to s
 is decoded by rtl_433, use `-G` to enable all device protocols.
 
 The first step in decoding new devices is to record the signals using `-a -t`. The signals will be
-stored individually in files named gfileNNN.data that can be played back with `rtl_433 -r gfileNNN.data`.
+stored individually in files named gNNN_FFFM_RRRk.cu8 that can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
 
 These files are vital for understanding the signal format as well as the message data.  Use both analyzers
-`-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gfileNNN.data -a -A`.
+`-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -a -A`.
 
 Make sure you have recorded a proper set of test signals representing different conditions together
 with any and all information about the values that the signal should represent. For example, make a

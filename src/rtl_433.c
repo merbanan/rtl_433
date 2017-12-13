@@ -34,6 +34,7 @@
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0;
 uint32_t frequency[MAX_PROTOCOLS];
+uint32_t center_frequency = 0;
 time_t rawtime_old;
 int duration = 0;
 time_t stop_time;
@@ -542,7 +543,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     FILE *sgfp;
 
             while (1) {
-            sprintf(sgf_name, "gfile%03d.data", demod->signal_grabber);
+            sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, frequency[0]/1000000.0, samp_rate/1000.0);
             demod->signal_grabber++;
             if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
                 break;
@@ -1345,7 +1346,8 @@ int main(int argc, char **argv) {
     }
         while (!do_exit) {
             /* Set the frequency */
-            r = rtlsdr_set_center_freq(dev, frequency[frequency_current]);
+            center_frequency = frequency[frequency_current];
+            r = rtlsdr_set_center_freq(dev, center_frequency);
             if (r < 0)
                 fprintf(stderr, "WARNING: Failed to set center freq.\n");
             else
