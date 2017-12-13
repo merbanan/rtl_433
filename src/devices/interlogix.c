@@ -83,7 +83,6 @@
  *
  */
 
-
 #define INTERLOGIX_CRC_POLY    0x07
 #define INTERLOGIX_CRC_INIT    0x00
 
@@ -149,11 +148,9 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         uint8_t *bb;
         data_t *data;
         int row = 0;
-        local_time_str(0, time_str);
-
-        char device_type[1];
+        char device_type[2];
         char *device_type_name = "";
-        char device_serial[6];
+        char device_serial[7];
         char device_raw_message[256];
         char *low_battery = "";
         char *f1_latch_state = "";
@@ -187,7 +184,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         }
 
         unsigned pos;
-
         unsigned bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
 
         if (bitbuffer->bits_per_row[row] - bit_offset < 45) { //message should be at least 45 bits not including preamble bits
@@ -208,7 +204,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         fprintf(stderr, "Message length: %d \n", msgLength);
 
                 bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, msgLength);
-
 
                 //TODO: Check message integrity (CRC/Checksum/parity) using crc8
                 //      message does not include sync bit that needs to be included in CRC calculation
@@ -252,10 +247,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         default: device_type_name = "unknown"; break;
                 }
 
-
-
-
-                low_battery = (message[3] & 0x10) ? "on" : "off";
+                low_battery = (message[3] & 0x10) ? "LOW" : "OK";
                 sprintf(device_serial, "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
                 sprintf(device_raw_message, "%s%s%s", int2bin(message[3]), int2bin(message[4]), int2bin(message[5]));
 
@@ -264,7 +256,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                 f3_latch_state = (message[4] & 0x40) ? "open" : "close";
                 f4_latch_state = (message[4] & 0x10) ? "open" : "close";
                 f5_latch_state = (message[4] & 0x04) ? "open" : "close";
-
 
                 if (debug_output >= 1) {
 
@@ -317,6 +308,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         fprintf(stderr, "\n");
                 }
 
+		local_time_str(0, time_str);
+
                 data = data_make("time", "Receiver Time", DATA_STRING, time_str,
                         "model", "Model", DATA_STRING, "GE Interlogix Device",
                         "device_type", "Device Type", DATA_STRING, device_type,
@@ -333,13 +326,10 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
                 data_acquired_handler(data);
 
-
                 // Return 1 if message successfully decoded
                 return 1;
 
         }
-
-
 }
 
 /*
@@ -388,7 +378,6 @@ static char *csv_output_fields[] = {
  *
  */
 
-
 r_device interlogix = {
     .name          = "Interlogix GE Security Device Decoder",
     .modulation    = OOK_PULSE_PPM_RAW,
@@ -400,5 +389,4 @@ r_device interlogix = {
     .demod_arg     = 1,
     .fields        = csv_output_fields,
 };
-
 
