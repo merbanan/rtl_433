@@ -112,6 +112,7 @@ add_executable(rtl_433
 	devices/nexa.c
 	devices/thermopro_tp12.c
 	devices/x10_sec.c
+	devices/interlogix.c
 )
 
 add_library(data data.c)
