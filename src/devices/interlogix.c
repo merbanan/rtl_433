@@ -86,27 +86,8 @@
 #define INTERLOGIX_CRC_POLY    0x07
 #define INTERLOGIX_CRC_INIT    0x00
 
-//preamble (and single sync bit) should be 0000 0000 0000 1
-//TODO: only searching for 0000 0001 and should be searching for all 13 bits of preamble
+//only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = { 0x01 };
-
-static uint8_t reverse4(uint8_t  nib)
-{
-        int revnib = 0;
-
-        revnib += (nib >> 3) & 0x1;
-        revnib += (nib >> 1) & 0x2;
-        revnib += (nib << 1) & 0x4;
-        revnib += (nib << 3) & 0x8;
-
-        return(revnib);
-}
-
-//assumes little endian - find if bit is set to 1 using position 0-7 left to right
-int isNthBitSet (uint8_t c, int n) {
-        static uint8_t  mask[] = {128, 64, 32, 16, 8, 4, 2, 1};
-        return ((c & mask[n]) != 0);
-}
 
 //assumes little endian - usage printBits(sizeof(i), &i);
 void printBits(size_t const size, void const * const ptr)
@@ -183,7 +164,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         bitbuffer_print(bitbuffer);
         }
 
-        unsigned pos;
         unsigned bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
 
         if (bitbuffer->bits_per_row[row] - bit_offset < 45) { //message should be at least 45 bits not including preamble bits
@@ -197,10 +177,11 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
                 //set message starting postion (just past preamble and sync bit)
                 bit_offset = sizeof(preamble)*8 + bit_offset;
+		
+                unsigned msgLength = bitbuffer->bits_per_row[row]-bit_offset;
+		uint8_t message[((msgLength/8) & ~0x07)]; //this is typically 6 but dymaically size so no overflow occurs
 
-                uint8_t message[6];
-                unsigned msgLength = bitbuffer->bits_per_row[row]-bit_offset+2; //TODO: what happens if a different message size arrives?
-                if (debug_output >= 2)
+	        if (debug_output >= 2)
                         fprintf(stderr, "Message length: %d \n", msgLength);
 
                 bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, msgLength);
@@ -247,9 +228,12 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         default: device_type_name = "unknown"; break;
                 }
 
-                low_battery = (message[3] & 0x10) ? "LOW" : "OK";
+                low_battery = (message[3] & 0x10) ? "low" : "ok";
                 sprintf(device_serial, "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
-                sprintf(device_raw_message, "%s%s%s", int2bin(message[3]), int2bin(message[4]), int2bin(message[5]));
+               	//TODO: find a better way to print in binary 
+		//sprintf(device_raw_message, "%s%s%s", int2bin(message[3]), int2bin(message[4]), int2bin(message[5]));
+		sprintf(device_raw_message, "%x%x%x", message[3], message[4], message[5]);
+
 
                 f1_latch_state = (message[3] & 0x04) ? "open" : "close";
                 f2_latch_state = (message[3] & 0x01) ? "open" : "close";
@@ -260,52 +244,15 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                 if (debug_output >= 1) {
 
                         //10110110 00001000 11100101 TTT0DA01 DC01DE00 00110000
-                        if (message[3] & 0x10) { //tested
-                                fprintf(stderr, "Low Battery ");
-                        }
-                        else {
-                                fprintf(stderr, "Battery OK ");
-                        }
-
-                        if(message[3] & 0x04) { //tested
-                                fprintf(stderr, "F1 Latch: OPEN ");
-                        }
-                        else {
-                                fprintf(stderr, "F1 Latch: CLOSED ");
-                        }
-
-                        if(message[3] & 0x01) {
-                                fprintf(stderr, "F2 Latch: OPEN ");
-                        }
-                        else {
-                                fprintf(stderr, "F2 Latch: CLOSED ");
-                        }
-                        if(message[4] & 0x40) { //tested but associated debouce flag will debounce with f5 for some reason retest
-                                fprintf(stderr, "F3 Latch: OPEN ");
-                        }
-                        else {
-                                fprintf(stderr, "F3 Latch: CLOSED ");
-                        }
-                        if(message[4] & 0x10) {
-                                fprintf(stderr, "F4 Latch: OPEN ");
-                        }
-                        else {
-                                fprintf(stderr, "F4 Latch: CLOSED ");
-                        }
-                        if(message[4] & 0x04) { //tested but not sure if positive latch of negative.. test
-                                fprintf(stderr, "F5 Positive Latch: OPEN ");
-                        }
-                        else {
-                                fprintf(stderr, "F5 Positive Latch: CLOSED ");
-                        }
-                        //if(message[4] & 0x02) {
-                        //      fprintf(stderr, "F5 Negative Latch: 1 ");
-                        //}
-                        //else {
-                        //      fprintf(stderr, "F5 Negative Latch: 0 ");
-                        //}
-
-                        fprintf(stderr, "\n");
+			fprintf(stderr, message[3] & 0x10 ? "Low Battery " : "Battery OK "); //tested
+			fprintf(stderr, message[3] & 0x04 ? "F1 Latch OPEN " : "F1 Latch: CLOSED "); //tested
+			fprintf(stderr, message[3] & 0x01 ? "F2 Latch OPEN " : "F2 Latch: CLOSED ");
+			fprintf(stderr, message[4] & 0x40 ? "F3 Latch OPEN " : "F3 Latch: CLOSED "); //tested but noted associated debuce flag is debounced with f5 for some reason
+			fprintf(stderr, message[4] & 0x10 ? "F4 Latch OPEN " : "F4 Latch: CLOSED ");
+			fprintf(stderr, message[4] & 0x04 ? "F5 Positive Latch OPEN " : "F5 Positive Latch: CLOSED "); //tested but need to test with f5 negative results
+			//fprintf(stderr, message[4] & 0x02 ? "F5 Negative Latch 1 " : "F5 Negative Latch: 0 ");
+				
+			fprintf(stderr, "\n");
                 }
 
 		local_time_str(0, time_str);
@@ -378,15 +325,21 @@ static char *csv_output_fields[] = {
  *
  */
 
+
+// old timings:
+//    .short_limit   = ((27+57)/2)*4,
+//    .long_limit    = (245)*4,
+//    .reset_limit   = (121)*4,
+ 
 r_device interlogix = {
     .name          = "Interlogix GE Security Device Decoder",
     .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = ((27+57)/2)*4,
-    .long_limit    = (245)*4,
-    .reset_limit   = (121)*4,
+    .short_limit   = (120+240)/2,
+    .long_limit    = 360,
+    .reset_limit   = 360,
     .json_callback = &interlogix_callback,
     .disabled      = 0,
-    .demod_arg     = 1,
+    .demod_arg     = 0,
     .fields        = csv_output_fields,
 };
 
