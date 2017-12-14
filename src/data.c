@@ -63,6 +63,7 @@ typedef struct data_printer {
 	void (*print_string)(struct data_printer_context *printer_ctx, const char *data, char *format, FILE *file);
 	void (*print_double)(struct data_printer_context *printer_ctx, double data, char *format, FILE *file);
 	void (*print_int)(struct data_printer_context *printer_ctx, int data, char *format, FILE *file);
+	void (*print_bool)(struct data_printer_context *printer_ctx, bool data, char *format, FILE *file);
 } data_printer_t;
 
 typedef struct data_printer_context {
@@ -112,11 +113,13 @@ static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *
 static void print_json_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
 static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
+static void print_json_bool(data_printer_context_t *printer_ctx, bool data, char *format, FILE *file);
 
 static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
 static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
 static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
+static void print_kv_bool(data_printer_context_t *printer_ctx, bool data, char *format, FILE *file);
 
 typedef struct {
 	const char **fields;
@@ -132,7 +135,8 @@ data_printer_t data_json_printer = {
 	.print_array  = print_json_array,
 	.print_string = print_json_string,
 	.print_double = print_json_double,
-	.print_int    = print_json_int
+	.print_int    = print_json_int,
+	.print_bool   = print_json_bool,
 };
 
 data_printer_t data_kv_printer = {
@@ -140,7 +144,8 @@ data_printer_t data_kv_printer = {
 	.print_array  = print_json_array,
 	.print_string = print_kv_string,
 	.print_double = print_kv_double,
-	.print_int    = print_kv_int
+	.print_int    = print_kv_int,
+	.print_bool   = print_kv_bool,
 };
 
 data_printer_t data_csv_printer = {
@@ -148,7 +153,8 @@ data_printer_t data_csv_printer = {
 	.print_array  = print_json_array,
 	.print_string = print_csv_string,
 	.print_double = print_json_double,
-	.print_int    = print_json_int
+	.print_int    = print_json_int,
+	.print_bool   = print_json_bool,
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -239,6 +245,13 @@ data_t *data_make(const char *key, const char *pretty_key, ...) {
 		} break;
 		case DATA_ARRAY  : {
 			value = va_arg(ap, data_t*);
+		} break;
+		case DATA_BOOL   : {
+			value = malloc(sizeof(bool));
+			if (value)
+				// use int here instead of bool because of automatic
+				// promotion in ...
+				*(bool*) value = va_arg(ap, int);
 		} break;
 		}
 
@@ -344,6 +357,9 @@ static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_ty
 	case DATA_ARRAY : {
 		printer_ctx->printer->print_array(printer_ctx, value, format, file);
 	} break;
+	case DATA_BOOL : {
+		printer_ctx->printer->print_bool(printer_ctx, *(bool*) value, format, file);
+	} break;
 	}
 }
 
@@ -402,6 +418,12 @@ static void print_json_int(data_printer_context_t *printer_ctx, int data, char *
 	fprintf(file, "%d", data);
 }
 
+static void print_json_bool(data_printer_context_t *printer_ctx, bool data, char *format, FILE *file)
+{
+	fputs(data ? "true" : "false", file);
+}
+
+
 /* Key-Value printer */
 static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
 {
@@ -446,6 +468,11 @@ static void print_kv_double(data_printer_context_t *printer_ctx, double data, ch
 static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
 {
 	fprintf(file, format ? format : "%d", data);
+}
+
+static void print_kv_bool(data_printer_context_t *printer_ctx, bool data, char *format, FILE *file)
+{
+	fputs(data ? "true" : "false", file);
 }
 
 

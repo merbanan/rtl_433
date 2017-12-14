@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "data.h"
 
@@ -27,6 +28,7 @@ int main()
 	data_t *data = data_make("label"      , "",		DATA_STRING, "1.2.3",
 				 "house_code" , "House Code",	DATA_INT, 42,
 				 "temp"	      , "Temperature",	DATA_DOUBLE, 99.9,
+				 "bool"       , "Boolean",	 DATA_BOOL, true,
 				 "array"      , "Array",	DATA_ARRAY, data_array(2, DATA_STRING, (char*[2]){"hello", "world"}),
 				 "array2"     , "Array 2",	DATA_ARRAY, data_array(2, DATA_INT, (int[2]){4, 2}),
 				 "array3"     , "Array 3",	DATA_ARRAY, data_array(2, DATA_ARRAY, (data_array_t*[2]){
@@ -34,7 +36,7 @@ int main()
 				 					 data_array(2, DATA_INT, (int[2]){5, 5}) }),
 				 "data"       , "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
 				 NULL);
-	const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
+	const char *fields[] = { "label", "house_code", "temp", "bool", "array", "array2", "array3", "data", "house_code" };
 	data_print(data, stdout, &data_json_printer, NULL); fprintf(stdout, "\n");
 	data_print(data, stdout, &data_kv_printer, NULL);
 	void *csv_aux = data_csv_init(fields, sizeof fields / sizeof *fields);
