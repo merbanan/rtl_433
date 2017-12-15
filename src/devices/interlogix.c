@@ -85,6 +85,7 @@
 
 #define INTERLOGIX_CRC_POLY    0x07
 #define INTERLOGIX_CRC_INIT    0x00
+#define INTERLOGIX_MSG_BIT_LEN 48
 
 //only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = { 0x01 };
@@ -130,18 +131,18 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         data_t *data;
         int row = 0;
         char device_type[2];
-        char *device_type_name = "";
+        char *device_type_name = NULL;
         char device_serial[7];
         char device_raw_message[256];
-        char *low_battery = "";
-        char *f1_latch_state = "";
-        char *f2_latch_state = "";
-        char *f3_latch_state = "";
-        char *f4_latch_state = "";
-        char *f5_latch_state = "";
+        char *low_battery = NULL;
+        char *f1_latch_state = NULL;
+        char *f2_latch_state = NULL;
+        char *f3_latch_state = NULL;
+        char *f4_latch_state = NULL;
+        char *f5_latch_state = NULL;
 
         if (debug_output >= 1) {
-                fprintf(stderr,"%s GE/Interlogix Wireless Devices Template Callback\n", time_str);
+                fprintf(stderr,"GE/Interlogix Wireless Devices Template Callback\n");
         }
         if (debug_output >= 2 ) {
 
@@ -156,7 +157,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                                 } else {
                                                 fprintf(stderr, "0");
                                 }
-                                //if ((bit % 8) == 7) { fprintf(stderr, " "); }   // Add byte separators
                 }
                 fprintf(stderr, "\n");
                 if (debug_output >=3)
@@ -167,38 +167,42 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         unsigned bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
 
         if (bitbuffer->bits_per_row[row] - bit_offset < 45) { //message should be at least 45 bits not including preamble bits
-                if (debug_output >= 3)
+                if (debug_output >= 1)
                         fprintf(stderr, "Found valid preamble but message size too small, exiting! \n");
                 return 0;
         }
         else {
-               if (debug_output >= 3)
-                        fprintf(stderr, "Found valid preamble and valid message size, begin parsing \n");
-
                 //set message starting postion (just past preamble and sync bit)
                 bit_offset = sizeof(preamble)*8 + bit_offset;
-		
-                unsigned msgLength = bitbuffer->bits_per_row[row]-bit_offset;
-		uint8_t message[((msgLength/8) & ~0x07)]; //this is typically 6 but dymaically size so no overflow occurs
 
-	        if (debug_output >= 2)
-                        fprintf(stderr, "Message length: %d \n", msgLength);
+                //even parity check (for bits 15-54) against even parity bit at bit 55
+		uint8_t calcParity = 0;
+		uint8_t msgParity = 0;	
+		for (uint8_t bitc = bit_offset; bitc < bitbuffer->bits_per_row[row]; bitc++ )
+		{
+			if (bitc == (bit_offset+40)) { //15 bits for preamble and sync so bit 41 is actually documented bit 55
+				msgParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
+				if (calcParity == msgParity) {
+					//exit loop and attemt to decode message as we have a valid parity check	
+					break;
+				} 
+				else {
+					if (debug_output >=1)	
+						fprintf(stderr, "Parity Check Failed! msgParity: %d and calcluated parity: %d \n", msgParity, calcParity); 
+					//dont attempt decode if parity check failed
+					return 0;	
+				}
+			}
+			calcParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
+		}
 
-                bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, msgLength);
+		uint8_t message[(INTERLOGIX_MSG_BIT_LEN/8)];
 
-                //TODO: Check message integrity (CRC/Checksum/parity) using crc8
-                //      message does not include sync bit that needs to be included in CRC calculation
-                //      missing 2 trailing bits in protocol that include CRC and stop bit?
-                if (crc8(message, 5, INTERLOGIX_CRC_POLY, INTERLOGIX_CRC_INIT) != message[5]) {
-                        if (debug_output >= 1)
-                                fprintf(stderr, "CRC Check for message payload failed! \n");
-                        //return 0;
-                }
-
+                bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
+                
                 if (debug_output >= 1) {
-
                         //grab 6, 4 bit nibbles from bit buffer. need to reverse them to get serial number
-                        fprintf(stderr, "\nDevice Serial Number: ");
+                        fprintf(stderr, "Device Serial Number: ");
                         fprintf(stderr, "%02x", reverse8(message[2]));
                         fprintf(stderr, "%02x", reverse8(message[1]));
                         fprintf(stderr, "%02x", reverse8(message[0]));
@@ -228,12 +232,11 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                         default: device_type_name = "unknown"; break;
                 }
 
-                low_battery = (message[3] & 0x10) ? "low" : "ok";
+                low_battery = (message[3] & 0x10) ? "on" : "off";
                 sprintf(device_serial, "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
                	//TODO: find a better way to print in binary 
 		//sprintf(device_raw_message, "%s%s%s", int2bin(message[3]), int2bin(message[4]), int2bin(message[5]));
 		sprintf(device_raw_message, "%x%x%x", message[3], message[4], message[5]);
-
 
                 f1_latch_state = (message[3] & 0x04) ? "open" : "close";
                 f2_latch_state = (message[3] & 0x01) ? "open" : "close";
@@ -242,7 +245,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
                 f5_latch_state = (message[4] & 0x04) ? "open" : "close";
 
                 if (debug_output >= 1) {
-
                         //10110110 00001000 11100101 TTT0DA01 DC01DE00 00110000
 			fprintf(stderr, message[3] & 0x10 ? "Low Battery " : "Battery OK "); //tested
 			fprintf(stderr, message[3] & 0x04 ? "F1 Latch OPEN " : "F1 Latch: CLOSED "); //tested
@@ -275,7 +277,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
                 // Return 1 if message successfully decoded
                 return 1;
-
         }
 }
 
@@ -324,12 +325,6 @@ static char *csv_output_fields[] = {
  * - rtL_433.h for the list of defined names
  *
  */
-
-
-// old timings:
-//    .short_limit   = ((27+57)/2)*4,
-//    .long_limit    = (245)*4,
-//    .reset_limit   = (121)*4,
  
 r_device interlogix = {
     .name          = "Interlogix GE Security Device Decoder",
