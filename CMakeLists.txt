@@ -32,17 +32,25 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
+    ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-Wno-unused)
     ADD_DEFINITIONS(-Wno-unused-parameter)
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
-    ADD_DEFINITIONS(-Wsign-compare)
-    ADD_DEFINITIONS(-g3 -O0)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
     # for strdup
     ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
+
+    # CMake Release default for GCC/Clang is "-O3 -DNDEBUG"
+    # set(CMAKE_C_FLAGS_RELEASE -O2)
+    # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
+    # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
+endif()
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+    # make sure we don't accidentally copy more than an int
+    ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
 endif()
 
 ########################################################################
@@ -50,13 +58,14 @@ endif()
 ########################################################################
 find_package(PkgConfig)
 find_package(LibRTLSDR)
+list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
 
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-	${LIBRTLSDR_INCLUDE_DIRS}
+    ${LIBRTLSDR_INCLUDE_DIRS}
 )
 
 ########################################################################

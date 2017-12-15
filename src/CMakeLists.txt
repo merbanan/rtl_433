@@ -114,7 +114,7 @@ add_executable(rtl_433
 add_library(data data.c)
 
 target_link_libraries(rtl_433
-	${LIBRTLSDR_LIBRARIES}
+	${SDR_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
