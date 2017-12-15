@@ -60,6 +60,21 @@ find_package(PkgConfig)
 find_package(LibRTLSDR)
 list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
 
+# cmake -DCMAKE_BUILD_TYPE=Profile ..
+# CPUPROFILE=prof.out ./src/rtl_433 ...
+# pprof -text ./src/rtl_433 prof.out
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
+    message(STATUS "Build type set to Profile. Linking GPerfTools.")
+    find_package(Gperftools REQUIRED)
+    include_directories(${GPERFTOOLS_INCLUDE_DIR})
+    list(APPEND SDR_LIBRARIES ${GPERFTOOLS_LIBRARIES} -Wl,-no_pie)
+    ADD_DEFINITIONS(-g)
+    ADD_DEFINITIONS(-fno-builtin-malloc)
+    ADD_DEFINITIONS(-fno-builtin-calloc)
+    ADD_DEFINITIONS(-fno-builtin-realloc)
+    ADD_DEFINITIONS(-fno-builtin-free)
+endif()
+
 ########################################################################
 # Setup the include and linker paths
 ########################################################################
