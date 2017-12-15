@@ -140,11 +140,11 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     char *f4_latch_state = NULL;
     char *f5_latch_state = NULL;
 
-    if (debug_output >= 1) {
+    if (debug_output >= 1) 
         fprintf(stderr,"GE/Interlogix Wireless Devices Template Callback\n");
-    }
-    if (debug_output >= 2 ) {
-
+    
+    if (debug_output >= 2 ) 
+    {
         fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bitbuffer->num_rows);
         fprintf(stderr, "bitbuffer:: Length of 1st row: %d \n", bitbuffer->bits_per_row[row]);
         fprintf(stderr, "bitbuffer:: Printing 1st row: \n");
@@ -165,12 +165,14 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
 
-    if (bitbuffer->bits_per_row[row] - bit_offset < 45) { //message should be at least 45 bits not including preamble bits
+    if (bitbuffer->bits_per_row[row] - bit_offset < 45) //message should be at least 45 bits not including preamble bits
+    { 
         if (debug_output >= 1)
             fprintf(stderr, "Found valid preamble but message size too small, exiting! \n");
         return 0;
     }
-    else {
+    else 
+    {
         //set message starting postion (just past preamble and sync bit)
         bit_offset = sizeof(preamble)*8 + bit_offset;
 
@@ -181,11 +183,13 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         {
             if (bitc == (bit_offset+40)) { //15 bits for preamble and sync so bit 41 is actually documented bit 55
                 msgParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
-                if (calcParity == msgParity) {
+                if (calcParity == msgParity) 
+                {
                     //exit loop and attemt to decode message as we have a valid parity check
                     break;
                 }
-                else {
+                else 
+                {
                     if (debug_output >=1)
                         fprintf(stderr, "Parity Check Failed! msgParity: %d and calcluated parity: %d \n", msgParity, calcParity);
                     //dont attempt decode if parity check failed
@@ -199,7 +203,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
         bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
 
-        if (debug_output >= 1) {
+        if (debug_output >= 1) 
+        {
             //grab 6, 4 bit nibbles from bit buffer. need to reverse them to get serial number
             fprintf(stderr, "Device Serial Number: ");
             fprintf(stderr, "%02x", reverse8(message[2]));
@@ -221,7 +226,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 
         //TODO: look at conditionally parsing message for specific device types - raw message
         //      will be passed so parsing for specific device can be done at higher layer
-        switch((reverse8(message[2])>>4)) {
+        switch((reverse8(message[2])>>4)) 
+        {
             case 0xa: device_type_name = "contact sensor"; break;
             case 0xf: device_type_name = "keyfob"; break;
             case 0x4: device_type_name = "motion sensor"; break;
@@ -242,7 +248,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         f4_latch_state = (message[4] & 0x10) ? "open" : "close";
         f5_latch_state = (message[4] & 0x04) ? "open" : "close";
 
-        if (debug_output >= 1) {
+        if (debug_output >= 1) 
+        {
             //10110110 00001000 11100101 TTT0DA01 DC01DE00 00110000
             fprintf(stderr, message[3] & 0x10 ? "Low Battery " : "Battery OK "); //tested
             fprintf(stderr, message[3] & 0x04 ? "F1 Latch OPEN " : "F1 Latch: CLOSED "); //tested
