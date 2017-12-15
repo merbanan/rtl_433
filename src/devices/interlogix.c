@@ -128,7 +128,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *bb;
     data_t *data;
-    int row = 0;
+    unsigned int row = 0;
     char device_type[2];
     char *device_type_name = NULL;
     char device_serial[7];
@@ -150,7 +150,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         fprintf(stderr, "bitbuffer:: Printing 1st row: \n");
 
         //this is typically done in the bitbuffer_print function but depends upon length so doing it explicitly here
-        for (uint16_t bit = 0; bit < bitbuffer->bits_per_row[row]; ++bit) {
+        for (unsigned int bit = 0; bit < bitbuffer->bits_per_row[row]; ++bit) {
             if (bitbuffer->bb[row][bit/8] & (0x80 >> (bit % 8))) {
                 fprintf(stderr, "1");
             } else {
@@ -163,7 +163,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
             bitbuffer_print(bitbuffer);
     }
 
-    uint16_t bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
+    unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
 
     if (bitbuffer->bits_per_row[row] - bit_offset < 45) { //message should be at least 45 bits not including preamble bits
         if (debug_output >= 1)
@@ -175,9 +175,9 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         bit_offset = sizeof(preamble)*8 + bit_offset;
 
         //even parity check (for bits 15-54) against even parity bit at bit 55
-        uint16_t calcParity = 0;
-        uint16_t msgParity = 0;
-        for (uint16_t bitc = bit_offset; bitc < bitbuffer->bits_per_row[row]; bitc++ )
+        unsigned int calcParity = 0;
+        unsigned int msgParity = 0;
+        for (unsigned int bitc = bit_offset; bitc < bitbuffer->bits_per_row[row]; bitc++ )
         {
             if (bitc == (bit_offset+40)) { //15 bits for preamble and sync so bit 41 is actually documented bit 55
                 msgParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
