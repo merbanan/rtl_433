@@ -55,6 +55,7 @@ static int oregon_scientific_callback_v1(bitbuffer_t *bitbuffer) {
 
 				data = data_make(
 					"time",			"",				DATA_STRING,	time_str,
+					"brand",		"",				DATA_STRING,	"OS",
 					"model",		"",				DATA_STRING,	"OSv1 Temperature Sensor",
 					"sid",			"SID",			DATA_INT,		sid,
 					"channel",		"Channel",		DATA_INT,		channel,
@@ -71,6 +72,7 @@ static int oregon_scientific_callback_v1(bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
 	"time",
+	"brand",
 	"model",
 	"id",
 	"channel",
