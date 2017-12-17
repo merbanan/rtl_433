@@ -1124,7 +1124,7 @@ int main(int argc, char **argv) {
 
     // select rtlsdr device by number (-d <n>)
     else if (dev_query) {
-        dev_index = atoi(optarg);
+        dev_index = atoi(dev_query);
         // check if 0 is a parsing error?
         if (dev_index < 0) {
             // select first available rtlsdr device
