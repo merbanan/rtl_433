@@ -246,6 +246,27 @@ void data_acquired_handler(data_t *data)
                         *pos = 'C';
                     }
             }
+            // Convert any fields ending in _mph to _kph
+            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_mph") != NULL)) {
+                   *(double*)d->value = mph2kmph(*(double*)d->value);
+                   char *new_label = str_replace(d->key, "_mph", "_kph");
+                   free(d->key);
+                   d->key = new_label;
+                   char *new_format_label = str_replace(d->format, "mph", "kph");
+                   free(d->format);
+                   d->format = new_format_label;
+            }
+
+            // Convert any fields ending in _mph to _kph
+            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_inch") != NULL)) {
+                   *(double*)d->value = inch2mm(*(double*)d->value);
+                   char *new_label = str_replace(d->key, "_inch", "_mm");
+                   free(d->key);
+                   d->key = new_label;
+                   char *new_format_label = str_replace(d->format, "inch", "mm");
+                   free(d->format);
+                   d->format = new_format_label;
+            }
         }
     }
     if (conversion_mode == CONVERT_CUSTOMARY) {
@@ -260,6 +281,27 @@ void data_acquired_handler(data_t *data)
                         (pos = strrchr(d->format, 'C'))) {
                         *pos = 'F';
                     }
+            }
+            // Convert any fields ending in _kph to _mph
+            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_kph") != NULL)) {
+                   *(double*)d->value = kmph2mph(*(double*)d->value);
+                   char *new_label = str_replace(d->key, "_kph", "_mph");
+                   free(d->key);
+                   d->key = new_label;
+                   char *new_format_label = str_replace(d->format, "kph", "mph");
+                   free(d->format);
+                   d->format = new_format_label;
+            }
+
+            // Convert any fields ending in _mm to _inch
+            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_mm") != NULL)) {
+                   *(double*)d->value = mm2inch(*(double*)d->value);
+                   char *new_label = str_replace(d->key, "_mm", "_inch");
+                   free(d->key);
+                   d->key = new_label;
+                   char *new_format_label = str_replace(d->format, "mm", "inch");
+                   free(d->format);
+                   d->format = new_format_label;
             }
         }
     }
