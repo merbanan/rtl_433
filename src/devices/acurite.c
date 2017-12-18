@@ -459,7 +459,7 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
     uint8_t *bb;
-    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed, wind_speedmph;
+    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed_kph, wind_speed_mph;
     uint8_t humidity, sensor_status, sequence_num, message_type;
     char channel, *wind_dirstr = "";
     char channel_str[2];
@@ -557,8 +557,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	    if (message_type == ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL) {
             // Wind speed, wind direction, and rain fall
-            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
-            wind_speedmph = kmph2mph(wind_speed);
+            wind_speed_kph = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speed_mph = kmph2mph(wind_speed_kph);
             wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
             wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
             raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
@@ -587,10 +587,10 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
                 "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
                 "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
-                "rainfall_accumulation",     NULL,   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
+                "rainfall_accumulation_inch", "rainfall_accumulation",   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
                 "raincounter_raw",  NULL,   DATA_INT,   raincounter,
                 NULL);
 
@@ -598,8 +598,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
 	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY) {
             // Wind speed, temperature and humidity
-            wind_speed = acurite_getWindSpeed_kph(bb[3], bb[4]);
-            wind_speedmph = kmph2mph(wind_speed);
+            wind_speed_kph = acurite_getWindSpeed_kph(bb[3], bb[4]);
+            wind_speed_mph = kmph2mph(wind_speed_kph);
             tempf = acurite_getTemp(bb[4], bb[5]);
             tempc = fahrenheit2celsius(tempf);
             humidity = acurite_getHumidity(bb[6]);
@@ -612,7 +612,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                 "message_type", NULL,   DATA_INT,       message_type,
-                "wind_speed",   NULL,   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speedmph,
+                "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
                 "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                 "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                 NULL);

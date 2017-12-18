@@ -1,6 +1,6 @@
 /**
  * Various utility functions for use by device drivers
- * 
+ *
  * Copyright (C) 2015 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -119,5 +119,29 @@ float kmph2mph(float kph);
 /// @return speed in kilometers per hour
 float mph2kmph(float kph);
 
+
+/// Convert millimeters (mm) to inches (inch)
+///
+/// @param mm: measurement in millimeters
+/// @return measurement in inches
+float mm2inch(float mm);
+
+/// Convert inches (inch) to millimeters (mm)
+///
+/// @param inch: measurement in inches
+/// @return measurement in millimeters
+float inch2mm(float inch);
+
+
+
+
+/// Replace a pattern in a string. This utility function is
+/// useful when converting native units to si or customary.
+///
+/// @param orig: string to search for patterns
+/// @param rep: the pattern to replace
+/// @param with: the replacement pattern
+/// @return a new string that has rep replaced with with
+char *str_replace(char *orig, char *rep, char *with);
 
 #endif /* INCLUDE_UTIL_H_ */
