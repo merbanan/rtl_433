@@ -86,6 +86,13 @@ static data_meta_type_t dmt[DATA_COUNT] = {
 	  .array_element_release    = NULL,
 	  .value_release            = (value_release_fn) free },
 
+	//  DATA_BOOL
+	{ .array_element_size       = sizeof(bool),
+	  .array_is_boxed           = false,
+	  .array_elementwise_import = NULL,
+	  .array_element_release    = NULL,
+	  .value_release            = (value_release_fn) free },
+
 	//  DATA_DOUBLE
 	{ .array_element_size       = sizeof(double),
 	  .array_is_boxed           = false,
@@ -235,6 +242,13 @@ data_t *data_make(const char *key, const char *pretty_key, ...) {
 			if (value)
 				*(int*) value = va_arg(ap, int);
 		} break;
+		case DATA_BOOL   : {
+			value = malloc(sizeof(bool));
+			if (value)
+				// use int here instead of bool because of automatic
+				// promotion in ...
+				*(bool*) value = va_arg(ap, int);
+		} break;
 		case DATA_DOUBLE : {
 			value = malloc(sizeof(double));
 			if (value)
@@ -245,13 +259,6 @@ data_t *data_make(const char *key, const char *pretty_key, ...) {
 		} break;
 		case DATA_ARRAY  : {
 			value = va_arg(ap, data_t*);
-		} break;
-		case DATA_BOOL   : {
-			value = malloc(sizeof(bool));
-			if (value)
-				// use int here instead of bool because of automatic
-				// promotion in ...
-				*(bool*) value = va_arg(ap, int);
 		} break;
 		}
 
@@ -348,6 +355,9 @@ static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_ty
 	case DATA_INT : {
 		printer_ctx->printer->print_int(printer_ctx, *(int*) value, format, file);
 	} break;
+	case DATA_BOOL : {
+		printer_ctx->printer->print_bool(printer_ctx, *(bool*) value, format, file);
+	} break;
 	case DATA_DOUBLE : {
 		printer_ctx->printer->print_double(printer_ctx, *(double*) value, format, file);
 	} break;
@@ -356,9 +366,6 @@ static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_ty
 	} break;
 	case DATA_ARRAY : {
 		printer_ctx->printer->print_array(printer_ctx, value, format, file);
-	} break;
-	case DATA_BOOL : {
-		printer_ctx->printer->print_bool(printer_ctx, *(bool*) value, format, file);
 	} break;
 	}
 }

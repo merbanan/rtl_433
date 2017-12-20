@@ -26,12 +26,12 @@
 typedef enum {
 	DATA_DATA,		/* pointer to data is stored */
 	DATA_INT,		/* pointer to integer is stored */
+	DATA_BOOL,		/* pointer to a bool is stored */
 	DATA_DOUBLE,		/* pointer to a double is stored */
 	DATA_STRING,		/* pointer to a string is stored */
 	DATA_ARRAY,		/* pointer to an array of values is stored */
 	DATA_COUNT,		/* invalid */
 	DATA_FORMAT,		/* indicates the following value is formatted */
-	DATA_BOOL,		/* pointer to a bool is stored */
 } data_type_t;
 
 typedef struct data_array {
