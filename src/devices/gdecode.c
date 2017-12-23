@@ -20,6 +20,10 @@ static int min_bits = 1;
 static int gdecode_callback(bitbuffer_t *bitbuffer) {
     int i;
     int min_bits_found = 0;
+    data_t *data;
+    data_t *row_data[BITBUF_ROWS];
+    char row_bytes[BITBUF_COLS + 1];
+    char time_str[LOCAL_TIME_BUFLEN];
 
     // discard short / unwanted bitbuffers
     if (bitbuffer->num_rows < min_rows)
@@ -34,17 +38,46 @@ static int gdecode_callback(bitbuffer_t *bitbuffer) {
     if (!min_bits_found)
         return 0;
 
-
     // TODO: add some spec for repeats...
     //int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
     //if (r < 0 || bitbuffer->bits_per_row[r] != 42)
     //    return 0;
 
-    printf("%s: ", myname);
-    bitbuffer_print(bitbuffer);
+    if (debug_output >= 1) {
+        fprintf(stderr, "%s: ", myname);
+        bitbuffer_print(bitbuffer);
+    }
+
+    local_time_str(0, time_str);
+    for (i = 0; i < bitbuffer->num_rows; i++) {
+        row_bytes[0] = "\0";
+        for (int col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
+            sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
+        }
+        row_data[i] = data_make(
+            "len", "", DATA_INT, bitbuffer->bits_per_row[i],
+            "data", "", DATA_STRING, strdup(row_bytes),
+            NULL);
+    }
+    data = data_make(
+        "time", "", DATA_STRING, time_str,
+        "model", "", DATA_STRING, myname,
+        "num_rows", "", DATA_INT, bitbuffer->num_rows,
+        "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
+        NULL);
+    data_acquired_handler(data);
 
     return 0;
 }
+
+static char *output_fields[] = {
+    "time",
+    "model",
+    "bits",
+    "num_rows",
+    "rows",
+    NULL
+};
 
 r_device *gdecode_create_device(char *spec) {
     r_device *dev = (r_device *)malloc(sizeof(r_device));
@@ -56,7 +89,7 @@ r_device *gdecode_create_device(char *spec) {
         fprintf(stderr, "Bad gdecoder spec, missing name!\n");
         exit(1);
     }
-    myname = c;
+    myname = strdup(c);
     snprintf(dev->name, sizeof(dev->name), "General Purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
@@ -120,7 +153,7 @@ r_device *gdecode_create_device(char *spec) {
 
     dev->json_callback = &gdecode_callback;
     dev->disabled = 0;
-    dev->fields = 0;
+    dev->fields = output_fields;
 
     c = strtok(NULL, ":");
     if (c != NULL) {
