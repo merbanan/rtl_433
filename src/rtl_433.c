@@ -29,6 +29,7 @@
 #include "pulse_demod.h"
 #include "data.h"
 #include "util.h"
+#include "optparse.h"
 
 
 static int do_exit = 0;
@@ -966,11 +967,11 @@ int main(int argc, char **argv) {
                 dev_query = optarg;
                 break;
             case 'f':
-                if (frequencies < MAX_PROTOCOLS) frequency[frequencies++] = (uint32_t) atof(optarg);
+                if (frequencies < MAX_PROTOCOLS) frequency[frequencies++] = atouint32_metric(optarg, "-f: ");
                 else fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
                 break;
             case 'H':
-                demod->hop_time = atoi(optarg);
+                demod->hop_time = atoi_time(optarg, "-H: ");
                 break;
             case 'g':
                 gain = (int) (atof(optarg) * 10); /* tenths of a dB */
@@ -982,16 +983,16 @@ int main(int argc, char **argv) {
                 ppm_error = atoi(optarg);
                 break;
             case 's':
-                samp_rate = (uint32_t) atof(optarg);
+                samp_rate = atouint32_metric(optarg, "-s: ");
                 break;
             case 'b':
-                out_block_size = (uint32_t) atof(optarg);
+                out_block_size = atouint32_metric(optarg, "-b: ");
                 break;
             case 'l':
-                demod->level_limit = (uint32_t) atof(optarg);
+                demod->level_limit = atouint32_metric(optarg, "-l: ");
                 break;
             case 'n':
-                bytes_to_read = (uint32_t) atof(optarg) * 2;
+                bytes_to_read = atouint32_metric(optarg, "-n: ") * 2;
                 break;
             case 'a':
                 demod->analyze = 1;
@@ -1081,7 +1082,7 @@ int main(int argc, char **argv) {
                 break;
             case 'T':
                 time(&stop_time);
-                duration = atoi(optarg);
+                duration = atoi_time(optarg, "-T: ");
                 if (duration < 1) {
                     fprintf(stderr, "Duration '%s' was not positive integer; will continue indefinitely\n", optarg);
                 } else {

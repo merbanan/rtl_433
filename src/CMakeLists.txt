@@ -23,6 +23,7 @@ add_executable(rtl_433
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c
+	optparse.c
 	util.c
 	devices/acurite.c
 	devices/alecto.c
