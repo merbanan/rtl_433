@@ -22,6 +22,10 @@ CFLAGS="$CFLAGS $LIBRTLSDR_CFLAGS"
 AC_PATH_PROG(DOXYGEN,doxygen,false)
 AM_CONDITIONAL(HAVE_DOXYGEN, test $DOXYGEN != false)
 
+# cmake compat dummies for Doxyfile.in
+AC_SUBST(CMAKE_CURRENT_SOURCE_DIR, "$srcdir")
+AC_SUBST(CMAKE_CURRENT_BINARY_DIR, "$builddir")
+
 AC_CONFIG_MACRO_DIR([m4])
 
 dnl checks for header files
