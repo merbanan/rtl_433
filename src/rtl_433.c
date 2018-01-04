@@ -943,7 +943,8 @@ int main(int argc, char **argv) {
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
-    char *gdecoder_query = NULL;
+    char *gdecoder_queries[32] = {0};
+    char **gdecoder_query = gdecoder_queries;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -1049,7 +1050,7 @@ int main(int argc, char **argv) {
                 }
                 break;
             case 'X':
-                gdecoder_query = optarg;
+                *gdecoder_query++ = optarg;
                 break;
             case 'q':
                 quiet_mode = 1;
@@ -1131,9 +1132,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (gdecoder_query) {
+    for (gdecoder_query = gdecoder_queries; *gdecoder_query; ++gdecoder_query) {
         r_device *gdecode_create_device(char *spec);
-        r_device *gdecode = gdecode_create_device(gdecoder_query);
+        r_device *gdecode = gdecode_create_device(*gdecoder_query);
         register_protocol(demod, gdecode);
         if (gdecode->modulation >= FSK_DEMOD_MIN_VAL) {
             demod->enable_FM_demod = 1;

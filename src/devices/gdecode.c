@@ -12,12 +12,15 @@
 #include "rtl_433.h"
 #include "util.h"
 
-// this limits us to only one gdecoder, needs a proper context parameter
-static char *myname = NULL;
-static int min_rows = 1;
-static int min_bits = 1;
+struct gdecode {
+    char *myname;
+    int min_rows;
+    int min_bits;
+    int min_repeats;
+};
 
-static int gdecode_callback(bitbuffer_t *bitbuffer) {
+static int gdecode_callback(bitbuffer_t *bitbuffer, struct gdecode *params)
+{
     int i;
     int min_bits_found = 0;
     data_t *data;
@@ -26,11 +29,11 @@ static int gdecode_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     // discard short / unwanted bitbuffers
-    if (bitbuffer->num_rows < min_rows)
+    if (bitbuffer->num_rows < params->min_rows)
         return 0;
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
-        if (bitbuffer->bits_per_row[i] >= min_bits) {
+        if (bitbuffer->bits_per_row[i] >= params->min_bits) {
             min_bits_found = 1;
             break;
         }
@@ -39,18 +42,18 @@ static int gdecode_callback(bitbuffer_t *bitbuffer) {
         return 0;
 
     // TODO: add some spec for repeats...
-    //int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
-    //if (r < 0 || bitbuffer->bits_per_row[r] != 42)
-    //    return 0;
+    int r = bitbuffer_find_repeated_row(bitbuffer, params->min_repeats, params->min_bits);
+    if (r < 0)
+        return 0;
 
     if (debug_output >= 1) {
-        fprintf(stderr, "%s: ", myname);
+        fprintf(stderr, "%s: ", params->myname);
         bitbuffer_print(bitbuffer);
     }
 
     local_time_str(0, time_str);
     for (i = 0; i < bitbuffer->num_rows; i++) {
-        row_bytes[0] = "\0";
+        row_bytes[0] = '\0';
         for (int col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
             sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
         }
@@ -61,7 +64,7 @@ static int gdecode_callback(bitbuffer_t *bitbuffer) {
     }
     data = data_make(
         "time", "", DATA_STRING, time_str,
-        "model", "", DATA_STRING, myname,
+        "model", "", DATA_STRING, params->myname,
         "num_rows", "", DATA_INT, bitbuffer->num_rows,
         "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
         NULL);
@@ -79,7 +82,25 @@ static char *output_fields[] = {
     NULL
 };
 
-r_device *gdecode_create_device(char *spec) {
+#define GDECODE_SLOTS 5
+static struct gdecode *params_slot[GDECODE_SLOTS];
+static int cb_slot0(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[0]); }
+static int cb_slot1(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[1]); }
+static int cb_slot2(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[2]); }
+static int cb_slot3(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[3]); }
+static int cb_slot4(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[4]); }
+static unsigned next_slot = 0;
+int (*callback_slot[])(bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4};
+
+r_device *gdecode_create_device(char *spec)
+{
+    if (next_slot >= GDECODE_SLOTS) {
+        fprintf(stderr, "Maximum number of gdecoder reached!\n");
+        exit(1);
+    }
+
+    struct gdecode *params = (struct gdecode *)malloc(sizeof(struct gdecode));
+    params_slot[next_slot] = params;
     r_device *dev = (r_device *)malloc(sizeof(r_device));
     char *c;
 
@@ -89,7 +110,7 @@ r_device *gdecode_create_device(char *spec) {
         fprintf(stderr, "Bad gdecoder spec, missing name!\n");
         exit(1);
     }
-    myname = strdup(c);
+    params->myname = strdup(c);
     snprintf(dev->name, sizeof(dev->name), "General Purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
@@ -151,15 +172,21 @@ r_device *gdecode_create_device(char *spec) {
         dev->demod_arg = atoi(c);
     }
 
-    dev->json_callback = &gdecode_callback;
+    dev->json_callback = callback_slot[next_slot];
     dev->disabled = 0;
     dev->fields = output_fields;
 
     c = strtok(NULL, ":");
     if (c != NULL) {
-        min_bits = atoi(c);
+        params->min_bits = atoi(c);
+    } else {
+        params->min_bits = 1;
     }
 
+    params->min_rows = 1;
+    params->min_repeats = 1;
+
     free(spec);
+    next_slot++;
     return dev;
 }
