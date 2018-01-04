@@ -79,7 +79,7 @@ Usage:	= Tuner options =
 		 3 = Raw I/Q samples (cf32, 2 channel)
 		 Note: If output file is specified, input will always be I/Q
 	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
-		append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
