@@ -921,6 +921,16 @@ void add_syslog_output(char *param)
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
+void add_mqtt_output(char *param)
+{
+    char *host = "localhost";
+    char *port = "1883";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "MQTT output to %s port %s\n", host, port);
+
+    output_handler[last_output_handler++] = data_output_mqtt_create(host, port);
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -1065,6 +1075,8 @@ int main(int argc, char **argv) {
                     add_kv_output(arg_param(optarg));
                 } else if (strncmp(optarg, "syslog", 6) == 0) {
                     add_syslog_output(arg_param(optarg));
+                } else if (strncmp(optarg, "mqtt", 4) == 0) {
+                    add_mqtt_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(devices);

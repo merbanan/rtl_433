@@ -23,6 +23,7 @@ add_executable(rtl_433
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c
+	mqtt_pub.c
 	optparse.c
 	util.c
 	devices/flex.c

@@ -32,6 +32,7 @@
 #include <netinet/in.h>
 #include <time.h>
 
+#include "mqtt_pub.h"
 #include "data.h"
 
 typedef void* (*array_elementwise_import_fn)(void*);
@@ -900,4 +901,149 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     datagram_client_open(&syslog->client, host, port);
 
     return &syslog->output;
+}
+
+/* MQTT printer */
+
+typedef struct {
+    struct data_output output;
+    mqtt_pub_t *pub;
+} data_output_mqtt_t;
+
+static void print_mqtt_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
+
+    char *orig = mqtt->pub->topic + strlen(mqtt->pub->topic); // save current topic
+
+    for (int c = 0; c < array->num_values; ++c) {
+        sprintf(orig, "/%d", c);
+        print_array_value(output, array, format, c);
+    }
+    *orig = '\0'; // restore topic
+}
+
+static char *append_topic(char *topic, data_t *data)
+{
+    if (data->type == DATA_STRING) {
+        *topic++ = '/';
+        strcpy(topic, data->value);
+        mqtt_pub_sanitize_topic(topic);
+        topic += strlen(data->value);
+
+    } else if (data->type == DATA_INT) {
+        *topic++ = '/';
+        topic += sprintf(topic, "%d", *(int *)data->value);
+
+    } else {
+        fprintf(stderr, "Can't append data type %d to topic\n", data->type);
+    }
+
+    return topic;
+}
+
+static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
+{
+    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
+
+    char *orig = mqtt->pub->topic + strlen(mqtt->pub->topic); // save current topic
+
+    // collect top level keys
+    data_t *data_type    = NULL;
+    data_t *data_brand   = NULL;
+    data_t *data_model   = NULL;
+    data_t *data_channel = NULL;
+    data_t *data_id      = NULL;
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "type"))
+            data_type = d;
+        else if (!strcmp(d->key, "brand"))
+            data_brand = d;
+        else if (!strcmp(d->key, "model"))
+            data_model = d;
+        else if (!strcmp(d->key, "channel"))
+            data_channel = d;
+        else if (!strcmp(d->key, "id"))
+            data_id = d;
+    }
+
+    char *end = orig;
+
+    // create topic
+    if (data_type)
+        end = append_topic(end, data_type);
+    if (data_brand)
+        end = append_topic(end, data_brand);
+    if (data_model)
+        end = append_topic(end, data_model);
+    if (data_channel)
+        end = append_topic(end, data_channel);
+    else if (data_id)
+        end = append_topic(end, data_id);
+
+    while (data) {
+        if (!strcmp(data->key, "time") || !strcmp(data->key, "type") || !strcmp(data->key, "brand") || !strcmp(data->key, "model") || !strcmp(data->key, "channel")) {
+            // skip, except "id"
+
+        } else {
+            // push topic
+            *end = '/';
+            strcpy(end + 1, data->key);
+            print_value(output, data->type, data->value, data->format);
+            *end = '\0'; // pop topic
+        }
+        data = data->next;
+    }
+    *orig = '\0'; // restore topic
+}
+
+static void print_mqtt_string(data_output_t *output, const char *str, char *format)
+{
+    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
+    mqtt_pub_publish(mqtt->pub, str);
+}
+
+static void print_mqtt_double(data_output_t *output, double data, char *format)
+{
+    char str[20];
+    int ret = snprintf(str, 20, "%f", data);
+    print_mqtt_string(output, str, format);
+}
+
+static void print_mqtt_int(data_output_t *output, int data, char *format)
+{
+    char str[20];
+    int ret = snprintf(str, 20, "%d", data);
+    print_mqtt_string(output, str, format);
+}
+
+static void data_output_mqtt_free(data_output_t *output)
+{
+    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
+
+    if (!mqtt)
+        return;
+
+    mqtt_pub_free(mqtt->pub);
+    free(mqtt);
+}
+
+struct data_output *data_output_mqtt_create(const char *host, const char *port)
+{
+    data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
+    if (!mqtt) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    mqtt->output.print_data   = print_mqtt_data;
+    mqtt->output.print_array  = print_mqtt_array;
+    mqtt->output.print_string = print_mqtt_string;
+    mqtt->output.print_double = print_mqtt_double;
+    mqtt->output.print_int    = print_mqtt_int;
+    mqtt->output.output_free  = data_output_mqtt_free;
+    int port_num = atoi(port);
+    mqtt->pub = mqtt_pub_init(host, port_num);
+
+    return &mqtt->output;
 }

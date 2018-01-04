@@ -82,6 +82,23 @@ find_package(PkgConfig)
 find_package(LibRTLSDR)
 list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
 
+find_package(paho)
+if(PAHO_FOUND)
+    list(APPEND SDR_LIBRARIES ${PAHO_LIBRARIES})
+    ADD_DEFINITIONS(-DHAVE_MQTT -DHAVE_PAHO)
+endif()
+
+find_package(mosquitto)
+if(MOSQUITTO_FOUND)
+    list(APPEND SDR_LIBRARIES ${MOSQUITTO_LIBRARIES})
+    ADD_DEFINITIONS(-DHAVE_MQTT -DHAVE_MOSQUITTO)
+endif()
+
+MESSAGE(STATUS "SDR_LIBRARIES:")
+foreach(found ${SDR_LIBRARIES})
+	message(STATUS "found='${found}'")
+endforeach()
+
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
 # pprof -text ./src/rtl_433 prof.out
