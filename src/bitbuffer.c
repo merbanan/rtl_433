@@ -178,7 +178,7 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
     int data = 0;
     int width = -1;
 
-    memset(bits, 0, sizeof(bitbuffer_t));
+	bitbuffer_clear(bits);
 
     for (c = code; *c; ++c) {
 
