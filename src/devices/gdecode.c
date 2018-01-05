@@ -198,13 +198,7 @@ r_device *gdecode_create_device(char *spec)
     dev->reset_limit = atoi(c);
 
     dev->json_callback = callback_slot[next_slot];
-    dev->demod_arg = 0;
-    dev->disabled = 0;
     dev->fields = output_fields;
-
-    params->min_rows = 1;
-    params->min_bits = 0;
-    params->min_repeats = 1;
 
     getkwargs(&c, NULL, NULL); // skip the initial fixed part
     char *key, *val;
@@ -229,6 +223,12 @@ r_device *gdecode_create_device(char *spec)
             exit(1);
         }
     }
+
+    if (params->min_bits < params->match_len)
+        params->min_bits = params->match_len;
+
+    if (params->min_bits > 0 && params->min_repeats < 1)
+        params->min_repeats = 1;
 
     free(spec);
     next_slot++;
