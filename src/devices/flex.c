@@ -14,7 +14,7 @@
 #include "optparse.h"
 
 struct flex_params {
-    char *myname;
+    char *name;
     unsigned min_rows;
     unsigned min_bits;
     unsigned min_repeats;
@@ -62,7 +62,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     }
 
     if (debug_output >= 1) {
-        fprintf(stderr, "%s: ", params->myname);
+        fprintf(stderr, "%s: ", params->name);
         bitbuffer_print(bitbuffer);
     }
 
@@ -79,7 +79,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     }
     data = data_make(
         "time", "", DATA_STRING, time_str,
-        "model", "", DATA_STRING, params->myname,
+        "model", "", DATA_STRING, params->name,
         "num_rows", "", DATA_INT, bitbuffer->num_rows,
         "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
         NULL);
@@ -140,7 +140,7 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Bad flex spec, missing name!\n");
         exit(1);
     }
-    params->myname = strdup(c);
+    params->name = strdup(c);
     snprintf(dev->name, sizeof(dev->name), "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
@@ -229,6 +229,14 @@ r_device *flex_create_device(char *spec)
 
     if (params->min_bits > 0 && params->min_repeats < 1)
         params->min_repeats = 1;
+
+    if (debug_output >= 1) {
+        fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
+        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f, demod_arg=%u\n",
+                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit, (unsigned)dev->demod_arg);
+        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, match_len=%u\n",
+                params->min_rows, params->min_bits, params->min_repeats, params->match_len);
+    }
 
     free(spec);
     next_slot++;

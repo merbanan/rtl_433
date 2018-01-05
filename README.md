@@ -62,6 +62,8 @@ Usage:	= Tuner options =
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
+	[-X <spec>] Add a general purpose decoder, spec is name:modulation:short:long:reset[,key=value...]
+		e.g. -X doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,minrepeats=3
 	[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
 	[-z <value>] Override short value in data decoder
 	[-x <value>] Override long value in data decoder
