@@ -49,6 +49,9 @@ void bitbuffer_invert(bitbuffer_t *bits);
 /// Print the content of the bitbuffer
 void bitbuffer_print(const bitbuffer_t *bits);
 
+/// Parse a string into a bitbuffer
+void bitbuffer_parse(bitbuffer_t *bits, const char *code);
+
 // Search the specified row of the bitbuffer, starting from bit 'start', for
 // the pattern provided. Return the location of the first match, or the end
 // of the row if no match is found.

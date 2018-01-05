@@ -12,6 +12,7 @@
 
 #include "bitbuffer.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 
@@ -171,6 +172,58 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 	}
 }
 
+void bitbuffer_parse(bitbuffer_t *bits, const char *code)
+{
+    const char *c;
+    int data = 0;
+    int width = -1;
+
+    memset(bits, 0, sizeof(bitbuffer_t));
+
+    for (c = code; *c; ++c) {
+
+        if (*c == ' ') {
+            continue;
+
+        } else if (*c == '0' && (*(c + 1) == 'x' || *(c + 1) == 'X')) {
+            ++c;
+            continue;
+
+        } else if (*c == '{') {
+            if (bits->num_rows > 0) {
+                if (width >= 0) {
+                    bits->bits_per_row[bits->num_rows - 1] = width;
+                }
+                bitbuffer_add_row(bits);
+            }
+
+            width = strtol(c + 1, (char **)&c, 0);
+            continue;
+
+        } else if (*c == '/') {
+            bitbuffer_add_row(bits);
+            if (width >= 0) {
+                bits->bits_per_row[bits->num_rows - 2] = width;
+                width = -1;
+            }
+            continue;
+
+        } else if (*c >= '0' && *c <= '9') {
+            data = *c - '0';
+        } else if (*c >= 'A' && *c <= 'F') {
+            data = *c - 'A' + 10;
+        } else if (*c >= 'a' && *c <= 'f') {
+            data = *c - 'a' + 10;
+        }
+        bitbuffer_add_bit(bits, data >> 3 & 0x01);
+        bitbuffer_add_bit(bits, data >> 2 & 0x01);
+        bitbuffer_add_bit(bits, data >> 1 & 0x01);
+        bitbuffer_add_bit(bits, data >> 0 & 0x01);
+    }
+    if (width >= 0 && bits->num_rows > 0) {
+        bits->bits_per_row[bits->num_rows - 1] = width;
+    }
+}
 
 int compare_rows(bitbuffer_t *bits, unsigned row_a, unsigned row_b) {
 	return (bits->bits_per_row[row_a] == bits->bits_per_row[row_b] &&
