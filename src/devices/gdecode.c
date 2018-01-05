@@ -15,10 +15,11 @@
 
 struct gdecode {
     char *myname;
-    int min_rows;
-    int min_bits;
-    int min_repeats;
-    int match_len;
+    unsigned min_rows;
+    unsigned min_bits;
+    unsigned min_repeats;
+    unsigned match_len;
+    bitrow_t match_bits;
 };
 
 static int gdecode_callback(bitbuffer_t *bitbuffer, struct gdecode *params)
@@ -43,11 +44,22 @@ static int gdecode_callback(bitbuffer_t *bitbuffer, struct gdecode *params)
     if (!min_bits_found)
         return 0;
 
+    // discard unless min_repeats, min_bits
     int r = bitbuffer_find_repeated_row(bitbuffer, params->min_repeats, params->min_bits);
     if (r < 0)
         return 0;
 
-    // TODO: add some spec for matches...
+    // discard unless match
+    if (params->match_len) {
+        unsigned found_len = 0;
+        for (i = 0; i < bitbuffer->num_rows; i++) {
+            found_len = bitbuffer->bits_per_row[i] - bitbuffer_search(bitbuffer, i, 0, params->match_bits, params->match_len);
+            if (found_len)
+                break;
+        }
+        if (!found_len)
+            return 0;
+    }
 
     if (debug_output >= 1) {
         fprintf(stderr, "%s: ", params->myname);
@@ -97,6 +109,18 @@ static int cb_slot6(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer,
 static int cb_slot7(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[7]); }
 static unsigned next_slot = 0;
 int (*callback_slot[])(bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
+
+static unsigned parse_bits(const char *code, bitrow_t bitrow)
+{
+    bitbuffer_t bits = {0};
+    bitbuffer_parse(&bits, code);
+    if (bits.num_rows != 1) {
+        fprintf(stderr, "Bad gdecoder spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
+        exit(1);
+    }
+    memcpy(bitrow, bits.bb[0], sizeof(bitrow_t));
+    return bits.bits_per_row[0];
+}
 
 r_device *gdecode_create_device(char *spec)
 {
@@ -179,7 +203,7 @@ r_device *gdecode_create_device(char *spec)
     dev->fields = output_fields;
 
     params->min_rows = 1;
-    params->min_bits = 1;
+    params->min_bits = 0;
     params->min_repeats = 1;
 
     getkwargs(&c, NULL, NULL); // skip the initial fixed part
@@ -198,7 +222,7 @@ r_device *gdecode_create_device(char *spec)
             params->min_repeats = atoi(val);
 
         else if (!strcasecmp(key, "match"))
-            params->match_len = atoi(val); // TODO:
+            params->match_len = parse_bits(val, params->match_bits);
 
         else {
             fprintf(stderr, "Bad gdecoder spec, unknown keyword (%s)!\n", key);
