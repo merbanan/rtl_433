@@ -1,4 +1,4 @@
-/* General purpose deocder. WIP.
+/* Flexible general purpose deocder.
  *
  * Copyright (C) 2017 Christian Zuckschwerdt
  *
@@ -13,7 +13,7 @@
 #include "util.h"
 #include "optparse.h"
 
-struct gdecode {
+struct flex_params {
     char *myname;
     unsigned min_rows;
     unsigned min_bits;
@@ -22,7 +22,7 @@ struct gdecode {
     bitrow_t match_bits;
 };
 
-static int gdecode_callback(bitbuffer_t *bitbuffer, struct gdecode *params)
+static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 {
     int i;
     int min_bits_found = 0;
@@ -97,16 +97,16 @@ static char *output_fields[] = {
     NULL
 };
 
-#define GDECODE_SLOTS 8
-static struct gdecode *params_slot[GDECODE_SLOTS];
-static int cb_slot0(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[0]); }
-static int cb_slot1(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[1]); }
-static int cb_slot2(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[2]); }
-static int cb_slot3(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[3]); }
-static int cb_slot4(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[4]); }
-static int cb_slot5(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[5]); }
-static int cb_slot6(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[6]); }
-static int cb_slot7(bitbuffer_t *bitbuffer) { return gdecode_callback(bitbuffer, params_slot[7]); }
+#define FLEX_SLOTS 8
+static struct flex_params *params_slot[FLEX_SLOTS];
+static int cb_slot0(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[0]); }
+static int cb_slot1(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[1]); }
+static int cb_slot2(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[2]); }
+static int cb_slot3(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[3]); }
+static int cb_slot4(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[4]); }
+static int cb_slot5(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[5]); }
+static int cb_slot6(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[6]); }
+static int cb_slot7(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[7]); }
 static unsigned next_slot = 0;
 int (*callback_slot[])(bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
 
@@ -115,21 +115,21 @@ static unsigned parse_bits(const char *code, bitrow_t bitrow)
     bitbuffer_t bits = {0};
     bitbuffer_parse(&bits, code);
     if (bits.num_rows != 1) {
-        fprintf(stderr, "Bad gdecoder spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
+        fprintf(stderr, "Bad flex spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
         exit(1);
     }
     memcpy(bitrow, bits.bb[0], sizeof(bitrow_t));
     return bits.bits_per_row[0];
 }
 
-r_device *gdecode_create_device(char *spec)
+r_device *flex_create_device(char *spec)
 {
-    if (next_slot >= GDECODE_SLOTS) {
-        fprintf(stderr, "Maximum number of gdecoder reached!\n");
+    if (next_slot >= FLEX_SLOTS) {
+        fprintf(stderr, "Maximum number of flex reached!\n");
         exit(1);
     }
 
-    struct gdecode *params = (struct gdecode *)calloc(1, sizeof(struct gdecode));
+    struct flex_params *params = (struct flex_params *)calloc(1, sizeof(struct flex_params));
     params_slot[next_slot] = params;
     r_device *dev = (r_device *)calloc(1, sizeof(r_device));
     char *c;
@@ -137,15 +137,15 @@ r_device *gdecode_create_device(char *spec)
     spec = strdup(spec);
     c = strtok(spec, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad gdecoder spec, missing name!\n");
+        fprintf(stderr, "Bad flex spec, missing name!\n");
         exit(1);
     }
     params->myname = strdup(c);
-    snprintf(dev->name, sizeof(dev->name), "General Purpose decoder '%s'", c);
+    snprintf(dev->name, sizeof(dev->name), "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad gdecoder spec, missing modulation!\n");
+        fprintf(stderr, "Bad flex spec, missing modulation!\n");
         exit(1);
     }
     // TODO: add demod_arg where needed
@@ -172,27 +172,27 @@ r_device *gdecode_create_device(char *spec)
     else if (!strcasecmp(c, "FSK_MANCHESTER_ZEROBIT"))
         dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
     else {
-        fprintf(stderr, "Bad gdecoder spec, unknown modulation!\n");
+        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
         exit(1);
     }
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad gdecoder spec, missing short limit!\n");
+        fprintf(stderr, "Bad flex spec, missing short limit!\n");
         exit(1);
     }
     dev->short_limit = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad gdecoder spec, missing long limit!\n");
+        fprintf(stderr, "Bad flex spec, missing long limit!\n");
         exit(1);
     }
     dev->long_limit = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad gdecoder spec, missing reset limit!\n");
+        fprintf(stderr, "Bad flex spec, missing reset limit!\n");
         exit(1);
     }
     dev->reset_limit = atoi(c);
@@ -219,7 +219,7 @@ r_device *gdecode_create_device(char *spec)
             params->match_len = parse_bits(val, params->match_bits);
 
         else {
-            fprintf(stderr, "Bad gdecoder spec, unknown keyword (%s)!\n", key);
+            fprintf(stderr, "Bad flex spec, unknown keyword (%s)!\n", key);
             exit(1);
         }
     }
