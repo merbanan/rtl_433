@@ -1038,7 +1038,11 @@ int main(int argc, char **argv) {
                     usage(devices);
                 }
 
-                devices[i - 1].disabled = 0;
+                if (i >= 1) {
+                    devices[i - 1].disabled = 0;
+                } else {
+                    fprintf(stderr, "Disabling all device decoders.\n");
+                }
                 break;
             case 'q':
                 quiet_mode = 1;
