@@ -70,10 +70,10 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     local_time_str(0, time_str);
     if (params->count_only) {
         data = data_make(
-            "time", "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, params->name,
-            "count", "", DATA_INT, match_count,
-            NULL);
+                "time", "", DATA_STRING, time_str,
+                "model", "", DATA_STRING, params->name,
+                "count", "", DATA_INT, match_count,
+                NULL);
         data_acquired_handler(data);
 
         return 0;
@@ -85,29 +85,29 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
             sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
         }
         row_data[i] = data_make(
-            "len", "", DATA_INT, bitbuffer->bits_per_row[i],
-            "data", "", DATA_STRING, strdup(row_bytes),
-            NULL);
+                "len", "", DATA_INT, bitbuffer->bits_per_row[i],
+                "data", "", DATA_STRING, strdup(row_bytes),
+                NULL);
     }
     data = data_make(
-        "time", "", DATA_STRING, time_str,
-        "model", "", DATA_STRING, params->name,
-        "count", "", DATA_INT, match_count,
-        "num_rows", "", DATA_INT, bitbuffer->num_rows,
-        "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
-        NULL);
+            "time", "", DATA_STRING, time_str,
+            "model", "", DATA_STRING, params->name,
+            "count", "", DATA_INT, match_count,
+            "num_rows", "", DATA_INT, bitbuffer->num_rows,
+            "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
+            NULL);
     data_acquired_handler(data);
 
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
-    "model",
-    "count",
-    "num_rows",
-    "rows",
-    NULL
+        "time",
+        "model",
+        "count",
+        "num_rows",
+        "rows",
+        NULL
 };
 
 #define FLEX_SLOTS 8
