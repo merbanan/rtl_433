@@ -38,8 +38,8 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
-    # for strdup
-    ADD_DEFINITIONS(-D_GNU_SOURCE)
+    # for strdup, setenv
+    ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
 
