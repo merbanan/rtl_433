@@ -20,8 +20,8 @@ struct flex_params {
     unsigned min_rows;
     unsigned min_bits;
     unsigned min_repeats;
-    unsigned count_only;
     unsigned invert;
+    unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
 };
@@ -129,7 +129,7 @@ static void help()
     fprintf(stderr,
             "Use -X <spec> to add a flexible general purpose decoder.\n\n"
             "<spec> is \"name:modulation:short:long:reset[,key=value...]\"\n"
-            "with:\n"
+            "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
             "\tOOK_MANCHESTER_ZEROBIT\n"
@@ -144,15 +144,22 @@ static void help()
             "\tFSK_PWM_RAW\n"
             "\tFSK_MANCHESTER_ZEROBIT\n"
             "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
+            "PCM short: Nominal width of pulse [us]\n"
+            "    long:  Nominal width of bit period [us]\n"
+            "PPM short: Threshold between short and long gap [us]\n"
+            "    long:  Maximum gap size before new row of bits [us]\n"
+            "PWM short: Threshold between short and long pulse [us]\n"
+            "    long:  Maximum gap size before new row of bits [us]\n"
+            "reset: Maximum gap size before End Of Message [us].\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tminbits=<n> : only match if at least one row has at least <n> bits\n"
             "\tminrows=<n> : only match if there are at least <n> rows\n"
             "\tminrepeats=<n> : only match if some row is repeated at least <n> times\n"
-            "\tcountonly : suppress detailed row output\n"
             "\tinvert : invert all bits\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
-            "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n\n"
+            "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
+            "\tcountonly : suppress detailed row output\n\n"
             "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,minrepeats=3\"\n\n");
     exit(0);
 }
@@ -279,14 +286,14 @@ r_device *flex_create_device(char *spec)
         else if (!strcasecmp(key, "minrepeats"))
             params->min_repeats = val ? atoi(val) : 0;
 
-        else if (!strcasecmp(key, "countonly"))
-            params->count_only = val ? atoi(val) : 1;
-
         else if (!strcasecmp(key, "invert"))
             params->invert = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
+
+        else if (!strcasecmp(key, "countonly"))
+            params->count_only = val ? atoi(val) : 1;
 
         else {
             fprintf(stderr, "Bad flex spec, unknown keyword (%s)!\n", key);
@@ -304,8 +311,8 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
         fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f, demod_arg=%u\n",
                 dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit, (unsigned)dev->demod_arg);
-        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, match_len=%u\n",
-                params->min_rows, params->min_bits, params->min_repeats, params->match_len);
+        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u\n",
+                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len);
     }
 
     free(spec);
