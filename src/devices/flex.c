@@ -21,6 +21,7 @@ struct flex_params {
     unsigned min_bits;
     unsigned min_repeats;
     unsigned count_only;
+    unsigned invert;
     unsigned match_len;
     bitrow_t match_bits;
 };
@@ -51,6 +52,10 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     if (r < 0)
         return 0;
     // TODO: set match_count to count of repeated rows
+
+    if (params->invert) {
+        bitbuffer_invert(bitbuffer);
+    }
 
     // discard unless match
     if (params->match_len) {
@@ -145,6 +150,7 @@ static void help()
             "\tminrows=<n> : only match if there are at least <n> rows\n"
             "\tminrepeats=<n> : only match if some row is repeated at least <n> times\n"
             "\tcountonly : suppress detailed row output\n"
+            "\tinvert : invert all bits\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n\n"
             "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,minrepeats=3\"\n\n");
@@ -275,6 +281,9 @@ r_device *flex_create_device(char *spec)
 
         else if (!strcasecmp(key, "countonly"))
             params->count_only = val ? atoi(val) : 1;
+
+        else if (!strcasecmp(key, "invert"))
+            params->invert = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
