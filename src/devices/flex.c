@@ -110,6 +110,38 @@ static char *output_fields[] = {
         NULL
 };
 
+static void usage()
+{
+    fprintf(stderr,
+            "Use -X <spec> to add a flexible general purpose decoder.\n\n"
+            "<spec> is \"name:modulation:short:long:reset[,key=value...]\"\n"
+            "with:\n"
+            "<name> can be any descriptive name tag you need in the output\n"
+            "<modulation> is one of:\n"
+            "\tOOK_MANCHESTER_ZEROBIT\n"
+            "\tOOK_PCM_RZ\n"
+            "\tOOK_PPM_RAW\n"
+            "\tOOK_PWM_PRECISE\n"
+            "\tOOK_PWM_RAW\n"
+            "\tOOK_PWM_TERNARY\n"
+            "\tOOK_CLOCK_BITS\n"
+            "\tOOK_PWM_OSV1\n"
+            "\tFSK_PCM\n"
+            "\tFSK_PWM_RAW\n"
+            "\tFSK_MANCHESTER_ZEROBIT\n"
+            "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
+            "Available options are:\n"
+            "\tdemod=<n> : the demod argument needed for some modulations\n"
+            "\tminbits=<n> : only match if at least one row has at least <n> bits\n"
+            "\tminrows=<n> : only match if there are at least <n> rows\n"
+            "\tminrepeats=<n> : only match if some row is repeated at least <n> times\n"
+            "\tcountonly : suppress detailed row output\n"
+            "\tmatch=<bits> : only match if the <bits> are found\n"
+            "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n\n"
+            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,minrepeats=3\"\n\n");
+    exit(1);
+}
+
 #define FLEX_SLOTS 8
 static struct flex_params *params_slot[FLEX_SLOTS];
 static int cb_slot0(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[0]); }
@@ -128,8 +160,8 @@ static unsigned parse_bits(const char *code, bitrow_t bitrow)
     bitbuffer_t bits = {0};
     bitbuffer_parse(&bits, code);
     if (bits.num_rows != 1) {
-        fprintf(stderr, "Bad flex spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
-        exit(1);
+        fprintf(stderr, "Bad flex spec, \"match\" needs exactly one bit row (%d found)!\n\n", bits.num_rows);
+        usage();
     }
     memcpy(bitrow, bits.bb[0], sizeof(bitrow_t));
     return bits.bits_per_row[0];
@@ -138,7 +170,7 @@ static unsigned parse_bits(const char *code, bitrow_t bitrow)
 r_device *flex_create_device(char *spec)
 {
     if (next_slot >= FLEX_SLOTS) {
-        fprintf(stderr, "Maximum number of flex reached!\n");
+        fprintf(stderr, "Maximum number of flex decoders reached!\n");
         exit(1);
     }
 
@@ -150,16 +182,16 @@ r_device *flex_create_device(char *spec)
     spec = strdup(spec);
     c = strtok(spec, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing name!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, missing name!\n\n");
+        usage();
     }
     params->name = strdup(c);
     snprintf(dev->name, sizeof(dev->name), "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing modulation!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, missing modulation!\n\n");
+        usage();
     }
     // TODO: add demod_arg where needed
     if (!strcasecmp(c, "OOK_MANCHESTER_ZEROBIT"))
@@ -185,28 +217,28 @@ r_device *flex_create_device(char *spec)
     else if (!strcasecmp(c, "FSK_MANCHESTER_ZEROBIT"))
         dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
     else {
-        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, unknown modulation!\n\n");
+        usage();
     }
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, missing short limit!\n\n");
+        usage();
     }
     dev->short_limit = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing long limit!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, missing long limit!\n\n");
+        usage();
     }
     dev->long_limit = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing reset limit!\n");
-        exit(1);
+        fprintf(stderr, "Bad flex spec, missing reset limit!\n\n");
+        usage();
     }
     dev->reset_limit = atoi(c);
 
@@ -235,8 +267,8 @@ r_device *flex_create_device(char *spec)
             params->match_len = parse_bits(val, params->match_bits);
 
         else {
-            fprintf(stderr, "Bad flex spec, unknown keyword (%s)!\n", key);
-            exit(1);
+            fprintf(stderr, "Bad flex spec, unknown keyword (%s)!\n\n", key);
+            usage();
         }
     }
 
