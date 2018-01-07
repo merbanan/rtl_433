@@ -18,6 +18,7 @@ struct flex_params {
     unsigned min_rows;
     unsigned min_bits;
     unsigned min_repeats;
+    unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
 };
@@ -25,7 +26,7 @@ struct flex_params {
 static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 {
     int i;
-    int min_bits_found = 0;
+    int match_count = 0;
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS + 1];
@@ -37,27 +38,27 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         if (bitbuffer->bits_per_row[i] >= params->min_bits) {
-            min_bits_found = 1;
-            break;
+            match_count++;
         }
     }
-    if (!min_bits_found)
+    if (!match_count)
         return 0;
 
     // discard unless min_repeats, min_bits
     int r = bitbuffer_find_repeated_row(bitbuffer, params->min_repeats, params->min_bits);
     if (r < 0)
         return 0;
+    // TODO: set match_count to count of repeated rows
 
     // discard unless match
     if (params->match_len) {
-        unsigned found_len = 0;
+        match_count = 0;
         for (i = 0; i < bitbuffer->num_rows; i++) {
-            found_len = bitbuffer->bits_per_row[i] - bitbuffer_search(bitbuffer, i, 0, params->match_bits, params->match_len);
-            if (found_len)
-                break;
+            if (bitbuffer_search(bitbuffer, i, 0, params->match_bits, params->match_len) < bitbuffer->bits_per_row[i]) {
+                match_count++;
+            }
         }
-        if (!found_len)
+        if (!match_count)
             return 0;
     }
 
@@ -67,6 +68,17 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     }
 
     local_time_str(0, time_str);
+    if (params->count_only) {
+        data = data_make(
+            "time", "", DATA_STRING, time_str,
+            "model", "", DATA_STRING, params->name,
+            "count", "", DATA_INT, match_count,
+            NULL);
+        data_acquired_handler(data);
+
+        return 0;
+    }
+
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
         for (int col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
@@ -80,6 +92,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     data = data_make(
         "time", "", DATA_STRING, time_str,
         "model", "", DATA_STRING, params->name,
+        "count", "", DATA_INT, match_count,
         "num_rows", "", DATA_INT, bitbuffer->num_rows,
         "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
         NULL);
@@ -91,7 +104,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 static char *output_fields[] = {
     "time",
     "model",
-    "bits",
+    "count",
     "num_rows",
     "rows",
     NULL
@@ -204,16 +217,19 @@ r_device *flex_create_device(char *spec)
     char *key, *val;
     while (getkwargs(&c, &key, &val)) {
         if (!strcasecmp(key, "demod"))
-            dev->demod_arg = atoi(val);
+            dev->demod_arg = val ? atoi(val) : 0;
 
         else if (!strcasecmp(key, "minbits"))
-            params->min_bits = atoi(val);
+            params->min_bits = val ? atoi(val) : 0;
 
         else if (!strcasecmp(key, "minrows"))
-            params->min_rows = atoi(val);
+            params->min_rows = val ? atoi(val) : 0;
 
         else if (!strcasecmp(key, "minrepeats"))
-            params->min_repeats = atoi(val);
+            params->min_repeats = val ? atoi(val) : 0;
+
+        else if (!strcasecmp(key, "countonly"))
+            params->count_only = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
