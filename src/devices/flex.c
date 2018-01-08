@@ -18,8 +18,11 @@
 struct flex_params {
     char *name;
     unsigned min_rows;
+    unsigned max_rows;
     unsigned min_bits;
+    unsigned max_bits;
     unsigned min_repeats;
+    unsigned max_repeats;
     unsigned invert;
     unsigned count_only;
     unsigned match_len;
@@ -36,18 +39,20 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     char time_str[LOCAL_TIME_BUFLEN];
 
     // discard short / unwanted bitbuffers
-    if (bitbuffer->num_rows < params->min_rows)
+    if ((bitbuffer->num_rows < params->min_rows)
+            || (params->max_rows && bitbuffer->num_rows > params->max_rows))
         return 0;
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
-        if (bitbuffer->bits_per_row[i] >= params->min_bits) {
+        if ((bitbuffer->bits_per_row[i] >= params->min_bits)
+                && (!params->max_bits || bitbuffer->bits_per_row[i] <= params->max_bits))
             match_count++;
-        }
     }
     if (!match_count)
         return 0;
 
     // discard unless min_repeats, min_bits
+    // TODO: check max_repeats, max_bits
     int r = bitbuffer_find_repeated_row(bitbuffer, params->min_repeats, params->min_bits);
     if (r < 0)
         return 0;
@@ -153,14 +158,15 @@ static void help()
             "reset: Maximum gap size before End Of Message [us].\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
-            "\tminbits=<n> : only match if at least one row has at least <n> bits\n"
-            "\tminrows=<n> : only match if there are at least <n> rows\n"
-            "\tminrepeats=<n> : only match if some row is repeated at least <n> times\n"
+            "\tbits=<n> : only match if at least one row has <n> bits\n"
+            "\trows=<n> : only match if there are <n> rows\n"
+            "\trepeats=<n> : only match if some row is repeated <n> times\n"
+            "\t\tuse opt>=n to match at least <n> and opt<=n to macth at most <n>\n"
             "\tinvert : invert all bits\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
-            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,minrepeats=3\"\n\n");
+            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
 }
 
@@ -277,14 +283,26 @@ r_device *flex_create_device(char *spec)
         if (!strcasecmp(key, "demod"))
             dev->demod_arg = val ? atoi(val) : 0;
 
-        else if (!strcasecmp(key, "minbits"))
+        else if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "bits<"))
+            params->max_bits = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "bits"))
+            params->min_bits = params->max_bits = val ? atoi(val) : 0;
 
-        else if (!strcasecmp(key, "minrows"))
+        else if (!strcasecmp(key, "rows>"))
             params->min_rows = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "rows<"))
+            params->max_rows = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "rows"))
+            params->min_rows = params->max_rows = val ? atoi(val) : 0;
 
-        else if (!strcasecmp(key, "minrepeats"))
+        else if (!strcasecmp(key, "repeats>"))
             params->min_repeats = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "repeats<"))
+            params->max_repeats = val ? atoi(val) : 0;
+        else if (!strcasecmp(key, "repeats"))
+            params->min_repeats = params->max_repeats = val ? atoi(val) : 0;
 
         else if (!strcasecmp(key, "invert"))
             params->invert = val ? atoi(val) : 1;
