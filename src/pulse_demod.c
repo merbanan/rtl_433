@@ -171,7 +171,9 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 		}
 
 		// End of Message?
-		if(pulses->gap[n] > device->reset_limit) {
+		if (((n == pulses->num_pulses - 1) 	// No more pulses? (FSK)
+				|| (pulses->gap[n] > device->reset_limit))	// Long silence (OOK)
+				&& (bits.num_rows > 0)) {	// Only if data has been accumulated
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
