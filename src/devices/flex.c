@@ -157,7 +157,7 @@ static void help()
             "PWM short: Threshold between short and long pulse [us]\n"
             "    long:  Maximum gap size before new row of bits [us]\n"
             "reset: Maximum gap size before End Of Message [us].\n"
-            "for PRECISE it's short:long:reset:tolerance[:syncwidth]\n"
+            "for PWM_PRECISE and CLOCK_BITS it's short:long:reset:tolerance[:syncwidth]\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
@@ -276,7 +276,7 @@ r_device *flex_create_device(char *spec)
     }
     dev->reset_limit = atoi(c);
 
-    if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
+    if (dev->modulation == OOK_PULSE_PWM_PRECISE || dev->modulation == OOK_PULSE_CLOCK_BITS) {
         PWM_Precise_Parameters *pwm_precise = (PWM_Precise_Parameters *)calloc(1, sizeof(PWM_Precise_Parameters));
 
         c = strtok(NULL, ":");
