@@ -138,17 +138,17 @@ static void help()
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
-            "\tOOK_MANCHESTER_ZEROBIT\n"
-            "\tOOK_PCM_RZ\n"
-            "\tOOK_PPM_RAW\n"
-            "\tOOK_PWM_PRECISE\n"
-            "\tOOK_PWM_RAW\n"
-            "\tOOK_PWM_TERNARY\n"
-            "\tOOK_CLOCK_BITS\n"
-            "\tOOK_PWM_OSV1\n"
-            "\tFSK_PCM\n"
-            "\tFSK_PWM_RAW\n"
-            "\tFSK_MANCHESTER_ZEROBIT\n"
+            "\tOOK_MC_ZEROBIT : Manchester Code with fixed leading zero bit\n"
+            "\tOOK_PCM_RZ :      Pulse Code Modulation (Return to Zero)\n"
+            "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
+            "\tOOK_PWM_PRECISE : Pulse Width Modulation with precise tolerance\n"
+            "\tOOK_PWM_RAW :     Pulse Width Modulation\n"
+            "\tOOK_PWM_SYNC :    Pulse Width Modulation with Sync bits\n"
+            "\tOOK_DMC :         Differential Manchester Code\n"
+            "\tOOK_MC_OSV1 :     Manchester Code for OSv1 devices\n"
+            "\tFSK_PCM :         FSK Pulse Code Modulation\n"
+            "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
+            "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
             "PCM short: Nominal width of pulse [us]\n"
             "    long:  Nominal width of bit period [us]\n"
@@ -228,7 +228,7 @@ r_device *flex_create_device(char *spec)
         usage();
     }
     // TODO: add demod_arg where needed
-    if (!strcasecmp(c, "OOK_MANCHESTER_ZEROBIT"))
+    if (!strcasecmp(c, "OOK_MC_ZEROBIT"))
         dev->modulation = OOK_PULSE_MANCHESTER_ZEROBIT;
     else if (!strcasecmp(c, "OOK_PCM_RZ"))
         dev->modulation = OOK_PULSE_PCM_RZ;
@@ -238,17 +238,17 @@ r_device *flex_create_device(char *spec)
         dev->modulation = OOK_PULSE_PWM_PRECISE;
     else if (!strcasecmp(c, "OOK_PWM_RAW"))
         dev->modulation = OOK_PULSE_PWM_RAW;
-    else if (!strcasecmp(c, "OOK_PWM_TERNARY"))
+    else if (!strcasecmp(c, "OOK_PWM_SYNC"))
         dev->modulation = OOK_PULSE_PWM_TERNARY;
-    else if (!strcasecmp(c, "OOK_CLOCK_BITS"))
+    else if (!strcasecmp(c, "OOK_DMC"))
         dev->modulation = OOK_PULSE_CLOCK_BITS;
-    else if (!strcasecmp(c, "OOK_PWM_OSV1"))
+    else if (!strcasecmp(c, "OOK_MC_OSV1"))
         dev->modulation = OOK_PULSE_PWM_OSV1;
     else if (!strcasecmp(c, "FSK_PCM"))
         dev->modulation = FSK_PULSE_PCM;
     else if (!strcasecmp(c, "FSK_PWM_RAW"))
         dev->modulation = FSK_PULSE_PWM_RAW;
-    else if (!strcasecmp(c, "FSK_MANCHESTER_ZEROBIT"))
+    else if (!strcasecmp(c, "FSK_MC_ZEROBIT"))
         dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
     else {
         fprintf(stderr, "Bad flex spec, unknown modulation!\n");
