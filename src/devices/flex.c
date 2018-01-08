@@ -13,6 +13,7 @@
 #include "data.h"
 #include "rtl_433.h"
 #include "util.h"
+#include "pulse_demod.h"
 #include "optparse.h"
 
 struct flex_params {
@@ -156,6 +157,7 @@ static void help()
             "PWM short: Threshold between short and long pulse [us]\n"
             "    long:  Maximum gap size before new row of bits [us]\n"
             "reset: Maximum gap size before End Of Message [us].\n"
+            "for PRECISE it's short:long:reset:tolerance[:syncwidth]\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
@@ -273,6 +275,24 @@ r_device *flex_create_device(char *spec)
         usage();
     }
     dev->reset_limit = atoi(c);
+
+    if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
+        PWM_Precise_Parameters *pwm_precise = (PWM_Precise_Parameters *)calloc(1, sizeof(PWM_Precise_Parameters));
+
+        c = strtok(NULL, ":");
+        if (c == NULL) {
+            fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
+            usage();
+        }
+        pwm_precise->pulse_tolerance = atoi(c);
+
+        c = strtok(NULL, ":");
+        if (c != NULL) {
+            pwm_precise->pulse_sync_width = atoi(c);
+        }
+
+        dev->demod_arg = (uintptr_t)pwm_precise;
+    }
 
     dev->json_callback = callback_slot[next_slot];
     dev->fields = output_fields;
