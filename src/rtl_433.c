@@ -189,6 +189,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     if (p->modulation == OOK_PULSE_PWM_PRECISE || p->modulation == OOK_PULSE_CLOCK_BITS) {
         PWM_Precise_Parameters *pwm_precise_parameters = (PWM_Precise_Parameters *)p->demod_arg;
         pwm_precise_parameters->pulse_tolerance = (float)pwm_precise_parameters->pulse_tolerance / ((float)1000000 / (float)samp_rate);
+        pwm_precise_parameters->pulse_sync_width = (float)pwm_precise_parameters->pulse_sync_width / ((float)1000000 / (float)samp_rate);
     }
     bitbuffer_clear(&p->bits);
 
