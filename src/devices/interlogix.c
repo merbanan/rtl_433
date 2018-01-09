@@ -225,18 +225,18 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     // see prootcol description addendum for keyfob protocol exceptions
     if ((reverse8(message[2])>>4) == 0xf) {
         low_battery = "off";
-        f1_latch_state = ((message[3] & 0xe) == 0x4) ? "close" : "open";
-        f2_latch_state = ((message[3] & 0xe) == 0x8) ? "close" : "open";
-        f3_latch_state = ((message[3] & 0xe) == 0xc) ? "close" : "open";
-        f4_latch_state = ((message[3] & 0xe) == 0x2) ? "close" : "open";
-        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "close" : "open"; 
+        f1_latch_state = ((message[3] & 0xe) == 0x4) ? "closed" : "open";
+        f2_latch_state = ((message[3] & 0xe) == 0x8) ? "closed" : "open";
+        f3_latch_state = ((message[3] & 0xe) == 0xc) ? "closed" : "open";
+        f4_latch_state = ((message[3] & 0xe) == 0x2) ? "closed" : "open";
+        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "closed" : "open"; 
     } else {
         low_battery = (message[3] & 0x10) ? "on" : "off";
-        f1_latch_state = (message[3] & 0x04) ? "open" : "close";
-        f2_latch_state = (message[3] & 0x01) ? "open" : "close";
-        f3_latch_state = (message[4] & 0x40) ? "open" : "close";
-        f4_latch_state = (message[4] & 0x10) ? "open" : "close";
-        f5_latch_state = (message[4] & 0x04) ? "open" : "close";
+        f1_latch_state = (message[3] & 0x04) ? "open" : "closed";
+        f2_latch_state = (message[3] & 0x01) ? "open" : "closed";
+        f3_latch_state = (message[4] & 0x40) ? "open" : "closed";
+        f4_latch_state = (message[4] & 0x10) ? "open" : "closed";
+        f5_latch_state = (message[4] & 0x04) ? "open" : "closed";
     }
     
     local_time_str(0, time_str);
