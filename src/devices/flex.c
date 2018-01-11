@@ -277,21 +277,17 @@ r_device *flex_create_device(char *spec)
     dev->reset_limit = atoi(c);
 
     if (dev->modulation == OOK_PULSE_PWM_PRECISE || dev->modulation == OOK_PULSE_CLOCK_BITS) {
-        PWM_Precise_Parameters *pwm_precise = (PWM_Precise_Parameters *)calloc(1, sizeof(PWM_Precise_Parameters));
-
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
             usage();
         }
-        pwm_precise->pulse_tolerance = atoi(c);
+        dev->tolerance = atoi(c);
 
         c = strtok(NULL, ":");
         if (c != NULL) {
-            pwm_precise->pulse_sync_width = atoi(c);
+            dev->sync_width = atoi(c);
         }
-
-        dev->demod_arg = (uintptr_t)pwm_precise;
     }
 
     dev->json_callback = callback_slot[next_slot];
