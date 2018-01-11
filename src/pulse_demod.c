@@ -151,20 +151,19 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 {
 	int events = 0;
 	bitbuffer_t bits = {0};
-	PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// 'Short' 1 pulse
-		if (fabsf(pulses->pulse[n] - device->short_limit) < p->pulse_tolerance) {
+		if (fabsf(pulses->pulse[n] - device->short_limit) < device->tolerance) {
 			bitbuffer_add_bit(&bits, 1);
 		// 'Long' 0 pulse
-		} else if (fabsf(pulses->pulse[n] - device->long_limit) < p->pulse_tolerance) {
+		} else if (fabsf(pulses->pulse[n] - device->long_limit) < device->tolerance) {
 			bitbuffer_add_bit(&bits, 0);
 		// Sync pulse
-		} else if (p->pulse_sync_width && (abs(pulses->pulse[n] - p->pulse_sync_width) < p->pulse_tolerance)) {
+		} else if (device->sync_width && (fabsf(pulses->pulse[n] - device->sync_width) < device->tolerance)) {
 			bitbuffer_add_row(&bits);
 		// Ignore spurious short pulses
-		} else if (pulses->pulse[n] < (device->short_limit - p->pulse_tolerance)) {
+		} else if (pulses->pulse[n] < (device->short_limit - device->tolerance)) {
 			// Do nothing
 		} else {
 			return 0;	// Pulse outside specified timing
@@ -288,7 +287,6 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
    int symbol[PD_MAX_PULSES * 2];
    unsigned int n;
 
-   PWM_Precise_Parameters *p = (PWM_Precise_Parameters *)device->demod_arg;
    bitbuffer_t bits = {0};
    int events = 0;
 
@@ -298,11 +296,11 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
    }
 
    for(n = 0; n < pulses->num_pulses * 2; ++n) {
-      if ( fabsf(symbol[n] - device->short_limit) < p->pulse_tolerance) {
+      if ( fabsf(symbol[n] - device->short_limit) < device->tolerance) {
          // Short - 1
          bitbuffer_add_bit(&bits, 1);
-         if ( fabsf(symbol[++n] - device->short_limit) > p->pulse_tolerance) {
-            if (symbol[n] >= device->reset_limit - p->pulse_tolerance ) {
+         if ( fabsf(symbol[++n] - device->short_limit) > device->tolerance) {
+            if (symbol[n] >= device->reset_limit - device->tolerance ) {
                // Don't expect another short gap at end of message
                n--;
             } else {
@@ -313,10 +311,10 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
                return events;
             }
          }
-      } else if ( fabsf(symbol[n] - device->long_limit) < p->pulse_tolerance) {
+      } else if ( fabsf(symbol[n] - device->long_limit) < device->tolerance) {
          // Long - 0
          bitbuffer_add_bit(&bits, 0);
-      } else if (symbol[n] >= device->reset_limit - p->pulse_tolerance ) {
+      } else if (symbol[n] >= device->reset_limit - device->tolerance ) {
          //END message ?
          if (device->callback) {
             events += device->callback(&bits);

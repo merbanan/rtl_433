@@ -76,8 +76,10 @@ struct protocol_state {
     float short_limit;
     float long_limit;
     float reset_limit;
+    float sync_width;
+    float tolerance;
     char *name;
-    unsigned long demod_arg;
+    unsigned demod_arg;
 };
 
 void data_acquired_handler(data_t *data);

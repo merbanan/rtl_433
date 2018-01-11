@@ -63,13 +63,6 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 
 
-/// Parameters for pulse_demod_pwm_precise
-typedef struct {
-	int	pulse_sync_width;		// Width of a sync pulse [us] (optional, ignored if 0)
-	int	pulse_tolerance;		// Tolerance of pulse widths [us]
-} PWM_Precise_Parameters;
-
-
 /// Demodulate a Pulse Width Modulation signal with precise timing
 ///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
@@ -80,7 +73,8 @@ typedef struct {
 /// @param device->short_limit: Width in samples of '1' [us]
 /// @param device->long_limit:  Width in samples of '0' [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
-/// @param device->demod_arg: pointer to PWM_Precise_Parameters
+/// @param device->sync_width:  Width of sync pulse [us]
+/// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -131,7 +125,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 /// @param device->short_limit: Width in samples of '1' [us]
 /// @param device->long_limit:  Width in samples of '0' [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
-/// @param device->demod_arg: pointer to PWM_Precise_Parameters (only pulse_tolerance used)
+/// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
 int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device);
 

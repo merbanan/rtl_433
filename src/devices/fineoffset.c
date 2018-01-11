@@ -343,19 +343,16 @@ r_device fineoffset_WH25 = {
 };
 
 
-PWM_Precise_Parameters pwm_precise_parameters_fo_wh0530 = {
-    .pulse_tolerance    = 160, // us
-    .pulse_sync_width   = 0,    // No sync bit used
-};
-
 r_device fineoffset_WH0530 = {
     .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
     .modulation     = OOK_PULSE_PWM_PRECISE,
     .short_limit    = 504,	// Short pulse 504µs
     .long_limit     = 1480, // Long pulse 1480µs
     .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)
+    .sync_width     = 0,    // No sync bit used
+    .tolerance      = 160, // us
     .json_callback  = &fineoffset_WH0530_callback,
     .disabled       = 0,
-    .demod_arg      = (uintptr_t)&pwm_precise_parameters_fo_wh0530,
+    .demod_arg      = 0,
     .fields         = output_fields_WH0530
 };

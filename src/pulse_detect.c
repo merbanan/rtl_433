@@ -600,7 +600,7 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 
 	// Demodulate (if detected)
 	if(device.modulation) {
-		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %lu\n",
+		fprintf(stderr, "Attempting demodulation... short_limit: %.0f, long_limit: %.0f, reset_limit: %.0f, demod_arg: %u\n",
 			device.short_limit, device.long_limit, device.reset_limit, device.demod_arg);
 		switch(device.modulation) {
 			case FSK_PULSE_PCM:

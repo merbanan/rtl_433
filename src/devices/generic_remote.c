@@ -90,18 +90,15 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 }
 
 
-PWM_Precise_Parameters pwm_precise_parameters_generic = {
-	.pulse_tolerance	= 200, // us
-	.pulse_sync_width	= 0,	// No sync bit used
-};
-
 r_device generic_remote = {
 	.name			= "Generic Remote SC226x EV1527",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
 	.short_limit	= 464,
 	.long_limit		= 1404,
 	.reset_limit	= 1800,
+	.sync_width 	= 0,	// No sync bit used
+	.tolerance  	= 200, // us
 	.json_callback	= &generic_remote_callback,
 	.disabled		= 0,
-	.demod_arg		= (uintptr_t)&pwm_precise_parameters_generic,
+	.demod_arg		= 0,
 };

@@ -55,18 +55,15 @@ static char *output_fields[] = {
 	NULL
 };
 
-PWM_Precise_Parameters pwm_precise_parameters_quhwa = {
-	.pulse_tolerance	= 80, // us
-	.pulse_sync_width	= 0,	// No sync bit used
-};
-
 r_device quhwa = {
 	.name			= "Quhwa",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
 	.short_limit            = 360,	// Pulse: Short 360µs, Long 1070µs
 	.long_limit		= 1070,	// Gaps: Short 360µs, Long 1070µs
 	.reset_limit	        = 1200,	// Intermessage Gap 5200µs
+	.sync_width	= 0,	// No sync bit used
+	.tolerance	= 80, // us
 	.json_callback	        = &quhwa_callback,
 	.disabled		= 0,
-	.demod_arg		= (uintptr_t)&pwm_precise_parameters_quhwa,
+	.demod_arg		= 0,
 };

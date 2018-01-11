@@ -182,15 +182,12 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->short_limit = (float) t_dev->short_limit / ((float) 1000000 / (float) samp_rate);
     p->long_limit = (float) t_dev->long_limit / ((float) 1000000 / (float) samp_rate);
     p->reset_limit = (float) t_dev->reset_limit / ((float) 1000000 / (float) samp_rate);
+    p->sync_width = (float) t_dev->sync_width / ((float)1000000 / (float)samp_rate);
+    p->tolerance = (float) t_dev->tolerance / ((float)1000000 / (float)samp_rate);
     p->modulation = t_dev->modulation;
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;
     p->demod_arg = t_dev->demod_arg;
-    if (p->modulation == OOK_PULSE_PWM_PRECISE || p->modulation == OOK_PULSE_CLOCK_BITS) {
-        PWM_Precise_Parameters *pwm_precise_parameters = (PWM_Precise_Parameters *)p->demod_arg;
-        pwm_precise_parameters->pulse_tolerance = (float)pwm_precise_parameters->pulse_tolerance / ((float)1000000 / (float)samp_rate);
-        pwm_precise_parameters->pulse_sync_width = (float)pwm_precise_parameters->pulse_sync_width / ((float)1000000 / (float)samp_rate);
-    }
     bitbuffer_clear(&p->bits);
 
     demod->r_devs[demod->r_dev_num] = p;

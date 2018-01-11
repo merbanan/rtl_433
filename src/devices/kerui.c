@@ -64,18 +64,15 @@ static char *output_fields[] = {
 	NULL
 };
 
-PWM_Precise_Parameters pwm_precise_parameters_kerui = {
-	.pulse_tolerance	= 80, // us
-	.pulse_sync_width	= 0,
-};
-
 r_device kerui = {
 	.name          = "Kerui PIR Sensor",
 	.modulation    = OOK_PULSE_PWM_PRECISE,
 	.short_limit   = 316,
 	.long_limit    = 1020,
 	.reset_limit   = 1800,
+	.sync_width    = 0,
+	.tolerance     = 80, // us
 	.json_callback = &kerui_callback,
 	.disabled      = 0,
-	.demod_arg     = (uintptr_t)&pwm_precise_parameters_kerui,
+	.demod_arg     = 0,
 };

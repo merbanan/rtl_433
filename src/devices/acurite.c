@@ -1037,11 +1037,6 @@ r_device acurite_txr = {
 
 // @todo, find a set of values that will work reasonably
 // with a range of signal levels
-//
-// PWM_Precise_Parameters pwm_precise_param_acurite_txr = {
-// 	.pulse_tolerance	= 200, // us
-// 	.pulse_sync_width	= 680, // us
-// };
 
 //r_device acurite_txr = {
 //    .name           = "Acurite 592TXR Temp/Humidity sensor",
@@ -1049,11 +1044,12 @@ r_device acurite_txr = {
 //    .short_limit    = 440,
 //    .long_limit     = 260,
 //    .reset_limit    = 4000,
+// 	  .sync_width     = 680, // us
+// 	  .tolerance      = 200, // us
 //    .json_callback  = &acurite_txr_callback,
 //    .disabled       = 0,
-//    .demod_arg      = (unsigned long)&pwm_precise_param_acurite_txr,
+//    .demod_arg      = 0,
 //};
-
 
 /*
  * Acurite 00986 Refrigerator / Freezer Thermometer

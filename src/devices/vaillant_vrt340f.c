@@ -201,11 +201,6 @@ vaillant_vrt340_callback (bitbuffer_t *bitbuffer)
     return vaillant_vrt340_parser (bitbuffer);
 }
 
-PWM_Precise_Parameters vaillant_vrt340_clock_bits_parameters = {
-    .pulse_tolerance    = 120, // us
-    .pulse_sync_width    = 0,    // No sync bit used
-};
-
 static char *output_fields[] = {
     "time",
     "model",
@@ -223,8 +218,10 @@ r_device vaillant_vrt340f = {
     .short_limit    = 836,
     .long_limit     = 1648, // not used
     .reset_limit    = 4000,
+    .sync_width     = 0,    // No sync bit used
+    .tolerance      = 120, // us
     .json_callback  = &vaillant_vrt340_callback,
     .disabled       = 0,
-    .demod_arg      = (uintptr_t)&vaillant_vrt340_clock_bits_parameters,
+    .demod_arg      = 0,
     .fields         = output_fields
 };
