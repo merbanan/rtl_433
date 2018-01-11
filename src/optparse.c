@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <string.h>
 
 uint32_t atouint32_metric(const char *str, const char *error_hint)
 {
@@ -128,6 +129,25 @@ int atoi_time(const char *str, const char *error_hint)
     }
 
     return (int)val;
+}
+
+char *asepc(char **stringp, char delim)
+{
+    if (!stringp || !*stringp) return NULL;
+    char *s = strchr(*stringp, delim);
+    if (s) *s++ = '\0';
+    char *p = *stringp;
+    *stringp = s;
+    return p;
+}
+
+char *getkwargs(char **s, char **key, char **val)
+{
+    char *v = asepc(s, ',');
+    char *k = asepc(&v, '=');
+    if (key) *key = k;
+    if (val) *val = v;
+    return k;
 }
 
 // Test code

@@ -34,4 +34,22 @@ uint32_t atouint32_metric(const char *str, const char *error_hint);
 /// @return parsed number value
 int atoi_time(const char *str, const char *error_hint);
 
+/// Similar to strsep.
+///
+/// @param[in,out] stringp
+/// @param delim the delimiter character
+/// @return the original value of *stringp
+char *asepc(char **stringp, char delim);
+
+/// Parse a comma-separated list of key/value pairs into kwargs
+///
+/// The input string will be modified and the pointer advanced.
+/// The key and val pointers will be into the original string.
+///
+/// @param[in,out] s String of key=value pairs, separated by commas
+/// @param[out] key keyword argument if found, NULL otherwise
+/// @param[out] val value if found, NULL otherwise
+/// @return the original value of *stringp (the keyword found)
+char *getkwargs(char **s, char **key, char **val);
+
 #endif /* OPTPARSE_H_ */
