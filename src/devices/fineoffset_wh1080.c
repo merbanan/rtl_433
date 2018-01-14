@@ -260,10 +260,6 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     if (bitbuffer->num_rows != 1) {
         return 0;
     }
-    if ((bitbuffer->bits_per_row[0] != 88) && (bitbuffer->bits_per_row[0] != 87) &&
-    (bitbuffer->bits_per_row[0] != 64) && (bitbuffer->bits_per_row[0] != 63)){
-        return 0;
-    }
 
     if(bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
 	sens_msg = 12;
@@ -286,6 +282,8 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
         (uint8_t *) & bbuf +1, 7*8);
         br = bbuf;
         bbuf[0] = 0xFF;
+    } else {
+        return 0;
     }
 
     if (debug_output) {
