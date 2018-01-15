@@ -125,6 +125,9 @@ if(UNIX)
 target_link_libraries(rtl_433 m)
 endif()
 
+# Explicitly say that we want C99
+set_property(TARGET rtl_433 PROPERTY C_STANDARD 99)
+
 ########################################################################
 # Install built library files & utilities
 ########################################################################

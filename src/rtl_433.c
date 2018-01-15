@@ -68,9 +68,9 @@ struct dm_state {
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
     union {
         // These buffers aren't used at the same time, so let's use a union to save some memory
-        int16_t fm_buf[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
-        uint16_t temp_buf[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
-    };
+        int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
+        uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
+    } buf;
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
@@ -677,12 +677,12 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // AM demodulation
-    envelope_detect(iq_buf, demod->temp_buf, len/2);
-    baseband_low_pass_filter(demod->temp_buf, demod->am_buf, len/2, &demod->lowpass_filter_state);
+    envelope_detect(iq_buf, demod->buf.temp, len/2);
+    baseband_low_pass_filter(demod->buf.temp, demod->am_buf, len/2, &demod->lowpass_filter_state);
 
     // FM demodulation
     if (demod->enable_FM_demod) {
-        baseband_demod_FM(iq_buf, demod->fm_buf, len/2, &demod->demod_FM_state);
+        baseband_demod_FM(iq_buf, demod->buf.fm, len/2, &demod->demod_FM_state);
     }
 
     // Handle special input formats
@@ -701,7 +701,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
         while(package_type) {
-            package_type = pulse_detect_package(demod->am_buf, demod->fm_buf, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
                 if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
@@ -790,7 +790,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         if (demod->debug_mode == 1) {  // AM data
             out_buf = (uint8_t*)demod->am_buf;
         } else if (demod->debug_mode == 2) {  // FM data
-            out_buf = (uint8_t*)demod->fm_buf;
+            out_buf = (uint8_t*)demod->buf.fm;
         }
         if (fwrite(out_buf, 1, len, demod->out_file) != len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
