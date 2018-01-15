@@ -14,9 +14,15 @@ Installation instructions:
 
 Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
 
-Depending on your system, you may also need to install the following libraries:
+Depending on your system, you may also need to install the following libraries.
+
+Debian:
 
     sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr
+
+Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
+
+    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
 
 Installation using cmake:
 
