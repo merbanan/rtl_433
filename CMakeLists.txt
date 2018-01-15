@@ -19,8 +19,6 @@ if (POLICY CMP0025)
 endif ()
 
 project(rtl433 C)
-set (rtl433_VERSION_MAJOR 1)
-set (rtl433_VERSION_MINOR 0)
 
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
@@ -30,6 +28,23 @@ endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+
+########################################################################
+# Get version info from Git
+########################################################################
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_COMMIT)
+if(GIT_COMMIT) # is a git repo
+    # shorten branch spec
+    string(REGEX REPLACE ".*/" "" GIT_BRANCH "${GIT_REFSPEC}")
+    # use lightweight (non-annotated) tags
+    git_describe(GIT_VERSION "--tags")
+    git_timestamp(GIT_TIMESTAMP)
+    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP} (${GIT_REFSPEC} commit ${GIT_COMMIT})")
+    ADD_DEFINITIONS(-DGIT_VERSION=${GIT_VERSION})
+    ADD_DEFINITIONS(-DGIT_BRANCH=${GIT_BRANCH})
+    ADD_DEFINITIONS(-DGIT_TIMESTAMP=${GIT_TIMESTAMP})
+endif()
 
 ########################################################################
 # Compiler specific setup

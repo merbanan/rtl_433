@@ -99,8 +99,15 @@ void usage(r_device *devices) {
     char disabledc;
 
     fprintf(stderr,
-            "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n\n"
-            "Usage:\t= Tuner options =\n"
+            "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n"
+#ifdef GIT_VERSION
+#define STR_VALUE(arg) #arg
+#define STR_EXPAND(s) STR_VALUE(s)
+            "version " STR_EXPAND(GIT_VERSION)
+            " branch " STR_EXPAND(GIT_BRANCH)
+            " at " STR_EXPAND(GIT_TIMESTAMP) "\n"
+#endif
+            "\nUsage:\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
             "\t[-g <gain>] (default: 0 for auto)\n"
