@@ -13,6 +13,11 @@
 # Project setup
 ########################################################################
 cmake_minimum_required(VERSION 2.6)
+# Fix behavior of CMAKE_C_STANDARD when targeting macOS.
+if (POLICY CMP0025)
+    cmake_policy(SET CMP0025 NEW)
+endif ()
+
 project(rtl433 C)
 set (rtl433_VERSION_MAJOR 1)
 set (rtl433_VERSION_MINOR 0)
@@ -29,14 +34,15 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
 ########################################################################
 # Compiler specific setup
 ########################################################################
-if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUAL "Clang") AND NOT WIN32)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD 99)
+if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-Wno-unused)
     ADD_DEFINITIONS(-Wno-unused-parameter)
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
-    ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
     # for strdup, setenv
     ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
@@ -48,7 +54,7 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" STREQUA
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
 endif()
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
 endif()
