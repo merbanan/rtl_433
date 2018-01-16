@@ -54,6 +54,7 @@ add_executable(rtl_433
 	devices/intertechno.c
 	devices/kedsum.c
 	devices/lacrosse.c
+	devices/lacrosse_TX141_Bv2.c
 	devices/lacrosse_TX141TH_Bv2.c
 	devices/lacrossews.c
 	devices/lightwave_rf.c
