@@ -76,6 +76,7 @@
 		DECL(honeywell) \
 		DECL(maverick_et73x) \
 		DECL(rftech) \
+		DECL(lacrosse_TX141_Bv2) \
 		DECL(lacrosse_TX141TH_Bv2) \
 		DECL(acurite_00275rm) \
 		DECL(lacrosse_tx35) \

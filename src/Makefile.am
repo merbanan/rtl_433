@@ -43,6 +43,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/intertechno.c \
                        devices/kedsum.c \
                        devices/lacrosse.c \
+                       devices/lacrosse_TX141_Bv2.c \
                        devices/lacrosse_TX141TH_Bv2.c \
                        devices/lacrossews.c \
 		               devices/lacrosse_tx35.c \
