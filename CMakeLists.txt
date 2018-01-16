@@ -58,6 +58,7 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES
     ADD_DEFINITIONS(-Wno-unused)
     ADD_DEFINITIONS(-Wno-unused-parameter)
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
+    ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
     # for strdup, setenv
     ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
