@@ -1,13 +1,30 @@
-/* LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
- * utilizing the remote temperature sensor TX141-Bv2 transmitting
- * in the 433.92 MHz band. Product pages:
+/* LaCrosse temperature sensor TX141-Bv2 transmitting in the 
+ * 433.92 MHz band. Product page:
  * https://www.lacrossetechnology.com/tx141-bv2-temperature-sensor/
  *
- * This file is a copy of lacrosse_TX141TH_Bv2.c, please refer to it for 
- * comments about design. The only difference for this file is
- * the LACROSSE_TX141_BITLEN is 37 instead of 40. 
+ * The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
  *
- * All references to TX141TH have been changed to TX141 removing TH.
+ * This file is a copy of lacrosse_TX141TH_Bv2.c, please refer to it for 
+ * comments about design. 
+ *
+ * Changes:
+ * - All references to TX141TH have been changed to TX141 removing TH.
+ * - LACROSSE_TX141_BITLEN is 37 instead of 40. 
+ * - The humidity variable has been removed.
+ * - Battery check bit is inverse of TX141TH.
+ *
+ * The CRC Checksum is not checked. In trying to reverse engineer the
+ * CRC, the first nibble can be checked by:
+ *
+ * a1 = (bytes[0]&0xF0) >> 4);
+ * b1 = (bytes[1]&0x40) >> 4) - 1;
+ * c1 = (bytes[2]&0xF0) >> 4);
+ * n1 = (a1+a2+c3)&0x0F;
+ *
+ * The second nibble I could not figure out.
+ *
+ * Changes done by Andrew Rivett (va3ned@gmail.com). Copyright is 
+ * retained by Robert Fraczkiewicz.
  *
  * Copyright (C) 2017 Robert Fraczkiewicz   (aromring@gmail.com)
  * This program is free software; you can redistribute it and/or modify
@@ -34,7 +51,7 @@ static int lacrosse_tx141_bv2_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
-    int i,j,k,nbytes,npacket,kmax,crc;
+    int i,j,k,nbytes,npacket,kmax;
     uint8_t id=0,status=0,battery_low=0,test=0,maxcount;
     uint16_t temp_raw=0;
     float temp_f,temp_c=0.0;
@@ -101,16 +118,6 @@ static int lacrosse_tx141_bv2_callback(bitbuffer_t *bitbuffer) {
     temp_raw=((status & 0x0F) << 8) + bytes[2];
     temp_f = 9.0*((float)temp_raw)/50.0-58.0; // Temperature in F
     temp_c = ((float)temp_raw)/10.0-50.0; // Temperature in C
-    // CRC is calculated as follows:
-    // a1 = (bytes[1]&0xF0) >> 4;
-    // b1 = (bytes[2]&0xF0) >> 4;
-    // a2 = (bytes[1]&0x0F);
-    // b2 = (bytes[2]&0x0F);
-    // crc = (((a1+a2)&0x0F) << 4) + ((b2-a2)&0x0F)
-    
-    crc = (((((bytes[1]&0xF0)>>4)+((bytes[2]&0xF0)>>4))&0x0F)<<4) + (((bytes[2]&0x0F)-(bytes[1]&0x0F))&0x0F);
-
-    fprintf(stderr, "%x %x %x %x %x %x\n", bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], crc);
 
     if (0==id || temp_f < -40.0 || temp_f > 140.0) {
         if (debug_output) {
