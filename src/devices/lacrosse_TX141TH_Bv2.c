@@ -139,22 +139,18 @@ typedef struct {
     uint8_t count;  // Count
 } data_and_count;
 
-static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
+static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
     int i,j,k,nbytes,npacket,kmax;
     int bitlen=0;
+    int device=0;
     uint8_t id=0,status=0,battery_low=0,test=0,humidity=0,maxcount;
     uint16_t temp_raw=0;
     float temp_c=0.0;
     data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT] = {0};
-    if( device == LACROSSE_TX141 ) {
-        bitlen = LACROSSE_TX141_BITLEN;
-    } else {
-        bitlen = LACROSSE_TX141TH_BITLEN;
-    }
 
     if (debug_output) {
         bitbuffer_print(bitbuffer);
@@ -163,6 +159,13 @@ static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
     npacket=0; // Number of unique packets
     for(i=0; i<BITBUF_ROWS; ++i) {
         j=bitbuffer->bits_per_row[i];
+        if( j >= 40 ) {
+            device = LACROSSE_TX141TH;
+            bitlen = LACROSSE_TX141TH_BITLEN;
+        } else {
+            device = LACROSSE_TX141;
+            bitlen = LACROSSE_TX141_BITLEN;
+        }
         if(j>=bitlen) {
             nbytes=j/8;
             for(j=0;j<nbytes;j+=LACROSSE_TX141TH_BYTELEN) {
@@ -225,7 +228,7 @@ static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
         humidity = bytes[3];
     }
 
-    if (0==id || (device == LACROSSE_TX141_BITLEN && (0==humidity || humidity > 100)) || temp_c < -50.0 || temp_c > 140.0) {
+    if (0==id || (device == LACROSSE_TX141TH && (0==humidity || humidity > 100)) || temp_c < -50.0 || temp_c > 140.0) {
         if (debug_output) {
             fprintf(stderr, "LaCrosse TX141-Bv2/TX141TH-Bv2 data error\n");
             fprintf(stderr, "id: %i, humidity:%i, temp:%f\n", id, humidity, temp_c);
@@ -237,7 +240,7 @@ static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
         data = data_make("time",    "Date and time", DATA_STRING,    time_str,
                          "model",   "", DATA_STRING,    "LaCrosse TX141-Bv2 sensor",
                          "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                         "temperature", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_c,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                          "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
                          "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
                           NULL);
@@ -245,7 +248,7 @@ static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
         data = data_make("time",    "Date and time", DATA_STRING,    time_str,
                          "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
                          "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                         "temperature", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_c,
+                         "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                          "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
                          "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
                          "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
@@ -257,48 +260,19 @@ static int lacrosse_tx141_process(bitbuffer_t *bitbuffer, int device) {
 
 }
 
-static int lacrosse_tx141_bv2_callback(bitbuffer_t *bitbuffer) {
-    return lacrosse_tx141_process(bitbuffer, LACROSSE_TX141);
-}
-static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
-    return lacrosse_tx141_process(bitbuffer, LACROSSE_TX141TH);
-}
-
-static char *output_fields_tx141[] = {
+static char *output_fields[] = {
     "time",
     "model",
     "id",
-    "temperature",
-    "battery",
-    "test",
-    NULL
-};
-
-static char *output_fields_tx141th[] = {
-    "time",
-    "model",
-    "id",
-    "temperature",
+    "temperature_C",
     "humidity",
     "battery",
     "test",
     NULL
 };
 
-r_device lacrosse_TX141_Bv2 = {
-    .name          = "LaCrosse TX141-Bv2 sensor",
-    .modulation    = OOK_PULSE_PWM_TERNARY,
-    .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
-    .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
-    .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-    .json_callback = &lacrosse_tx141_bv2_callback,
-    .disabled      = 0,
-    .demod_arg     = 2,       // Longest pulses are startbits
-    .fields        = output_fields_tx141,
-};
-
 r_device lacrosse_TX141TH_Bv2 = {
-    .name          = "LaCrosse TX141TH-Bv2 sensor",
+    .name          = "LaCrosse TX141-Bv2/TX141TH-Bv2 sensor",
     .modulation    = OOK_PULSE_PWM_TERNARY,
     .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
     .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
@@ -306,5 +280,5 @@ r_device lacrosse_TX141TH_Bv2 = {
     .json_callback = &lacrosse_tx141th_bv2_callback,
     .disabled      = 0,
     .demod_arg     = 2,       // Longest pulses are startbits
-    .fields        = output_fields_tx141th,
+    .fields        = output_fields,
 };
