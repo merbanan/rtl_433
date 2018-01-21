@@ -26,6 +26,7 @@ typedef bitrow_t bitarray_t[BITBUF_ROWS];
 typedef struct {
 	uint16_t	num_rows;	// Number of active rows
 	uint16_t	bits_per_row[BITBUF_ROWS];	// Number of active bits per row
+	uint16_t	syncs_before_row[BITBUF_ROWS];	// Number of sync pulses before row
 	bitarray_t	bb;			// The actual bits buffer
 } bitbuffer_t;
 
@@ -38,6 +39,9 @@ void bitbuffer_add_bit(bitbuffer_t *bits, int bit);
 
 /// Add a new row to the bitbuffer
 void bitbuffer_add_row(bitbuffer_t *bits);
+
+/// Increment sync counter, add new row if not empty
+void bitbuffer_add_sync(bitbuffer_t *bits);
 
 /// Extract (potentially unaligned) bytes from the bit buffer. Len is bits.
 void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,

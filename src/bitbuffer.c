@@ -51,6 +51,15 @@ void bitbuffer_add_row(bitbuffer_t *bits) {
 }
 
 
+void bitbuffer_add_sync(bitbuffer_t *bits) {
+	if (bits->num_rows == 0) bits->num_rows++;	// Add first row automatically
+	if (bits->bits_per_row[bits->num_rows - 1]) {
+		bitbuffer_add_row(bits);
+	}
+	bits->syncs_before_row[bits->num_rows-1]++;
+}
+
+
 void bitbuffer_invert(bitbuffer_t *bits) {
 	for (unsigned row = 0; row < bits->num_rows; ++row) {
 		if (bits->bits_per_row[row] > 0) {
