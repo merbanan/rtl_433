@@ -159,6 +159,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     npacket=0; // Number of unique packets
     for(i=0; i<BITBUF_ROWS; ++i) {
         j=bitbuffer->bits_per_row[i];
+        if (j == 0) continue; // sync
         if( j >= 40 ) {
             device = LACROSSE_TX141TH;
             bitlen = LACROSSE_TX141TH_BITLEN;
