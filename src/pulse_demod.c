@@ -366,18 +366,19 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
             if (symbol[n] >= device->reset_limit - device->tolerance ) {
                // Don't expect another short gap at end of message
                n--;
-            } else {
+			} else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
+				bitbuffer_add_row(&bits);
 /*
                fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
                        device->name);
 */
-               return events;
             }
          }
       } else if ( fabsf(symbol[n] - device->long_limit) < device->tolerance) {
          // Long - 0
          bitbuffer_add_bit(&bits, 0);
-      } else if (symbol[n] >= device->reset_limit - device->tolerance ) {
+      } else if (symbol[n] >= device->reset_limit - device->tolerance
+			&& bits.num_rows > 0) { // Only if data has been accumulated
          //END message ?
          if (device->callback) {
             events += device->callback(&bits);
