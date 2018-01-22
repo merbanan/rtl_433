@@ -876,6 +876,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
     int     nsignal = 0;
 
     local_time_str(0, time_str);
+    bitbuffer_invert(bitbuf);
 
     if (debug_output > 1) {
         fprintf(stderr,"acurite_00275rm\n");
@@ -1092,12 +1093,13 @@ r_device acurite_606 = {
 
 r_device acurite_00275rm = {
     .name           = "Acurite 00275rm,00276rm Temp/Humidity with optional probe",
-    .modulation     = OOK_PULSE_PWM_TERNARY,
-    .short_limit    = 320,  // = 4* 80,  80  is reported by -G option
-    .long_limit     = 520,  // = 4*130, 130  "
-  //  .reset_limit    = 608,  // = 4*152, 152  "
-    .reset_limit    = 708,  // = 4*152, 152  "
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 232,  // short pulse is 232 us
+    .long_limit     = 420,  // long pulse is 420 us
+    .gap_limit      = 520,  // long gap is 384 us, sync gap is 592 us
+    .reset_limit    = 708,  // no packet gap, sync gap is 592 us
+    .sync_width     = 632,  // sync pulse is 632 us
     .json_callback  = &acurite_00275rm_callback,
     .disabled       = 0,
-    .demod_arg      = 2,
+    .demod_arg      = 0,    // not used
 };
