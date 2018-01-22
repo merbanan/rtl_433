@@ -44,6 +44,7 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	float humidity;
 	bitrow_t *bb = bitbuffer->bb;
 
+	bitbuffer_invert(bitbuffer);
 	// Validate package (row [0] is empty due to sync bit)
 	if ((bitbuffer->bits_per_row[1] == 21)			// Dont waste time on a long/short package
 		&& (crc8(bb[1], 3, 0x80, 0) != 0)		// It should be odd parity
@@ -105,11 +106,13 @@ static char *output_fields[] = {
 
 r_device calibeur_RF104 = {
 	.name           = "Calibeur RF-104 Sensor",
-	.modulation     = OOK_PULSE_PWM_TERNARY,
-	.short_limit    = 1160,	// Short pulse 760µs, Startbit 1560µs, Long pulse 2240µs
-	.long_limit     = 1900,	// Maximum pulse period (long pulse + fixed gap)
+	.modulation     = OOK_PULSE_PWM_PRECISE,
+	.short_limit    = 760,	// Short pulse 760µs
+	.long_limit     = 2240,	// Long pulse 2240µs
 	.reset_limit    = 3200,	// Longest gap (2960-760µs)
+	.sync_width     = 1560,	// Startbit 1560µs
+	.tolerance      = 0,	// raw mode
 	.json_callback  = &calibeur_rf104_callback,
 	.disabled       = 0,
-	.demod_arg      = 1		// Startbit is middle bit
+	.demod_arg      = 0		// not used
 };
