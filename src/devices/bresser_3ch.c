@@ -35,10 +35,6 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
     int id, status, battery_low, test, channel, temp_raw, humidity;
     float temp_f;
 
-    /* note:
-       4 double wide sync pulses each go to an own row, the rows length will be
-       1 1 1 1 41 1 1 1 1 41 1 1 1 1 41 1 1 1 1 41 1 1 1 1 491
-     */
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
     if (r < 0 || bitbuffer->bits_per_row[r] > 42) {
         return 0;
@@ -104,9 +100,11 @@ static char *output_fields[] = {
 
 r_device bresser_3ch = {
     .name           = "Bresser Thermo-/Hygro-Sensor 3CH",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 375,   // short pulse is ~250 us, long pulse is ~500 us
-    .long_limit     = 625,   // long gap (with short pulse) is ~500 us, sync gap is ~750 us
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 250,   // short pulse is ~250 us
+    .long_limit     = 500,   // long pulse is ~500 us
+    .sync_width     = 750,   // sync pulse is ~750 us
+    .gap_limit      = 625,   // long gap (with short pulse) is ~500 us, sync gap is ~750 us
     .reset_limit    = 1250,  // maximum gap is 1000 us (long gap + longer sync gap on last repeat)
     .json_callback  = &bresser_3ch_callback,
     .disabled       = 0,
