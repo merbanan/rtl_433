@@ -49,26 +49,30 @@ Layout appears to be:
 static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
     int iTemp1, iTemp2, good = -1;
     float fTemp1, fTemp2;
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *bytes;
     unsigned int device, value;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
-    good = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
-
+    good = bitbuffer_find_repeated_row(bitbuffer, 5, 40);
     if (good < 0) {
         return 0;
+    }
+
+    bytes = bitbuffer->bb[good];
+    if (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3]) {
+        return 0; // reduce false positives
     }
 
     // Note: the device ID changes randomly each time you replace the battery, so we can't early out based on it.
     // This is probably to allow multiple devices to be used at once.  When you replace the receiver batteries
     // or long-press its power button, it pairs with the first device ID it hears.
-    device = bb[good][0];
+    device = bytes[0];
 
     if(debug_output) {
-        // There is a mysterious checksum in bb[good][4].  It may be the same as the checksum used by the TP-11,
+        // There is a mysterious checksum in bytes[4].  It may be the same as the checksum used by the TP-11,
         // which consisted of a lookup table containing, for each bit in the message, a byte to be xor-ed into
         // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian
         // elimnation, so dump some data so we can try this.
@@ -77,13 +81,13 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
         // bruteforce-crc didn't find anything, though - this may not be a CRC algorithm specifically.
         fprintf(stderr,"thermopro_tp12_raw_data:");
         for(int bit_index = 0; bit_index < 40; ++bit_index){
-            fputc(bitrow_get_bit(bb[good], bit_index) + '0', stderr);
+            fputc(bitrow_get_bit(bytes, bit_index) + '0', stderr);
         }
         fputc('\n', stderr);
     }
 
-    iTemp1 = ((bb[good][2] & 0xf0) << 4) | bb[good][1];
-    iTemp2 = ((bb[good][2] & 0x0f) << 8) | bb[good][3];
+    iTemp1 = ((bytes[2] & 0xf0) << 4) | bytes[1];
+    iTemp2 = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
     fTemp1 = (iTemp1 - 200) / 10.;
     fTemp2 = (iTemp2 - 200) / 10.;
