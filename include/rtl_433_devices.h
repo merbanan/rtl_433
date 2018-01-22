@@ -109,6 +109,7 @@ typedef struct {
 	float short_limit;
 	float long_limit;
 	float reset_limit;
+	float gap_limit;
     float sync_width;
     float tolerance;
 	int (*json_callback)(bitbuffer_t *bitbuffer);

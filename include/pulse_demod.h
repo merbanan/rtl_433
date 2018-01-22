@@ -54,6 +54,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit
 /// - Long  pulse will add a 0 bit
+/// @deprecated use pulse_demod_pwm_precise (long_limit becomes gap_limit).
 /// @param device->short_limit: Threshold between short and long pulse [us]
 /// @param device->long_limit:  Maximum gap size before new row of bits [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
@@ -63,18 +64,21 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 
 
-/// Demodulate a Pulse Width Modulation signal with precise timing
+/// Demodulate a Pulse Width Modulation signal
 ///
-/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
+/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, long, and optional sync pulses.
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit
-/// - Long  pulse will add a 0 bit
-/// - Sync  pulse will add a new row to bitbuffer
-/// @param device->short_limit: Width in samples of '1' [us]
-/// @param device->long_limit:  Width in samples of '0' [us]
+/// - Long pulse will add a 0 bit
+/// - Sync pulse (optional) will add a new row to bitbuffer
+/// @param device->short_limit: Nominal width of '1' [us]
+/// @param device->long_limit:  Nominal width of '0' [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
-/// @param device->sync_width:  Width of sync pulse [us]
-/// @param device->tolerance:   Maximum deviation from nominal widths [us]
+/// @param device->gap_limit:   Maximum gap size before new row of bits [us]
+/// @param device->sync_width:  Nominal width of sync pulse (optional) [us]
+/// @param device->tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
+/// @param device->demod_arg = 0: Do not remove any startbits
+/// @param device->demod_arg = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -84,6 +88,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, middle and long high pulses.
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// The sync bit will add a new row to the bitbuffer
+/// @deprecated use pulse_demod_pwm_precise (note that the buffer will be inverted).
 /// @param device->short_limit: Threshold between short and middle pulse [us]
 /// @param device->long_limit:  Threshold between middle and long pulse [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].

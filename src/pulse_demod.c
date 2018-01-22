@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 
 
 int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
@@ -150,40 +151,102 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
+	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
+	int start_bit = device->demod_arg;
 
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// 'Short' 1 pulse
-		if (fabsf(pulses->pulse[n] - device->short_limit) < device->tolerance) {
+	// lower and upper bounds (non inclusive)
+	int one_l, one_u;
+	int zero_l, zero_u;
+	int sync_l = 0, sync_u = 0;
+
+	if (device->tolerance > 0) {
+		// precise
+		one_l = device->short_limit - device->tolerance;
+		one_u = device->short_limit + device->tolerance;
+		zero_l = device->long_limit - device->tolerance;
+		zero_u = device->long_limit + device->tolerance;
+		if (device->sync_width > 0) {
+			sync_l = device->sync_width - device->tolerance;
+			sync_u = device->sync_width + device->tolerance;
+		}
+
+	} else if (device->sync_width <= 0) {
+		// no sync, short=1, long=0
+		one_l = 0;
+		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		zero_l = one_u - 1;
+		zero_u = INT_MAX;
+
+	} else if (device->sync_width < device->short_limit) {
+		// short=sync, middle=1, long=0
+		sync_l = 0;
+		sync_u = (device->sync_width + device->short_limit) / 2 + 1;
+		one_l = sync_u - 1;
+		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		zero_l = one_u - 1;
+		zero_u = INT_MAX;
+
+	} else if (device->sync_width < device->long_limit) {
+		// short=1, middle=sync, long=0
+		one_l = 0;
+		one_u = (device->short_limit + device->sync_width) / 2 + 1;
+		sync_l = one_u - 1;
+		sync_u = (device->sync_width + device->long_limit) / 2 + 1;
+		zero_l = sync_u - 1;
+		zero_u = INT_MAX;
+
+	} else {
+		// short=1, middle=0, long=sync
+		one_l = 0;
+		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		zero_l = one_u - 1;
+		zero_u = (device->long_limit + device->sync_width) / 2 + 1;
+		sync_l = zero_u - 1;
+		sync_u = INT_MAX;
+	}
+
+	for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+		if (start_bit == 1 && start_bit_detected == 0) {
+			// remove a startbit
+			start_bit_detected = 1;
+		} else if (pulses->pulse[n] > one_l && pulses->pulse[n] < one_u) {
+			// 'Short' 1 pulse
 			bitbuffer_add_bit(&bits, 1);
-		// 'Long' 0 pulse
-		} else if (fabsf(pulses->pulse[n] - device->long_limit) < device->tolerance) {
+		} else if (pulses->pulse[n] > zero_l && pulses->pulse[n] < zero_u) {
+			// 'Long' 0 pulse
 			bitbuffer_add_bit(&bits, 0);
-		// Sync pulse
-		} else if (device->sync_width && (fabsf(pulses->pulse[n] - device->sync_width) < device->tolerance)) {
-			bitbuffer_add_row(&bits);
-		// Ignore spurious short pulses
-		} else if (pulses->pulse[n] < (device->short_limit - device->tolerance)) {
-			// Do nothing
+		} else if (pulses->pulse[n] > sync_l && pulses->pulse[n] < sync_u) {
+			// Sync pulse
+			bitbuffer_add_sync(&bits);
+		} else if (pulses->pulse[n] < one_l) {
+			// Ignore spurious short pulses
 		} else {
-			return 0;	// Pulse outside specified timing
+			// Pulse outside specified timing
+			return 0;
 		}
 
 		// End of Message?
-		if (((n == pulses->num_pulses - 1) 	// No more pulses? (FSK)
-				|| (pulses->gap[n] > device->reset_limit))	// Long silence (OOK)
-				&& (bits.num_rows > 0)) {	// Only if data has been accumulated
+		if (((n == pulses->num_pulses - 1) // No more pulses? (FSK)
+				|| (pulses->gap[n] > device->reset_limit)) // Long silence (OOK)
+				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
 			// Debug printout
-			if(!device->callback || (debug_output && events > 0)) {
+			if (!device->callback || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_pwm_precise(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
+			start_bit_detected = 0;
+		} else if (device->gap_limit > 0 && pulses->gap[n] > device->gap_limit
+				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
+			// New packet in multipacket
+			bitbuffer_add_row(&bits);
+			start_bit_detected = 0;
 		}
-	} // for
+	}
 	return events;
 }
 
