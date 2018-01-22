@@ -93,14 +93,16 @@
 #define LACROSSE_TX141_BITLEN 37
 #define LACROSSE_TX141TH_BITLEN 40
 
-static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
+static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
+{
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     int r;
-    int device=0;
-    uint8_t id=0,status=0,battery_low=0,test=0,humidity=0;
-    uint16_t temp_raw=0;
-    float temp_c=0.0;
+    int device;
+    uint8_t *bytes;
+    uint8_t id, status, battery_low, test, humidity = 0;
+    uint16_t temp_raw;
+    float temp_c;
 
     if (debug_output) {
         bitbuffer_print(bitbuffer);
@@ -114,29 +116,29 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     }
     bitbuffer_invert(bitbuffer);
 
-    if (bitbuffer->bits_per_row[r] >= 40 ) {
+    if (bitbuffer->bits_per_row[r] >= 40) {
         device = LACROSSE_TX141TH;
     } else {
         device = LACROSSE_TX141;
     }
 
-    uint8_t *bytes = bitbuffer->bb[r];
-    id=bytes[0];
-    status=bytes[1];
-    if( device == LACROSSE_TX141 ) {
-        battery_low=!((status & 0x80) >> 7);
+    bytes = bitbuffer->bb[r];
+    id = bytes[0];
+    status = bytes[1];
+    if (device == LACROSSE_TX141) {
+        battery_low = !((status & 0x80) >> 7);
     } else {
-        battery_low=(status & 0x80) >> 7;
+        battery_low = (status & 0x80) >> 7;
     }
-    test=(status & 0x40) >> 6;
-    temp_raw=((status & 0x0F) << 8) + bytes[2];
-    temp_c = ((float)temp_raw)/10.0-50.0; // Temperature in C
+    test = (status & 0x40) >> 6;
+    temp_raw = ((status & 0x0F) << 8) + bytes[2];
+    temp_c = ((float)temp_raw) / 10.0 - 50.0; // Temperature in C
 
-    if( device == LACROSSE_TX141TH ) {
+    if (device == LACROSSE_TX141TH) {
         humidity = bytes[3];
     }
 
-    if (0==id || (device == LACROSSE_TX141TH && (0==humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
+    if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
         if (debug_output) {
             fprintf(stderr, "LaCrosse TX141-Bv2/TX141TH-Bv2 data error\n");
             fprintf(stderr, "id: %i, humidity:%i, temp:%f\n", id, humidity, temp_c);
@@ -145,23 +147,25 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
     }
 
     local_time_str(0, time_str);
-    if( device == LACROSSE_TX141 ) {
-        data = data_make("time",    "Date and time", DATA_STRING,    time_str,
-                         "model",   "", DATA_STRING,    "LaCrosse TX141-Bv2 sensor",
-                         "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                         "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
-                         "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
-                          NULL);
+    if (device == LACROSSE_TX141) {
+        data = data_make(
+                "time",          "Date and time", DATA_STRING, time_str,
+                "model",         "",              DATA_STRING, "LaCrosse TX141-Bv2 sensor",
+                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
+                NULL);
     } else {
-        data = data_make("time",    "Date and time", DATA_STRING,    time_str,
-                         "model",   "", DATA_STRING,    "LaCrosse TX141TH-Bv2 sensor",
-                         "id",      "Sensor ID",  DATA_FORMAT, "%02x", DATA_INT, id,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                         "humidity",    "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                         "battery", "Battery",  DATA_STRING, battery_low ? "LOW" : "OK",
-                         "test",    "Test?",  DATA_STRING, test ? "Yes" : "No",
-                          NULL);
+        data = data_make(
+                "time",          "Date and time", DATA_STRING, time_str,
+                "model",         "",              DATA_STRING, "LaCrosse TX141TH-Bv2 sensor",
+                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
+                NULL);
     }
     data_acquired_handler(data);
 
