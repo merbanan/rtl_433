@@ -5,8 +5,8 @@
 
 // Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
 //     http://wiki.kainhofer.com/hardware/vaillantvrt340f
-// The data is sent differential Manchester encoded (OOK_PULSE_CLOCK_BITS in
-// rtl_433 terms) with bit-stuffing (after five 1 bits an extra 0 bit is inserted)
+// The data is sent differential Manchester encoded
+// with bit-stuffing (after five 1 bits an extra 0 bit is inserted)
 //
 // All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
 //
@@ -214,11 +214,10 @@ static char *output_fields[] = {
 
 r_device vaillant_vrt340f = {
     .name           = "Vaillant calorMatic 340f Central Heating Control",
-    .modulation     = OOK_PULSE_CLOCK_BITS,
-    .short_limit    = 836,
-    .long_limit     = 1648, // not used
+    .modulation     = OOK_PULSE_DMC,
+    .short_limit    = 836,  // half-bit width 836 us
+    .long_limit     = 1648, // bit width 1648 us
     .reset_limit    = 4000,
-    .sync_width     = 0,    // No sync bit used
     .tolerance      = 120, // us
     .json_callback  = &vaillant_vrt340_callback,
     .disabled       = 0,

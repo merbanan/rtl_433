@@ -73,7 +73,7 @@ static char *output_fields[] = {
 
 r_device fordremote = {
 	.name			= "Ford Car Key",
-	.modulation		= OOK_PULSE_CLOCK_BITS,
+	.modulation		= OOK_PULSE_DMC,
 	.short_limit	= 250,  // half-bit width is 250 us
 	.long_limit		= 500,	// bit width is 500 us
 	.reset_limit	= 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us

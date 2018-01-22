@@ -346,7 +346,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 	return events;
 }
 
-int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device) {
+int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
    int symbol[PD_MAX_PULSES * 2];
    unsigned int n;
 
@@ -369,7 +369,7 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
 			} else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
 				bitbuffer_add_row(&bits);
 /*
-               fprintf(stderr, "Detected error during pulse_demod_clock_bits(): %s\n",
+               fprintf(stderr, "Detected error during pulse_demod_dmc(): %s\n",
                        device->name);
 */
             }
@@ -384,7 +384,7 @@ int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *de
             events += device->callback(&bits);
          }
          if(!device->callback || (debug_output && events > 0)) {
-            fprintf(stderr, "pulse_demod_clock_bits(): %s \n", device->name);
+            fprintf(stderr, "pulse_demod_dmc(): %s \n", device->name);
             bitbuffer_print(&bits);
          }
          bitbuffer_clear(&bits);

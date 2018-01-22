@@ -725,8 +725,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                             p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_CLOCK_BITS:
-                            p_events += pulse_demod_clock_bits(&demod->pulse_data, demod->r_devs[i]);
+                        case OOK_PULSE_DMC:
+                            p_events += pulse_demod_dmc(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM_OSV1:
                             p_events += pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
@@ -757,7 +757,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PWM_RAW:
                         case OOK_PULSE_PWM_TERNARY:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
-                        case OOK_PULSE_CLOCK_BITS:
+                        case OOK_PULSE_DMC:
                         case OOK_PULSE_PWM_OSV1:
                             break;
                         case FSK_PULSE_PCM:

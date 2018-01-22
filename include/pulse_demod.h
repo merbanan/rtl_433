@@ -115,6 +115,8 @@ int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *d
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
 
 
+/// Demodulate a Differential Manchester Coded signal
+///
 /// No level shift within the clock cycle translates to a logic 0
 /// One level shift within the clock cycle translates to a logic 1
 /// Each clock cycle begins with a level shift
@@ -132,7 +134,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_clock_bits(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device);
 
 
 int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device);

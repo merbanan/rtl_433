@@ -53,7 +53,7 @@
 #define	OOK_PULSE_PWM_PRECISE	6			// Pulse Width Modulation with precise timing parameters
 #define	OOK_PULSE_PWM_RAW		7			// DEPRECATED; Pulse Width Modulation. Short pulses = 1, Long = 0
 #define	OOK_PULSE_PWM_TERNARY	8			// DEPRECATED; Pulse Width Modulation with three widths: Sync, 0, 1. Sync determined by argument
-#define	OOK_PULSE_CLOCK_BITS	9			// Level shift within the clock cycle.
+#define	OOK_PULSE_DMC       	9			// Level shift within the clock cycle.
 #define	OOK_PULSE_PWM_OSV1		10			// Pulse Width Modulation. Oregon Scientific v1
 
 #define	FSK_DEMOD_MIN_VAL		16			// Dummy. FSK demodulation must start at this value

@@ -133,11 +133,10 @@ static char *output_fields[] = {
 
 r_device hideki_ts04 = {
     .name           = "HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor",
-    .modulation     = OOK_PULSE_CLOCK_BITS,
-    .short_limit    = 520,
-    .long_limit     = 1040,
+    .modulation     = OOK_PULSE_DMC,
+    .short_limit    = 520,  // half-bit width 520 us
+    .long_limit     = 1040, // bit width 1040 us
     .reset_limit    = 4000,
-    .sync_width     = 0,    // No sync bit used
     .tolerance      = 240, // us
     .json_callback  = &hideki_ts04_callback,
     .disabled       = 0,
