@@ -251,55 +251,6 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 }
 
 
-int pulse_demod_pwm_ternary(const pulse_data_t *pulses, struct protocol_state *device)
-{
-	int events = 0;
-	bitbuffer_t bits = {0};
-	unsigned sync_bit = device->demod_arg;
-
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// Short pulse
-		if (pulses->pulse[n] < device->short_limit) {
-			if (sync_bit == 0) {
-				bitbuffer_add_row(&bits);
-			} else {
-				bitbuffer_add_bit(&bits, 0);
-			}
-		// Middle pulse
-		} else if (pulses->pulse[n] < device->long_limit) {
-			if (sync_bit == 0) {
-				bitbuffer_add_bit(&bits, 0);
-			} else if (sync_bit == 1) {
-				bitbuffer_add_row(&bits);
-			} else {
-				bitbuffer_add_bit(&bits, 1);
-			}
-		// Long pulse
-		} else {
-			if (sync_bit == 2) {
-				bitbuffer_add_row(&bits);
-			} else {
-				bitbuffer_add_bit(&bits, 1);
-			}
-		}
-
-		// End of Message?
-		if(pulses->gap[n] > device->reset_limit) {
-			if (device->callback) {
-				events += device->callback(&bits);
-			}
-			// Debug printout
-			if(!device->callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm_ternary(): %s \n", device->name);
-				bitbuffer_print(&bits);
-			}
-			bitbuffer_clear(&bits);
-		}
-	} // for
-	return events;
-}
-
-
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
 	int time_since_last = 0;
