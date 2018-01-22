@@ -468,8 +468,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     uint8_t strike_count, strike_distance;
     data_t *data;
 
-
     local_time_str(0, time_str);
+    bitbuffer_invert(bitbuf);
 
     if (debug_output > 1) {
         fprintf(stderr,"acurite_txr\n");
@@ -1019,38 +1019,19 @@ r_device acurite_th = {
 /*
  * For Acurite 592 TXR Temp/Mumidity, but
  * Should match Acurite 592TX, 5-n-1, etc.
- *
- *
- * @todo, convert to use precise demodulator, after adding a flag
- *        to set "polarity" to flip short bits = 0 vs. 1.
  */
-
 r_device acurite_txr = {
     .name           = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning",
-    .modulation     = OOK_PULSE_PWM_TERNARY,
-    .short_limit    = 320,
-    .long_limit     = 520,
-    .reset_limit    = 4000,
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 220,  // short pulse is 220 us + 392 us gap
+    .long_limit     = 408,  // long pulse is 408 us + 204 us gap
+    .sync_width     = 620,  // sync pulse is 620 us + 596 us gap
+    .gap_limit      = 500,  // longest data gap is 392 us, sync gap is 596 us
+    .reset_limit    = 4000, // packet gap is 2192 us
     .json_callback  = &acurite_txr_callback,
     .disabled       = 1,
-    .demod_arg      = 2,
+    .demod_arg      = 0,    // not used
 };
-
-// @todo, find a set of values that will work reasonably
-// with a range of signal levels
-
-//r_device acurite_txr = {
-//    .name           = "Acurite 592TXR Temp/Humidity sensor",
-//    .modulation     = OOK_PULSE_PWM_PRECISE,
-//    .short_limit    = 440,
-//    .long_limit     = 260,
-//    .reset_limit    = 4000,
-// 	  .sync_width     = 680, // us
-// 	  .tolerance      = 200, // us
-//    .json_callback  = &acurite_txr_callback,
-//    .disabled       = 0,
-//    .demod_arg      = 0,
-//};
 
 /*
  * Acurite 00986 Refrigerator / Freezer Thermometer
