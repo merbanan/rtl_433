@@ -6,9 +6,7 @@
  *
  * The TX141TH-Bv2 protocol is OOK modulated PWM with fixed period of 625 us
  * for data bits, preambled by four long startbit pulses of fixed period equal
- * to ~1666 us. Hence, it is similar to Bresser Thermo-/Hygro-Sensor 3CH (bresser_3ch.c
- * included in this source code) with the exception that OOK_PULSE_PWM_TERNARY
- * modulation type is technically more correct than OOK_PULSE_PWM_RAW.
+ * to ~1666 us. Hence, it is similar to Bresser Thermo-/Hygro-Sensor 3CH.
  *
  * A single data packet looks as follows:
  * 1) preamble - 833 us high followed by 833 us low, repeated 4 times:
@@ -21,7 +19,7 @@
  *      --    ---    ---     --     --    ---     -- ....
  * A logical 1 is 417 us of high followed by 208 us of low.
  * A logical 0 is 208 us of high followed by 417 us of low.
- * Thus, in the pictorial example above the bits are 1 0 0 1 1 0 1 ....
+ * Thus, in the example pictured above the bits are 1 0 0 1 1 0 1 ....
  *
  * The TX141TH-Bv2 sensor sends 12 of identical packets, one immediately following
  * the other, in a single burst. These 12-packet bursts repeat every 50 seconds. At
@@ -49,47 +47,10 @@
  * 0x87 0x01 0xc3 0x31 0xd8
  * 0x87 0x02 0x28 0x37 0xd8
  *
- * Developer's comment 1: because of our choice of the OOK_PULSE_PWM_TERNARY type, the input
- * array of bits will look like this:
- * bitbuffer:: Number of rows: 25
- *  [00] {0} :
- *  [01] {0} :
- *  [02] {0} :
- *  [03] {0} :
- *  [04] {40} 87 02 67 39 f6
- *  [05] {0} :
- *  [06] {0} :
- *  [07] {0} :
- *  [08] {40} 87 02 67 39 f6
- *  [09] {0} :
- *  [10] {0} :
- *  [11] {0} :
- *  [12] {40} 87 02 67 39 f6
- *  [13] {0} :
- *  [14] {0} :
- *  [15] {0} :
- *  [16] {40} 87 02 67 39 f6
- *  [17] {0} :
- *  [18] {0} :
- *  [19] {0} :
- *  [20] {40} 87 02 67 39 f6
- *  [21] {0} :
- *  [22] {0} :
- *  [23] {0} :
- *  [24] {280} 87 02 67 39 f6 87 02 67 39 f6 87 02 67 39 f6 87 02 67 39 f6 87 02 67 39 f6 87 02 67 39 f6 87 02 67 39 f6
- * which is a direct consequence of two factors: (1) pulse_demod_pwm_ternary() always assuming
- * only one startbit, and (2) bitbuffer_add_row() not adding rows beyond BITBUF_ROWS. This is
- * OK because the data is clearly processable and the unique pattern minimizes the chance of
- * confusion with other sensors, particularly Bresser 3CH.
- *
- * Developer's comment 2: with unknown CRC (see above) the obvious way of checking the data
+ * Developer's comment: with unknown CRC (see above) the obvious way of checking the data
  * integrity is making use of the 12 packet repetition. In principle, transmission errors are
- * be relatively rare, thus the most frequent packet (statistical mode) should represent
- * the true data. Therefore, in the fisrt part of the callback routine the mode is determined
- * for the first 4 bytes of the data compressed into a single 32-bit integer. Since the packet
- * count is small, no sophisticated mode algorithm is necessary; a simple array of <data,count>
- * structures is sufficient. The added bonus is that relative count enables us to determine
- * the quality of radio transmission.
+ * be relatively rare, thus the most frequent packet should represent the true data.
+ * A count enables us to determine the quality of radio transmission.
  *
  * *** Addition of TX141 temperature only device, Jan 2018 by Andrew Rivett (veggiefrog@gmail.com) ***
  *
@@ -131,89 +92,35 @@
 
 #define LACROSSE_TX141_BITLEN 37
 #define LACROSSE_TX141TH_BITLEN 40
-#define LACROSSE_TX141TH_BYTELEN 5  // = LACROSSE_TX141TH_BITLEN / 8
-#define LACROSSE_TX141TH_PACKETCOUNT 12
-
-typedef struct {
-    uint32_t data;  // First 4 data bytes compressed into 32-bit integer
-    uint8_t count;  // Count
-} data_and_count;
 
 static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
-    int i,j,k,nbytes,npacket,kmax;
-    int bitlen=0;
+    int r;
     int device=0;
-    uint8_t id=0,status=0,battery_low=0,test=0,humidity=0,maxcount;
+    uint8_t id=0,status=0,battery_low=0,test=0,humidity=0;
     uint16_t temp_raw=0;
     float temp_c=0.0;
-    data_and_count dnc[LACROSSE_TX141TH_PACKETCOUNT] = {0};
 
     if (debug_output) {
         bitbuffer_print(bitbuffer);
     }
 
-    npacket=0; // Number of unique packets
-    for(i=0; i<BITBUF_ROWS; ++i) {
-        j=bitbuffer->bits_per_row[i];
-        if (j == 0) continue; // sync
-        if( j >= 40 ) {
-            device = LACROSSE_TX141TH;
-            bitlen = LACROSSE_TX141TH_BITLEN;
-        } else {
-            device = LACROSSE_TX141;
-            bitlen = LACROSSE_TX141_BITLEN;
-        }
-        if(j>=bitlen) {
-            nbytes=j/8;
-            for(j=0;j<nbytes;j+=LACROSSE_TX141TH_BYTELEN) {
-                uint32_t *d=(uint32_t *)(bb[i]+j);
-                uint8_t not_found=1;
-                for(k=0;k<npacket;++k) {
-                    if(*d==dnc[k].data) {
-                        ++(dnc[k].count);
-                        not_found=0;
-                        break;
-                    }
-                }
-                if(not_found) {
-                    dnc[npacket].data=*d;
-                    dnc[npacket].count=1;
-                    if(npacket+1<LACROSSE_TX141TH_PACKETCOUNT) ++npacket;
-                }
-            }
-        }
-    }
-
-    if (debug_output) {
-        fprintf(stderr, "%d unique packet(s)\n", npacket);
-        for(k=0;k<npacket;++k) {
-            fprintf(stderr, "%08x \t %d \n", dnc[k].data,dnc[k].count);
-        }
-    }
-
-    // Find the most frequent data packet, if necessary
-    kmax=0;
-    maxcount=0;
-    if(npacket>1) {
-        for(k=0;k<npacket;++k) {
-            if(dnc[k].count>maxcount) {
-                maxcount=dnc[k].count;
-                kmax=k;
-            }
-        }
-    }
-
+    // Find the most frequent data packet
+    r = bitbuffer_find_repeated_row(bitbuffer, 5, 37);
     // reduce false positives, require at least 5 out of 12 repeats.
-    if (dnc[kmax].count < 5) {
+    if (r < 0) {
         return 0;
     }
+    bitbuffer_invert(bitbuffer);
 
-    // Unpack the data bytes back to eliminate dependence on the platform endiannes!
-    uint8_t *bytes=(uint8_t*)(&(dnc[kmax].data));
+    if (bitbuffer->bits_per_row[r] >= 40 ) {
+        device = LACROSSE_TX141TH;
+    } else {
+        device = LACROSSE_TX141;
+    }
+
+    uint8_t *bytes = bitbuffer->bb[r];
     id=bytes[0];
     status=bytes[1];
     if( device == LACROSSE_TX141 ) {
@@ -237,6 +144,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
+    local_time_str(0, time_str);
     if( device == LACROSSE_TX141 ) {
         data = data_make("time",    "Date and time", DATA_STRING,    time_str,
                          "model",   "", DATA_STRING,    "LaCrosse TX141-Bv2 sensor",
@@ -274,12 +182,13 @@ static char *output_fields[] = {
 
 r_device lacrosse_TX141TH_Bv2 = {
     .name          = "LaCrosse TX141-Bv2/TX141TH-Bv2 sensor",
-    .modulation    = OOK_PULSE_PWM_TERNARY,
-    .short_limit   = 312,     // short pulse is ~208 us, long pulse is ~417 us
-    .long_limit    = 625,     // long gap (with short pulse) is ~417 us, sync gap is ~833 us
+    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .short_limit   = 208,    // short pulse is 208 us + 417 us gap
+    .long_limit    = 417,    // long pulse is 417 us + 208 us gap
+    .sync_width    = 833,    // sync pulse is 833 us + 833 us gap
+    .gap_limit     = 625,    // long gap (with short pulse) is ~417 us, sync gap is ~833 us
     .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
     .json_callback = &lacrosse_tx141th_bv2_callback,
     .disabled      = 0,
-    .demod_arg     = 2,       // Longest pulses are startbits
     .fields        = output_fields,
 };
