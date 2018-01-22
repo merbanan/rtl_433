@@ -138,27 +138,28 @@ static void help()
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
-            "\tOOK_MC_ZEROBIT : Manchester Code with fixed leading zero bit\n"
+            "\tOOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "\tOOK_PCM_RZ :      Pulse Code Modulation (Return to Zero)\n"
             "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
-            "\tOOK_PWM_PRECISE : Pulse Width Modulation with precise tolerance\n"
-            "\tOOK_PWM_RAW :     Pulse Width Modulation\n"
-            "\tOOK_PWM_SYNC :    Pulse Width Modulation with Sync bits\n"
+            "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
             "\tOOK_MC_OSV1 :     Manchester Code for OSv1 devices\n"
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
             "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
-            "PCM short: Nominal width of pulse [us]\n"
-            "    long:  Nominal width of bit period [us]\n"
-            "PPM short: Threshold between short and long gap [us]\n"
-            "    long:  Maximum gap size before new row of bits [us]\n"
-            "PWM short: Threshold between short and long pulse [us]\n"
-            "    long:  Maximum gap size before new row of bits [us]\n"
+            "PCM_RZ  short: Nominal width of pulse [us]\n"
+            "         long: Nominal width of bit period [us]\n"
+            "PPM_RAW short: Threshold between short and long gap [us]\n"
+            "         long: Maximum gap size before new row of bits [us]\n"
+            "PWM_RAW short: Threshold between short and long pulse [us]\n"
+            "         long: Maximum gap size before new row of bits [us]\n"
+            "PWM     short: Nominal width of '1' pulse [us]\n"
+            "         long: Nominal width of '0' pulse [us]\n"
+            "          gap: Maximum gap size before new row of bits [us]\n"
             "reset: Maximum gap size before End Of Message [us].\n"
-            "for PWM_PRECISE use short:long:reset:tolerance[:syncwidth]\n"
-            "for CLOCK_BITS use short:long:reset:tolerance\n"
+            "for PWM use short:long:reset[:tolerance[:syncwidth]]\n"
+            "for DMC use short:long:reset:tolerance\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
@@ -235,12 +236,8 @@ r_device *flex_create_device(char *spec)
         dev->modulation = OOK_PULSE_PCM_RZ;
     else if (!strcasecmp(c, "OOK_PPM_RAW"))
         dev->modulation = OOK_PULSE_PPM_RAW;
-    else if (!strcasecmp(c, "OOK_PWM_PRECISE"))
+    else if (!strcasecmp(c, "OOK_PWM"))
         dev->modulation = OOK_PULSE_PWM_PRECISE;
-    else if (!strcasecmp(c, "OOK_PWM_RAW"))
-        dev->modulation = OOK_PULSE_PWM_RAW;
-    else if (!strcasecmp(c, "OOK_PWM_SYNC"))
-        dev->modulation = OOK_PULSE_PWM_TERNARY;
     else if (!strcasecmp(c, "OOK_DMC"))
         dev->modulation = OOK_PULSE_CLOCK_BITS;
     else if (!strcasecmp(c, "OOK_MC_OSV1"))
@@ -277,18 +274,25 @@ r_device *flex_create_device(char *spec)
     }
     dev->reset_limit = atoi(c);
 
-    if (dev->modulation == OOK_PULSE_PWM_PRECISE || dev->modulation == OOK_PULSE_CLOCK_BITS) {
+    if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
+        c = strtok(NULL, ":");
+        if (c != NULL) {
+            dev->tolerance = atoi(c);
+        }
+
+        c = strtok(NULL, ":");
+        if (c != NULL) {
+            dev->sync_width = atoi(c);
+        }
+    }
+
+    if (dev->modulation == OOK_PULSE_CLOCK_BITS) {
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
             usage();
         }
         dev->tolerance = atoi(c);
-
-        c = strtok(NULL, ":");
-        if (c != NULL) {
-            dev->sync_width = atoi(c);
-        }
     }
 
     dev->json_callback = callback_slot[next_slot];
