@@ -117,6 +117,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
 
     /* Get the time */
     local_time_str(0, time_str);
+    bitbuffer_invert(bitbuffer);
 
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
@@ -219,9 +220,9 @@ static char *philips_output_fields[] = {
 
 r_device philips = {
     .name          = "Philips outdoor temperature sensor",
-    .modulation    = OOK_PULSE_PWM_TERNARY,
-    .short_limit   = 500,
-    .long_limit    = 4000,
+    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .short_limit   = 2000,
+    .long_limit    = 6000,
     .reset_limit   = 30000,
     .json_callback = &philips_callback,
     .disabled      = 0,
