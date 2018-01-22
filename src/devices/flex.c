@@ -239,7 +239,7 @@ r_device *flex_create_device(char *spec)
     else if (!strcasecmp(c, "OOK_PWM"))
         dev->modulation = OOK_PULSE_PWM_PRECISE;
     else if (!strcasecmp(c, "OOK_DMC"))
-        dev->modulation = OOK_PULSE_CLOCK_BITS;
+        dev->modulation = OOK_PULSE_DMC;
     else if (!strcasecmp(c, "OOK_MC_OSV1"))
         dev->modulation = OOK_PULSE_PWM_OSV1;
     else if (!strcasecmp(c, "FSK_PCM"))
@@ -286,7 +286,7 @@ r_device *flex_create_device(char *spec)
         }
     }
 
-    if (dev->modulation == OOK_PULSE_CLOCK_BITS) {
+    if (dev->modulation == OOK_PULSE_DMC) {
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
