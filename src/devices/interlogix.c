@@ -1,4 +1,4 @@
-/* Interlogix/GE Wireless Device Decoder
+/* Interlogix/GE/UTC Wireless Device Decoder
  *
  * Copyright © 2017 Brent Bailey - bailey.brent@gmail.com
  *
@@ -14,9 +14,7 @@
 
 
 /*
- * Interlogix/GE Wireless 315.508 mhz Devices
- *
- * Found actual frequency to be -f 319511500
+ * Interlogix/GE/UTC Wireless 319.5 mhz Devices
  *
  * Deocding done per us patent #5761206
  * https://www.google.com/patents/US5761206
@@ -81,18 +79,25 @@
  *
  * Addendum
  * _______________________________
- * GE/Interlogix keyfobs do not follow the documented iti protocol and it appears the protocol was misread by the team that created the keyfobs 
- *     The button states are sent in the three trigger count bits (bit 40-42) and no battery status appears to be provided.
- *      4 buttons and a single multi-button press (buttons 1 - lock and buttons 2 - unlock) for a total of 5 buttons available on the keyfob.
- *
+ * GE/Interlogix keyfobs do not follow the documented iti protocol and it 
+ *     appears the protocol was misread by the team that created the keyfobs. 
+ *     The button states are sent in the three trigger count bits (bit 40-42) 
+ *     and no battery status appears to be provided. 4 buttons and a single 
+ *     multi-button press (buttons 1 - lock and buttons 2 - unlock) for a total 
+ *     of 5 buttons available on the keyfob.
+ * For contact sensors, latch 3 (typically the tamper/case open latch) will 
+ *     float (giving misreads) if the external contacts are used (ie; closed) 
+ *     and there is no 4.7 Kohm end of line resistor in place on the external 
+ *     circuit
  */
 
-#define INTERLOGIX_MSG_BIT_LEN 48 //message is actually 46 but adding 2 bits for easier manipulation
+// message length is actually 46 but adding 2 bits for easier manipulation
+#define INTERLOGIX_MSG_BIT_LEN 48 
 
-//only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
+// preamble message.  only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = { 0x01 };
 
-//assumes little endian - usage printBits(sizeof(i), &i);
+// assumes little endian - usage printBits(sizeof(i), &i);
 void printBits(size_t const size, void const * const ptr)
 {
     unsigned char *b = (unsigned char*) ptr;
@@ -124,16 +129,16 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     char *f4_latch_state = NULL;
     char *f5_latch_state = NULL;
 
-    if (debug_output >= 1) { 
+    if (debug_output) { 
         fprintf(stderr,"GE/Interlogix Wireless Devices Template Callback\n");
         fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bitbuffer->num_rows);
         fprintf(stderr, "bitbuffer:: Length of 1st row: %d \n", bitbuffer->bits_per_row[row]);
     }
 
-    if (debug_output >= 1 ) { 
+    if (debug_output) { 
         fprintf(stderr, "bitbuffer:: Printing 1st row: \n");
 
-        //this is typically done in the bitbuffer_print function but depends upon length so doing it explicitly here
+        // this is typically done in the bitbuffer_print function but depends upon length so doing it explicitly here
         for (unsigned int bit = 0; bit < bitbuffer->bits_per_row[row]; ++bit) {
             if (bitbuffer->bb[row][bit/8] & (0x80 >> (bit % 8))) {
                 fprintf(stderr, "1");
@@ -143,14 +148,14 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         }
         fprintf(stderr, "\n");
         if (debug_output >=3)
-            //print all rows
+            // print all rows
             bitbuffer_print(bitbuffer);
     }
 
     // search for preamble and exit if not found
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
     if (bit_offset == bitbuffer->bits_per_row[row] || bitbuffer->num_rows != 1) {
-        if (debug_output >= 1)
+        if (debug_output)
             fprintf(stderr, "Preamble not found, exiting! bit_offset: %d \n", bit_offset);
         return 0;
     }
@@ -159,35 +164,28 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     bit_offset += sizeof(preamble)*8;
 
     if (bitbuffer->bits_per_row[row] - bit_offset < INTERLOGIX_MSG_BIT_LEN - 3) {
-        if (debug_output >= 1)
+        if (debug_output)
             fprintf(stderr, "Found valid preamble but message size (%d) too small, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
-
-    // even parity check (for bits 15-54) against even parity bit at bit 55
-    unsigned int calcParity = 0;
-    unsigned int msgParity = 0;
-    for (unsigned int bitc = bit_offset; bitc < bitbuffer->bits_per_row[row]; bitc++ ) {
-        if (bitc == (bit_offset+40)) { // 15 bits for preamble and sync so bit 41 is actually documented bit 55
-            msgParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
-            if (calcParity == msgParity) { 
-                // exit loop and attempt to decode message as we have a valid parity check
-                break;
-            } else {
-                if (debug_output >=1)
-                    fprintf(stderr, "Even Parity Check Failed! msgParity: %d and calcluated parity: %d \n", msgParity, calcParity);
-                // parity check failed exit
-                return 0;
-            }
-        }
-        calcParity ^= (bitbuffer->bb[row][bitc/8] & (0x80 >> (bitc % 8))) ? 1 : 0;
-    }
-    
-    //TODO: odd parity check- Bit 56 provides odd parity over even bits 16 to 56.
     
     uint8_t message[(INTERLOGIX_MSG_BIT_LEN/8)];
     
     bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
+
+    // parity check: even data bits from message[0 .. 40] and odd data bits from message[1 .. 41]
+    // i.e. 5 bytes and two (top-most) bits.
+    int parity = message[0] ^ message[1] ^ message[2] ^ message[3] ^ message[4]; // parity as byte
+    parity = (parity >> 4) ^ (parity & 0xF); // fold to nibble
+    parity = (parity >> 2) ^ (parity & 0x3); // fold to 2 bits
+    parity ^= message[5] >> 6; // add check bits
+    int parity_error = parity ^ 0x3; // both parities are odd, i.e. 1 on success
+
+    if (parity_error) {
+        if (debug_output)
+            fprintf(stderr, "Parity check failed (%d %d)\n", parity >> 1, parity & 1);
+        return 0;
+    }
     
     if (debug_output >= 1) {
         // grab 6, 4 bit nibbles from bit buffer. need to reverse them to get serial number
@@ -210,10 +208,10 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     sprintf(device_type, "%01x", (reverse8(message[2])>>4));
     
     switch((reverse8(message[2])>>4)) { 
-        case 0xa: device_type_name = "contact sensor"; break;
+        case 0xa: device_type_name = "contact"; break;
         case 0xf: device_type_name = "keyfob"; break;
-        case 0x4: device_type_name = "motion sensor"; break;
-        case 0x6: device_type_name = "heat sensor"; break;
+        case 0x4: device_type_name = "motion"; break;
+        case 0x6: device_type_name = "heat"; break;
     
         default: device_type_name = "unknown"; break;
     }
@@ -222,32 +220,31 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     
     sprintf(device_raw_message, "%x%x%x", message[3], message[4], message[5]);
     
-    // see prootcol description addendum for keyfob protocol exceptions
+    // keyfob logic. see prootcol description addendum for protocol exceptions
     if ((reverse8(message[2])>>4) == 0xf) {
-        low_battery = "off";
-        f1_latch_state = ((message[3] & 0xe) == 0x4) ? "closed" : "open";
-        f2_latch_state = ((message[3] & 0xe) == 0x8) ? "closed" : "open";
-        f3_latch_state = ((message[3] & 0xe) == 0xc) ? "closed" : "open";
-        f4_latch_state = ((message[3] & 0xe) == 0x2) ? "closed" : "open";
-        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "closed" : "open"; 
+        low_battery = "OK";
+        f1_latch_state = ((message[3] & 0xe) == 0x4) ? "CLOSED" : "OPEN";
+        f2_latch_state = ((message[3] & 0xe) == 0x8) ? "CLOSED" : "OPEN";
+        f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
+        f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
+        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN"; 
     } else {
-        low_battery = (message[3] & 0x10) ? "on" : "off";
-        f1_latch_state = (message[3] & 0x04) ? "open" : "closed";
-        f2_latch_state = (message[3] & 0x01) ? "open" : "closed";
-        f3_latch_state = (message[4] & 0x40) ? "open" : "closed";
-        f4_latch_state = (message[4] & 0x10) ? "open" : "closed";
-        f5_latch_state = (message[4] & 0x04) ? "open" : "closed";
+        low_battery = (message[3] & 0x10) ? "LOW" : "OK";
+        f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";
+        f2_latch_state = (message[3] & 0x01) ? "OPEN" : "CLOSED";
+        f3_latch_state = (message[4] & 0x40) ? "OPEN" : "CLOSED";
+        f4_latch_state = (message[4] & 0x10) ? "OPEN" : "CLOSED";
+        f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
     
     local_time_str(0, time_str);
     
     data = data_make("time", "Receiver Time", DATA_STRING, time_str,
-        "model", "Model", DATA_STRING, "GE Interlogix Device",
-        "device_type", "Device Type", DATA_STRING, device_type,
+        "model", "Model", DATA_STRING, "Interlogix",
         "device_type_name","Device Type Name", DATA_STRING, device_type_name,
-        "device_serial","Device Serial Number", DATA_STRING, device_serial,
+        "id","ID", DATA_STRING, device_serial,
         "device_raw_message","Raw Message", DATA_STRING, device_raw_message,
-        "low_battery","Low Battery Indicator", DATA_STRING, low_battery,
+        "battery","Battery", DATA_STRING, low_battery,
         "f1_latch_state","F1 Latch State", DATA_STRING, f1_latch_state,
         "f2_latch_state","F2 Latch State", DATA_STRING, f2_latch_state,
         "f3_latch_state","F3 Latch State", DATA_STRING, f3_latch_state,
@@ -257,7 +254,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     
     data_acquired_handler(data);
     
-    // return 1 since message successfully decoded
     return 1;
 
 }
@@ -272,7 +268,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 static char *csv_output_fields[] = {
     "time",
     "model",
-    "device_type",
     "device_type_name",
     "device_serial",
     "low_battery",
@@ -286,7 +281,7 @@ static char *csv_output_fields[] = {
 };
 
 /*
- * r_device - registers device/callback. see rtl_433_devices.h
+ * _device - registers device/callback. see rtl_433_devices.h
  *
  * Timings:
  *
@@ -309,11 +304,11 @@ static char *csv_output_fields[] = {
  */
 
 r_device interlogix = {
-    .name          = "Interlogix GE Security Device Decoder",
+    .name          = "Interlogix GE UTC Security Devices Decoder",
     .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (120+240)/2, //Threshold between 120µs short and 240µs long gap 
-    .long_limit    = 360, //Maximum gap size before new row of bits
-    .reset_limit   = 360, //Maximum gap size before End Of Message
+    .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2 
+    .long_limit    = 1000, //Maximum gap size before new row of bits
+    .reset_limit   = 500, //Maximum gap size before End Of Message
     .json_callback = &interlogix_callback,
     .disabled      = 0,
     .demod_arg     = 0,
