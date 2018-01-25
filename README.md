@@ -62,6 +62,7 @@ Usage:	= Tuner options =
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
+	[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
 	[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
 	[-z <value>] Override short value in data decoder
 	[-x <value>] Override long value in data decoder

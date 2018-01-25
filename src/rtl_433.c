@@ -119,6 +119,7 @@ void usage(r_device *devices) {
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
+            "\t[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "\t[-z <value>] Override short value in data decoder\n"
             "\t[-x <value>] Override long value in data decoder\n"
@@ -942,6 +943,8 @@ int main(int argc, char **argv) {
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
+    char *flex_queries[32] = {0};
+    char **flex_query = flex_queries;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -963,7 +966,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:F:C:T:UWGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:X:F:C:T:UWGy:E")) != -1) {
         switch (opt) {
             case 'd':
                 dev_query = optarg;
@@ -1046,6 +1049,9 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "Disabling all device decoders.\n");
                 }
                 break;
+            case 'X':
+                *flex_query++ = optarg;
+                break;
             case 'q':
                 quiet_mode = 1;
                 break;
@@ -1123,6 +1129,15 @@ int main(int argc, char **argv) {
             if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
+        }
+    }
+
+    r_device *flex_create_device(char *spec); // maybe put this in some header file?
+    for (flex_query = flex_queries; *flex_query; ++flex_query) {
+        r_device *flex = flex_create_device(*flex_query);
+        register_protocol(demod, flex);
+        if (flex->modulation >= FSK_DEMOD_MIN_VAL) {
+            demod->enable_FM_demod = 1;
         }
     }
 
