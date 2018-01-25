@@ -94,9 +94,13 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
+        // print byte-wide
         for (int col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
             sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
         }
+        // remove last nibble if needed
+        row_bytes[2 * (bitbuffer->bits_per_row[i] + 3) / 8] = '\0';
+
         row_data[i] = data_make(
                 "len", "", DATA_INT, bitbuffer->bits_per_row[i],
                 "data", "", DATA_STRING, strdup(row_bytes),
@@ -139,7 +143,7 @@ static void help()
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
             "\tOOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
-            "\tOOK_PCM_RZ :      Pulse Code Modulation (Return to Zero)\n"
+            "\tOOK_PCM :         Pulse Code Modulation (RZ or NRZ)\n"
             "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
             "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
@@ -232,7 +236,7 @@ r_device *flex_create_device(char *spec)
     // TODO: add demod_arg where needed
     if (!strcasecmp(c, "OOK_MC_ZEROBIT"))
         dev->modulation = OOK_PULSE_MANCHESTER_ZEROBIT;
-    else if (!strcasecmp(c, "OOK_PCM_RZ"))
+    else if (!strcasecmp(c, "OOK_PCM"))
         dev->modulation = OOK_PULSE_PCM_RZ;
     else if (!strcasecmp(c, "OOK_PPM_RAW"))
         dev->modulation = OOK_PULSE_PPM_RAW;
