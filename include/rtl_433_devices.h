@@ -101,7 +101,8 @@
 		DECL(schrader_EG53MA4) \
 		DECL(nexa) \
 		DECL(thermopro_tp12) \
-		DECL(ge_coloreffects)
+		DECL(ge_coloreffects) \
+		DECL(x10_sec)
 
 typedef struct {
 	char name[256];
