@@ -121,6 +121,32 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device);
 
 
+/// Demodulate a raw Pulse Interval and Width Modulation signal
+///
+/// Each level shift is a new bit.
+/// A short interval is a logic 1, a long interval a logic 0
+///
+/// @param device->short_limit: Nominal width of a bit [us]
+/// @param device->long_limit:  Maximum width of a run of bits [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
+/// @param device->tolerance:   Maximum deviation from nominal widths [us]
+/// @return number of events processed
+int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
+
+
+/// Demodulate a differential Pulse Interval and Width Modulation signal
+///
+/// Each level shift is a new bit.
+/// A short interval is a logic 1, a long interval a logic 0
+///
+/// @param device->short_limit: Nominal width of '1' [us]
+/// @param device->long_limit:  Nominal width of '0' [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
+/// @param device->tolerance:   Maximum deviation from nominal widths [us]
+/// @return number of events processed
+int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *device);
+
+
 int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device);
 
 

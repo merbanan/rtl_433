@@ -345,6 +345,100 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
    return events;
 }
 
+int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *device) {
+	int symbol[PD_MAX_PULSES * 2];
+	unsigned int n;
+	int w;
+
+	bitbuffer_t bits = {0};
+	int events = 0;
+
+	for (n = 0; n < pulses->num_pulses; n++) {
+		symbol[n * 2] = pulses->pulse[n];
+		symbol[(n * 2) + 1] = pulses->gap[n];
+	}
+
+	for (n = 0; n < pulses->num_pulses * 2; ++n) {
+		w = symbol[n] / device->short_limit + 0.5;
+	  	if (symbol[n] > device->long_limit) {
+			bitbuffer_add_row(&bits);
+		} else if (fabsf(symbol[n] - w * device->short_limit) < device->tolerance) {
+			// Add w symbols
+			for (; w > 0; --w)
+				bitbuffer_add_bit(&bits, 1-n%2);
+		} else if (symbol[n] < device->reset_limit
+				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
+			bitbuffer_add_row(&bits);
+/*
+			fprintf(stderr, "Detected error during pulse_demod_piwm_raw(): %s\n",
+					device->name);
+*/
+	  	}
+
+		if (((n == pulses->num_pulses * 2 - 1) // No more pulses? (FSK)
+				|| (symbol[n] > device->reset_limit)) // Long silence (OOK)
+				&& (bits.num_rows > 0)) { // Only if data has been accumulated
+			//END message ?
+			if (device->callback) {
+				events += device->callback(&bits);
+			}
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_piwm_raw(): %s \n", device->name);
+				bitbuffer_print(&bits);
+			}
+			bitbuffer_clear(&bits);
+		}
+        }
+
+	return events;
+}
+
+int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *device) {
+	int symbol[PD_MAX_PULSES * 2];
+	unsigned int n;
+
+	bitbuffer_t bits = {0};
+	int events = 0;
+
+	for (n = 0; n < pulses->num_pulses; n++) {
+		symbol[n * 2] = pulses->pulse[n];
+		symbol[(n * 2) + 1] = pulses->gap[n];
+	}
+
+	for (n = 0; n < pulses->num_pulses * 2; ++n) {
+		if (fabsf(symbol[n] - device->short_limit) < device->tolerance) {
+			// Short - 1
+			bitbuffer_add_bit(&bits, 1);
+	  	} else if (fabsf(symbol[n] - device->long_limit) < device->tolerance) {
+			// Long - 0
+	        bitbuffer_add_bit(&bits, 0);
+		} else if (symbol[n] < device->reset_limit
+				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
+			bitbuffer_add_row(&bits);
+/*
+			fprintf(stderr, "Detected error during pulse_demod_piwm_dc(): %s\n",
+					device->name);
+*/
+	  	}
+
+		if (((n == pulses->num_pulses * 2 - 1) // No more pulses? (FSK)
+				|| (symbol[n] > device->reset_limit)) // Long silence (OOK)
+				&& (bits.num_rows > 0)) { // Only if data has been accumulated
+			//END message ?
+			if (device->callback) {
+				events += device->callback(&bits);
+			}
+			if(!device->callback || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_piwm_dc(): %s \n", device->name);
+				bitbuffer_print(&bits);
+			}
+			bitbuffer_clear(&bits);
+		}
+	}
+
+	return events;
+}
+
 /*
  * Oregon Scientific V1 Protocol
  * Starts with a clean preamble of 12 pulses with

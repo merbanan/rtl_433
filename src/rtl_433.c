@@ -757,6 +757,12 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                             p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
                             break;
+                        case OOK_PULSE_PIWM_RAW:
+                            p_events += pulse_demod_piwm_raw(&demod->pulse_data, demod->r_devs[i]);
+                            break;
+                        case OOK_PULSE_PIWM_DC:
+                            p_events += pulse_demod_piwm_dc(&demod->pulse_data, demod->r_devs[i]);
+                            break;
                         case OOK_PULSE_DMC:
                             p_events += pulse_demod_dmc(&demod->pulse_data, demod->r_devs[i]);
                             break;

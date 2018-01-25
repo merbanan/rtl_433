@@ -52,6 +52,8 @@
 #define	OOK_PULSE_PPM_RAW		5			// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
 #define	OOK_PULSE_PWM_PRECISE	6			// Pulse Width Modulation with precise timing parameters
 #define	OOK_PULSE_PWM_RAW		7			// DEPRECATED; Pulse Width Modulation. Short pulses = 1, Long = 0
+#define	OOK_PULSE_PIWM_RAW     	8			// Level shift for each bit. Short interval = 1, Long = 0
+#define	OOK_PULSE_PIWM_DC      	11			// Level shift for each bit. Short interval = 1, Long = 0
 #define	OOK_PULSE_DMC       	9			// Level shift within the clock cycle.
 #define	OOK_PULSE_PWM_OSV1		10			// Pulse Width Modulation. Oregon Scientific v1
 
