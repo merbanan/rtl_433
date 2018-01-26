@@ -228,7 +228,7 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer) {
 
 		data = data_make(
 			"time",	"",		DATA_STRING,	time_str,
-			"model",	"",		DATA_STRING,	"Acurite Rain Gague",
+			"model",	"",		DATA_STRING,	"Acurite Rain Gauge",
 			"id",		"",		DATA_INT,	id,
 			"rain", 	"Total Rain",	DATA_FORMAT,	"%.1f mm", DATA_DOUBLE, total_rain,
 			NULL);
