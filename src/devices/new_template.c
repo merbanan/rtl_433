@@ -51,7 +51,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    uint16_t r; // a row index
+    int r; // a row index
     uint8_t *b; // bits of a row
     int parity;
     uint8_t r_crc, c_crc;
