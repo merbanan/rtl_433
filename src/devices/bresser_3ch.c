@@ -28,9 +28,9 @@
 #include "data.h"
 
 static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
-    data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+    uint8_t *b;
 
     int id, status, battery_low, test, channel, temp_raw, humidity;
     float temp_f;
@@ -40,7 +40,7 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    uint8_t *b = bb[r];
+    b = bitbuffer->bb[r];
     b[0] = ~b[0];
     b[1] = ~b[1];
     b[2] = ~b[2];
@@ -74,14 +74,16 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
     }
 
     local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, "Bresser 3CH sensor",
-                     "id",            "",            DATA_INT, id,
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",
-                     "temperature_F", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
-                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                     NULL);
+    data = data_make(
+            "time",          "",            DATA_STRING, time_str,
+            "model",         "",            DATA_STRING, "Bresser 3CH sensor",
+            "id",            "",            DATA_INT,    id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",
+            "temperature_F", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
+            NULL);
     data_acquired_handler(data);
 
     return 1;
@@ -95,6 +97,7 @@ static char *output_fields[] = {
     "battery",
     "temperature_F",
     "humidity",
+    "mic",
     NULL
 };
 
