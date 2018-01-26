@@ -99,7 +99,7 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
 
         /* debug output */
         if (debug_output) {
-            fprintf(stderr, "%20s  X10SEC: id = %02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
+            fprintf(stderr, "%20s  X10SEC: id=%02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
             bitbuffer_print(bitbuffer);
         }
 
