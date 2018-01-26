@@ -41,9 +41,7 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
         b = bitbuffer->bb[r];
 
         /* looking for five bytes */
-        if (bitbuffer->bits_per_row[r] < 40) {
-            continue;
-        }
+        if (bitbuffer->bits_per_row[r] < 40) continue;
 
         /* validate what we received */
         if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff) continue;
