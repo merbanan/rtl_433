@@ -53,70 +53,67 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
          */
         test_a = b[0] ^ 0x0f;
         test_b = b[2] ^ 0xff;
-        if (test_a != b[1] || test_b != b[3]) {
-            continue;
-        } else {
-            /* set event_str based on code received */
-            switch(b[2]) {
-                case 0x04:
-                    event_str = "DS10A DOOR/WINDOW OPEN";
-                    break;
-                case 0x06:
-                    event_str = "KR10A KEY-FOB ARM";
-                    break;
-                case 0x0c:
-                    event_str = "MS10A MOTION TRIPPED";
-                    break;
-                case 0x46:
-                    event_str = "KR10A KEY-FOB LIGHTS-ON";
-                    break;
-                case 0x82:
-                    event_str = "SH624 SEC-REMOTE DISARM";
-                    break;
-                case 0x84:
-                    event_str = "DS10A DOOR/WINDOW CLOSED";
-                    break;
-                case 0x86:
-                    event_str = "KR10A KEY-FOB DISARM";
-                    break;
-                case 0x88:
-                    event_str = "KR15A PANIC";
-                    break;
-                case 0x8c:
-                    event_str = "MS10A MOTION READY";
-                    break;
-                case 0x98:
-                    event_str = "KR15A PANIC-3SECOND";
-                    break;
-                case 0xc6:
-                    event_str = "KR10A KEY-FOB LIGHTS-OFF";
-                    break;
-            }
+        if (test_a != b[1] || test_b != b[3]) continue;
 
-            /* get x10_id_str, x10_code_str, and time_str ready for output */
-            sprintf(x10_id_str, "%02x%02x", b[0], b[4]);
-            sprintf(x10_code_str, "%02x", b[2]);
-            local_time_str(0, time_str);
-
-            /* debug output */
-            if (debug_output) {
-                fprintf(stderr, "%20s  X10SEC: id = %02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
-                bitbuffer_print(bitbuffer);
-            }
-
-            /* build and handle data set for normal output */
-            data = data_make(
-                    "time",     "",             DATA_STRING, time_str,
-                    "model",    "",             DATA_STRING, "X10 Security",
-                    "id",       "Device ID",    DATA_STRING, x10_id_str,
-                    "code",     "Code",         DATA_STRING, x10_code_str,
-                    "event",    "Event",        DATA_STRING, event_str,
-                    NULL
-                    );
-            data_acquired_handler(data);
-
-            return 1;
+        /* set event_str based on code received */
+        switch(b[2]) {
+            case 0x04:
+                event_str = "DS10A DOOR/WINDOW OPEN";
+                break;
+            case 0x06:
+                event_str = "KR10A KEY-FOB ARM";
+                break;
+            case 0x0c:
+                event_str = "MS10A MOTION TRIPPED";
+                break;
+            case 0x46:
+                event_str = "KR10A KEY-FOB LIGHTS-ON";
+                break;
+            case 0x82:
+                event_str = "SH624 SEC-REMOTE DISARM";
+                break;
+            case 0x84:
+                event_str = "DS10A DOOR/WINDOW CLOSED";
+                break;
+            case 0x86:
+                event_str = "KR10A KEY-FOB DISARM";
+                break;
+            case 0x88:
+                event_str = "KR15A PANIC";
+                break;
+            case 0x8c:
+                event_str = "MS10A MOTION READY";
+                break;
+            case 0x98:
+                event_str = "KR15A PANIC-3SECOND";
+                break;
+            case 0xc6:
+                event_str = "KR10A KEY-FOB LIGHTS-OFF";
+                break;
         }
+
+        /* get x10_id_str, x10_code_str, and time_str ready for output */
+        sprintf(x10_id_str, "%02x%02x", b[0], b[4]);
+        sprintf(x10_code_str, "%02x", b[2]);
+        local_time_str(0, time_str);
+
+        /* debug output */
+        if (debug_output) {
+            fprintf(stderr, "%20s  X10SEC: id = %02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
+            bitbuffer_print(bitbuffer);
+        }
+
+        /* build and handle data set for normal output */
+        data = data_make(
+                "time",     "",             DATA_STRING, time_str,
+                "model",    "",             DATA_STRING, "X10 Security",
+                "id",       "Device ID",    DATA_STRING, x10_id_str,
+                "code",     "Code",         DATA_STRING, x10_code_str,
+                "event",    "Event",        DATA_STRING, event_str,
+                NULL
+                );
+        data_acquired_handler(data);
+        return 1;
     }
     return 0;
 }
