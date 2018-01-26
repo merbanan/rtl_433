@@ -26,7 +26,6 @@
 #include "util.h"
 
 static int x10_sec_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
