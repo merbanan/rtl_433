@@ -24,6 +24,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "limits.h"
+// gethostname() needs _XOPEN_SOURCE 500 on unistd.h
+#define _XOPEN_SOURCE 500
+#include <unistd.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <time.h>
 
 #include "data.h"
 
@@ -127,6 +134,21 @@ typedef struct {
 static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
 static void print_csv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 
+typedef struct {
+	struct sockaddr_in server;
+	int sock;
+	int pri;
+	char hostname[_POSIX_HOST_NAME_MAX + 1];
+	char *buf_end;
+	size_t buf_size;
+} data_syslog_aux_t;
+
+static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
+static void print_syslog_array(data_printer_context_t *printer_ctx, data_array_t *data, char *format, FILE *file);
+static void print_syslog_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
+static void print_syslog_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
+static void print_syslog_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
+
 data_printer_t data_json_printer = {
 	.print_data   = print_json_data,
 	.print_array  = print_json_array,
@@ -149,6 +171,14 @@ data_printer_t data_csv_printer = {
 	.print_string = print_csv_string,
 	.print_double = print_json_double,
 	.print_int    = print_json_int
+};
+
+data_printer_t data_syslog_printer = {
+	.print_data   = print_syslog_data,
+	.print_array  = print_syslog_array,
+	.print_string = print_syslog_string,
+	.print_double = print_syslog_double,
+	.print_int    = print_syslog_int
 };
 
 static _Bool import_values(void* dst, void* src, int num_values, data_type_t type) {
@@ -572,4 +602,205 @@ void data_csv_free(void *aux)
 	data_csv_aux_t *csv = aux;
 	free(csv->fields);
 	free(csv);
+}
+
+/* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
+static void append_buf(data_printer_context_t *printer_ctx, const char *str)
+{
+	data_syslog_aux_t *syslog = printer_ctx->aux;
+	size_t len = strlen(str);
+	if (syslog->buf_size >= len + 1) {
+		strcpy(syslog->buf_end, str);
+		syslog->buf_end += len;
+		syslog->buf_size -= len;
+	}
+}
+
+static int snprintf_a(char **restrict str, size_t *size, const char *restrict format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+
+	int n = vsnprintf(*str, *size, format, ap);
+	size_t written = 0;
+	if (n > 0) {
+		written = (size_t)n < *size ? (size_t)n : *size;
+		*size -= written;
+		*str += written;
+	}
+	va_end(ap);
+	return n;
+}
+
+static void print_syslog_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file)
+{
+	int element_size = dmt[array->type].array_element_size;
+	char buffer[element_size];
+	append_buf(printer_ctx, "[");
+	for (int c = 0; c < array->num_values; ++c) {
+		if (c)
+			append_buf(printer_ctx, ",");
+		if (!dmt[array->type].array_is_boxed) {
+			memcpy(buffer, (void**)((char*)array->values + element_size * c), element_size);
+			print_value(printer_ctx, file, array->type, buffer, format);
+		} else {
+			print_value(printer_ctx, file, array->type, *(void**)((char*)array->values + element_size * c), format);
+		}
+	}
+	append_buf(printer_ctx, "]");
+}
+
+static void print_syslog_object(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+{
+	_Bool separator = false;
+	append_buf(printer_ctx, "{");
+	while (data) {
+		if (separator)
+			append_buf(printer_ctx, ",");
+		printer_ctx->printer->print_string(printer_ctx, data->key, NULL, file);
+		append_buf(printer_ctx, ":");
+		print_value(printer_ctx, file, data->type, data->value, data->format);
+		separator = true;
+		data = data->next;
+	}
+	append_buf(printer_ctx, "}");
+}
+
+static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+{
+	data_syslog_aux_t *syslog = printer_ctx->aux;
+
+	if (syslog->buf_end) {
+		print_syslog_object(printer_ctx, data, format, file);
+		return;
+	}
+
+	char message[1024];
+	syslog->buf_end = message;
+	syslog->buf_size = 1024;
+
+	time_t now;
+	struct tm tm_info;
+	time(&now);
+	gmtime_r(&now, &tm_info);
+	char timestamp[21];
+	strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
+
+	snprintf_a(&syslog->buf_end, &syslog->buf_size, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
+
+	print_syslog_object(printer_ctx, data, format, file);
+
+	int slen = sizeof(syslog->server);
+
+	if (sendto(syslog->sock, message, strlen(message), 0, (struct sockaddr *) &syslog->server, slen) == -1) {
+		perror("sendto");
+	}
+
+	syslog->buf_end = NULL;
+}
+
+static void print_syslog_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+{
+	data_syslog_aux_t *syslog = printer_ctx->aux;
+	char *buf = syslog->buf_end;
+	size_t size = syslog->buf_size;
+
+	if (size < strlen(str) + 3) {
+		return;
+	}
+
+	*buf++ = '"';
+	size--;
+	for (; *str && size >= 3; ++str) {
+		if (*str == '"' || *str == '\\') {
+			*buf++ = '\\';
+			size--;
+		}
+		*buf++ = *str;
+		size--;
+	}
+	if (size >= 2) {
+		*buf++ = '"';
+		size--;
+	}
+	*buf = '\0';
+
+	syslog->buf_end = buf;
+	syslog->buf_size = size;
+}
+
+static void print_syslog_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+{
+	data_syslog_aux_t *syslog = printer_ctx->aux;
+	snprintf_a(&syslog->buf_end, &syslog->buf_size, "%f", data);
+}
+
+static void print_syslog_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+{
+	data_syslog_aux_t *syslog = printer_ctx->aux;
+	snprintf_a(&syslog->buf_end, &syslog->buf_size, "%d", data);
+}
+
+void *data_syslog_init(const char *host, int port)
+{
+	if (!host || !port)
+		return NULL;
+
+	data_syslog_aux_t *syslog = calloc(1, sizeof(data_syslog_aux_t));
+	if (!syslog) {
+		fprintf(stderr, "calloc() failed");
+		return NULL;
+	}
+
+	// Severity 5 "Notice", Facility 20 "local use 4"
+	syslog->pri = 20 * 8 + 5;
+
+	gethostname(syslog->hostname, _POSIX_HOST_NAME_MAX + 1);
+	syslog->hostname[_POSIX_HOST_NAME_MAX] = '\0';
+
+	syslog->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (syslog->sock == -1) {
+		perror("socket");
+		free(syslog);
+		return NULL;
+	}
+
+	int broadcast = 1;
+	int ret = setsockopt(syslog->sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+
+	memset(&syslog->server, 0, sizeof(syslog->server));
+	syslog->server.sin_family = AF_INET;
+	syslog->server.sin_port = htons(port);
+
+	struct addrinfo *result = NULL, hints;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+
+	int error = getaddrinfo(host, NULL, &hints, &result);
+	if (error) {
+		fprintf(stderr, "%s\n", gai_strerror(error));
+		close(syslog->sock);
+		free(syslog);
+		return NULL;
+	}
+	memcpy(&(syslog->server.sin_addr), &((struct sockaddr_in*)result->ai_addr)->sin_addr, sizeof(struct in_addr));
+	freeaddrinfo(result);
+
+	return syslog;
+}
+
+void data_syslog_free(void *aux)
+{
+	if (!aux)
+		return;
+
+	data_syslog_aux_t *syslog = aux;
+
+	if (syslog->sock != -1) {
+		close(syslog->sock);
+		syslog->sock = -1;
+	}
+
+	free(syslog);
 }

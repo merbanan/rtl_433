@@ -52,6 +52,7 @@ struct data_printer;
 extern struct data_printer data_json_printer;
 extern struct data_printer data_kv_printer;
 extern struct data_printer data_csv_printer;
+extern struct data_printer data_syslog_printer;
 
 /** Constructs a structured data object.
 
@@ -117,5 +118,11 @@ void *data_csv_init(const char **fields, int num_fields);
 
 /** Destructs auxiliary CSV data. */
 void data_csv_free(void *csv);
+
+/** Construct auxiliary data for Syslog UDP socket */
+void *data_syslog_init(const char *host, int port);
+
+/** Destructs auxiliary syslog data. */
+void data_syslog_free(void *syslog);
 
 #endif // INCLUDE_DATA_H_

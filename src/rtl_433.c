@@ -142,8 +142,9 @@ void usage(r_device *devices) {
             "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t Note: If output file is specified, input will always be I/Q\n"
-            "\t[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.\n"
-            "\t\tappend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
@@ -920,6 +921,39 @@ void add_kv_output(char *param)
     next_output_handler = &output->next;
 }
 
+void add_syslog_output(char *param)
+{
+    char *syslog_host = "localhost";
+    int syslog_port = 514;
+
+    if (param && *param) {
+        // e.g. "127.0.0.1:1514"
+        syslog_host = param;
+        char *n = strchr(syslog_host, ':');
+        if (n) {
+            *n++ = '\0';
+            syslog_port = atoi(n);
+        }
+    }
+    fprintf(stderr, "Syslog UDP datagrams to: %s:%d\n", syslog_host, syslog_port);
+
+    void *aux_data = data_syslog_init(syslog_host, syslog_port);
+    if (!aux_data) {
+        fprintf(stderr, "rtl_433: failed to allocate memory for Syslog auxiliary data\n");
+        exit(1);
+    }
+    output_handler_t *output = calloc(1, sizeof(output_handler_t));
+    if (!output) {
+        fprintf(stderr, "rtl_433: failed to allocate memory for output handler\n");
+        exit(1);
+    }
+    output->printer = &data_syslog_printer;
+    output->aux_free = &data_syslog_free;
+    output->aux = aux_data;
+    *next_output_handler = output;
+    next_output_handler = &output->next;
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -1062,6 +1096,8 @@ int main(int argc, char **argv) {
                     add_csv_output(arg_param(optarg), determine_csv_fields(devices, num_r_devices));
                 } else if (strncmp(optarg, "kv", 2) == 0) {
                     add_kv_output(arg_param(optarg));
+                } else if (strncmp(optarg, "syslog", 6) == 0) {
+                    add_syslog_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(devices);
