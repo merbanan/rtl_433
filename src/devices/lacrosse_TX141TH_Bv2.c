@@ -111,7 +111,7 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
     // Find the most frequent data packet
     r = bitbuffer_find_repeated_row(bitbuffer, 5, 37);
     // reduce false positives, require at least 5 out of 12 repeats.
-    if (r < 0) {
+    if (r < 0 || bitbuffer->bits_per_row[r] > 40) {
         return 0;
     }
     bitbuffer_invert(bitbuffer);
