@@ -30,8 +30,6 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
-    uint8_t test_a;                      /* test 1/2 for message     */
-    uint8_t test_b;                      /* test 2/2 for message     */
     char *event_str = "UNKNOWN";         /* human-readable event     */
     char x10_id_str[5] = "\0";           /* string showing hex value */
     char x10_code_str[5] = "\0";         /* string showing hex value */
