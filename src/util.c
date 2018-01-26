@@ -130,7 +130,7 @@ int byteParity(uint8_t inByte){
 
 char* local_time_str(time_t time_secs, char *buf) {
     time_t etime;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     if (time_secs == 0) {
         extern float sample_file_pos;
@@ -143,9 +143,9 @@ char* local_time_str(time_t time_secs, char *buf) {
         etime = time_secs;
     }
 
-    tm_info = localtime(&etime);
+    localtime_r(&etime, &tm_info);
 
-    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", &tm_info);
     return buf;
 }
 
