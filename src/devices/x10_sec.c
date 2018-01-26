@@ -45,15 +45,8 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
             continue;
         }
 
-        /* validate what we received ...
-         * used intermediate variables test_a and test_b to suppress
-         * warnings generated when compiling using:
-         *
-         *   if((b[0]^0x0f)==b[1] && (b[2]^0xff)==b[3])
-         */
-        test_a = b[0] ^ 0x0f;
-        test_b = b[2] ^ 0xff;
-        if (test_a != b[1] || test_b != b[3]) continue;
+        /* validate what we received */
+        if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff) continue;
 
         /* set event_str based on code received */
         switch(b[2]) {
