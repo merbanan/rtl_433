@@ -166,7 +166,7 @@ Supported device protocols:
     [70]  Honeywell Door/Window Sensor
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
-    [73]  LaCrosse TX141TH-Bv2 sensor
+    [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT Temperature sensor
     [76]  LaCrosse TX29IT Temperature sensor
@@ -192,6 +192,7 @@ Supported device protocols:
     [96]  Nexa
     [97]  Thermopro TP12 Thermometer
     [98]  GE Color Effects
+    [99]  X10 Security
 
 * Disabled by default, use -R n or -G
 
