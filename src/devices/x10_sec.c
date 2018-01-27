@@ -1,9 +1,10 @@
 /*
- * X10 Security sensor decoding for rtl_433
+ * X10 Security sensor decoder.
  *
- * Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
- * https://github.com/merbanan/rtl_433/issues/30
- * Danke, Willi
+ * Each packet starts with a sync pulse of 9000 us and 4500 us gap.
+ * The message is OOK PPM codeded with 567 us pulse and long gap (0 bit)
+ * of 1680 us or short gap (1 bit) of 590 us. There are 41 bits, the
+ * message is repeated 5 times with a packet gap of 40000 us.
  *
  * Tested with American sensors operating at 310 MHz
  * e.g., rtl_433 -f 310.558M
@@ -13,6 +14,7 @@
  * be set to indicate something like a low battery condition.
  *
  * Copyright (C) 2018 Anthony Kava
+ * Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,25 +28,27 @@
 #include "util.h"
 
 static int x10_sec_callback(bitbuffer_t *bitbuffer) {
+    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
     char *event_str = "UNKNOWN";         /* human-readable event     */
-    char x10_id_str[5] = "\0";           /* string showing hex value */
-    char x10_code_str[5] = "\0";         /* string showing hex value */
-    char time_str[LOCAL_TIME_BUFLEN];
+    char x10_id_str[5] = "";             /* string showing hex value */
+    char x10_code_str[5] = "";           /* string showing hex value */
 
     for (r=0; r < bitbuffer->num_rows; ++r) {
         b = bitbuffer->bb[r];
 
         /* looking for five bytes */
-        if (bitbuffer->bits_per_row[r] < 40) continue;
+        if (bitbuffer->bits_per_row[r] < 40)
+            continue;
 
         /* validate what we received */
-        if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff) continue;
+        if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff)
+            continue;
 
         /* set event_str based on code received */
-        switch(b[2]) {
+        switch (b[2]) {
             case 0x04:
                 event_str = "DS10A DOOR/WINDOW OPEN";
                 break;
@@ -98,8 +102,7 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
                 "id",       "Device ID",    DATA_STRING, x10_id_str,
                 "code",     "Code",         DATA_STRING, x10_code_str,
                 "event",    "Event",        DATA_STRING, event_str,
-                NULL
-                );
+                NULL);
         data_acquired_handler(data);
         return 1;
     }
@@ -118,14 +121,12 @@ static char *output_fields[] = {
 /* r_device definition */
 r_device x10_sec = {
     .name           = "X10 Security",
-    .modulation     = OOK_PULSE_PPM_RAW,    /* new equivalent to OOK_PWM_D */
+    .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1100,
     .long_limit     = 2200,
-    .reset_limit    = 10000,
+    .reset_limit    = 6000,
     .json_callback  = &x10_sec_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .demod_arg      = 0,
     .fields         = output_fields
 };
-
-// vim: ts=4 sts=4 sw=4 et
