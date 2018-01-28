@@ -316,6 +316,7 @@ static void print_value(data_output_t *output, data_type_t type, void *value, ch
 }
 
 /* JSON printer */
+
 static void print_json_array(data_output_t *output, data_array_t *array, char *format)
 {
     int element_size = dmt[array->type].array_element_size;
@@ -372,7 +373,35 @@ static void print_json_int(data_output_t *output, int data, char *format)
     fprintf(output->file, "%d", data);
 }
 
+static void data_output_json_free(data_output_t *output)
+{
+    if (!output)
+        return;
+
+    free(output);
+}
+
+struct data_output *data_output_json_create(FILE *file)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_json_data;
+    output->print_array  = print_json_array;
+    output->print_string = print_json_string;
+    output->print_double = print_json_double;
+    output->print_int    = print_json_int;
+    output->output_free  = data_output_json_free;
+    output->file         = file;
+
+    return output;
+}
+
 /* Key-Value printer */
+
 static void print_kv_data(data_output_t *output, data_t *data, char *format)
 {
     _Bool separator = false;
@@ -421,6 +450,25 @@ static void print_kv_int(data_output_t *output, int data, char *format)
 static void print_kv_string(data_output_t *output, const char *data, char *format)
 {
     fprintf(output->file, format ? format : "%s", data);
+}
+
+struct data_output *data_output_kv_create(FILE *file)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_kv_data;
+    output->print_array  = print_json_array;
+    output->print_string = print_kv_string;
+    output->print_double = print_kv_double;
+    output->print_int    = print_kv_int;
+    output->output_free  = data_output_json_free;
+    output->file         = file;
+
+    return output;
 }
 
 /* CSV printer; doesn't really support recursive data objects yes */
@@ -552,6 +600,26 @@ static void data_output_csv_free(data_output_t *output)
 
     free(csv->fields);
     free(csv);
+}
+
+struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
+{
+    data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
+    if (!csv) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    csv->output.print_data   = print_csv_data;
+    csv->output.print_array  = print_json_array;
+    csv->output.print_string = print_csv_string;
+    csv->output.print_double = print_json_double;
+    csv->output.print_int    = print_json_int;
+    csv->output.output_free  = data_output_csv_free;
+    csv->output.file         = file;
+    data_output_csv_init(csv, fields, num_fields);
+
+    return &csv->output;
 }
 
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
@@ -760,74 +828,6 @@ static void data_output_syslog_free(data_output_t *output)
     }
 
     free(syslog);
-}
-
-// constructors
-
-static void data_json_free(data_output_t *output)
-{
-    if (!output)
-        return;
-
-    free(output);
-}
-
-struct data_output *data_output_json_create(FILE *file)
-{
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
-    }
-
-    output->print_data   = print_json_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_json_string;
-    output->print_double = print_json_double;
-    output->print_int    = print_json_int;
-    output->output_free  = data_json_free;
-    output->file         = file;
-
-    return output;
-}
-
-struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
-{
-    data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
-    if (!csv) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
-    }
-
-    csv->output.print_data   = print_csv_data;
-    csv->output.print_array  = print_json_array;
-    csv->output.print_string = print_csv_string;
-    csv->output.print_double = print_json_double;
-    csv->output.print_int    = print_json_int;
-    csv->output.output_free  = data_output_csv_free;
-    csv->output.file         = file;
-    data_output_csv_init(csv, fields, num_fields);
-
-    return &csv->output;
-}
-
-struct data_output *data_output_kv_create(FILE *file)
-{
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
-    }
-
-    output->print_data   = print_kv_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_kv_string;
-    output->print_double = print_kv_double;
-    output->print_int    = print_kv_int;
-    output->output_free  = data_json_free;
-    output->file         = file;
-
-    return output;
 }
 
 struct data_output *data_output_syslog_create(const char *host, int port)
