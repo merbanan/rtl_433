@@ -72,7 +72,6 @@ typedef struct data_output {
     void (*print_int)(struct data_output *output, int data, char *format);
     void (*output_free)(struct data_output *output);
     FILE *file;
-    void *aux;
 } data_output_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
@@ -111,21 +110,6 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .array_element_release    = (array_element_release_fn) data_array_free ,
       .value_release            = (value_release_fn) data_array_free },
 };
-
-typedef struct {
-    const char **fields;
-    int          data_recursion;
-    const char*  separator;
-} data_csv_aux_t;
-
-typedef struct {
-    struct sockaddr_in server;
-    int sock;
-    int pri;
-    char hostname[_POSIX_HOST_NAME_MAX + 1];
-    char *buf_end;
-    size_t buf_size;
-} data_syslog_aux_t;
 
 static _Bool import_values(void *dst, void *src, int num_values, data_type_t type)
 {
@@ -440,9 +424,18 @@ static void print_kv_string(data_output_t *output, const char *data, char *forma
 }
 
 /* CSV printer; doesn't really support recursive data objects yes */
+
+typedef struct {
+	struct data_output output;
+    const char **fields;
+    int data_recursion;
+    const char *separator;
+} data_output_csv_t;
+
 static void print_csv_data(data_output_t *output, data_t *data, char *format)
 {
-    data_csv_aux_t *csv = output->aux;
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     const char **fields = csv->fields;
     int i;
 
@@ -467,7 +460,8 @@ static void print_csv_data(data_output_t *output, data_t *data, char *format)
 
 static void print_csv_string(data_output_t *output, const char *str, char *format)
 {
-    data_csv_aux_t *csv = output->aux;
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     while (*str) {
         if (strncmp(str, csv->separator, strlen(csv->separator)) == 0)
             fputc('\\', output->file);
@@ -481,9 +475,8 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-static void *data_csv_init(const char **fields, int num_fields)
+static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, int num_fields)
 {
-    data_csv_aux_t *csv = calloc(1, sizeof(data_csv_aux_t));
     int csv_fields = 0;
     int i, j;
     const char **allowed = NULL;
@@ -553,18 +546,30 @@ alloc_error:
     return NULL;
 }
 
-static void data_csv_free(data_output_t *output)
+static void data_output_csv_free(data_output_t *output)
 {
-    data_csv_aux_t *csv = output->aux;
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     free(csv->fields);
     free(csv);
-    free(output);
 }
 
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
+
+typedef struct {
+    struct data_output output;
+    struct sockaddr_in server;
+    int sock;
+    int pri;
+    char hostname[_POSIX_HOST_NAME_MAX + 1];
+    char *buf_end;
+    size_t buf_size;
+} data_output_syslog_t;
+
 static void append_buf(data_output_t *output, const char *str)
 {
-    data_syslog_aux_t *syslog = output->aux;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
+
     size_t len = strlen(str);
     if (syslog->buf_size >= len + 1) {
         strcpy(syslog->buf_end, str);
@@ -625,7 +630,7 @@ static void print_syslog_object(data_output_t *output, data_t *data, char *forma
 
 static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
-    data_syslog_aux_t *syslog = output->aux;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     if (syslog->buf_end) {
         print_syslog_object(output, data, format);
@@ -658,7 +663,8 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 
 static void print_syslog_string(data_output_t *output, const char *str, char *format)
 {
-    data_syslog_aux_t *syslog = output->aux;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
+
     char *buf = syslog->buf_end;
     size_t size = syslog->buf_size;
 
@@ -688,26 +694,20 @@ static void print_syslog_string(data_output_t *output, const char *str, char *fo
 
 static void print_syslog_double(data_output_t *output, double data, char *format)
 {
-    data_syslog_aux_t *syslog = output->aux;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
     snprintf_a(&syslog->buf_end, &syslog->buf_size, "%f", data);
 }
 
 static void print_syslog_int(data_output_t *output, int data, char *format)
 {
-    data_syslog_aux_t *syslog = output->aux;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
     snprintf_a(&syslog->buf_end, &syslog->buf_size, "%d", data);
 }
 
-static void *data_syslog_init(const char *host, int port)
+static void *data_output_syslog_init(data_output_syslog_t *syslog, const char *host, int port)
 {
     if (!host || !port)
         return NULL;
-
-    data_syslog_aux_t *syslog = calloc(1, sizeof(data_syslog_aux_t));
-    if (!syslog) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
-    }
 
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
@@ -747,12 +747,12 @@ static void *data_syslog_init(const char *host, int port)
     return syslog;
 }
 
-static void data_syslog_free(data_output_t *output)
+static void data_output_syslog_free(data_output_t *output)
 {
-    if (!output)
-        return;
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
-    data_syslog_aux_t *syslog = output->aux;
+    if (!syslog)
+        return;
 
     if (syslog->sock != -1) {
         close(syslog->sock);
@@ -760,7 +760,6 @@ static void data_syslog_free(data_output_t *output)
     }
 
     free(syslog);
-    free(output);
 }
 
 // constructors
@@ -794,22 +793,22 @@ struct data_output *data_output_json_create(FILE *file)
 
 struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
 {
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
+    data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
+    if (!csv) {
         fprintf(stderr, "calloc() failed");
         return NULL;
     }
 
-    output->print_data   = print_csv_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_csv_string;
-    output->print_double = print_json_double;
-    output->print_int    = print_json_int;
-    output->output_free  = data_csv_free;
-    output->file         = file;
-    output->aux          = data_csv_init(fields, num_fields);
+    csv->output.print_data   = print_csv_data;
+    csv->output.print_array  = print_json_array;
+    csv->output.print_string = print_csv_string;
+    csv->output.print_double = print_json_double;
+    csv->output.print_int    = print_json_int;
+    csv->output.output_free  = data_output_csv_free;
+    csv->output.file         = file;
+    data_output_csv_init(csv, fields, num_fields);
 
-    return output;
+    return &csv->output;
 }
 
 struct data_output *data_output_kv_create(FILE *file)
@@ -833,19 +832,19 @@ struct data_output *data_output_kv_create(FILE *file)
 
 struct data_output *data_output_syslog_create(const char *host, int port)
 {
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
+    data_output_syslog_t *syslog = calloc(1, sizeof(data_output_syslog_t));
+    if (!syslog) {
         fprintf(stderr, "calloc() failed");
         return NULL;
     }
 
-    output->print_data   = print_syslog_data;
-    output->print_array  = print_syslog_array;
-    output->print_string = print_syslog_string;
-    output->print_double = print_syslog_double;
-    output->print_int    = print_syslog_int;
-    output->output_free  = data_syslog_free;
-    output->aux          = data_syslog_init(host, port);
+    syslog->output.print_data   = print_syslog_data;
+    syslog->output.print_array  = print_syslog_array;
+    syslog->output.print_string = print_syslog_string;
+    syslog->output.print_double = print_syslog_double;
+    syslog->output.print_int    = print_syslog_int;
+    syslog->output.output_free  = data_output_syslog_free;
+    data_output_syslog_init(syslog, host, port);
 
-    return output;
+    return &syslog->output;
 }
