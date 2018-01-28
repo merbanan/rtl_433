@@ -48,12 +48,6 @@ typedef struct data {
 	struct data* next; /* chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
 
-struct data_printer;
-extern struct data_printer data_json_printer;
-extern struct data_printer data_kv_printer;
-extern struct data_printer data_csv_printer;
-extern struct data_printer data_syslog_printer;
-
 /** Constructs a structured data object.
 
     Example:
@@ -99,14 +93,14 @@ data_array_t *data_array(int num_values, data_type_t type, void *ptr);
 /** Releases a data array */
 void data_array_free(data_array_t *array);
 
-/** Prints a structured data object as JSON to the given stream */
-void data_print(data_t *data, FILE* file, struct data_printer *printer, void *aux);
-
 /** Releases a structure object */
 void data_free(data_t *data);
 
-/** Construct auxiliary data for CSV construction
+struct data_output;
 
+/** Construct data output for CSV printer
+
+    @param file the output stream
     @param fields the list of fields to accept and expect. Array is copied, but the actual
                   strings not. The list may contain duplicates and they are eliminated.
     @param num_fields number of fields
@@ -114,15 +108,18 @@ void data_free(data_t *data);
     @return The auxiliary data to pass along with data_csv_printer to data_print.
             You must release this object with data_csv_free once you're done with it.
 */
-void *data_csv_init(const char **fields, int num_fields);
 
-/** Destructs auxiliary CSV data. */
-void data_csv_free(void *csv);
+struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields);
 
-/** Construct auxiliary data for Syslog UDP socket */
-void *data_syslog_init(const char *host, int port);
+struct data_output *data_output_json_create(FILE *file);
 
-/** Destructs auxiliary syslog data. */
-void data_syslog_free(void *syslog);
+struct data_output *data_output_kv_create(FILE *file);
+
+struct data_output *data_output_syslog_create(const char *host, int port);
+
+/** Prints a structured data object */
+void data_output_print(struct data_output *output, data_t *data);
+
+void data_output_free(struct data_output *output);
 
 #endif // INCLUDE_DATA_H_

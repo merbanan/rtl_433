@@ -62,20 +62,18 @@ typedef struct {
     value_release_fn value_release;
 } data_meta_type_t;
 
-struct data_printer_context;
+struct data_output;
 
-typedef struct data_printer {
-    void (*print_data)(struct data_printer_context *printer_ctx, data_t *data, char *format, FILE *file);
-    void (*print_array)(struct data_printer_context *printer_ctx, data_array_t *data, char *format, FILE *file);
-    void (*print_string)(struct data_printer_context *printer_ctx, const char *data, char *format, FILE *file);
-    void (*print_double)(struct data_printer_context *printer_ctx, double data, char *format, FILE *file);
-    void (*print_int)(struct data_printer_context *printer_ctx, int data, char *format, FILE *file);
-} data_printer_t;
-
-typedef struct data_printer_context {
-    data_printer_t *printer;
+typedef struct data_output {
+    void (*print_data)(struct data_output *output, data_t *data, char *format);
+    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
+    void (*print_string)(struct data_output *output, const char *data, char *format);
+    void (*print_double)(struct data_output *output, double data, char *format);
+    void (*print_int)(struct data_output *output, int data, char *format);
+    void (*output_free)(struct data_output *output);
+    FILE *file;
     void *aux;
-} data_printer_context_t;
+} data_output_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
     //  DATA_DATA
@@ -114,25 +112,11 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .value_release            = (value_release_fn) data_array_free },
 };
 
-static void print_json_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
-static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *data, char *format, FILE *file);
-static void print_json_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
-static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
-static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
-
-static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
-static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
-static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
-static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
-
 typedef struct {
     const char **fields;
-    int data_recursion;
-    const char *separator;
+    int          data_recursion;
+    const char*  separator;
 } data_csv_aux_t;
-
-static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
-static void print_csv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
 
 typedef struct {
     struct sockaddr_in server;
@@ -142,40 +126,6 @@ typedef struct {
     char *buf_end;
     size_t buf_size;
 } data_syslog_aux_t;
-
-static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file);
-static void print_syslog_array(data_printer_context_t *printer_ctx, data_array_t *data, char *format, FILE *file);
-static void print_syslog_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file);
-static void print_syslog_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file);
-static void print_syslog_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file);
-
-data_printer_t data_json_printer = {
-        .print_data = print_json_data,
-        .print_array = print_json_array,
-        .print_string = print_json_string,
-        .print_double = print_json_double,
-        .print_int = print_json_int};
-
-data_printer_t data_kv_printer = {
-        .print_data = print_kv_data,
-        .print_array = print_json_array,
-        .print_string = print_kv_string,
-        .print_double = print_kv_double,
-        .print_int = print_kv_int};
-
-data_printer_t data_csv_printer = {
-        .print_data = print_csv_data,
-        .print_array = print_json_array,
-        .print_string = print_csv_string,
-        .print_double = print_json_double,
-        .print_int = print_json_int};
-
-data_printer_t data_syslog_printer = {
-        .print_data = print_syslog_data,
-        .print_array = print_syslog_array,
-        .print_string = print_syslog_string,
-        .print_double = print_syslog_double,
-        .print_int = print_syslog_int};
 
 static _Bool import_values(void *dst, void *src, int num_values, data_type_t type)
 {
@@ -340,19 +290,23 @@ void data_free(data_t *data)
     }
 }
 
-void data_print(data_t *data, FILE *file, data_printer_t *printer, void *aux)
+void data_output_print(data_output_t *output, data_t *data)
 {
-    data_printer_context_t ctx = {
-            .printer = printer,
-            .aux = aux};
-    ctx.printer->print_data(&ctx, data, NULL, file);
-    if (file) {
-        fputc('\n', file);
-        fflush(file);
+    output->print_data(output, data, NULL);
+    if (output->file) {
+        fputc('\n', output->file);
+        fflush(output->file);
     }
 }
 
-static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_type_t type, void *value, char *format)
+void data_output_free(data_output_t *output)
+{
+    if (!output)
+        return;
+    output->output_free(output);
+}
+
+static void print_value(data_output_t *output, data_type_t type, void *value, char *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -360,82 +314,82 @@ static void print_value(data_printer_context_t *printer_ctx, FILE *file, data_ty
         assert(0);
         break;
     case DATA_DATA:
-        printer_ctx->printer->print_data(printer_ctx, value, format, file);
+        output->print_data(output, value, format);
         break;
     case DATA_INT:
-        printer_ctx->printer->print_int(printer_ctx, *(int *)value, format, file);
+        output->print_int(output, *(int *)value, format);
         break;
     case DATA_DOUBLE:
-        printer_ctx->printer->print_double(printer_ctx, *(double *)value, format, file);
+        output->print_double(output, *(double *)value, format);
         break;
     case DATA_STRING:
-        printer_ctx->printer->print_string(printer_ctx, value, format, file);
+        output->print_string(output, value, format);
         break;
     case DATA_ARRAY:
-        printer_ctx->printer->print_array(printer_ctx, value, format, file);
+        output->print_array(output, value, format);
         break;
     }
 }
 
 /* JSON printer */
-static void print_json_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file)
+static void print_json_array(data_output_t *output, data_array_t *array, char *format)
 {
     int element_size = dmt[array->type].array_element_size;
     char buffer[element_size];
-    fprintf(file, "[");
+    fprintf(output->file, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(file, ", ");
+            fprintf(output->file, ", ");
         if (!dmt[array->type].array_is_boxed) {
             memcpy(buffer, (void **)((char *)array->values + element_size * c), element_size);
-            print_value(printer_ctx, file, array->type, buffer, format);
+            print_value(output, array->type, buffer, format);
         } else {
-            print_value(printer_ctx, file, array->type, *(void **)((char *)array->values + element_size * c), format);
+            print_value(output, array->type, *(void **)((char *)array->values + element_size * c), format);
         }
     }
-    fprintf(file, "]");
+    fprintf(output->file, "]");
 }
 
-static void print_json_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+static void print_json_data(data_output_t *output, data_t *data, char *format)
 {
     _Bool separator = false;
-    fputc('{', file);
+    fputc('{', output->file);
     while (data) {
         if (separator)
-            fprintf(file, ", ");
-        printer_ctx->printer->print_string(printer_ctx, data->key, NULL, file);
-        fprintf(file, " : ");
-        print_value(printer_ctx, file, data->type, data->value, data->format);
+            fprintf(output->file, ", ");
+        output->print_string(output, data->key, NULL);
+        fprintf(output->file, " : ");
+        print_value(output, data->type, data->value, data->format);
         separator = true;
         data = data->next;
     }
-    fputc('}', file);
+    fputc('}', output->file);
 }
 
-static void print_json_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+static void print_json_string(data_output_t *output, const char *str, char *format)
 {
-    fprintf(file, "\"");
+    fprintf(output->file, "\"");
     while (*str) {
         if (*str == '"')
-            fputc('\\', file);
-        fputc(*str, file);
+            fputc('\\', output->file);
+        fputc(*str, output->file);
         ++str;
     }
-    fprintf(file, "\"");
+    fprintf(output->file, "\"");
 }
 
-static void print_json_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+static void print_json_double(data_output_t *output, double data, char *format)
 {
-    fprintf(file, "%.3f", data);
+    fprintf(output->file, "%.3f", data);
 }
 
-static void print_json_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+static void print_json_int(data_output_t *output, int data, char *format)
 {
-    fprintf(file, "%d", data);
+    fprintf(output->file, "%d", data);
 }
 
 /* Key-Value printer */
-static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+static void print_kv_data(data_output_t *output, data_t *data, char *format)
 {
     _Bool separator = false;
     _Bool was_labeled = false;
@@ -445,50 +399,50 @@ static void print_kv_data(data_printer_context_t *printer_ctx, data_t *data, cha
         /* put a : between the first non-labeled and labeled */
         if (separator) {
             if (labeled && !was_labeled && !written_title) {
-                fprintf(file, "\n");
+                fprintf(output->file, "\n");
                 written_title = true;
                 separator = false;
             } else {
                 if (was_labeled)
-                    fprintf(file, "\n");
+                    fprintf(output->file, "\n");
                 else
-                    fprintf(file, " ");
+                    fprintf(output->file, " ");
             }
         }
         if (!strcmp(data->key, "time"))
-            /* fprintf(file, "") */;
+            /* fprintf(output->file, "") */;
         else if (!strcmp(data->key, "model"))
-            fprintf(file, ":\t");
+            fprintf(output->file, ":\t");
         else
-            fprintf(file, "\t%s:\t", data->pretty_key);
+            fprintf(output->file, "\t%s:\t", data->pretty_key);
         if (labeled)
-            fputc(' ', file);
-        print_value(printer_ctx, file, data->type, data->value, data->format);
+            fputc(' ', output->file);
+        print_value(output, data->type, data->value, data->format);
         separator = true;
         was_labeled = labeled;
         data = data->next;
     }
 }
 
-static void print_kv_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+static void print_kv_double(data_output_t *output, double data, char *format)
 {
-    fprintf(file, format ? format : "%.3f", data);
+    fprintf(output->file, format ? format : "%.3f", data);
 }
 
-static void print_kv_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+static void print_kv_int(data_output_t *output, int data, char *format)
 {
-    fprintf(file, format ? format : "%d", data);
+    fprintf(output->file, format ? format : "%d", data);
 }
 
-static void print_kv_string(data_printer_context_t *printer_ctx, const char *data, char *format, FILE *file)
+static void print_kv_string(data_output_t *output, const char *data, char *format)
 {
-    fprintf(file, format ? format : "%s", data);
+    fprintf(output->file, format ? format : "%s", data);
 }
 
 /* CSV printer; doesn't really support recursive data objects yes */
-static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+static void print_csv_data(data_output_t *output, data_t *data, char *format)
 {
-    data_csv_aux_t *csv = printer_ctx->aux;
+    data_csv_aux_t *csv = output->aux;
     const char **fields = csv->fields;
     int i;
 
@@ -500,24 +454,24 @@ static void print_csv_data(data_printer_context_t *printer_ctx, data_t *data, ch
         const char *key = fields[i];
         data_t *found = NULL;
         if (i)
-            fprintf(file, "%s", csv->separator);
+            fprintf(output->file, "%s", csv->separator);
         for (data_t *iter = data; !found && iter; iter = iter->next)
             if (strcmp(iter->key, key) == 0)
                 found = iter;
 
         if (found)
-            print_value(printer_ctx, file, found->type, found->value, found->format);
+            print_value(output, found->type, found->value, found->format);
     }
     --csv->data_recursion;
 }
 
-static void print_csv_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+static void print_csv_string(data_output_t *output, const char *str, char *format)
 {
-    data_csv_aux_t *csv = printer_ctx->aux;
+    data_csv_aux_t *csv = output->aux;
     while (*str) {
         if (strncmp(str, csv->separator, strlen(csv->separator)) == 0)
-            fputc('\\', file);
-        fputc(*str, file);
+            fputc('\\', output->file);
+        fputc(*str, output->file);
         ++str;
     }
 }
@@ -527,7 +481,7 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-void *data_csv_init(const char **fields, int num_fields)
+static void *data_csv_init(const char **fields, int num_fields)
 {
     data_csv_aux_t *csv = calloc(1, sizeof(data_csv_aux_t));
     int csv_fields = 0;
@@ -599,17 +553,18 @@ alloc_error:
     return NULL;
 }
 
-void data_csv_free(void *aux)
+static void data_csv_free(data_output_t *output)
 {
-    data_csv_aux_t *csv = aux;
+    data_csv_aux_t *csv = output->aux;
     free(csv->fields);
     free(csv);
+    free(output);
 }
 
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
-static void append_buf(data_printer_context_t *printer_ctx, const char *str)
+static void append_buf(data_output_t *output, const char *str)
 {
-    data_syslog_aux_t *syslog = printer_ctx->aux;
+    data_syslog_aux_t *syslog = output->aux;
     size_t len = strlen(str);
     if (syslog->buf_size >= len + 1) {
         strcpy(syslog->buf_end, str);
@@ -634,46 +589,46 @@ static int snprintf_a(char **restrict str, size_t *size, const char *restrict fo
     return n;
 }
 
-static void print_syslog_array(data_printer_context_t *printer_ctx, data_array_t *array, char *format, FILE *file)
+static void print_syslog_array(data_output_t *output, data_array_t *array, char *format)
 {
     int element_size = dmt[array->type].array_element_size;
     char buffer[element_size];
-    append_buf(printer_ctx, "[");
+    append_buf(output, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            append_buf(printer_ctx, ",");
+            append_buf(output, ",");
         if (!dmt[array->type].array_is_boxed) {
             memcpy(buffer, (void **)((char *)array->values + element_size * c), element_size);
-            print_value(printer_ctx, file, array->type, buffer, format);
+            print_value(output, array->type, buffer, format);
         } else {
-            print_value(printer_ctx, file, array->type, *(void **)((char *)array->values + element_size * c), format);
+            print_value(output, array->type, *(void **)((char *)array->values + element_size * c), format);
         }
     }
-    append_buf(printer_ctx, "]");
+    append_buf(output, "]");
 }
 
-static void print_syslog_object(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+static void print_syslog_object(data_output_t *output, data_t *data, char *format)
 {
     _Bool separator = false;
-    append_buf(printer_ctx, "{");
+    append_buf(output, "{");
     while (data) {
         if (separator)
-            append_buf(printer_ctx, ",");
-        printer_ctx->printer->print_string(printer_ctx, data->key, NULL, file);
-        append_buf(printer_ctx, ":");
-        print_value(printer_ctx, file, data->type, data->value, data->format);
+            append_buf(output, ",");
+        output->print_string(output, data->key, NULL);
+        append_buf(output, ":");
+        print_value(output, data->type, data->value, data->format);
         separator = true;
         data = data->next;
     }
-    append_buf(printer_ctx, "}");
+    append_buf(output, "}");
 }
 
-static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data, char *format, FILE *file)
+static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
-    data_syslog_aux_t *syslog = printer_ctx->aux;
+    data_syslog_aux_t *syslog = output->aux;
 
     if (syslog->buf_end) {
-        print_syslog_object(printer_ctx, data, format, file);
+        print_syslog_object(output, data, format);
         return;
     }
 
@@ -690,7 +645,7 @@ static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data,
 
     snprintf_a(&syslog->buf_end, &syslog->buf_size, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
 
-    print_syslog_object(printer_ctx, data, format, file);
+    print_syslog_object(output, data, format);
 
     int slen = sizeof(syslog->server);
 
@@ -701,9 +656,9 @@ static void print_syslog_data(data_printer_context_t *printer_ctx, data_t *data,
     syslog->buf_end = NULL;
 }
 
-static void print_syslog_string(data_printer_context_t *printer_ctx, const char *str, char *format, FILE *file)
+static void print_syslog_string(data_output_t *output, const char *str, char *format)
 {
-    data_syslog_aux_t *syslog = printer_ctx->aux;
+    data_syslog_aux_t *syslog = output->aux;
     char *buf = syslog->buf_end;
     size_t size = syslog->buf_size;
 
@@ -731,19 +686,19 @@ static void print_syslog_string(data_printer_context_t *printer_ctx, const char 
     syslog->buf_size = size;
 }
 
-static void print_syslog_double(data_printer_context_t *printer_ctx, double data, char *format, FILE *file)
+static void print_syslog_double(data_output_t *output, double data, char *format)
 {
-    data_syslog_aux_t *syslog = printer_ctx->aux;
+    data_syslog_aux_t *syslog = output->aux;
     snprintf_a(&syslog->buf_end, &syslog->buf_size, "%f", data);
 }
 
-static void print_syslog_int(data_printer_context_t *printer_ctx, int data, char *format, FILE *file)
+static void print_syslog_int(data_output_t *output, int data, char *format)
 {
-    data_syslog_aux_t *syslog = printer_ctx->aux;
+    data_syslog_aux_t *syslog = output->aux;
     snprintf_a(&syslog->buf_end, &syslog->buf_size, "%d", data);
 }
 
-void *data_syslog_init(const char *host, int port)
+static void *data_syslog_init(const char *host, int port)
 {
     if (!host || !port)
         return NULL;
@@ -792,12 +747,12 @@ void *data_syslog_init(const char *host, int port)
     return syslog;
 }
 
-void data_syslog_free(void *aux)
+static void data_syslog_free(data_output_t *output)
 {
-    if (!aux)
+    if (!output)
         return;
 
-    data_syslog_aux_t *syslog = aux;
+    data_syslog_aux_t *syslog = output->aux;
 
     if (syslog->sock != -1) {
         close(syslog->sock);
@@ -805,4 +760,92 @@ void data_syslog_free(void *aux)
     }
 
     free(syslog);
+    free(output);
+}
+
+// constructors
+
+static void data_json_free(data_output_t *output)
+{
+    if (!output)
+        return;
+
+    free(output);
+}
+
+struct data_output *data_output_json_create(FILE *file)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_json_data;
+    output->print_array  = print_json_array;
+    output->print_string = print_json_string;
+    output->print_double = print_json_double;
+    output->print_int    = print_json_int;
+    output->output_free  = data_json_free;
+    output->file         = file;
+
+    return output;
+}
+
+struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_csv_data;
+    output->print_array  = print_json_array;
+    output->print_string = print_csv_string;
+    output->print_double = print_json_double;
+    output->print_int    = print_json_int;
+    output->output_free  = data_csv_free;
+    output->file         = file;
+    output->aux          = data_csv_init(fields, num_fields);
+
+    return output;
+}
+
+struct data_output *data_output_kv_create(FILE *file)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_kv_data;
+    output->print_array  = print_json_array;
+    output->print_string = print_kv_string;
+    output->print_double = print_kv_double;
+    output->print_int    = print_kv_int;
+    output->output_free  = data_json_free;
+    output->file         = file;
+
+    return output;
+}
+
+struct data_output *data_output_syslog_create(const char *host, int port)
+{
+    data_output_t *output = calloc(1, sizeof(data_output_t));
+    if (!output) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    output->print_data   = print_syslog_data;
+    output->print_array  = print_syslog_array;
+    output->print_string = print_syslog_string;
+    output->print_double = print_syslog_double;
+    output->print_int    = print_syslog_int;
+    output->output_free  = data_syslog_free;
+    output->aux          = data_syslog_init(host, port);
+
+    return output;
 }

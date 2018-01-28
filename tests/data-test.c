@@ -35,10 +35,18 @@ int main()
 				 "data"       , "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
 				 NULL);
 	const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
-	data_print(data, stdout, &data_json_printer, NULL); fprintf(stdout, "\n");
-	data_print(data, stdout, &data_kv_printer, NULL);
-	void *csv_aux = data_csv_init(fields, sizeof fields / sizeof *fields);
-	data_print(data, stdout, &data_csv_printer, csv_aux);
-	data_csv_free(csv_aux);
+
+	void *json_output = data_output_json_create(stdout);
+	void *kv_output = data_output_kv_create(stdout);
+	void *csv_output = data_output_csv_create(stdout, fields, sizeof fields / sizeof *fields);
+
+	data_output_print(json_output, data); fprintf(stdout, "\n");
+	data_output_print(kv_output, data);
+	data_output_print(csv_output, data);
+
+	data_output_free(json_output);
+	data_output_free(kv_output);
+	data_output_free(csv_output);
+
 	data_free(data);
 }

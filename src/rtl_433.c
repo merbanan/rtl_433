@@ -31,6 +31,7 @@
 #include "util.h"
 #include "optparse.h"
 
+#define MAX_DATA_OUTPUTS 32
 
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0;
@@ -225,19 +226,11 @@ static unsigned int pulse_end = 0;
 static unsigned int pulse_avg = 0;
 static unsigned int signal_start = 0;
 static unsigned int signal_end = 0;
-static unsigned int signal_pulse_data[4000][3] = {
-    {0}};
+static unsigned int signal_pulse_data[4000][3] = {{ 0 }};
 static unsigned int signal_pulse_counter = 0;
 
-typedef struct output_handler {
-    /*data_printer_t*/ void *printer;
-    void (*aux_free)(void *aux);
-    FILE *file;
-    void *aux;
-    struct output_handler *next;
-} output_handler_t;
-static output_handler_t *output_handler = NULL;
-static output_handler_t **next_output_handler = &output_handler;
+static void *output_handler[MAX_DATA_OUTPUTS];
+static int last_output_handler = 0;
 
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
@@ -315,8 +308,8 @@ void data_acquired_handler(data_t *data)
         }
     }
 
-    for (output_handler_t *output = output_handler; output; output = output->next) {
-        data_print(data, output->file, output->printer, output->aux);
+    for (int i = 0; i < last_output_handler; ++i) {
+        data_output_print(output_handler[i], data);
     }
     data_free(data);
 }
@@ -821,7 +814,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-void *determine_csv_fields(r_device* devices, int num_devices)
+const char **determine_csv_fields(r_device *devices, int num_devices, int *num_fields)
 {
     int i, j;
     int cur_output_fields = 0;
@@ -847,9 +840,8 @@ void *determine_csv_fields(r_device* devices, int num_devices)
         }
     }
 
-    csv_aux = data_csv_init(output_fields, num_output_fields);
-    free(output_fields);
-    return csv_aux;
+    *num_fields = num_output_fields;
+    return output_fields;
 }
 
 char *arg_param(char *arg)
@@ -878,47 +870,20 @@ FILE *fopen_output(char *param)
 
 void add_json_output(char *param)
 {
-    output_handler_t *output = calloc(1, sizeof(output_handler_t));
-    if (!output) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for output handler\n");
-        exit(1);
-    }
-    output->printer = &data_json_printer;
-    output->file = fopen_output(param);
-    *next_output_handler = output;
-    next_output_handler = &output->next;
+    output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-void add_csv_output(char *param, void *aux_data)
+void add_csv_output(char *param, r_device *devices, int num_devices)
 {
-    if (!aux_data) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for CSV auxiliary data\n");
-        exit(1);
-    }
-    output_handler_t *output = calloc(1, sizeof(output_handler_t));
-    if (!output) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for output handler\n");
-        exit(1);
-    }
-    output->printer = &data_csv_printer;
-    output->aux_free = &data_csv_free;
-    output->file = fopen_output(param);
-    output->aux = aux_data;
-    *next_output_handler = output;
-    next_output_handler = &output->next;
+    int num_output_fields;
+    const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
+    output_handler[last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
+    free(output_fields);
 }
 
 void add_kv_output(char *param)
 {
-    output_handler_t *output = calloc(1, sizeof(output_handler_t));
-    if (!output) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for output handler\n");
-        exit(1);
-    }
-    output->printer = &data_kv_printer;
-    output->file = fopen_output(param);
-    *next_output_handler = output;
-    next_output_handler = &output->next;
+    output_handler[last_output_handler++] = data_output_kv_create(fopen_output(param));
 }
 
 void add_syslog_output(char *param)
@@ -937,21 +902,7 @@ void add_syslog_output(char *param)
     }
     fprintf(stderr, "Syslog UDP datagrams to: %s:%d\n", syslog_host, syslog_port);
 
-    void *aux_data = data_syslog_init(syslog_host, syslog_port);
-    if (!aux_data) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for Syslog auxiliary data\n");
-        exit(1);
-    }
-    output_handler_t *output = calloc(1, sizeof(output_handler_t));
-    if (!output) {
-        fprintf(stderr, "rtl_433: failed to allocate memory for output handler\n");
-        exit(1);
-    }
-    output->printer = &data_syslog_printer;
-    output->aux_free = &data_syslog_free;
-    output->aux = aux_data;
-    *next_output_handler = output;
-    next_output_handler = &output->next;
+    output_handler[last_output_handler++] = data_output_syslog_create(syslog_host, syslog_port);
 }
 
 int main(int argc, char **argv) {
@@ -1093,7 +1044,7 @@ int main(int argc, char **argv) {
                 if (strncmp(optarg, "json", 4) == 0) {
                     add_json_output(arg_param(optarg));
                 } else if (strncmp(optarg, "csv", 3) == 0) {
-                    add_csv_output(arg_param(optarg), determine_csv_fields(devices, num_r_devices));
+                    add_csv_output(arg_param(optarg), devices, num_r_devices);
                 } else if (strncmp(optarg, "kv", 2) == 0) {
                     add_kv_output(arg_param(optarg));
                 } else if (strncmp(optarg, "syslog", 6) == 0) {
@@ -1155,7 +1106,7 @@ int main(int argc, char **argv) {
         out_filename = argv[optind];
     }
 
-    if (!output_handler) {
+    if (last_output_handler < 1) {
         add_kv_output(NULL);
     }
 
@@ -1488,10 +1439,8 @@ int main(int argc, char **argv) {
 
     rtlsdr_close(dev);
 out:
-    for (output_handler_t *output = output_handler; output; output = output->next) {
-        if (output->aux_free) {
-            output->aux_free(output->aux);
-        }
+    for (int i = 0; i < last_output_handler; ++i) {
+        data_output_free(output_handler[i]);
     }
     return r >= 0 ? r : -r;
 }
