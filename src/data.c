@@ -315,22 +315,27 @@ static void print_value(data_output_t *output, data_type_t type, void *value, ch
     }
 }
 
+static void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
+{
+    int element_size = dmt[array->type].array_element_size;
+    char buffer[element_size];
+    if (!dmt[array->type].array_is_boxed) {
+        memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
+        print_value(output, array->type, buffer, format);
+    } else {
+        print_value(output, array->type, *(void **)((char *)array->values + element_size * idx), format);
+    }
+}
+
 /* JSON printer */
 
 static void print_json_array(data_output_t *output, data_array_t *array, char *format)
 {
-    int element_size = dmt[array->type].array_element_size;
-    char buffer[element_size];
     fprintf(output->file, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
             fprintf(output->file, ", ");
-        if (!dmt[array->type].array_is_boxed) {
-            memcpy(buffer, (void **)((char *)array->values + element_size * c), element_size);
-            print_value(output, array->type, buffer, format);
-        } else {
-            print_value(output, array->type, *(void **)((char *)array->values + element_size * c), format);
-        }
+        print_array_value(output, array, format, c);
     }
     fprintf(output->file, "]");
 }
@@ -664,18 +669,11 @@ static int snprintf_a(char **restrict str, size_t *size, const char *restrict fo
 
 static void print_syslog_array(data_output_t *output, data_array_t *array, char *format)
 {
-    int element_size = dmt[array->type].array_element_size;
-    char buffer[element_size];
     append_buf(output, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
             append_buf(output, ",");
-        if (!dmt[array->type].array_is_boxed) {
-            memcpy(buffer, (void **)((char *)array->values + element_size * c), element_size);
-            print_value(output, array->type, buffer, format);
-        } else {
-            print_value(output, array->type, *(void **)((char *)array->values + element_size * c), format);
-        }
+        print_array_value(output, array, format, c);
     }
     append_buf(output, "]");
 }
