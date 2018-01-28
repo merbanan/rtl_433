@@ -47,7 +47,7 @@ typedef struct {
        a copy of the value beforehand, because the dumping function only
        deals with boxed values.
      */
-    _Bool array_is_boxed;
+    bool array_is_boxed;
 
     /* function for importing arrays. strings are specially handled (as they
        are copied deeply), whereas other arrays are just copied shallowly
@@ -111,7 +111,7 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .value_release            = (value_release_fn) data_array_free },
 };
 
-static _Bool import_values(void *dst, void *src, int num_values, data_type_t type)
+static bool import_values(void *dst, void *src, int num_values, data_type_t type)
 {
     int element_size = dmt[type].array_element_size;
     array_elementwise_import_fn import = dmt[type].array_elementwise_import;
@@ -337,7 +337,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char *f
 
 static void print_json_data(data_output_t *output, data_t *data, char *format)
 {
-    _Bool separator = false;
+    bool separator = false;
     fputc('{', output->file);
     while (data) {
         if (separator)
@@ -404,11 +404,11 @@ struct data_output *data_output_json_create(FILE *file)
 
 static void print_kv_data(data_output_t *output, data_t *data, char *format)
 {
-    _Bool separator = false;
-    _Bool was_labeled = false;
-    _Bool written_title = false;
+    bool separator = false;
+    bool was_labeled = false;
+    bool written_title = false;
     while (data) {
-        _Bool labeled = data->pretty_key[0];
+        bool labeled = data->pretty_key[0];
         /* put a : between the first non-labeled and labeled */
         if (separator) {
             if (labeled && !was_labeled && !written_title) {
@@ -471,10 +471,10 @@ struct data_output *data_output_kv_create(FILE *file)
     return output;
 }
 
-/* CSV printer; doesn't really support recursive data objects yes */
+/* CSV printer; doesn't really support recursive data objects yet */
 
 typedef struct {
-	struct data_output output;
+    struct data_output output;
     const char **fields;
     int data_recursion;
     const char *separator;
@@ -682,7 +682,7 @@ static void print_syslog_array(data_output_t *output, data_array_t *array, char 
 
 static void print_syslog_object(data_output_t *output, data_t *data, char *format)
 {
-    _Bool separator = false;
+    bool separator = false;
     append_buf(output, "{");
     while (data) {
         if (separator)
