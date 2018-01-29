@@ -696,6 +696,65 @@ static void datagram_client_send(datagram_client_t *client, const char *message,
     }
 }
 
+/* array buffer (string builder) */
+
+typedef struct {
+    char *head;
+    char *tail;
+    size_t left;
+} abuf_t;
+
+static void abuf_init(abuf_t *buf, char *dst, size_t len)
+{
+    buf->head = dst;
+    buf->tail = dst;
+    buf->left = len;
+}
+
+static void abuf_setnull(abuf_t *buf)
+{
+    buf->head = NULL;
+    buf->tail = NULL;
+    buf->left = 0;
+}
+
+static char *abuf_push(abuf_t *buf)
+{
+    return buf->tail;
+}
+
+static void abuf_pop(abuf_t *buf, char *end)
+{
+    buf->left += buf->tail - end;
+    buf->tail = end;
+}
+
+static void abuf_cat(abuf_t *buf, const char *str)
+{
+    size_t len = strlen(str);
+    if (buf->left >= len + 1) {
+        strcpy(buf->tail, str);
+        buf->tail += len;
+        buf->left -= len;
+    }
+}
+
+static int abuf_printf(abuf_t *buf, const char *restrict format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+
+    int n = vsnprintf(buf->tail, buf->left, format, ap);
+    size_t len = 0;
+    if (n > 0) {
+        len = (size_t)n < buf->left ? (size_t)n : buf->left;
+        buf->tail += len;
+        buf->left -= len;
+    }
+    va_end(ap);
+    return n;
+}
+
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
 
 typedef struct {
@@ -703,77 +762,51 @@ typedef struct {
     datagram_client_t client;
     int pri;
     char hostname[_POSIX_HOST_NAME_MAX + 1];
-    char *buf_end;
-    size_t buf_size;
+    abuf_t msg;
 } data_output_syslog_t;
-
-static void append_buf(data_output_t *output, const char *str)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    size_t len = strlen(str);
-    if (syslog->buf_size >= len + 1) {
-        strcpy(syslog->buf_end, str);
-        syslog->buf_end += len;
-        syslog->buf_size -= len;
-    }
-}
-
-static int snprintf_a(char **restrict str, size_t *size, const char *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-
-    int n = vsnprintf(*str, *size, format, ap);
-    size_t written = 0;
-    if (n > 0) {
-        written = (size_t)n < *size ? (size_t)n : *size;
-        *size -= written;
-        *str += written;
-    }
-    va_end(ap);
-    return n;
-}
 
 static void print_syslog_array(data_output_t *output, data_array_t *array, char *format)
 {
-    append_buf(output, "[");
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
+
+    abuf_cat(&syslog->msg, "[");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            append_buf(output, ",");
+            abuf_cat(&syslog->msg, ",");
         print_array_value(output, array, format, c);
     }
-    append_buf(output, "]");
+    abuf_cat(&syslog->msg, "]");
 }
 
 static void print_syslog_object(data_output_t *output, data_t *data, char *format)
 {
+    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
+
     bool separator = false;
-    append_buf(output, "{");
+    abuf_cat(&syslog->msg, "{");
     while (data) {
         if (separator)
-            append_buf(output, ",");
+            abuf_cat(&syslog->msg, ",");
         output->print_string(output, data->key, NULL);
-        append_buf(output, ":");
+        abuf_cat(&syslog->msg, ":");
         print_value(output, data->type, data->value, data->format);
         separator = true;
         data = data->next;
     }
-    append_buf(output, "}");
+    abuf_cat(&syslog->msg, "}");
 }
 
 static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
-    if (syslog->buf_end) {
+    if (syslog->msg.tail) {
         print_syslog_object(output, data, format);
         return;
     }
 
     char message[1024];
-    syslog->buf_end = message;
-    syslog->buf_size = 1024;
+    abuf_init(&syslog->msg, message, 1024);
 
     time_t now;
     struct tm tm_info;
@@ -782,21 +815,21 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     char timestamp[21];
     strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 
-    snprintf_a(&syslog->buf_end, &syslog->buf_size, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
+    abuf_printf(&syslog->msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
 
     print_syslog_object(output, data, format);
 
     datagram_client_send(&syslog->client, message, strlen(message));
 
-    syslog->buf_end = NULL;
+    abuf_setnull(&syslog->msg);
 }
 
 static void print_syslog_string(data_output_t *output, const char *str, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
-    char *buf = syslog->buf_end;
-    size_t size = syslog->buf_size;
+    char *buf = syslog->msg.tail;
+    size_t size = syslog->msg.left;
 
     if (size < strlen(str) + 3) {
         return;
@@ -818,20 +851,20 @@ static void print_syslog_string(data_output_t *output, const char *str, char *fo
     }
     *buf = '\0';
 
-    syslog->buf_end = buf;
-    syslog->buf_size = size;
+    syslog->msg.tail = buf;
+    syslog->msg.left = size;
 }
 
 static void print_syslog_double(data_output_t *output, double data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    snprintf_a(&syslog->buf_end, &syslog->buf_size, "%f", data);
+    abuf_printf(&syslog->msg, "%f", data);
 }
 
 static void print_syslog_int(data_output_t *output, int data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    snprintf_a(&syslog->buf_end, &syslog->buf_size, "%d", data);
+    abuf_printf(&syslog->msg, "%d", data);
 }
 
 static void data_output_syslog_free(data_output_t *output)
