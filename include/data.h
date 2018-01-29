@@ -115,7 +115,7 @@ struct data_output *data_output_json_create(FILE *file);
 
 struct data_output *data_output_kv_create(FILE *file);
 
-struct data_output *data_output_syslog_create(const char *host, int port);
+struct data_output *data_output_syslog_create(const char *host, const char *port);
 
 /** Prints a structured data object */
 void data_output_print(struct data_output *output, data_t *data);

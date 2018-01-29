@@ -888,21 +888,33 @@ void add_kv_output(char *param)
 
 void add_syslog_output(char *param)
 {
-    char *syslog_host = "localhost";
-    int syslog_port = 514;
+    char *host = "localhost";
+    char *port = "514";
 
     if (param && *param) {
-        // e.g. "127.0.0.1:1514"
-        syslog_host = param;
-        char *n = strchr(syslog_host, ':');
-        if (n) {
-            *n++ = '\0';
-            syslog_port = atoi(n);
+        // e.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
+        if (*param != ':') {
+            host = param;
+            if (*param == '[') {
+                host++;
+                param = strchr(param, ']');
+                if (param) {
+                    *param++ = '\0';
+                } else {
+                    fprintf(stderr, "Malformed Ipv6 address!\n");
+                    exit(1);
+                }
+            }
+        }
+        param = strchr(param, ':');
+        if (param) {
+            *param++ = '\0';
+            port = param;
         }
     }
-    fprintf(stderr, "Syslog UDP datagrams to: %s:%d\n", syslog_host, syslog_port);
+    fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
-    output_handler[last_output_handler++] = data_output_syslog_create(syslog_host, syslog_port);
+    output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
 int main(int argc, char **argv) {
