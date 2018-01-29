@@ -117,6 +117,8 @@ struct data_output *data_output_kv_create(FILE *file);
 
 struct data_output *data_output_syslog_create(const char *host, const char *port);
 
+struct data_output *data_output_graphite_create(const char *host, const char *port);
+
 struct data_output *data_output_mqtt_create(const char *host, const char *port);
 
 /** Prints a structured data object */

@@ -903,6 +903,203 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     return &syslog->output;
 }
 
+/* Graphite printer */
+
+typedef struct {
+    struct data_output output;
+    datagram_client_t client;
+    char *prefix;
+    abuf_t path;
+} data_output_graphite_t;
+
+static void graphite_sanitize_path(char *path)
+{
+    for (; path && *path; ++path) {
+        if (*path == ' ')
+            *path = '_';
+        if (*path == '/')
+            *path = '_';
+        if (*path == '.')
+            *path = '_';
+        if (*path == '&')
+            *path = '_';
+    }
+}
+
+static void abuf_append_value(abuf_t *buf, char *separator, data_t *data)
+{
+    if (data->type == DATA_STRING) {
+        abuf_cat(buf, separator);
+        char *p = buf->tail;
+        abuf_cat(buf, data->value);
+        graphite_sanitize_path(p);
+
+    } else if (data->type == DATA_INT) {
+        abuf_cat(buf, separator);
+        abuf_printf(buf, "%d", *(int *)data->value);
+
+    } else {
+        fprintf(stderr, "Can't append data type %d to graphite path\n", data->type);
+    }
+}
+
+/*
+    if "battery" in data:
+        if data["battery"] == "OK":
+            graphite.push(path + '.battery', 1, now)
+        else:
+            graphite.push(path + '.battery', 0, now)
+
+    if "humidity" in data:
+        graphite.push(path + '.humidity', data["humidity"], now)
+
+    if "temperature_C" in data:
+        graphite.push(path + '.temperature', data["temperature_C"], now)
+*/
+
+static void print_graphite_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    char *orig = abuf_push(&graphite->path);
+    for (int c = 0; c < array->num_values; ++c) {
+        abuf_printf(&graphite->path, ".%d", c);
+        print_array_value(output, array, format, c);
+        abuf_pop(&graphite->path, orig);
+    }
+}
+
+static void print_graphite_object(data_output_t *output, data_t *data, char *format)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    char *orig = abuf_push(&graphite->path);
+    while (data) {
+        abuf_printf(&graphite->path, ".%s", data->key);
+        print_value(output, data->type, data->value, data->format);
+        abuf_pop(&graphite->path, orig);
+        data = data->next;
+    }
+}
+
+static void print_graphite_data(data_output_t *output, data_t *data, char *format)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    if (graphite->path.tail) {
+        print_graphite_object(output, data, format);
+        return;
+    }
+
+    char path[1024];
+    abuf_init(&graphite->path, path, 1024);
+
+    abuf_printf(&graphite->path, "%s", graphite->prefix);
+    // char *orig = abuf_push(&graphite->path);
+
+    // collect top level keys
+    data_t *data_type    = NULL;
+    data_t *data_brand   = NULL;
+    data_t *data_model   = NULL;
+    data_t *data_channel = NULL;
+    data_t *data_id      = NULL;
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "type"))
+            data_type = d;
+        else if (!strcmp(d->key, "brand"))
+            data_brand = d;
+        else if (!strcmp(d->key, "model"))
+            data_model = d;
+        else if (!strcmp(d->key, "channel"))
+            data_channel = d;
+        else if (!strcmp(d->key, "id"))
+            data_id = d;
+    }
+
+    // create topic
+    if (data_type)
+        abuf_append_value(&graphite->path, ".", data_type);
+    if (data_brand)
+        abuf_append_value(&graphite->path, ".", data_brand);
+    if (data_model)
+        abuf_append_value(&graphite->path, ".", data_model);
+//    else
+//        abuf_append_value(&graphite->path, ".", "generic");
+    if (data_channel)
+        abuf_append_value(&graphite->path, ".CH", data_channel);
+    else if (data_id)
+        abuf_append_value(&graphite->path, ".ID", data_id);
+
+    print_graphite_object(output, data, format);
+    // abuf_pop(&graphite->path, orig);
+
+    abuf_setnull(&graphite->path);
+}
+
+static void print_graphite_send(data_output_graphite_t *output)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    time_t now;
+    time(&now);
+    abuf_printf(&graphite->path, " %jd", (intmax_t)now);
+
+    datagram_client_send(&graphite->client, graphite->path.head, strlen(graphite->path.head));
+}
+
+static void print_graphite_string(data_output_t *output, const char *str, char *format)
+{
+    // ignore
+}
+
+static void print_graphite_double(data_output_t *output, double data, char *format)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    abuf_printf(&graphite->path, " %f", data);
+    print_graphite_send(graphite);
+}
+
+static void print_graphite_int(data_output_t *output, int data, char *format)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    abuf_printf(&graphite->path, " %d", data);
+    print_graphite_send(graphite);
+}
+
+static void data_output_graphite_free(data_output_t *output)
+{
+    data_output_graphite_t *graphite = (data_output_graphite_t *)output;
+
+    if (!graphite)
+        return;
+
+    datagram_client_close(&graphite->client);
+    free(graphite->prefix);
+    free(graphite);
+}
+
+struct data_output *data_output_graphite_create(const char *host, const char *port)
+{
+    data_output_graphite_t *graphite = calloc(1, sizeof(data_output_graphite_t));
+    if (!graphite) {
+        fprintf(stderr, "calloc() failed");
+        return NULL;
+    }
+
+    graphite->output.print_data   = print_graphite_data;
+    graphite->output.print_array  = print_graphite_array;
+    graphite->output.print_string = print_graphite_string;
+    graphite->output.print_double = print_graphite_double;
+    graphite->output.print_int    = print_graphite_int;
+    graphite->output.output_free  = data_output_graphite_free;
+    graphite->prefix              = strdup("rtl433");
+    datagram_client_open(&graphite->client, host, port);
+
+    return &graphite->output;
+}
+
 /* MQTT printer */
 
 typedef struct {
