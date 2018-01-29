@@ -11,6 +11,7 @@ rtl_433_SOURCES      = baseband.c \
                        rtl_433.c \
                        optparse.c \
                        util.c \
+                       devices/flex.c \
                        devices/acurite.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
