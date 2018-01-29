@@ -868,6 +868,31 @@ FILE *fopen_output(char *param)
     return file;
 }
 
+// e.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
+void hostport_param(char *param, char **host, char **port)
+{
+    if (param && *param) {
+        if (*param != ':') {
+            *host = param;
+            if (*param == '[') {
+                (*host)++;
+                param = strchr(param, ']');
+                if (param) {
+                    *param++ = '\0';
+                } else {
+                    fprintf(stderr, "Malformed Ipv6 address!\n");
+                    exit(1);
+                }
+            }
+        }
+        param = strchr(param, ':');
+        if (param) {
+            *param++ = '\0';
+            *port = param;
+        }
+    }
+}
+
 void add_json_output(char *param)
 {
     output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
@@ -890,28 +915,7 @@ void add_syslog_output(char *param)
 {
     char *host = "localhost";
     char *port = "514";
-
-    if (param && *param) {
-        // e.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
-        if (*param != ':') {
-            host = param;
-            if (*param == '[') {
-                host++;
-                param = strchr(param, ']');
-                if (param) {
-                    *param++ = '\0';
-                } else {
-                    fprintf(stderr, "Malformed Ipv6 address!\n");
-                    exit(1);
-                }
-            }
-        }
-        param = strchr(param, ':');
-        if (param) {
-            *param++ = '\0';
-            port = param;
-        }
-    }
+    hostport_param(param, &host, &port);
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
