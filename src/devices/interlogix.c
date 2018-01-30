@@ -12,10 +12,11 @@
 #include "pulse_demod.h"
 #include "util.h"
 
-
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
- *
+ * 
+ * Frequency: 319508000
+ * 
  * Deocding done per us patent #5761206
  * https://www.google.com/patents/US5761206
  *
@@ -79,47 +80,31 @@
  *
  * Addendum
  * _______________________________
- * GE/Interlogix keyfobs do not follow the documented iti protocol and it 
- *     appears the protocol was misread by the team that created the keyfobs. 
- *     The button states are sent in the three trigger count bits (bit 40-42) 
- *     and no battery status appears to be provided. 4 buttons and a single 
- *     multi-button press (buttons 1 - lock and buttons 2 - unlock) for a total 
+ * GE/Interlogix keyfobs do not follow the documented iti protocol and it
+ *     appears the protocol was misread by the team that created the keyfobs.
+ *     The button states are sent in the three trigger count bits (bit 40-42)
+ *     and no battery status appears to be provided. 4 buttons and a single
+ *     multi-button press (buttons 1 - lock and buttons 2 - unlock) for a total
  *     of 5 buttons available on the keyfob.
- * For contact sensors, latch 3 (typically the tamper/case open latch) will 
- *     float (giving misreads) if the external contacts are used (ie; closed) 
- *     and there is no 4.7 Kohm end of line resistor in place on the external 
+ * For contact sensors, latch 3 (typically the tamper/case open latch) will
+ *     float (giving misreads) if the external contacts are used (ie; closed)
+ *     and there is no 4.7 Kohm end of line resistor in place on the external
  *     circuit
  */
 
 // message length is actually 46 but adding 2 bits for easier manipulation
-#define INTERLOGIX_MSG_BIT_LEN 48 
+#define INTERLOGIX_MSG_BIT_LEN 48
 
 // preamble message.  only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = { 0x01 };
-
-// assumes little endian - usage printBits(sizeof(i), &i);
-void printBits(size_t const size, void const * const ptr)
-{
-    unsigned char *b = (unsigned char*) ptr;
-    unsigned char byte;
-    int i, j;
-
-    for (i=size-1;i>=0;i--) {
-        for (j=7;j>=0;j--) {
-            byte = (b[i] >> j) & 1;
-            fprintf(stderr, "%u", byte);
-        }
-    }
-    fprintf(stderr, " ");
-}
 
 static int interlogix_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t *bb;
     data_t *data;
     unsigned int row = 0;
-    char device_type[2];
-    char *device_type_name = NULL;
+    char device_type_id[2];
+    char *device_type = NULL;
     char device_serial[7];
     char device_raw_message[256];
     char *low_battery = NULL;
@@ -129,29 +114,6 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
     char *f4_latch_state = NULL;
     char *f5_latch_state = NULL;
 
-    if (debug_output) { 
-        fprintf(stderr,"GE/Interlogix Wireless Devices Template Callback\n");
-        fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bitbuffer->num_rows);
-        fprintf(stderr, "bitbuffer:: Length of 1st row: %d \n", bitbuffer->bits_per_row[row]);
-    }
-
-    if (debug_output) { 
-        fprintf(stderr, "bitbuffer:: Printing 1st row: \n");
-
-        // this is typically done in the bitbuffer_print function but depends upon length so doing it explicitly here
-        for (unsigned int bit = 0; bit < bitbuffer->bits_per_row[row]; ++bit) {
-            if (bitbuffer->bb[row][bit/8] & (0x80 >> (bit % 8))) {
-                fprintf(stderr, "1");
-            } else {
-                fprintf(stderr, "0");
-            }
-        }
-        fprintf(stderr, "\n");
-        if (debug_output >=3)
-            // print all rows
-            bitbuffer_print(bitbuffer);
-    }
-
     // search for preamble and exit if not found
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, sizeof(preamble)*8);
     if (bit_offset == bitbuffer->bits_per_row[row] || bitbuffer->num_rows != 1) {
@@ -159,7 +121,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
             fprintf(stderr, "Preamble not found, exiting! bit_offset: %d \n", bit_offset);
         return 0;
     }
- 
+
     // set message starting postion (just past preamble and sync bit) and exit if msg length not met
     bit_offset += sizeof(preamble)*8;
 
@@ -168,9 +130,9 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
             fprintf(stderr, "Found valid preamble but message size (%d) too small, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
-    
+
     uint8_t message[(INTERLOGIX_MSG_BIT_LEN/8)];
-    
+
     bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
 
     // parity check: even data bits from message[0 .. 40] and odd data bits from message[1 .. 41]
@@ -186,40 +148,22 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
             fprintf(stderr, "Parity check failed (%d %d)\n", parity >> 1, parity & 1);
         return 0;
     }
-    
-    if (debug_output >= 1) {
-        // grab 6, 4 bit nibbles from bit buffer. need to reverse them to get serial number
-        fprintf(stderr, "Device Serial Number: ");
-        fprintf(stderr, "%02x", reverse8(message[2]));
-        fprintf(stderr, "%02x", reverse8(message[1]));
-        fprintf(stderr, "%02x", reverse8(message[0]));
-        fprintf(stderr, "\n");
-    
-        fprintf(stderr, "Device Message: ");
-        printBits(sizeof(message[0]), &message[0]);
-        printBits(sizeof(message[1]), &message[1]);
-        printBits(sizeof(message[2]), &message[2]);
-        printBits(sizeof(message[3]), &message[3]);
-        printBits(sizeof(message[4]), &message[4]);
-        printBits(sizeof(message[5]), &message[5]);
-        fprintf(stderr, "\n");
+
+    sprintf(device_type_id, "%01x", (reverse8(message[2])>>4));
+
+    switch((reverse8(message[2])>>4)) {
+        case 0xa: device_type = "contact"; break;
+        case 0xf: device_type = "keyfob"; break;
+        case 0x4: device_type = "motion"; break;
+        case 0x6: device_type = "heat"; break;
+
+        default: device_type = "unknown"; break;
     }
-    
-    sprintf(device_type, "%01x", (reverse8(message[2])>>4));
-    
-    switch((reverse8(message[2])>>4)) { 
-        case 0xa: device_type_name = "contact"; break;
-        case 0xf: device_type_name = "keyfob"; break;
-        case 0x4: device_type_name = "motion"; break;
-        case 0x6: device_type_name = "heat"; break;
-    
-        default: device_type_name = "unknown"; break;
-    }
-    
+
     sprintf(device_serial, "%02x%02x%02x", reverse8(message[2]), reverse8(message[1]), reverse8(message[0]));
-    
+
     sprintf(device_raw_message, "%x%x%x", message[3], message[4], message[5]);
-    
+
     // keyfob logic. see prootcol description addendum for protocol exceptions
     if ((reverse8(message[2])>>4) == 0xf) {
         low_battery = "OK";
@@ -227,7 +171,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         f2_latch_state = ((message[3] & 0xe) == 0x8) ? "CLOSED" : "OPEN";
         f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
         f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
-        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN"; 
+        f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN";
     } else {
         low_battery = (message[3] & 0x10) ? "LOW" : "OK";
         f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";
@@ -236,26 +180,25 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
         f4_latch_state = (message[4] & 0x10) ? "OPEN" : "CLOSED";
         f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
-    
+
     local_time_str(0, time_str);
-    
+
     data = data_make("time", "Receiver Time", DATA_STRING, time_str,
         "model", "Model", DATA_STRING, "Interlogix",
-        "device_type_name","Device Type Name", DATA_STRING, device_type_name,
+        "device_type","Device Type", DATA_STRING, device_type,
         "id","ID", DATA_STRING, device_serial,
         "device_raw_message","Raw Message", DATA_STRING, device_raw_message,
         "battery","Battery", DATA_STRING, low_battery,
-        "f1_latch_state","F1 Latch State", DATA_STRING, f1_latch_state,
-        "f2_latch_state","F2 Latch State", DATA_STRING, f2_latch_state,
-        "f3_latch_state","F3 Latch State", DATA_STRING, f3_latch_state,
-        "f4_latch_state","F4 Latch State", DATA_STRING, f4_latch_state,
-        "f5_latch_state","F5 Latch State", DATA_STRING, f5_latch_state,
+        "switch1","Switch1 State", DATA_STRING, f1_latch_state,
+        "switch2","Switch2 State", DATA_STRING, f2_latch_state,
+        "switch3","Switch3 State", DATA_STRING, f3_latch_state,
+        "switch4","Switch4 State", DATA_STRING, f4_latch_state,
+        "switch5","Switch5 State", DATA_STRING, f5_latch_state,
         NULL);
-    
-    data_acquired_handler(data);
-    
-    return 1;
 
+    data_acquired_handler(data);
+
+    return 1;
 }
 
 /*
@@ -268,15 +211,15 @@ static int interlogix_callback(bitbuffer_t *bitbuffer) {
 static char *csv_output_fields[] = {
     "time",
     "model",
-    "device_type_name",
-    "device_serial",
-    "low_battery",
+    "device_type",
+    "id",
     "device_raw_message",
-    "f1_latch_state",
-    "f2_latch_state",
-    "f3_latch_state",
-    "f4_latch_state",
-    "f5_latch_state",
+    "battery",
+    "switch1",
+    "switch2",
+    "switch3",
+    "switch4",
+    "switch5",
     NULL
 };
 
@@ -306,7 +249,7 @@ static char *csv_output_fields[] = {
 r_device interlogix = {
     .name          = "Interlogix GE UTC Security Devices Decoder",
     .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2 
+    .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2
     .long_limit    = 1000, //Maximum gap size before new row of bits
     .reset_limit   = 500, //Maximum gap size before End Of Message
     .json_callback = &interlogix_callback,
@@ -314,4 +257,3 @@ r_device interlogix = {
     .demod_arg     = 0,
     .fields        = csv_output_fields,
 };
-
