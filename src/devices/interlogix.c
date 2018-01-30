@@ -247,7 +247,7 @@ static char *csv_output_fields[] = {
  */
 
 r_device interlogix = {
-    .name          = "Interlogix GE UTC Security Devices Decoder",
+    .name          = "Interlogix GE UTC Security Devices",
     .modulation    = OOK_PULSE_PPM_RAW,
     .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2
     .long_limit    = 1000, //Maximum gap size before new row of bits
