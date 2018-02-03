@@ -48,14 +48,14 @@ def print_sensor_state():
     sys.stdout.flush()  # Print in real-time
 
 
-def on_connect(client, userdata, rc):
+def on_connect(client, userdata, flags, rc):
     """ Callback for when the client receives a CONNACK response from the server. """
     log.info("MQTT Connection: " + mqtt.connack_string(rc))
     if rc != 0:
         log.error("Could not connect. RC: " + str(rc))
         exit()
     # Subscribing in on_connect() means that if we lose the connection and reconnect then subscriptions will be renewed.
-    client.subscribe(MQTT_TOPIC_PREFIX + "/#")
+    client.subscribe(MQTT_TOPIC_PREFIX)
 
 
 def on_disconnect(client, userdata, rc):
