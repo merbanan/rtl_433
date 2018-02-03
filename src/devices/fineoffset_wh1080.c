@@ -12,6 +12,15 @@
  * For the WH1080 part I mostly have re-elaborated and merged their works. Credits (and kudos) should go to them all
  * (and to many others too).
  *
+ * Reports 1 row, 88 pulses
+ * Format: ff ID ?X XX YY ZZ ?? ?? ?? UU CC
+ * - ID: device id
+ * - ?X XX: temperature, likely in 0.1C steps (.1 e7 == 8.7C, .1 ef == 9.5C)
+ * - YY: percent in a single byte (for example 54 == 84%)
+ * - ZZ: wind speed (00 == 0, 01 == 1.1km/s, ...)
+ * - UU: wind direction: 00 is N, 02 is NE, 04 is E, etc. up to 0F is seems
+ * - CC: checksum
+ *
  *****************************************
  * WH1080
  *****************************************
@@ -88,7 +97,6 @@
  *
  *
  */
-
 
 #include "data.h"
 #include "rtl_433.h"
