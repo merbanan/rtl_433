@@ -28,8 +28,10 @@
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #define _XOPEN_SOURCE 500
 #include <unistd.h>
+#ifndef _WIN32
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
 #include <time.h>
 
 #include "data.h"
@@ -629,6 +631,8 @@ struct data_output *data_output_csv_create(FILE *file, const char **fields, int 
 
 /* Datagram (UDP) client */
 
+#ifndef _WIN32
+
 typedef struct {
     struct sockaddr_storage addr;
     socklen_t addr_len;
@@ -901,3 +905,13 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 
     return &syslog->output;
 }
+
+#else
+
+struct data_output *data_output_syslog_create(const char *host, const char *port)
+{
+    fprintf(stderr, "Syslog output not available.\n");
+    exit(1);
+}
+
+#endif
