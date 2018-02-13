@@ -102,7 +102,9 @@
 		DECL(nexa) \
 		DECL(thermopro_tp12) \
 		DECL(ge_coloreffects) \
-		DECL(x10_sec)
+		DECL(x10_sec) \
+		DECL(euroster_3000tx) \
+		DECL(elro_db270)
 
 typedef struct {
 	char name[256];
