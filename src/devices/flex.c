@@ -162,7 +162,7 @@ static void help()
             "         long: Nominal width of '0' pulse [us]\n"
             "          gap: Maximum gap size before new row of bits [us]\n"
             "reset: Maximum gap size before End Of Message [us].\n"
-            "for PWM use short:long:reset[:tolerance[:syncwidth]]\n"
+            "for PWM use short:long:reset:gap[:tolerance[:syncwidth]]\n"
             "for DMC use short:long:reset:tolerance\n"
             "Available options are:\n"
             "\tdemod=<n> : the demod argument needed for some modulations\n"
@@ -217,7 +217,7 @@ r_device *flex_create_device(char *spec)
     struct flex_params *params = (struct flex_params *)calloc(1, sizeof(struct flex_params));
     params_slot[next_slot] = params;
     r_device *dev = (r_device *)calloc(1, sizeof(r_device));
-    char *c;
+    char *c, *o;
 
     spec = strdup(spec);
     c = strtok(spec, ":");
@@ -280,12 +280,21 @@ r_device *flex_create_device(char *spec)
 
     if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
         c = strtok(NULL, ":");
-        if (c != NULL) {
+        if (c == NULL) {
+            fprintf(stderr, "Bad flex spec, missing gap limit!\n");
+            usage();
+        }
+        dev->gap_limit = atoi(c);
+
+        o = strtok(NULL, ":");
+        if (o != NULL) {
+            c = o;
             dev->tolerance = atoi(c);
         }
 
-        c = strtok(NULL, ":");
-        if (c != NULL) {
+        o = strtok(NULL, ":");
+        if (o != NULL) {
+            c = o;
             dev->sync_width = atoi(c);
         }
     }
