@@ -47,6 +47,7 @@
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \
 		DECL(oil_watchman) \
+		DECL(byron) \
 		DECL(current_cost) \
 		DECL(emontx) \
 		DECL(ht680) \
