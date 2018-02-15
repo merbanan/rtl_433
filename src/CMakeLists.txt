@@ -62,6 +62,7 @@ add_executable(rtl_433
 	devices/newkaku.c
 	devices/nexus.c
 	devices/oil_watchman.c
+	devices/byron.c
 	devices/oregon_scientific.c
 	devices/oregon_scientific_v1.c
 	devices/prologue.c
