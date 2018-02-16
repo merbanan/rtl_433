@@ -814,29 +814,44 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-const char **determine_csv_fields(r_device *devices, int num_devices, int *num_fields)
+const char **determine_csv_fields(r_device *devices, int num_devices, r_device *extra_device, int *num_fields)
 {
     int i, j;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     void *csv_aux;
     const char **output_fields = NULL;
-    for (i = 0; i < num_devices; i++)
+    for (i = 0; i < num_devices; i++) {
         if (!devices[i].disabled) {
-        if (devices[i].fields)
-        for (int c = 0; devices[i].fields[c]; ++c)
-            ++num_output_fields;
-        else
-        fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-            i, devices[i].name);
+            if (devices[i].fields)
+                for (int c = 0; devices[i].fields[c]; ++c)
+                    ++num_output_fields;
+            else
+                fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
+                        i, devices[i].name);
+        }
     }
-    output_fields = calloc(num_output_fields + 1, sizeof(char*));
+    if (extra_device && !extra_device->disabled) {
+        if (extra_device->fields)
+            for (int c = 0; extra_device->fields[c]; ++c)
+                ++num_output_fields;
+        else
+            fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
+                    i, extra_device->name);
+    }
+    output_fields = calloc(num_output_fields + 1, sizeof(char *));
     for (i = 0; i < num_devices; i++) {
         if (!devices[i].disabled && devices[i].fields) {
             for (int c = 0; devices[i].fields[c]; ++c) {
                 output_fields[cur_output_fields] = devices[i].fields[c];
                 ++cur_output_fields;
             }
+        }
+    }
+    if (extra_device && !extra_device->disabled && extra_device->fields) {
+        for (int c = 0; extra_device->fields[c]; ++c) {
+            output_fields[cur_output_fields] = extra_device->fields[c];
+            ++cur_output_fields;
         }
     }
 
@@ -898,10 +913,10 @@ void add_json_output(char *param)
     output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-void add_csv_output(char *param, r_device *devices, int num_devices)
+void add_csv_output(char *param, r_device *devices, int num_devices, r_device * extra_device)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
+    const char **output_fields = determine_csv_fields(devices, num_devices, extra_device, &num_output_fields);
     output_handler[last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
     free(output_fields);
 }
@@ -920,6 +935,8 @@ void add_syslog_output(char *param)
 
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
+
+r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
@@ -944,8 +961,7 @@ int main(int argc, char **argv) {
     char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
-    char *flex_queries[32] = {0};
-    char **flex_query = flex_queries;
+    r_device *flex_device = NULL;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -1051,7 +1067,11 @@ int main(int argc, char **argv) {
                 }
                 break;
             case 'X':
-                *flex_query++ = optarg;
+                flex_device = flex_create_device(optarg);
+                register_protocol(demod, flex_device);
+                if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
+                    demod->enable_FM_demod = 1;
+                }
                 break;
             case 'q':
                 quiet_mode = 1;
@@ -1060,7 +1080,7 @@ int main(int argc, char **argv) {
                 if (strncmp(optarg, "json", 4) == 0) {
                     add_json_output(arg_param(optarg));
                 } else if (strncmp(optarg, "csv", 3) == 0) {
-                    add_csv_output(arg_param(optarg), devices, num_r_devices);
+                    add_csv_output(arg_param(optarg), devices, num_r_devices, flex_device);
                 } else if (strncmp(optarg, "kv", 2) == 0) {
                     add_kv_output(arg_param(optarg));
                 } else if (strncmp(optarg, "syslog", 6) == 0) {
@@ -1132,15 +1152,6 @@ int main(int argc, char **argv) {
             if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
-        }
-    }
-
-    r_device *flex_create_device(char *spec); // maybe put this in some header file?
-    for (flex_query = flex_queries; *flex_query; ++flex_query) {
-        r_device *flex = flex_create_device(*flex_query);
-        register_protocol(demod, flex);
-        if (flex->modulation >= FSK_DEMOD_MIN_VAL) {
-            demod->enable_FM_demod = 1;
         }
     }
 
