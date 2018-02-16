@@ -513,6 +513,15 @@ static void print_csv_data(data_output_t *output, data_t *data, char *format)
     --csv->data_recursion;
 }
 
+static void print_csv_array(data_output_t *output, data_array_t *array, char *format)
+{
+    for (int c = 0; c < array->num_values; ++c) {
+        if (c)
+            fprintf(output->file, ";");
+        print_array_value(output, array, format, c);
+    }
+}
+
 static void print_csv_string(data_output_t *output, const char *str, char *format)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -618,7 +627,7 @@ struct data_output *data_output_csv_create(FILE *file, const char **fields, int 
     }
 
     csv->output.print_data   = print_csv_data;
-    csv->output.print_array  = print_json_array;
+    csv->output.print_array  = print_csv_array;
     csv->output.print_string = print_csv_string;
     csv->output.print_double = print_json_double;
     csv->output.print_int    = print_json_int;
