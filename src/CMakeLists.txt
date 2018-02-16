@@ -112,8 +112,6 @@ add_executable(rtl_433
 	devices/nexa.c
 	devices/thermopro_tp12.c
 	devices/x10_sec.c
-	devices/euroster_3000tx.c
-	devices/elro_db270.c
 )
 
 add_library(data data.c)
