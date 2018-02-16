@@ -36,6 +36,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     int match_count = 0;
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
+    char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS + 1];
     char time_str[LOCAL_TIME_BUFLEN];
 
@@ -103,8 +104,11 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 
         row_data[i] = data_make(
                 "len", "", DATA_INT, bitbuffer->bits_per_row[i],
-                "data", "", DATA_STRING, strdup(row_bytes),
+                "data", "", DATA_STRING, row_bytes,
                 NULL);
+        // a simpler representation for csv output
+        row_codes[i] = malloc(5 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
+        sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     data = data_make(
             "time", "", DATA_STRING, time_str,
@@ -112,8 +116,12 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
             "count", "", DATA_INT, match_count,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
+            "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
     data_acquired_handler(data);
+    for (i = 0; i < bitbuffer->num_rows; i++) {
+        free(row_codes[i]);
+    }
 
     return 0;
 }
@@ -124,6 +132,7 @@ static char *output_fields[] = {
         "count",
         "num_rows",
         "rows",
+        "codes",
         NULL
 };
 
