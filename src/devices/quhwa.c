@@ -15,55 +15,57 @@
 #include "data.h"
 #include "util.h"
 
+static int quhwa_callback(bitbuffer_t *bitbuffer)
+{
+    int r = bitbuffer_find_repeated_row(bitbuffer, 5, 18);
+    if (r < 0)
+        return 0;
 
-static int quhwa_callback(bitbuffer_t *bitbuffer) {
-	bitrow_t *bb = bitbuffer->bb;
-	uint8_t *b = bb[0];
+    uint8_t *b = bitbuffer->bb[r];
 
-	b[0] = ~b[0];
-	b[1] = ~b[1];
-	b[2] = ~b[2];
+    b[0] = ~b[0];
+    b[1] = ~b[1];
+    b[2] = ~b[2];
 
-	unsigned bits = bitbuffer->bits_per_row[0];
+    if (bitbuffer->bits_per_row[r] != 18
+			|| (b[1] & 0x03) != 0x03
+			|| (b[2] & 0xC0) != 0xC0)
+        return 0;
 
-	if ((bits == 18) &&
-		((b[1] & 0x03) == 0x03) &&
-		((b[2] & 0xC0) == 0xC0))
-	{
-		uint32_t ID = (b[0] << 8) | b[1];
-		data_t *data;
+    uint32_t id = (b[0] << 8) | b[1];
 
-		char time_str[LOCAL_TIME_BUFLEN];
-		local_time_str(0, time_str);
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
 
-		data = data_make("time", "", DATA_STRING, time_str,
-			"model", "", DATA_STRING, "Quhwa doorbell",
-			"id", "ID", DATA_INT, ID,
-			NULL);
+    data_t *data = data_make(
+            "time", "", DATA_STRING, time_str,
+            "model", "", DATA_STRING, "Quhwa doorbell",
+            "id", "ID", DATA_INT, id,
+            NULL);
 
-		data_acquired_handler(data);
+    data_acquired_handler(data);
 
-		return 1;
-	}
-	return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"id",
-	NULL
+    "time",
+    "model",
+    "id",
+    NULL
 };
 
 r_device quhwa = {
-	.name			= "Quhwa",
-	.modulation		= OOK_PULSE_PWM_PRECISE,
-	.short_limit            = 360,	// Pulse: Short 360µs, Long 1070µs
-	.long_limit		= 1070,	// Gaps: Short 360µs, Long 1070µs
-	.reset_limit	        = 1200,	// Intermessage Gap 5200µs
-	.sync_width	= 0,	// No sync bit used
-	.tolerance	= 80, // us
-	.json_callback	        = &quhwa_callback,
-	.disabled		= 0,
-	.demod_arg		= 0,
+    .name          = "Quhwa",
+    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .short_limit   = 360,  // Pulse: Short 360µs, Long 1070µs
+    .long_limit    = 1070, // Gaps: Short 360µs, Long 1070µs
+    .reset_limit   = 6600, // Intermessage Gap 6500µs
+    .gap_limit     = 1200, // Long Gap 1120µs
+    .sync_width    = 0,    // No sync bit used
+    .tolerance     = 80,   // us
+    .json_callback = &quhwa_callback,
+    .disabled      = 0,
+    .demod_arg     = 0,
+    .fields        = output_fields
 };
