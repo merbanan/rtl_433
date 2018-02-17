@@ -178,6 +178,8 @@ sighandler(int signum) {
 static void sighandler(int signum) {
     if (signum == SIGPIPE) {
         signal(SIGPIPE,SIG_IGN);
+    } else if (signum == SIGALRM) {
+        fprintf(stderr, "Async read stalled, exiting!\n");
     } else {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
@@ -1116,12 +1118,9 @@ int main(int argc, char **argv) {
                 overwrite_mode = 1;
                 break;
             case 'T':
-                time(&stop_time);
                 duration = atoi_time(optarg, "-T: ");
                 if (duration < 1) {
-                    fprintf(stderr, "Duration '%s' was not positive integer; will continue indefinitely\n", optarg);
-                } else {
-                    stop_time += duration;
+                    fprintf(stderr, "Duration '%s' not a positive number; will continue indefinitely\n", optarg);
                 }
                 break;
             case 'y':
@@ -1373,10 +1372,14 @@ int main(int argc, char **argv) {
             exit(0);
         }
 
-    fprintf(stderr, "Reading samples in sync mode...\n");
-    uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
+        fprintf(stderr, "Reading samples in sync mode...\n");
+        uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
 
-      time_t timestamp;
+        if (duration > 0) {
+            time(&stop_time);
+            stop_time += duration;
+        }
+        time_t timestamp;
         while (!do_exit) {
             r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
             if (r < 0) {
@@ -1399,19 +1402,19 @@ int main(int argc, char **argv) {
                 break;
             }
 
-        if (duration > 0) {
-          time(&timestamp);
-          if (timestamp >= stop_time) {
-            do_exit = 1;
-            fprintf(stderr, "Time expired, exiting!\n");
-          }
-        }
+            if (duration > 0) {
+                time(&timestamp);
+                if (timestamp >= stop_time) {
+                    do_exit = 1;
+                    fprintf(stderr, "Time expired, exiting!\n");
+                }
+            }
 
             if (bytes_to_read > 0)
                 bytes_to_read -= n_read;
         }
 
-    free(buffer);
+        free(buffer);
     } else {
         if (frequencies == 0) {
             frequency[0] = DEFAULT_FREQUENCY;
@@ -1419,9 +1422,13 @@ int main(int argc, char **argv) {
         } else {
             time(&rawtime_old);
         }
-    if (!quiet_mode) {
-        fprintf(stderr, "Reading samples in async mode...\n");
-    }
+        if (!quiet_mode) {
+            fprintf(stderr, "Reading samples in async mode...\n");
+        }
+        if (duration > 0) {
+            time(&stop_time);
+            stop_time += duration;
+        }
         while (!do_exit) {
             /* Set the frequency */
             center_frequency = frequency[frequency_current];
@@ -1448,9 +1455,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (do_exit)
-        fprintf(stderr, "\nUser cancel, exiting...\n");
-    else
+    if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
     if (demod->out_file && (demod->out_file != stdout))
