@@ -37,7 +37,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
-    char row_bytes[BITBUF_COLS + 1];
+    char row_bytes[BITBUF_COLS * 2 + 1];
     char time_str[LOCAL_TIME_BUFLEN];
 
     // discard short / unwanted bitbuffers
