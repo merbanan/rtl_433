@@ -193,6 +193,7 @@ Supported device protocols:
     [97]  Thermopro TP12 Thermometer
     [98]  GE Color Effects
     [99]  X10 Security
+    [100]  Interlogix GE UTC Security Devices
 
 * Disabled by default, use -R n or -G
 
