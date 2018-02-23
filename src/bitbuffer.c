@@ -85,8 +85,8 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 		unsigned shift = 8 - (pos & 7);
 		uint16_t word;
 
-		pos >>= 3; // Convert to bytes
-		len >>= 3;
+		pos = pos >> 3; // Convert to bytes
+		len = (len + 7) >> 3;
 
 		word = bits[pos];
 
