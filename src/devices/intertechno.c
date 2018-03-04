@@ -3,8 +3,7 @@
 static int intertechno_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
 
-      //if (bb[1][1] == 0 && bb[1][0] != 0 && bb[1][3]==bb[2][3]){
-      if(bb[0][0]==0 && bb[0][0] == 0 && bb[1][0] == 0x56){
+      if(bb[0][0]==0 && (bb[1][0] == 0x56 || bb[1][0] == 0x69)){
         fprintf(stdout, "Switch event:\n");
         fprintf(stdout, "protocol       = Intertechno\n");
         fprintf(stdout, "rid            = %x\n",bb[1][0]);
@@ -28,8 +27,8 @@ static int intertechno_callback(bitbuffer_t *bitbuffer) {
 r_device intertechno = {
     .name           = "Intertechno 433",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 400,
-    .long_limit     = 1400,
+    .short_limit    = 600,
+    .long_limit     = 1700,
     .reset_limit    = 10000,
     .json_callback  = &intertechno_callback,
     .disabled       = 1,
