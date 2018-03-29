@@ -25,9 +25,6 @@
 
 #define MYDEVICE_BITLEN      16
 #define MYDEVICE_MINREPEATS  3
-#define SHORT_GAP            1692
-#define LONG_GAP             2812
-#define RESET_GAP            6172
 
 char *button_map[] = {
 /*  0 */ "Undefined",
@@ -71,7 +68,7 @@ char *button_map[] = {
 /* 38 */ "Undefined",
 /* 39 */ "Right",
 /* 40 */ "TV/Video",
-/* 41 */ "Live TV",
+/* 41 */ "View/Live TV",
 /* 42 */ "Undefined",
 /* 43 */ "Guide",
 /* 44 */ "Undefined",
@@ -129,6 +126,8 @@ static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
 
     data = data_make(
             "time",  "", DATA_STRING, time_str,
+            "brand", "", DATA_STRING, "Dish",
+            "model", "", DATA_STRING, "6.3",
             "button", "", DATA_STRING, button_string,
             NULL);
 
@@ -139,16 +138,18 @@ static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "time",
+    "brand",
+    "model",
     "button",
     NULL
 };
 
 r_device dish_remote_6_3 = {
-    .name          = "Dish remote 6.3 decoder",
+    .name          = "Dish remote 6.3",
     .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (SHORT_GAP + LONG_GAP) / 2,
-    .long_limit    = SHORT_GAP + LONG_GAP,
-    .reset_limit   = (SHORT_GAP + LONG_GAP) * 2,
+    .short_limit   = (1692 + 2812) / 2,
+    .long_limit    = 1692 + 2812,
+    .reset_limit   = (1692 + 2812) * 2,
     .json_callback = &dish_remote_6_3_callback,
     .disabled      = 0,
     .demod_arg     = 0,
