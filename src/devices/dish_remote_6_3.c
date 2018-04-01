@@ -126,8 +126,7 @@ static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
 
     data = data_make(
             "time",  "", DATA_STRING, time_str,
-            "brand", "", DATA_STRING, "Dish",
-            "model", "", DATA_STRING, "6.3",
+            "model", "", DATA_STRING, "Dish remote 6.3",
             "button", "", DATA_STRING, button_string,
             NULL);
 
@@ -138,7 +137,6 @@ static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "time",
-    "brand",
     "model",
     "button",
     NULL
@@ -151,7 +149,7 @@ r_device dish_remote_6_3 = {
     .long_limit    = 1692 + 2812,
     .reset_limit   = (1692 + 2812) * 2,
     .json_callback = &dish_remote_6_3_callback,
-    .disabled      = 0,
+    .disabled      = 1,
     .demod_arg     = 0,
     .fields        = output_fields,
 };
