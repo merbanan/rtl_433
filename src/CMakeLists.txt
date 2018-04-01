@@ -113,6 +113,7 @@ add_executable(rtl_433
 	devices/thermopro_tp12.c
 	devices/x10_sec.c
 	devices/interlogix.c
+	devices/dish_remote_6_3.c
 )
 
 add_library(data data.c)

@@ -98,6 +98,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/nexa.c \
                        devices/thermopro_tp12.c \
                        devices/x10_sec.c \
-                       devices/interlogix.c
+                       devices/interlogix.c \
+                       devices/dish_remote_6_3.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

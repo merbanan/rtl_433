@@ -103,7 +103,8 @@
 		DECL(thermopro_tp12) \
 		DECL(ge_coloreffects) \
 		DECL(x10_sec) \
-		DECL(interlogix)
+		DECL(interlogix) \
+		DECL(dish_remote_6_3)
 
 typedef struct {
 	char name[256];
