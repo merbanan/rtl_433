@@ -431,17 +431,19 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     strike_distance = bb[7] & 0x1f;
     l_status = (bb[7] & 0x60) >> 5;
 
-    printf("%s Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",
-	   time_str, sensor_id, channel, message_type, tempf, humidity, strike_count, strike_distance, l_status);
+    if (debug_output) {
+        printf("%s Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",
+	    time_str, sensor_id, channel, message_type, tempf, humidity, strike_count, strike_distance, l_status);
 
-    // FIXME Temporarily dump raw message data until the
-    // decoding improves.  Includes parity indicator(*).
-    for (int i=0; i < browlen; i++) {
-	char pc;
-	pc = byteParity(bb[i]) == 0 ? ' ' : '*';
-	fprintf(stdout, " %02x%c", bb[i], pc);
+	// FIXME Temporarily dump raw message data until the
+        // decoding improves.  Includes parity indicator(*).
+	for (int i=0; i < browlen; i++) {
+	    char pc;
+	    pc = byteParity(bb[i]) == 0 ? ' ' : '*';
+	    fprintf(stdout, " %02x%c", bb[i], pc);
+	}
+	printf("\n");
     }
-    printf("\n");
 
     valid++;
     return(valid);
