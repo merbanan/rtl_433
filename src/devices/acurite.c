@@ -421,8 +421,10 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     char channel_str[2];
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
+    data_t *data;
 
     channel = acurite_getChannel(bb[0]);  // same as TXR
+    sprintf(channel_str, "%c", channel);
     sensor_id = (bb[1] << 8) | bb[2];     // TBD 16 bits or 20?
     humidity = acurite_getHumidity(bb[3]);  // same as TXR
     message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD batttery?
@@ -445,7 +447,20 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
 	printf("\n");
     }
 
+    data = data_make(
+       "time",			"",			DATA_STRING,	time_str,
+       "model",	        	"",			DATA_STRING,	"Acurite Lightning 6045M",
+       "sensor_id",		"",			DATA_INT,	sensor_id,
+       "channel",  		"",     		DATA_STRING, 	&channel_str,
+       "temperature_F", 	"temperature",		DATA_FORMAT,	"%.1f F", 	DATA_DOUBLE, 	tempf,
+       "humidity",         	"humidity",		DATA_INT,	humidity,
+       "strike_count",          "lightning_count",	DATA_INT, 	strike_count,
+       "strike_dist",        	"last_distance",	DATA_INT, 	strike_distance,
+     NULL);
+
+    data_acquired_handler(data);
     valid++;
+
     return(valid);
 }
 
