@@ -1046,7 +1046,7 @@ r_device acurite_txr = {
     .gap_limit      = 500,  // longest data gap is 392 us, sync gap is 596 us
     .reset_limit    = 4000, // packet gap is 2192 us
     .json_callback  = &acurite_txr_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .demod_arg      = 0,    // not used
 };
 
