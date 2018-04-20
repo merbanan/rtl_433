@@ -421,8 +421,10 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     char channel_str[2];
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
+    data_t *data;
 
     channel = acurite_getChannel(bb[0]);  // same as TXR
+    sprintf(channel_str, "%c", channel);
     sensor_id = (bb[1] << 8) | bb[2];     // TBD 16 bits or 20?
     humidity = acurite_getHumidity(bb[3]);  // same as TXR
     message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD batttery?
@@ -445,7 +447,20 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
 	printf("\n");
     }
 
+    data = data_make(
+       "time",			"",			DATA_STRING,	time_str,
+       "model",	        	"",			DATA_STRING,	"Acurite Lightning 6045M",
+       "sensor_id",    		NULL,  			DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+       "channel",  		NULL,     		DATA_STRING, 	&channel_str,
+       "temperature_F", 	"temperature",		DATA_FORMAT,	"%.1f F", 	DATA_DOUBLE, 	tempf,
+       "humidity",         	"humidity",		DATA_INT,	humidity,
+       "strike_count",          "lightning_count",	DATA_INT, 	strike_count,
+       "strike_dist",        	"last_distance",	DATA_INT, 	strike_distance,
+     NULL);
+
+    data_acquired_handler(data);
     valid++;
+
     return(valid);
 }
 
@@ -533,11 +548,12 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                     "time",			"",		DATA_STRING,	time_str,
                     "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
                     "id",			"",		DATA_INT,	sensor_id,
-                    "channel",  		"",     	DATA_STRING, 	&channel_str,
-                    "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-                    "humidity",         "Humidity",	DATA_INT,	humidity,
-                    "battery",          "Battery",    	DATA_INT, 	battery_low,
-                    "status",		"",		DATA_INT,	sensor_status,
+                    "status",			"",		DATA_INT,	sensor_status,
+		    "sensor_id",    		NULL,  		DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                    "channel",  		NULL,     	DATA_STRING, 	&channel_str,
+                    "temperature_C", 		"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+                    "humidity",         	"Humidity",	DATA_INT,	humidity,
+                    "battery",          	"Battery",    	DATA_INT, 	battery_low,
                     NULL);
 
             data_acquired_handler(data);
@@ -1031,7 +1047,7 @@ r_device acurite_txr = {
     .gap_limit      = 500,  // longest data gap is 392 us, sync gap is 596 us
     .reset_limit    = 4000, // packet gap is 2192 us
     .json_callback  = &acurite_txr_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .demod_arg      = 0,    // not used
 };
 
