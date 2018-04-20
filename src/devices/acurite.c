@@ -450,8 +450,8 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     data = data_make(
        "time",			"",			DATA_STRING,	time_str,
        "model",	        	"",			DATA_STRING,	"Acurite Lightning 6045M",
-       "sensor_id",		"",			DATA_INT,	sensor_id,
-       "channel",  		"",     		DATA_STRING, 	&channel_str,
+       "sensor_id",    		NULL,  			DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+       "channel",  		NULL,     		DATA_STRING, 	&channel_str,
        "temperature_F", 	"temperature",		DATA_FORMAT,	"%.1f F", 	DATA_DOUBLE, 	tempf,
        "humidity",         	"humidity",		DATA_INT,	humidity,
        "strike_count",          "lightning_count",	DATA_INT, 	strike_count,
@@ -548,11 +548,12 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                     "time",			"",		DATA_STRING,	time_str,
                     "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
                     "id",			"",		DATA_INT,	sensor_id,
-                    "channel",  		"",     	DATA_STRING, 	&channel_str,
-                    "temperature_C", 	"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
-                    "humidity",         "Humidity",	DATA_INT,	humidity,
-                    "battery",          "Battery",    	DATA_INT, 	battery_low,
-                    "status",		"",		DATA_INT,	sensor_status,
+                    "status",			"",		DATA_INT,	sensor_status,
+		    "sensor_id",    		NULL,  		DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                    "channel",  		NULL,     	DATA_STRING, 	&channel_str,
+                    "temperature_C", 		"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
+                    "humidity",         	"Humidity",	DATA_INT,	humidity,
+                    "battery",          	"Battery",    	DATA_INT, 	battery_low,
                     NULL);
 
             data_acquired_handler(data);
