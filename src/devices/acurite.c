@@ -365,10 +365,12 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * Same pulse characteristics. checksum, and parity checking on data bytes.
  *
  * 0   1   2   3   4   5   6   7   8
- * CI? II  II  HH  ST  TT  LL  DD? KK
+ * CI? II  BX  HH  ST  TT  LL  DD? KK
  *
  * C = Channel
  * I = ID
+ * B = Battery + possible unknown status bits.
+ * X = Unknown usually F.
  * H = Humidity
  * S = Status/Message type/Temperature MSB.
  * T = Temperature
@@ -379,8 +381,15 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * Byte 0 - channel number A/B/C
  * - Channel in 2 most significant bits - A: 0xC, B: 0x8, C: 00
  * - TBD: lower 6 bits, ID or unused?
+ * - 2018-04-21, Assuming lower nybble is ID for 12 bits of ID.
  *
- * Bytes 1 & 2 - ID, all 8 bits, no parity.
+ * Byte 1 - ID all 8 bits, no parity.
+ *
+ * Byte 2 - Upper nybble: battery & possible other status
+ *          0x40 = battery OK, (off is battery low)
+ *          0x20 = TBD Always on??
+ *          0x10 = TBD always off?
+ *          Lower nybble: Unknown TBD always 0xF?
  *
  * Byte 3 - Humidity (7 bits + parity bit)
  *
@@ -397,7 +406,8 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * - Stored in EEPROM or something non-volatile)
  * - Wraps at 127
  *
- * Byte 7 - Lightning Distance (5 bits) and status bits (2 bits)  (?)
+ * Byte 7 - Edge of Storm Distance Approximation
+ * - (5 bits) and 2 other status bits (TBD)
  * - Bits PSSDDDDD  (P = Parity, S = Status, D = Distance
  * - 5 lower bits is distance in unit? (miles? km?) to edge of storm (theory)
  * - Bit 0x20: (RF) interference / strong RFI detected (to be verified)
@@ -408,11 +418,16 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  *
  * Byte 8 - checksum. 8 bits, no parity.
  *
- * @todo - Get lightning/distance to front of storm to match display
- * @todo - Low battery, figure out encoding
+ * @todo - Byte 2, battery flag and other status buts, NOT ID.
+ * @todo - check parity on bytes 2 - 7
+ * @todo - Active Flag. RFI flag, and unkonwn flags in data_make
+ *
+ * Additional reverse engineering needed:
+ * @todo - Determine if ID is 12 bits or 8 bits, 
+ * @todo - Get distance to front of storm to match display
  * @todo - figure out remaining status bits and how to report
- * @todo - convert to data make once decoding is stable
  */
+
 static int acurite_6045_decode (bitrow_t bb, int browlen) {
     int valid = 0;
     float tempf;
@@ -421,13 +436,15 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     char channel_str[2];
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
+    int battery_low = 0;
     data_t *data;
 
     channel = acurite_getChannel(bb[0]);  // same as TXR
     sprintf(channel_str, "%c", channel);
-    sensor_id = (bb[1] << 8) | bb[2];     // TBD 16 bits or 20?
+    sensor_id = ((bb[0] & 0x0F)  << 8) | bb[1];     // TBD 12 bits or only 8?
+    battery_low = (bb[2] & 0x40) == 0;
     humidity = acurite_getHumidity(bb[3]);  // same as TXR
-    message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD batttery?
+    message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD
     tempf = acurite_6045_getTemp(bb[4], bb[5]);
     strike_count = bb[6] & 0x7f;
     strike_distance = bb[7] & 0x1f;
@@ -449,13 +466,14 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
 
     data = data_make(
        "time",			"",			DATA_STRING,	time_str,
-       "model",	        	"",			DATA_STRING,	"Acurite Lightning 6045M",
-       "sensor_id",    		NULL,  			DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+       "model",			"",			DATA_STRING,	"Acurite Lightning 6045M",
+       "id",    		NULL,  			DATA_INT,	sensor_id,
        "channel",  		NULL,     		DATA_STRING, 	&channel_str,
        "temperature_F", 	"temperature",		DATA_FORMAT,	"%.1f F", 	DATA_DOUBLE, 	tempf,
-       "humidity",         	"humidity",		DATA_INT,	humidity,
-       "strike_count",          "lightning_count",	DATA_INT, 	strike_count,
-       "strike_dist",        	"last_distance",	DATA_INT, 	strike_distance,
+       "humidity",		"humidity",		DATA_INT,	humidity,
+       "strike_count",		"strike_count",		DATA_INT, 	strike_count,
+       "storm_dist",		"storm_distance",	DATA_INT, 	strike_distance,
+       "battery",		"battery",		DATA_STRING,	battery_low ? "LOW" : "OK",
      NULL);
 
     data_acquired_handler(data);
