@@ -751,7 +751,13 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  * - needs new PPM demod that can separate out the short
  *   start/sync pulses which confuse things and cause
  *   one data bit to be lost in the check value.
- * - low battery detection
+ *
+ * 2018-04 A user with a dedicated receiver indicated the
+ *   possibility that the transmitter actually drops the
+ *   last bit instead of the demod.
+ *
+ * leaving some of the debugging code until the missing
+ * bit issue gets resolved.
  *
  */
 
@@ -763,13 +769,11 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
     float tempc;
     uint16_t sensor_id, valid_cnt = 0;
     char sensor_type;
+    char *channel_str;
+    int battery_low;
+    data_t *data;
 
     local_time_str(0, time_str);
-
-    if (debug_output > 1) {
-        fprintf(stderr,"acurite_986\n");
-        bitbuffer_print(bitbuf);
-    }
 
     for (uint16_t brow = 0; brow < bitbuf->num_rows; ++brow) {
 	browlen = (bitbuf->bits_per_row[brow] + 7)/8;
@@ -797,7 +801,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	if (browlen > 5 && bb[browlen - 1] == 0)
 	    browlen--;
 
-	// Reverse the bits
+	// Reverse the bits, msg sent LSB first
 	for (uint8_t i = 0; i < browlen; i++)
 	    br[i] = reverse8(bb[i]);
 
@@ -813,42 +817,59 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	status = br[3];
 	sensor_num = (status & 0x01) + 1;
 	status = status >> 1;
+	battery_low = ((status & 1) == 1);
+
 	// By default Sensor 1 is the Freezer, 2 Refrigerator
 	sensor_type = sensor_num == 2 ? 'F' : 'R';
-	crc = br[4];
+	channel_str = sensor_num == 2 ? "2F" : "1R";
 
-	if ((crcc = crc8le(br, 5, 0x07, 0)) != 0) {
-	    // XXX make debug
-	    if (debug_output) {
+	crc = br[4];
+	crcc = crc8le(br, 4, 0x07, 0);
+
+	if (crcc != crc) {
+	    if (debug_output > 1) {
 		fprintf(stderr,"%s Acurite 986 sensor bad CRC: %02x -",
 			time_str, crc8le(br, 4, 0x07, 0));
 		for (uint8_t i = 0; i < browlen; i++)
 		    fprintf(stderr," %02x", br[i]);
 		fprintf(stderr,"\n");
 	    }
-	    continue;
-	}
-
-	if ((status & 1) == 1) {
-	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: low battery, status %02x\n",
-		    time_str, sensor_id, sensor_num, sensor_type, status);
-	}
-
-	// catch any status bits that haven't been decoded yet
-	if ((status & 0xFE) != 0) {
-	    fprintf(stderr, "%s Acurite 986 sensor 0x%04x - %d%c: Unexpected status %02x\n",
-		    time_str, sensor_id, sensor_num, sensor_type, status);
+	    // HACK: rct 2018-04-22
+	    // the message is often missing the last 1 bit either due to a
+	    // problem with the device or demodulator
+	    // Add 1 (0x80 because message is LSB) and retry CRC.
+	    if (crcc == (crc | 0x80)) {
+		if (debug_output > 1) {
+		    fprintf(stderr,"%s Acurite 986 CRC fix %02x - %02x\n",
+			    time_str,crc,crcc);
+		}
+	    } else {
+		continue;
+	    }
 	}
 
 	if (tempf & 0x80) {
 	    tempf = (tempf & 0x7f) * -1;
 	}
-	tempc = fahrenheit2celsius(tempf);
 
+	tempc = fahrenheit2celsius(tempf); // only for debug/old-style output
 
-	printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
+	if (debug_output)
+	    printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
 	       time_str, sensor_id, sensor_num, sensor_type,
 	       tempc, tempf);
+
+	data = data_make(
+		"time",			"",		DATA_STRING,	time_str,
+		"model",		"",		DATA_STRING,	"Acurite 986 Sensor",
+		"id",			NULL,		DATA_INT,	sensor_id,
+		"channel",		NULL,		DATA_STRING,	channel_str,
+		"temperature_F",	"temperature",	DATA_FORMAT, "%d F", DATA_INT,	tempf,
+		"battery",		"battery",	DATA_STRING,	battery_low ? "LOW" : "OK",	// @todo convert to bool
+		"status",		"status",	DATA_INT,	status,
+	    NULL);
+
+	data_acquired_handler(data);
 
 	valid_cnt++;
 
@@ -1135,7 +1156,7 @@ r_device acurite_986 = {
     .long_limit     = 1280,
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .demod_arg      = 2,
 };
 
