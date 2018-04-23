@@ -13,7 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 
-uint8_t reverse8(uint8_t x) {
+uint8_t reverse8(uint8_t x)
+{
     x = (x & 0xF0) >> 4 | (x & 0x0F) << 4;
     x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
     x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
@@ -21,7 +22,8 @@ uint8_t reverse8(uint8_t x) {
 }
 
 
-uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
     unsigned remainder = init << 1; // LSB is unused
     unsigned poly = polynomial << 1;
     unsigned byte, bit;
@@ -60,11 +62,11 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 }
 
 
-uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
     uint8_t crc = init, i;
     unsigned byte;
     uint8_t bit;
-
 
     for (byte = 0; byte < nBytes; ++byte) {
     for (i = 0x01; i & 0xff; i <<= 1) {
@@ -83,7 +85,8 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
     return reverse8(crc);
 }
 
-uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init) {
+uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+{
     uint16_t remainder = init;
     unsigned byte, bit;
 
@@ -101,7 +104,8 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
     return remainder;
 }
 
-uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init) {
+uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+{
     uint16_t remainder = init;
     unsigned byte, bit;
 
@@ -120,15 +124,16 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
 }
 
 
-
-int byteParity(uint8_t inByte){
+int byteParity(uint8_t inByte)
+{
     inByte ^= inByte >> 4;
     inByte &= 0xf;
     return (0x6996 >> inByte) & 1;
 }
 
 
-char* local_time_str(time_t time_secs, char *buf) {
+char* local_time_str(time_t time_secs, char *buf)
+{
     time_t etime;
     struct tm *tm_info;
 
@@ -172,11 +177,13 @@ float mph2kmph(float mph)
 }
 
 
-float mm2inch(float mm) {
+float mm2inch(float mm)
+{
     return mm * 0.039370;
 }
 
-float inch2mm(float inch) {
+float inch2mm(float inch)
+{
     return inch / 0.039370;
 }
 
@@ -216,7 +223,8 @@ bool str_endswith(const char *restrict str, const char *restrict suffix)
 // https://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c/779960#779960
 //
 // You must free the result if result is non-NULL.
-char *str_replace(char *orig, char *rep, char *with) {
+char *str_replace(char *orig, char *rep, char *with)
+{
     char *result;  // the return string
     char *ins;     // the next insert point
     char *tmp;     // varies
