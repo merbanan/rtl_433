@@ -239,73 +239,111 @@ void data_acquired_handler(data_t *data)
 {
     if (conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
-            if ((d->type == DATA_DOUBLE) &&
-                !strcmp(d->key, "temperature_F")) {
-                    *(double*)d->value = fahrenheit2celsius(*(double*)d->value);
-                    free(d->key);
-                    d->key = strdup("temperature_C");
-                    char *pos;
-                    if (d->format &&
-                        (pos = strrchr(d->format, 'F'))) {
-                        *pos = 'C';
-                    }
+            // Convert double type fields ending in _F to _C
+            if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_F")) {
+                *(double*)d->value = fahrenheit2celsius(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_F", "_C");
+                free(d->key);
+                d->key = new_label;
+                char *pos;
+                if (d->format && (pos = strrchr(d->format, 'F'))) {
+                    *pos = 'C';
+                }
             }
-            // Convert any fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_mph") != NULL)) {
-                   *(double*)d->value = mph2kmph(*(double*)d->value);
-                   char *new_label = str_replace(d->key, "_mph", "_kph");
-                   free(d->key);
-                   d->key = new_label;
-                   char *new_format_label = str_replace(d->format, "mph", "kph");
-                   free(d->format);
-                   d->format = new_format_label;
+            // Convert double type fields ending in _mph to _kph
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mph")) {
+                *(double*)d->value = mph2kmph(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_mph", "_kph");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "mph", "kph");
+                free(d->format);
+                d->format = new_format_label;
             }
-
-            // Convert any fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_inch") != NULL)) {
-                   *(double*)d->value = inch2mm(*(double*)d->value);
-                   char *new_label = str_replace(d->key, "_inch", "_mm");
-                   free(d->key);
-                   d->key = new_label;
-                   char *new_format_label = str_replace(d->format, "inch", "mm");
-                   free(d->format);
-                   d->format = new_format_label;
+            // Convert double type fields ending in _mph to _kph
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_inch")) {
+                *(double*)d->value = inch2mm(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_inch", "_mm");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "inch", "mm");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _inHg to _hPa
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_inHg")) {
+                *(double*)d->value = inhg2hpa(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_inHg", "_hPa");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "inHg", "hPa");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _PSI to _kPa
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_PSI")) {
+                *(double*)d->value = psi2kpa(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_PSI", "_kPa");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "PSI", "kPa");
+                free(d->format);
+                d->format = new_format_label;
             }
         }
     }
     if (conversion_mode == CONVERT_CUSTOMARY) {
         for (data_t *d = data; d; d = d->next) {
-            if ((d->type == DATA_DOUBLE) &&
-                !strcmp(d->key, "temperature_C")) {
-                    *(double*)d->value = celsius2fahrenheit(*(double*)d->value);
-                    free(d->key);
-                    d->key = strdup("temperature_F");
-                    char *pos;
-                    if (d->format &&
-                        (pos = strrchr(d->format, 'C'))) {
-                        *pos = 'F';
-                    }
+            // Convert double type fields ending in _C to _F
+            if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_C")) {
+                *(double*)d->value = celsius2fahrenheit(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_C", "_F");
+                free(d->key);
+                d->key = new_label;
+                char *pos;
+                if (d->format && (pos = strrchr(d->format, 'C'))) {
+                    *pos = 'F';
+                }
             }
-            // Convert any fields ending in _kph to _mph
-            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_kph") != NULL)) {
-                   *(double*)d->value = kmph2mph(*(double*)d->value);
-                   char *new_label = str_replace(d->key, "_kph", "_mph");
-                   free(d->key);
-                   d->key = new_label;
-                   char *new_format_label = str_replace(d->format, "kph", "mph");
-                   free(d->format);
-                   d->format = new_format_label;
+            // Convert double type fields ending in _kph to _mph
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kph")) {
+                *(double*)d->value = kmph2mph(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_kph", "_mph");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "kph", "mph");
+                free(d->format);
+                d->format = new_format_label;
             }
-
-            // Convert any fields ending in _mm to _inch
-            else if ((d->type == DATA_DOUBLE) && (strstr(d->key, "_mm") != NULL)) {
-                   *(double*)d->value = mm2inch(*(double*)d->value);
-                   char *new_label = str_replace(d->key, "_mm", "_inch");
-                   free(d->key);
-                   d->key = new_label;
-                   char *new_format_label = str_replace(d->format, "mm", "inch");
-                   free(d->format);
-                   d->format = new_format_label;
+            // Convert double type fields ending in _mm to _inch
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm")) {
+                *(double*)d->value = mm2inch(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_mm", "_inch");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "mm", "inch");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _hPa to _inHg
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_hPa")) {
+                *(double*)d->value = hpa2inhg(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_hPa", "_inHg");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "hPa", "inHg");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _kPa to _PSI
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kPa")) {
+                *(double*)d->value = kpa2psi(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_kPa", "_PSI");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "kPa", "PSI");
+                free(d->format);
+                d->format = new_format_label;
             }
         }
     }

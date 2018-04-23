@@ -12,6 +12,7 @@
 #define INCLUDE_UTIL_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <time.h>
 
 // Helper macros
@@ -133,7 +134,38 @@ float mm2inch(float mm);
 float inch2mm(float inch);
 
 
+/// Convert kilo Pascal (kPa) to pounds per square inch (PSI)
+///
+/// @param kpa: pressure in kPa
+/// @return pressure in PSI
+float kpa2psi(float kpa);
 
+/// Convert pounds per square inch (PSI) to kilo Pascal (kPa)
+///
+/// @param psi: pressure in PSI
+/// @return pressure in kPa
+float psi2kpa(float psi);
+
+
+/// Convert hecto Pascal (hPa) to inches of mercury (inHg)
+///
+/// @param kpa: pressure in kPa
+/// @return pressure in inHg
+float hpa2inhg(float hpa);
+
+/// Convert inches of mercury (inHg) to hecto Pascal (hPa)
+///
+/// @param kpa: pressure in inHg
+/// @return pressure in hPa
+float inhg2hpa(float inhg);
+
+
+/// Return true if the string ends with the specified suffix, otherwise return false.
+///
+/// @param str: string to search for patterns
+/// @param suffix: the pattern to search
+/// @return true if the string ends with the specified suffix, false otherwise.
+bool str_endswith(const char *restrict str, const char *restrict suffix);
 
 /// Replace a pattern in a string. This utility function is
 /// useful when converting native units to si or customary.

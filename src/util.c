@@ -181,6 +181,37 @@ float inch2mm(float inch) {
 }
 
 
+float kpa2psi(float kpa)
+{
+    return kpa / 6.89475729;
+}
+
+float psi2kpa(float psi)
+{
+    return psi * 6.89475729;
+}
+
+
+float hpa2inhg(float hpa)
+{
+    return hpa / 33.8639;
+}
+
+float inhg2hpa(float inhg)
+{
+    return inhg * 33.8639;
+}
+
+
+bool str_endswith(const char *restrict str, const char *restrict suffix)
+{
+    int str_len = strlen(str);
+    int suffix_len = strlen(suffix);
+
+    return (str_len >= suffix_len) &&
+           (0 == strcmp(str + (str_len - suffix_len), suffix));
+}
+
 // Original string replacement function was found here:
 // https://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c/779960#779960
 //
