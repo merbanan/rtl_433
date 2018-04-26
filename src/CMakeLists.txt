@@ -114,6 +114,7 @@ add_executable(rtl_433
 	devices/x10_sec.c
 	devices/interlogix.c
 	devices/dish_remote_6_3.c
+	devices/kerui_door.c
 )
 
 add_library(data data.c)
