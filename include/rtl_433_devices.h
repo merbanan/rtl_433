@@ -105,7 +105,7 @@
 		DECL(x10_sec) \
 		DECL(interlogix) \
 		DECL(dish_remote_6_3) \
-    DECL(kerui_door)
+		DECL(kerui_door)
 
 typedef struct {
 	char name[256];
