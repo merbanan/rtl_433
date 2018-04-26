@@ -195,6 +195,7 @@ Supported device protocols:
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
     [101]* Dish remote 6.3
+    [102]  Kerui Door Sensor
 
 * Disabled by default, use -R n or -G
 
