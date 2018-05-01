@@ -60,7 +60,7 @@
  * - LACROSSE_TX141_BITLEN is 37 instead of 40. 
  * - The humidity variable has been removed for TX141.
  * - Battery check bit is inverse of TX141TH.
- * - temp_f removed, temp_c (celcius) is what's provided by the device.
+ * - temp_f removed, temp_c (celsius) is what's provided by the device.
  *
  * The CRC Checksum is not checked. In trying to reverse engineer the
  * CRC, the first nibble can be checked by:

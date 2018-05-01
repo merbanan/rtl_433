@@ -27,7 +27,7 @@
  TYP AAAAAAAA BCDDEFFF FFFFFFFF GGGGGGGx xxxxx
  BIT 76543210 76543210 76543210 76543210 76543
 
- TYPDescriptian
+ TYPDescription
  A = Rolling Device Code, Change after battery replacement
  B = Battery 0=OK 1=LOW
  C = Manual Send Button Pressed 0=not pressed 1=pressed

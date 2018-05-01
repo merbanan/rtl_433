@@ -25,9 +25,9 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
 
-    if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//allways starts with ac or b2
+    if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//always starts with ac or b2
         // first bit is from startbit sequence, not part of payload!
-        // check protocol if value is 10 or 01, else stop processing as it is no vallid KAKU packet!
+        // check protocol if value is 10 or 01, else stop processing as it is no valid KAKU packet!
         //get id=24bits, remember 1st 1 bit = startbit, no payload!
         for (packet = 0; packet < 6; packet++) {//get first part kakuid
             tmp = bb[0][packet] << 1;

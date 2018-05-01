@@ -4,7 +4,7 @@
 /* Currently this can decode the temperature and id from Rubicson sensors
  *
  * the sensor sends 36 bits 12 times pwm modulated
- * the data is grouped into 9 nibles
+ * the data is grouped into 9 nibbles
  * [id0] [id1], [bat|unk1|chan1|chan2] [temp0], [temp1] [temp2], [F] [crc1], [crc2]
  *
  * The id changes when the battery is changed in the sensor.
@@ -82,8 +82,8 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
     if (rubicson_crc_check(bb)) {
         local_time_str(0, time_str);
 
-        /* Nible 3,4,5 contains 12 bits of temperature
-         * The temerature is signed and scaled by 10 */
+        /* Nibble 3,4,5 contains 12 bits of temperature
+         * The temperature is signed and scaled by 10 */
         temp = (int16_t)((uint16_t)(bb[0][1] << 12) | (bb[0][2] << 4));
         temp = temp >> 4;
 

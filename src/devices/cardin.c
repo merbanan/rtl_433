@@ -4,7 +4,7 @@
 /*
  * Cardin S466-TX2 generic garage door remote control on 27.195 Mhz
  * Remember to set de freq right with -f 27195000
- * May be usefull for other Cardin product too
+ * May be useful for other Cardin product too
  *
  * Copyright (C) 2015 Denis Bodor
  * This program is free software; you can redistribute it and/or modify

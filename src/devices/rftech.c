@@ -76,7 +76,7 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
  * List of fields to output when using CSV
  *
  * Used to determine what fields will be output in what
- * order for this devince when using -F csv.
+ * order for this device when using -F csv.
  *
  */
 static char *csv_output_fields[] = {

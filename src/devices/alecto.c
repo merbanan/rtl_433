@@ -86,7 +86,7 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
 
         csum = reverse8((csum & 0xf) << 4);
         csum2 = reverse8((csum2 & 0xf) << 4);
-        /* Quit if checksup does not work out */
+        /* Quit if checksum does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
             if(debug_output) {

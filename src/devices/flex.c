@@ -1,4 +1,4 @@
-/* Flexible general purpose deocder.
+/* Flexible general purpose decoder.
  *
  * Copyright (C) 2017 Christian Zuckschwerdt
  *

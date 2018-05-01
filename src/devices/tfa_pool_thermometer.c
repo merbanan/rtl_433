@@ -34,7 +34,7 @@ AAAABBBB BBBBCCCC CCCCCCCC DDEE
 
 A: ?
 B: device id (changing only after reset)
-C: templerature
+C: temperature
 D: channel number
 E: ?
 */

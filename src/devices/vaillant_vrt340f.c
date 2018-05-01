@@ -127,7 +127,7 @@ vaillant_vrt340_parser (bitbuffer_t *bitbuffer)
 
     uint16_t bitcount = bits.bits_per_row[0];
 
-    // Change to least-significant-bit last (protocol uses least-siginificant-bit first) for hex representation:
+    // Change to least-significant-bit last (protocol uses least-significant-bit first) for hex representation:
     for (uint16_t k = 0; k <= (uint16_t)(bitcount-1)/8; k++) {
         bits.bb[0][k] = reverse8(bits.bb[0][k]);
     }
