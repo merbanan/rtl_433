@@ -450,7 +450,7 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     float tempf;
     uint8_t humidity, message_type, l_status;
     char channel, channel_str[2];
-    char raw_str[32], *rawp;
+    char raw_str[31], *rawp;
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
     int battery_low, active, rfi_detect, ussb1;
@@ -480,10 +480,10 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
      */
     rawp = (char *)raw_str;
     for (int i=0; i < min(browlen, 15); i++) {
-	sprintf(rawp,"%02x",bb[i]);
-	rawp += 2;
+        sprintf(rawp,"%02x",bb[i]);
+        rawp += 2;
     };
-    rawp = '\0';
+    *rawp = '\0';
 
     // Flag whether this message might need further analysis
     if (((bb[0] & 0x30) != 0) ||	// Channel high nybble 0x3 unused
