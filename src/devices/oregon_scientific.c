@@ -308,7 +308,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",         "House Code",     DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",    "Channel",        DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",    "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",   "Humidity",       DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.0f hPa",   DATA_DOUBLE, pressure,
             NULL);
@@ -344,7 +344,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
         data_acquired_handler(data);
       }
@@ -360,7 +360,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
         data_acquired_handler(data);
       }
@@ -375,7 +375,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
         data_acquired_handler(data);
@@ -391,7 +391,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
         data_acquired_handler(data);
@@ -410,7 +410,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
         data_acquired_handler(data);
       }
@@ -427,7 +427,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg, sensor_id),
             "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f mPa", DATA_DOUBLE, pressure,
             NULL);
@@ -525,7 +525,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
           "channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
           "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
-          "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+          "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
           "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
           NULL);
         data_acquired_handler(data);
@@ -541,7 +541,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
             "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
             "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
-            "temperature_C",  "Celcius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
           data_acquired_handler(data);
         }

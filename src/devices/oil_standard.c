@@ -60,9 +60,9 @@ static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
 	// 0x02: High-bit for depth
 	// 0x04: (always zero?)
 	// 0x08: Leak/theft alarm
-	// 0x10: (unkown toggle)
-	// 0x20: (unkown toggle)
-	// 0x40: (unkown toggle)
+	// 0x10: (unknown toggle)
+	// 0x20: (unknown toggle)
+	// 0x40: (unknown toggle)
 	// 0x80: (always zero?)
 	flags = b[2] & ~0x0A;
 	alarm = (b[2] & 0x08) >> 3;

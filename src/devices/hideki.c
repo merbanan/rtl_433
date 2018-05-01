@@ -40,7 +40,7 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
         unsigned int offset = i/8;
         packet[i] = b[i+offset] << (i%8);
         packet[i] |= b[i+offset+1] >> (8 - i%8);
-        // reverse as it is litle endian...
+        // reverse as it is little endian...
         packet[i] = reverse8(packet[i]);
         // toggle each bit
         packet[i] ^= 0xFF;

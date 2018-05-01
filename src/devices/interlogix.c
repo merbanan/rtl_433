@@ -17,7 +17,7 @@
  * 
  * Frequency: 319508000
  * 
- * Deocding done per us patent #5761206
+ * Decoding done per us patent #5761206
  * https://www.google.com/patents/US5761206
  *
  * Protocol Bits
@@ -29,7 +29,7 @@
  * 36-39 4 bit device type code (DT bits 0-3)
  * 40-42 3 bit trigger count (TC bit 0-2)
  * 43 low battery bit
- * 44 F1 latch bit NOTE: F1 latch bit and debounce are reversed.  Typo or endianess issue?
+ * 44 F1 latch bit NOTE: F1 latch bit and debounce are reversed.  Typo or endianness issue?
  * 45 F1 debounced level
  * 46 F2 latch bit
  * 47 F2 debounced level
@@ -164,7 +164,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
 
     sprintf(raw_message, "%02x%02x%02x", message[3], message[4], message[5]);
 
-    // keyfob logic. see prootcol description addendum for protocol exceptions
+    // keyfob logic. see protocol description addendum for protocol exceptions
     if ((reverse8(message[2]) >> 4) == 0xf) {
         low_battery    = "OK";
         f1_latch_state = ((message[3] & 0xe) == 0x4) ? "CLOSED" : "OPEN";

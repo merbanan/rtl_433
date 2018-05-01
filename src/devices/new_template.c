@@ -137,7 +137,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
     }
 
     /*
-     * Or (prefered) search for the message preamble:
+     * Or (preferred) search for the message preamble:
      * See bitbuffer_search()
      */
 
@@ -199,7 +199,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
         /*
          * received an unexpected message type
          * could be a bad message or a new message not
-         * previously seen.  Optionally log debug putput.
+         * previously seen.  Optionally log debug output.
          */
         return 0;
     }

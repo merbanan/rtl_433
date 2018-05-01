@@ -13,7 +13,7 @@
  * DSC - Digital Security Controls 433 Mhz Wireless Security Contacts
  *       doors, windows, smoke, CO2, water,
  *
- * Protcol Description available in this FCC Report for FCC ID F5300NB912
+ * Protocol Description available in this FCC Report for FCC ID F5300NB912
  *  https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=100988
  *
  * General Packet Description
@@ -57,7 +57,7 @@
  *
  * The ESN in practice is 24 bits, The type + remaining 5 nybbles,
  *
- * The CRC is 8 bit, "little endian", Polynomial 0xf5, Inital value 0x3d
+ * The CRC is 8 bit, "little endian", Polynomial 0xf5, Initial value 0x3d
  *
  * CRC algorithm found with CRC reveng (reveng.sourceforge.net)
  *

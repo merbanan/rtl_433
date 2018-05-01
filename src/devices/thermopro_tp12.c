@@ -75,7 +75,7 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
         // There is a mysterious checksum in bytes[4].  It may be the same as the checksum used by the TP-11,
         // which consisted of a lookup table containing, for each bit in the message, a byte to be xor-ed into
         // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian
-        // elimnation, so dump some data so we can try this.
+        // elimination, so dump some data so we can try this.
 
         // This format is easily usable by bruteforce-crc, after piping through | grep raw_data | cut -d':' -f2 
         // bruteforce-crc didn't find anything, though - this may not be a CRC algorithm specifically.

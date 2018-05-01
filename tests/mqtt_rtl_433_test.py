@@ -6,7 +6,7 @@ as MQTT network messages. Recommended way of sending rtl_433 data on network is:
 
 $ rtl_433 -F json -U | mosquitto_pub -t home/rtl_433 -l
 
-An MQTT broker e.g. 'mosquitto' must be running on local compputer
+An MQTT broker e.g. 'mosquitto' must be running on local computer
 
 Copyright (C) 2017 Tommy Vestermark
 This program is free software; you can redistribute it and/or modify
@@ -15,22 +15,24 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 """
 
-import multiprocessing as mp
-import logging
-import paho.mqtt.client as mqtt
+import datetime
 import json
-import sys, os
-import time, datetime
+import logging
+import multiprocessing as mp
+import sys
+import time
+
+import paho.mqtt.client as mqtt
 
 MQTT_SERVER = "127.0.0.1"
 MQTT_TOPIC_PREFIX = "home/rtl_433"
-TIMEOUT_STALE_SENSOR = 600      # Seconds before showing a timeout indicator
+TIMEOUT_STALE_SENSOR = 600  # Seconds before showing a timeout indicator
 
-#log = logging.getLogger()  # Single process logger
-log = mp.log_to_stderr()    # Multiprocessing capable logger
+# log = logging.getLogger()  # Single process logger
+log = mp.log_to_stderr()  # Multiprocessing capable logger
 mqtt_client = mqtt.Client("RTL_433_Test")
 
-sensor_state = dict()   # Dictionary containing accumulated sensor state
+sensor_state = dict()  # Dictionary containing accumulated sensor state
 
 
 def print_sensor_state():
@@ -42,8 +44,8 @@ def print_sensor_state():
         for ID in sensor_state[model]:
             data = sensor_state[model][ID]['data'].copy()
             timestamp = data.pop('time')
-            timedelta = (time_now-timestamp).total_seconds()
-            indicator = "*" if (timedelta < 2) else "~" if (timedelta > TIMEOUT_STALE_SENSOR) else " "   # Indicator for new and stale data
+            timedelta = (time_now - timestamp).total_seconds()
+            indicator = "*" if (timedelta < 2) else "~" if (timedelta > TIMEOUT_STALE_SENSOR) else " "  # Indicator for new and stale data
             print("  ID {:5} {}{} {}".format(ID, timestamp.isoformat(sep=' '), indicator, data))
     sys.stdout.flush()  # Print in real-time
 
@@ -69,7 +71,7 @@ def on_message(client, userdata, msg):
         try:
             # Decode JSON payload
             d = json.loads(msg.payload.decode())
-        except:
+        except json.decoder.JSONDecodeError:
             log.warning("JSON decode error: " + msg.payload.decode())
             return
 
@@ -80,10 +82,10 @@ def on_message(client, userdata, msg):
         # Update sensor_state
         sensor_model = d.pop('model', 'unknown')
         sensor_id = d.pop('id', 0)
-        sensor_state.setdefault(sensor_model,{}).setdefault(sensor_id,{})['data'] = d
+        sensor_state.setdefault(sensor_model, {}).setdefault(sensor_id, {})['data'] = d
         print_sensor_state()
     else:
-        log.info("Uknown topic: " + msg.topic + "\t" + msg.payload.decode())
+        log.info("Unknown topic: " + msg.topic + "\t" + msg.payload.decode())
 
 
 # Setup MQTT client

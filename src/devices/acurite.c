@@ -10,7 +10,7 @@
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
  * - 609TXC "TH" temperature and humidity sensor (609A1TX)
  * - Acurite 986 Refrigerator / Freezer Thermometer
- * - Acurite 606TX temperature sesor
+ * - Acurite 606TX temperature sensor
  * - Acurite 6045M Lightning Detector (Work in Progress)
  */
 
@@ -39,7 +39,7 @@ static char time_str[LOCAL_TIME_BUFLEN];
 // of the 5n1 station that report differently.
 //
 // The original implementation used by the 5n1 device type
-// here seems to have a straight linear/cicular mapping.
+// here seems to have a straight linear/circular mapping.
 //
 // The newer 5n1 mapping seems to just jump around with no clear
 // meaning, but does map to the values sent by Acurite's
@@ -350,7 +350,7 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  *
  * Specs:
  * - lightning strike count
- * - extimated distance to front of storm, up to 25 miles / 40 km
+ * - estimated distance to front of storm, up to 25 miles / 40 km
  * - Temperature -40 to 158 F / -40 to 70 C
  * - Humidity 1 - 99% RH
  *
@@ -374,7 +374,7 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * H = Humidity
  * S = Status/Message type/Temperature MSB.
  * T = Temperature
- * D = Lightning distanace and status bits?
+ * D = Lightning distance and status bits?
  * L = Lightning strike count.
  * K = Checksum
  *
@@ -415,7 +415,7 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * - Bit 0x40: TBD, possible activity?
  * - distance = 0x1f: possible invalid value indication (value at power up)
  * - Note: Distance sometimes goes to 0 right after strike counter increment
- *         status bits might indicate validifity of distance.
+ *         status bits might indicate validity of distance.
  *
  * Byte 8 - checksum. 8 bits, no parity.
  *
@@ -475,7 +475,7 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     /*
      * 2018-04-21 rct - There are still a number of unknown bits in the
      * message that need to be figured out. Add the raw message hex to
-     * to the structured data outputput to allow future analysis without
+     * to the structured data output to allow future analysis without
      * having to enable debug for long running rtl_433 processes.
      */
     rawp = (char *)raw_str;
@@ -537,7 +537,7 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
  *:
  * - 592TXR temperature and humidity sensor
  * - 5-n-1 weather station
- * - 6045M Lightning Detectur with Temperature and Humidity
+ * - 6045M Lightning Detector with Temperature and Humidity
  */
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
@@ -726,7 +726,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  * Acurite 00986 Refrigerator / Freezer Thermometer
  *
  * Includes two sensors and a display, labeled 1 and 2,
- * by default 1 - Refridgerator, 2 - Freezer
+ * by default 1 - Refrigerator, 2 - Freezer
  *
  * PPM, 5 bytes, sent twice, no gap between repeaters
  * start/sync pulses two short, with short gaps, followed by
@@ -738,7 +738,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
  *
  * TT II II SS CC
  *
- * T - Temperature in Fahrenehit, integer, MSB = sign.
+ * T - Temperature in Fahrenheit, integer, MSB = sign.
  *     Encoding is "Sign and magnitude"
  * I - 16 bit sensor ID
  *     changes at each power up
@@ -790,7 +790,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	}
 
 	// Reduce false positives
-	// may eliminate these with a beter PPM (precise?) demod.
+	// may eliminate these with a better PPM (precise?) demod.
 	if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
 	   (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
 	    continue;
@@ -941,7 +941,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
     // do some basic checking to make sure we have a valid data record
     if ((bb[0][0] == 0) && (bb[1][4] == 0)) {					//This test may need some more scrutiny...
-        // calculate the checksum and only continue if we have a maching checksum
+        // calculate the checksum and only continue if we have a matching checksum
         uint8_t chk = Checksum(3, &bb[1][0]);
 
         if (chk == bb[1][3]) {
@@ -1036,7 +1036,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "probe",           "",             DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
 
@@ -1050,7 +1050,7 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "probe",           "",             DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
                     "water",           "",             DATA_INT,       water,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
@@ -1064,9 +1064,9 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "probe",           "",             DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
-                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
             //  Spot probe (detects temperature and humidity)
@@ -1079,9 +1079,9 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
                     "probe",           "",             DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                     "humidity",        "Humidity",     DATA_INT,       humidity,
-                    "ptemperature_C",  "Celcius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                    "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                     "phumidity",       "Humidity",     DATA_INT,       phumidity,
                     "mic",             "Integrity",    DATA_STRING,    "CRC",
                     NULL);
@@ -1122,7 +1122,7 @@ r_device acurite_th = {
 };
 
 /*
- * For Acurite 592 TXR Temp/Mumidity, but
+ * For Acurite 592 TXR Temp/Humidity, but
  * Should match Acurite 592TX, 5-n-1, etc.
  */
 r_device acurite_txr = {

@@ -1,6 +1,6 @@
 /* Kerui PIR sensor
 *
-*	Code derrived from akhan_100F14.c
+*	Code derived from akhan_100F14.c
 *
 * Such as
 * http://www.ebay.co.uk/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xkerui+pir.TRS0&_nkw=kerui+pir&_sacat=0

@@ -38,7 +38,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 		}
 		// Add run of zeros
 		periods -= highs;					// Remove 1s from whole period
-		periods = min(periods, MAX_ZEROS); 	// Dont overflow at end of message
+		periods = min(periods, MAX_ZEROS); 	// Don't overflow at end of message
 		for (int i=0; i < periods; ++i) {
 			bitbuffer_add_bit(&bits, 0);
 		}
@@ -58,7 +58,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 
 		// End of Message?
 		if (((n == pulses->num_pulses-1) 	// No more pulses? (FSK)
-		 || (pulses->gap[n] > device->reset_limit))	// Loong silence (OOK)
+		 || (pulses->gap[n] > device->reset_limit))	// Long silence (OOK)
 		 && (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->callback) {
@@ -256,7 +256,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 	int time_since_last = 0;
 	bitbuffer_t bits = {0};
 
-	// First rising edge is allways counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
+	// First rising edge is always counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
 	bitbuffer_add_bit(&bits, 0);
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {

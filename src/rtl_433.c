@@ -127,7 +127,7 @@ void usage(r_device *devices) {
             "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "\t= Analyze/Debug options =\n"
             "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
-            "\t[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt\n"
+            "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt\n"
             "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
@@ -1173,7 +1173,7 @@ int main(int argc, char **argv) {
         r = 0;
         for (i = 0; i < demod->r_dev_num; i++) {
             if (!quiet_mode)
-                fprintf(stderr, "Verifing test data with device %s.\n", demod->r_devs[i]->name);
+                fprintf(stderr, "Verifying test data with device %s.\n", demod->r_devs[i]->name);
             r += pulse_demod_string(test_data, demod->r_devs[i]);
         }
         exit(!r);
