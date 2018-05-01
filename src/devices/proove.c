@@ -7,7 +7,7 @@
  * From http://elektronikforumet.com/wiki/index.php/RF_Protokoll_-_Proove_self_learning
  * Proove packet structure (32 bits):
  * HHHH HHHH HHHH HHHH HHHH HHHH HHGO CCEE
- * H = The first 26 bits are transmitter unique codes, and it is this code that the reciever “learns” to recognize.
+ * H = The first 26 bits are transmitter unique codes, and it is this code that the receiver “learns” to recognize.
  * G = Group code. Set to 0 for on, 1 for off.
  * O = On/Off bit. Set to 0 for on, 1 for off.
  * C = Channel bits.

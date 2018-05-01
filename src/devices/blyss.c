@@ -19,7 +19,7 @@ static int blyss_dc5_uk_wh(bitbuffer_t *bitbuffer)
 	for (int i = 0; i < bitbuffer->num_rows; i++)
 	{
 		//This needs additional validation, but works on mine. Suspect each DC5-UK-WH uses different codes as the transmitter
-		//is paired to the receivers to avoid being triggerd by the neighbours transmitter ?!?
+		//is paired to the receivers to avoid being triggered by the neighbours transmitter ?!?
 		if (((bb[i][0] == 0xce) && (bb[i][1] == 0x8e) && (bb[i][2] == 0x2a) && (bb[i][3] == 0x6c) && (bb[i][4] == 0x80)) ||
 			((bb[i][0] == 0xe7) && (bb[i][1] == 0x37) && (bb[i][2] == 0x7a) && (bb[i][3] == 0x2c) && (bb[i][4] == 0x80)))
 		{

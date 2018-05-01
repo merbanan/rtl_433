@@ -105,7 +105,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		{
 			energy = ((pulsecount/n_imp) * (3600/30));
 		}
-		//New code for calculating varous energy values for differing pulse-kwh values
+		//New code for calculating various energy values for differing pulse-kwh values
 		const int imp_kwh[] = {3200, 2000, 1000, 500, 0};
 		for (unsigned i=0; imp_kwh[i] !=0; ++i) {
 			if (pulsecount < 3)

@@ -27,7 +27,7 @@
  *
  * Temperature:
  * Sensor sends data in °F, lowest supported value is 90°F
- * 12 bit uingned and scaled by 10 (Nibbles: 6,5,4)
+ * 12 bit unsigned and scaled by 10 (Nibbles: 6,5,4)
  * in this case "011001100101" =  1637/10 - 90 = 73.7 °F (23.17 °C)
  *
  * Humidity:
@@ -45,7 +45,7 @@
  *
  * Unknown1: (Bits 8,9) changes not so often
  * Unknown2: (Bits 36-39) changes with every packet, probably checksum
- * Unknown3: (Bits 34,35) changes not so often, mayby also part of the checksum
+ * Unknown3: (Bits 34,35) changes not so often, maybe also part of the checksum
  *
  */
 

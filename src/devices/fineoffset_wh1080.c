@@ -45,7 +45,7 @@
  * That's why it's NOT possible to get pressure data by wireless communication. If you need pressure data you should try
  * an Arduino/Raspberry solution wired with a BMP180/280 or BMP085 sensor.
  *
- * Data are trasmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
+ * Data are transmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
  *
  * This module is also capable to decode the DCF77/WWVB time signal sent by the time signal decoder
  * (which is enclosed on the sensor tx): around the minute 59 of the even hours the sensor's TX stops sending weather data,

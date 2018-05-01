@@ -2,7 +2,7 @@
  *
  * "Voltcraft Energy Count 3000" sensor sold by Conrad
  * aka “Velleman NETBSEM4”
- * aka “La Crosse Techology Remote Cost Control Monitor – RS3620”.
+ * aka “La Crosse Technology Remote Cost Control Monitor – RS3620”.
  * aka "ELV Cost Control"
  *
  * Stub driver

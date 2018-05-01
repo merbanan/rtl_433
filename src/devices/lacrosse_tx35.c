@@ -22,7 +22,7 @@ Random device id (6 bits)
                                           ~ 3rd bits of byte 5
 new battery indicator
                                            ~ 4th bits of byte 5
-unkown, unused
+unknown, unused
                                              ~~~~ ~~~~ ~~~~ 2nd nibble of byte 5 and byte 6
 temperature, in bcd *10 +40
                                                             ~ 1st bit of byte 7
@@ -51,7 +51,7 @@ How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.ht
 #include "util.h"
 #include "data.h"
 
-#define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidty
+#define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidity
 #define LACROSSE_TX35_CRC_POLY       0x31
 #define LACROSSE_TX35_CRC_INIT       0x00
 #define LACROSSE_TX29_MODEL          29 // Model number
@@ -75,7 +75,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 
 	static const uint8_t preamble[] = {
 		0xaa, // preamble
-		0x2d, // brand identifer
+		0x2d, // brand identifier
 		0xd4, // brand identifier
 		0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
 	};

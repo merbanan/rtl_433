@@ -113,7 +113,7 @@ static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuff
                                           be set and is accepted by receiver) */
     };
 
-    /* extrat on/off bits (first or second key column on the remote */
+    /* extract on/off bits (first or second key column on the remote) */
     int on  = b[2]>>2 & 1;
     int off = b[2]    & 1;
 

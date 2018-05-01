@@ -195,7 +195,7 @@ typedef struct {
 	int pulse_length;		// Counter for internal pulse detection
 	int max_pulse;			// Size of biggest pulse detected
 
-	int data_counter;		// Counter for how much of data chunck is processed
+	int data_counter;		// Counter for how much of data chunk is processed
 	int lead_in_counter;	// Counter for allowing initial noise estimate to settle
 
 	int ook_low_estimate;		// Estimate for the OOK low level (base noise level) in the envelope data
@@ -243,7 +243,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;	// Default is a ratio of low level
 					s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
 					s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
-					if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;		// Allow inital estimate to settle
+					if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;		// Allow initial estimate to settle
 				}
 				break;
 			case PD_OOK_STATE_PULSE:

@@ -26,7 +26,7 @@
  * pre is always 0xFF
  * type is always 0x4 (may be different for different sensor type?)
  * id is a random id that is generated when the sensor starts
- * temp is 12 bit signed magnitude scaled by 10 celcius
+ * temp is 12 bit signed magnitude scaled by 10 celsius
  * humi is 8 bit relative humidity percentage
  *
  * Based on reverse engineering with gnu-radio and the nice article here:

@@ -20,7 +20,7 @@
  * - Zero Pulses are longer (1,400 uS High, 1,000 uS Low) = 2,400 uS
  * - One Pulses are shorter (  550 uS High, 1,000 uS Low) = 1,600 uS
  * - Sensor id changes when the battery is changed
- * - Primay Value are BCD with one decimal place: vvv = 12.3
+ * - Primary Value are BCD with one decimal place: vvv = 12.3
  * - Secondary value is integer only intval = 12, seems to be a repeat of primary
  *   This may actually be an additional data check because the 4 bit checksum
  *   and parity bit is  pretty week at detecting errors.
@@ -39,7 +39,7 @@
  *   the detect and decode could be collapsed into a single reasonably
  *   readable function.
  *
- * - Make the time stamp output a generat utility function.
+ * - Make the time stamp output a general utility function.
  */
 
 #include "rtl_433.h"
@@ -56,7 +56,7 @@
 // for clarity.  The LaCrosse protocol is based
 // on 4 bit nybbles.
 //
-// Domodulation
+// Demodulation
 // Long bits = 0
 // short bits = 1
 //

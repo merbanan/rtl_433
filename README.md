@@ -69,7 +69,7 @@ Usage:	= Tuner options =
 	[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
 	= Analyze/Debug options =
 	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
-	[-A] Pulse Analyzer. Enable pulse analyzis and decode attempt
+	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
@@ -215,7 +215,7 @@ Examples:
 | `rtl_433 -F json -U \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
 | `rtl_433 -f 433535000 -f 434019000 -H 15` | Will poll two frequencies with 15 seconds interval.
 
-This software is mostly useable for developers right now.
+This software is mostly usable for developers right now.
 
 
 Supporting Additional Devices and Test Data
