@@ -23,9 +23,9 @@
  *  #7      -- Message Count. Rolling counter incremented at each unique message.
  *  #8      -- Switch setting -> 2="day", 4="timer", 8="night"
  *  #9 -#10 -- Temperature decimal <value>/256
- *  #11-#12 -- Temperature integer (in Celcius)
+ *  #11-#12 -- Temperature integer (in Celsius)
  *  #13-#14 -- Set point decimal <value>/256
- *  #15-#16 -- Set point integer (in Celcius)
+ *  #15-#16 -- Set point integer (in Celsius)
  *  #17-#20 -- CRC16, poly 0x1021, includes nibble #1-#16
  *
  * Copyright (C) 2016 Tommy Vestermark

@@ -2,7 +2,7 @@
  * X10 Security sensor decoder.
  *
  * Each packet starts with a sync pulse of 9000 us and 4500 us gap.
- * The message is OOK PPM codeded with 567 us pulse and long gap (0 bit)
+ * The message is OOK PPM encoded with 567 us pulse and long gap (0 bit)
  * of 1680 us or short gap (1 bit) of 590 us. There are 41 bits, the
  * message is repeated 5 times with a packet gap of 40000 us.
  *

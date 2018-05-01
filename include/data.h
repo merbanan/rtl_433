@@ -74,7 +74,7 @@ typedef struct data {
     @param pretty_key Pretty name for the key. Use "" if to omit pretty label for this field completely,
                       or NULL if to use key name for it.
     @param type Type of the first value to put in.
-    @param ... The value of the first value to put in, follwed by the rest of the
+    @param ... The value of the first value to put in, followed by the rest of the
                key-type-values. The list is terminated with a NULL.
 
     @return A constructed data_t* object or NULL if there was a memory allocation error.

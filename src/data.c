@@ -53,7 +53,7 @@ typedef struct {
 
     /* function for importing arrays. strings are specially handled (as they
        are copied deeply), whereas other arrays are just copied shallowly
-       (but copied nevertheles) */
+       (but copied nevertheless) */
     array_elementwise_import_fn array_elementwise_import;
 
     /* a function for releasing an element when put in an array; integers

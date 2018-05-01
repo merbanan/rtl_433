@@ -19,7 +19,7 @@
  *
  * Assuming MSB first and falling edge = 1.
  *
- * quarternary conversion of message needed:
+ * quaternary conversion of message needed:
  * 0x05 = 0
  * 0x06 = 1
  * 0x09 = 2
@@ -28,8 +28,8 @@
  * Message looks like this:
  * a = Header (0xAA9995)
  * b = device state (2=default; 7=init)
- * c = temp1 (need to substract 532)
- * d = temp2 (need to substract 532)
+ * c = temp1 (need to subtract 532)
+ * d = temp2 (need to subtract 532)
  * e = checksum (the checksum gets renewed on a device reset, and represents a kind of session_id)
  *
  * nibble: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
@@ -50,7 +50,7 @@
 
 //here we extract bitbuffer values, for easy data handling
 static void convert_bitbuffer(bitbuffer_t *bitbuffer, unsigned int *msg_converted, char *msg_hex_combined) {
-    //quarternary convertion
+    //quaternary conversion
     unsigned int quart_convert[16] ={0,0,0,0,0,0,1,0,0,2,3,0,0,0,0,0};
     int i;
     for(i = 0; i < 13; i++) {
@@ -199,7 +199,7 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     if((bitbuffer->bb[0][0] != 0xAA || bitbuffer->bb[0][0] != 0xaa ) || bitbuffer->bb[0][1] != 0x99 || bitbuffer->bb[0][2] != 0x95)
         return 0;
 
-    //convert hex values into quardinary values
+    //convert hex values into quaternary values
     convert_bitbuffer(bitbuffer, msg_converted, msg_hex_combined);
 
     //checksum is used to represent a session. This means, we get a new session_id if a reset or battery exchange is done.
