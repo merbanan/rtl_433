@@ -154,6 +154,53 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
 	return ipos;
 }
 
+unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
+        bitbuffer_t *outbuf, unsigned max)
+{
+    uint8_t *bits = inbuf->bb[row];
+    unsigned int len  = inbuf->bits_per_row[row];
+    unsigned int ipos = start;
+    uint8_t bit1, bit2, bit3;
+
+    if (max && len > start + (max * 2))
+        len = start + (max * 2);
+
+    // the first long pulse will determine the clock
+    // if needed skip one short pulse to get in synch
+    while (ipos < len) {
+        bit1 = bit(bits, ipos++);
+        bit2 = bit(bits, ipos++);
+        bit3 = bit(bits, ipos);
+
+        if (bit1 != bit2) {
+            if (bit2 != bit3) {
+                bitbuffer_add_bit(outbuf, 0);
+            } else {
+				bit2 = bit1;
+				ipos -= 1;
+				break;
+			}
+        } else {
+			bit2 = 1 - bit1;
+			ipos -= 2;
+			break;
+		}
+    }
+
+    while (ipos < len) {
+        bit1 = bit(bits, ipos++);
+        if (bit1 == bit2)
+            break; // clock missing, abort
+        bit2 = bit(bits, ipos++);
+
+        if (bit1 == bit2)
+            bitbuffer_add_bit(outbuf, 1);
+        else
+            bitbuffer_add_bit(outbuf, 0);
+    }
+
+    return ipos;
+}
 
 void bitbuffer_print(const bitbuffer_t *bits) {
 	fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
