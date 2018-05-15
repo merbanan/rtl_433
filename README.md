@@ -183,6 +183,7 @@ Supported device protocols:
     [116]  Honeywell Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
+    [119]* Bresser Weather Center 5-in-1
 
 * Disabled by default, use -R n or -G
 

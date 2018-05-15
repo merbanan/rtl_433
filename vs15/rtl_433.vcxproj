@@ -127,6 +127,7 @@
     <ClCompile Include="..\src\devices\blyss.c" />
     <ClCompile Include="..\src\devices\brennenstuhl_rcs_2044.c" />
     <ClCompile Include="..\src\devices\bresser_3ch.c" />
+    <ClCompile Include="..\src\devices\bresser_5in1.c" />
     <ClCompile Include="..\src\devices\bt_rain.c" />
     <ClCompile Include="..\src\devices\calibeur.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
