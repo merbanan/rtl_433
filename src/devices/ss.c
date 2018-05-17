@@ -25,7 +25,7 @@ ss_sensor_parser (bitbuffer_t *bitbuffer)
 	uint16_t bitcount = bitbuffer->bits_per_row[0];
 
 	data_t *data;
-	char *extradata = "";
+	char extradata[30] = "";
 
 	local_time_str(0, time_str);
 
@@ -42,6 +42,13 @@ ss_sensor_parser (bitbuffer_t *bitbuffer)
 		strcat(id, str);
 	}
 
+	if (bb[0][9] == 64) { 
+		strcpy(extradata,"Contact Closed");
+	} else if (bb[0][9] == 128) { 
+		strcpy(extradata,"Contact Open");
+	} else if (bb[0][9] == 192) { 
+		strcpy(extradata,"Alarm Off");
+	}
 	data = data_make(
 		"time",		"",	DATA_STRING, time_str,
 		"model",	"",	DATA_STRING, "SimpliSafe Sensor",
@@ -87,7 +94,7 @@ ss_pinentry_parser(bitbuffer_t *bitbuffer)
 	}
 
 	char str[2];
-	char extradata[20] = "Disarm Pin: ";
+	char extradata[30] = "Disarm Pin: ";
 	sprintf(str, "%x", digits[0]);
 	strcat(extradata, str);
 	for (uint16_t k = 1; k < 4; k++) {
@@ -104,14 +111,13 @@ ss_pinentry_parser(bitbuffer_t *bitbuffer)
 		"extradata",	"Extra Data",	DATA_STRING, extradata,
 		NULL
 	);
-		//"state",	"State",	DATA_INT, bb[0][9],
         data_acquired_handler(data);
 
 	return 1;
 }
 
 static int 
-ss_keypad_arming (bitbuffer_t *bitbuffer)
+ss_keypad_commands (bitbuffer_t *bitbuffer)
 {
 	bitrow_t *bb = bitbuffer->bb;
 	uint16_t bitcount = bitbuffer->bits_per_row[0];
@@ -119,26 +125,19 @@ ss_keypad_arming (bitbuffer_t *bitbuffer)
 	data_t *data;
 	local_time_str(0, time_str);
 
-//	/* DEBUG: print out the received packet */
-//	fprintf (stderr, "SS bitcount=%d; data= ", bitcount);
-//	for (int i = 0 ; i <= bitcount/8 ; i++) {
-//		fprintf (stderr, "%02x", bb[0][i]);
-//	}
-//	fprintf(stderr, "\n");
-
-	// Change to least-significant-bit last (protocol uses least-siginificant-bit first) for hex representation:
-
-	char extradata[20] = "Arming: ";
+	char extradata[30]; // = "Arming: ";
 	if (bb[0][10] == 0x6a) { 
-		strcat(extradata, "Away");
+		strcpy(extradata, "Arm System - Away");
 	} else if (bb[0][10] == 0xca) { 
-		strcat(extradata, "Home");
+		strcpy(extradata, "Arm System - Home");
 	} else if (bb[0][10] == 0x3a) { 
-		strcat(extradata, "Cancelled");
+		strcpy(extradata, "Arm System - Cancelled");
+	} else if (bb[0][10] == 0x2a) { 
+		strcpy(extradata, "Keypad Panic Button");
+	} else if (bb[0][10] == 0x86) { 
+		strcpy(extradata, "Keypad Menu Button");
 	} else { 
-		char tmp[20] = "";
-		sprintf(tmp, "Unknown Keypad: %02x", bb[0][10]);
-		strcpy(extradata,tmp);
+		sprintf(extradata, "Unknown Keypad: %02x", bb[0][10]);
 	}
 
 	char id[5] = ""; 
@@ -167,7 +166,6 @@ ss_sensor_callback (bitbuffer_t *bitbuffer)
 {
 	bitbuffer_invert(bitbuffer); // Invert the Bits
 	bitrow_t *bb = bitbuffer->bb;
-	// fprintf (stderr, "%02x %02x %02x", bb[0][0], bb[0][1], bb[0][2]);
 
 	if (bb[0][0] != 0x33 && bb[0][1] != 0xa0) { // All Messages Must start with 0x33a0
 		return 0;
@@ -177,7 +175,7 @@ ss_sensor_callback (bitbuffer_t *bitbuffer)
 		} else if (bb[0][2] == 0x66) {
 			return ss_pinentry_parser (bitbuffer);
 		} else if (bb[0][2] == 0x44) { 
-			return ss_keypad_arming (bitbuffer);
+			return ss_keypad_commands (bitbuffer);
 		} else {
 			fprintf(stderr, "Unknown Message Type: %02x\n", bb[0][2]);
 
