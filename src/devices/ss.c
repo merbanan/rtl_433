@@ -178,13 +178,6 @@ ss_sensor_callback (bitbuffer_t *bitbuffer)
 			return ss_keypad_commands (bitbuffer);
 		} else {
 			fprintf(stderr, "Unknown Message Type: %02x\n", bb[0][2]);
-
-	/* DEBUG: print out the received packet */
-//	fprintf (stderr, "SS bitcount=%d; data= ", bitcount);
-//	for (int i = 0 ; i <= bitcount/8 ; i++) {
-//		fprintf (stderr, "%02x", bb[0][i]);
-//	}
-//	fprintf(stderr, "\n");
 			return 0;
 		}
 	} 
@@ -202,7 +195,7 @@ static char *sensor_output_fields[] = {
 };
 
 r_device ss_sensor = {
-    .name           = "SimpliSafe Sensors",
+    .name           = "SimpliSafe Home Security System",
     .modulation     = OOK_PULSE_PIWM_DC,
     .short_limit    = 500,  // half-bit width 500 us
     .long_limit     = 1000, // bit width 1000 us
