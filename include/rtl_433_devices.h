@@ -104,7 +104,8 @@
 		DECL(ge_coloreffects) \
 		DECL(x10_sec) \
 		DECL(interlogix) \
-		DECL(dish_remote_6_3)
+		DECL(dish_remote_6_3) \
+		DECL(ss_sensor)
 
 typedef struct {
 	char name[256];
