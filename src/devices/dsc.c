@@ -73,11 +73,17 @@
 #define DSC_CT_CRC_POLY        0xf5
 #define DSC_CT_CRC_INIT        0x3d
 
-
-static int DSC_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
-    int valid_cnt = 0;
+static int dsc_callback(bitbuffer_t *bitbuffer)
+{
     char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+    uint8_t *b;
+    int valid_cnt = 0;
+    uint8_t bytes[5];
+    uint8_t status, crc;
+    uint32_t esn;
+    char status_str[3];
+    char esn_str[7];
 
     if (debug_output > 1) {
         fprintf(stderr,"Possible DSC Contact: ");
@@ -106,34 +112,30 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
             continue;
         }
 
+        b = bitbuffer->bb[row];
         // Validate Sync/Start bits == 1 and are in the right position
-        if (!((bb[row][0] & 0xF0) &&     // First 4 bits are start/sync bits
-              (bb[row][1] & 0x08) &&    // Another sync/start bit between
-              (bb[row][2] & 0x04) &&    // every 8 data bits
-              (bb[row][3] & 0x02) &&
-              (bb[row][4] & 0x01))) {
+        if (!((b[0] & 0xF0) &&     // First 4 bits are start/sync bits
+              (b[1] & 0x08) &&    // Another sync/start bit between
+              (b[2] & 0x04) &&    // every 8 data bits
+              (b[3] & 0x02) &&
+              (b[4] & 0x01))) {
             if (debug_output > 1) {
                 fprintf(stderr,
                     "DSC Invalid start/sync bits %02x %02x %02x %02x %02x\n",
-                    bb[row][0] & 0xF0,
-                    bb[row][1] & 0x08,
-                    bb[row][2] & 0x04,
-                    bb[row][3] & 0x02,
-                    bb[row][4] & 0x01);
+                    b[0] & 0xF0,
+                    b[1] & 0x08,
+                    b[2] & 0x04,
+                    b[3] & 0x02,
+                    b[4] & 0x01);
             }
             continue;
         }
 
-        uint8_t bytes[5];
-        uint8_t status,crc;
-        uint32_t esn;
-        uint8_t crcc1, crcc2, crcc3, crcc4, crcc5, crcc6, crcc7, crcc8;
-
-        bytes[0] = ((bb[row][0] & 0x0F) << 4) | ((bb[row][1] & 0xF0) >> 4);
-        bytes[1] = ((bb[row][1] & 0x07) << 5) | ((bb[row][2] & 0xF8) >> 3);
-        bytes[2] = ((bb[row][2] & 0x03) << 6) | ((bb[row][3] & 0xFC) >> 2);
-        bytes[3] = ((bb[row][3] & 0x01) << 7) | ((bb[row][4] & 0xFE) >> 1);
-        bytes[4] = ((bb[row][5]));
+        bytes[0] = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
+        bytes[1] = ((b[1] & 0x07) << 5) | ((b[2] & 0xF8) >> 3);
+        bytes[2] = ((b[2] & 0x03) << 6) | ((b[3] & 0xFC) >> 2);
+        bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
+        bytes[4] = ((b[5]));
 
         // XXX change to debug_output
         if (debug_output)
@@ -144,17 +146,25 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 
-        local_time_str(0, time_str);
-
-        if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) == 0) {
-            printf("%s DSC Contact ESN: %06X, Status: %02X, CRC: %02X\n",
-                time_str, esn, status, crc);
-
-            valid_cnt++; // Have a valid packet.
-        } else if (debug_output) {
-            fprintf(stderr,"%s DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
-                time_str, esn, status, crc);
+        if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) != 0) {
+            if (debug_output)
+                fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
+                        esn, status, crc);
+            continue;
         }
+
+        sprintf(status_str, "%02x", status);
+        sprintf(esn_str, "%06x", esn);
+        data = data_make(
+                "time", "", DATA_STRING, time_str,
+                "model", "", DATA_STRING, "DSC Contact",
+                "id", "", DATA_STRING, esn_str,
+                "status", "", DATA_STRING, status_str,
+                "mic", "", DATA_STRING, "CRC",
+                NULL);
+        data_acquired_handler(data);
+
+        valid_cnt++; // Have a valid packet.
     }
 
     if (valid_cnt) {
@@ -164,6 +174,14 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
     return 0;
 }
 
+static char *output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "status",
+    "mic",
+    NULL
+};
 
 r_device DSC = {
     .name          = "DSC Security Contact",
@@ -171,7 +189,8 @@ r_device DSC = {
     .short_limit   = 250,    // Pulse length, 250 µs
     .long_limit    = 500,    // Bit period, 500 µs
     .reset_limit   = 5000, // Max gap,
-    .json_callback = &DSC_callback,
-    .disabled      = 1,
+    .json_callback = &dsc_callback,
+    .disabled      = 0,
     .demod_arg     = 0,
+    .fields        = output_fields,
 };
