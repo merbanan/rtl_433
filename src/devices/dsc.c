@@ -147,7 +147,7 @@ static int DSC_callback(bitbuffer_t *bitbuffer) {
         local_time_str(0, time_str);
 
         if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) == 0) {
-            printf("%s DSC Contact ESN: %06X, Status: %02X, CRC: %02X\n",
+            printf("{ \"time\" :  \"%s\", \"model\" : \"DSC Contact\", \"ESN\" : \"%06X\", \"status\" : \"%02X\", \"CRC\"\ : \"%02X\"} \n",
                 time_str, esn, status, crc);
 
             valid_cnt++; // Have a valid packet.
