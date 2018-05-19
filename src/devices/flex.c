@@ -156,6 +156,8 @@ static void help()
             "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
             "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
+            "\tOOK_PIWM_RAW :    Raw Pulse Interval and Width Modulation\n"
+            "\tOOK_PIWM_DC :     Differential Pulse Interval and Width Modulation\n"
             "\tOOK_MC_OSV1 :     Manchester Code for OSv1 devices\n"
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
             "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
@@ -253,6 +255,10 @@ r_device *flex_create_device(char *spec)
         dev->modulation = OOK_PULSE_PWM_PRECISE;
     else if (!strcasecmp(c, "OOK_DMC"))
         dev->modulation = OOK_PULSE_DMC;
+    else if (!strcasecmp(c, "OOK_PIWM_RAW"))
+        dev->modulation = OOK_PULSE_PIWM_RAW;
+    else if (!strcasecmp(c, "OOK_PIWM_DC"))
+        dev->modulation = OOK_PULSE_PIWM_DC;
     else if (!strcasecmp(c, "OOK_MC_OSV1"))
         dev->modulation = OOK_PULSE_PWM_OSV1;
     else if (!strcasecmp(c, "FSK_PCM"))
@@ -308,7 +314,9 @@ r_device *flex_create_device(char *spec)
         }
     }
 
-    if (dev->modulation == OOK_PULSE_DMC) {
+    if (dev->modulation == OOK_PULSE_DMC
+            || dev->modulation == OOK_PULSE_PIWM_RAW
+            || dev->modulation == OOK_PULSE_PIWM_DC) {
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
