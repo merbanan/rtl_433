@@ -28,6 +28,8 @@ struct flex_params {
     unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
+    unsigned preamble_len;
+    bitrow_t preamble_bits;
 };
 
 static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
@@ -39,6 +41,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
     char time_str[LOCAL_TIME_BUFLEN];
+    bitrow_t tmp;
 
     // discard short / unwanted bitbuffers
     if ((bitbuffer->num_rows < params->min_rows)
@@ -70,6 +73,24 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
         for (i = 0; i < bitbuffer->num_rows; i++) {
             if (bitbuffer_search(bitbuffer, i, 0, params->match_bits, params->match_len) < bitbuffer->bits_per_row[i]) {
                 match_count++;
+            }
+        }
+        if (!match_count)
+            return 0;
+    }
+
+    // discard unless match, this should be an AND condition
+    if (params->preamble_len) {
+        match_count = 0;
+        for (i = 0; i < bitbuffer->num_rows; i++) {
+            unsigned pos = bitbuffer_search(bitbuffer, i, 0, params->preamble_bits, params->preamble_len);
+            if (pos < bitbuffer->bits_per_row[i]) {
+                match_count++;
+                pos += params->preamble_len;
+                unsigned len = bitbuffer->bits_per_row[i] - pos;
+                bitbuffer_extract_bytes(bitbuffer, i, pos, tmp, len);
+                memcpy(bitbuffer->bb[i], tmp, (len + 7) / 8);
+                bitbuffer->bits_per_row[i] = len;
             }
         }
         if (!match_count)
@@ -183,6 +204,7 @@ static void help()
             "\t\tuse opt>=n to match at least <n> and opt<=n to match at most <n>\n"
             "\tinvert : invert all bits\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
+            "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
             "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,repeats>=3\"\n\n");
@@ -361,6 +383,9 @@ r_device *flex_create_device(char *spec)
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
 
+        else if (!strcasecmp(key, "preamble"))
+            params->preamble_len = parse_bits(val, params->preamble_bits);
+
         else if (!strcasecmp(key, "countonly"))
             params->count_only = val ? atoi(val) : 1;
 
@@ -380,8 +405,8 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
         fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f, demod_arg=%u\n",
                 dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit, (unsigned)dev->demod_arg);
-        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u\n",
-                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len);
+        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
+                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
     }
 
     free(spec);
