@@ -155,6 +155,7 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
 
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
+        local_time_str(0, time_str);
         data = data_make(
                 "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "DSC Contact",
