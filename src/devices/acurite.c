@@ -378,44 +378,61 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * L = Lightning strike count.
  * K = Checksum
  *
- * Byte 0 - channel number A/B/C
- * - Channel in 2 most significant bits - A: 0xC, B: 0x8, C: 00
- * - TBD: lower 6 bits, ID or unused?
- * - 2018-04-21, Assuming lower nybble is ID for 12 bits of ID.
+ * Byte 0 - channel/?/ID?
+ * - 0xC0: channel (A: 0xC, B: 0x8, C: 00)
+ *   Note that Channel is a logical concept, not a frequency.
+ * - 0x30: @todo Figure out
+ * - 0x0F: most significant 4 bits of ID
+ *    (not confirmed, assumed on 2018-04-21)
  *
  * Byte 1 - ID all 8 bits, no parity.
+ * - 0xFF = least significant 8 bits of ID
+ *    Note that ID is just a number and that least/most is not
+ *    externally meaningful.
  *
  * Byte 2 - Upper nybble: battery & possible other status
- *          0x40 = battery OK, (off is battery low)
- *          0x20 = TBD Always on??
- *          0x10 = TBD always off?
- *          Lower nybble: Unknown TBD always 0xF?
+ * - 0x80 = @todo Figure out
+ * - 0x40 = 1 is battery OK, 0 is battery low
+ * - 0x20 = @todo always on??
+ * - 0x10 = @todo always off?
+ * - 0x0F = @todo always 0xF?
  *
- * Byte 3 - Humidity (7 bits + parity bit)
+ * Byte 3 - Humidity
+ * - 0x80 - even parity
+ * - 0x7f - humidity
  *
  * Byte 4 - Status (2 bits) and Temperature MSB (5 bits)
  * - Bitmask PASTTTTT  (P = Parity, A = Active,  S = Status, T = Temperature)
+ * - 0x80 - even parity
  * - 0x40 - Active Mode
- * 	    Transmitting every 8 seconds (lightning possibly detected)
- *          normal, off, transmits every 24 seconds
+ *    Transmitting every 8 seconds (lightning possibly detected)
+ *    normal, off, transmits every 24 seconds
  * - 0x20 - TBD: always off?
- * - 0x1F - Temperature MSB (5 bits)
+ * - 0x1F - Temperature most significant 5 bits
  *
  * Byte 5 - Temperature LSB (7 bits, 8th is parity)
+ * - 0x80 - even parity
+ * - 0x7F - Temperature least significant 7 bits
  *
  * Byte 6 - Lightning Strike count (7 bits, 8th is parity)
- * - Stored in EEPROM or something non-volatile)
- * - Wraps at 127
+ * - 0x80 - even parity
+ * - 0x7F - strike count (wraps at 127)
+ *    Stored in EEPROM (or something non-volatile)
+ *    @todo Does it go from 127 to 1, or to 0?
  *
  * Byte 7 - Edge of Storm Distance Approximation
- * - (5 bits) and 2 other status bits (TBD)
  * - Bits PSSDDDDD  (P = Parity, S = Status, D = Distance
- * - 5 lower bits is distance in unit? (miles? km?) to edge of storm (theory)
- * - Bit 0x20: (RF) interference / strong RFI detected (to be verified)
- * - Bit 0x40: TBD, possible activity?
- * - distance = 0x1f: possible invalid value indication (value at power up)
- * - Note: Distance sometimes goes to 0 right after strike counter increment
- *         status bits might indicate validity of distance.
+ * - 0x80 - even parity
+ * - 0x40 - USSB (unknown strike status bit) - (possible activity?)
+ *    currently decoded into "ussb" output field
+ *    @todo needs understanding
+ * - 0x20 - RFI (radio frequency interference)
+ *    @todo needs cross-checking with light and/or console
+ * - 0x1F - distance to edge of storm (theory)
+ *    value 0x1f is possible invalid value indication (value at power up)
+ *    @todo determine if miles, km, or something else
+ *    Note: Distance sometimes goes to 0 right after strike counter increment.
+ *          Status bits might indicate validity of distance.
  *
  * Byte 8 - checksum. 8 bits, no parity.
  *
