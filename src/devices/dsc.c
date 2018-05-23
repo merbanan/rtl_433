@@ -155,11 +155,16 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
 
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
+
+        local_time_str(0, time_str);
+
         data = data_make(
-                "time", "", DATA_STRING, time_str,
-                "model", "", DATA_STRING, "DSC Contact",
-                "id", "", DATA_STRING, esn_str,
-                "status", "", DATA_STRING, status_str,
+		"time", "", DATA_STRING, time_str,
+		"model", "", DATA_STRING, "DSC Contact",
+		"id", "", DATA_INT, esn,
+		"esn", "", DATA_STRING, esn_str,
+		"status", "", DATA_INT, status,
+		"status_hex", "", DATA_STRING, status_str, // TEMP DELETE once bits are output
                 "mic", "", DATA_STRING, "CRC",
                 NULL);
         data_acquired_handler(data);
