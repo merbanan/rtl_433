@@ -31,6 +31,7 @@
 #define ID_UV800    0xd874
 #define ID_THN129   0xcc43  // THN129 Temp only
 #define ID_BTHGN129 0x5d53  // Baro, Temp, Hygro sensor
+#define ID_UVR128   0xec70
 
 float get_os_temperature(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included  to support sensors with temp in different position
@@ -435,6 +436,20 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
       //}
 
       return 1;
+	} else if (sensor_id == ID_UVR128 && num_valid_v2_bits==297) {
+		if ((validate_os_v2_message(msg, 297, num_valid_v2_bits, 12) == 0)) {
+		int uvidx = get_os_uv(msg, sensor_id);
+		data = data_make(
+		  "time",           "",           DATA_STRING, time_str,
+		  "model",          "",     	  DATA_STRING, "Oregon Scientific UVR128",
+		  "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
+		  "uv",             "UV Index",   DATA_FORMAT, "%u", DATA_INT, uvidx,
+		  "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
+		  //"channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
+		  NULL);
+		data_acquired_handler(data);
+		}
+	 return 1;
     }else if (num_valid_v2_bits > 16) {
       if(debug_output) {
         fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
