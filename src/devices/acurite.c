@@ -8,10 +8,12 @@
  * - 5-n-1 pro weather sensor, Model: 06014RM
  * - 896 Rain gauge, Model: 00896
  * - 592TXR / 06002RM Tower sensor (temperature and humidity)
+ *   (Note: Some newer sensors share the 592TXR coding for compatibility.
  * - 609TXC "TH" temperature and humidity sensor (609A1TX)
  * - Acurite 986 Refrigerator / Freezer Thermometer
  * - Acurite 606TX temperature sensor
  * - Acurite 6045M Lightning Detector (Work in Progress)
+ * - Acurite 00275rm and 00276rm temp. and humidity with optional probe.
  */
 
 
@@ -27,8 +29,11 @@
 #define ACURITE_6045_BITLEN		72
 
 // ** Acurite known message types
-#define ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL  0x31
-#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY     0x38
+#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
+#define ACURITE_MSGTYPE_6045M                           0x2f
+#define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
+#define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
+
 
 static char time_str[LOCAL_TIME_BUFLEN];
 
@@ -107,6 +112,8 @@ const float acurite_5n1_winddirections[] =
     };
 
 
+// @todo remove for 1.0 release, shouldn't keep state in rtl_433.
+//      See bug #466
 // 5n1 keep state for how much rain has been seen so far
 static int acurite_5n1raincounter = 0;  // for 5n1 decoder
 static int acurite_5n1t_raincounter = 0;  // for combined 5n1/TXR decoder
@@ -365,13 +372,11 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * Same pulse characteristics. checksum, and parity checking on data bytes.
  *
  * 0   1   2   3   4   5   6   7   8
- * CI? II  BX  HH  ST  TT  LL  DD? KK
+ * CI II  BB  HH  ST  TT  LL  DD? KK
  *
  * C = Channel
  * I = ID
- * B = Battery + possible unknown status bits.
- * X = Unknown usually F.
- * H = Humidity
+ * B = Battery + Mesage type 0x2f
  * S = Status/Message type/Temperature MSB.
  * T = Temperature
  * D = Lightning distance and status bits?
@@ -380,29 +385,26 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  *
  * Byte 0 - channel/?/ID?
  * - 0xC0: channel (A: 0xC, B: 0x8, C: 00)
- *   Note that Channel is a logical concept, not a frequency.
- * - 0x30: @todo Figure out
- * - 0x0F: most significant 4 bits of ID
- *    (not confirmed, assumed on 2018-04-21)
+ * - 0x3F: most significant 6 bits of bit ID
+ *    (14 bits, same as Acurite Tower sensor family)
  *
  * Byte 1 - ID all 8 bits, no parity.
  * - 0xFF = least significant 8 bits of ID
  *    Note that ID is just a number and that least/most is not
  *    externally meaningful.
  *
- * Byte 2 - Upper nybble: battery & possible other status
- * - 0x80 = @todo Figure out
+ * Byte 2 - Battery and Message type
+ * - Bitmask PBMMMMMM
+ * - 0x80 = Parity
  * - 0x40 = 1 is battery OK, 0 is battery low
- * - 0x20 = @todo always on??
- * - 0x10 = @todo always off?
- * - 0x0F = @todo always 0xF?
+ * - 0x3f = Message type is 0x2f to indicate 06045M lightning
  *
  * Byte 3 - Humidity
  * - 0x80 - even parity
  * - 0x7f - humidity
  *
  * Byte 4 - Status (2 bits) and Temperature MSB (5 bits)
- * - Bitmask PASTTTTT  (P = Parity, A = Active,  S = Status, T = Temperature)
+ * - Bitmask PAUTTTTT  (P = Parity, A = Active,  U = unknown, T = Temperature)
  * - 0x80 - even parity
  * - 0x40 - Active Mode
  *    Transmitting every 8 seconds (lightning possibly detected)
@@ -423,8 +425,8 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * Byte 7 - Edge of Storm Distance Approximation
  * - Bits PSSDDDDD  (P = Parity, S = Status, D = Distance
  * - 0x80 - even parity
- * - 0x40 - USSB (unknown strike status bit) - (possible activity?)
- *    currently decoded into "ussb" output field
+ * - 0x40 - USSB1 (unknown strike status bit) - (possible activity?)
+ *    currently decoded into "ussb1" output field
  *    @todo needs understanding
  * - 0x20 - RFI (radio frequency interference)
  *    @todo needs cross-checking with light and/or console
@@ -457,7 +459,6 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  * @todo - check parity on bytes 2 - 7
  *
  * Additional reverse engineering needed:
- * @todo - Determine if ID is 12 bits or 8 bits, 
  * @todo - Get distance to front of storm to match display
  * @todo - figure out remaining status bits and how to report
  */
@@ -476,11 +477,11 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
 
     channel = acurite_getChannel(bb[0]);  // same as TXR
     sprintf(channel_str, "%c", channel);  // No DATA_CHAR, need null term. str
-    sensor_id = ((bb[0] & 0x0F)  << 8) | bb[1];     // TBD 12 bits or only 8?
+    sensor_id = acurite_txr_getSensorId(bb[0],bb[1]); // 2018-05-23 same as TXR
     battery_low = (bb[2] & 0x40) == 0;
     humidity = acurite_getHumidity(bb[3]);  // same as TXR
     active = (bb[4] & 0x40) == 0x40;	// Sensor is actively listening for strikes
-    message_type = (bb[4] & 0x60) >> 5;  // status bits: 0x2 8 second xmit, 0x1 - TBD
+    message_type = bb[2] & 0x3f;
     tempf = acurite_6045_getTemp(bb[4], bb[5]);
     strike_count = bb[6] & 0x7f;
     strike_distance = bb[7] & 0x1f;
@@ -503,7 +504,7 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
     *rawp = '\0';
 
     // Flag whether this message might need further analysis
-    if (((bb[0] & 0x30) != 0) ||	// Channel high nybble 0x3 unused
+    if ((message_type != ACURITE_MSGTYPE_6045M) || // 6045 message type is 0x2f
 	((bb[2] & 0x20) != 0x20) || // unknown status bit, always on
 	((bb[2] & 0x0f) != 0x0f) || // unknown status bits, always on
 	((bb[4] & 0x20) != 0) // unknown status bits, always off
@@ -555,6 +556,10 @@ static int acurite_6045_decode (bitrow_t bb, int browlen) {
  * - 592TXR temperature and humidity sensor
  * - 5-n-1 weather station
  * - 6045M Lightning Detector with Temperature and Humidity
+ *
+ * @todo - refactor, move 5n1 and txr decoding into separate functions.
+ * @todo - TBD Are parity and checksum the same across these devices?
+ *         (opportunity to DRY-up and simplify?)
  */
 static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     int browlen, valid = 0;
@@ -615,6 +620,15 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	}
 
 
+        // acurite sensors with a common format appear to have a message type
+        // in the lower 6 bits of the 3rd byte.
+        // Format: PBMMMMMM
+        // P = Parity
+        // B = Battery Normal
+        // M = Message type
+        message_type = bb[2] & 0x3f;
+
+
 	// tower sensor messages are 7 bytes.
 	// @todo - see if there is a type in the message that
 	// can be used instead of length to determine type
@@ -625,18 +639,18 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 	    humidity = acurite_getHumidity(bb[3]);
 	    tempc = acurite_txr_getTemp(bb[4], bb[5]);
             sprintf(channel_str, "%c", channel);
-            battery_low = sensor_status >>7;
+            battery_low = (bb[2] & 0x40) == 0;
 
             data = data_make(
                     "time",			"",		DATA_STRING,	time_str,
                     "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
                     "id",			"",		DATA_INT,	sensor_id,
-                    "status",			"",		DATA_INT,	sensor_status,
 		    "sensor_id",    		NULL,  		DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                     "channel",  		NULL,     	DATA_STRING, 	&channel_str,
                     "temperature_C", 		"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
                     "humidity",         	"Humidity",	DATA_INT,	humidity,
-                    "battery",          	"Battery",    	DATA_INT, 	battery_low,
+                    "battery_low",	        "battery",	DATA_INT,	battery_low,
+
                     NULL);
 
             data_acquired_handler(data);
@@ -653,10 +667,9 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
         sprintf(channel_str, "%c", channel);
 	    sensor_id = acurite_5n1_getSensorId(bb[0],bb[1]);
 	    sequence_num = acurite_5n1_getMessageCaught(bb[0]);
-	    message_type = bb[2] & 0x3f;
         battery_low = (bb[2] & 0x40) >> 6;
 
-	    if (message_type == ACURITE_MSGTYPE_WINDSPEED_WINDDIR_RAINFALL) {
+	    if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL) {
             // Wind speed, wind direction, and rain fall
             wind_speed_kph = acurite_getWindSpeed_kph(bb[3], bb[4]);
             wind_speed_mph = kmph2mph(wind_speed_kph);
@@ -697,7 +710,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
 
             data_acquired_handler(data);
 
-	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY) {
+	    } else if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY) {
             // Wind speed, temperature and humidity
             wind_speed_kph = acurite_getWindSpeed_kph(bb[3], bb[4]);
             wind_speed_mph = kmph2mph(wind_speed_kph);
@@ -904,7 +917,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 // http://www.osengr.org/WxShield/Downloads/Weather-Sensor-RF-Protocols.pdf
 //
 // This is the same algorithm as used in ambient_weather.c
-//
+// @todo - move to util.c, (and rename)
 uint8_t Checksum(int length, uint8_t *buff) {
   uint8_t mask = 0xd3;
   uint8_t checksum = 0x00;
