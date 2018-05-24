@@ -1354,41 +1354,41 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Couldn't allocate read buffers!\n");
             exit(1);
         }
-    if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
-        in_file = stdin;
-        in_filename = "<stdin>";
-    } else {
-        in_file = fopen(in_filename, "rb");
-        if (!in_file) {
-        fprintf(stderr, "Opening file: %s failed!\n", in_filename);
-        goto out;
+        if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
+            in_file = stdin;
+            in_filename = "<stdin>";
+        } else {
+            in_file = fopen(in_filename, "rb");
+            if (!in_file) {
+                fprintf(stderr, "Opening file: %s failed!\n", in_filename);
+                goto out;
+            }
         }
-    }
-    fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
-    if (!quiet_mode) {
-        fprintf(stderr, "Input format: %s\n", (demod->debug_mode == 3) ? "cf32" : "uint8");
-    }
-    sample_file_pos = 0.0;
+        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
+        if (!quiet_mode) {
+            fprintf(stderr, "Input format: %s\n", (demod->debug_mode == 3) ? "cf32" : "uint8");
+        }
+        sample_file_pos = 0.0;
 
         int n_read, cf32_tmp;
         do {
-        if (demod->debug_mode == 3) {
-        n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH, in_file);
-        for(int n = 0; n < n_read; n++) {
-            cf32_tmp = test_mode_float_buf[n]*127 + 127;
-            if (cf32_tmp < 0)
-                cf32_tmp = 0;
-            else if (cf32_tmp > 255)
-                cf32_tmp = 255;
-            test_mode_buf[n] = (uint8_t)cf32_tmp;
-        }
+            if (demod->debug_mode == 3) {
+                n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH, in_file);
+                for(int n = 0; n < n_read; n++) {
+                    cf32_tmp = test_mode_float_buf[n]*127 + 127;
+                    if (cf32_tmp < 0)
+                        cf32_tmp = 0;
+                    else if (cf32_tmp > 255)
+                        cf32_tmp = 255;
+                    test_mode_buf[n] = (uint8_t)cf32_tmp;
+                }
             } else {
                 n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
             }
             if (n_read == 0) break;  // rtlsdr_callback() will Segmentation Fault with len=0
             rtlsdr_callback(test_mode_buf, n_read, demod);
             i++;
-        sample_file_pos = (float)i * n_read / samp_rate / 2;
+            sample_file_pos = (float)i * n_read / samp_rate / 2;
         } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
@@ -1397,9 +1397,9 @@ int main(int argc, char **argv) {
 
         //Always classify a signal at the end of the file
         classify_signal();
-    if (!quiet_mode) {
-        fprintf(stderr, "Test mode file issued %d packets\n", i);
-    }
+        if (!quiet_mode) {
+            fprintf(stderr, "Test mode file issued %d packets\n", i);
+        }
         free(test_mode_buf);
         free(test_mode_float_buf);
         exit(0);
