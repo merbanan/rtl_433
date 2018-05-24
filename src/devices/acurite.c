@@ -376,7 +376,7 @@ static float acurite_6045_getTemp (uint8_t highbyte, uint8_t lowbyte) {
  *
  * C = Channel
  * I = ID
- * B = Battery + Mesage type 0x2f
+ * B = Battery + Message type 0x2f
  * S = Status/Message type/Temperature MSB.
  * T = Temperature
  * D = Lightning distance and status bits?
@@ -645,11 +645,11 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                     "time",			"",		DATA_STRING,	time_str,
                     "model",	        	"",		DATA_STRING,	"Acurite tower sensor",
                     "id",			"",		DATA_INT,	sensor_id,
-		    "sensor_id",    		NULL,  		DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                    "sensor_id",    		NULL,  		DATA_FORMAT,    "0x%04x",   DATA_INT,       sensor_id, // @todo hex output not working, delete at 1.0 release
                     "channel",  		NULL,     	DATA_STRING, 	&channel_str,
                     "temperature_C", 		"Temperature",	DATA_FORMAT,	"%.1f C", DATA_DOUBLE, tempc,
                     "humidity",         	"Humidity",	DATA_INT,	humidity,
-                    "battery_low",	        "battery",	DATA_INT,	battery_low,
+                    "battery_low",	        "battery low",	DATA_INT,	battery_low,
 
                     NULL);
 
@@ -696,7 +696,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
             data = data_make(
                 "time",         "",   DATA_STRING,    time_str,
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
-                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                "sensor_id",    NULL, DATA_INT,       sensor_id, // @todo normaiize to "id" at 1.0 release.
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -721,7 +721,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
             data = data_make(
                 "time",         "",   DATA_STRING,    time_str,
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
-                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                "sensor_id",    NULL, DATA_INT,  sensor_id, // @todo normalize to "id" at 1.0 release.
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
