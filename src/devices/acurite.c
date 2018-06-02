@@ -885,16 +885,17 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 	tempc = fahrenheit2celsius(tempf); // only for debug/old-style output
 
 	if (debug_output)
-	    printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F\n",
+	    printf("%s Acurite 986 sensor 0x%04x - %d%c: %3.1f C %d F battery: %s \n",
 	       time_str, sensor_id, sensor_num, sensor_type,
-	       tempc, tempf);
+	       tempc, tempf, battery_low ? "LOW" : "OK");
 
 	data = data_make(
 		"time",			"",		DATA_STRING,	time_str,
 		"model",		"",		DATA_STRING,	"Acurite 986 Sensor",
 		"id",			NULL,		DATA_INT,	sensor_id,
 		"channel",		NULL,		DATA_STRING,	channel_str,
-		"temperature_F",	"temperature",	DATA_FORMAT, "%d F", DATA_INT,	tempf,
+    "temperature_F",	"temperature",	DATA_FORMAT, "%d F", DATA_INT,	tempf,
+		"temperature_C",	"temperature",	DATA_FORMAT, "%.1f C", DATA_DOUBLE,	tempc,
 		"battery",		"battery",	DATA_STRING,	battery_low ? "LOW" : "OK",	// @todo convert to bool
 		"status",		"status",	DATA_INT,	status,
 	    NULL);
@@ -988,7 +989,7 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 	    data = data_make("time",          "",            DATA_STRING, time_str,
                              "model",         "",            DATA_STRING, "Acurite 606TX Sensor",
                              "id",            "",            DATA_INT, sensor_id,
-			     "battery",	      "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+			                       "battery",	      "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                              "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                              NULL);
  	    data_acquired_handler(data);
