@@ -105,7 +105,8 @@
 		DECL(x10_sec) \
 		DECL(interlogix) \
 		DECL(dish_remote_6_3) \
-		DECL(ss_sensor)
+		DECL(ss_sensor) \
+                DECL(sensible_living)
 
 typedef struct {
 	char name[256];

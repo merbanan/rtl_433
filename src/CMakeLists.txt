@@ -115,6 +115,7 @@ add_executable(rtl_433
 	devices/interlogix.c
 	devices/dish_remote_6_3.c
 	devices/simplisafe.c
+        devices/sensible_living.c
 )
 
 add_library(data data.c)
