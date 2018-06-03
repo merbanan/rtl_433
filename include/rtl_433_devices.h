@@ -108,6 +108,7 @@
 		DECL(ss_sensor)
 
 typedef struct {
+	unsigned protocol_num; // fixed sequence number, assigned in main()
 	char name[256];
 	unsigned int modulation;
 	float short_limit;
