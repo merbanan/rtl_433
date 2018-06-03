@@ -894,7 +894,7 @@ static int acurite_986_callback(bitbuffer_t *bitbuf) {
 		"model",		"",		DATA_STRING,	"Acurite 986 Sensor",
 		"id",			NULL,		DATA_INT,	sensor_id,
 		"channel",		NULL,		DATA_STRING,	channel_str,
-		"temperature_F",	"temperature",	DATA_FORMAT, "%d F", DATA_INT,	tempf,
+		"temperature_F",	"temperature",	DATA_FORMAT, "%f F", DATA_DOUBLE,	(float)tempf,
 		"battery",		"battery",	DATA_STRING,	battery_low ? "LOW" : "OK",	// @todo convert to bool
 		"status",		"status",	DATA_INT,	status,
 	    NULL);
