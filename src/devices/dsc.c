@@ -84,6 +84,8 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
     uint32_t esn;
     char status_str[3];
     char esn_str[7];
+    int s_closed, s_event, s_tamper, s_battery_low;
+    int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
     if (debug_output > 1) {
         fprintf(stderr,"Possible DSC Contact: ");
@@ -153,6 +155,33 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
             continue;
         }
 
+        // Decode status bits:
+
+        // 0x02 = Closed/OK/Restored
+        s_closed = (status & 0x02) == 0x02;
+
+        // 0x40 = Heartbeat (not an open/close event)
+        s_event = ((status & 0x40) != 0x40);
+
+        // 0x08 Battery Low
+        s_battery_low = (status & 0x08) == 0x08;
+
+        // Tamper: 0x10 set or 0x01 unset indicate tamper
+        // 0x10 Set to tamper message type (more testing needed)
+        // 0x01 Cleared tamper status (seend during hearbeats)
+        s_tamper = ((status & 0x01) != 0x01) || ((status & 0x10) == 0x10);
+
+        // "experimental" (naming might change)
+        s_xactivity = (status & 0x20) == 0x20;
+
+        // Break out 2 tamper bits
+        s_xtamper1 = (status & 0x01) != 0x01; // 0x01 set: case closed/no tamper
+        s_xtamper2 = (status & 0x10) == 0x10; //tamper event or EOL problem
+
+        // exception/states not seen
+        // 0x80 is always set and 0x04 has never been set.
+        s_exception = ((status & 0x80) != 0x80) || ((status & 0x04) == 0x04);
+
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
@@ -162,6 +191,16 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
                 "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "DSC Contact",
                 "id", "", DATA_INT, esn,
+                "closed", "", DATA_INT, s_closed, // @todo make bool
+                "event", "", DATA_INT, s_event, // @todo make bool
+                "tamper", "", DATA_INT, s_tamper, // @todo make bool
+                "battery_low", "", DATA_INT, s_battery_low, // @todo make bool
+                "xactivity", "", DATA_INT, s_xactivity, // @todo make bool
+
+                // Note: the following may change or be removed
+                "xtamper1", "", DATA_INT, s_xtamper1, // @todo make bool
+                "xtamper2", "", DATA_INT, s_xtamper2, // @todo make bool
+                "exception", "", DATA_INT, s_exception, // @todo make bool
                 "esn", "", DATA_STRING, esn_str, // to be removed - transitional
                 "status", "", DATA_INT, status,
                 "status_hex", "", DATA_STRING, status_str, // to be removed - once bits are output
