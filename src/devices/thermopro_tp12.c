@@ -11,7 +11,7 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define MODEL "Thermopro TP12 Thermometer"
+#define MODEL "Thermopro TP08/TP12 Thermometer"
 
 /*
 A normal sequence for the TP12:
@@ -56,7 +56,10 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
 
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
-    good = bitbuffer_find_repeated_row(bitbuffer, 5, 40);
+    // Update for TP08: same is true but only 2 rows (plus a third missing the trailing 1) are xmitted.
+    // Rather than create a whole new device I simply lowered min_repeat_count, everything else
+    // works perfectly. is this bad?
+    good = bitbuffer_find_repeated_row(bitbuffer, 2, 40);
     if (good < 0) {
         return 0;
     }
