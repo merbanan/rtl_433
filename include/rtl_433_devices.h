@@ -42,7 +42,7 @@
 		DECL(efergy_e2_classic) \
 		DECL(kw9015b) \
 		DECL(generic_temperature_sensor) \
-        DECL(wg_pb12v1) \
+		DECL(wg_pb12v1) \
 		DECL(acurite_txr) \
 		DECL(acurite_986) \
 		DECL(hideki_ts04) \
@@ -115,8 +115,8 @@ typedef struct {
 	float long_limit;
 	float reset_limit;
 	float gap_limit;
-    float sync_width;
-    float tolerance;
+	float sync_width;
+	float tolerance;
 	int (*json_callback)(bitbuffer_t *bitbuffer);
 	unsigned int disabled;
 	unsigned demod_arg;	// Decoder specific optional argument

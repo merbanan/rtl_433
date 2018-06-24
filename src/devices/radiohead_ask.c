@@ -13,8 +13,22 @@
 #define RH_ASK_HEADER_LEN 4
 #define RH_ASK_MAX_MESSAGE_LEN (RH_ASK_MAX_PAYLOAD_LEN - RH_ASK_HEADER_LEN - 3)
 
-uint8_t payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
-int data_payload[RH_ASK_MAX_MESSAGE_LEN];
+uint8_t rh_payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
+int rh_data_payload[RH_ASK_MAX_MESSAGE_LEN];
+
+// Transmitter speed in bits per seconds
+#define SL_ASK_SPEED 1000
+#define SL_ASK_BIT_LEN (int)1e6/SL_ASK_SPEED
+
+// Maximum message length (including the headers, byte count and FCS) we are willing to support
+// This is pretty arbitrary
+#define SL_ASK_MAX_PAYLOAD_LEN 80
+#define SL_ASK_HEADER_LEN 4
+#ifndef SL_ASK_MAX_MESSAGE_LEN
+    #define SL_ASK_MAX_MESSAGE_LEN (SL_ASK_MAX_PAYLOAD_LEN - SL_ASK_HEADER_LEN - 3)
+#endif
+
+uint8_t sl_payload[SL_ASK_MAX_PAYLOAD_LEN] = {0};
 
 // Note: all tje "4to6 code" came from RadioHead source code.
 // see: http://www.airspayce.com/mikem/arduino/RadioHead/index.html
@@ -105,7 +119,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
             return 0;
         }
         uint8_t byte = hi_nibble << 4 | lo_nibble;
-        payload[nb_bytes] = byte;
+        rh_payload[nb_bytes] = byte;
         if (nb_bytes == 0) {
             msg_len = byte;
         }
@@ -114,14 +128,14 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
 
     // Get header
     data_len = msg_len - RH_ASK_HEADER_LEN - 3;
-    header_to = payload[1];
-    header_from = payload[2];
-    header_id = payload[3];
-    header_flags = payload[4];
+    header_to = rh_payload[1];
+    header_from = rh_payload[2];
+    header_id = rh_payload[3];
+    header_flags = rh_payload[4];
 
     // Check CRC
-    crc = payload[5 + data_len] + (payload[5 + data_len + 1] << 8);
-    crc_recompute = ~crc16(payload, msg_len - 2, 0x8408, 0xFFFF);
+    crc = rh_payload[5 + data_len] + (rh_payload[5 + data_len + 1] << 8);
+    crc_recompute = ~crc16(rh_payload, msg_len - 2, 0x8408, 0xFFFF);
     if (crc_recompute != crc) {
         if (debug_output) {
             fprintf(stdout, "CRC error: %04X != %04X\n", crc_recompute, crc);
@@ -131,7 +145,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
 
     // Format data
     for (int j = 0; j < msg_len; j++) {
-        data_payload[j] = (int)payload[5 + j];
+        rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     local_time_str(0, time_str);
     data = data_make(
@@ -142,7 +156,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
             "from",         "From",         DATA_INT, header_from,
             "id",           "Id",           DATA_INT, header_id,
             "flags",        "Flags",        DATA_INT, header_flags,
-            "payload",      "Payload",      DATA_ARRAY, data_array(data_len, DATA_INT, data_payload),
+            "payload",      "Payload",      DATA_ARRAY, data_array(data_len, DATA_INT, rh_data_payload),
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     data_acquired_handler(data);
@@ -150,7 +164,114 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *output_fields[] = {
+static int sensible_living_callback(bitbuffer_t *bitbuffer)
+{
+    // Get time
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+    local_time_str(0, time_str);
+
+    uint8_t row = 0; // we are considering only first row
+    unsigned int len = bitbuffer->bits_per_row[row];
+
+    uint8_t msg_len = SL_ASK_MAX_MESSAGE_LEN;
+    unsigned int pos, nb_bytes;
+    uint8_t rxBits[2] = {0};
+
+    uint16_t crc, crc_recompute;
+    uint8_t data_len, house_id, sensor_type, sensor_count, alarms;
+    uint16_t module_id, sensor_value, battery_voltage;
+
+    // Looking for preamble
+    uint8_t init_pattern[] = {
+      0x55, // 8
+      0x55, // 16
+      0x55, // 24
+      0x51, // 32
+      0xcd, // 40
+    };
+    // The first 0 is ignored by the decoder, so we look only for 28 bits of "01"
+    // and not 32. Also "0x1CD" is 0xb38 (SL_ASK_START_SYMBOL) with LSBit first.
+    uint8_t init_pattern_len = 40;
+
+    pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
+    if(pos == len){
+        if(debug_output) {
+            printf("SL ASK preamble not found\n");
+        }
+        return 0;
+    }
+
+    // read "bytes" of 12 bit
+    nb_bytes=0;
+    pos += init_pattern_len;
+    for(; pos < len && nb_bytes < msg_len; pos += 12){
+        bitbuffer_extract_bytes(bitbuffer, row, pos, rxBits, /*len=*/16);
+        // ^ we should read 16 bits and not 12, elsewhere last 4bits are ignored
+        rxBits[0] = reverse8(rxBits[0]);
+        rxBits[1] = reverse8(rxBits[1]);
+        rxBits[1] = ((rxBits[1] & 0x0F)<<2) + (rxBits[0]>>6);
+        rxBits[0] &= 0x3F;
+        uint8_t hi_nibble = symbol_6to4(rxBits[0]);
+        if(hi_nibble > 0xF){
+            if(debug_output){
+                fprintf(stdout, "Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
+            }
+            return 0;
+        }
+        uint8_t lo_nibble = symbol_6to4(rxBits[1]);
+        if(lo_nibble > 0xF){
+            if(debug_output){
+                fprintf(stdout, "Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
+            }
+            return 0;
+        }
+        uint8_t byte =  hi_nibble<<4 | lo_nibble;
+        sl_payload[nb_bytes] = byte;
+        if(nb_bytes == 0){
+            msg_len = byte;
+        }
+        nb_bytes++;
+    }
+
+    // Get header
+    data_len = msg_len - SL_ASK_HEADER_LEN - 3;
+    house_id = sl_payload[1];
+    module_id = sl_payload[2] * 256 + sl_payload[3];
+    sensor_type = sl_payload[4];
+    sensor_count = sl_payload[5];
+    alarms = sl_payload[6];
+    sensor_value = sl_payload[7] * 256 + sl_payload[8];
+    battery_voltage = sl_payload[9] * 256 + sl_payload[10];
+
+    // Check CRC
+    crc = sl_payload[5 + data_len] + (sl_payload[5 + data_len + 1]<<8);
+    crc_recompute = ~crc16(sl_payload, msg_len-2, 0x8408, 0xFFFF);
+    if(crc_recompute != crc){
+        if(debug_output){
+            fprintf(stdout, "CRC error: %04X != %04X\n", crc_recompute, crc);
+        }
+        return 0;
+    }
+
+    data = data_make(
+        "time",             "",                 DATA_STRING,  time_str,
+        "model",            "",                 DATA_STRING,  "Sensible Living Mini-Plant Moisture Sensor",
+        "house_id",         "House ID",         DATA_INT,     house_id,
+        "module_id",        "Module ID",        DATA_INT,     module_id,
+        "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
+        "sensor_count",     "Sensor Count",     DATA_INT,     sensor_count,
+        "alarms",           "Alarms",           DATA_INT,     alarms,
+        "sensor_value",     "Sensor Value",     DATA_INT,     sensor_value,
+        "battery_voltage",  "Battery Voltage",  DATA_INT,     battery_voltage,
+        NULL
+	);
+    data_acquired_handler(data);
+
+    return 0;
+}
+
+static char *radiohead_ask_output_fields[] = {
     "time",
     "model",
     "len",
@@ -163,6 +284,19 @@ static char *output_fields[] = {
     NULL
 };
 
+static char *sensible_living_output_fields[] = {
+    "time",
+    "model",
+    "house_id",
+    "module_id",
+    "sensor_type",
+    "sensor_count",
+    "alarms",
+    "sensor_value",
+    "battery_voltage",
+    NULL
+};
+
 r_device radiohead_ask = {
     .name           = "Radiohead ASK",
     .modulation     = OOK_PULSE_PCM_RZ,
@@ -170,5 +304,15 @@ r_device radiohead_ask = {
     .long_limit     = 500,
     .reset_limit    = 5000,
     .json_callback  = &radiohead_ask_callback,
-    .fields         = output_fields,
+    .fields         = radiohead_ask_output_fields,
+};
+
+r_device sensible_living = {
+    .name           = "Sensible Living Mini-Plant Moisture Sensor",
+    .modulation     = OOK_PULSE_PCM_RZ,
+    .short_limit    = SL_ASK_BIT_LEN,
+    .long_limit     = SL_ASK_BIT_LEN,
+    .reset_limit    = SL_ASK_BIT_LEN*10,
+    .json_callback  = &sensible_living_callback,
+    .fields         = sensible_living_output_fields,
 };
