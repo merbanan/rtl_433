@@ -33,6 +33,7 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
 
     uint8_t *packet = packet_bits.bb[0];
     // Read data
+    // Meter
     if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 0) ){
         uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
 
@@ -51,6 +52,23 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
         return 1;
     }
+    // Counter
+    else if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 64) ){
+       uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
+
+       uint16_t sensor_type = packet[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
+       uint32_t c_impulse = packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
+       data = data_make("time",         "",              DATA_STRING, time_str,
+               "model",        "",              DATA_STRING, "CurrentCost Counter", //TODO: it may have different CC Model ? any ref ?
+               "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+               "sensor_type",  "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type,
+               //"counter",      "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               "power0",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               NULL);
+       data_acquired_handler(data);
+       return 1;
+    }
+
     return 0;
 }
 
