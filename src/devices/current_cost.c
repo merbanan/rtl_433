@@ -57,7 +57,7 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "time",
     "model",
-    "rc",
+    "dev_id",
     "power0",
     "power1",
     "power2",
