@@ -36,10 +36,13 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
     // Meter (packet[0] = 0000xxxx) bits 5 and 4 are "unknown", but always 0 to date.
     if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 0) ){
         uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
+        uint16_t watt0 = 0;
+        uint16_t watt1 = 0;
+        uint16_t watt2 = 0;
         //Check the "Data valid indicator" bit is 1 before using the sensor values
-        if((packet[2] & 0x80) == 1) { uint16_t watt0 = (packet[2] & 0x7F) << 8 | packet[3] ; }
-        if((packet[4] & 0x80) == 1) { uint16_t watt1 = (packet[4] & 0x7F) << 8 | packet[5] ; }
-        if((packet[6] & 0x80) == 1) { uint16_t watt2 = (packet[6] & 0x7F) << 8 | packet[7] ; }
+        if((packet[2] & 0x80) == 128) { watt0 = (packet[2] & 0x7F) << 8 | packet[3] ; }
+        if((packet[4] & 0x80) == 128) { watt1 = (packet[4] & 0x7F) << 8 | packet[5] ; }
+        if((packet[6] & 0x80) == 128) { watt2 = (packet[6] & 0x7F) << 8 | packet[7] ; }
         data = data_make("time",          "",       DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "CurrentCost TX", //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
