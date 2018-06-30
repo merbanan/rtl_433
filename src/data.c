@@ -27,7 +27,11 @@
 #include "limits.h"
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #define _XOPEN_SOURCE 500
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #ifndef _WIN32
 #include <netdb.h>
 #include <netinet/in.h>
@@ -320,7 +324,12 @@ static void print_value(data_output_t *output, data_type_t type, void *value, ch
 static void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
+#ifdef RTL_433_NO_VLAs
+    char *buffer = alloca (element_size);
+#else
     char buffer[element_size];
+#endif
+    
     if (!dmt[array->type].array_is_boxed) {
         memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
         print_value(output, array->type, buffer, format);
