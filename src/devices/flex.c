@@ -8,8 +8,6 @@
  * (at your option) any later version.
  */
 
-#include <strings.h>
-
 #include "data.h"
 #include "rtl_433.h"
 #include "util.h"
