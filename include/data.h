@@ -23,6 +23,41 @@
 
 #include <stdio.h>
 
+#if defined(_MSC_VER) && !defined(__clang__)
+  /*
+   * MSVC have no support for "Variable Length Arrays"
+   * But compiling using 'clang-cl', '_MSC_VER' is a built-in. Hence use VLA
+   * for Clang in that case.
+   * With no VLAs, we need 'alloca()' which is in '<malloc.h>' etc.
+   */
+  #include <malloc.h>
+  #define RTL_433_NO_VLAs
+
+  /* gcc uses the syntax:
+   *   foo (char *restict ptr);
+   *
+   * But MSVC needs the syntax:
+   *   foo (char *ptr __declspec(restrict));
+   *
+   * Hence just make 'restrict' a NOOP.
+   */
+  #ifndef restrict
+  #define restrict
+  #endif
+#endif
+
+/*
+ * The only place '<strings.h>' is currenly needed is in 'src/devices/flex.c'.
+ * But it's cleaner to keep such trivia here.
+ */
+#ifdef _MSC_VER
+  #include <string.h>
+  #define strcasecmp(s1,s2)     _stricmp(s1,s2)
+  #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
+#else
+  #include <strings.h>
+#endif
+
 typedef enum {
 	DATA_DATA,		/* pointer to data is stored */
 	DATA_INT,		/* pointer to integer is stored */
