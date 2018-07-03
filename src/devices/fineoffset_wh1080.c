@@ -262,12 +262,8 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     int msg_type; // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 12; // 12=Weather/Time sensor  8=UV/Light sensor
     int i;
-#ifdef RTL_433_NO_VLAs
-    uint8_t *bbuf = alloca (sens_msg);
-#else
-    uint8_t bbuf[sens_msg];
-#endif
-	
+    uint8_t bbuf[11]; // max 8 / 11 bytes needed
+
     local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
