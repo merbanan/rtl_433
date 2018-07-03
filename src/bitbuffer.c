@@ -203,22 +203,38 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
 }
 
 void bitbuffer_print(const bitbuffer_t *bits) {
+	int highest_indent, indent_this_col, indent_this_row, row_len;
+	uint16_t col, row;
+
+	/* Figure out the longest row of bit to get the highest_indent
+	 */
+	highest_indent = sizeof("[dd] {dd} ") - 1;
+	for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
+		for (col = indent_this_col  = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
+			indent_this_col += 2+1;
+		}
+		indent_this_row = indent_this_col;
+		if (indent_this_row > highest_indent)
+			highest_indent = indent_this_row;
+	}
+
 	fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
-	for (uint16_t row = 0; row < bits->num_rows; ++row) {
-		fprintf(stderr, "[%02d] {%d} ", row, bits->bits_per_row[row]);
-		for (uint16_t col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-			fprintf(stderr, "%02x ", bits->bb[row][col]);
+	for (row = 0; row < bits->num_rows; ++row) {
+		fprintf(stderr, "[%02d] {%2d} ", row, bits->bits_per_row[row]);
+		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
+			row_len += fprintf(stderr, "%02x ", bits->bb[row][col]);
 		}
 		// Print binary values also?
 		if (bits->bits_per_row[row] <= BITBUF_MAX_PRINT_BITS) {
-			fprintf(stderr, ": ");
+			fprintf(stderr, "%-*s: ", highest_indent-row_len, "");
 			for (uint16_t bit = 0; bit < bits->bits_per_row[row]; ++bit) {
 				if (bits->bb[row][bit/8] & (0x80 >> (bit % 8))) {
 					fprintf(stderr, "1");
 				} else {
 					fprintf(stderr, "0");
 				}
-				if ((bit % 8) == 7) { fprintf(stderr, " "); }	// Add byte separators
+				if ((bit % 8) == 7)      // Add byte separators
+					fprintf(stderr, " ");
 			}
 		}
 		fprintf(stderr, "\n");
