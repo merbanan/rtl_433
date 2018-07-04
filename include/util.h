@@ -177,4 +177,9 @@ bool str_endswith(const char *restrict str, const char *restrict suffix);
 /// @return a new string that has rep replaced with with
 char *str_replace(char *orig, char *rep, char *with);
 
+/// Make a nice printable string for a frequency.
+///
+/// @param freq: the frequency to convert to a string.
+const char *nice_freq (double freq);
+
 #endif /* INCLUDE_UTIL_H_ */
