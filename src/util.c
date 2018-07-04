@@ -270,6 +270,21 @@ char *str_replace(char *orig, char *rep, char *with)
     return result;
 }
 
+// Make a more readable string for a frequency.
+const char *nice_freq (double freq)
+{
+  static char buf[30];
+
+  if (freq >= 1E9)
+     snprintf (buf, sizeof(buf), "%.3fGHz", freq/1E9);
+  else if (freq >= 1E6)
+     snprintf (buf, sizeof(buf), "%.3fMHz", freq/1E6);
+  else if (freq >= 1E3)
+     snprintf (buf, sizeof(buf), "%.3fkHz", freq/1E3);
+  else
+     snprintf (buf, sizeof(buf), "%f", freq);
+  return (buf);
+}
 
 // Test code
 // gcc -I include/ -std=gnu99 -D _TEST src/util.c
