@@ -256,7 +256,7 @@ static int sensible_living_callback(bitbuffer_t *bitbuffer)
 
     data = data_make(
         "time",             "",                 DATA_STRING,  time_str,
-        "model",            "",                 DATA_STRING,  "Sensible Living Mini-Plant Moisture Sensor",
+        "model",            "",                 DATA_STRING,  "Sensible Living Plant Moisture",
         "house_id",         "House ID",         DATA_INT,     house_id,
         "module_id",        "Module ID",        DATA_INT,     module_id,
         "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
@@ -264,6 +264,7 @@ static int sensible_living_callback(bitbuffer_t *bitbuffer)
         "alarms",           "Alarms",           DATA_INT,     alarms,
         "sensor_value",     "Sensor Value",     DATA_INT,     sensor_value,
         "battery_voltage",  "Battery Voltage",  DATA_INT,     battery_voltage,
+        "mic",              "Integrity",        DATA_STRING,  "CRC",
         NULL
 	);
     data_acquired_handler(data);
@@ -294,6 +295,7 @@ static char *sensible_living_output_fields[] = {
     "alarms",
     "sensor_value",
     "battery_voltage",
+    "mic",
     NULL
 };
 

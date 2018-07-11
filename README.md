@@ -85,8 +85,9 @@ Usage:	= Tuner options =
 		 2 = FM demodulated samples (int16) (experimental)
 		 3 = Raw I/Q samples (cf32, 2 channel)
 		 Note: If output file is specified, input will always be I/Q
-	[-F] kv|json|csv Produce decoded output in given format. Not yet supported by all drivers.
+	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
 		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+		 specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
@@ -116,7 +117,7 @@ Supported device protocols:
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
-    [23]* DSC Security Contact
+    [23]  DSC Security Contact
     [24]* Brennenstuhl RCS 2044
     [25]  GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
@@ -133,8 +134,8 @@ Supported device protocols:
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1
-    [40]* Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
-    [41]* Acurite 986 Refrigerator / Freezer Thermometer
+    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+    [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
     [44]  CurrentCost Current Sensor
@@ -196,6 +197,7 @@ Supported device protocols:
     [100]  Interlogix GE UTC Security Devices
     [101]* Dish remote 6.3
     [102]* SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
+    [103]  Sensible Living Mini-Plant Moisture Sensor
 
 * Disabled by default, use -R n or -G
 
