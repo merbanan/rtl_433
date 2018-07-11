@@ -32,13 +32,39 @@
 #include <unistd.h>
 #endif
 
-#ifndef _WIN32
-#include <netdb.h>
-#include <netinet/in.h>
+#ifdef _WIN32
+  #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+  #undef _WIN32_WINNT
+  #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
+  #endif
+
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+#else
+  #include <netdb.h>
+  #include <netinet/in.h>
+
+  #define SOCKET_TYPE     int
+  #define INVALID_SOCKET  -1
 #endif
+
 #include <time.h>
 
 #include "data.h"
+
+#ifdef _WIN32
+  #define _POSIX_HOST_NAME_MAX  128
+  #undef  close   /* We only work with sockets here */
+  #define close(s)              closesocket (s)
+  #define perror(str)           ws2_perror (str)
+
+  static void ws2_perror (const char *str)
+  {
+    if (str && *str)
+       fprintf (stderr, "%s: ", str);
+    fprintf (stderr, "Winsock error %d.\n", WSAGetLastError());
+  }
+#endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
 typedef void* (*array_element_release_fn)(void*);
@@ -649,12 +675,10 @@ struct data_output *data_output_csv_create(FILE *file, const char **fields, int 
 
 /* Datagram (UDP) client */
 
-#ifndef _WIN32
-
 typedef struct {
     struct sockaddr_storage addr;
     socklen_t addr_len;
-    int sock;
+    SOCKET sock;
 } datagram_client_t;
 
 static int datagram_client_open(datagram_client_t *client, const char *host, const char *port)
@@ -663,8 +687,8 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
         return -1;
 
     struct addrinfo hints, *res, *res0;
-    int error;
-    int sock;
+    int    error;
+    SOCKET sock;
     const char *cause = NULL;
 
     memset(&hints, 0, sizeof(hints));
@@ -676,7 +700,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
         fprintf(stderr, "%s\n", gai_strerror(error));
         return -1;
     }
-    sock = -1;
+    sock = INVALID_SOCKET;
     for (res = res0; res; res = res->ai_next) {
         sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
         if (sock >= 0) {
@@ -688,7 +712,7 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
         }
     }
     freeaddrinfo(res0);
-    if (sock < 0) {
+    if (sock == INVALID_SOCKET) {
         perror("socket");
         return -1;
     }
@@ -704,10 +728,14 @@ static void datagram_client_close(datagram_client_t *client)
     if (!client)
         return;
 
-    if (client->sock != -1) {
+    if (client->sock != INVALID_SOCKET) {
         close(client->sock);
-        client->sock = -1;
+        client->sock = INVALID_SOCKET;
     }
+
+#ifdef _WIN32
+    WSACleanup();
+#endif 
 }
 
 static void datagram_client_send(datagram_client_t *client, const char *message, size_t message_len)
@@ -833,7 +861,11 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     time_t now;
     struct tm tm_info;
     time(&now);
+#ifdef _MSC_VER
+    gmtime_s(&tm_info, &now);
+#else
     gmtime_r(&now, &tm_info);
+#endif    
     char timestamp[21];
     strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 
@@ -908,6 +940,15 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
         fprintf(stderr, "calloc() failed");
         return NULL;
     }
+#ifdef _WIN32
+    WSADATA wsa;
+
+    if (WSAStartup(MAKEWORD(2,2),&wsa) != 0) {
+        perror("WSAStartup()");
+        free(syslog);
+        return NULL;
+    }
+#endif
 
     syslog->output.print_data   = print_syslog_data;
     syslog->output.print_array  = print_syslog_array;
@@ -923,13 +964,3 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 
     return &syslog->output;
 }
-
-#else
-
-struct data_output *data_output_syslog_create(const char *host, const char *port)
-{
-    fprintf(stderr, "Syslog output not available.\n");
-    exit(1);
-}
-
-#endif
