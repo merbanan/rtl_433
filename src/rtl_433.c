@@ -207,7 +207,7 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     demod->r_dev_num++;
 
     if (!quiet_mode) {
-    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", demod->r_dev_num, t_dev->name);
+    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", t_dev->protocol_num, t_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
@@ -1190,6 +1190,7 @@ int main(int argc, char **argv) {
     }
 
     for (i = 0; i < num_r_devices; i++) {
+        devices[i].protocol_num = i + 1;
         if (!devices[i].disabled || register_all) {
             register_protocol(demod, &devices[i]);
             if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
