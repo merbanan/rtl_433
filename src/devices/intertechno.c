@@ -1,28 +1,74 @@
+/* Intertechno remotes.
+ *
+ * Intertechno remote labeled ITT-1500 that came with 3x ITR-1500 remote outlets. The set is labeled IT-1500.
+ * The PPM consists of a 220µs high followed by 340µs or 1400µs of gap.
+ *
+ * There is another type of remotes that have an ID prefix of 0x56 and slightly shorter timing.
+ */
+
 #include "rtl_433.h"
+#include "util.h"
 
-static int intertechno_callback(bitbuffer_t *bitbuffer) {
+static int intertechno_callback(bitbuffer_t *bitbuffer)
+{
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
     bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b = bitbuffer->bb[1];
+    char id_str[11];
+    int slave;
+    int master;
+    int command;
 
-      if(bb[0][0]==0 && (bb[1][0] == 0x56 || bb[1][0] == 0x69)){
+    if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
+        return 0;
+
+    if (debug_output > 1) {
         fprintf(stdout, "Switch event:\n");
         fprintf(stdout, "protocol       = Intertechno\n");
-        fprintf(stdout, "rid            = %x\n",bb[1][0]);
-        fprintf(stdout, "rid            = %x\n",bb[1][1]);
-        fprintf(stdout, "rid            = %x\n",bb[1][2]);
-        fprintf(stdout, "rid            = %x\n",bb[1][3]);
-        fprintf(stdout, "rid            = %x\n",bb[1][4]);
-        fprintf(stdout, "rid            = %x\n",bb[1][5]);
-        fprintf(stdout, "rid            = %x\n",bb[1][6]);
-        fprintf(stdout, "rid            = %x\n",bb[1][7]);
-        fprintf(stdout, "ADDR Slave     = %i\n",bb[1][7] & 0x0f);
-        fprintf(stdout, "ADDR Master    = %i\n",(bb[1][7] & 0xf0) >> 4);
-        fprintf(stdout, "command        = %i\n",(bb[1][6] & 0x07));
-        fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
-
-        return 1;
+        fprintf(stdout, "rid            = %x\n", b[0]);
+        fprintf(stdout, "rid            = %x\n", b[1]);
+        fprintf(stdout, "rid            = %x\n", b[2]);
+        fprintf(stdout, "rid            = %x\n", b[3]);
+        fprintf(stdout, "rid            = %x\n", b[4]);
+        fprintf(stdout, "rid            = %x\n", b[5]);
+        fprintf(stdout, "rid            = %x\n", b[6]);
+        fprintf(stdout, "rid            = %x\n", b[7]);
+        fprintf(stdout, "ADDR Slave     = %i\n", b[7] & 0x0f);
+        fprintf(stdout, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
+        fprintf(stdout, "command        = %i\n",( b[6] & 0x07));
+        fprintf(stdout, "%02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
     }
-    return 0;
+
+    sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
+    slave = b[7] & 0x0f;
+    master = (b[7] & 0xf0) >> 4;
+    command = b[6] & 0x07;
+
+    local_time_str(0, time_str);
+    data = data_make(
+        "time",             "",     DATA_STRING,    time_str,
+        "model",            "",     DATA_STRING,    "Intertechno",
+        "id",               "",     DATA_STRING,    id_str,
+        "slave",            "",     DATA_INT,       slave,
+        "master",           "",     DATA_INT,       master,
+        "command",          "",     DATA_INT,       command,
+        NULL);
+
+    data_acquired_handler(data);
+    return 1;
 }
+
+static char *output_fields[] = {
+    "time",
+    "model",
+    "type",
+    "id",
+    "slave",
+    "master",
+    "command",
+    NULL
+};
 
 r_device intertechno = {
     .name           = "Intertechno 433",
@@ -33,4 +79,5 @@ r_device intertechno = {
     .json_callback  = &intertechno_callback,
     .disabled       = 1,
     .demod_arg      = 0,
+    .fields         = output_fields,
 };
