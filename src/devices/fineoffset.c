@@ -224,8 +224,8 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
  *
  * hh h = Header (first bit is not received and must be added)
  * II = Sensor ID (guess). Does not change at battery change.
- * T TT = Temperature (+40*10)
- * RR RR = Rain count (each count = 0.3mm, LSB first)
+ * T TT = Temperature (+40*10) (Upper bit is Battery Low indicator)
+ * RR RR = Rain count (each count = 0.3mm(*), LSB first)   * See below
  * ?? = Always 0xFF (maybe reserved for humidity?)
  * CC = CRC8 with polynomium 0x31
  * CC = Checksum of previous 7 bytes (binary sum truncated to 8 bit)
@@ -267,14 +267,17 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     }
 
     const uint8_t id = (buffer[0]<<4) | (buffer[1]>>4);
-    const float temperature = (float)((uint16_t)(buffer[1] & 0xF)<< 8 | buffer[2]) / 10.0 - 40.0;
-    const float rain = 0.3 * (((uint16_t)buffer[4] << 8) | buffer[3]);
+    const uint8_t battery_low = (buffer[1] & 0x8);
+    const float temperature = (float)((uint16_t)(buffer[1] & 0x7)<< 8 | buffer[2]) / 10.0 - 40.0;
+    static const float RAIN_FACTOR = 851.1 / 0x0b1f;  // (*) Based on example readout (851.1mm)
+    const float rain = RAIN_FACTOR * (((uint16_t)buffer[4] << 8) | buffer[3]);
 
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "rain",          "Rain",        DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain,
+                     "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
     data_acquired_handler(data);
