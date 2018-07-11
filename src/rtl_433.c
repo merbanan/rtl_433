@@ -1481,7 +1481,7 @@ int main(int argc, char **argv) {
             if (r < 0)
                 fprintf(stderr, "WARNING: Failed to set center freq.\n");
             else
-                fprintf(stderr, "Tuned to %u Hz.\n", rtlsdr_get_center_freq(dev));
+                fprintf(stderr, "Tuned to %s.\n", nice_freq(rtlsdr_get_center_freq(dev)));
 #ifndef _WIN32
             signal(SIGALRM, sighandler);
             alarm(3); // require callback to run every 3 second, abort otherwise
