@@ -44,7 +44,7 @@
   #include <netdb.h>
   #include <netinet/in.h>
 
-  #define SOCKET_TYPE     int
+  #define SOCKET          int
   #define INVALID_SOCKET  -1
 #endif
 
