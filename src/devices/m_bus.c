@@ -9,6 +9,9 @@
 #include "rtl_433.h"
 #include "util.h"
 
+inline unsigned bcd2int(uint8_t bcd) {
+    return 10*(bcd>>4) + (bcd & 0xF);
+}
 
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
 static uint8_t m_bus_decode_3of6(uint8_t byte) {
@@ -36,6 +39,7 @@ fprintf(stderr,"Decode %0X\n", byte);
     return out;
 }
 
+
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
 static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes) {
     for (unsigned n=0; n<num_bytes; ++n) {
@@ -60,28 +64,68 @@ static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code) {
 }
 
 
+// Decode device type string
+const char* m_bus_device_type_str(uint8_t devType) {
+    char *str = "";
+    switch(devType) {
+        case 0x00:  str = "Other";  break;
+        case 0x01:  str = "Oil";  break;
+        case 0x02:  str = "Electricity";  break;
+        case 0x03:  str = "Gas";  break;
+        case 0x04:  str = "Heat";  break;
+        case 0x05:  str = "Steam";  break;
+        case 0x06:  str = "Warm Water";  break;
+        case 0x07:  str = "Water";  break;
+        case 0x08:  str = "Heat Cost Allocator";  break;
+        case 0x09:  str = "Compressed Air";  break;
+        case 0x0A:
+        case 0x0B:  str = "Cooling load meter";  break;
+        case 0x0C:  str = "Heat";  break;
+        case 0x0D:  str = "Heat/Cooling load meter";  break;
+        case 0x0E:  str = "Bus/System component";  break;
+        case 0x0F:  str = "Unknown";  break;
+        case 0x15:  str = "Hot Water";  break;
+        case 0x16:  str = "Cold Water";  break;
+        case 0x17:  str = "Hot/Cold Water meter";  break;
+        case 0x18:  str = "Pressure";  break;
+        case 0x19:  str = "A/D Converter";  break;
+        default:    break;  // Unknown
+    }
+    return str;
+}
+
+
 static int m_bus_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
-    static const uint8_t HEADER_T[]  = { 0x55, 0x54, 0x3D};              // Mode T Header
-//  static const uint8_t HEADER_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Header
-//  static const uint8_t HEADER_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Header
-    static const uint16_t BLOCK1_SIZE = 10;     // Size of Block 1 excluding CRC (if applicable)
+    static const uint8_t PREAMBLE_T[]  = { 0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
+//  static const uint8_t PREAMBLE_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
+//  static const uint8_t PREAMBLE_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
+//  static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
+    static const uint16_t BLOCK1B_SIZE = 10;     // Size of Block 1, format B
     static const uint16_t CRC_POLY = 0x3D65;
-//    static const uint16_t CRC_POLY = 0x4D79;
-    uint8_t bytes[300];
-    unsigned byte_offset = 0;
+
+    uint8_t     block[300];     // Maximum Length: 1+255+17*2 (Format A)
+    unsigned    field_L;        // Length
+    uint8_t     field_C;        // Control
+    char        field_M_str[4]; // Manufacturer
+    uint32_t    field_A_ID;     // Address, ID
+    uint8_t     field_A_Version;    // Address, Version
+    uint8_t     field_A_DevType;    // Address, Device Type
+    uint8_t     field_CI;       // Control Information
+    char raw_str[1024];
+
 
 ///////////////
-    if (debug_output > 1) {
+    if (debug_output > 0) {
         fprintf(stderr,"Debug Wireless M-bus:\n");
         bitbuffer_print(bitbuffer);
     }
 /////////////
 
-    // Validate package
-    if (bitbuffer->bits_per_row[0] < 100 || bitbuffer->bits_per_row[0] > 700) {  // XXXXXXX
+    // Validate package length
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
         return 0;
     }
 
@@ -89,95 +133,105 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
 
     // Find a Mode T or C data package
-    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, HEADER_T, sizeof(HEADER_T)*8);
-    if (bit_offset + 32*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T, sizeof(PREAMBLE_T)*8);
+    if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (debug_output) { fprintf(stderr, "M-Bus: short package. Header index: %u\n", bit_offset); }
         return 0;
     }
-    bit_offset += sizeof(HEADER_T)*8; // skip header
+    bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
-    if (next_byte == 0x54) {  // Mode C
+    // Mode C
+    if (next_byte == 0x54) {
         bit_offset += 8;
         next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
-        if (next_byte == 0xCD) { // Format A
+        // Format A
+        if (next_byte == 0xCD) {
             if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format A - not implemented\n"); }
             return 1;
         }
-        else if (next_byte == 0x3D) { // Format B
+        // Format B
+        else if (next_byte == 0x3D) {
             if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
+            // Peak Length (as Block 1 and 2 is same telegram with common CRC)
             bit_offset += 8;
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, bytes, 8);    // Get length to fetch, including CRCs 
-            unsigned field_L = bytes[0];
+            field_L = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
+
             // Check length of package is sufficient...
-            if (field_L < 12 || field_L+1 > (bitbuffer->bits_per_row[0]-bit_offset)/8) {
-                if (debug_output) { fprintf(stderr, "M-Bus, Format B, Package too short for Length!\n"); }
+            if ((field_L < 12) || (field_L > (bitbuffer->bits_per_row[0]-(bit_offset+8))/8)) {
+                if (debug_output) { fprintf(stderr, "M-Bus, Format B, Package too short for Length: %u\n", field_L); }
                 return 0;
             }
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset+8, bytes+1, field_L*8);   // Get all the rest..
+            // Get Block 1 + Block 2 (inclusive field_L)
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, (min(field_L, 128)+1)*8);
 
             // Validate CRC
-            unsigned crc_offset = field_L-1;
-            uint16_t crc_calc = ~crc16_ccitt(bytes, crc_offset, CRC_POLY, 0);
-            uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
+            unsigned crc_offset = min(field_L, 128)-1;
+            uint16_t crc_calc = ~crc16_ccitt(block, crc_offset, CRC_POLY, 0);
+            uint16_t crc_read = (((uint16_t)block[crc_offset] << 8) | block[crc_offset+1]);
             if (crc_calc != crc_read) {
-                if (debug_output) { fprintf(stderr, "M-Bus: CRC error: CRC 0x%0X, 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read); }
+                if (debug_output) { fprintf(stderr, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read); }
                 return 0;
             }
 
+            field_C         = block[1];
+            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), field_M_str);    // Decode Manufacturer
+            field_A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
+            field_A_Version = block[8];
+            field_A_DevType = block[9];
+            field_CI        = block[10];
 
-    //    if (debug_output) {
-            char raw_str[1024];
-            for (unsigned n=0; n<(field_L+1); n++) { sprintf(raw_str+n*3, "%02x ", bytes[n]); }
-            fprintf(stderr, "Raw: %s\n", raw_str);
-    //    }
+            // Todo: code does still not support long telegrams L>128
 
-            // Decode Manufacturer
-            char m_str[4];
-            m_bus_manuf_decode((bytes[3] << 8 | bytes[2]), m_str);
-            fprintf(stderr, "Manuf: %s\n", m_str);
-
-            // Decode Manufacturer
-            char a_str[4];
-            fprintf(stderr, "Address: %0X%0X%0X%0X%0X%0X\n", bytes[4], bytes[5], bytes[6], bytes[7], bytes[8], bytes[9]);
+        //    if (debug_output) {
+                for (unsigned n=0; n<(field_L+1); n++) { sprintf(raw_str+n*2, "%02x", block[n]); }
+        //        fprintf(stderr, "Block: %s\n", raw_str);
+        //    }
 
 
-            return 1;
+            char dbg_str[1024];
+            for (unsigned n=0; n<4; n++) { sprintf(dbg_str+n*2, "%02x", block[13+n]); }
+            fprintf(stderr, "Debug: %s\n", dbg_str);
+
+
+
+
         }
+        // Unknown Format
         else {
             if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Unknown format: 0x%X\n", next_byte); }
             return 0;
         }
     }
-
-    if (debug_output) { fprintf(stderr, "M-Bus: Mode T?\n"); }
-    return 0;
-    // Test for Mode T...
-    /*
-        unsigned block_len = 12;   // Block 1 is always 12 bytes long
-
-        // Get Block 1
-        if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, bytes, block_len) < 0) {
-            if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
-            return 0;
-        }
-        bit_offset += block_len * 12;   // 12 bits per byte due to "3of6" coding
-
-
-        uint8_t bytes_left = bytes[0] - 9;  // Read length field and subtract bytes from block 1 (excl. Length and CRC)
-        byte_offset += block_len-2;         // Increment, but leave out CRC bytes
-    */
-
+    // Mode T
+    else {
+        if (debug_output) { fprintf(stderr, "M-Bus: Mode T - Not implemented\n"); }
+        return 0;
+        // Test for Mode T...
+        /*
+            // Get Block 1
+            if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, block, 12)) < 0) {
+                if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
+                return 0;
+            }
+            bit_offset += block_len * 12;   // 12 bits per byte due to "3of6" coding
+        */
+    }
 
     // Output data
     data = data_make(
-        "time",     "",     DATA_STRING,    time_str,
-        "model",        "",     DATA_STRING,    "Wireless M-Bus Mode-C2",
-//          "id",       "ID",       DATA_INT,   id,
-//          "temperature_C",    "Temperature",  DATA_FORMAT,    "%.2f C", DATA_DOUBLE, temp_meas,
-//          "setpoint_C",   "Setpoint", DATA_FORMAT,    "%.2f C", DATA_DOUBLE, temp_setp,
-//          "switch",       "Switch",   DATA_STRING,    str_sw,
-//            "mic",           "Integrity",            DATA_STRING,    "CRC",
+        "time",     "",             DATA_STRING,    time_str,
+        "model",    "",             DATA_STRING,    "Wireless M-Bus",
+        "M",        "Manufacturer", DATA_STRING,    field_M_str,
+        "id",       "ID",           DATA_INT,       field_A_ID,
+        "version",  "Version",      DATA_INT,       field_A_Version,
+        "type_id",  "Device Type ID",   DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
+        "type",     "Device Type",      DATA_STRING,    m_bus_device_type_str(field_A_DevType),
+        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, field_C,
+        "CI",       "Control Info", DATA_FORMAT,    "0x%02X",   DATA_INT, field_CI,
+        "L",        "Length",       DATA_INT,       field_L,
+        "mic",      "Integrity",    DATA_STRING,    "CRC",
+        "raw",      "Raw",          DATA_STRING,    raw_str,
         NULL);
     data_acquired_handler(data);
 
