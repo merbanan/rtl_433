@@ -1,5 +1,9 @@
 /* Wireless M-Bus (EN 13757-4)
  *
+ * Implements the Physical layer (RF receiver) and Data Link layer of the
+ * Wireless M-Bus protocol. Will return a data string (including the CI byte)
+ * for further processing by an Application layer (outside this program).
+ *
  * Copyright (C) 2018 Tommy Vestermark
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -9,6 +13,7 @@
 #include "rtl_433.h"
 #include "util.h"
 
+// Convert two BCD encoded nibbles to an integer
 inline unsigned bcd2int(uint8_t bcd) {
     return 10*(bcd>>4) + (bcd & 0xF);
 }
@@ -52,6 +57,21 @@ static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, ui
         output[n] = (nibble_h << 4) | nibble_l;
     }
     return 0;
+}
+
+
+// Validate CRC
+static int m_bus_crc_valid(const uint8_t* bytes, unsigned crc_offset) {
+    static const uint16_t CRC_POLY = 0x3D65;
+    uint16_t crc_calc = ~crc16_ccitt(bytes, crc_offset, CRC_POLY, 0);
+    uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
+    if (crc_calc != crc_read) {
+        if (debug_output) {
+            fprintf(stderr, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read);
+        }
+        return 0;
+    }
+    return 1;
 }
 
 
@@ -102,27 +122,23 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_T[]  = { 0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
-//  static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
+    static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
     static const uint16_t BLOCK1B_SIZE = 10;     // Size of Block 1, format B
-    static const uint16_t CRC_POLY = 0x3D65;
 
-    uint8_t     block[300];     // Maximum Length: 1+255+17*2 (Format A)
-    unsigned    field_L;        // Length
+    uint8_t     block[300];     // Concatenated blocks with CRC fields removed from data. Maximum Length: 1+255+17*2 (Format A)
+    uint8_t     data_offset;    // Start of data bytes in block for Application Layer
+    uint8_t     data_length = 0;    // Length of data bytes
+
+    uint8_t     field_L;        // Length
     uint8_t     field_C;        // Control
     char        field_M_str[4]; // Manufacturer
     uint32_t    field_A_ID;     // Address, ID
     uint8_t     field_A_Version;    // Address, Version
     uint8_t     field_A_DevType;    // Address, Device Type
-    uint8_t     field_CI;       // Control Information
-    char raw_str[1024];
 
-
-///////////////
-    if (debug_output > 0) {
-        fprintf(stderr,"Debug Wireless M-bus:\n");
-        bitbuffer_print(bitbuffer);
-    }
-/////////////
+    uint16_t    field_CRC;
+    uint8_t     field_CI = 0;   // Control Information
+    char        str_buf[1024];
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
@@ -135,88 +151,126 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     // Find a Mode T or C data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T, sizeof(PREAMBLE_T)*8);
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (debug_output) { fprintf(stderr, "M-Bus: short package. Header index: %u\n", bit_offset); }
         return 0;
     }
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
+    bit_offset += 8;
     // Mode C
     if (next_byte == 0x54) {
-        bit_offset += 8;
         next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
+        bit_offset += 8;
         // Format A
         if (next_byte == 0xCD) {
-            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format A - not implemented\n"); }
-            return 1;
-        }
-        // Format B
-        else if (next_byte == 0x3D) {
-            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
-            // Peak Length (as Block 1 and 2 is same telegram with common CRC)
-            bit_offset += 8;
-            field_L = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
-
-            // Check length of package is sufficient...
-            if ((field_L < 12) || (field_L > (bitbuffer->bits_per_row[0]-(bit_offset+8))/8)) {
-                if (debug_output) { fprintf(stderr, "M-Bus, Format B, Package too short for Length: %u\n", field_L); }
-                return 0;
-            }
-            // Get Block 1 + Block 2 (inclusive field_L)
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, (min(field_L, 128)+1)*8);
-
-            // Validate CRC
-            unsigned crc_offset = min(field_L, 128)-1;
-            uint16_t crc_calc = ~crc16_ccitt(block, crc_offset, CRC_POLY, 0);
-            uint16_t crc_read = (((uint16_t)block[crc_offset] << 8) | block[crc_offset+1]);
-            if (crc_calc != crc_read) {
-                if (debug_output) { fprintf(stderr, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read); }
-                return 0;
-            }
-
+            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format A\n"); }
+            // Get Block 1
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1A_SIZE*8);
+            bit_offset += BLOCK1A_SIZE*8;
+            field_L         = block[0];
             field_C         = block[1];
             m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), field_M_str);    // Decode Manufacturer
             field_A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
             field_A_Version = block[8];
             field_A_DevType = block[9];
-            field_CI        = block[10];
+            data_offset     = BLOCK1A_SIZE;
+            data_length     = field_L-9;     // Store length of data
 
-            // Todo: code does still not support long telegrams L>128
+            // Validate CRC
+            if (!m_bus_crc_valid(block, 10)) return 0;
 
-        //    if (debug_output) {
-                for (unsigned n=0; n<(field_L+1); n++) { sprintf(raw_str+n*2, "%02x", block[n]); }
-        //        fprintf(stderr, "Block: %s\n", raw_str);
-        //    }
+            // Check length of package is sufficient...
+            if ((field_L < 9) || ((field_L-9)*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
+                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", field_L); }
+                return 0;
+            }
 
+            // Get all remaining blocks (2...) and concatenate into block array (overwriting CRC bytes)
+            for (int n=0; n < (field_L-9+15)/16; ++n) {
+                uint8_t *block_ptr = block+BLOCK1A_SIZE+n*16;       // Pointer into block where data starts. Skip the 2 CRC bytes!
+                uint8_t block_size = min(field_L-9-n*16, 16)+2;     // Maximum block size is 16 Data + 2 CRC
 
-            char dbg_str[1024];
-            for (unsigned n=0; n<4; n++) { sprintf(dbg_str+n*2, "%02x", block[13+n]); }
-            fprintf(stderr, "Debug: %s\n", dbg_str);
+                // Get Block 2+n
+                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block_ptr, block_size*8);
+                bit_offset += block_size*8;
 
+                // Validate CRC
+                if (!m_bus_crc_valid(block_ptr, block_size-2)) return 0;
+            }
 
+            // Decode Block 2
+            field_CI        = (data_length ? block[BLOCK1A_SIZE] : 0);  // Telegrams without Block 2 are seen.
+        } // Format A
+        // Format B
+        else if (next_byte == 0x3D) {
+            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
+            // Get Block 1 and decode
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1B_SIZE*8);
+            bit_offset += BLOCK1B_SIZE*8;
+            field_L         = block[0];
+            field_C         = block[1];
+            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), field_M_str);    // Decode Manufacturer
+            field_A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
+            field_A_Version = block[8];
+            field_A_DevType = block[9];
+            data_offset     = BLOCK1B_SIZE;
+            data_length     = field_L-(BLOCK1B_SIZE-1)-2;     // Subtract CRC bytes (but include CI)
 
+            // Check length of package is sufficient...
+            if ((field_L < 12) || (((field_L-(BLOCK1B_SIZE-1)))*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
+                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", field_L); }
+                return 0;
+            }
+            // Get Block 2
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+BLOCK1B_SIZE, (min(field_L, 127)-9)*8);  // Cap length for long telegrams
+            bit_offset += (min(field_L, 127)-9)*8;
+            field_CI        = block[BLOCK1B_SIZE];
 
-        }
+            // Validate CRC
+            if (!m_bus_crc_valid(block, min(field_L, 127)-1)) return 0;
+
+            // Extract extra block for long telegrams (not tested!)
+            if (field_L >= (128-1+3)) {
+                // Get Block 3
+                unsigned block_offset = 126;     // Where to start new block (128-2 to overwrite CRC)
+                bit_offset += 128*8;
+                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+block_offset, (field_L-127)*8);
+
+                // Validate CRC
+                if (!m_bus_crc_valid(block+block_offset, field_L-127-2)) return 0;
+
+                data_length -= 2;   // Subtract the two extra CRC bytes
+            }
+        }   // Format B
         // Unknown Format
         else {
-            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Unknown format: 0x%X\n", next_byte); }
+            if (debug_output) {
+                fprintf(stderr, "M-Bus: Mode C, Unknown format: 0x%X\n", next_byte);
+                bitbuffer_print(bitbuffer);
+            }
             return 0;
         }
-    }
+    }   // Mode C
     // Mode T
     else {
-        if (debug_output) { fprintf(stderr, "M-Bus: Mode T - Not implemented\n"); }
+        if (debug_output) {
+            fprintf(stderr, "M-Bus: Mode T - Not implemented\n");
+            bitbuffer_print(bitbuffer);
+        }
         return 0;
-        // Test for Mode T...
         /*
             // Get Block 1
-            if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, block, 12)) < 0) {
+            if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, block, BLOCK1A_SIZE)) < 0) {
                 if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
                 return 0;
             }
-            bit_offset += block_len * 12;   // 12 bits per byte due to "3of6" coding
+            bit_offset += BLOCK1A_SIZE * 12;   // 12 bits per byte due to "3of6" coding
         */
-    }
+    }   // Mode T
+
+    // Make data string
+    str_buf[0] = 0;
+    for (unsigned n=0; n<data_length; n++) { sprintf(str_buf+n*2, "%02x", block[n+data_offset]); }
 
     // Output data
     data = data_make(
@@ -225,32 +279,20 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         "M",        "Manufacturer", DATA_STRING,    field_M_str,
         "id",       "ID",           DATA_INT,       field_A_ID,
         "version",  "Version",      DATA_INT,       field_A_Version,
-        "type_id",  "Device Type ID",   DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
-        "type",     "Device Type",      DATA_STRING,    m_bus_device_type_str(field_A_DevType),
+        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
+        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(field_A_DevType),
         "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, field_C,
         "CI",       "Control Info", DATA_FORMAT,    "0x%02X",   DATA_INT, field_CI,
         "L",        "Length",       DATA_INT,       field_L,
+        "data_length",  "Data Length",          DATA_INT,           data_length,
+        "data_string",  "Data String",          DATA_STRING,        str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
-        "raw",      "Raw",          DATA_STRING,    raw_str,
         NULL);
     data_acquired_handler(data);
 
     return 1;
 }
 
-/*
-static char *output_fields[] = {
-    "time",
-    "brand"
-    "model"
-    "id"
-    "temperature_C",
-    "setpoint_C",
-    "switch",
-    "mic",
-    NULL
-};
-*/
 
 r_device m_bus_100kbps = {
     .name           = "Wireless M-Bus 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
@@ -261,5 +303,4 @@ r_device m_bus_100kbps = {
     .json_callback  = &m_bus_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
-//    .fields         = output_fields
 };

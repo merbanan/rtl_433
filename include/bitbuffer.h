@@ -15,7 +15,7 @@
 
 #include <stdint.h>
 
-#define BITBUF_COLS		80		// Number of bytes in a column
+#define BITBUF_COLS		256		// Number of bytes in a column
 #define BITBUF_ROWS		25
 #define BITBUF_MAX_PRINT_BITS	50	// Maximum number of bits to print (in addition to hex values)
 
