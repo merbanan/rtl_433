@@ -126,18 +126,15 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     static const uint16_t BLOCK1B_SIZE = 10;     // Size of Block 1, format B
 
     uint8_t     block[300];     // Concatenated blocks with CRC fields removed from data. Maximum Length: 1+255+17*2 (Format A)
-    uint8_t     data_offset;    // Start of data bytes in block for Application Layer
-    uint8_t     data_length = 0;    // Length of data bytes
-
     uint8_t     field_L;        // Length
     uint8_t     field_C;        // Control
     char        field_M_str[4]; // Manufacturer
     uint32_t    field_A_ID;     // Address, ID
     uint8_t     field_A_Version;    // Address, Version
     uint8_t     field_A_DevType;    // Address, Device Type
-
     uint16_t    field_CRC;
-    uint8_t     field_CI = 0;   // Control Information
+    uint8_t     data_offset;    // Start of data bytes in block for Application Layer
+    uint8_t     data_length;    // Length of data bytes
     char        str_buf[1024];
 
     // Validate package length
@@ -197,9 +194,6 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
                 // Validate CRC
                 if (!m_bus_crc_valid(block_ptr, block_size-2)) return 0;
             }
-
-            // Decode Block 2
-            field_CI        = (data_length ? block[BLOCK1A_SIZE] : 0);  // Telegrams without Block 2 are seen.
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
@@ -224,7 +218,6 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
             // Get Block 2
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+BLOCK1B_SIZE, (min(field_L, 127)-9)*8);  // Cap length for long telegrams
             bit_offset += (min(field_L, 127)-9)*8;
-            field_CI        = block[BLOCK1B_SIZE];
 
             // Validate CRC
             if (!m_bus_crc_valid(block, min(field_L, 127)-1)) return 0;
@@ -282,10 +275,9 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
         "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(field_A_DevType),
         "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, field_C,
-        "CI",       "Control Info", DATA_FORMAT,    "0x%02X",   DATA_INT, field_CI,
         "L",        "Length",       DATA_INT,       field_L,
         "data_length",  "Data Length",          DATA_INT,           data_length,
-        "data_string",  "Data String",          DATA_STRING,        str_buf,
+        "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
     data_acquired_handler(data);
