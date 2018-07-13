@@ -275,8 +275,8 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
         "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(field_A_DevType),
         "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, field_C,
-        "L",        "Length",       DATA_INT,       field_L,
-        "data_length",  "Data Length",          DATA_INT,           data_length,
+//        "L",        "Length",       DATA_INT,       field_L,
+//        "data_length",  "Data Length",          DATA_INT,           data_length,
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
