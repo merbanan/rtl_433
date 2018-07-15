@@ -51,7 +51,8 @@
 
 
 static int s3318p_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b;
+    int browlen;
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
@@ -65,11 +66,12 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     if (r < 0 || bitbuffer->bits_per_row[r] != 42)
       return 0;
 
-    uint8_t *b = bb[r];
+    b = bitbuffer->bb[r];
+    browlen = (bitbuffer->bits_per_row[r] + 7) / 8;
 
     /* shift all the bits left 2 to align the fields */
     int i;
-    for (i = 0; i < BITBUF_COLS-1; i++) {
+    for (i = 0; i < browlen; i++) {
       uint8_t bits1 = b[i] << 2;
       uint8_t bits2 = (b[i+1] & 0xC0) >> 6;
       bits1 |= bits2;

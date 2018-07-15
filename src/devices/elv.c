@@ -1,6 +1,6 @@
 #include "rtl_433.h"
 
-uint16_t AD_POP(uint8_t bb[BITBUF_COLS], uint8_t bits, uint8_t bit) {
+uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit) {
     uint16_t val = 0;
     uint8_t i, byte_no, bit_no;
     for (i=0;i<bits;i++) {

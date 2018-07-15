@@ -34,7 +34,6 @@
 #include "util.h"
 #include "data.h"
 
-//static int calibeur_rf104_callback(uint8_t bb[BITBUF_ROWS][BITBUF_COLS], int16_t bits_per_row[BITBUF_ROWS]) {
 static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];

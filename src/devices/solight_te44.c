@@ -66,7 +66,7 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
 
         // all lines should have equal content
         // will work also for the last, shorter line, as the separating bit is always 0 anyway
-        if (i > 0 && 0 != memcmp(bb[i], bb[i - 1], BITBUF_COLS)) {
+        if (i > 0 && 0 != memcmp(bb[i], bb[i - 1], 5)) { // 5 bytes to compare 40 bits
             return 0;
         }
     }

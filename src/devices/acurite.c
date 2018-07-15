@@ -119,7 +119,7 @@ static int acurite_5n1raincounter = 0;  // for 5n1 decoder
 static int acurite_5n1t_raincounter = 0;  // for combined 5n1/TXR decoder
 
 
-static int acurite_checksum(uint8_t row[BITBUF_COLS], int cols) {
+static int acurite_checksum(uint8_t *row, int cols) {
     // sum of first n-1 bytes modulo 256 should equal nth byte
     // also disregard a row of all zeros
     int i;

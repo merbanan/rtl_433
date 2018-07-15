@@ -105,6 +105,7 @@ static int
 ambient_weather_parser (bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
+    int browlen;
     float temperature;
     uint8_t humidity;
     uint16_t channel;
@@ -118,9 +119,11 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
     if(bitbuffer->bits_per_row[0] != 195)    // There seems to be 195 bits in a correct message
         return 0;
 
+	browlen = (bitbuffer->bits_per_row[0] + 7) / 8;
+
     /* shift all the bits left 1 to align the fields */
     int i;
-    for (i = 0; i < BITBUF_COLS-1; i++) {
+    for (i = 0; i < browlen; i++) {
         uint8_t bits1 = bb[0][i] << 1;
         uint8_t bits2 = (bb[0][i+1] & 0x80) >> 7;
         bits1 |= bits2;
@@ -130,7 +133,7 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
     /* DEBUG: print out the received packet */
     /*
     fprintf(stderr, "\n! ");
-    for (i = 0 ; i < BITBUF_COLS ; i++) {
+    for (i = 0 ; i < browlen ; i++) {
         fprintf (stderr, "%02x ", bb[0][i]);
     }
     fprintf (stderr,"\n\n");
@@ -139,7 +142,7 @@ ambient_weather_parser (bitbuffer_t *bitbuffer)
     if ( ((bb[0][0] == 0x00) && (bb[0][1] == 0x14) && (bb[0][2] & 0x50)) ||
              ((bb[0][0] == 0xff) && (bb[0][1] == 0xd4) && (bb[0][2] & 0x50)) ) {
 
-        if (validate_checksum (bb[0], BITBUF_COLS)) {
+        if (validate_checksum (bb[0], browlen)) {
             return 0;
         }
 
