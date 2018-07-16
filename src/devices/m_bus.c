@@ -253,11 +253,9 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     }   // Mode C
     // Mode T
     else {
-        if (debug_output) {
-            fprintf(stderr, "M-Bus: Mode T - Not implemented\n");
-            bitbuffer_print(bitbuffer);
-        }
-        return 0;
+        if (debug_output) { fprintf(stderr, "M-Bus: Mode T\n"); }
+        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        return 1;
         /*
             // Get Block 1
             if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, block, BLOCK1A_SIZE)) < 0) {
@@ -290,6 +288,48 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     data_acquired_handler(data);
 
     return 1;
+}
+
+
+static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
+    static const uint8_t PREAMBLE_F[]  = { 0x55, 0xF6};      // Mode F Preamble
+//  static const uint8_t PREAMBLE_FA[] = { 0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
+//  static const uint8_t PREAMBLE_FB[] = { 0x55, 0xF6, 0x72};  // Mode F, format B Preamble
+
+    // Validate package length
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
+        return 0;
+    }
+
+    // Find a Mode F data package
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_F, sizeof(PREAMBLE_F)*8);
+    if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
+        return 0;
+    }
+    bit_offset += sizeof(PREAMBLE_F)*8;     // skip preamble
+
+    uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
+    bit_offset += 8;
+    // Format A
+    if (next_byte == 0x8D) {
+        if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
+        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        return 1;
+    } // Format A
+    // Format B
+    else if (next_byte == 0x72) {
+        if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
+        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        return 1;
+    }   // Format B
+    // Unknown Format
+    else {
+        if (debug_output) {
+            fprintf(stderr, "M-Bus: Mode F, Unknown format: 0x%X\n", next_byte);
+            bitbuffer_print(bitbuffer);
+        }
+        return 0;
+    }
 }
 
 
@@ -363,7 +403,7 @@ r_device m_bus_mode_f = {
     .short_limit    = 1000.0/2.4,   // ~417 us
     .long_limit     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 5000,         // ??
-    .json_callback  = &m_bus_callback,
+    .json_callback  = &m_bus_mode_f_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
 };
