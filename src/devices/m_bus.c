@@ -246,10 +246,10 @@ static void m_bus_output_data(const m_bus_data_t *out, const m_bus_block1_t *blo
 }
 
 
-static int m_bus_callback(bitbuffer_t *bitbuffer) {
-    static const uint8_t PREAMBLE_T[]  = { 0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
-//  static const uint8_t PREAMBLE_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
-//  static const uint8_t PREAMBLE_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
+static int m_bus_mode_c_t_callback(bitbuffer_t *bitbuffer) {
+    static const uint8_t PREAMBLE_T[]  = {0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
+//  static const uint8_t PREAMBLE_CA[] = {0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
+//  static const uint8_t PREAMBLE_CB[] = {0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
 
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -303,7 +303,7 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     // Mode T
     else {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode T\n"); }
-        if (debug_output) { fprintf(stderr, "Experimental - Not testet\n"); }
+        if (debug_output) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
         if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
@@ -319,10 +319,42 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
 }
 
 
+static int m_bus_mode_r_callback(bitbuffer_t *bitbuffer) {
+    static const uint8_t PREAMBLE_RA[]  = {0x55, 0x54, 0x76, 0x96};      // Mode R, format A (B not supported)
+
+    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+
+    // Validate package length
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
+        return 0;
+    }
+
+    // Find a data package
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_RA, sizeof(PREAMBLE_RA)*8);
+    if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
+        return 0;
+    }
+    bit_offset += sizeof(PREAMBLE_RA)*8;     // skip preamble
+
+    if (debug_output) { fprintf(stderr, "M-Bus: Mode R, Format A\n"); }
+    if (debug_output) { fprintf(stderr, "Experimental - Not tested\n"); }
+    // Extract data
+    data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
+    // Decode
+    if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
+
+    m_bus_output_data(&data_out, &block1);
+    return 1;
+}
+
+
 static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
-    static const uint8_t PREAMBLE_F[]  = { 0x55, 0xF6};      // Mode F Preamble
-//  static const uint8_t PREAMBLE_FA[] = { 0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
-//  static const uint8_t PREAMBLE_FB[] = { 0x55, 0xF6, 0x72};  // Mode F, format B Preamble
+    static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
+//  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
+//  static const uint8_t PREAMBLE_FB[] = {0x55, 0xF6, 0x72};  // Mode F, format B Preamble
 
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -376,7 +408,7 @@ r_device m_bus_mode_c_t = {
     .short_limit    = 10,   // Bit rate: 100 kb/s
     .long_limit     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
-    .json_callback  = &m_bus_callback,
+    .json_callback  = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
 };
@@ -391,7 +423,7 @@ r_device m_bus_mode_s = {
     .short_limit    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
     .long_limit     = 0,    // Unused
     .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
-    .json_callback  = &m_bus_callback,
+    .json_callback  = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
 };
@@ -404,7 +436,7 @@ r_device m_bus_mode_s = {
 
 // Mode R2
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
-//      Preamble { 0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
+//      Preamble {0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_r = {
     .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
@@ -412,7 +444,7 @@ r_device m_bus_mode_r = {
     .short_limit    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
     .long_limit     = 0,    // Unused
     .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
-    .json_callback  = &m_bus_callback,
+    .json_callback  = &m_bus_mode_r_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
 };
@@ -420,8 +452,8 @@ r_device m_bus_mode_r = {
 // Mode N
 // Frequency 169.400 MHz to 169.475 MHz in 12.5/25/50 kHz bands
 // Bitrate 2.4/4.8 kbps, Modulation GFSK,
-//      Preamble { 0x55, 0xF6, 0x8D} (Format A)
-//      Preamble { 0x55, 0xF6, 0x72} (Format B)
+//      Preamble {0x55, 0xF6, 0x8D} (Format A)
+//      Preamble {0x55, 0xF6, 0x72} (Format B)
 //      Note: FDMA currently not supported, but Mode F2 may be usable for 2.4
 // Bitrate 19.2 kbps, Modulation 4 GFSK (9600 BAUD)
 //      Note: Not currently possible with rtl_433
@@ -429,8 +461,8 @@ r_device m_bus_mode_r = {
 
 // Mode F2
 // Frequency 433.82 MHz, Bitrate 2.4 kbps, Modulation NRZ FSK
-//      Preamble { 0x55, 0xF6, 0x8D} (Format A)
-//      Preamble { 0x55, 0xF6, 0x72} (Format B)
+//      Preamble {0x55, 0xF6, 0x8D} (Format A)
+//      Preamble {0x55, 0xF6, 0x72} (Format B)
 // Untested stub!!! (Need samples)
 r_device m_bus_mode_f = {
     .name           = "Wireless M-Bus, Mode F, 2.4kbps",
