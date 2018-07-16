@@ -286,12 +286,76 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
 }
 
 
-r_device m_bus_100kbps = {
-    .name           = "Wireless M-Bus 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
+// Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
+// Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
+r_device m_bus_mode_c_t = {
+    .name           = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
     .modulation     = FSK_PULSE_PCM,
     .short_limit    = 10,   // Bit rate: 100 kb/s
     .long_limit     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
+    .json_callback  = &m_bus_callback,
+    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .demod_arg      = 0,
+};
+
+
+// Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
+// Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
+// Untested!!! (Need samples)
+r_device m_bus_mode_s = {
+    .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
+    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
+    .long_limit     = 0,    // Unused
+    .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
+    .json_callback  = &m_bus_callback,
+    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .demod_arg      = 0,
+};
+
+
+// Mode C2 (Meter RX)
+// Frequency 869.525 MHz, Bitrate 50 kbps, Modulation Manchester
+//      Note: Not so interesting, as it is only Meter RX
+
+
+// Mode R2
+// Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
+//      Preamble { 0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
+// Untested sub!!! (Need samples)
+r_device m_bus_mode_r = {
+    .name           = "Wireless M-Bus, Mode R, 2.4kbps (-f 868330000)",
+    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
+    .short_limit    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
+    .long_limit     = 0,    // Unused
+    .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
+    .json_callback  = &m_bus_callback,
+    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .demod_arg      = 0,
+};
+
+// Mode N
+// Frequency 169.400 MHz to 169.475 MHz in 12.5/25/50 kHz bands
+// Bitrate 2.4/4.8 kbps, Modulation GFSK,
+//      Preamble { 0x55, 0xF6, 0x8D} (Format A)
+//      Preamble { 0x55, 0xF6, 0x72} (Format B)
+//      Note: FDMA currently not supported, but Mode F2 may be usable for 2.4
+// Bitrate 19.2 kbps, Modulation 4 GFSK (9600 BAUD)
+//      Note: Not currently possible with rtl_433
+
+
+// Mode F2
+// Frequency 433.82 MHz, Bitrate 2.4 kbps, Modulation NRZ FSK
+//      Preamble { 0x55, 0xF6, 0x8D} (Format A)
+//      Preamble { 0x55, 0xF6, 0x72} (Format B)
+// Untested stub!!! (Need samples)
+r_device m_bus_mode_f = {
+    .name           = "Wireless M-Bus, Mode F, 2.4kbps",
+    .modulation     = FSK_PULSE_PCM,
+    .short_limit    = 1000.0/2.4,   // ~417 us
+    .long_limit     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
+    .reset_limit    = 5000,         // ??
     .json_callback  = &m_bus_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
     .demod_arg      = 0,
