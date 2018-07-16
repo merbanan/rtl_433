@@ -325,7 +325,7 @@ r_device m_bus_mode_s = {
 //      Preamble { 0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
 // Untested sub!!! (Need samples)
 r_device m_bus_mode_r = {
-    .name           = "Wireless M-Bus, Mode R, 2.4kbps (-f 868330000)",
+    .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
     .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
     .short_limit    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
     .long_limit     = 0,    // Unused
