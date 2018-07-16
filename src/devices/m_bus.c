@@ -115,6 +115,18 @@ const char* m_bus_device_type_str(uint8_t devType) {
 }
 
 
+// Data structure for block 1
+typedef struct {
+    uint8_t     L;        // Length
+    uint8_t     C;        // Control
+    char        M_str[4]; // Manufacturer (encoded as 2 bytes)
+    uint32_t    A_ID;     // Address, ID
+    uint8_t     A_Version;    // Address, Version
+    uint8_t     A_DevType;    // Address, Device Type
+    uint16_t    CRC;      // Optional (Only for Format A)
+} m_bus_block1_t;
+
+
 static int m_bus_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -126,13 +138,8 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     static const uint16_t BLOCK1B_SIZE = 10;     // Size of Block 1, format B
 
     uint8_t     block[300];     // Concatenated blocks with CRC fields removed from data. Maximum Length: 1+255+17*2 (Format A)
-    uint8_t     field_L;        // Length
-    uint8_t     field_C;        // Control
-    char        field_M_str[4]; // Manufacturer
-    uint32_t    field_A_ID;     // Address, ID
-    uint8_t     field_A_Version;    // Address, Version
-    uint8_t     field_A_DevType;    // Address, Device Type
-    uint16_t    field_CRC;
+    m_bus_block1_t  block1 = {0};
+
     uint8_t     data_offset;    // Start of data bytes in block for Application Layer
     uint8_t     data_length;    // Length of data bytes
     char        str_buf[1024];
@@ -164,28 +171,28 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
             // Get Block 1
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1A_SIZE*8);
             bit_offset += BLOCK1A_SIZE*8;
-            field_L         = block[0];
-            field_C         = block[1];
-            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), field_M_str);    // Decode Manufacturer
-            field_A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
-            field_A_Version = block[8];
-            field_A_DevType = block[9];
+            block1.L         = block[0];
+            block1.C         = block[1];
+            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), block1.M_str);    // Decode Manufacturer
+            block1.A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
+            block1.A_Version = block[8];
+            block1.A_DevType = block[9];
             data_offset     = BLOCK1A_SIZE;
-            data_length     = field_L-9;     // Store length of data
+            data_length     = block1.L-9;     // Store length of data
 
             // Validate CRC
             if (!m_bus_crc_valid(block, 10)) return 0;
 
             // Check length of package is sufficient...
-            if ((field_L < 9) || ((field_L-9)*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
-                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", field_L); }
+            if ((block1.L < 9) || ((block1.L-9)*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
+                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1.L); }
                 return 0;
             }
 
             // Get all remaining blocks (2...) and concatenate into block array (overwriting CRC bytes)
-            for (int n=0; n < (field_L-9+15)/16; ++n) {
+            for (int n=0; n < (block1.L-9+15)/16; ++n) {
                 uint8_t *block_ptr = block+BLOCK1A_SIZE+n*16;       // Pointer into block where data starts. Skip the 2 CRC bytes!
-                uint8_t block_size = min(field_L-9-n*16, 16)+2;     // Maximum block size is 16 Data + 2 CRC
+                uint8_t block_size = min(block1.L-9-n*16, 16)+2;     // Maximum block size is 16 Data + 2 CRC
 
                 // Get Block 2+n
                 bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block_ptr, block_size*8);
@@ -201,36 +208,36 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
             // Get Block 1 and decode
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1B_SIZE*8);
             bit_offset += BLOCK1B_SIZE*8;
-            field_L         = block[0];
-            field_C         = block[1];
-            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), field_M_str);    // Decode Manufacturer
-            field_A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
-            field_A_Version = block[8];
-            field_A_DevType = block[9];
+            block1.L         = block[0];
+            block1.C         = block[1];
+            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), block1.M_str);    // Decode Manufacturer
+            block1.A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
+            block1.A_Version = block[8];
+            block1.A_DevType = block[9];
             data_offset     = BLOCK1B_SIZE;
-            data_length     = field_L-(BLOCK1B_SIZE-1)-2;     // Subtract CRC bytes (but include CI)
+            data_length     = block1.L-(BLOCK1B_SIZE-1)-2;     // Subtract CRC bytes (but include CI)
 
             // Check length of package is sufficient...
-            if ((field_L < 12) || (((field_L-(BLOCK1B_SIZE-1)))*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
-                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", field_L); }
+            if ((block1.L < 12) || (((block1.L-(BLOCK1B_SIZE-1)))*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
+                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1.L); }
                 return 0;
             }
             // Get Block 2
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+BLOCK1B_SIZE, (min(field_L, 127)-9)*8);  // Cap length for long telegrams
-            bit_offset += (min(field_L, 127)-9)*8;
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+BLOCK1B_SIZE, (min(block1.L, 127)-9)*8);  // Cap length for long telegrams
+            bit_offset += (min(block1.L, 127)-9)*8;
 
             // Validate CRC
-            if (!m_bus_crc_valid(block, min(field_L, 127)-1)) return 0;
+            if (!m_bus_crc_valid(block, min(block1.L, 127)-1)) return 0;
 
             // Extract extra block for long telegrams (not tested!)
-            if (field_L >= (128-1+3)) {
+            if (block1.L >= (128-1+3)) {
                 // Get Block 3
                 unsigned block_offset = 126;     // Where to start new block (128-2 to overwrite CRC)
                 bit_offset += 128*8;
-                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+block_offset, (field_L-127)*8);
+                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+block_offset, (block1.L-127)*8);
 
                 // Validate CRC
-                if (!m_bus_crc_valid(block+block_offset, field_L-127-2)) return 0;
+                if (!m_bus_crc_valid(block+block_offset, block1.L-127-2)) return 0;
 
                 data_length -= 2;   // Subtract the two extra CRC bytes
             }
@@ -269,13 +276,13 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     data = data_make(
         "time",     "",             DATA_STRING,    time_str,
         "model",    "",             DATA_STRING,    "Wireless M-Bus",
-        "M",        "Manufacturer", DATA_STRING,    field_M_str,
-        "id",       "ID",           DATA_INT,       field_A_ID,
-        "version",  "Version",      DATA_INT,       field_A_Version,
-        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, field_A_DevType,
-        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(field_A_DevType),
-        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, field_C,
-//        "L",        "Length",       DATA_INT,       field_L,
+        "M",        "Manufacturer", DATA_STRING,    block1.M_str,
+        "id",       "ID",           DATA_INT,       block1.A_ID,
+        "version",  "Version",      DATA_INT,       block1.A_Version,
+        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1.A_DevType,
+        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1.A_DevType),
+        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1.C,
+//        "L",        "Length",       DATA_INT,       block1.L,
 //        "data_length",  "Data Length",          DATA_INT,           data_length,
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
