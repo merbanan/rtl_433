@@ -126,6 +126,94 @@ typedef struct {
     uint16_t    CRC;      // Optional (Only for Format A)
 } m_bus_block1_t;
 
+typedef struct {
+    uint8_t     data[512];
+    unsigned    length;
+} m_bus_data_t;
+
+
+static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
+    static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
+
+    // Get Block 1
+    block1->L         = in->data[0];
+    block1->C         = in->data[1];
+    m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+    block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
+    block1->A_Version = in->data[8];
+    block1->A_DevType = in->data[9];
+
+    // Store length of data
+    out->length      = block1->L-9;
+
+    // Validate CRC
+    if (!m_bus_crc_valid(in->data, 10)) return 0;
+
+    // Check length of package is sufficient
+    unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
+    if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
+        if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        return 0;
+    }
+
+    // Get all remaining data blocks and concatenate into data array (removing CRC bytes)
+    for (unsigned n=0; n < num_data_blocks; ++n) {
+        const uint8_t *in_ptr   = in->data+BLOCK1A_SIZE+n*18;       // Pointer to where data starts. Each block is 18 bytes
+        uint8_t *out_ptr        = out->data+n*16;                   // Pointer into block where data starts.
+        uint8_t block_size      = min(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
+
+        // Validate CRC
+        if (!m_bus_crc_valid(in_ptr, block_size-2)) return 0;
+
+        // Get block data
+        memcpy(out_ptr, in_ptr, block_size);
+    }
+    return 1;
+}
+
+
+static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
+    static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
+    static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
+    static const uint16_t BLOCK1_2B_SIZE  = 128;
+
+    // Get Block 1
+    block1->L         = in->data[0];
+    block1->C         = in->data[1];
+    m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+    block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
+    block1->A_Version = in->data[8];
+    block1->A_DevType = in->data[9];
+
+    // Store length of data
+    out->length      = block1->L-(9+2);     // Subtract Block 1 and CRC bytes (but include CI)
+
+    // Check length of package is sufficient
+    if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
+        if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        return 0;
+    }
+
+    // Validate CRC
+    if (!m_bus_crc_valid(in->data, min(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
+
+    // Get data from Block 2
+    memcpy(out->data, in->data+BLOCK1B_SIZE, (min(block1->L-11, BLOCK2B_SIZE-2)));
+
+    // Extract extra block for long telegrams (not tested!)
+    static const uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
+    if (block1->L > (L_OFFSET+2)) {        // Any more data? (besided 2 extra CRC)
+        // Validate CRC
+        if (!m_bus_crc_valid(in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;
+
+        // Get Block 3
+        memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
+
+        out->length -= 2;   // Subtract the two extra CRC bytes
+    }
+    return 1;
+}
+
 
 static int m_bus_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
@@ -134,14 +222,11 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_T[]  = { 0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
-    static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
-    static const uint16_t BLOCK1B_SIZE = 10;     // Size of Block 1, format B
 
-    uint8_t     block[300];     // Concatenated blocks with CRC fields removed from data. Maximum Length: 1+255+17*2 (Format A)
-    m_bus_block1_t  block1 = {0};
+    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
-    uint8_t     data_offset;    // Start of data bytes in block for Application Layer
-    uint8_t     data_length;    // Length of data bytes
     char        str_buf[1024];
 
     // Validate package length
@@ -168,79 +253,20 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         // Format A
         if (next_byte == 0xCD) {
             if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format A\n"); }
-            // Get Block 1
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1A_SIZE*8);
-            bit_offset += BLOCK1A_SIZE*8;
-            block1.L         = block[0];
-            block1.C         = block[1];
-            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), block1.M_str);    // Decode Manufacturer
-            block1.A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
-            block1.A_Version = block[8];
-            block1.A_DevType = block[9];
-            data_offset     = BLOCK1A_SIZE;
-            data_length     = block1.L-9;     // Store length of data
-
-            // Validate CRC
-            if (!m_bus_crc_valid(block, 10)) return 0;
-
-            // Check length of package is sufficient...
-            if ((block1.L < 9) || ((block1.L-9)*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
-                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1.L); }
-                return 0;
-            }
-
-            // Get all remaining blocks (2...) and concatenate into block array (overwriting CRC bytes)
-            for (int n=0; n < (block1.L-9+15)/16; ++n) {
-                uint8_t *block_ptr = block+BLOCK1A_SIZE+n*16;       // Pointer into block where data starts. Skip the 2 CRC bytes!
-                uint8_t block_size = min(block1.L-9-n*16, 16)+2;     // Maximum block size is 16 Data + 2 CRC
-
-                // Get Block 2+n
-                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block_ptr, block_size*8);
-                bit_offset += block_size*8;
-
-                // Validate CRC
-                if (!m_bus_crc_valid(block_ptr, block_size-2)) return 0;
-            }
+            // Extract data
+            data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
+            // Decode
+            if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
             if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
-            // Get Block 1 and decode
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block, BLOCK1B_SIZE*8);
-            bit_offset += BLOCK1B_SIZE*8;
-            block1.L         = block[0];
-            block1.C         = block[1];
-            m_bus_manuf_decode((uint32_t)(block[3] << 8 | block[2]), block1.M_str);    // Decode Manufacturer
-            block1.A_ID      = bcd2int(block[7])*1000000 + bcd2int(block[6])*10000 + bcd2int(block[5])*100 + bcd2int(block[4]);
-            block1.A_Version = block[8];
-            block1.A_DevType = block[9];
-            data_offset     = BLOCK1B_SIZE;
-            data_length     = block1.L-(BLOCK1B_SIZE-1)-2;     // Subtract CRC bytes (but include CI)
-
-            // Check length of package is sufficient...
-            if ((block1.L < 12) || (((block1.L-(BLOCK1B_SIZE-1)))*8 > (int)(bitbuffer->bits_per_row[0]-bit_offset))) {
-                if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1.L); }
-                return 0;
-            }
-            // Get Block 2
-            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+BLOCK1B_SIZE, (min(block1.L, 127)-9)*8);  // Cap length for long telegrams
-            bit_offset += (min(block1.L, 127)-9)*8;
-
-            // Validate CRC
-            if (!m_bus_crc_valid(block, min(block1.L, 127)-1)) return 0;
-
-            // Extract extra block for long telegrams (not tested!)
-            if (block1.L >= (128-1+3)) {
-                // Get Block 3
-                unsigned block_offset = 126;     // Where to start new block (128-2 to overwrite CRC)
-                bit_offset += 128*8;
-                bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, block+block_offset, (block1.L-127)*8);
-
-                // Validate CRC
-                if (!m_bus_crc_valid(block+block_offset, block1.L-127-2)) return 0;
-
-                data_length -= 2;   // Subtract the two extra CRC bytes
-            }
+            // Extract data
+            data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
+            bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
+            // Decode
+            if(!m_bus_decode_format_b(&data_in, &data_out, &block1))    return 0;
         }   // Format B
         // Unknown Format
         else {
@@ -268,7 +294,7 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
 
     // Make data string
     str_buf[0] = 0;
-    for (unsigned n=0; n<data_length; n++) { sprintf(str_buf+n*2, "%02x", block[n+data_offset]); }
+    for (unsigned n=0; n<data_out.length; n++) { sprintf(str_buf+n*2, "%02x", data_out.data[n]); }
 
     // Output data
     data = data_make(
@@ -281,7 +307,7 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1.A_DevType),
         "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1.C,
 //        "L",        "Length",       DATA_INT,       block1.L,
-//        "data_length",  "Data Length",          DATA_INT,           data_length,
+        "data_length",  "Data Length",          DATA_INT,           data_out.length,
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
