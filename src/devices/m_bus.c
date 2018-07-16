@@ -303,16 +303,15 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     // Mode T
     else {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode T\n"); }
-        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
-        return 1;
-        /*
-            // Get Block 1
-            if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, block, BLOCK1A_SIZE)) < 0) {
-                if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
-                return 0;
-            }
-            bit_offset += BLOCK1A_SIZE * 12;   // 12 bits per byte due to "3of6" coding
-        */
+        if (debug_output) { fprintf(stderr, "Experimental - Not testet\n"); }
+        // Extract data
+        data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
+        if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
+            if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
+            return 0;
+        }
+        // Decode
+        if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
     m_bus_output_data(&data_out, &block1);
@@ -347,11 +346,13 @@ static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
     if (next_byte == 0x8D) {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
         if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        return 1;
     } // Format A
     // Format B
     else if (next_byte == 0x72) {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
         if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        return 1;
     }   // Format B
     // Unknown Format
     else {
@@ -404,7 +405,7 @@ r_device m_bus_mode_s = {
 // Mode R2
 // Frequency 868.33 MHz, Bitrate 4.8 kbps, Modulation Manchester FSK
 //      Preamble { 0x55, 0x54, 0x76, 0x96} (Format A) (B not supported)
-// Untested sub!!! (Need samples)
+// Untested stub!!! (Need samples)
 r_device m_bus_mode_r = {
     .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
     .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
