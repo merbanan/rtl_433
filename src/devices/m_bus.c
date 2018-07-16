@@ -215,10 +215,38 @@ static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bu
 }
 
 
-static int m_bus_callback(bitbuffer_t *bitbuffer) {
-    data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
+static void m_bus_output_data(const m_bus_data_t *out, const m_bus_block1_t *block1) {
+    data_t  *data;
+    char    time_str[LOCAL_TIME_BUFLEN];
+    char    str_buf[1024];
 
+    // Get time now
+    local_time_str(0, time_str);
+
+    // Make data string
+    str_buf[0] = 0;
+    for (unsigned n=0; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
+
+    // Output data
+    data = data_make(
+        "time",     "",             DATA_STRING,    time_str,
+        "model",    "",             DATA_STRING,    "Wireless M-Bus",
+        "M",        "Manufacturer", DATA_STRING,    block1->M_str,
+        "id",       "ID",           DATA_INT,       block1->A_ID,
+        "version",  "Version",      DATA_INT,       block1->A_Version,
+        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->A_DevType,
+        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1->A_DevType),
+        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1->C,
+//        "L",        "Length",       DATA_INT,       block1->L,
+        "data_length",  "Data Length",          DATA_INT,           out->length,
+        "data",     "Data",         DATA_STRING,    str_buf,
+        "mic",      "Integrity",    DATA_STRING,    "CRC",
+        NULL);
+    data_acquired_handler(data);
+}
+
+
+static int m_bus_callback(bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_T[]  = { 0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = { 0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = { 0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
@@ -227,15 +255,10 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
-    char        str_buf[1024];
-
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
         return 0;
     }
-
-    // Get time now
-    local_time_str(0, time_str);
 
     // Find a Mode T or C data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T, sizeof(PREAMBLE_T)*8);
@@ -292,27 +315,7 @@ static int m_bus_callback(bitbuffer_t *bitbuffer) {
         */
     }   // Mode T
 
-    // Make data string
-    str_buf[0] = 0;
-    for (unsigned n=0; n<data_out.length; n++) { sprintf(str_buf+n*2, "%02x", data_out.data[n]); }
-
-    // Output data
-    data = data_make(
-        "time",     "",             DATA_STRING,    time_str,
-        "model",    "",             DATA_STRING,    "Wireless M-Bus",
-        "M",        "Manufacturer", DATA_STRING,    block1.M_str,
-        "id",       "ID",           DATA_INT,       block1.A_ID,
-        "version",  "Version",      DATA_INT,       block1.A_Version,
-        "type",     "Device Type",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1.A_DevType,
-        "type_string",  "Device Type String",   DATA_STRING,        m_bus_device_type_str(block1.A_DevType),
-        "C",        "Control",      DATA_FORMAT,    "0x%02X",   DATA_INT, block1.C,
-//        "L",        "Length",       DATA_INT,       block1.L,
-        "data_length",  "Data Length",          DATA_INT,           data_out.length,
-        "data",     "Data",         DATA_STRING,    str_buf,
-        "mic",      "Integrity",    DATA_STRING,    "CRC",
-        NULL);
-    data_acquired_handler(data);
-
+    m_bus_output_data(&data_out, &block1);
     return 1;
 }
 
@@ -321,6 +324,10 @@ static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_F[]  = { 0x55, 0xF6};      // Mode F Preamble
 //  static const uint8_t PREAMBLE_FA[] = { 0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
 //  static const uint8_t PREAMBLE_FB[] = { 0x55, 0xF6, 0x72};  // Mode F, format B Preamble
+
+    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
@@ -340,13 +347,11 @@ static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
     if (next_byte == 0x8D) {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
         if (debug_output) { fprintf(stderr, "Not implemented\n"); }
-        return 1;
     } // Format A
     // Format B
     else if (next_byte == 0x72) {
         if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
         if (debug_output) { fprintf(stderr, "Not implemented\n"); }
-        return 1;
     }   // Format B
     // Unknown Format
     else {
@@ -356,6 +361,9 @@ static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
         }
         return 0;
     }
+
+    m_bus_output_data(&data_out, &block1);
+    return 1;
 }
 
 
