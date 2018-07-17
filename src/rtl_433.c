@@ -82,7 +82,7 @@ struct dm_state {
 
     /* Signal grabber variables */
     int signal_grabber;
-    int8_t* sg_buf;
+    int8_t *sg_buf;
     int sg_index;
     int sg_len;
 
@@ -626,13 +626,13 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     char sgf_name[256] = {0};
                     FILE *sgfp;
 
-            while (1) {
-            sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, frequency[0]/1000000.0, samp_rate/1000.0);
-            demod->signal_grabber++;
-            if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
-                break;
-            }
-            }
+                    while (1) {
+                        sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, frequency[0] / 1000000.0, samp_rate / 1000.0);
+                        demod->signal_grabber++;
+                        if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
+                            break;
+                        }
+                    }
 
                     signal_bszie = 2 * (signal_end - (signal_start - 10000));
                     signal_bszie = (131072 - (signal_bszie % 131072)) + signal_bszie;
@@ -722,7 +722,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // Handle special input formats
-    if(!demod->out_file) {                // If output file is specified we always assume I/Q input
+    if (!demod->out_file) {                // If output file is specified we always assume I/Q input
         if (demod->debug_mode == 1) {    // The IQ buffer is really AM demodulated data
             memcpy(demod->am_buf, iq_buf, len);
         } else if (demod->debug_mode == 2) {    // The IQ buffer is really FM demodulated data
@@ -736,10 +736,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
-        while(package_type) {
+        while (package_type) {
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
-                if(demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -780,12 +780,12 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if(debug_output > 1) pulse_data_print(&demod->pulse_data);
-                if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
+                if (debug_output > 1) pulse_data_print(&demod->pulse_data);
+                if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, samp_rate);
                 }
             } else if (package_type == 2) {
-                if(demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
@@ -810,12 +810,12 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if(debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-                if(demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
+                if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
+                if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
                 }
             } // if (package_type == ...
-        } // while(package_type)...
+        } // while (package_type)...
 
         if (stop_after_successful_events_flag && (p_events > 0)) {
             do_exit = do_exit_async = 1;
@@ -824,7 +824,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     } // if (demod->analyze...
 
     if (demod->out_file) {
-        uint8_t* out_buf = iq_buf;  // Default is to dump IQ samples
+        uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         if (demod->debug_mode == 1) {  // AM data
             out_buf = (uint8_t*)demod->am_buf;
         } else if (demod->debug_mode == 2) {  // FM data
@@ -959,7 +959,7 @@ void add_json_output(char *param)
     output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-void add_csv_output(char *param, r_device *devices, int num_devices, r_device * extra_device)
+void add_csv_output(char *param, r_device *devices, int num_devices, r_device *extra_device)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(devices, num_devices, extra_device, &num_output_fields);
@@ -999,7 +999,7 @@ int main(int argc, char **argv) {
     uint32_t i = 0;
     int sync_mode = 0;
     int ppm_error = 0;
-    struct dm_state* demod;
+    struct dm_state *demod;
     int dev_index = 0;
     int frequency_current = 0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
@@ -1154,7 +1154,7 @@ int main(int argc, char **argv) {
                 _tzset();
 #else
                 utc_mode = setenv("TZ", "UTC", 1);
-                if(utc_mode != 0)
+                if (utc_mode != 0)
                     fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
 #endif
                 break;
@@ -1193,7 +1193,7 @@ int main(int argc, char **argv) {
         devices[i].protocol_num = i + 1;
         if (!devices[i].disabled || register_all) {
             register_protocol(demod, &devices[i]);
-            if(devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
+            if (devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
         }
@@ -1274,8 +1274,8 @@ int main(int argc, char **argv) {
             break;
         }
     }
-    if(r < 0) {
-        if(!quiet_mode) fprintf(stderr, "Unable to open a device\n");
+    if (r < 0) {
+        if (!quiet_mode) fprintf(stderr, "Unable to open a device\n");
         exit(1);
     }
 
