@@ -77,7 +77,8 @@ struct dm_state {
     int enable_FM_demod;
     int analyze;
     int analyze_pulses;
-    int debug_mode;
+    int load_mode;
+    int dump_mode;
     int hop_time;
 
     /* Signal grabber variables */
@@ -722,12 +723,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // Handle special input formats
-    if (!demod->out_file) {                // If output file is specified we always assume I/Q input
-        if (demod->debug_mode == 1) {    // The IQ buffer is really AM demodulated data
-            memcpy(demod->am_buf, iq_buf, len);
-        } else if (demod->debug_mode == 2) {    // The IQ buffer is really FM demodulated data
-            fprintf(stderr, "Reading FM modulated data not implemented yet!\n");
-        }
+    if (demod->load_mode == 1) { // The IQ buffer is really AM demodulated data
+        memcpy(demod->am_buf, iq_buf, len);
+    } else if (demod->load_mode == 2) { // The IQ buffer is really FM demodulated data
+        memcpy(demod->buf.fm, iq_buf, len);
     }
 
     if (demod->analyze || (demod->out_file == stdout)) {    // We don't want to decode devices when outputting to stdout
@@ -825,9 +824,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     if (demod->out_file) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
-        if (demod->debug_mode == 1) {  // AM data
+        if (demod->dump_mode == 1) {  // AM data
             out_buf = (uint8_t*)demod->am_buf;
-        } else if (demod->debug_mode == 2) {  // FM data
+        } else if (demod->dump_mode == 2) {  // FM data
             out_buf = (uint8_t*)demod->buf.fm;
         }
         if (fwrite(out_buf, 1, len, demod->out_file) != len) {
@@ -992,6 +991,7 @@ int main(int argc, char **argv) {
     char *test_data = NULL;
     char *out_filename = NULL;
     char *in_filename = NULL;
+    int loaddump_mode = 0;
     FILE *in_file;
     int n_read;
     int r = 0, opt;
@@ -1012,8 +1012,7 @@ int main(int argc, char **argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
-    demod = malloc(sizeof (struct dm_state));
-    memset(demod, 0, sizeof (struct dm_state));
+    demod = calloc(1, sizeof(struct dm_state));
 
     /* initialize tables */
     baseband_init();
@@ -1024,7 +1023,7 @@ int main(int argc, char **argv) {
 #undef DECL
             };
 
-    num_r_devices = sizeof(devices)/sizeof(*devices);
+    num_r_devices = sizeof(devices) / sizeof(*devices);
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
@@ -1073,12 +1072,17 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
+                demod->load_mode = loaddump_mode;
                 break;
             case 't':
                 demod->signal_grabber = 1;
                 break;
             case 'm':
-                demod->debug_mode = atoi(optarg);
+                loaddump_mode = atoi(optarg);
+                if (loaddump_mode < 0 || loaddump_mode > 3) {
+                    fprintf(stderr, "Invalid sample mode %s\n", optarg);
+                    usage(devices);
+                }
                 break;
             case 'S':
                 sync_mode = 1;
@@ -1325,6 +1329,7 @@ int main(int argc, char **argv) {
     }
 
     if (out_filename) {
+        demod->dump_mode = loaddump_mode;
         if (strcmp(out_filename, "-") == 0) { /* Write samples to stdout */
             demod->out_file = stdout;
 #ifdef _WIN32
@@ -1367,13 +1372,13 @@ int main(int argc, char **argv) {
         }
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
         if (!quiet_mode) {
-            fprintf(stderr, "Input format: %s\n", (demod->debug_mode == 3) ? "cf32" : "uint8");
+            fprintf(stderr, "Input format: %s\n", (demod->load_mode == 3) ? "2ch cf32" : "2ch uint8 / 1ch uint16");
         }
         sample_file_pos = 0.0;
 
         int n_read, cf32_tmp;
         do {
-            if (demod->debug_mode == 3) {
+            if (demod->load_mode == 3) {
                 n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH, in_file);
                 for(int n = 0; n < n_read; n++) {
                     cf32_tmp = test_mode_float_buf[n]*127 + 127;
