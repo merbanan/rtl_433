@@ -622,7 +622,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
 
                 signal_pulse_counter = 0;
                 if (demod->sg_buf) {
-                    int start_pos, signal_bszie, wlen, wrest = 0, sg_idx, idx;
+                    int start_pos, signal_bsize, wlen, wrest = 0, sg_idx, idx;
                     char sgf_name[256] = {0};
                     FILE *sgfp;
 
@@ -634,17 +634,17 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                         }
                     }
 
-                    signal_bszie = 2 * (signal_end - (signal_start - 10000));
-                    signal_bszie = (131072 - (signal_bszie % 131072)) + signal_bszie;
+                    signal_bsize = 2 * (signal_end - (signal_start - 10000));
+                    signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
                     sg_idx = demod->sg_index - demod->sg_len;
                     if (sg_idx < 0)
                         sg_idx = SIGNAL_GRABBER_BUFFER - demod->sg_len;
                     idx = (i - 40000)*2;
-                    start_pos = sg_idx + idx - signal_bszie;
-                    fprintf(stderr, "signal_bszie = %d  -      sg_index = %d\n", signal_bszie, demod->sg_index);
+                    start_pos = sg_idx + idx - signal_bsize;
+                    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, demod->sg_index);
                     fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
-                    if (signal_bszie > SIGNAL_GRABBER_BUFFER)
-                        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bszie, SIGNAL_GRABBER_BUFFER);
+                    if (signal_bsize > SIGNAL_GRABBER_BUFFER)
+                        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, SIGNAL_GRABBER_BUFFER);
 
                     if (start_pos < 0) {
                         start_pos = SIGNAL_GRABBER_BUFFER + start_pos;
@@ -656,10 +656,10 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     if (!sgfp) {
                         fprintf(stderr, "Failed to open %s\n", sgf_name);
                     }
-                    wlen = signal_bszie;
-                    if (start_pos + signal_bszie > SIGNAL_GRABBER_BUFFER) {
+                    wlen = signal_bsize;
+                    if (start_pos + signal_bsize > SIGNAL_GRABBER_BUFFER) {
                         wlen = SIGNAL_GRABBER_BUFFER - start_pos;
-                        wrest = signal_bszie - wlen;
+                        wrest = signal_bsize - wlen;
                     }
                     fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
                     fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
