@@ -25,18 +25,25 @@
 /// @param len: number of samples to process
 void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
 
+// for evaluation
+void envelope_detect_nolut(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_true_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_true_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len);
+
 #define FILTER_ORDER 1
 
 /// Filter state buffer
 typedef struct {
-	int16_t	y[FILTER_ORDER];
-	int16_t	x[FILTER_ORDER];
+    int16_t y[FILTER_ORDER];
+    int16_t x[FILTER_ORDER];
 } FilterState;
 
 /// FM_Demod state buffer
 typedef struct {
-	int16_t	br, bi;		// Last I/Q sample
-	int16_t xlp, ylp;	// Low-pass filter state
+    int32_t br, bi;   // Last I/Q sample
+    int32_t xlp, ylp; // Low-pass filter state
 } DemodFM_State;
 
 /// Lowpass filter
@@ -55,7 +62,10 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
 /// @param *y_buf: output from FM demodulator
 /// @param len: number of samples to process
 /// @param DemodFM_State: State to store between chunk processing
-void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned num_samples, DemodFM_State *state);
+void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
+
+// for evaluation
+void baseband_demod_FM_cs16(const int16_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
 
 /// Initialize tables and constants
 /// Should be called once at startup
