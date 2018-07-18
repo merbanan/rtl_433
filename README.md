@@ -82,9 +82,9 @@ Usage:	= Tuner options =
 	[-m <mode>] Data file mode for input / output file (default: 0)
 		 0 = Raw I/Q samples (uint8, 2 channel)
 		 1 = AM demodulated samples (int16 pcm, 1 channel)
-		 2 = FM demodulated samples (int16) (experimental)
+		 2 = FM demodulated samples (int16) (output only)
 		 3 = Raw I/Q samples (cf32, 2 channel)
-		 Note: If output file is specified, input will always be I/Q
+		 4 = Raw I/Q samples (cs16, 2 channel)
 	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
 		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514

@@ -72,6 +72,7 @@ struct dm_state {
         int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
         uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
     } buf;
+    int sample_size; // CU8: 1, CS16: 2
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
@@ -141,9 +142,9 @@ void usage(r_device *devices) {
             "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
             "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
             "\t\t 1 = AM demodulated samples (int16 pcm, 1 channel)\n"
-            "\t\t 2 = FM demodulated samples (int16) (experimental)\n"
+            "\t\t 2 = FM demodulated samples (int16) (output only)\n"
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
-            "\t\t Note: If output file is specified, input will always be I/Q\n"
+            "\t\t 4 = Raw I/Q samples (cs16, 2 channel)\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -690,6 +691,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
+    unsigned long n_samples;
 
     if (do_exit || do_exit_async)
         return;
@@ -699,6 +701,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         do_exit = 1;
         rtlsdr_cancel_async(dev);
     }
+
+    n_samples = len / 2 / demod->sample_size;
 
 #ifndef _WIN32
     alarm(3); // require callback to run every 3 second, abort otherwise
@@ -714,29 +718,41 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // AM demodulation
-    envelope_detect(iq_buf, demod->buf.temp, len/2);
-    baseband_low_pass_filter(demod->buf.temp, demod->am_buf, len/2, &demod->lowpass_filter_state);
+    if (demod->sample_size == 1) { // CU8
+        envelope_detect(iq_buf, demod->buf.temp, n_samples);
+        //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
+        //magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+    } else { // CS16
+        //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+        magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+    }
+    baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
     // FM demodulation
     if (demod->enable_FM_demod) {
-        baseband_demod_FM(iq_buf, demod->buf.fm, len/2, &demod->demod_FM_state);
+        if (demod->sample_size == 1) { // CU8
+            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state);
+        } else { // CS16
+            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state);
+        }
     }
 
     // Handle special input formats
     if (demod->load_mode == 1) { // The IQ buffer is really AM demodulated data
         memcpy(demod->am_buf, iq_buf, len);
     } else if (demod->load_mode == 2) { // The IQ buffer is really FM demodulated data
+        // we would need AM for the envelope too
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
     if (demod->analyze || (demod->out_file == stdout)) {    // We don't want to decode devices when outputting to stdout
-        pwm_analyze(demod, demod->am_buf, len / 2);
+        pwm_analyze(demod, demod->am_buf, n_samples);
     } else {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
         while (package_type) {
-            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, len/2, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
@@ -824,12 +840,15 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     if (demod->out_file) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
+        unsigned long out_len = n_samples * 2 * demod->sample_size;
         if (demod->dump_mode == 1) {  // AM data
             out_buf = (uint8_t*)demod->am_buf;
+            out_len = n_samples * sizeof(int16_t);
         } else if (demod->dump_mode == 2) {  // FM data
             out_buf = (uint8_t*)demod->buf.fm;
+            out_len = n_samples * sizeof(int16_t);
         }
-        if (fwrite(out_buf, 1, len, demod->out_file) != len) {
+        if (fwrite(out_buf, 1, out_len, demod->out_file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
             rtlsdr_cancel_async(dev);
         }
@@ -1072,6 +1091,10 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
+                if (loaddump_mode == 2) {
+                    fprintf(stderr, "FM input not supported\n");
+                    usage(devices);
+                }
                 demod->load_mode = loaddump_mode;
                 break;
             case 't':
@@ -1079,7 +1102,7 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 loaddump_mode = atoi(optarg);
-                if (loaddump_mode < 0 || loaddump_mode > 3) {
+                if (loaddump_mode < 0 || loaddump_mode > 4) {
                     fprintf(stderr, "Invalid sample mode %s\n", optarg);
                     usage(devices);
                 }
@@ -1275,6 +1298,7 @@ int main(int argc, char **argv) {
         } else {
             if (!quiet_mode) fprintf(stderr, "Using device %d: %s\n",
                                      i, rtlsdr_get_device_name(i));
+            demod->sample_size = sizeof(uint8_t); // CU8
             break;
         }
     }
@@ -1352,9 +1376,8 @@ int main(int argc, char **argv) {
         demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
 
     if (in_filename) {
-        int i = 0;
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
-        float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(float));
+        float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
         if (!test_mode_buf || !test_mode_float_buf)
         {
             fprintf(stderr, "Couldn't allocate read buffers!\n");
@@ -1371,30 +1394,45 @@ int main(int argc, char **argv) {
             }
         }
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
+        if (demod->load_mode < 3) {
+            demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
+        } else {
+            demod->sample_size = sizeof(int16_t); // CF32, CS16
+        }
         if (!quiet_mode) {
-            fprintf(stderr, "Input format: %s\n", (demod->load_mode == 3) ? "2ch cf32" : "2ch uint8 / 1ch uint16");
+            char *load_mode_str;
+            switch (demod->load_mode) {
+            case 0: load_mode_str = "CU8 (2ch uint8)"; break;
+            case 1: load_mode_str = "S16 AM (1ch int16)"; break;
+            case 2: load_mode_str = "S16 FM (1ch int16)"; break;
+            case 3: load_mode_str = "CF32 (2ch Float32)"; break;
+            case 4: load_mode_str = "CS16 (2ch int16)"; break;
+            }
+            fprintf(stderr, "Input format: %s\n", load_mode_str);
         }
         sample_file_pos = 0.0;
 
-        int n_read, cf32_tmp;
+        int n_blocks = 0;
+        unsigned long n_read;
         do {
             if (demod->load_mode == 3) {
-                n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH, in_file);
-                for(int n = 0; n < n_read; n++) {
-                    cf32_tmp = test_mode_float_buf[n]*127 + 127;
-                    if (cf32_tmp < 0)
-                        cf32_tmp = 0;
-                    else if (cf32_tmp > 255)
-                        cf32_tmp = 255;
-                    test_mode_buf[n] = (uint8_t)cf32_tmp;
+                n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
+                // clamp float to [-1,1] and scale to Q0.15
+                for(unsigned long n = 0; n < n_read; n++) {
+                    int s_tmp = test_mode_float_buf[n] * INT16_MAX;
+                    if (s_tmp < -INT16_MAX)
+                        s_tmp = -INT16_MAX;
+                    else if (s_tmp > INT16_MAX)
+                        s_tmp = INT16_MAX;
+                    test_mode_buf[n] = (int16_t)s_tmp;
                 }
             } else {
                 n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
             }
             if (n_read == 0) break;  // rtlsdr_callback() will Segmentation Fault with len=0
             rtlsdr_callback(test_mode_buf, n_read, demod);
-            i++;
-            sample_file_pos = (float)i * n_read / samp_rate / 2;
+            n_blocks++;
+            sample_file_pos = (float)n_blocks * n_read / samp_rate / 2 / demod->sample_size;
         } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
