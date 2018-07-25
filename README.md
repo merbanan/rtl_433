@@ -198,6 +198,10 @@ Supported device protocols:
     [101]* Dish remote 6.3
     [102]* SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
+    [104]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
+    [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
+    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+    [107]* Wireless M-Bus, Mode F, 2.4kbps
 
 * Disabled by default, use -R n or -G
 

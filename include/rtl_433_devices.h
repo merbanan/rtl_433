@@ -106,7 +106,11 @@
 		DECL(interlogix) \
 		DECL(dish_remote_6_3) \
 		DECL(ss_sensor) \
-		DECL(sensible_living)
+		DECL(sensible_living) \
+		DECL(m_bus_mode_c_t) \
+		DECL(m_bus_mode_s) \
+		DECL(m_bus_mode_r) \
+		DECL(m_bus_mode_f)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()
