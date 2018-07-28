@@ -64,6 +64,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/tfa_pool_thermometer.c \
                        devices/valeo.c \
                        devices/waveman.c \
+                       devices/wssensor.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
                        devices/s3318p.c \
