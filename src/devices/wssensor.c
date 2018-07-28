@@ -43,19 +43,19 @@ static int wssensor_callback(bitbuffer_t *bitbuffer) {
 
     b = bitbuffer->bb[r];
 
-    int16_t temperature;
-    uint8_t battery_status;
-    uint8_t startup;
-    uint8_t channel;
-    uint8_t sensor_id;
+    int temperature;
+    int battery_status;
+    int startup;
+    int channel;
+    int sensor_id;
     float temperature_c;
 
     /* TTTTTTTT TTTTBSCC IIIIIIII  */
-    temperature = (int16_t)(((int8_t)(b[0] & 0xFFu) << 4) | ((b[1] & 0xF0u) >> 4));
-    battery_status = (uint8_t)((b[1] >> 3) & 1);
-    startup = (uint8_t)((b[1] >> 2) & 1);
-    channel = (uint8_t)(b[1] & 3) + 1;
-    sensor_id = (uint8_t)b[2];
+    temperature = ((int8_t)b[0] << 4) | ((b[1] & 0xf0) >> 4); // note the sign extend
+    battery_status = (b[1] & 0x08) >> 3;
+    startup = (b[1] & 0x04) >> 2;
+    channel = (b[1] & 0x03) + 1;
+    sensor_id = b[2];
 
     temperature_c = temperature / 10.0f;
 
@@ -94,27 +94,9 @@ static char *output_fields[] = {
     NULL
 };
 
-/*
-Analyzing pulses...
-Total count:  575,  width: 236925		(947.7 ms)
-Pulse width distribution:
- [ 0] count:  575,  width:    56 [53;65]	( 224 us)
-Gap width distribution:
- [ 0] count:  390,  width:   258 [252;289]	(1032 us)
- [ 1] count:  161,  width:   498 [497;533]	(1992 us)
- [ 2] count:   23,  width:  1004 [1003;1005]	(4016 us)
-Pulse period distribution:
- [ 0] count:  390,  width:   315 [311;346]	(1260 us)
- [ 1] count:  161,  width:   556 [554;591]	(2224 us)
- [ 2] count:   23,  width:  1061 [1060;1063]	(4244 us)
-Level estimates [high, low]:  15905,    100
-Frequency offsets [F1, F2]:  -10073,      0	(-38.4 kHz, +0.0 kHz)
-*/
-
 r_device wssensor = {
     .name           = MODEL,
     .modulation     = OOK_PULSE_PPM_RAW,
-    // note that these are in microseconds, not samples.
     .short_limit    = 1400,
     .long_limit     = 2400,
     .reset_limit    = 4400,
