@@ -64,7 +64,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/tfa_pool_thermometer.c \
                        devices/valeo.c \
                        devices/waveman.c \
-                       devices/wssensor.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
                        devices/s3318p.c \
@@ -101,6 +100,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/x10_sec.c \
                        devices/interlogix.c \
                        devices/dish_remote_6_3.c \
-                       devices/simplisafe.c
+                       devices/simplisafe.c \
+                       devices/wssensor.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
