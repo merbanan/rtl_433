@@ -11,19 +11,18 @@
  *
  * Transmit Interval: every ~61 s
  * Frequency: 433.92 MHz
- * Manchester Encoding, pulse width: 464 us, gap width 1508 us.
+ * Manchester Encoding, pulse width: 460 us, gap width 1508 us.
  *
  * A complete message is 444 bits:
- *
  *   PPPPPPPP PPPP
- *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ	(repeated 7 times)
- *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM	(last packet without J)
+ *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ  (repeated 7 times)
+ *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM      (last packet without J)
  *
  * 20-bit initial preamble, always 0
  *   PPPPPPPP PPPP = 0x0000 0x00
  *
  * 54-bit data packet format
- *   0   1    2   3    4   5    6   7    8   9    10  11   12  13	(nibbles #, aligned to 8-bit)
+ *   0   1    2   3    4   5    6   7    8   9    10  11   12  13  (nibbles #, aligned to 8-bit)
  *   ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ
  *
  *   K = 6-bit checksum, sum of nibbles 2-11
@@ -67,16 +66,16 @@
 #define MSG_LEN                 ((MSG_BITS + 7) / 8)
 #define MSG_MIN_BITS            (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
 
-#define SWAP_UINT16(x) ((uint16_t) (				\
-			(((uint16_t) (x) & 0x00ff) << 8) |	\
-			(((uint16_t) (x) & 0xff00) >> 8)	\
-		))
-#define SWAP_UINT32(x) ((uint32_t) (				\
-			(((uint32_t) (x) & 0xff00) << 8) |	\
-			(((uint32_t) (x) & 0xff0000) >> 8) |	\
-			(((uint32_t) (x) & 0xff) << 24) |	\
-			((uint32_t) (x) >> 24)			\
-		))
+#define SWAP_UINT16(x) ((uint16_t) (                           \
+                         (((uint16_t) (x) & 0x00ff) << 8) |    \
+                         (((uint16_t) (x) & 0xff00) >> 8)      \
+                       ))
+#define SWAP_UINT32(x) ((uint32_t) (                           \
+                         (((uint32_t) (x) & 0xff00) << 8) |    \
+                         (((uint32_t) (x) & 0xff0000) >> 8) |  \
+                         (((uint32_t) (x) & 0xff) << 24) |     \
+                         ((uint32_t) (x) >> 24)                \
+                       ))
 
 static const
 uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
@@ -168,7 +167,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         bitbuffer_extract_bytes(bitbuffer, row, bitpos + offset, b, MSG_PACKET_BITS);
 
         /* Aligned data: ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ */
-	checksum = b[0] & 0x3f;
+        checksum = b[0] & 0x3f;
         checksum_calculated = checksum_calculate(b);
         postmark = b[5];
 
@@ -192,12 +191,12 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             printf("\n");
         }
 
-	if (postmark == MSG_PACKET_POSTMARK && \
+        if (postmark == MSG_PACKET_POSTMARK && \
             checksum == checksum_calculated) {
 
             device_id = b[1];
             battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
-            channel = b[2] & 0x07;
+            channel = (b[2] & 0x07) + 1;
             temp_last = temperature;
             temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
 
@@ -251,11 +250,11 @@ ttx201_callback(bitbuffer_t *bitbuffer)
     int row;
     int events = 0;
 
-    if (bitbuffer->num_rows > 0 && \
-        bitbuffer->bits_per_row[0] > MSG_PACKET_BITS) {
-        for (row = 0; row < bitbuffer->num_rows; ++row) {
+    for (row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] > MSG_PACKET_BITS) {
             events += ttx201_decode(bitbuffer, row, 0);
         }
+        if (events) return events; // for now, break after first successful message
     }
 
     return events;
