@@ -63,7 +63,15 @@
 #define MSG_PACKET_POSTMARK     0x14
 #define MSG_PACKET_SEPARATOR    0xf8
 #define TEMP_NULL               (-2731)
-#define MSG_LEN                 ((MSG_BITS + 7) / 8)
+
+#ifndef CHAR_BIT
+#define CHAR_BIT                8
+#endif
+
+#define BITLEN(x)               (sizeof(x) * CHAR_BIT)
+#define MSG_PAD_BITS            ((((MSG_PACKET_BITS / CHAR_BIT) + 1) * CHAR_BIT) - MSG_PACKET_BITS)
+#define MSG_DATA_BITS           (MSG_PAD_BITS + MSG_PACKET_BITS - BITLEN(packet_end))
+#define MSG_LEN                 ((MSG_BITS + CHAR_BIT - 1) / CHAR_BIT)
 #define MSG_MIN_BITS            (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
 
 #define SWAP_UINT16(x) ((uint16_t) (                           \
@@ -83,16 +91,15 @@ uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
 /*
  * count leading zero bits
  */
-#define CLZ_BITS ((8 * sizeof(uint32_t)) - 1)
 static int clz(uint32_t x)
 {
     int i;
 
-    for (i = CLZ_BITS; i >= 0 && ((x >> i) & 1) == 0; i--) {
+    for (i = BITLEN(uint32_t) - 1; i >= 0 && ((x >> i) & 1) == 0; i--) {
         // counting...
     }
 
-    return CLZ_BITS - i;
+    return BITLEN(uint32_t) - 1 - i;
 }
 
 #define HIGH(x) (((x) & 0xf0) >> 4)
@@ -136,7 +143,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         return 0;
     }
 
-    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 8 * sizeof(uint32_t));
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, BITLEN(uint32_t));
     if (bi[0] != 0) {
         preamble = clz(SWAP_UINT32(bi[0]));
     }
@@ -155,15 +162,17 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         printf("Data decoded:\n a   v  cs    K   ID    S   B  C  X    T    M     J\n");
     }
  
-    if (preamble > MSG_PREAMBLE_BITS && bits != MSG_BITS + 1) {
-        preamble--;
-    }
-    if (preamble < 2) {
-        preamble = 2;
+    if (preamble > MSG_PREAMBLE_BITS) {
+        preamble = MSG_PREAMBLE_BITS;
+    } else if (preamble < MSG_PAD_BITS) {
+        preamble = MSG_PAD_BITS;
     }
 
     // walk packets
-    for (offset = preamble - 2; offset >= 0 && offset < bits - MSG_PACKET_BITS + 8; offset += MSG_PACKET_BITS) {
+    for (offset = preamble - MSG_PAD_BITS;
+         offset >= 0 && offset < bits - MSG_PACKET_BITS + ((int) BITLEN(packet_end) / 2);
+         offset += MSG_PACKET_BITS) {
+
         bitbuffer_extract_bytes(bitbuffer, row, bitpos + offset, b, MSG_PACKET_BITS);
 
         /* Aligned data: ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ */
@@ -209,8 +218,8 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         } else {
             // search valid packet
             offset = bitbuffer_search(bitbuffer, row,
-                         bitpos + offset + MSG_PACKET_BITS - 8,
-                         (const uint8_t *)&packet_end, 16);
+                         bitpos + offset + MSG_DATA_BITS + 1,
+                         (const uint8_t *)&packet_end, BITLEN(packet_end));
 
             if (debug_output) {
                 printf("Checksum error: %d x %d, postmark 0x%02x, end: %d\n",
@@ -220,7 +229,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             if (offset >= MSG_BITS) {
                 break;
             }
-            offset -= 2 * MSG_PACKET_BITS - 14;
+            offset -= MSG_DATA_BITS + MSG_PACKET_BITS;
         }
     }
 
