@@ -74,32 +74,30 @@
 #define MSG_LEN                 ((MSG_BITS + CHAR_BIT - 1) / CHAR_BIT)
 #define MSG_MIN_BITS            (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
 
-#define SWAP_UINT16(x) ((uint16_t) (                           \
-                         (((uint16_t) (x) & 0x00ff) << 8) |    \
-                         (((uint16_t) (x) & 0xff00) >> 8)      \
-                       ))
-#define SWAP_UINT32(x) ((uint32_t) (                           \
-                         (((uint32_t) (x) & 0xff00) << 8) |    \
-                         (((uint32_t) (x) & 0xff0000) >> 8) |  \
-                         (((uint32_t) (x) & 0xff) << 24) |     \
-                         ((uint32_t) (x) >> 24)                \
-                       ))
-
 static const
 uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
 
 /*
  * count leading zero bits
  */
-static int clz(uint32_t x)
+static int clz_a8(uint8_t *b, int len)
 {
-    int i;
+    int c = 0;
+    int i, j;
 
-    for (i = BITLEN(uint32_t) - 1; i >= 0 && ((x >> i) & 1) == 0; i--) {
-        // counting...
+    if (b != NULL) {
+        for (i = 0; i < len; i++) {
+            if (b[i] != 0) {
+                for (j = CHAR_BIT - 1; j > 0 && (b[i] & (1 << j)) == 0; j--) {
+                  // counting ...
+                }
+                c += CHAR_BIT - 1 - j;
+                break;
+            }
+        }
+        c += i * CHAR_BIT;
     }
-
-    return BITLEN(uint32_t) - 1 - i;
+    return c;
 }
 
 #define HIGH(x) (((x) & 0xf0) >> 4)
@@ -117,12 +115,10 @@ checksum_calculate(uint8_t *b)
     return sum & 0x3f;  
 }
 
-
 static int
 ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_LEN];
-    uint32_t *bi = (uint32_t *) b;
     int bits = bitbuffer->bits_per_row[row];
     int preamble = 0;
     int offset = 0;
@@ -144,14 +140,12 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, BITLEN(uint32_t));
-    if (bi[0] != 0) {
-        preamble = clz(SWAP_UINT32(bi[0]));
-    }
+    preamble = clz_a8(b, 4);
 
     if (debug_output) {
         printf("TTX201 received raw data: ");
         bitbuffer_print(bitbuffer);
-        printf("Preamble: 0x%08x, length: %d\n", SWAP_UINT32(bi[0]), preamble);
+        printf("Preamble: 0x%02x%02x%02x%02x, length: %d\n", b[0], b[1], b[2], b[3], preamble);
 
         if (bits != MSG_BITS) {
             printf("Wrong message length: %d (expected %d)\n", bits, MSG_BITS);
