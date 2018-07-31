@@ -38,7 +38,7 @@
  *
  * Sample received raw data package:
  *   bitbuffer:: Number of rows: 1
- *   [00] {444} 00 00 06 f0 80 00 41 c5 3e 1c c2 00 11 07 14 f8 77 08 00 84 1c 53 e1 ec 20 03 10 71 4f 87 f0 80 10 41 c5 3e 20 c2 00 51 07 14 f8 87 08 01 84 1c 53 e2 2c 20 07 10 71 40 
+ *   [00] {444} 00 00 06 f0 80 00 41 c5 3e 1c c2 00 11 07 14 f8 77 08 00 84 1c 53 e1 ec 20 03 10 71 4f 87 f0 80 10 41 c5 3e 20 c2 00 51 07 14 f8 87 08 01 84 1c 53 e2 2c 20 07 10 71 40
  *
  * Decoded:
  *   K   I    S    B  C    X   T    M     J
@@ -56,23 +56,23 @@
 #include "data.h"
 #include "util.h"
 
-#define MODEL                   "TTX201 Temperature Sensor"
-#define MSG_BITS                444
-#define MSG_PREAMBLE_BITS       20
-#define MSG_PACKET_BITS         54
-#define MSG_PACKET_POSTMARK     0x14
-#define MSG_PACKET_SEPARATOR    0xf8
-#define TEMP_NULL               (-2731)
+#define MODEL                "TTX201 Temperature Sensor"
+#define MSG_BITS             444
+#define MSG_PREAMBLE_BITS    20
+#define MSG_PACKET_BITS      54
+#define MSG_PACKET_POSTMARK  0x14
+#define MSG_PACKET_SEPARATOR 0xf8
+#define TEMP_NULL            (-2731)
 
 #ifndef CHAR_BIT
-#define CHAR_BIT                8
+#define CHAR_BIT             8
 #endif
 
-#define BITLEN(x)               (sizeof(x) * CHAR_BIT)
-#define MSG_PAD_BITS            ((((MSG_PACKET_BITS / CHAR_BIT) + 1) * CHAR_BIT) - MSG_PACKET_BITS)
-#define MSG_DATA_BITS           (MSG_PAD_BITS + MSG_PACKET_BITS - BITLEN(packet_end))
-#define MSG_LEN                 ((MSG_BITS + CHAR_BIT - 1) / CHAR_BIT)
-#define MSG_MIN_BITS            (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
+#define BITLEN(x)            (sizeof(x) * CHAR_BIT)
+#define MSG_PAD_BITS         ((((MSG_PACKET_BITS / CHAR_BIT) + 1) * CHAR_BIT) - MSG_PACKET_BITS)
+#define MSG_DATA_BITS        (MSG_PAD_BITS + MSG_PACKET_BITS - BITLEN(packet_end))
+#define MSG_LEN              ((MSG_BITS + CHAR_BIT - 1) / CHAR_BIT)
+#define MSG_MIN_BITS         (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
 
 static const
 uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
@@ -111,8 +111,7 @@ checksum_calculate(uint8_t *b)
     for (i = 1; i < 6; i++) {
         sum += HIGH(b[i]) + LOW(b[i]);
     }
-  
-    return sum & 0x3f;  
+    return sum & 0x3f;
 }
 
 static int
@@ -145,17 +144,20 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     if (debug_output) {
         printf("TTX201 received raw data: ");
         bitbuffer_print(bitbuffer);
-        printf("Preamble: 0x%02x%02x%02x%02x, length: %d\n", b[0], b[1], b[2], b[3], preamble);
+        printf("Preamble: 0x%02x%02x%02x%02x, length: %d\n",
+		b[0], b[1], b[2], b[3], preamble);
 
         if (bits != MSG_BITS) {
             printf("Wrong message length: %d (expected %d)\n", bits, MSG_BITS);
         }
         if (preamble < MSG_PREAMBLE_BITS) {
-            printf("Short preamble: %d bits (expected %d)\n", preamble, MSG_PREAMBLE_BITS);
+            printf("Short preamble: %d bits (expected %d)\n",
+		preamble, MSG_PREAMBLE_BITS);
         }
-        printf("Data decoded:\n a   v  cs    K   ID    S   B  C  X    T    M     J\n");
+        printf("Data decoded:\n" \
+		" a   v  cs    K   ID    S   B  C  X    T    M     J\n");
     }
- 
+
     if (preamble > MSG_PREAMBLE_BITS) {
         preamble = MSG_PREAMBLE_BITS;
     } else if (preamble < MSG_PAD_BITS) {
@@ -208,16 +210,15 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             } else if (valid_packets > 2) {
                 temperature = temp_last; // maybe invalid, recover previous
             }
-
         } else {
             // search valid packet
             offset = bitbuffer_search(bitbuffer, row,
-                         bitpos + offset + MSG_DATA_BITS + 1,
-                         (const uint8_t *)&packet_end, BITLEN(packet_end));
+                        bitpos + offset + MSG_DATA_BITS + 1,
+                        (const uint8_t *)&packet_end, BITLEN(packet_end));
 
             if (debug_output) {
                 printf("Checksum error: %d x %d, postmark 0x%02x, end: %d\n",
-				checksum, checksum_calculated, postmark, offset);
+			checksum, checksum_calculated, postmark, offset);
             }
 
             if (offset >= MSG_BITS) {
@@ -232,7 +233,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     }
 
     temperature_c = temperature / 10.0f;
- 
+
     local_time_str(0, time_str);
     data = data_make(
             "time",           "",             DATA_STRING, time_str,
