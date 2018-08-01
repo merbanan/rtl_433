@@ -119,16 +119,16 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_LEN];
     int bits = bitbuffer->bits_per_row[row];
-    int preamble = 0;
-    int offset = 0;
     int valid_packets = 0;
+    int preamble;
+    int offset;
     int checksum;
     int checksum_calculated;
     int postmark;
     int device_id;
     int battery_low;
     int channel;
-    int temp_last;
+    int temp;
     int temperature = TEMP_NULL;
     float temperature_c;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -139,7 +139,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, BITLEN(uint32_t));
-    preamble = clz_a8(b, 4);
+    preamble = clz_a8(b, sizeof(uint32_t));
 
     if (debug_output) {
         printf("TTX201 received raw data: ");
@@ -202,13 +202,13 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             device_id = b[1];
             battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
             channel = (b[2] & 0x07) + 1;
-            temp_last = temperature;
-            temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
+            temp = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
 
-            if (temp_last == temperature || temp_last == TEMP_NULL) {
+            if (temperature == temp) {
                 valid_packets++;
-            } else if (valid_packets > 2) {
-                temperature = temp_last; // maybe invalid, recover previous
+            } else if (valid_packets < 2) {
+                temperature = temp;
+                valid_packets = 1;
             }
         } else {
             // search valid packet
@@ -255,7 +255,7 @@ ttx201_callback(bitbuffer_t *bitbuffer)
     int events = 0;
 
     for (row = 0; row < bitbuffer->num_rows; ++row) {
-        if (bitbuffer->bits_per_row[row] > MSG_PACKET_BITS) {
+        if (bitbuffer->bits_per_row[row] >= MSG_MIN_BITS) {
             events += ttx201_decode(bitbuffer, row, 0);
         }
         if (events) return events; // for now, break after first successful message
