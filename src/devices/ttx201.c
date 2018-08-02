@@ -169,7 +169,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
          offset >= 0 && offset < bits - MSG_PACKET_BITS + ((int) BITLEN(packet_end) / 2);
          offset += MSG_PACKET_BITS) {
 
-        bitbuffer_extract_bytes(bitbuffer, row, bitpos + offset, b, MSG_PACKET_BITS);
+        bitbuffer_extract_bytes(bitbuffer, row, bitpos + offset, b, MSG_PACKET_BITS + MSG_PAD_BITS);
 
         /* Aligned data: ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ */
         checksum = b[0] & 0x3f;
