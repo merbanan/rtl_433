@@ -4,8 +4,8 @@
  * http://www.ebay.co.uk/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xkerui+pir.TRS0&_nkw=kerui+pir&_sacat=0
  *
  * also tested with:
- *   KERUI D026 433MHz Wireless Door Window Magnetic Sensor Dedector Alarm System
- *   (open / close / tamper)
+ *   KERUI D026 Window Door Magnet Sensor Detector (433MHz) https://fccid.io/2AGNGKR-D026
+ *   events: open / close / tamper / battery low (below 5V of 12V battery)
  *
  * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
  */
@@ -36,9 +36,10 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
     cmd = b[2] & 0x0F;
     switch (cmd) {
         case 0xa: cmd_str = "0xa (PIR)"; break;
-        case 0xe: cmd_str = "0xa (open)"; break;
-        case 0x7: cmd_str = "0xa (close)"; break;
-        case 0xb: cmd_str = "0xa (tamper)"; break;
+        case 0xe: cmd_str = "0xe (open)"; break;
+        case 0x7: cmd_str = "0x7 (close)"; break;
+        case 0xb: cmd_str = "0xb (tamper)"; break;
+        case 0xf: cmd_str = "0xf (battery)"; break;
         default:  cmd_str = NULL; break;
     }
 
