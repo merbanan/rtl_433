@@ -77,7 +77,7 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
     data = data_make(
             "time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Bresser 3CH sensor",
-            "id",            "",            DATA_INT,    id,
+            "id",            "Id",          DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",
             "temperature_F", "Temperature", DATA_FORMAT, "%.2f F", DATA_DOUBLE, temp_f,
