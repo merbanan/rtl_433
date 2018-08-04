@@ -262,11 +262,13 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             continue;
 
         } else if (*c == '{') {
-            if (bits->num_rows > 0) {
-                if (width >= 0) {
-                    bits->bits_per_row[bits->num_rows - 1] = width;
-                }
+            if (bits->num_rows == 0) {
+                bits->num_rows++;
+            } else {
                 bitbuffer_add_row(bits);
+            }
+            if (width >= 0) {
+                bits->bits_per_row[bits->num_rows - 2] = width;
             }
 
             width = strtol(c + 1, (char **)&c, 0);
@@ -292,7 +294,10 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
         bitbuffer_add_bit(bits, data >> 1 & 0x01);
         bitbuffer_add_bit(bits, data >> 0 & 0x01);
     }
-    if (width >= 0 && bits->num_rows > 0) {
+    if (width >= 0) {
+        if (bits->num_rows == 0) {
+            bits->num_rows++;
+        }
         bits->bits_per_row[bits->num_rows - 1] = width;
     }
 }
