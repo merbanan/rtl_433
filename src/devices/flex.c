@@ -182,7 +182,7 @@ static void help()
             "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
-            "PCM_RZ  short: Nominal width of pulse [us]\n"
+            "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
             "PPM_RAW short: Threshold between short and long gap [us]\n"
             "         long: Maximum gap size before new row of bits [us]\n"
@@ -251,6 +251,12 @@ r_device *flex_create_device(char *spec)
     char *c, *o;
 
     spec = strdup(spec);
+    // locate optional args and terminate mandatory args
+    char *args = strchr(spec, ',');
+    if (args) {
+        *args++ = '\0';
+    }
+
     c = strtok(spec, ":");
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
@@ -348,9 +354,8 @@ r_device *flex_create_device(char *spec)
     dev->json_callback = callback_slot[next_slot];
     dev->fields = output_fields;
 
-    getkwargs(&c, NULL, NULL); // skip the initial fixed part
     char *key, *val;
-    while (getkwargs(&c, &key, &val)) {
+    while (getkwargs(&args, &key, &val)) {
         if (!strcasecmp(key, "demod"))
             dev->demod_arg = val ? atoi(val) : 0;
 
