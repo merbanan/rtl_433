@@ -190,14 +190,12 @@ alloc_error:
     return NULL;
 }
 
-data_t *data_make(const char *key, const char *pretty_key, ...)
+static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key, va_list ap)
 {
-    va_list ap;
     data_type_t type;
-    va_start(ap, pretty_key);
-
-    data_t *first = NULL;
-    data_t *prev = NULL;
+    data_t *prev = first;
+    while (prev && prev->next)
+        prev = prev->next;
     char *format = false;
     type = va_arg(ap, data_type_t);
     do {
@@ -276,8 +274,25 @@ data_t *data_make(const char *key, const char *pretty_key, ...)
 
 alloc_error:
     data_free(first);
-    va_end(ap);
     return NULL;
+}
+
+data_t *data_make(const char *key, const char *pretty_key, ...)
+{
+    va_list ap;
+    va_start(ap, pretty_key);
+    data_t *result = vdata_make(NULL, key, pretty_key, ap);
+    va_end(ap);
+    return result;
+}
+
+data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
+{
+    va_list ap;
+    va_start(ap, pretty_key);
+    data_t *result = vdata_make(first, key, pretty_key, ap);
+    va_end(ap);
+    return result;
 }
 
 void data_array_free(data_array_t *array)
