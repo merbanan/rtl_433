@@ -1400,14 +1400,14 @@ int main(int argc, char **argv) {
             demod->sample_size = sizeof(int16_t); // CF32, CS16
         }
         if (!quiet_mode) {
-            char *load_mode_str;
+            char *load_mode_str = null;
             switch (demod->load_mode) {
             case 0: load_mode_str = "CU8 (2ch uint8)"; break;
             case 1: load_mode_str = "S16 AM (1ch int16)"; break;
             case 2: load_mode_str = "S16 FM (1ch int16)"; break;
             case 3: load_mode_str = "CF32 (2ch Float32)"; break;
             case 4: load_mode_str = "CS16 (2ch int16)"; break;
-            default: load_mode_str = "Unknown load_mode " + demod->load_mode ; break;
+            default: fprintf(stderr, "Unknown load_mode: %d\nMust be between 0 and 4", demod->load_mode);  break;
             }
             fprintf(stderr, "Input format: %s\n", load_mode_str);
         }
