@@ -1,7 +1,7 @@
 /* OpenEnergyMonitor.org emonTx sensor protocol
  *
- * Copyright © 2016 Tommy Vestermark
- * Copyright © 2016 David Woodhouse
+ * Copyright (C) 2016 Tommy Vestermark
+ * Copyright (C) 2016 David Woodhouse
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

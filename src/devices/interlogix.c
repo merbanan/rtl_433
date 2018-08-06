@@ -1,6 +1,6 @@
 /* Interlogix/GE/UTC Wireless Device Decoder
  *
- * Copyright (C) 2017 Brent Bailey - bailey.brent@gmail.com
+ * Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

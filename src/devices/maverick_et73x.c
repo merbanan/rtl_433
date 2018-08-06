@@ -1,6 +1,6 @@
 /* Maverick ET-73x BBQ Sensor
  *
- * Copyright © 2016 gismo2004
+ * Copyright (C) 2016 gismo2004
  * Credits to all users of mentioned forum below!
  *
  * This program is free software; you can redistribute it and/or modify

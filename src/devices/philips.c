@@ -33,7 +33,7 @@
  * but it has the exact same pulse/gap width as a short pulse, and
  * gets processed as data.
  *
- * Copyright (C) 2017 Chris Coffey (kpuc@sdf.org)
+ * Copyright (C) 2017 Chris Coffey <kpuc@sdf.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

@@ -2,7 +2,7 @@
  * Also marked INFRA 217S34
  * Ewig Industries Macao
  *
- * Copyright © 2016 Erik Johannessen
+ * Copyright (C) 2016 Erik Johannessen
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

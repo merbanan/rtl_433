@@ -1,6 +1,6 @@
 /* Various Oregon Scientific protocols
  *
- * Copyright (C) 2015 Helge Weissig, Denis Bodor, vestom, Karl Lattimer,
+ * Copyright (C) 2015 Helge Weissig, Denis Bodor, Tommy Vestermark, Karl Lattimer,
  * deennoo, pclov3r, onlinux, Pasquale Fiorillo.
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

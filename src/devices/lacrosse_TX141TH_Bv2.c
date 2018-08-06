@@ -52,7 +52,7 @@
  * be relatively rare, thus the most frequent packet should represent the true data.
  * A count enables us to determine the quality of radio transmission.
  *
- * *** Addition of TX141 temperature only device, Jan 2018 by Andrew Rivett (veggiefrog@gmail.com) ***
+ * *** Addition of TX141 temperature only device, Jan 2018 by Andrew Rivett <veggiefrog@gmail.com> ***
  *
  * The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
  *
@@ -72,10 +72,10 @@
  *
  * The second nibble I could not figure out.
  *
- * Changes done by Andrew Rivett (veggiefrog@gmail.com). Copyright is 
+ * Changes done by Andrew Rivett <veggiefrog@gmail.com>. Copyright is
  * retained by Robert Fraczkiewicz.
  *
- * Copyright (C) 2017 Robert Fraczkiewicz   (aromring@gmail.com)
+ * Copyright (C) 2017 Robert Fraczkiewicz <aromring@gmail.com>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or

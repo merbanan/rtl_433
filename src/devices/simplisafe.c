@@ -7,7 +7,7 @@
  *  2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte	    | 1 Byte
  *  Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
  *
- * Copyright (C) 2018, Adam Callis, adam.callis@gmail.com
+ * Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
  * License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
  */
 
