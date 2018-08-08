@@ -172,13 +172,10 @@ static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bu
 }
 
 
-#define BLOCK1B_SIZE 10   // Size of Block 1, format B
-#define BLOCK2B_SIZE 118  // Maximum size of Block 2, format B
-#define BLOCK1_2B_SIZE 128
 static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
-    //static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
-    //static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
-    //static const uint16_t BLOCK1_2B_SIZE  = 128;
+    static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
+    static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
+    static const uint16_t BLOCK1_2B_SIZE  = 128;
 
     // Get Block 1
     block1->L         = in->data[0];
@@ -204,7 +201,7 @@ static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bu
     memcpy(out->data, in->data+BLOCK1B_SIZE, (min(block1->L-11, BLOCK2B_SIZE-2)));
 
     // Extract extra block for long telegrams (not tested!)
-    static const uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
+    uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
     if (block1->L > (L_OFFSET+2)) {        // Any more data? (besided 2 extra CRC)
         // Validate CRC
         if (!m_bus_crc_valid(in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;

@@ -16,6 +16,15 @@
 #include <stdbool.h>
 #include <time.h>
 
+
+#if defined _MSC_VER && _MSC_VER >= 1900 // Visual Studio >= 2015
+	#define RESTRICT  __restrict
+#elif defined _MSC_VER // Visual Studio < 2015
+	#define RESTRICT 
+#else // no Visual Studio
+	#define RESTRICT restrict
+#endif
+
 // Helper macros
 #ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
@@ -166,7 +175,7 @@ float inhg2hpa(float inhg);
 /// @param str: string to search for patterns
 /// @param suffix: the pattern to search
 /// @return true if the string ends with the specified suffix, false otherwise.
-bool str_endswith(const char *str, const char *suffix);
+bool str_endswith(const char *RESTRICT str, const char *RESTRICT suffix);
 
 /// Replace a pattern in a string. This utility function is
 /// useful when converting native units to si or customary.
