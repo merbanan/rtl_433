@@ -1,6 +1,6 @@
 rtl_433_win
 ===========
-This is a fork of merbanan/rtl_433 which compiles for Win64 under Microsoft Visual Studio (verified with VS 2015). Pre-compiled binaries are included.
+This is a fork of merbanan/rtl_433 which compiles for Win64 under Microsoft Visual Studio (verified with VS 2015). See release sectionn for pre-compiled binaries.
 To compile it yourself, you first need to extract the files from https://osmocom.org/attachments/2242/RelWithDebInfo.zip into a folder "rtl-sdr" parallel to the rtl_433_win folder.
 It has to look like this
 
