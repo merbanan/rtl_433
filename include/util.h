@@ -166,7 +166,7 @@ float inhg2hpa(float inhg);
 /// @param str: string to search for patterns
 /// @param suffix: the pattern to search
 /// @return true if the string ends with the specified suffix, false otherwise.
-bool str_endswith(const char *restrict str, const char *restrict suffix);
+bool str_endswith(const char *str, const char *suffix);
 
 /// Replace a pattern in a string. This utility function is
 /// useful when converting native units to si or customary.

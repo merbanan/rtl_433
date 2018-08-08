@@ -13,13 +13,15 @@
 
 // We don't really *use* this because there's no endianness support
 // for just using le16_to_cpu(pkt.ct1) etc. A task for another day...
+#pragma pack(push, 1)
 struct emontx {
 	uint8_t syn, group, node, len;
 	uint16_t ct1, ct2, ct3, ct4, Vrms, temp[6];
 	uint32_t pulse;
 	uint16_t crc;
 	uint8_t postamble;
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
 // This is the JeeLibs RF12 packet format as described at
 // http://jeelabs.org/2011/06/09/rf12-packet-format-and-design/

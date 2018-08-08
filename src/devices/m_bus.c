@@ -172,10 +172,13 @@ static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bu
 }
 
 
+#define BLOCK1B_SIZE 10   // Size of Block 1, format B
+#define BLOCK2B_SIZE 118  // Maximum size of Block 2, format B
+#define BLOCK1_2B_SIZE 128
 static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
-    static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
-    static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
-    static const uint16_t BLOCK1_2B_SIZE  = 128;
+    //static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
+    //static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
+    //static const uint16_t BLOCK1_2B_SIZE  = 128;
 
     // Get Block 1
     block1->L         = in->data[0];
