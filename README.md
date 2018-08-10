@@ -1,5 +1,5 @@
 rtl_433
-===========
+=======
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
