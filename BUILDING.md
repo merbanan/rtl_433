@@ -39,13 +39,15 @@ The final 'make install' step should be run as a user with appropriate permissio
 
 ## Windows
 
+### mingw-w64
+
 You'll need librtlsdr and libusb, they are dependencies for rtl_433.
 
 libusb has prebuilt binaries for windows, 
 librtlsdr needs to be built (at least for the latest version, some binaries 
 of older versions seem to be floating around)
 
-### librtlsdr
+#### librtlsdr
 
 taken and adapted from here: https://www.onetransistor.eu/2017/03/compile-librtlsdr-windows-mingw.html
 
@@ -95,7 +97,7 @@ SET(THREADS_FOUND TRUE)
 * generate makefiles for mingw: `cmake -G "MinGW Makefiles" ..`
 * build the librtlsdr library: `mingw32-make`
 
-### rtl_433
+#### rtl_433
 
 * clone the rtl_433 repository and cd into it
 * create a build folder and go into it: `mkdir build && cd build`
