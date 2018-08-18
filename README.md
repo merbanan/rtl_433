@@ -3,46 +3,15 @@ rtl_433
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
+Building/installation:
+----------------------
+
+See [BUILDING.md]()
+
 How to add support for unsupported sensors
 ------------------------------------------
 
 Read the Test Data section at the bottom.
-
-
-Installation instructions:
---------------------------
-
-Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
-
-Depending on your system, you may also need to install the following libraries.
-
-Debian:
-
-    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
-
-Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
-
-    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
-
-Installation using cmake:
-
-    cd rtl_433/
-    mkdir build
-    cd build
-    cmake ../
-    make
-    make install
-
-Installation using autoconf:
-
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
-
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
-
 
 Running:
 --------

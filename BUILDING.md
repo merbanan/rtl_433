@@ -1,10 +1,51 @@
-# Building rtl_433 for windows
+# Building rtl_433
 
-you'll need librtlsdr and libusb, they are dependencies for rtl_433
+## Linux
+
+Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
+
+Depending on your system, you may also need to install the following libraries.
+
+Debian:
+
+    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
+
+Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
+
+    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
+
+### CMake
+
+Installation using cmake:
+
+    cd rtl_433/
+    mkdir build
+    cd build
+    cmake ../
+    make
+    make install
+
+### autoconf
+
+Installation using autoconf:
+
+    cd rtl_433/
+    autoreconf --install
+    ./configure
+    make
+    make install
+
+The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
+
+## Windows
+
+You'll need librtlsdr and libusb, they are dependencies for rtl_433.
+
 libusb has prebuilt binaries for windows, 
-librtlsdr needs to be built (at least for the latest version, some binaries seem to be floating around)
+librtlsdr needs to be built (at least for the latest version, some binaries 
+of older versions seem to be floating around)
 
-## librtlsdr
+### librtlsdr
 
 taken and adapted from here: https://www.onetransistor.eu/2017/03/compile-librtlsdr-windows-mingw.html
 
@@ -54,7 +95,7 @@ SET(THREADS_FOUND TRUE)
 * generate makefiles for mingw: `cmake -G "MinGW Makefiles" ..`
 * build the librtlsdr library: `mingw32-make`
 
-## rtl_433
+### rtl_433
 
 * clone the rtl_433 repository and cd into it
 * create a build folder and go into it: `mkdir build && cd build`
