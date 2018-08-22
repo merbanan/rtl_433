@@ -138,7 +138,7 @@ Supported device protocols:
     [72]* RF-tech
     [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [75]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
     [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
@@ -171,6 +171,7 @@ Supported device protocols:
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
+    [108]  WS Temperature Sensor
 
 * Disabled by default, use -R n or -G
 
