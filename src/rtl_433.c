@@ -1442,7 +1442,7 @@ int main(int argc, char **argv) {
         //Always classify a signal at the end of the file
         classify_signal();
         if (!quiet_mode) {
-            fprintf(stderr, "Test mode file issued %d packets\n", i);
+            fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
         }
         free(test_mode_buf);
         free(test_mode_float_buf);
