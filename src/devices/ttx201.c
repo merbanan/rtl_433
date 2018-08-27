@@ -64,14 +64,10 @@
 #define MSG_PACKET_SEPARATOR 0xf8
 #define TEMP_NULL            (-2731)
 
-#ifndef CHAR_BIT
-#define CHAR_BIT             8
-#endif
-
-#define BITLEN(x)            (sizeof(x) * CHAR_BIT)
-#define MSG_PAD_BITS         ((((MSG_PACKET_BITS / CHAR_BIT) + 1) * CHAR_BIT) - MSG_PACKET_BITS)
+#define BITLEN(x)            (sizeof(x) * 8)
+#define MSG_PAD_BITS         ((((MSG_PACKET_BITS / 8) + 1) * 8) - MSG_PACKET_BITS)
 #define MSG_DATA_BITS        (MSG_PAD_BITS + MSG_PACKET_BITS - BITLEN(packet_end))
-#define MSG_LEN              ((MSG_BITS + CHAR_BIT - 1) / CHAR_BIT)
+#define MSG_LEN              ((MSG_BITS + 7) / 8)
 #define MSG_MIN_BITS         (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
 
 static const
@@ -88,20 +84,18 @@ static int clz_a8(uint8_t *b, int len)
     if (b != NULL) {
         for (i = 0; i < len; i++) {
             if (b[i] != 0) {
-                for (j = CHAR_BIT - 1; j > 0 && (b[i] & (1 << j)) == 0; j--) {
+                for (j = 7; j > 0 && (b[i] & (1 << j)) == 0; j--) {
                   // counting ...
                 }
-                c += CHAR_BIT - 1 - j;
+                c += 7 - j;
                 break;
             }
         }
-        c += i * CHAR_BIT;
+        c += i * 8;
     }
     return c;
 }
 
-#define HIGH(x) (((x) & 0xf0) >> 4)
-#define LOW(x)  ((x) & 0x0f)
 static int
 checksum_calculate(uint8_t *b)
 {
@@ -109,7 +103,7 @@ checksum_calculate(uint8_t *b)
     int sum = 0;
 
     for (i = 1; i < 6; i++) {
-        sum += HIGH(b[i]) + LOW(b[i]);
+        sum += ((b[i] & 0xf0) >> 4) + (b[i] & 0x0f);
     }
     return sum & 0x3f;
 }
