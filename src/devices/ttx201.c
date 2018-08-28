@@ -73,28 +73,8 @@
 static const
 uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
 
-/*
- * count leading zero bits
- */
-static int clz_a8(uint8_t *b, int len)
-{
-    int c = 0;
-    int i, j;
-
-    if (b != NULL) {
-        for (i = 0; i < len; i++) {
-            if (b[i] != 0) {
-                for (j = 7; j > 0 && (b[i] & (1 << j)) == 0; j--) {
-                  // counting ...
-                }
-                c += 7 - j;
-                break;
-            }
-        }
-        c += i * 8;
-    }
-    return c;
-}
+static const
+uint8_t preamble_pattern[1] = { 0x01 };
 
 static int
 checksum_calculate(uint8_t *b)
@@ -133,7 +113,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, BITLEN(uint32_t));
-    preamble = clz_a8(b, sizeof(uint32_t));
+    preamble = 7 + bitbuffer_search(bitbuffer, row, bitpos, (const uint8_t *)&preamble_pattern, BITLEN(preamble_pattern));
 
     if (debug_output) {
         printf("TTX201 received raw data: ");
