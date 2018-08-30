@@ -152,7 +152,7 @@ ss_sensor_callback (bitbuffer_t *bitbuffer)
 
 	uint8_t *b = bitbuffer->bb[row];
 
-	if (b[0] != 0x33 && b[1] != 0xa0) // All Messages Must start with 0x33a0
+	if (b[0] != 0x33 || b[1] != 0xa0) // All Messages Must start with 0x33a0
 		return 0;
 
 	if (b[2] == 0x88) {
