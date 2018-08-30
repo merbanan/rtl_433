@@ -146,7 +146,7 @@ ss_keypad_commands (bitbuffer_t *bitbuffer, int row)
 static int
 ss_sensor_callback (bitbuffer_t *bitbuffer)
 {
-        // Simplisafe transmits data twice. Treat second copy as a checkum
+        // Simplisafe transmits data twice. Treat second copy as a checksum
         // and reject transmissions that lack it.
         int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
         if (row < 0) return 0;
