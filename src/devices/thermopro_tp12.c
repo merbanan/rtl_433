@@ -11,7 +11,7 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define MODEL "Thermopro TP08/TP12 Thermometer"
+#define MODEL "Thermopro TP12 Thermometer"
 
 /*
 A normal sequence for the TP12:
@@ -56,10 +56,12 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
 
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
-    // Update for TP08: same is true but only 2 rows (plus a third missing the trailing 1) are xmitted.
-    // Rather than create a whole new device I simply lowered min_repeat_count, everything else
-    // works perfectly. is this bad?
-    good = bitbuffer_find_repeated_row(bitbuffer, 2, 40);
+    // Update for TP08: same is true but only 2 rows.
+    good = bitbuffer_find_repeated_row(
+        bitbuffer, 
+        (bitbuffer->num_rows > 5) ? 5 : 2,
+        40
+    );
     if (good < 0) {
         return 0;
     }
@@ -137,7 +139,7 @@ Those gaps are suspiciously close to 500 us and 1500 us.
 */
 
 r_device thermopro_tp12 = {
-    .name          = MODEL,
+    .name          = "Thermopro TP08/TP12 thermometer",
     .modulation    = OOK_PULSE_PPM_RAW,
     // note that these are in microseconds, not samples.
     .short_limit   = 1000,
