@@ -146,16 +146,15 @@ ss_keypad_commands (bitbuffer_t *bitbuffer, int row)
 static int
 ss_sensor_callback (bitbuffer_t *bitbuffer)
 {
-        // Simplisafe transmits data twice. Treat second copy as a checksum
-        // and reject transmissions that lack it.
+        // Require two identical rows.
         int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
         if (row < 0) return 0;
-	bitbuffer_invert(bitbuffer); // Invert the Bits
 
-	uint8_t *b = bitbuffer->bb[row];
+        // The row must start with 0xcc5f (0x33a0 inverted).
+        uint8_t *b = bitbuffer->bb[row];
+	if (b[0] != 0xcc || b[1] != 0x5f) return 0;
 
-	if (b[0] != 0x33 || b[1] != 0xa0) // All Messages Must start with 0x33a0
-		return 0;
+	bitbuffer_invert(bitbuffer);
 
 	if (b[2] == 0x88) {
 		return ss_sensor_parser (bitbuffer, row);
