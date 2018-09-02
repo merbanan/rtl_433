@@ -112,14 +112,14 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         return 0;
     }
 
-    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, BITLEN(uint32_t));
-    preamble = 7 + bitbuffer_search(bitbuffer, row, bitpos, (const uint8_t *)&preamble_pattern, BITLEN(preamble_pattern));
+    preamble = bitbuffer_search(bitbuffer, row, bitpos,
+                   (const uint8_t *)&preamble_pattern,
+                   BITLEN(preamble_pattern)) + BITLEN(preamble_pattern) - 1;
 
     if (debug_output) {
         printf("TTX201 received raw data: ");
         bitbuffer_print(bitbuffer);
-        printf("Preamble: 0x%02x%02x%02x%02x, length: %d\n",
-		b[0], b[1], b[2], b[3], preamble);
+        printf("Preamble length: %d\n", preamble);
 
         if (bits != MSG_BITS) {
             printf("Wrong message length: %d (expected %d)\n", bits, MSG_BITS);
@@ -187,8 +187,8 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         } else {
             // search valid packet
             offset = bitbuffer_search(bitbuffer, row,
-                        bitpos + offset + MSG_DATA_BITS + 1,
-                        (const uint8_t *)&packet_end, BITLEN(packet_end));
+                         bitpos + offset + MSG_DATA_BITS + 1,
+                         (const uint8_t *)&packet_end, BITLEN(packet_end));
 
             if (debug_output) {
                 printf("Checksum error: %d x %d, postmark 0x%02x, end: %d\n",
@@ -210,12 +210,12 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 
     local_time_str(0, time_str);
     data = data_make(
-            "time",           "",             DATA_STRING, time_str,
-            "model",          "",             DATA_STRING, MODEL,
-            "id",             "House Code",   DATA_INT,    device_id,
-            "channel",        "Channel",      DATA_INT,    channel,
-            "battery",        "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C",  "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "time",          "",            DATA_STRING, time_str,
+            "model",         "",            DATA_STRING, MODEL,
+            "id",            "House Code",  DATA_INT,    device_id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
             NULL);
     data_acquired_handler(data);
 
@@ -259,4 +259,3 @@ r_device ttx201 = {
     .demod_arg     = 0,
     .fields        = output_fields
 };
-
