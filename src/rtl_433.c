@@ -52,6 +52,7 @@ time_t stop_time;
 int flag;
 int stop_after_successful_events_flag = 0;
 uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
+uint64_t input_pos = 0;
 float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
@@ -80,6 +81,7 @@ enum {
     F32_FM    = 6,
     F32_I     = 7,
     F32_Q     = 8,
+    VCD_LOGIC = 9,
 } data_format_t;
 
 uint16_t num_r_devices = 0;
@@ -172,6 +174,7 @@ void usage(r_device *devices, int exit_code)
             "\t\t 6 = FM demodulated samples (f32) (output only)\n"
             "\t\t 7 = Raw I samples (f32, 1 channel) (output only)\n"
             "\t\t 8 = Raw Q samples (f32, 1 channel) (output only)\n"
+            "\t\t 9 = Demodulator logic state (text, VCD) (output only)\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -781,7 +784,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
         while (package_type) {
-            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
@@ -824,6 +827,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
+                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->pulse_data, '\'', samp_rate);
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, samp_rate);
@@ -856,6 +860,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
+                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->fsk_pulse_data, '"', samp_rate);
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
@@ -869,7 +874,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     } // if (demod->analyze...
 
-    if (demod->out_file) {
+    if (demod->out_file && demod->dump_mode != VCD_LOGIC) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
@@ -920,6 +925,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     }
 
+    input_pos += n_samples;
     if (bytes_to_read > 0)
         bytes_to_read -= len;
 
@@ -1178,7 +1184,7 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 loaddump_mode = atoi(optarg);
-                if (loaddump_mode < 0 || loaddump_mode > F32_Q) {
+                if (loaddump_mode < 0 || loaddump_mode > VCD_LOGIC) {
                     fprintf(stderr, "Invalid sample mode %s\n", optarg);
                     usage(devices, 1);
                 }
@@ -1446,6 +1452,9 @@ int main(int argc, char **argv) {
                 goto out;
             }
         }
+        if (demod->dump_mode == VCD_LOGIC) {
+            pulse_data_print_vcd_header(demod->out_file, samp_rate);
+        }
     }
 
     if (demod->signal_grabber)
@@ -1487,6 +1496,7 @@ int main(int argc, char **argv) {
             case F32_FM:    load_mode_str = "F32 FM (1ch float32)"; break;
             case F32_I:     load_mode_str = "F32 I (1ch float32)"; break;
             case F32_Q:     load_mode_str = "F32 Q (1ch float32)"; break;
+            case VCD_LOGIC: load_mode_str = "VCD logic (text)"; break;
             default:        load_mode_str = "Unknown";  break;
             }
             fprintf(stderr, "Input format: %s\n", load_mode_str);

@@ -24,10 +24,52 @@ void pulse_data_clear(pulse_data_t *data) {
 
 
 void pulse_data_print(const pulse_data_t *data) {
-    fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);
+	fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);
 	for(unsigned n = 0; n < data->num_pulses; ++n) {
 		fprintf(stderr, "[%3u] Pulse: %4u, Gap: %4u, Period: %4u\n", n, data->pulse[n], data->gap[n], data->pulse[n] + data->gap[n]);
 	}
+}
+
+void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
+{
+	char time_str[LOCAL_TIME_BUFLEN];
+	char *timescale;
+	if (sample_rate <= 500000)
+		timescale = "1 us";
+	else
+		timescale = "100 ns";
+	fprintf(file, "$date %s $end\n", local_time_str(0, time_str));
+	fprintf(file, "$version rtl_433 0.1.0 $end\n");
+	fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate));
+	fprintf(file, "$timescale %s $end\n", timescale);
+	fprintf(file, "$scope module rtl_433 $end\n");
+	fprintf(file, "$var wire 1 / FRAME $end\n");
+	fprintf(file, "$var wire 1 ' AM $end\n");
+	fprintf(file, "$var wire 1 \" FM $end\n");
+	fprintf(file, "$upscope $end\n");
+	fprintf(file, "$enddefinitions $end\n");
+	fprintf(file, "#0 0/ 0' 0\"\n");
+}
+
+void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint32_t sample_rate)
+{
+	float scale;
+	if (sample_rate <= 500000)
+		scale = 1000000 / sample_rate; // unit: 1 us
+	else
+		scale = 10000000 / sample_rate; // unit: 100 ns
+	intmax_t pos = data->offset;
+	for (unsigned n = 0; n < data->num_pulses; ++n) {
+		if (n == 0)
+			fprintf(file, "#%zd 1/ 1%c\n", (intmax_t)(pos * scale), ch_id);
+		else
+			fprintf(file, "#%zd 1%c\n", (intmax_t)(pos * scale), ch_id);
+		pos += data->pulse[n];
+		fprintf(file, "#%zd 0%c\n", (intmax_t)(pos * scale), ch_id);
+		pos += data->gap[n];
+	}
+	if (data->num_pulses > 0)
+		fprintf(file, "#%zd 0/\n", (intmax_t)(pos * scale));
 }
 
 
@@ -208,7 +250,7 @@ static pulse_state_t pulse_state;
 
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
+int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, intmax_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
@@ -230,6 +272,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					// Initialize all data
 					pulse_data_clear(pulses);
 					pulse_data_clear(fsk_pulses);
+					pulses->offset = sample_offset + s->data_counter;
+					fsk_pulses->offset = sample_offset + s->data_counter;
 					s->pulse_length = 0;
 					s->max_pulse = 0;
 					s->FSK_state = (pulse_FSK_state_t){0};
