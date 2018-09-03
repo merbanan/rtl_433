@@ -116,6 +116,12 @@ typedef struct data {
 */
 data_t *data_make(const char *key, const char *pretty_key, ...);
 
+/** Adds to a structured data object.
+
+    @see data_make()
+*/
+data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...);
+
 /** Constructs an array from given data of the given uniform type.
 
     @param ptr The contents pointed by the argument are copied in.
