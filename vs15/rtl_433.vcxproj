@@ -85,9 +85,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\data.h" />

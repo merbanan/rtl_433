@@ -1,23 +1,5 @@
-rtl_433_win
-===========
-This is a fork of merbanan/rtl_433 which compiles for Win64 under Microsoft Visual Studio (verified with VS 2015). See release section for pre-compiled binaries.
-To compile it yourself, you first need to extract the files from https://osmocom.org/attachments/2242/RelWithDebInfo.zip into a folder "rtl-sdr" parallel to the rtl_433_win folder.
-It has to look like this
-
-    rtl_433_win
-        include
-        src
-        vs15
-        <and so on>
-    
-    rtl-sdr
-        x64
-        <and so on>
-    
-Then simply open rtl_433_win/vs15/rtl_433.sln in Visual Studio and select between debug/release build options.
-
-Original readme from merbanan/rtl_433:
-===========
+rtl_433
+=======
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
@@ -187,7 +169,7 @@ Supported device protocols:
     [72]* RF-tech
     [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [75]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
     [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
@@ -220,6 +202,7 @@ Supported device protocols:
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
+    [108]  WS Temperature Sensor
 
 * Disabled by default, use -R n or -G
 
