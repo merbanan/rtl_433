@@ -21,6 +21,7 @@
  */
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
