@@ -10,6 +10,23 @@
  *
  */
 
+/*
+
+5e       ba       9a       9f       e1       34
+01011110 10111010 10011010 10011111 11100001 00110100
+5555RRRR RRRRTTTT TTTTTTTT UUCCFFFF XXXXXXXX ????????
+
+
+5 = constant 5
+R = random power on id
+T = 12 bits of temperature with 0x900 bias and scaled by 10
+U = unk, maybe battery indicator (display is missing one though)
+C = channel
+F = constant F
+X = xor checksum
+? = unknown
+
+*/
 
 #include "rtl_433.h"
 #include "pulse_demod.h"
@@ -39,6 +56,10 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
         return 0;
     }
 
+    /* Validate checksum */
+    if ((b[0]^b[1]^b[2]^b[3]) != b[4])
+        return 0;
+
     /* Get rid */
     sensor_rid = (b[0]&0x0F)<<4 | (b[1]&0x0F);
 
@@ -46,10 +67,10 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
     temp_c = (float) ((((b[1]&0xF)<<8) | b[2])-0x990) / 10.0;
 
     /* Get channel */
-    channel = ((b[4]>>4) & 0x3) + 1;
+    channel = ((b[3]>>4) & 0x3);
 
-    /* crc? */
-    value = (b[5]<<8)| b[6]; 
+    /* unk */
+    value = b[5];
 
     if (debug_output) {
         fprintf(stderr, "wt1024_callback:");
@@ -63,7 +84,8 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
             "rid",    "Random ID", DATA_INT,    sensor_rid,
             "channel",       "Channel",     DATA_INT,    channel,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "data",  "", DATA_INT,    value,
+            "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
+            "data",  "Data", DATA_INT,    value,
             NULL);
 
     data_acquired_handler(data);
@@ -85,6 +107,7 @@ static char *output_fields[] = {
     "rid",
     "channel",
     "temperature_C",
+    "mic",
     "data",
     NULL
 };
@@ -95,8 +118,9 @@ r_device wt1024 = {
     .modulation    = OOK_PULSE_PWM_PRECISE,
     .short_limit   = 680,
     .long_limit    = 1850,
-    .reset_limit   = 10000,
+    .reset_limit   = 30000,
     .gap_limit     = 4000,
+    .sync_width    = 10000,
     .json_callback = &wt1024_callback,
     .disabled      = 0,
     .demod_arg     = 0,
