@@ -22,6 +22,7 @@
  *
  * The data is grouped in 6 bytes / 12 nibbles
  * [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
+ * There is an extra, unidentified 7th byte in WH2A packages.
  *
  * pre is always 0xFF
  * type is always 0x4 (may be different for different sensor type?)
@@ -34,7 +35,7 @@
  */
 static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    uint8_t b[40] = {0};
+    uint8_t b[6] = {0};
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
@@ -49,6 +50,11 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
         model = "Fine Offset Electronics, WH2 Temperature/Humidity sensor";
+
+    } else if (bitbuffer->bits_per_row[0] == 55 &&
+            bb[0][0] == 0xFE) { // WH2A
+        bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
+        model = "Fine Offset WH2A sensor";
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
@@ -81,7 +87,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
 
     // Nibble 5,6,7 contains 12 bits of temperature
     temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bb[0][0] == 0xFF) { // WH2
+    if (bitbuffer->bits_per_row[0] != 47) { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF;	// remove sign bit
