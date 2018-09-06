@@ -42,13 +42,18 @@ ss_sensor_parser (bitbuffer_t *bitbuffer, int row)
 	if (bitbuffer->bits_per_row[row] != 92)
 		return 0;
 
+        uint8_t seq = reverse8(b[8]);
+        uint8_t state = reverse8(b[9]);
+        uint8_t csum = reverse8(b[10]);
+        if (((seq + state) & 0xff) != csum) return 0;
+
 	ss_get_id(id, b);
 
-	if (b[9] == 64) {
+        if (state == 1) {
+                strcpy(extradata,"Contact Open");
+        } else if (state == 2) {
 		strcpy(extradata,"Contact Closed");
-	} else if (b[9] == 128) {
-		strcpy(extradata,"Contact Open");
-	} else if (b[9] == 192) {
+        } else if (state == 3) {
 		strcpy(extradata,"Alarm Off");
 	}
 
@@ -57,8 +62,8 @@ ss_sensor_parser (bitbuffer_t *bitbuffer, int row)
 		"time",		"",	DATA_STRING, time_str,
 		"model",	"",	DATA_STRING, "SimpliSafe Sensor",
 		"device",	"Device ID",	DATA_STRING, id,
-		"seq",		"Sequence",	DATA_INT, b[8],
-		"state",	"State",	DATA_INT, b[9],
+		"seq",		"Sequence",	DATA_INT, seq,
+		"state",	"State",	DATA_INT, state,
 		"extradata",	"Extra Data",	DATA_STRING, extradata,
 		NULL
 	);
