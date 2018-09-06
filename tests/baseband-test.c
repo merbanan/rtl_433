@@ -15,9 +15,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#ifndef _WIN32
-#include <sys/uio.h>
-#endif
 #include <unistd.h>
 #include <time.h>
 

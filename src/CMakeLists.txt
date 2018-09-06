@@ -121,19 +121,13 @@ add_executable(rtl_433
 )
 
 add_library(data data.c)
-
-if(MINGW)
-target_link_libraries(data ws2_32 mswsock)
-endif()
+target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433
 	${SDR_LIBRARIES}
+	${NET_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 )
-
-if(MINGW)
-target_link_libraries(rtl_433 ws2_32 mswsock)
-endif()
 
 set(INSTALL_TARGETS rtl_433)
 if(UNIX)
