@@ -74,9 +74,9 @@ static char *output_fields[] = {
 
 r_device skylink_motion = {
     .name           = "Skylink HA-434TL motion sensor",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 320,
-    .long_limit     = 384,
+    .modulation     = OOK_PULSE_PPM_RAW,
+    .short_limit    = 136,
+    .long_limit     = 505,
     .reset_limit    = 497,
     .json_callback  = &skylink_motion_callback,
     .disabled       = 0,
