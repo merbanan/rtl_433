@@ -1,7 +1,7 @@
 rtl_433_win
 ===========
-This is a fork of merbanan/rtl_433 which compiles for Win64 under Microsoft Visual Studio (verified with VS 2015). See release section for pre-compiled binaries.
-
+This is a fork of merbanan/rtl_433 which provides pre-compiled Win64 binaries in the release section.
+Meanwhile, the project files for Microsoft Visual Studio (verified with VS 2015) are part of that project.
 See the vs15 folder for compilation instructions.
 
 Original readme from merbanan/rtl_433:
