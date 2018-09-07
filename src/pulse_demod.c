@@ -264,7 +264,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		if (device->tolerance > 0
 				&& (pulses->pulse[n] < device->short_limit - device->tolerance
 				|| pulses->pulse[n] > device->short_limit * 2 + device->tolerance
-				|| pulses->gap[n] > device->short_limit - device->tolerance
+				|| pulses->gap[n] < device->short_limit - device->tolerance
 				|| pulses->gap[n] > device->short_limit * 2 + device->tolerance)) {
 			// The pulse or gap is too long or too short, thus invalid
 			bitbuffer_add_row(&bits);
