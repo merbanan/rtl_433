@@ -89,6 +89,7 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
                      "interval", "Interval",       DATA_FORMAT, "%ds", DATA_INT, interval,
                      "battery",  "Battery",        DATA_STRING, battery ? "OK" : "LOW",
                      "learn",    "Learning",       DATA_STRING, learn ? "YES" : "NO",
+                     "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
                      NULL);
 
     data_acquired_handler(data);

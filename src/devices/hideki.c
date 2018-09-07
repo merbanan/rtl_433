@@ -1,9 +1,8 @@
 #include "rtl_433.h"
-#include "pulse_demod.h"
 #include "util.h"
 #include "data.h"
 
-#define HIDEKI_BYTES_PER_ROW 14
+#define HIDEKI_MAX_BYTES_PER_ROW 14
 
 //    11111001 0  11110101 0  01110011 1 01111010 1  11001100 0  01000011 1  01000110 1  00111111  0 00001001 0  00010111 0
 //    SYNC+HEAD P   RC cha P           P     Nr.? P   .1° 1°  P   10°  BV P   1%  10% P  ????SYNC    -------Check?------- P
@@ -19,34 +18,27 @@
 enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
 
 static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
-    uint8_t *b = bb[0];//TODO: handle the 3 row, need change in PULSE_CLOCK decoding
-
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    local_time_str(0, time_str);
-
-    uint8_t packet[HIDEKI_BYTES_PER_ROW];
+    uint8_t *b = bitbuffer->bb[0]; // TODO: handle the 3 row, need change in PULSE_CLOCK decoding
+    uint8_t packet[HIDEKI_MAX_BYTES_PER_ROW];
     int sensortype = HIDEKI_WIND; // default for 14 valid bytes
     uint8_t channel, humidity, rc, battery_ok;
     int temp, wind_strength, wind_direction, rain_units;
 
-    // Transform the incoming data:
-    //  * change endianness
-    //  * toggle each bits
+    // Transform incoming data:
+    //  * reverse MSB/LSB
+    //  * invert all bits
     //  * Remove (and check) parity bit
     // TODO this may be factorise as a bitbuffer method (as for bitbuffer_manchester_decode)
-    for(int i=0; i<HIDEKI_BYTES_PER_ROW; i++){
+    for (int i = 0; i < HIDEKI_MAX_BYTES_PER_ROW; i++) {
         unsigned int offset = i/8;
-        packet[i] = b[i+offset] << (i%8);
-        packet[i] |= b[i+offset+1] >> (8 - i%8);
-        // reverse as it is little endian...
-        packet[i] = reverse8(packet[i]);
-        // toggle each bit
-        packet[i] ^= 0xFF;
+        packet[i] = (b[i+offset] << (i%8)) | (b[i+offset+1] >> (8 - i%8));
+        packet[i] = reverse8(packet[i]); // reverse LSB first to LSB last
+        packet[i] ^= 0xFF; // invert bits
         // check parity
         uint8_t parity = ((b[i+offset+1] >> (7 - i%8)) ^ 0xFF) & 0x01;
-        if(parity != byteParity(packet[i]))
+        if (parity != byteParity(packet[i]))
         {
             if (i == 10) {
                 sensortype = HIDEKI_TS04;
@@ -61,59 +53,62 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
     }
 
     // Read data
-    if(packet[0] == 0x9f){ //Note: it may exist other valid id
-        channel = (packet[1] >> 5) & 0x0F;
-        if(channel >= 5) channel -= 1;
-        rc = packet[1] & 0x0F;
-        temp = (packet[5] & 0x0F) * 100 + ((packet[4] & 0xF0) >> 4) * 10 + (packet[4] & 0x0F);
-        if(((packet[5]>>7) & 0x01) == 0){
-            temp = -temp;
-        }
-        battery_ok = (packet[5]>>6) & 0x01;
-        if (sensortype == HIDEKI_TS04) {
-            humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
-            data = data_make("time",          "",              DATA_STRING, time_str,
-                             "model",         "",              DATA_STRING, "HIDEKI TS04 sensor",
-                             "rc",            "Rolling Code",  DATA_INT, rc,
-                             "channel",       "Channel",       DATA_INT, channel,
-                             "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
-                             "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
-                             "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                             NULL);
-            data_acquired_handler(data);
-            return 1;
-        }
-        if (sensortype == HIDEKI_WIND) {
-            const uint8_t wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
-            wind_direction = wd[((packet[11] & 0xF0) >> 4)] * 225;
-            wind_strength = (packet[9] & 0x0F) * 100 + ((packet[8] & 0xF0) >> 4) * 10 + (packet[8] & 0x0F);
-            data = data_make("time",          "",              DATA_STRING, time_str,
-                             "model",         "",              DATA_STRING, "HIDEKI Wind sensor",
-                             "rc",            "Rolling Code",  DATA_INT, rc,
-                             "channel",       "Channel",       DATA_INT, channel,
-                             "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
-                             "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
-                             "windstrength",  "Wind Strength", DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_strength*0.160934f,
-                             "winddirection", "Direction",     DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction/10.f,
-                             NULL);
-            data_acquired_handler(data);
-            return 1;
-        }
-        if (sensortype == HIDEKI_RAIN) {
-            rain_units = (packet[5] << 8) + packet[4];
-            battery_ok = (packet[2]>>6) & 0x01;
-            data = data_make("time",          "",              DATA_STRING, time_str,
-                             "model",         "",              DATA_STRING, "HIDEKI Rain sensor",
-                             "rc",            "Rolling Code",  DATA_INT, rc,
-                             "channel",       "Channel",       DATA_INT, channel,
-                             "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
-                             "rain",          "Rain",          DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units*0.7f,
-                             NULL);
-            data_acquired_handler(data);
-            return 1;
-        }
+    if (packet[0] != 0x9f) // NOTE: other valid ids might exist
         return 0;
+
+    channel = (packet[1] >> 5) & 0x0F;
+    if (channel >= 5) channel -= 1;
+    rc = packet[1] & 0x0F;
+    temp = (packet[5] & 0x0F) * 100 + ((packet[4] & 0xF0) >> 4) * 10 + (packet[4] & 0x0F);
+    if (((packet[5]>>7) & 0x01) == 0) {
+        temp = -temp;
     }
+    battery_ok = (packet[5]>>6) & 0x01;
+
+    local_time_str(0, time_str);
+    if (sensortype == HIDEKI_TS04) {
+        humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
+        data = data_make("time",          "",              DATA_STRING, time_str,
+                         "model",         "",              DATA_STRING, "HIDEKI TS04 sensor",
+                         "rc",            "Rolling Code",  DATA_INT, rc,
+                         "channel",       "Channel",       DATA_INT, channel,
+                         "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
+                         "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
+                         "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                         NULL);
+        data_acquired_handler(data);
+        return 1;
+    }
+    if (sensortype == HIDEKI_WIND) {
+        const uint8_t wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
+        wind_direction = wd[((packet[11] & 0xF0) >> 4)] * 225;
+        wind_strength = (packet[9] & 0x0F) * 100 + ((packet[8] & 0xF0) >> 4) * 10 + (packet[8] & 0x0F);
+        data = data_make("time",          "",              DATA_STRING, time_str,
+                         "model",         "",              DATA_STRING, "HIDEKI Wind sensor",
+                         "rc",            "Rolling Code",  DATA_INT, rc,
+                         "channel",       "Channel",       DATA_INT, channel,
+                         "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
+                         "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
+                         "windstrength",  "Wind Strength", DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_strength*0.160934f,
+                         "winddirection", "Direction",     DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction/10.f,
+                         NULL);
+        data_acquired_handler(data);
+        return 1;
+    }
+    if (sensortype == HIDEKI_RAIN) {
+        rain_units = (packet[5] << 8) + packet[4];
+        battery_ok = (packet[2]>>6) & 0x01;
+        data = data_make("time",          "",              DATA_STRING, time_str,
+                         "model",         "",              DATA_STRING, "HIDEKI Rain sensor",
+                         "rc",            "Rolling Code",  DATA_INT, rc,
+                         "channel",       "Channel",       DATA_INT, channel,
+                         "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
+                         "rain",          "Rain",          DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units*0.7f,
+                         NULL);
+        data_acquired_handler(data);
+        return 1;
+    }
+
     return 0;
 }
 
