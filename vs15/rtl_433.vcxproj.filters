@@ -352,8 +352,5 @@
     <ClCompile Include="..\src\devices\m_bus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\wt0124.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

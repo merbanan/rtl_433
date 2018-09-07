@@ -117,15 +117,17 @@ add_executable(rtl_433
 	devices/interlogix.c
 	devices/dish_remote_6_3.c
 	devices/simplisafe.c
+	devices/wt0124.c
 )
 
 add_library(data data.c)
+target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433
 	${SDR_LIBRARIES}
-    ${CMAKE_THREAD_LIBS_INIT}
+	${NET_LIBRARIES}
+	${CMAKE_THREAD_LIBS_INIT}
 )
-
 
 set(INSTALL_TARGETS rtl_433)
 if(UNIX)

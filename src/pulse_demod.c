@@ -261,7 +261,16 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Falling edge is on end of pulse
-		if(pulses->pulse[n] + time_since_last > (device->short_limit * 1.5)) {
+		if (device->tolerance > 0
+				&& (pulses->pulse[n] < device->short_limit - device->tolerance
+				|| pulses->pulse[n] > device->short_limit * 2 + device->tolerance
+				|| pulses->gap[n] < device->short_limit - device->tolerance
+				|| pulses->gap[n] > device->short_limit * 2 + device->tolerance)) {
+			// The pulse or gap is too long or too short, thus invalid
+			bitbuffer_add_row(&bits);
+			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
+			time_since_last = 0;
+		} else if(pulses->pulse[n] + time_since_last > (device->short_limit * 1.5)) {
 			// Last bit was recorded more than short_limit*1.5 samples ago
 			// so this pulse start must be a data edge (falling data edge means bit = 1)
 			bitbuffer_add_bit(&bits, 1);

@@ -97,6 +97,10 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
     ADD_DEFINITIONS(-fno-builtin-free)
 endif()
 
+if(MINGW)
+list(APPEND NET_LIBRARIES ws2_32 mswsock)
+endif()
+
 ########################################################################
 # Setup the include and linker paths
 ########################################################################

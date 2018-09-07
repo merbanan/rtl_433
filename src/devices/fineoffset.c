@@ -22,6 +22,7 @@
  *
  * The data is grouped in 6 bytes / 12 nibbles
  * [pre] [pre] [type] [id] [id] [temp] [temp] [temp] [humi] [humi] [crc] [crc]
+ * There is an extra, unidentified 7th byte in WH2A packages.
  *
  * pre is always 0xFF
  * type is always 0x4 (may be different for different sensor type?)
@@ -34,7 +35,7 @@
  */
 static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    uint8_t b[40] = {0};
+    uint8_t b[6] = {0};
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 
@@ -49,6 +50,11 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
         model = "Fine Offset Electronics, WH2 Temperature/Humidity sensor";
+
+    } else if (bitbuffer->bits_per_row[0] == 55 &&
+            bb[0][0] == 0xFE) { // WH2A
+        bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
+        model = "Fine Offset WH2A sensor";
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
@@ -81,7 +87,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
 
     // Nibble 5,6,7 contains 12 bits of temperature
     temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bb[0][0] == 0xFF) { // WH2
+    if (bitbuffer->bits_per_row[0] != 47) { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF;	// remove sign bit
@@ -210,7 +216,6 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-
 /* Fine Offset Electronics WH0530 Temperature/Rain sensor protocol
  * aka Agimex Rosenborg 35926 (sold in Denmark)
  * aka ...
@@ -231,28 +236,22 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
  * CC = Checksum of previous 7 bytes (binary sum truncated to 8 bit)
  */
 static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-
     char time_str[LOCAL_TIME_BUFLEN];
+    bitrow_t *bb = bitbuffer->bb;
 
     // Validate package
     if (bitbuffer->bits_per_row[0] != 71        // Match exact length to avoid false positives
-        || (bb[0][0]>>1) != 0x7F                // Check header (two upper nibbles)
-        || (bb[0][1]>>5) != 0x3                 // Check header (third nibble)
-    ) {
+            || (bb[0][0]>>1) != 0x7F            // Check header (two upper nibbles)
+            || (bb[0][1]>>5) != 0x3)            // Check header (third nibble)
         return 0;
-    }
-
-    // Get time now
-    local_time_str(0, time_str);
 
     uint8_t buffer[8];
-    bitbuffer_extract_bytes(bitbuffer, 0, 7, buffer, sizeof(buffer)*8);     // Skip first 7 bits
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, buffer, sizeof(buffer) * 8);     // Skip first 7 bits
 
     if (debug_output) {
-        char raw_str[128];
-        for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str+n*3, "%02x ", buffer[n]); }
+        char raw_str[8 * 3 + 1];
+        for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str + n * 3, "%02x ", buffer[n]); }
         fprintf(stderr, "Fineoffset_WH0530: Raw %s\n", raw_str);
     }
 
@@ -272,6 +271,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     static const float RAIN_FACTOR = 851.1 / 0x0b1f;  // (*) Based on example readout (851.1mm)
     const float rain = RAIN_FACTOR * (((uint16_t)buffer[4] << 8) | buffer[3]);
 
+    local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
                      "id",            "ID",          DATA_INT, id,
@@ -285,7 +285,6 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-
 static char *output_fields[] = {
     "time",
     "model",
@@ -295,7 +294,6 @@ static char *output_fields[] = {
     "mic",
     NULL
 };
-
 
 static char *output_fields_WH25[] = {
     "time",
@@ -308,30 +306,29 @@ static char *output_fields_WH25[] = {
     NULL
 };
 
-
 static char *output_fields_WH0530[] = {
     "time",
     "model",
     "id",
     "temperature_C",
     "rain",
+    "battery",
     "mic",
     NULL
 };
 
-
 r_device fineoffset_WH2 = {
-    .name           = "Fine Offset Electronics, WH2 Temperature/Humidity Sensor",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 800,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_limit     = 2800,	// Maximum pulse period (long pulse + fixed gap)
-    .reset_limit    = 2800,	// We just want 1 package
+    .name           = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_limit     = 1500,	// Maximum pulse period (long pulse + fixed gap)
+    .reset_limit    = 1200,	// We just want 1 package
+    .tolerance      = 160, // us
     .json_callback  = &fineoffset_WH2_callback,
     .disabled       = 0,
     .demod_arg      = 0,
     .fields         = output_fields
 };
-
 
 r_device fineoffset_WH25 = {
     .name           = "Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor",
@@ -344,7 +341,6 @@ r_device fineoffset_WH25 = {
     .demod_arg      = 0,
     .fields         = output_fields_WH25
 };
-
 
 r_device fineoffset_WH0530 = {
     .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",

@@ -189,7 +189,6 @@
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
     <ClCompile Include="..\src\devices\wssensor.c" />
-    <ClCompile Include="..\src\devices\wt0124.c" />
     <ClCompile Include="..\src\devices\wt450.c" />
     <ClCompile Include="..\src\devices\x10_rf.c" />
     <ClCompile Include="..\src\devices\x10_sec.c" />
