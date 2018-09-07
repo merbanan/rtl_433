@@ -361,7 +361,7 @@ static void classify_signal() {
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
-    unsigned int signal_distance_data[4000] = {0};
+    unsigned int signal_distance_data[1000] = {0};
     struct protocol_state p = {0};
     unsigned int signal_type;
 
@@ -572,7 +572,6 @@ static void classify_signal() {
         signal_pulse_data[i][0] = 0;
         signal_pulse_data[i][1] = 0;
         signal_pulse_data[i][2] = 0;
-        signal_distance_data[i] = 0;
     }
 
 }

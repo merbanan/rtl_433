@@ -100,6 +100,11 @@
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\optparse.c" />
+    <ClCompile Include="..\src\pulse_demod.c" />
+    <ClCompile Include="..\src\pulse_detect.c" />
+    <ClCompile Include="..\src\rtl_433.c" />
+    <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
@@ -127,10 +132,10 @@
     <ClCompile Include="..\src\devices\flex.c" />
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\ft004b.c" />
+    <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\generic_motion.c" />
     <ClCompile Include="..\src\devices\generic_remote.c" />
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c" />
-    <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
@@ -144,15 +149,15 @@
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
     <ClCompile Include="..\src\devices\lacrosse.c" />
-    <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lacrosse_TX141TH_Bv2.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />
+    <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
+    <ClCompile Include="..\src\devices\m_bus.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
-    <ClCompile Include="..\src\devices\m_bus.c" />
-    <ClCompile Include="..\src\devices\newkaku.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
+    <ClCompile Include="..\src\devices\newkaku.c" />
     <ClCompile Include="..\src\devices\nexa.c" />
     <ClCompile Include="..\src\devices\nexus.c" />
     <ClCompile Include="..\src\devices\oil_standard.c" />
@@ -194,11 +199,6 @@
     <ClCompile Include="..\src\devices\x10_rf.c" />
     <ClCompile Include="..\src\devices\x10_sec.c" />
     <ClCompile Include="..\src\getopt\getopt.c" />
-    <ClCompile Include="..\src\optparse.c" />
-    <ClCompile Include="..\src\pulse_demod.c" />
-    <ClCompile Include="..\src\pulse_detect.c" />
-    <ClCompile Include="..\src\rtl_433.c" />
-    <ClCompile Include="..\src\util.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

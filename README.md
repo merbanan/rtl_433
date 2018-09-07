@@ -1,11 +1,3 @@
-rtl_433_win
-===========
-This is a fork of merbanan/rtl_433 which compiles for Win64 under Microsoft Visual Studio (verified with VS 2015). See release section for pre-compiled binaries.
-
-See the vs15 folder for compilation instructions.
-
-Original readme from merbanan/rtl_433:
-===========
 rtl_433
 =======
 
@@ -89,7 +81,7 @@ Supported device protocols:
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
+    [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
@@ -168,7 +160,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  Nexa
-    [97]  Thermopro TP12 Thermometer
+    [97]  Thermopro TP08/TP12 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
@@ -180,6 +172,7 @@ Supported device protocols:
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  WS Temperature Sensor
+    [109]  WT0124 Pool Thermometer
 
 * Disabled by default, use -R n or -G
 
