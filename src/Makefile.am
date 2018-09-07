@@ -103,6 +103,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/interlogix.c \
                        devices/dish_remote_6_3.c \
                        devices/simplisafe.c \
-                       devices/wt1024.c
+                       devices/wt1024.c \
+                       devices/skylink_ha-434tl.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
