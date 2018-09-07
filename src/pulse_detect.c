@@ -30,6 +30,31 @@ void pulse_data_print(const pulse_data_t *data) {
 	}
 }
 
+static void *bounded_memset(void *b, int c, intmax_t size, intmax_t offset, intmax_t len)
+{
+    if (offset < 0) {
+        len += offset; // reduce len by negative offset
+		offset = 0;
+	}
+    if (offset + len > size) {
+        len = size - offset; // clip excessive len
+	}
+    if (len > 0)
+        memset((char *)b + offset, c, len);
+    return b;
+}
+
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, intmax_t buf_offset, const pulse_data_t *data, uint8_t bits)
+{
+	intmax_t pos = data->offset - buf_offset;
+	for (unsigned n = 0; n < data->num_pulses; ++n) {
+		bounded_memset(buf, 0x01 | bits, len, pos, data->pulse[n]);
+		pos += data->pulse[n];
+		bounded_memset(buf, 0x01, len, pos, data->gap[n]);
+		pos += data->gap[n];
+	}
+}
+
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 {
 	char time_str[LOCAL_TIME_BUFLEN];

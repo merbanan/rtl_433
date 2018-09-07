@@ -41,6 +41,9 @@ void pulse_data_clear(pulse_data_t *data);		// Clear the struct
 /// Print the content of a pulse_data_t structure (for debug)
 void pulse_data_print(const pulse_data_t *data);
 
+/// Dump the content of a pulse_data_t structure as raw binary
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, intmax_t buf_offset, const pulse_data_t *data, uint8_t bits);
+
 /// Print a header for the VCD format
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate);
 
