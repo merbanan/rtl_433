@@ -61,6 +61,8 @@ Usage:	= Tuner options =
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
+	[-V] Output the version string and exit
+	[-h] Output this usage help and exit
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported device protocols:
@@ -141,7 +143,7 @@ Supported device protocols:
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH24, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
