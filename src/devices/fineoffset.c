@@ -165,8 +165,8 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
 
-    // Validate package
-    if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 205) { // Nominal size is 196 bit periods
+    // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods
+    if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 215) {
         return 0;
     }
 
