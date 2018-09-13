@@ -481,27 +481,11 @@ static char *output_fields[] = {
 r_device fineoffset_wh1080 = {
     .name           = "Fine Offset Electronics WH1080/WH3080 Weather Station",
     .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 800,
-    .long_limit     = 2800,
-    .reset_limit    = 2800,
-    .json_callback  = &fineoffset_wh1080_callback,
-    .disabled       = 0,
-    .demod_arg      = 0,
-    .fields         = output_fields,
-};
-
-/**
- * http://www.jaycar.com.au/mini-lcd-display-weather-station/p/XC0400
- */
-
-r_device fineoffset_XC0400 = {
-    .name           = "Fine Offset Electronics, XC0400",
-    .modulation     = OOK_PULSE_PWM_RAW,
     .short_limit    = 800,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
     .long_limit     = 2800,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2800,	// We just want 1 package
     .json_callback  = &fineoffset_wh1080_callback,
     .disabled       = 0,
     .demod_arg      = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

@@ -66,7 +66,7 @@ Usage:	= Tuner options =
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported device protocols:
-    [01]* Silvercrest Remote Control
+    [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
@@ -131,7 +131,7 @@ Supported device protocols:
     [63]  Efergy Optical
     [64]  Honda Car Key
     [65]* Template decoder
-    [66]  Fine Offset Electronics, XC0400
+    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
