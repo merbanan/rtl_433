@@ -7,7 +7,7 @@
  *  2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte	    | 1 Byte
  *  Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
  *
- * Copyright (C) 2018, Adam Callis, adam.callis@gmail.com
+ * Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
  * License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
  */
 
@@ -176,7 +176,7 @@ static char *sensor_output_fields[] = {
 };
 
 r_device ss_sensor = {
-    .name           = "SimpliSafe Home Security System",
+    .name           = "SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)",
     .modulation     = OOK_PULSE_PIWM_DC,
     .short_limit    = 500,  // half-bit width 500 us
     .long_limit     = 1000, // bit width 1000 us

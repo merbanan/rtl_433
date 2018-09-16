@@ -1,5 +1,6 @@
 /*
- * LaCrosse/StarMétéo/Conrad TX35DTH-IT, TX29-IT,  Temperature and Humidity Sensors.
+ * LaCrosse/StarMétéo/Conrad TX35DTH-IT, TFA Dostmann 30.3155     Temperature/Humidity Sensors.
+ * LaCrosse/StarMétéo/Conrad TX29-IT                              Temperature Sensors.
  * Tune to 868240000Hz
  *
 *
@@ -195,7 +196,7 @@ r_device lacrosse_tx29 = {
 
 // Receiver for the TX35 device
 r_device lacrosse_tx35 = {
-	.name           = "LaCrosse TX35DTH-IT Temperature sensor",
+	.name           = "LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor",
 	.modulation     = FSK_PULSE_PCM,
 	.short_limit    = 105,
 	.long_limit     = 105,

@@ -54,6 +54,10 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         bb[r][3] != 0 &&
         !rubicson_crc_check(bb)) {
 
+        /* if const is not 1111 then abort */
+        if ((bb[r][3]&0xF0) != 0xF0)
+            return 0;
+
         /* Get time now */
         local_time_str(0, time_str);
 

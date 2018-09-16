@@ -1,7 +1,7 @@
 /* Steelmate TPMS FSK protocol
  *
- * Copyright © 2016 Benjamin Larsson
- * Copyright © 2016 John Jore
+ * Copyright (C) 2016 Benjamin Larsson
+ * Copyright (C) 2016 John Jore
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

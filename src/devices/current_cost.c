@@ -33,12 +33,16 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
 
     uint8_t *packet = packet_bits.bb[0];
     // Read data
+    // Meter (packet[0] = 0000xxxx) bits 5 and 4 are "unknown", but always 0 to date.
     if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 0) ){
         uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
-
-        uint16_t watt0 = (packet[2] & 0x7F) << 8 | packet[3] ;
-        uint16_t watt1 = (packet[4] & 0x7F) << 8 | packet[5] ;
-        uint16_t watt2 = (packet[6] & 0x7F) << 8 | packet[7] ;
+        uint16_t watt0 = 0;
+        uint16_t watt1 = 0;
+        uint16_t watt2 = 0;
+        //Check the "Data valid indicator" bit is 1 before using the sensor values
+        if((packet[2] & 0x80) == 128) { watt0 = (packet[2] & 0x7F) << 8 | packet[3] ; }
+        if((packet[4] & 0x80) == 128) { watt1 = (packet[4] & 0x7F) << 8 | packet[5] ; }
+        if((packet[6] & 0x80) == 128) { watt2 = (packet[6] & 0x7F) << 8 | packet[7] ; }
         data = data_make("time",          "",       DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "CurrentCost TX", //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
@@ -51,13 +55,30 @@ static int current_cost_callback(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
         return 1;
     }
+    // Counter (packet[0] = 0100xxxx) bits 5 and 4 are "unknown", but always 0 to date.
+    else if(packet_bits.bits_per_row[0] >= 56 && ((packet[0] & 0xf0) == 64) ){
+       uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
+       // packet[2] is "Apparently unused"
+       uint16_t sensor_type = packet[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
+       uint32_t c_impulse = packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
+       data = data_make("time",         "",              DATA_STRING, time_str,
+               "model",        "",              DATA_STRING, "CurrentCost Counter", //TODO: it may have different CC Model ? any ref ?
+               "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+               "sensor_type",  "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
+               //"counter",      "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               "power0",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               NULL);
+       data_acquired_handler(data);
+       return 1;
+    }
+
     return 0;
 }
 
 static char *output_fields[] = {
     "time",
     "model",
-    "rc",
+    "dev_id",
     "power0",
     "power1",
     "power2",

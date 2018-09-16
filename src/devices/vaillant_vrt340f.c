@@ -21,7 +21,7 @@
 // Btr.   ... Battery: 0x00=OK, 0x01=LOW
 // Checksm... Checksum (2-byte signed int): = -sum(bytes 4-12)
 
-// Copyright (C) 2017, Reinhold Kainhofer, reinhold@kainhofer.com
+// Copyright (C) 2017 Reinhold Kainhofer <reinhold@kainhofer.com>
 // License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
 
 static int16_t

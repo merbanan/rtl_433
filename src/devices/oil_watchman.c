@@ -3,7 +3,7 @@
  * Tested devices:
  * Sensor Systems Watchman Sonic
  *
- * Copyright © 2015 David Woodhouse
+ * Copyright (C) 2015 David Woodhouse
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

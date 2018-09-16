@@ -3,46 +3,15 @@ rtl_433
 
 rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
 
+Building/installation:
+----------------------
+
+See [BUILDING.md](BUILDING.md)
+
 How to add support for unsupported sensors
 ------------------------------------------
 
 Read the Test Data section at the bottom.
-
-
-Installation instructions:
---------------------------
-
-Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
-
-Depending on your system, you may also need to install the following libraries.
-
-Debian:
-
-    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
-
-Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
-
-    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
-
-Installation using cmake:
-
-    cd rtl_433/
-    mkdir build
-    cd build
-    cmake ../
-    make
-    make install
-
-Installation using autoconf:
-
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
-
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
-
 
 Running:
 --------
@@ -92,10 +61,12 @@ Usage:	= Tuner options =
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
+	[-V] Output the version string and exit
+	[-h] Output this usage help and exit
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported device protocols:
-    [01]* Silvercrest Remote Control
+    [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
@@ -112,7 +83,7 @@ Supported device protocols:
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
+    [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
@@ -160,7 +131,7 @@ Supported device protocols:
     [63]  Efergy Optical
     [64]  Honda Car Key
     [65]* Template decoder
-    [66]  Fine Offset Electronics, XC0400
+    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -169,10 +140,10 @@ Supported device protocols:
     [72]* RF-tech
     [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [75]  LaCrosse TX35DTH-IT Temperature sensor
+    [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH24, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -191,7 +162,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  Nexa
-    [97]  Thermopro TP12 Thermometer
+    [97]  Thermopro TP08/TP12 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
@@ -202,6 +173,8 @@ Supported device protocols:
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
+    [108]  WS Temperature Sensor
+    [109]  WT0124 Pool Thermometer
 
 * Disabled by default, use -R n or -G
 

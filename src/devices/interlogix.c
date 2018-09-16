@@ -1,6 +1,6 @@
 /* Interlogix/GE/UTC Wireless Device Decoder
  *
- * Copyright (C) 2017 Brent Bailey - bailey.brent@gmail.com
+ * Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,9 +131,25 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
         return 0;
     }
 
+    if (bitbuffer->bits_per_row[row] - bit_offset > INTERLOGIX_MSG_BIT_LEN + 7) {
+        if (debug_output)
+            fprintf(stderr, "Found valid preamble but message size (%d) too long, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
+        return 0;
+    }
+
     uint8_t message[(INTERLOGIX_MSG_BIT_LEN + 7) / 8];
 
     bitbuffer_extract_bytes(bitbuffer, row, bit_offset, message, INTERLOGIX_MSG_BIT_LEN);
+
+    // reduce false positives, abort if id or code looks wrong
+    if (message[0] == 0x00 && message[1] == 0x00 && message[2] == 0x00)
+        return 0;
+    if (message[0] == 0xff && message[1] == 0xff && message[2] == 0xff)
+        return 0;
+    if (message[3] == 0x00 && message[4] == 0x00 && message[5] == 0x00)
+        return 0;
+    if (message[3] == 0xff && message[4] == 0xff && message[5] == 0xff)
+        return 0;
 
     // parity check: even data bits from message[0 .. 40] and odd data bits from message[1 .. 41]
     // i.e. 5 bytes and two (top-most) bits.

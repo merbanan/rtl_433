@@ -16,6 +16,11 @@
 #include <stdbool.h>
 #include <time.h>
 
+
+#if defined _MSC_VER // Microsoft Visual Studio
+	#define restrict  __restrict
+#endif
+
 // Helper macros
 #ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))

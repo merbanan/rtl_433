@@ -69,7 +69,7 @@
 		DECL(efergy_optical) \
 		DECL(hondaremote) \
 		DECL(template) \
-		DECL(fineoffset_XC0400) \
+		DECL(template) \
 		DECL(radiohead_ask) \
 		DECL(kerui) \
 		DECL(fineoffset_wh1050) \
@@ -112,6 +112,7 @@
 		DECL(m_bus_mode_r) \
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
+		DECL(wt1024) \
 		DECL(ttx201)
 
 typedef struct {
