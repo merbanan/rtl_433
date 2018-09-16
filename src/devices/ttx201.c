@@ -11,21 +11,22 @@
  *
  * Transmit Interval: every ~61 s
  * Frequency: 433.92 MHz
- * Manchester Encoding, pulse width: 460 us, gap width 1508 us.
+ * Manchester Encoding, pulse width: 500 us, interpacket gap width 1500 us.
  *
- * A complete message is 444 bits:
- *   PPPPPPPP PPPP
- *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ  (repeated 7 times)
- *     KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM      (last packet without J)
+ * A complete message is 445 bits:
+ *      PPPPPPPP PPPPPPPP P
+ *   LL LLKKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJ  (repeated 7 times)
+ *   LL LLKKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM       (last packet without J)
  *
- * 20-bit initial preamble, always 0
- *   PPPPPPPP PPPP = 0x0000 0x00
+ * 17-bit initial preamble, always 0
+ *   PPPPPPPP PPPPPPPP P = 0x00 0x00 0
  *
  * 54-bit data packet format
- *   0   1    2   3    4   5    6   7    8   9    10  11   12  13  (nibbles #, aligned to 8-bit)
- *   ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ
+ *   0    1   2    3   4    5   6    7   8    9   10   11  12   13  (nibbles #, aligned to 8-bit values)
+ *   ..LL LLKKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJ
  *
- *   K = 6-bit checksum, sum of nibbles 2-11
+ *   L = 4-bit start of packet, always 0
+ *   K = 6-bit checksum, sum of nibbles 3-12
  *   I = 8-bit sensor ID
  *   S = startup (0 = normal operation, 1 = reset or battery changed)
  *   ? = unknown, always 0
@@ -34,22 +35,31 @@
  *   X = 3-bit packet index, 0-7
  *   T = 12-bit signed temperature * 10 in Celsius
  *   M = 8-bit postmark, always 0x14
- *   J = 8-bit packet separator, always 0xF8
+ *   J = 4-bit packet separator, always 0xF
  *
  * Sample received raw data package:
- *   bitbuffer:: Number of rows: 1
- *   [00] {444} 00 00 06 f0 80 00 41 c5 3e 1c c2 00 11 07 14 f8 77 08 00 84 1c 53 e1 ec 20 03 10 71 4f 87 f0 80 10 41 c5 3e 20 c2 00 51 07 14 f8 87 08 01 84 1c 53 e2 2c 20 07 10 71 40
+ *   bitbuffer:: Number of rows: 10
+ *   [00] {17} 00 00 00             : 00000000 00000000 0
+ *   [01] {54} 07 30 80 00 42 05 3c
+ *   [02] {54} 07 70 80 04 42 05 3c
+ *   [03] {54} 07 b0 80 08 42 05 3c
+ *   [04] {54} 07 f0 80 0c 42 05 3c
+ *   [05] {54} 08 30 80 10 42 05 3c
+ *   [06] {54} 08 70 80 14 42 05 3c
+ *   [07] {54} 08 b0 80 18 42 05 3c
+ *   [08] {50} 08 f0 80 1c 42 05 00 : 00001000 11110000 10000000 00011100 01000010 00000101 00
+ *   [09] { 1} 00                   : 0
  *
- * Decoded:
- *   K   I    S    B  C    X   T    M     J
- *   27  194  0x0  0  0x0  0   263  0x14  0xf8
- *   28  194  0x0  0  0x0  1   263  0x14  0xf8
- *   29  194  0x0  0  0x0  2   263  0x14  0xf8
- *   30  194  0x0  0  0x0  3   263  0x14  0xf8
- *   31  194  0x0  0  0x0  4   263  0x14  0xf8
- *   32  194  0x0  0  0x0  5   263  0x14  0xf8
- *   33  194  0x0  0  0x0  6   263  0x14  0xf8
- *   34  194  0x0  0  0x0  7   263  0x14
+ * Data decoded:
+ *   r  cs    K   ID    S   B  C  X    T    M     J
+ *   1  28    28  194  0x0  0  0  0   264  0x14  0xf
+ *   2  29    29  194  0x0  0  0  1   264  0x14  0xf
+ *   3  30    30  194  0x0  0  0  2   264  0x14  0xf
+ *   4  31    31  194  0x0  0  0  3   264  0x14  0xf
+ *   5  32    32  194  0x0  0  0  4   264  0x14  0xf
+ *   6  33    33  194  0x0  0  0  5   264  0x14  0xf
+ *   7  34    34  194  0x0  0  0  6   264  0x14  0xf
+ *   8  35    35  194  0x0  0  0  7   264  0x14
  */
 
 #include "rtl_433.h"
@@ -57,24 +67,15 @@
 #include "util.h"
 
 #define MODEL                "TTX201 Temperature Sensor"
-#define MSG_BITS             444
-#define MSG_PREAMBLE_BITS    20
+#define MSG_PREAMBLE_BITS    17
+#define MSG_PACKET_MIN_BITS  50
 #define MSG_PACKET_BITS      54
 #define MSG_PACKET_POSTMARK  0x14
-#define MSG_PACKET_SEPARATOR 0xf8
-#define TEMP_NULL            (-2731)
+#define MSG_MIN_ROWS         2
+#define MSG_MAX_ROWS         10
 
-#define BITLEN(x)            (sizeof(x) * 8)
 #define MSG_PAD_BITS         ((((MSG_PACKET_BITS / 8) + 1) * 8) - MSG_PACKET_BITS)
-#define MSG_DATA_BITS        (MSG_PAD_BITS + MSG_PACKET_BITS - BITLEN(packet_end))
-#define MSG_LEN              ((MSG_BITS + 7) / 8)
-#define MSG_MIN_BITS         (MSG_PREAMBLE_BITS + 2 * MSG_PACKET_BITS)
-
-static const
-uint8_t packet_end[2] = {MSG_PACKET_POSTMARK, MSG_PACKET_SEPARATOR}; // 16 bits
-
-static const
-uint8_t preamble_pattern[1] = { 0x01 };
+#define MSG_PACKET_LEN       ((MSG_PACKET_BITS + MSG_PAD_BITS) / 8)
 
 static int
 checksum_calculate(uint8_t *b)
@@ -91,118 +92,79 @@ checksum_calculate(uint8_t *b)
 static int
 ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    uint8_t b[MSG_LEN];
+    uint8_t b[MSG_PACKET_LEN];
     int bits = bitbuffer->bits_per_row[row];
-    int valid_packets = 0;
-    int preamble;
-    int offset;
     int checksum;
     int checksum_calculated;
     int postmark;
     int device_id;
     int battery_low;
     int channel;
-    int temp;
-    int temperature = TEMP_NULL;
+    int temperature;
     float temperature_c;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    if (bits < MSG_MIN_BITS) {
+    if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
+        if (debug_output) {
+            if (row == 0) {
+                if (bits < MSG_PREAMBLE_BITS) {
+                    fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
+				bits, MSG_PREAMBLE_BITS);
+                }
+            } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
+                fprintf(stderr, "Wrong packet #%d length: %d bits (expected %d)\n",
+			row, bits, MSG_PACKET_BITS);
+            }
+        }
         return 0;
     }
 
-    preamble = bitbuffer_search(bitbuffer, row, bitpos,
-                   (const uint8_t *)&preamble_pattern,
-                   BITLEN(preamble_pattern)) + BITLEN(preamble_pattern) - 1;
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b,
+                            MSG_PACKET_BITS + MSG_PAD_BITS);
+
+    /* Aligned data: LLKKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJ */
+    checksum = b[0] & 0x3f;
+    checksum_calculated = checksum_calculate(b);
+    postmark = b[5];
 
     if (debug_output) {
-        printf("TTX201 received raw data: ");
-        bitbuffer_print(bitbuffer);
-        printf("Preamble length: %d\n", preamble);
-
-        if (bits != MSG_BITS) {
-            printf("Wrong message length: %d (expected %d)\n", bits, MSG_BITS);
+        fprintf(stderr, "%2d  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
+		row,
+		checksum_calculated,
+		checksum,
+		b[1],				// Device Id
+		(b[2] & 0xf0) >> 4,		// Unknown 1
+		(b[2] & 0x08) >> 3,		// Battery
+		b[2] & 0x07,			// Channel
+		b[3] >> 4,			// Packet index
+		((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4],	// Temperature
+		postmark
+            );
+        if (bits == MSG_PACKET_BITS) {
+            fprintf(stderr, "  0x%01x", b[6] >> 4);		// Packet separator
         }
-        if (preamble < MSG_PREAMBLE_BITS) {
-            printf("Short preamble: %d bits (expected %d)\n",
-		preamble, MSG_PREAMBLE_BITS);
-        }
-        printf("Data decoded:\n" \
-		" a   v  cs    K   ID    S   B  C  X    T    M     J\n");
+        fprintf(stderr, "\n");
     }
 
-    if (preamble > MSG_PREAMBLE_BITS) {
-        preamble = MSG_PREAMBLE_BITS;
-    } else if (preamble < MSG_PAD_BITS) {
-        preamble = MSG_PAD_BITS;
-    }
+    if (postmark == MSG_PACKET_POSTMARK && \
+        checksum == checksum_calculated) {
 
-    // walk packets
-    for (offset = preamble - MSG_PAD_BITS;
-         offset >= 0 && offset < bits - MSG_PACKET_BITS + ((int) BITLEN(packet_end) / 2);
-         offset += MSG_PACKET_BITS) {
+        device_id = b[1];
+        battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
+        channel = (b[2] & 0x07) + 1;
+        temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
 
-        bitbuffer_extract_bytes(bitbuffer, row, bitpos + offset, b, MSG_PACKET_BITS + MSG_PAD_BITS);
-
-        /* Aligned data: ..KKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJJJJJ */
-        checksum = b[0] & 0x3f;
-        checksum_calculated = checksum_calculate(b);
-        postmark = b[5];
-
+    } else {
         if (debug_output) {
-            printf("%3d %2d  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
-			offset,
-			valid_packets,
-			checksum_calculated,
-			checksum,
-			b[1],				// Device Id
-			(b[2] & 0xf0) >> 4,		// Unknown 1
-			(b[2] & 0x08) >> 3,		// Battery
-			b[2] & 0x07,			// Channel
-			b[3] >> 4,			// Packet index
-			((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4],	// Temperature
-			postmark
-                );
-            if (offset < MSG_BITS - MSG_PACKET_BITS) {
-                printf("  0x%02x", b[6]);		// Packet separator
+            if (postmark != MSG_PACKET_POSTMARK) {
+                fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
+			row, postmark, MSG_PACKET_POSTMARK);
             }
-            printf("\n");
+            if (checksum != checksum_calculated) {
+                fprintf(stderr, "Packet #%d checksum error.\n", row);
+            }
         }
-
-        if (postmark == MSG_PACKET_POSTMARK && \
-            checksum == checksum_calculated) {
-
-            device_id = b[1];
-            battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
-            channel = (b[2] & 0x07) + 1;
-            temp = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
-
-            if (temperature == temp) {
-                valid_packets++;
-            } else if (valid_packets < 2) {
-                temperature = temp;
-                valid_packets = 1;
-            }
-        } else {
-            // search valid packet
-            offset = bitbuffer_search(bitbuffer, row,
-                         bitpos + offset + MSG_DATA_BITS + 1,
-                         (const uint8_t *)&packet_end, BITLEN(packet_end));
-
-            if (debug_output) {
-                printf("Checksum error: %d x %d, postmark 0x%02x, end: %d\n",
-			checksum, checksum_calculated, postmark, offset);
-            }
-
-            if (offset >= MSG_BITS) {
-                break;
-            }
-            offset -= MSG_DATA_BITS + MSG_PACKET_BITS;
-        }
-    }
-
-    if (valid_packets < 1) {
         return 0;
     }
 
@@ -228,11 +190,19 @@ ttx201_callback(bitbuffer_t *bitbuffer)
     int row;
     int events = 0;
 
-    for (row = 0; row < bitbuffer->num_rows; ++row) {
-        if (bitbuffer->bits_per_row[row] >= MSG_MIN_BITS) {
-            events += ttx201_decode(bitbuffer, row, 0);
+    if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
+
+        if (debug_output) {
+            fprintf(stderr, "TTX201 received raw data: ");
+            bitbuffer_print(bitbuffer);
+            fprintf(stderr, "Data decoded:\n" \
+		" r  cs    K   ID    S   B  C  X    T    M     J\n");
         }
-        if (events) return events; // for now, break after first successful message
+
+        for (row = 0; row < bitbuffer->num_rows; ++row) {
+            events += ttx201_decode(bitbuffer, row, 0);
+            if (events && !debug_output) return events; // for now, break after first successful message
+        }
     }
 
     return events;
@@ -254,8 +224,10 @@ r_device ttx201 = {
     .short_limit   = 510,
     .long_limit    = 0, // not used
     .reset_limit   = 1700,
+    .tolerance     = 250,
     .json_callback = &ttx201_callback,
     .disabled      = 0,
     .demod_arg     = 0,
     .fields        = output_fields
 };
+
