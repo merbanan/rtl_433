@@ -14,7 +14,7 @@
 #include "util.h"
 
 // Convert two BCD encoded nibbles to an integer
-inline unsigned bcd2int(uint8_t bcd) {
+static unsigned bcd2int(uint8_t bcd) {
     return 10*(bcd>>4) + (bcd & 0xF);
 }
 
