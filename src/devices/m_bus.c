@@ -127,8 +127,8 @@ typedef struct {
 } m_bus_block1_t;
 
 typedef struct {
-    uint8_t     data[512];
     unsigned    length;
+    uint8_t     data[512];
 } m_bus_data_t;
 
 
