@@ -70,6 +70,18 @@ typedef enum  {
 } conversion_mode_t;
 static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
+enum {
+    CU8_IQ    = 0,
+    S16_AM    = 1,
+    S16_FM    = 2,
+    CF32_IQ   = 3,
+    CS16_IQ   = 4,
+    F32_AM    = 5,
+    F32_FM    = 6,
+    F32_I     = 7,
+    F32_Q     = 8,
+} data_format_t;
+
 uint16_t num_r_devices = 0;
 
 struct dm_state {
@@ -81,6 +93,7 @@ struct dm_state {
         int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
         uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
     } buf;
+    float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 1, CS16: 2
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
@@ -155,6 +168,10 @@ void usage(r_device *devices, int exit_code)
             "\t\t 2 = FM demodulated samples (int16) (output only)\n"
             "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
             "\t\t 4 = Raw I/Q samples (cs16, 2 channel)\n"
+            "\t\t 5 = AM demodulated samples (f32) (output only)\n"
+            "\t\t 6 = FM demodulated samples (f32) (output only)\n"
+            "\t\t 7 = Raw I samples (f32, 1 channel) (output only)\n"
+            "\t\t 8 = Raw Q samples (f32, 1 channel) (output only)\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -750,9 +767,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // Handle special input formats
-    if (demod->load_mode == 1) { // The IQ buffer is really AM demodulated data
+    if (demod->load_mode == S16_AM) { // The IQ buffer is really AM demodulated data
         memcpy(demod->am_buf, iq_buf, len);
-    } else if (demod->load_mode == 2) { // The IQ buffer is really FM demodulated data
+    } else if (demod->load_mode == S16_FM) { // The IQ buffer is really FM demodulated data
         // we would need AM for the envelope too
         memcpy(demod->buf.fm, iq_buf, len);
     }
@@ -855,13 +872,48 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     if (demod->out_file) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
-        if (demod->dump_mode == 1) {  // AM data
-            out_buf = (uint8_t*)demod->am_buf;
+
+        if (demod->dump_mode == S16_AM) {
+            out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
-        } else if (demod->dump_mode == 2) {  // FM data
-            out_buf = (uint8_t*)demod->buf.fm;
+
+        } else if (demod->dump_mode == S16_FM) {
+            out_buf = (uint8_t *)demod->buf.fm;
             out_len = n_samples * sizeof(int16_t);
+
+        } else if (demod->dump_mode == F32_AM) {
+            for (unsigned long n = 0; n < n_samples; ++n)
+                demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
+            out_buf = (uint8_t *)demod->f32_buf;
+            out_len = n_samples * sizeof(float);
+
+        } else if (demod->dump_mode == F32_FM) {
+            for (unsigned long n = 0; n < n_samples; ++n)
+                demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
+            out_buf = (uint8_t *)demod->f32_buf;
+            out_len = n_samples * sizeof(float);
+
+        } else if (demod->dump_mode == F32_I) {
+            if (demod->sample_size == 1)
+                for (unsigned long n = 0; n < n_samples; ++n)
+                    demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
+            else
+                for (unsigned long n = 0; n < n_samples; ++n)
+                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2] * (1.0 / 0x8000); // scale from Q0.15
+            out_buf = (uint8_t *)demod->f32_buf;
+            out_len = n_samples * sizeof(float);
+
+        } else if (demod->dump_mode == F32_Q) {
+            if (demod->sample_size == 1)
+                for (unsigned long n = 0; n < n_samples; ++n)
+                    demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
+            else
+                for (unsigned long n = 0; n < n_samples; ++n)
+                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2 + 1] * (1.0 / 0x8000); // scale from Q0.15
+            out_buf = (uint8_t *)demod->f32_buf;
+            out_len = n_samples * sizeof(float);
         }
+
         if (fwrite(out_buf, 1, out_len, demod->out_file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
             rtlsdr_cancel_async(dev);
@@ -1111,8 +1163,12 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
-                if (loaddump_mode == 2) {
+                if (loaddump_mode == S16_AM) {
                     fprintf(stderr, "FM input not supported\n");
+                    usage(devices, 1);
+                }
+                if (loaddump_mode >= F32_AM) {
+                    fprintf(stderr, "input format not supported\n");
                     usage(devices, 1);
                 }
                 demod->load_mode = loaddump_mode;
@@ -1122,7 +1178,7 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 loaddump_mode = atoi(optarg);
-                if (loaddump_mode < 0 || loaddump_mode > 4) {
+                if (loaddump_mode < 0 || loaddump_mode > F32_Q) {
                     fprintf(stderr, "Invalid sample mode %s\n", optarg);
                     usage(devices, 1);
                 }
@@ -1414,7 +1470,7 @@ int main(int argc, char **argv) {
             }
         }
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
-        if (demod->load_mode < 3) {
+        if (demod->load_mode <= S16_FM) {
             demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
         } else {
             demod->sample_size = sizeof(int16_t); // CF32, CS16
@@ -1422,12 +1478,16 @@ int main(int argc, char **argv) {
         if (!quiet_mode) {
             char *load_mode_str = NULL;
             switch (demod->load_mode) {
-            case 0: load_mode_str = "CU8 (2ch uint8)"; break;
-            case 1: load_mode_str = "S16 AM (1ch int16)"; break;
-            case 2: load_mode_str = "S16 FM (1ch int16)"; break;
-            case 3: load_mode_str = "CF32 (2ch Float32)"; break;
-            case 4: load_mode_str = "CS16 (2ch int16)"; break;
-            default: load_mode_str = "Unknown";  break;
+            case CU8_IQ:    load_mode_str = "CU8 IQ (2ch uint8)"; break;
+            case S16_AM:    load_mode_str = "S16 AM (1ch int16)"; break;
+            case S16_FM:    load_mode_str = "S16 FM (1ch int16)"; break;
+            case CF32_IQ:   load_mode_str = "CF32 IQ (2ch float32)"; break;
+            case CS16_IQ:   load_mode_str = "CS16 IQ (2ch int16)"; break;
+            case F32_AM:    load_mode_str = "F32 AM (1ch float32)"; break;
+            case F32_FM:    load_mode_str = "F32 FM (1ch float32)"; break;
+            case F32_I:     load_mode_str = "F32 I (1ch float32)"; break;
+            case F32_Q:     load_mode_str = "F32 Q (1ch float32)"; break;
+            default:        load_mode_str = "Unknown";  break;
             }
             fprintf(stderr, "Input format: %s\n", load_mode_str);
         }
@@ -1436,7 +1496,7 @@ int main(int argc, char **argv) {
         int n_blocks = 0;
         unsigned long n_read;
         do {
-            if (demod->load_mode == 3) {
+            if (demod->load_mode == CF32_IQ) {
                 n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                 // clamp float to [-1,1] and scale to Q0.15
                 for(unsigned long n = 0; n < n_read; n++) {
