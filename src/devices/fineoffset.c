@@ -287,7 +287,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
  * aa 2d d4 e5 02 72 28 27 21 c9 bb aa
  *
  * II = Sensor ID (based on 2 different sensors). Does not change at battery change.
- * T TT = Temperature (+40*10)
+ * T TT = Temperature (+40*10), top bit is low battery flag
  * HH = Humidity
  * PP PP = Pressure (*10)
  * CC = Checksum of previous 6 bytes (binary sum truncated to 8 bit)
@@ -338,10 +338,12 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     }
 
     // Decode data
-    uint8_t id = (b[0] << 4) | (b[1] >> 4);
-    float   temperature = ((b[1] & 0xF) << 8 | b[2]) * 0.1 - 40.0;
-    uint8_t humidity = b[3];
-    float   pressure = (b[4] << 8 | b[5]) * 0.1;
+    uint8_t id        = (b[0] << 4) | (b[1] >> 4);
+    int low_battery   = (b[1] & 0x08) >> 3;
+    int temp_raw      = (b[1] & 0x07) << 8 | b[2]; // 0x7ff if invalid
+    float temperature = temp_raw * 0.1 - 40.0;     // range -40.0-60.0 C
+    uint8_t humidity  = b[3];
+    float pressure    = (b[4] << 8 | b[5]) * 0.1;
 
     // Output data
     local_time_str(0, time_str);
@@ -351,6 +353,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                      "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+                     "battery",       "Battery",     DATA_STRING, low_battery ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                       NULL);
     data_acquired_handler(data);
