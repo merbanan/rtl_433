@@ -107,6 +107,7 @@ static int skylink_motion_callback(bitbuffer_t *bitbuffer) {
                         sprintf(raw_str, "%05x", raw);
                         motion = ( motion == 5 );
 
+
                         /* Get time now */
                         local_time_str(0, time_str);
                         data = data_make(
@@ -134,9 +135,15 @@ static char *output_fields[] = {
 r_device skylink_motion = {
         .name           = "Skylink HA-434TL motion sensor",
         .modulation     = OOK_PULSE_PPM_RAW,
+<<<<<<< HEAD
         .short_limit    = 600,// Divide by 4 from DEBUG ouput
         .long_limit     = 1700,
         .reset_limit    = 10000,
+=======
+        .short_limit    = 650,
+        .long_limit     = 3000,
+        .reset_limit    = 20000,
+>>>>>>> origin/master
         .json_callback  = &skylink_motion_callback,
         .disabled       = 0,
         .demod_arg      = 0,
