@@ -34,6 +34,14 @@
 
 #define MAX_DATA_OUTPUTS 32
 
+#ifdef GIT_VERSION
+#define STR_VALUE(arg) #arg
+#define STR_EXPAND(s) STR_VALUE(s)
+#define VERSION "version " STR_EXPAND(GIT_VERSION) " branch " STR_EXPAND(GIT_BRANCH) " at " STR_EXPAND(GIT_TIMESTAMP)
+#else
+#define VERSION "version unknown"
+#endif
+
 static int do_exit = 0;
 static int do_exit_async = 0, frequencies = 0;
 uint32_t frequency[MAX_PROTOCOLS];
@@ -98,19 +106,20 @@ struct dm_state {
     pulse_data_t    fsk_pulse_data;
 };
 
-void usage(r_device *devices) {
+void version()
+{
+    fprintf(stderr, "rtl_433 " VERSION "\n");
+    exit(0);
+}
+
+void usage(r_device *devices, int exit_code)
+{
     int i;
     char disabledc;
 
     fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n"
-#ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            "version " STR_EXPAND(GIT_VERSION)
-            " branch " STR_EXPAND(GIT_BRANCH)
-            " at " STR_EXPAND(GIT_TIMESTAMP) "\n"
-#endif
+            VERSION "\n"
             "\nUsage:\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
             "\t[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
@@ -153,6 +162,8 @@ void usage(r_device *devices) {
             "\t[-T] specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
+            "\t[-V] Output the version string and exit\n"
+            "\t[-h] Output this usage help and exit\n"
             "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
@@ -163,7 +174,7 @@ void usage(r_device *devices) {
     }
     fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
 
-    exit(1);
+    exit(exit_code);
 }
 
 #ifdef _WIN32
@@ -1048,8 +1059,14 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "x:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:X:F:C:T:UWGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:X:F:C:T:UWGy:E")) != -1) {
         switch (opt) {
+            case 'h':
+                usage(devices, 0);
+                break;
+            case 'V':
+                version();
+                break;
             case 'd':
                 dev_query = optarg;
                 break;
@@ -1094,7 +1111,7 @@ int main(int argc, char **argv) {
                 in_filename = optarg;
                 if (loaddump_mode == 2) {
                     fprintf(stderr, "FM input not supported\n");
-                    usage(devices);
+                    usage(devices, 1);
                 }
                 demod->load_mode = loaddump_mode;
                 break;
@@ -1105,7 +1122,7 @@ int main(int argc, char **argv) {
                 loaddump_mode = atoi(optarg);
                 if (loaddump_mode < 0 || loaddump_mode > 4) {
                     fprintf(stderr, "Invalid sample mode %s\n", optarg);
-                    usage(devices);
+                    usage(devices, 1);
                 }
                 break;
             case 'S':
@@ -1131,7 +1148,7 @@ int main(int argc, char **argv) {
                 i = atoi(optarg);
                 if (i > num_r_devices) {
                     fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-                    usage(devices);
+                    usage(devices, 1);
                 }
 
                 if (i >= 1) {
@@ -1161,7 +1178,7 @@ int main(int argc, char **argv) {
                     add_syslog_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(devices);
+                    usage(devices, 1);
                 }
                 break;
             case 'C':
@@ -1173,7 +1190,7 @@ int main(int argc, char **argv) {
                     conversion_mode = CONVERT_CUSTOMARY;
                 } else {
                     fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(devices);
+                    usage(devices, 1);
                 }
                 break;
             case 'U':
@@ -1202,13 +1219,13 @@ int main(int argc, char **argv) {
                 stop_after_successful_events_flag = 1;
                 break;
             default:
-                usage(devices);
+                usage(devices, 1);
                 break;
         }
     }
 
     if (argc <= optind - 1) {
-        usage(devices);
+        usage(devices, 1);
     } else {
         out_filename = argv[optind];
     }
