@@ -118,10 +118,6 @@ add_executable(rtl_433
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/x10_sec.c
-	devices/interlogix.c
-	devices/dish_remote_6_3.c
-	devices/simplisafe.c
-	devices/wt0124.c
 	devices/skylink_ha-434tl.c
 )
 

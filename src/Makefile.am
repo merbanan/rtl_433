@@ -103,50 +103,8 @@ rtl_433_SOURCES      = baseband.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-<<<<<<< HEAD
-                       devices/s3318p.c \
-                       devices/akhan_100F14.c \
-                       devices/quhwa.c \
-                       devices/proove.c \
-                       devices/bresser_3ch.c \
-                       devices/oregon_scientific_sl109h.c \
-                       devices/steelmate.c \
-                       devices/schraeder.c \
-                       devices/elro_db286a.c \
-                       devices/efergy_optical.c \
-                       devices/hondaremote.c \
-                       devices/new_template.c \
-                       devices/radiohead_ask.c \
-                       devices/kerui.c \
-                       devices/fineoffset_wh1050.c \
-                       devices/honeywell.c \
-                       devices/maverick_et73x.c \
-                       devices/rftech.c \
-                       devices/lacrosse_tx35.c \
-                       devices/vaillant_vrt340f.c \
-                       devices/ibis_beacon.c \
-                       devices/oil_standard.c \
-                       devices/tpms_citroen.c \
-                       devices/thermopro_tp11.c \
-                       devices/solight_te44.c \
-                       devices/smoke_gs558.c \
-                       devices/generic_motion.c \
-                       devices/tpms_toyota.c \
-                       devices/tpms_ford.c \
-                       devices/tpms_renault.c \
-                       devices/infactory.c \
-                       devices/fordremote.c \
-                       devices/philips.c \
-                       devices/nexa.c \
-                       devices/thermopro_tp12.c \
                        devices/x10_sec.c \
-                       devices/interlogix.c \
-                       devices/dish_remote_6_3.c \
-                       devices/simplisafe.c \
-                       devices/wt1024.c \
                        devices/skylink_ha-434tl.c
-=======
-                       devices/x10_sec.c
->>>>>>> merbanan/master
+
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
