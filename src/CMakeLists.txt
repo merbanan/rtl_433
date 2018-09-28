@@ -118,6 +118,7 @@ add_executable(rtl_433
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/x10_sec.c
+	devices/skylink_ha-434tl.c
 )
 
 add_library(data data.c)
