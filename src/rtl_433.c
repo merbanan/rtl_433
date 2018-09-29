@@ -821,6 +821,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PWM_PRECISE:
                         case OOK_PULSE_PWM_RAW:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
+                        case OOK_PULSE_PIWM_RAW:
+                        case OOK_PULSE_PIWM_DC:
                         case OOK_PULSE_DMC:
                         case OOK_PULSE_PWM_OSV1:
                             break;
