@@ -120,7 +120,8 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 			if (ppos == pattern_bits_len)
 				return ipos - pattern_bits_len;
 		} else {
-			ipos += -ppos + 1;
+			ipos -= ppos;
+			ipos++;
 			ppos = 0;
 		}
 	}
