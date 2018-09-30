@@ -61,10 +61,12 @@ Usage:	= Tuner options =
 	[-T] specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
+	[-V] Output the version string and exit
+	[-h] Output this usage help and exit
 	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
 
 Supported device protocols:
-    [01]* Silvercrest Remote Control
+    [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
@@ -81,7 +83,7 @@ Supported device protocols:
     [15]  KlikAanKlikUit Wireless Switch
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH2 Temperature/Humidity Sensor
+    [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus Temperature & Humidity Sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
@@ -129,7 +131,7 @@ Supported device protocols:
     [63]  Efergy Optical
     [64]  Honda Car Key
     [65]* Template decoder
-    [66]  Fine Offset Electronics, XC0400
+    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -141,7 +143,7 @@ Supported device protocols:
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH24, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -160,7 +162,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  Nexa
-    [97]  Thermopro TP12 Thermometer
+    [97]  Thermopro TP08/TP12 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
@@ -172,6 +174,7 @@ Supported device protocols:
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  WS Temperature Sensor
+    [109]  WT0124 Pool Thermometer
 
 * Disabled by default, use -R n or -G
 
