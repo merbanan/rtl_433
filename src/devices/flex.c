@@ -14,6 +14,44 @@
 #include "pulse_demod.h"
 #include "optparse.h"
 
+/// extract a number up to 32/64 bits from given offset with given bit length
+unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
+{
+    unsigned pos = bit_offset / 8;            // the first byte we need
+    unsigned shl = bit_offset - pos * 8;      // shift left we need to align
+    unsigned len = (shl + bit_count + 7) / 8; // number of bytes we need
+    unsigned shr = 8 * len - shl - bit_count; // actual shift right
+//    printf("pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
+    unsigned long val = data[pos];
+    // TODO: mask off top bits
+    for (unsigned i = 1; i < len - 1; ++i) {
+        val = val << 8 | data[pos + i];
+    }
+    // shift down and add the last bits, so we don't potentially loose the top bits
+    if (len > 1)
+        val = (val << (8 - shr)) | (data[pos + len - 1] >> shr);
+    else
+        val >>= shr;
+    return val;
+}
+
+struct flex_map {
+    unsigned key;
+    const char *val;
+};
+
+#define GETTER_MAP_SLOTS 16
+
+struct flex_get {
+    unsigned bit_offset;
+    unsigned bit_count;
+    unsigned long mask;
+    const char *name;
+    struct flex_map map[GETTER_MAP_SLOTS];
+};
+
+#define GETTER_SLOTS 8
+
 struct flex_params {
     char *name;
     unsigned min_rows;
@@ -28,6 +66,7 @@ struct flex_params {
     bitrow_t match_bits;
     unsigned preamble_len;
     bitrow_t preamble_bits;
+    struct flex_get getter[GETTER_SLOTS];
 };
 
 static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
@@ -125,6 +164,27 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
                 "len", "", DATA_INT, bitbuffer->bits_per_row[i],
                 "data", "", DATA_STRING, row_bytes,
                 NULL);
+        // add a data line for each getter
+        for (int g = 0; g < GETTER_SLOTS && params->getter[g].bit_count > 0; ++g) {
+            struct flex_get *getter = &params->getter[g];
+            unsigned long val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
+            if (getter->mask)
+                val &= getter->mask;
+            int m;
+            for (m = 0; getter->map[m].val; m++) {
+                if (getter->map[m].key == val) {
+                    data_append(row_data[i],
+                            getter->name, "", DATA_STRING, getter->map[m].val,
+                            NULL);
+                    break;
+                }
+            }
+            if (!getter->map[m].val) {
+                data_append(row_data[i],
+                        getter->name, "", DATA_INT, val,
+                        NULL);
+            }
+        }
         // a simpler representation for csv output
         row_codes[i] = malloc(5 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
@@ -234,6 +294,67 @@ static unsigned parse_bits(const char *code, bitrow_t bitrow)
     return bits.bits_per_row[0];
 }
 
+const char *parse_map(const char *arg, struct flex_get *getter)
+{
+    const char *c = arg;
+    int i = 0;
+
+    while (*c == ' ') c++;
+    if (*c == '[') c++;
+
+    while (*c) {
+        unsigned long key;
+        char *val;
+
+        while (*c == ' ') c++;
+        if (*c == ']') return c + 1;
+
+        // first parse a number
+        key = strtol(c, (char **)&c, 0); // hex, oct, or dec
+
+        while (*c == ' ') c++;
+        if (*c == ':') c++;
+        while (*c == ' ') c++;
+
+        // then parse a string
+        const char *e = c;
+        while (*e != ' ' && *e != ']') e++;
+        val = malloc(e - c + 1);
+        memcpy(val, c, e - c);
+        val[e - c] = '\0';
+        c = e;
+
+        // store result
+        getter->map[i].key = key;
+        getter->map[i].val = val;
+        i++;
+    }
+    return c;
+}
+
+static void parse_getter(const char *arg, struct flex_get *getter)
+{
+    bitrow_t bitrow;
+    while (arg && *arg) {
+        if (*arg == '[') {
+            arg = parse_map(arg, getter);
+            continue;
+        }
+        char *p = strchr(arg, ':');
+        if (p)
+            *p++ = '\0';
+        if (*arg == '@')
+            getter->bit_offset = strtol(++arg, NULL, 0);
+        else if (*arg == '{' || (*arg >= '0' && *arg <= '9')) {
+            getter->bit_count = parse_bits(arg, bitrow);
+            getter->mask = extract_number(bitrow, 0, getter->bit_count);
+        }
+        else
+            getter->name = strdup(arg);
+        arg = p;
+    }
+}
+
 r_device *flex_create_device(char *spec)
 {
     if (next_slot >= FLEX_SLOTS) {
@@ -249,6 +370,7 @@ r_device *flex_create_device(char *spec)
     params_slot[next_slot] = params;
     r_device *dev = (r_device *)calloc(1, sizeof(r_device));
     char *c, *o;
+    int get_count = 0;
 
     spec = strdup(spec);
     // locate optional args and terminate mandatory args
@@ -392,7 +514,15 @@ r_device *flex_create_device(char *spec)
         else if (!strcasecmp(key, "countonly"))
             params->count_only = val ? atoi(val) : 1;
 
-        else {
+        else if (!strcasecmp(key, "get")) {
+            if (get_count < GETTER_SLOTS)
+                parse_getter(val, &params->getter[get_count++]);
+            else {
+                fprintf(stderr, "Maximum getter slots exceeded (%d)!\n", GETTER_SLOTS);
+                usage();
+            }
+
+        } else {
             fprintf(stderr, "Bad flex spec, unknown keyword (%s)!\n", key);
             usage();
         }
