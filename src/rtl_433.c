@@ -31,6 +31,7 @@
 #include "data.h"
 #include "util.h"
 #include "optparse.h"
+#include "fileformat.h"
 
 #define MAX_DATA_OUTPUTS 32
 
@@ -71,20 +72,6 @@ typedef enum  {
 } conversion_mode_t;
 static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
-enum {
-    CU8_IQ    = 0,
-    S16_AM    = 1,
-    S16_FM    = 2,
-    CF32_IQ   = 3,
-    CS16_IQ   = 4,
-    F32_AM    = 5,
-    F32_FM    = 6,
-    F32_I     = 7,
-    F32_Q     = 8,
-    VCD_LOGIC = 9,
-    U8_LOGIC  = 10
-} data_format_t;
-
 uint16_t num_r_devices = 0;
 
 struct dm_state {
@@ -104,8 +91,8 @@ struct dm_state {
     int enable_FM_demod;
     int analyze;
     int analyze_pulses;
-    int load_mode;
-    int dump_mode;
+    file_info_t load_info;
+    file_info_t dump_info;
     int hop_time;
 
     /* Signal grabber variables */
@@ -166,18 +153,6 @@ void usage(r_device *devices, int exit_code)
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
-            "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
-            "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
-            "\t\t 1 = AM demodulated samples (int16 pcm, 1 channel)\n"
-            "\t\t 2 = FM demodulated samples (int16) (output only)\n"
-            "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
-            "\t\t 4 = Raw I/Q samples (cs16, 2 channel)\n"
-            "\t\t 5 = AM demodulated samples (f32) (output only)\n"
-            "\t\t 6 = FM demodulated samples (f32) (output only)\n"
-            "\t\t 7 = Raw I samples (f32, 1 channel) (output only)\n"
-            "\t\t 8 = Raw Q samples (f32, 1 channel) (output only)\n"
-            "\t\t 9 = Demodulator logic state (text, VCD) (output only)\n"
-            "\t\t 10 = Raw demodulator logic state (u8) (output only)\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -773,9 +748,9 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // Handle special input formats
-    if (demod->load_mode == S16_AM) { // The IQ buffer is really AM demodulated data
+    if (demod->load_info.format == S16_AM) { // The IQ buffer is really AM demodulated data
         memcpy(demod->am_buf, iq_buf, len);
-    } else if (demod->load_mode == S16_FM) { // The IQ buffer is really FM demodulated data
+    } else if (demod->load_info.format == S16_FM) { // The IQ buffer is really FM demodulated data
         // we would need AM for the envelope too
         memcpy(demod->buf.fm, iq_buf, len);
     }
@@ -786,7 +761,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
-        if (demod->dump_mode == U8_LOGIC) memset(demod->u8_buf, 0, n_samples);
+        if (demod->dump_info.format == U8_LOGIC) memset(demod->u8_buf, 0, n_samples);
         while (package_type) {
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
@@ -831,8 +806,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->pulse_data, '\'', samp_rate);
-                if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->pulse_data, '\'', samp_rate);
+                if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, samp_rate);
@@ -865,8 +840,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->fsk_pulse_data, '"', samp_rate);
-                if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->fsk_pulse_data, '"', samp_rate);
+                if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
@@ -875,8 +850,8 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         } // while (package_type)...
 
         // dump partial pulse_data for this buffer
-        if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
-        if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+        if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+        if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
 
         if (stop_after_successful_events_flag && (p_events > 0)) {
             do_exit = do_exit_async = 1;
@@ -884,31 +859,31 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     } // if (demod->analyze...
 
-    if (demod->out_file && demod->dump_mode != VCD_LOGIC) {
+    if (demod->out_file && demod->dump_info.format != VCD_LOGIC) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
-        if (demod->dump_mode == S16_AM) {
+        if (demod->dump_info.format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_mode == S16_FM) {
+        } else if (demod->dump_info.format == S16_FM) {
             out_buf = (uint8_t *)demod->buf.fm;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_mode == F32_AM) {
+        } else if (demod->dump_info.format == F32_AM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_FM) {
+        } else if (demod->dump_info.format == F32_FM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_I) {
+        } else if (demod->dump_info.format == F32_I) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -918,7 +893,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_Q) {
+        } else if (demod->dump_info.format == F32_Q) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -928,7 +903,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == U8_LOGIC) { // state data
+        } else if (demod->dump_info.format == U8_LOGIC) { // state data
             out_buf = demod->u8_buf;
             out_len = n_samples;
         }
@@ -1096,7 +1071,6 @@ int main(int argc, char **argv) {
     char *test_data = NULL;
     char *out_filename = NULL;
     char *in_filename = NULL;
-    int loaddump_mode = 0;
     FILE *in_file;
     int n_read;
     int r = 0, opt;
@@ -1183,25 +1157,14 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
-                if (loaddump_mode == S16_AM) {
-                    fprintf(stderr, "FM input not supported\n");
-                    usage(devices, 1);
-                }
-                if (loaddump_mode >= F32_AM) {
-                    fprintf(stderr, "input format not supported\n");
-                    usage(devices, 1);
-                }
-                demod->load_mode = loaddump_mode;
+                // TODO: check_read_file_info()
                 break;
             case 't':
                 demod->signal_grabber = 1;
                 break;
             case 'm':
-                loaddump_mode = atoi(optarg);
-                if (loaddump_mode < 0 || loaddump_mode > U8_LOGIC) {
-                    fprintf(stderr, "Invalid sample mode %s\n", optarg);
-                    usage(devices, 1);
-                }
+                fprintf(stderr, "sample mode option is deprecated.\n");
+                usage(devices, 1);
                 break;
             case 'S':
                 sync_mode = 1;
@@ -1449,24 +1412,24 @@ int main(int argc, char **argv) {
     }
 
     if (out_filename) {
-        demod->dump_mode = loaddump_mode;
-        if (strcmp(out_filename, "-") == 0) { /* Write samples to stdout */
+        parse_file_info(out_filename, &demod->dump_info);
+        if (strcmp(demod->dump_info.path, "-") == 0) { /* Write samples to stdout */
             demod->out_file = stdout;
 #ifdef _WIN32
             _setmode(_fileno(stdin), _O_BINARY);
 #endif
         } else {
-                if (access(out_filename, F_OK) == 0 && !overwrite_mode) {
+                if (access(demod->dump_info.path, F_OK) == 0 && !overwrite_mode) {
                 fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
                 goto out;
             }
-            demod->out_file = fopen(out_filename, "wb");
+            demod->out_file = fopen(demod->dump_info.path, "wb");
             if (!demod->out_file) {
                 fprintf(stderr, "Failed to open %s\n", out_filename);
                 goto out;
             }
         }
-        if (demod->dump_mode == VCD_LOGIC) {
+        if (demod->dump_info.format == VCD_LOGIC) {
             pulse_data_print_vcd_header(demod->out_file, samp_rate);
         }
     }
@@ -1475,6 +1438,7 @@ int main(int argc, char **argv) {
         demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
 
     if (in_filename) {
+        parse_file_info(in_filename, &demod->load_info);
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
         if (!test_mode_buf || !test_mode_float_buf)
@@ -1482,46 +1446,33 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Couldn't allocate read buffers!\n");
             exit(1);
         }
-        if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
+        if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
             in_file = stdin;
             in_filename = "<stdin>";
         } else {
-            in_file = fopen(in_filename, "rb");
+            in_file = fopen(demod->load_info.path, "rb");
             if (!in_file) {
                 fprintf(stderr, "Opening file: %s failed!\n", in_filename);
                 goto out;
             }
         }
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
-        if (demod->load_mode <= S16_FM) {
+        if (demod->load_info.format == CU8_IQ
+                || demod->load_info.format == S16_AM
+                || demod->load_info.format == S16_FM) {
             demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
         } else {
             demod->sample_size = sizeof(int16_t); // CF32, CS16
         }
         if (!quiet_mode) {
-            char *load_mode_str = NULL;
-            switch (demod->load_mode) {
-            case CU8_IQ:    load_mode_str = "CU8 IQ (2ch uint8)"; break;
-            case S16_AM:    load_mode_str = "S16 AM (1ch int16)"; break;
-            case S16_FM:    load_mode_str = "S16 FM (1ch int16)"; break;
-            case CF32_IQ:   load_mode_str = "CF32 IQ (2ch float32)"; break;
-            case CS16_IQ:   load_mode_str = "CS16 IQ (2ch int16)"; break;
-            case F32_AM:    load_mode_str = "F32 AM (1ch float32)"; break;
-            case F32_FM:    load_mode_str = "F32 FM (1ch float32)"; break;
-            case F32_I:     load_mode_str = "F32 I (1ch float32)"; break;
-            case F32_Q:     load_mode_str = "F32 Q (1ch float32)"; break;
-            case VCD_LOGIC: load_mode_str = "VCD logic (text)"; break;
-            case U8_LOGIC:  load_mode_str = "U8 logic (text)"; break;
-            default:        load_mode_str = "Unknown";  break;
-            }
-            fprintf(stderr, "Input format: %s\n", load_mode_str);
+            fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
         }
         sample_file_pos = 0.0;
 
         int n_blocks = 0;
         unsigned long n_read;
         do {
-            if (demod->load_mode == CF32_IQ) {
+            if (demod->load_info.format == CF32_IQ) {
                 n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                 // clamp float to [-1,1] and scale to Q0.15
                 for(unsigned long n = 0; n < n_read; n++) {

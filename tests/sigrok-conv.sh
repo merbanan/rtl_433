@@ -37,15 +37,15 @@ if [ ! -z "$4" ] ; then
 fi
 
 # create I-data channel
-rtl_433 -q -r "$file" -m 7 analog-1-4-1 >/dev/null 2>&1
+rtl_433 -q -r "$file" F32:I:analog-1-4-1 >/dev/null 2>&1
 # create Q-data channel
-rtl_433 -q -r "$file" -m 8 analog-1-5-1 >/dev/null 2>&1
+rtl_433 -q -r "$file" F32:Q:analog-1-5-1 >/dev/null 2>&1
 # create AM-data channel
-rtl_433 -q -r "$file" -m 5 analog-1-6-1 >/dev/null 2>&1
+rtl_433 -q -r "$file" F32:AM:analog-1-6-1 >/dev/null 2>&1
 # create FM-data channel
-rtl_433 -q -r "$file" -m 6 analog-1-7-1 >/dev/null 2>&1
+rtl_433 -q -r "$file" F32:FM:analog-1-7-1 >/dev/null 2>&1
 # create state channels
-rtl_433 -q -r "$file" -m 10 logic-1-1 >/dev/null 2>&1
+rtl_433 -q -r "$file" U8:LOGIC:logic-1-1 >/dev/null 2>&1
 # create version tag
 echo -n "2" >version
 # create meta data
