@@ -48,7 +48,7 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 
 //call function to lookup what button was pressed
 			const char* code = get_command_codes(bytes);
-			device_id = (bytes[44]>>8|bytes[45]);
+			device_id = bytes[44]<<8 | bytes[45];
 
 			/* Get time now */
 			local_time_str(0, time_str);
