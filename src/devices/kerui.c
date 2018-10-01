@@ -35,11 +35,11 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
     id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
     cmd = b[2] & 0x0F;
     switch (cmd) {
-        case 0xa: cmd_str = "0xa (PIR)"; break;
-        case 0xe: cmd_str = "0xe (open)"; break;
-        case 0x7: cmd_str = "0x7 (close)"; break;
-        case 0xb: cmd_str = "0xb (tamper)"; break;
-        case 0xf: cmd_str = "0xf (battery)"; break;
+        case 0xa: cmd_str = "motion"; break;
+        case 0xe: cmd_str = "open"; break;
+        case 0x7: cmd_str = "close"; break;
+        case 0xb: cmd_str = "tamper"; break;
+        case 0xf: cmd_str = "battery"; break;
         default:  cmd_str = NULL; break;
     }
 
@@ -48,10 +48,11 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
 
     local_time_str(0, time_str);
     data = data_make(
-            "time",     "",             DATA_STRING, time_str,
-            "model",    "",             DATA_STRING, "Kerui PIR Sensor",
-            "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
-            "data",     "Data (4bit)",  DATA_STRING, cmd_str,
+            "time",     "",               DATA_STRING, time_str,
+            "model",    "",               DATA_STRING, "Kerui PIR / Contact Sensor",
+            "id",       "ID (20bit)",     DATA_FORMAT, "0x%x", DATA_INT, id,
+            "cmd",      "Command (4bit)", DATA_FORMAT, "0x%x", DATA_INT, cmd,
+            "state",    "State",          DATA_STRING, cmd_str,
             NULL);
 
     data_acquired_handler(data);
@@ -62,12 +63,13 @@ static char *output_fields[] = {
     "time",
     "model",
     "id",
-    "data",
+    "cmd",
+    "state",
     NULL
 };
 
 r_device kerui = {
-    .name          = "Kerui PIR Sensor",
+    .name          = "Kerui PIR / Contact Sensor",
     .modulation    = OOK_PULSE_PWM_PRECISE,
     .short_limit   = 320,
     .long_limit    = 960,
