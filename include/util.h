@@ -17,7 +17,7 @@
 #include <time.h>
 
 
-#if defined _MSC_VER // Microsoft Visual Studio
+#if defined _MSC_VER & !defined( restrict ) // Microsoft Visual Studio
 	#define restrict  __restrict
 #endif
 

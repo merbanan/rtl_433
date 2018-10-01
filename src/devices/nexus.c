@@ -19,9 +19,7 @@
  * The sensor can be bought at Clas Ohlsen
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 extern int rubicson_crc_check(bitrow_t *bb);
 

@@ -10,6 +10,7 @@
  * (at your option) any later version.
  */
 
+#include "pch.h"
 #include "bitbuffer.h"
 #include <stdio.h>
 #include <stdlib.h>

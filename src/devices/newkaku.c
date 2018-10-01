@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */

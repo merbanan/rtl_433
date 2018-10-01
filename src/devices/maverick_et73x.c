@@ -39,8 +39,7 @@
 **/
 
 
-#include "rtl_433.h"
-#include "util.h"
+#include "pch.h"
 
 #define MAV_MESSAGE_LENGTH 104
 #define TEMPERATURE_START_POSITION_S1 8

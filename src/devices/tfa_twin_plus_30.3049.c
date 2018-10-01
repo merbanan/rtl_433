@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 /*
  * TFA-Twin-Plus-30.3049

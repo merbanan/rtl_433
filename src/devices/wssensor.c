@@ -21,9 +21,7 @@
  *   I = sensor ID
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 #define MODEL "WS Temperature Sensor"
 #define WS_PACKETLEN	24

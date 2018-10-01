@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 
+#include "pch.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 #include "util.h"
@@ -84,6 +85,7 @@ void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint3
 	else
 		scale = 10000000 / sample_rate; // unit: 100 ns
 	intmax_t pos = data->offset;
+#ifndef _WIN32	// Does not understand %zd. Compiler suggests %jd
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		if (n == 0)
 			fprintf(file, "#%zd 1/ 1%c\n", (intmax_t)(pos * scale), ch_id);
@@ -95,6 +97,19 @@ void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint3
 	}
 	if (data->num_pulses > 0)
 		fprintf(file, "#%zd 0/\n", (intmax_t)(pos * scale));
+#else
+	for (unsigned n = 0; n < data->num_pulses; ++n) {
+		if (n == 0)
+			fprintf(file, "#%jd 1/ 1%c\n", (intmax_t)(pos * scale), ch_id);
+		else
+			fprintf(file, "#%jd 1%c\n", (intmax_t)(pos * scale), ch_id);
+		pos += data->pulse[n];
+		fprintf(file, "#%jd 0%c\n", (intmax_t)(pos * scale), ch_id);
+		pos += data->gap[n];
+	}
+	if (data->num_pulses > 0)
+		fprintf(file, "#%jd 0/\n", (intmax_t)(pos * scale));
+#endif
 }
 
 

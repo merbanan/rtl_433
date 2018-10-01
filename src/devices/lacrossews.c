@@ -17,9 +17,7 @@
 	48-51	12 - Check Sum = Nibble sum of nibbles 0-11
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 #define LACROSSE_WS_BITLEN	52
 

@@ -14,7 +14,7 @@
 #include "data.h"
 
 #ifdef _WIN32
-#include <windows.h>
+//#include <windows.h>
 #include <io.h>
 #include <fcntl.h>
 #ifdef _MSC_VER

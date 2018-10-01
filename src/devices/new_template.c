@@ -27,9 +27,7 @@
 
 /* Use this as a starting point for a new decoder. */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "pch.h"
 
 /*
  * Hypothetical template device

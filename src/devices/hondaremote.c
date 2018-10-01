@@ -8,9 +8,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+
+#include "pch.h"
 
 static const char* command_code[] ={"boot", "unlock" , "lock",};
 
@@ -48,7 +47,7 @@ static int hondaremote_callback(bitbuffer_t *bitbuffer) {
 
 //call function to lookup what button was pressed
 			const char* code = get_command_codes(bytes);
-			device_id = bytes[44]<<8 | bytes[45];
+			device_id = (bytes[44]<<8|bytes[45]);
 
 			/* Get time now */
 			local_time_str(0, time_str);

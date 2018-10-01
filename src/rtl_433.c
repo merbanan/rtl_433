@@ -20,6 +20,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "pch.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -31,6 +32,11 @@
 #include "data.h"
 #include "util.h"
 #include "optparse.h"
+//	Not in rtl_433.h because it includes ws2defs.h which conflicts with
+//	winsock2.h used in data.c
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 #define MAX_DATA_OUTPUTS 32
 

@@ -16,9 +16,7 @@
  * C = Checksum, CRC-8 truncated poly 0x07 init 0x00
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "pch.h"
 
 // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
 static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits

@@ -10,10 +10,7 @@
  * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 static int kerui_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];

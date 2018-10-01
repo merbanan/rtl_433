@@ -1,7 +1,3 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
-
 /* Conrad Electronics S3318P outdoor sensor
  *
  * Transmit Interval: every ~50s
@@ -49,6 +45,7 @@
  *
  */
 
+#include "pch.h"
 
 static int s3318p_callback(bitbuffer_t *bitbuffer) {
     uint8_t *b;
