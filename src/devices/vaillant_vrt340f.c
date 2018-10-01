@@ -1,8 +1,3 @@
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
-
 // Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
 //     http://wiki.kainhofer.com/hardware/vaillantvrt340f
 // The data is sent differential Manchester encoded
@@ -23,6 +18,8 @@
 
 // Copyright (C) 2017 Reinhold Kainhofer <reinhold@kainhofer.com>
 // License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
+
+#include "pch.h"
 
 static int16_t
 calculate_checksum (uint8_t *buff, int from, int to) {

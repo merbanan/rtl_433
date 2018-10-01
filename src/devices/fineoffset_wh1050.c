@@ -38,10 +38,7 @@
  */
 
 
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
-#include "math.h"
+#include "pch.h"
 
 #define CRC_POLY 0x31
 #define CRC_INIT 0xff

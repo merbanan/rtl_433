@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 /*
  * Brennenstuhl RCS 2044 remote control on 433.92MHz

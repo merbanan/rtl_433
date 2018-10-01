@@ -47,3 +47,10 @@ build/
 
 *.orig
 *~
+/include/rtlsdr
+/include/rtlsdr/rtl-sdr_export.h
+/include/rtlsdr/rtl-sdr.h
+.vs
+x86
+/vs17/rtlsdr.lib
+/vs17/rtlsdr.dll

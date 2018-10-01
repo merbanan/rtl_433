@@ -12,10 +12,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 //33 pulses per data pattern
 #define	DB286A_PULSECOUNT		33

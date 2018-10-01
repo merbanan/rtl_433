@@ -34,8 +34,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+
+#include "pch.h"
 
 #define NUM_BYTES 10	// Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
 static const uint8_t HEADER[] = { 0x36, 0x5c };	// Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)

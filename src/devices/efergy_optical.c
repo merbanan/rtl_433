@@ -18,9 +18,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];

@@ -25,9 +25,7 @@
  */
 
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "pch.h"
 
 static int steelmate_callback(bitbuffer_t *bitbuffer) {
 	//if (debug_output >= 1) {

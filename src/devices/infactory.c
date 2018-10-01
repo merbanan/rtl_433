@@ -26,9 +26,7 @@
  *
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 static int infactory_callback(bitbuffer_t *bitbuffer) {
 

@@ -12,9 +12,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-
+#include "pch.h"
 
 // Frame preamble:
 // 11001100 11001100 11001100 11001100 11001100 11111111 00000000

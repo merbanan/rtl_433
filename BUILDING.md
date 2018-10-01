@@ -41,6 +41,8 @@ The final 'make install' step should be run as a user with appropriate permissio
 
 ### mingw-w64
 
+Compiling rtl_433 requires [rtl-sdr](http://sdr.osmocom.org/trac/wiki/rtl-sdr) to be installed.
+
 You'll need librtlsdr and libusb, they are dependencies for rtl_433.
 
 libusb has prebuilt binaries for windows, 
@@ -116,3 +118,30 @@ SET(THREADS_FOUND TRUE)
 * rtl_433.exe should be built now
 * you need to place it in the same folder as librtlsdr.dll and libusb-1.0.dll (you should have seen both of them by now)
 * good luck!
+
+### Visual Studio 17 Community edition
+
+You'll need librtlsdr and libusb, they are dependencies for rtl_433.
+
+libusb has prebuilt binaries for windows, 
+librtlsdr needs to be built (at least for the latest version, some binaries 
+of older versions seem to be floating around)
+
+You will also need rtlsdr files, (http://sdr.osmocom.org/trac/wiki/rtl-sdr) or (https://github.com/ms-jdow/rtlsdr-Cplusplus-VS2010) to be installed. If you use ms-jdow then at this time comment out the function at line 53, "//RTLSDR_API int rtlsdr_get_device_usb_cstrings( uint32_t index" if it is still there in the version you download.
+
+Compile the rtlsdr++ project and place .lib files from its output directories, x86 and x64 into a directory structure that looks like this:
+rtlsdr_libs
+    x64
+        debug
+            rtlsdr.lib
+        release
+            rtlsdr.lib
+    x86
+        debug
+            rtlsdr.lib
+        release
+            rtlsdr.lib
+
+You may want to copy over the dll files to that structure as well. You'll want them at run time. Copy the appropriate one of them into the folder in which you are running rtl433.
+
+Once that is done load the VS17.sln file into Visual Studio 17, build, and you're ready to go.

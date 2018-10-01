@@ -1,5 +1,3 @@
-#include "rtl_433.h"
-#include "util.h"
 /* Inovalley kw9015b rain and Temperature weather station
  *
  * Copyright (C) 2015 Alexandre Coffignal
@@ -8,6 +6,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+
+#include "pch.h"
 
 extern uint8_t reverse8(uint8_t x);
 

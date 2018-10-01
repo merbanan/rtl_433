@@ -17,9 +17,7 @@
  * [03] {78} 03 e0 01 e4 e0 90 52 97 39 60
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 static int fordremote_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;

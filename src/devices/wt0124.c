@@ -28,10 +28,7 @@ X = xor checksum
 
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-
+#include "pch.h"
 
 static int wt1024_callback(bitbuffer_t *bitbuffer)
 {

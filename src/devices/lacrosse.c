@@ -42,9 +42,7 @@
  * - Make the time stamp output a general utility function.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "pch.h"
 
 #define LACROSSE_TX_BITLEN        44
 #define LACROSSE_NYBBLE_CNT        11

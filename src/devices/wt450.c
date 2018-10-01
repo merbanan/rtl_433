@@ -53,10 +53,7 @@
  * p - parity (xor of all bits should give 0)
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "pulse_demod.h"
-#include "data.h"
+#include "pch.h"
 
 static int wt450_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;

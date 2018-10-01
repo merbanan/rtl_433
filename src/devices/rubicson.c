@@ -1,6 +1,3 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
 /* Currently this can decode the temperature and id from Rubicson sensors
  *
  * the sensor sends 36 bits 12 times pwm modulated
@@ -18,6 +15,7 @@
  * The sensor can be bought at Kjell&Co
  */
 
+#include "pch.h"
 
 /* Working routine for checking the crc, lots of magic but it works */
 

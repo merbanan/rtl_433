@@ -66,8 +66,7 @@
  *
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "pch.h"
 
 #define DSC_CT_MSGLEN        5
 #define DSC_CT_CRC_POLY        0xf5

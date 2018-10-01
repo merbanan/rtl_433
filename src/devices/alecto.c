@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 /* Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
  * Message Format: (9 nibbles, 36 bits):

@@ -22,9 +22,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 static float
 get_temperature (uint8_t * msg)

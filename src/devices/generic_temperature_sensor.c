@@ -7,10 +7,8 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
 
+#include "pch.h"
 
 static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;

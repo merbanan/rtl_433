@@ -42,9 +42,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "pch.h"
 
 static int wg_pb12v1_callback(bitbuffer_t *bitbuffer) {
     /* This function detects if the packet (bitbuffer) is from a WG-PB12V1

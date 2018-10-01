@@ -30,9 +30,8 @@
  * LSB                 MSB
  * ffffff45 01236pHH hhhhh Encoding
 */
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+
+#include "pch.h"
 
 static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;

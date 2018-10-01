@@ -10,6 +10,7 @@
  * (at your option) any later version.
  */
 
+#include "pch.h"
 #include "pulse_demod.h"
 #include "bitbuffer.h"
 #include "util.h"

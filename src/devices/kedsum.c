@@ -20,9 +20,8 @@
    hhhh humidity low nibble
    HHHH humidity high nibble
 */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+
+#include "pch.h"
 
 static int kedsum_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;

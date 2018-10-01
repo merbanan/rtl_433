@@ -16,9 +16,7 @@
 *
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "pch.h"
 
 static int honeywell_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
