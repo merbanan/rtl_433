@@ -132,7 +132,6 @@ void usage(r_device *devices, int exit_code)
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
-            "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
@@ -1076,7 +1075,6 @@ int main(int argc, char **argv) {
     int r = 0, opt;
     int gain = 0;
     uint32_t i = 0;
-    int sync_mode = 0;
     int ppm_error = 0;
     struct dm_state *demod;
     int dev_index = 0;
@@ -1107,7 +1105,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:X:F:C:T:UWGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:R:X:F:C:T:UWGy:E")) != -1) {
         switch (opt) {
             case 'h':
                 usage(devices, 0);
@@ -1165,9 +1163,6 @@ int main(int argc, char **argv) {
             case 'm':
                 fprintf(stderr, "sample mode option is deprecated.\n");
                 usage(devices, 1);
-                break;
-            case 'S':
-                sync_mode = 1;
                 break;
             case 'D':
                 debug_output++;
@@ -1511,56 +1506,6 @@ int main(int argc, char **argv) {
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-    if (sync_mode) {
-        if (!demod->out_file) {
-            fprintf(stderr, "Specify an output file for sync mode.\n");
-            exit(0);
-        }
-
-        fprintf(stderr, "Reading samples in sync mode...\n");
-        uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
-
-        if (duration > 0) {
-            time(&stop_time);
-            stop_time += duration;
-        }
-        time_t timestamp;
-        while (!do_exit) {
-            r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
-            if (r < 0) {
-                fprintf(stderr, "WARNING: sync read failed.\n");
-                break;
-            }
-
-            if ((bytes_to_read > 0) && (bytes_to_read < (uint32_t) n_read)) {
-                n_read = bytes_to_read;
-                do_exit = 1;
-            }
-
-            if (fwrite(buffer, 1, n_read, demod->out_file) != (size_t) n_read) {
-                fprintf(stderr, "Short write, samples lost, exiting!\n");
-                break;
-            }
-
-            if ((uint32_t) n_read < out_block_size) {
-                fprintf(stderr, "Short read, samples lost, exiting!\n");
-                break;
-            }
-
-            if (duration > 0) {
-                time(&timestamp);
-                if (timestamp >= stop_time) {
-                    do_exit = 1;
-                    fprintf(stderr, "Time expired, exiting!\n");
-                }
-            }
-
-            if (bytes_to_read > 0)
-                bytes_to_read -= n_read;
-        }
-
-        free(buffer);
-    } else {
         if (frequencies == 0) {
             frequency[0] = DEFAULT_FREQUENCY;
             frequencies = 1;
@@ -1598,7 +1543,6 @@ int main(int argc, char **argv) {
             do_exit_async = 0;
             frequency_current = (frequency_current + 1) % frequencies;
         }
-    }
 
     if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
