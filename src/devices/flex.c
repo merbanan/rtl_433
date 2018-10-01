@@ -23,7 +23,7 @@ unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_co
     unsigned shr = 8 * len - shl - bit_count; // actual shift right
 //    printf("pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
     unsigned long val = data[pos];
-    // TODO: mask off top bits
+    val = (uint8_t)(val << shl) >> shl; // mask off top bits
     for (unsigned i = 1; i < len - 1; ++i) {
         val = val << 8 | data[pos + i];
     }
@@ -353,6 +353,9 @@ static void parse_getter(const char *arg, struct flex_get *getter)
             getter->name = strdup(arg);
         arg = p;
     }
+    if (debug_output)
+        fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",
+                getter->bit_offset, getter->bit_count, getter->mask, getter->name);
 }
 
 r_device *flex_create_device(char *spec)
