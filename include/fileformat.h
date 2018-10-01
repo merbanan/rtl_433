@@ -13,6 +13,7 @@
 #define INCLUDE_FILEFORMAT_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 // a single handy number to define the file type.
 // bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
@@ -73,6 +74,7 @@ typedef struct {
     uint32_t sample_rate;
     char const *spec;
     char const *path;
+    FILE *file;
 } file_info_t;
 
 int parse_file_info(const char *filename, file_info_t *info);
