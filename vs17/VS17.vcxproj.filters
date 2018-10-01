@@ -24,9 +24,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\baseband.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -56,6 +53,9 @@
     </ClInclude>
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files\getopt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pch.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -362,10 +362,10 @@
     <ClCompile Include="..\src\getopt\getopt.c">
       <Filter>Source Files\GetOpt</Filter>
     </ClCompile>
-    <ClCompile Include="pch.c">
+    <ClCompile Include="..\src\data.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\data.c">
+    <ClCompile Include="..\src\pch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
