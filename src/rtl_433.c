@@ -75,7 +75,6 @@ static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 uint16_t num_r_devices = 0;
 
 struct dm_state {
-    FILE *out_file;
     int32_t level_limit;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
     union {
@@ -754,7 +753,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
-    if (demod->analyze || (demod->out_file == stdout)) {    // We don't want to decode devices when outputting to stdout
+    if (demod->analyze || (demod->dump_info.file == stdout)) {    // We don't want to decode devices when outputting to stdout
         pwm_analyze(demod, demod->am_buf, n_samples);
     } else {
         // Detect a package and loop through demodulators with pulse data
@@ -805,7 +804,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->pulse_data, '\'', samp_rate);
+                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->dump_info.file, &demod->pulse_data, '\'', samp_rate);
                 if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
@@ -839,7 +838,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->fsk_pulse_data, '"', samp_rate);
+                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->dump_info.file, &demod->fsk_pulse_data, '"', samp_rate);
                 if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
@@ -858,7 +857,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     } // if (demod->analyze...
 
-    if (demod->out_file && demod->dump_info.format != VCD_LOGIC) {
+    if (demod->dump_info.file && demod->dump_info.format != VCD_LOGIC) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
@@ -907,7 +906,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_len = n_samples;
         }
 
-        if (fwrite(out_buf, 1, out_len, demod->out_file) != out_len) {
+        if (fwrite(out_buf, 1, out_len, demod->dump_info.file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
             rtlsdr_cancel_async(dev);
         }
@@ -1409,7 +1408,7 @@ int main(int argc, char **argv) {
     if (out_filename) {
         parse_file_info(out_filename, &demod->dump_info);
         if (strcmp(demod->dump_info.path, "-") == 0) { /* Write samples to stdout */
-            demod->out_file = stdout;
+            demod->dump_info.file = stdout;
 #ifdef _WIN32
             _setmode(_fileno(stdin), _O_BINARY);
 #endif
@@ -1418,14 +1417,14 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
                 goto out;
             }
-            demod->out_file = fopen(demod->dump_info.path, "wb");
-            if (!demod->out_file) {
+            demod->dump_info.file = fopen(demod->dump_info.path, "wb");
+            if (!demod->dump_info.file) {
                 fprintf(stderr, "Failed to open %s\n", out_filename);
                 goto out;
             }
         }
         if (demod->dump_info.format == VCD_LOGIC) {
-            pulse_data_print_vcd_header(demod->out_file, samp_rate);
+            pulse_data_print_vcd_header(demod->dump_info.file, samp_rate);
         }
     }
 
@@ -1547,8 +1546,8 @@ int main(int argc, char **argv) {
     if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    if (demod->out_file && (demod->out_file != stdout))
-        fclose(demod->out_file);
+    if (demod->dump_info.file && (demod->dump_info.file != stdout))
+        fclose(demod->dump_info.file);
 
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);
