@@ -21,21 +21,20 @@
  */
 
 #include "pch.h"
-#include <stdbool.h>
-#include <stddef.h>
 
 #include "rtl-sdr.h"
 #include "rtl_433.h"
-#include "baseband.h"
-#include "pulse_detect.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "rtl_433_devices.h"
+
 #include "optparse.h"
 //	Not in rtl_433.h because it includes ws2defs.h which conflicts with
 //	winsock2.h used in data.c
 #ifdef _WIN32
-#include <windows.h>
+	#include <windows.h>
+	#ifdef _MSC_VER
+		#include "getopt/getopt.h"
+		#define F_OK 0
+	#endif
 #endif
 
 #define MAX_DATA_OUTPUTS 32

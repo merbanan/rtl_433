@@ -11,11 +11,7 @@
 #include "pch.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
-#include "util.h"
-#include "rtl_433.h"
 #include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 void pulse_data_clear(pulse_data_t *data) {
 	*data = (const pulse_data_t) {

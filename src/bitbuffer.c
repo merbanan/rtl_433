@@ -12,9 +12,6 @@
 
 #include "pch.h"
 #include "bitbuffer.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 void bitbuffer_clear(bitbuffer_t *bits) {

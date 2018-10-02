@@ -3,25 +3,17 @@
 
 #include <errno.h>
 #include <signal.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <stdint.h>
 
-#include "rtl_433_devices.h"
-#include "bitbuffer.h"
-#include "data.h"
+//#include "rtl_433_devices.h"
+#include "pulse_detect.h"
+#include "pulse_demod.h"
 
-#ifdef _WIN32
-//#include <windows.h>
-#include <io.h>
-#include <fcntl.h>
-#ifdef _MSC_VER
-#include "getopt/getopt.h"
-#define F_OK 0
-#endif
-#endif
+//#ifdef _WIN32
+//#ifdef _MSC_VER
+//#include "getopt/getopt.h"
+//#define F_OK 0
+//#endif
+//#endif
 #ifndef _MSC_VER
 #include <unistd.h>
 #include <getopt.h>
@@ -46,25 +38,6 @@
 #define MAX_PROTOCOLS           109
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
-/* Supported modulation types */
-#define	OOK_PULSE_MANCHESTER_ZEROBIT	3	// Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
-#define	OOK_PULSE_PCM_RZ		4			// Pulse Code Modulation with Return-to-Zero encoding, Pulse = 0, No pulse = 1
-#define	OOK_PULSE_PPM_RAW		5			// Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
-#define	OOK_PULSE_PWM_PRECISE	6			// Pulse Width Modulation with precise timing parameters
-#define	OOK_PULSE_PWM_RAW		7			// DEPRECATED; Pulse Width Modulation. Short pulses = 1, Long = 0
-#define	OOK_PULSE_PIWM_RAW     	8			// Level shift for each bit. Short interval = 1, Long = 0
-#define	OOK_PULSE_PIWM_DC      	11			// Level shift for each bit. Short interval = 1, Long = 0
-#define	OOK_PULSE_DMC       	9			// Level shift within the clock cycle.
-#define	OOK_PULSE_PWM_OSV1		10			// Pulse Width Modulation. Oregon Scientific v1
-
-#define	FSK_DEMOD_MIN_VAL		16			// Dummy. FSK demodulation must start at this value
-#define	FSK_PULSE_PCM			16			// FSK, Pulse Code Modulation
-#define	FSK_PULSE_PWM_RAW		17			// FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
-#define FSK_PULSE_MANCHESTER_ZEROBIT 18		// FSK, Manchester encoding
-
-extern int debug_output;
-extern float sample_file_pos;
-
 struct protocol_state {
     int (*callback)(bitbuffer_t *bitbuffer);
 
@@ -83,7 +56,5 @@ struct protocol_state {
     char *name;
     unsigned demod_arg;
 };
-
-void data_acquired_handler(data_t *data);
 
 #endif /* INCLUDE_RTL_433_H_ */

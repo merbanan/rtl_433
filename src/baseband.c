@@ -13,12 +13,6 @@
  */
 
 #include "pch.h"
-#include "baseband.h"
-#include "util.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
 
 
 static uint16_t scaled_squares[256];

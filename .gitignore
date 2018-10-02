@@ -54,3 +54,4 @@ build/
 x86
 /vs17/rtlsdr.lib
 /vs17/rtlsdr.dll
+/vs17/x64

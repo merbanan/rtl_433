@@ -21,10 +21,6 @@
 #include "pch.h"
 #include <stdarg.h>
 #include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 #include "limits.h"
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #define _XOPEN_SOURCE 500
