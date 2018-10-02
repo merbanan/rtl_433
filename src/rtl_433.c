@@ -109,7 +109,7 @@ struct dm_state {
     pulse_data_t    fsk_pulse_data;
 };
 
-void version()
+void version(void)
 {
     fprintf(stderr, "rtl_433 " VERSION "\n");
     exit(0);
@@ -153,24 +153,70 @@ void usage(r_device *devices, int exit_code)
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
-            "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
-            "\t[-T] specify number of seconds to run\n"
+            "\t[-T] Specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-V] Output the version string and exit\n"
-            "\t[-h] Output this usage help and exit\n\n",
+            "\t[-h] Output this usage help and exit\n"
+            "\t\t Use -R, -X, -F, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
-    fprintf(stderr, "Supported device protocols:\n");
-    for (i = 0; i < num_r_devices; i++) {
-        disabledc = devices[i].disabled ? '*' : ' ';
-        fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+    if (devices) {
+        fprintf(stderr, "Supported device protocols:\n");
+        for (i = 0; i < num_r_devices; i++) {
+            disabledc = devices[i].disabled ? '*' : ' ';
+            fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+        }
+        fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
     }
-    fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
-
     exit(exit_code);
+}
+
+void help_output(void)
+{
+    fprintf(stderr,
+            "[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+    exit(0);
+}
+
+void help_read(void)
+{
+    fprintf(stderr,
+            "[-r <filename>] Read data from input file instead of a receiver\n"
+            "\tParameters are detected from the full path, file name, and extension.\n\n"
+            "\tA center frequency is detected as (fractional) number suffixed with 'M',\n"
+            "\t'Hz', 'kHz', 'MHz', or 'GHz'.\n\n"
+            "\tA sample rate is detected as (fractional) number suffixed with 'k',\n"
+            "\t'sps', 'ksps', 'Msps', or 'Gsps'.\n\n"
+            "\tFile content and format are detected as parameters, possible options are:\n"
+            "\t'cu8', 'cs16', 'cf32' ('IQ' implied), and 'am.s16'.\n\n"
+            "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
+            "\tOverrides can be prefixed, separated by colon (':')\n\n"
+            "\tE.g. default detection by extension: path/filename.am.s16\n"
+            "\tforced overrides: am:s16:path/filename.ext\n");
+    exit(0);
+}
+
+void help_write(void)
+{
+    fprintf(stderr,
+            "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "[-W <filename>] Save data stream to output file, overwrite existing file\n"
+            "\tParameters are detected from the full path, file name, and extension.\n\n"
+            "\tFile content and format are detected as parameters, possible options are:\n"
+            "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
+            "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
+            "\t'i.f32', 'q.f32', 'logic.u8', and 'vcd'.\n\n"
+            "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
+            "\tOverrides can be prefixed, separated by colon (':')\n\n"
+            "\tE.g. default detection by extension: path/filename.am.s16\n"
+            "\tforced overrides: am:s16:path/filename.ext\n");
+    exit(0);
 }
 
 #ifdef _WIN32
@@ -364,7 +410,7 @@ void data_acquired_handler(data_t *data)
     data_free(data);
 }
 
-static void classify_signal() {
+static void classify_signal(void) {
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
@@ -1149,7 +1195,7 @@ int main(int argc, char **argv) {
     while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
         switch (opt) {
             case 'h':
-                usage(devices, 0);
+                usage(NULL, 0);
                 break;
             case 'V':
                 version();
@@ -1196,12 +1242,15 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_read();
                 // TODO: check_read_file_info()
                 break;
             case 'w':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
                 add_dumper(optarg, demod->dumper, 0);
                 break;
             case 'W':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
                 add_dumper(optarg, demod->dumper, 1);
                 break;
             case 't':
@@ -1209,7 +1258,7 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 fprintf(stderr, "sample mode option is deprecated.\n");
-                usage(devices, 1);
+                usage(NULL, 1);
                 break;
             case 'D':
                 debug_output++;
@@ -1221,6 +1270,8 @@ int main(int argc, char **argv) {
                 override_long = atoi(optarg);
                 break;
             case 'R':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) usage(devices, 0);
+
                 if (!have_opt_R) {
                     for (i = 0; i < num_r_devices; i++) {
                         devices[i].disabled = 1;
@@ -1251,6 +1302,7 @@ int main(int argc, char **argv) {
                 quiet_mode = 1;
                 break;
             case 'F':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_output();
                 if (strncmp(optarg, "json", 4) == 0) {
                     add_json_output(arg_param(optarg));
                 } else if (strncmp(optarg, "csv", 3) == 0) {
@@ -1261,7 +1313,7 @@ int main(int argc, char **argv) {
                     add_syslog_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(devices, 1);
+                    usage(NULL, 1);
                 }
                 break;
             case 'C':
@@ -1273,7 +1325,7 @@ int main(int argc, char **argv) {
                     conversion_mode = CONVERT_CUSTOMARY;
                 } else {
                     fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(devices, 1);
+                    usage(NULL, 1);
                 }
                 break;
             case 'U':
@@ -1299,13 +1351,20 @@ int main(int argc, char **argv) {
                 stop_after_successful_events_flag = 1;
                 break;
             default:
-                usage(devices, 1);
+                // handle missing arguments as help request
+                if (optopt == 'R') usage(devices, 0);
+                else if (optopt == 'X') flex_create_device(NULL);
+                else if (optopt == 'F') help_output();
+                else if (optopt == 'r') help_read();
+                else if (optopt == 'w') help_write();
+                else if (optopt == 'W') help_write();
+                else usage(NULL, 1);
                 break;
         }
     }
 
     if (argc <= optind - 1) {
-        usage(devices, 1);
+        usage(NULL, 1);
     } else {
         out_filename = argv[optind]; // deprecated
     }
