@@ -34,6 +34,7 @@
 #include "fileformat.h"
 
 #define MAX_DATA_OUTPUTS 32
+#define MAX_DUMP_OUTPUTS 8
 
 #ifdef GIT_VERSION
 #define STR_VALUE(arg) #arg
@@ -63,7 +64,6 @@ int include_only = 0;  // Option -I
 int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
-int overwrite_mode = 0;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -91,7 +91,7 @@ struct dm_state {
     int analyze;
     int analyze_pulses;
     file_info_t load_info;
-    file_info_t dump_info;
+    file_info_t dumper[MAX_DUMP_OUTPUTS];
     int hop_time;
 
     /* Signal grabber variables */
@@ -145,12 +145,13 @@ void usage(r_device *devices, int exit_code)
             "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
-            "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
             "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
+            "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -159,8 +160,7 @@ void usage(r_device *devices, int exit_code)
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-V] Output the version string and exit\n"
-            "\t[-h] Output this usage help and exit\n"
-            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
+            "\t[-h] Output this usage help and exit\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     fprintf(stderr, "Supported device protocols:\n");
@@ -639,7 +639,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     while (1) {
                         sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, frequency[0] / 1000000.0, samp_rate / 1000.0);
                         demod->signal_grabber++;
-                        if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
+                        if (access(sgf_name, F_OK) == -1) {
                             break;
                         }
                     }
@@ -753,13 +753,18 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
-    if (demod->analyze || (demod->dump_info.file == stdout)) {    // We don't want to decode devices when outputting to stdout
+    if (demod->analyze) {
         pwm_analyze(demod, demod->am_buf, n_samples);
     } else {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
-        if (demod->dump_info.format == U8_LOGIC) memset(demod->u8_buf, 0, n_samples);
+        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+            if (dumper->format == U8_LOGIC) {
+                memset(demod->u8_buf, 0, n_samples);
+                break;
+            }
+        }
         while (package_type) {
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
@@ -804,8 +809,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->dump_info.file, &demod->pulse_data, '\'', samp_rate);
-                if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                }
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, samp_rate);
@@ -838,8 +845,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_info.format == VCD_LOGIC) pulse_data_print_vcd(demod->dump_info.file, &demod->fsk_pulse_data, '"', samp_rate);
-                if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                }
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
@@ -848,8 +857,13 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         } // while (package_type)...
 
         // dump partial pulse_data for this buffer
-        if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
-        if (demod->dump_info.format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+            if (dumper->format == U8_LOGIC) {
+                pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                break;
+            }
+        }
 
         if (stop_after_successful_events_flag && (p_events > 0)) {
             do_exit = do_exit_async = 1;
@@ -857,31 +871,33 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     } // if (demod->analyze...
 
-    if (demod->dump_info.file && demod->dump_info.format != VCD_LOGIC) {
+    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+        if (!dumper->file || dumper->format == VCD_LOGIC)
+            continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
-        if (demod->dump_info.format == S16_AM) {
+        if (dumper->format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_info.format == S16_FM) {
+        } else if (dumper->format == S16_FM) {
             out_buf = (uint8_t *)demod->buf.fm;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_info.format == F32_AM) {
+        } else if (dumper->format == F32_AM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_info.format == F32_FM) {
+        } else if (dumper->format == F32_FM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_info.format == F32_I) {
+        } else if (dumper->format == F32_I) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -891,7 +907,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_info.format == F32_Q) {
+        } else if (dumper->format == F32_Q) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -901,12 +917,12 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_info.format == U8_LOGIC) { // state data
+        } else if (dumper->format == U8_LOGIC) { // state data
             out_buf = demod->u8_buf;
             out_len = n_samples;
         }
 
-        if (fwrite(out_buf, 1, out_len, demod->dump_info.file) != out_len) {
+        if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
             rtlsdr_cancel_async(dev);
         }
@@ -1059,6 +1075,32 @@ void add_syslog_output(char *param)
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
+void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
+{
+    while (dumper->spec && *dumper->spec) ++dumper; // TODO: check MAX_DUMP_OUTPUTS
+
+    parse_file_info(spec, dumper);
+    if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
+        dumper->file = stdout;
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
+    } else {
+        if (access(dumper->path, F_OK) == 0 && !overwrite) {
+            fprintf(stderr, "Output file %s already exists, exiting\n", spec);
+            exit(1);
+        }
+        dumper->file = fopen(dumper->path, "wb");
+        if (!dumper->file) {
+            fprintf(stderr, "Failed to open %s\n", spec);
+            exit(1);
+        }
+    }
+    if (dumper->format == VCD_LOGIC) {
+        pulse_data_print_vcd_header(dumper->file, samp_rate);
+    }
+}
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 int main(int argc, char **argv) {
@@ -1104,7 +1146,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:R:X:F:C:T:UWGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
         switch (opt) {
             case 'h':
                 usage(devices, 0);
@@ -1155,6 +1197,12 @@ int main(int argc, char **argv) {
             case 'r':
                 in_filename = optarg;
                 // TODO: check_read_file_info()
+                break;
+            case 'w':
+                add_dumper(optarg, demod->dumper, 0);
+                break;
+            case 'W':
+                add_dumper(optarg, demod->dumper, 1);
                 break;
             case 't':
                 demod->signal_grabber = 1;
@@ -1238,9 +1286,6 @@ int main(int argc, char **argv) {
                     fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
 #endif
                 break;
-            case 'W':
-                overwrite_mode = 1;
-                break;
             case 'T':
                 duration = atoi_time(optarg, "-T: ");
                 if (duration < 1) {
@@ -1262,7 +1307,7 @@ int main(int argc, char **argv) {
     if (argc <= optind - 1) {
         usage(devices, 1);
     } else {
-        out_filename = argv[optind];
+        out_filename = argv[optind]; // deprecated
     }
 
     if (last_output_handler < 1) {
@@ -1406,26 +1451,7 @@ int main(int argc, char **argv) {
     }
 
     if (out_filename) {
-        parse_file_info(out_filename, &demod->dump_info);
-        if (strcmp(demod->dump_info.path, "-") == 0) { /* Write samples to stdout */
-            demod->dump_info.file = stdout;
-#ifdef _WIN32
-            _setmode(_fileno(stdin), _O_BINARY);
-#endif
-        } else {
-                if (access(demod->dump_info.path, F_OK) == 0 && !overwrite_mode) {
-                fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
-                goto out;
-            }
-            demod->dump_info.file = fopen(demod->dump_info.path, "wb");
-            if (!demod->dump_info.file) {
-                fprintf(stderr, "Failed to open %s\n", out_filename);
-                goto out;
-            }
-        }
-        if (demod->dump_info.format == VCD_LOGIC) {
-            pulse_data_print_vcd_header(demod->dump_info.file, samp_rate);
-        }
+        add_dumper(out_filename, demod->dumper, 0); // deprecated
     }
 
     if (demod->signal_grabber)
@@ -1546,8 +1572,9 @@ int main(int argc, char **argv) {
     if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    if (demod->dump_info.file && (demod->dump_info.file != stdout))
-        fclose(demod->dump_info.file);
+    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper)
+        if (dumper->file && (dumper->file != stdout))
+            fclose(dumper->file);
 
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);
