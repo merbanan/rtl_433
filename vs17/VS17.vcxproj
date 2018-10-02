@@ -291,6 +291,7 @@
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\util.c" />
+    <ClCompile Include="fineoffset_wh31.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

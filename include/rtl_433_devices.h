@@ -112,9 +112,13 @@
 		DECL(m_bus_mode_r) \
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
-		DECL(wt1024)
+		DECL(wt1024) \
+		DECL( fineoffset_WH31 )
+
+#define MAX_PROTOCOLS           112		// Two extras for user defined protocols.
 
 #define DECL(name) extern r_device name;
+
 DEVICES
 #undef DECL
 

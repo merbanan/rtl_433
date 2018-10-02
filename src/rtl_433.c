@@ -254,8 +254,8 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
         fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
-    fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
-    exit(-1);
+		fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
+		exit(-1);
     }
 }
 
@@ -1134,6 +1134,14 @@ int main(int argc, char **argv) {
             };
 
     num_r_devices = sizeof(devices) / sizeof(*devices);
+	if ( num_r_devices > MAX_PROTOCOLS )
+	{
+        fprintf(stderr, "\n\nAvailable number of protocols is %d but MAX_PROTCOLS is %d\n", num_r_devices, MAX_PROTOCOLS );
+		fprintf(stderr, "Increase MAX_PROTOCOLS to >= the number of available protocols and recompile.\n\n\n");
+#if defined( _DEBUG )
+		exit(-1);
+#endif
+    }
 
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
