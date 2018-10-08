@@ -26,6 +26,9 @@
     <ClInclude Include="..\include\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fileformat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\optparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -56,6 +59,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\fileformat.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\optparse.c">

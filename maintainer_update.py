@@ -53,7 +53,7 @@ require_clean_work_tree()
 # Get the help text
 try:
     help_text = subprocess.check_output(
-        ["./build/src/rtl_433", "-h"], stderr=subprocess.STDOUT)
+        ["./build/src/rtl_433", "-R"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError as e:
     help_text = e.output
 
