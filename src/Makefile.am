@@ -6,6 +6,7 @@ bin_PROGRAMS         = rtl_433
 rtl_433_SOURCES      = baseband.c \
                        bitbuffer.c \
                        data.c \
+                       fileformat.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \

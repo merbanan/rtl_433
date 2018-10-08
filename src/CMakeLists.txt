@@ -20,6 +20,7 @@ add_executable(rtl_433
 	baseband.c
 	bitbuffer.c
 	data.c
+	fileformat.c
 	optparse.c
 	pulse_demod.c
 	pulse_detect.c
