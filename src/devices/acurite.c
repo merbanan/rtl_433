@@ -33,6 +33,7 @@
 #define ACURITE_MSGTYPE_6045M                           0x2f
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
+#define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1     0x20
 
 
 static char time_str[LOCAL_TIME_BUFLEN];
@@ -722,6 +723,27 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
                 "time",         "",   DATA_STRING,    time_str,
                 "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
                 "sensor_id",    NULL, DATA_INT,  sensor_id, // @todo normalize to "id" at 1.0 release.
+                "channel",      NULL,   DATA_STRING,    &channel_str,
+                "sequence_num",  NULL,   DATA_INT,      sequence_num,
+                "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                "message_type", NULL,   DATA_INT,       message_type,
+                "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
+                "temperature_F", 	"temperature",	DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                "humidity",     NULL,	DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                NULL);
+            data_acquired_handler(data);
+
+	    } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1) {
+            // Wind speed, temperature and humidity for 3-n-1
+            sensor_id = ((bb[0] & 0x3f) << 8) | bb[1]; // 3-n-1 sensor ID is the bottom 14 bits of byte 0 & 1
+            humidity = acurite_getHumidity(bb[3]);
+            tempf = acurite_getTemp(bb[4], bb[5]) - 108; // regression yields (rawtemp-1480)*0.1
+            wind_speed_mph = bb[6] & 0x7f; // seems to be plain MPH
+
+            data = data_make(
+                "time",         "",   DATA_STRING,    time_str,
+                "model",        "",   DATA_STRING,    "Acurite 3n1 sensor",
+                "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                 "channel",      NULL,   DATA_STRING,    &channel_str,
                 "sequence_num",  NULL,   DATA_INT,      sequence_num,
                 "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
