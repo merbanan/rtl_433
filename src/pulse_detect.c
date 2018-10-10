@@ -30,7 +30,7 @@ void pulse_data_print(const pulse_data_t *data) {
 	}
 }
 
-static void *bounded_memset(void *b, int c, intmax_t size, intmax_t offset, intmax_t len)
+static void *bounded_memset(void *b, int c, int64_t size, int64_t offset, int64_t len)
 {
 	if (offset < 0) {
 		len += offset; // reduce len by negative offset
@@ -44,9 +44,9 @@ static void *bounded_memset(void *b, int c, intmax_t size, intmax_t offset, intm
 	return b;
 }
 
-void pulse_data_dump_raw(uint8_t *buf, unsigned len, intmax_t buf_offset, const pulse_data_t *data, uint8_t bits)
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, const pulse_data_t *data, uint8_t bits)
 {
-	intmax_t pos = data->offset - buf_offset;
+	int64_t pos = data->offset - buf_offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		bounded_memset(buf, 0x01 | bits, len, pos, data->pulse[n]);
 		pos += data->pulse[n];
@@ -83,18 +83,18 @@ void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint3
 		scale = 1000000 / sample_rate; // unit: 1 us
 	else
 		scale = 10000000 / sample_rate; // unit: 100 ns
-	intmax_t pos = data->offset;
+	uint64_t pos = data->offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		if (n == 0)
-			fprintf(file, "#%zd 1/ 1%c\n", (intmax_t)(pos * scale), ch_id);
+			fprintf(file, "#%.f 1/ 1%c\n", pos * scale, ch_id);
 		else
-			fprintf(file, "#%zd 1%c\n", (intmax_t)(pos * scale), ch_id);
+			fprintf(file, "#%.f 1%c\n", pos * scale, ch_id);
 		pos += data->pulse[n];
-		fprintf(file, "#%zd 0%c\n", (intmax_t)(pos * scale), ch_id);
+		fprintf(file, "#%.f 0%c\n", pos * scale, ch_id);
 		pos += data->gap[n];
 	}
 	if (data->num_pulses > 0)
-		fprintf(file, "#%zd 0/\n", (intmax_t)(pos * scale));
+		fprintf(file, "#%.f 0/\n", pos * scale);
 }
 
 
@@ -275,7 +275,7 @@ static pulse_state_t pulse_state;
 
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, intmax_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
+int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
