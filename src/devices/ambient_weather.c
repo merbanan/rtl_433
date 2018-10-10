@@ -5,8 +5,8 @@
 // three repeats without gap
 // full preamble is 0x00145
 // and on decoding also 0xffd45
-static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 16 bits
-static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 16 bits
+static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
+static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
 static uint8_t
 calculate_checksum(uint8_t *buff, int length)
@@ -102,7 +102,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 8+6*8 <=
+                (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
             events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
@@ -110,7 +110,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         }
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_inverted, 16)) + 8+6*8 <=
+                (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
             events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
