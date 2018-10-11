@@ -25,6 +25,7 @@ add_executable(rtl_433
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c
+	sdr.c
 	util.c
 	devices/acurite.c
 	devices/akhan_100F14.c
