@@ -71,6 +71,7 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
     data = data_make(
             "time",     "",             DATA_STRING, time_str,
             "model",    "",             DATA_STRING, "Chuango Security Technology",
+            "mid",      "MID",          DATA_STRING, "CHUANGO",
             "id",       "ID",           DATA_INT,    id,
             "cmd",      "CMD",          DATA_STRING, cmd_str,
             "cmd_id",   "CMD_ID",       DATA_INT,    cmd,

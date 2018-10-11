@@ -138,6 +138,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		data = data_make(
 			"time",		"",		DATA_STRING,	time_str,
 			"model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
+			"mid",		"MID",		DATA_STRING, "DANCFR",
 			"id",		"ID",		DATA_INT,	id,
 			"temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 			"setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
