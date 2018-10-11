@@ -23,8 +23,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "rtl-sdr.h"
 #include "rtl_433.h"
+#include "sdr.h"
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
@@ -57,7 +57,7 @@ uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 uint64_t input_pos = 0;
 float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
-static rtlsdr_dev_t *dev = NULL;
+static sdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
 int include_only = 0;  // Option -I
@@ -225,7 +225,7 @@ sighandler(int signum) {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
         do_exit = 1;
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
         return TRUE;
     }
     return FALSE;
@@ -240,7 +240,7 @@ static void sighandler(int signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
     do_exit = 1;
-    rtlsdr_cancel_async(dev);
+    sdr_stop(dev);
 }
 #endif
 
@@ -741,7 +741,7 @@ err:
 }
 
 
-static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
+static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -753,7 +753,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     if ((bytes_to_read > 0) && (bytes_to_read <= len)) {
         len = bytes_to_read;
         do_exit = 1;
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
     }
 
     n_samples = len / 2 / demod->sample_size;
@@ -913,7 +913,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
         if (stop_after_successful_events_flag && (p_events > 0)) {
             do_exit = do_exit_async = 1;
-            rtlsdr_cancel_async(dev);
+            sdr_stop(dev);
         }
     } // if (demod->analyze...
 
@@ -970,7 +970,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            rtlsdr_cancel_async(dev);
+            sdr_stop(dev);
         }
     }
 
@@ -986,14 +986,14 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 #ifndef _WIN32
 	  alarm(0); // cancel the watchdog timer
 #endif
-	  rtlsdr_cancel_async(dev);
+	  sdr_stop(dev);
 	}
     if (duration > 0 && rawtime >= stop_time) {
         do_exit_async = do_exit = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
         fprintf(stderr, "Time expired, exiting!\n");
     }
 }
@@ -1161,14 +1161,11 @@ int main(int argc, char **argv) {
     int n_read;
     int r = 0, opt;
     int gain = 0;
-    uint32_t i = 0;
+    int i;
     int ppm_error = 0;
     struct dm_state *demod;
-    int dev_index = 0;
     int frequency_current = 0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
-    uint16_t device_count;
-    char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
     r_device *flex_device = NULL;
@@ -1384,8 +1381,8 @@ int main(int argc, char **argv) {
     }
 
     if (!quiet_mode)
-    fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
-        demod->r_dev_num, num_r_devices);
+        fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
+                demod->r_dev_num, num_r_devices);
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1409,104 +1406,36 @@ int main(int argc, char **argv) {
     }
 
     if (!in_filename) {
-    device_count = rtlsdr_get_device_count();
-    if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
-        exit(1);
-    }
-
-    if (!quiet_mode) fprintf(stderr, "Found %d device(s)\n\n", device_count);
-
-    // select rtlsdr device by serial (-d :<serial>)
-    if (dev_query && *dev_query == ':') {
-        dev_index = rtlsdr_get_index_by_serial(&dev_query[1]);
-        if (dev_index < 0) {
-            if (!quiet_mode)
-                fprintf(stderr, "Could not find device with serial '%s' (err %d)",
-                        &dev_query[1], dev_index);
+        r = sdr_open(&dev, &demod->sample_size, dev_query, !quiet_mode);
+        if (r < 0) {
             exit(1);
         }
-    }
-
-    // select rtlsdr device by number (-d <n>)
-    else if (dev_query) {
-        dev_index = atoi(dev_query);
-        // check if 0 is a parsing error?
-        if (dev_index < 0) {
-            // select first available rtlsdr device
-            dev_index = 0;
-            dev_query = NULL;
-        }
-    }
-
-    for (i = dev_query ? dev_index : 0;
-         //cast quiets -Wsign-compare; if dev_index were < 0, would have exited above
-         i < (dev_query ? (unsigned)dev_index + 1 : device_count);
-         i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-
-        if (!quiet_mode) fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
-                                 i, vendor, product, serial);
-
-        r = rtlsdr_open(&dev, i);
-        if (r < 0) {
-            if (!quiet_mode) fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n",
-                                     i);
-        } else {
-            if (!quiet_mode) fprintf(stderr, "Using device %d: %s\n",
-                                     i, rtlsdr_get_device_name(i));
-            demod->sample_size = sizeof(uint8_t); // CU8
-            break;
-        }
-    }
-    if (r < 0) {
-        if (!quiet_mode) fprintf(stderr, "Unable to open a device\n");
-        exit(1);
-    }
 
 #ifndef _WIN32
-    sigact.sa_handler = sighandler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
-    sigaction(SIGQUIT, &sigact, NULL);
-    sigaction(SIGPIPE, &sigact, NULL);
+        sigact.sa_handler = sighandler;
+        sigemptyset(&sigact.sa_mask);
+        sigact.sa_flags = 0;
+        sigaction(SIGINT, &sigact, NULL);
+        sigaction(SIGTERM, &sigact, NULL);
+        sigaction(SIGQUIT, &sigact, NULL);
+        sigaction(SIGPIPE, &sigact, NULL);
 #else
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
+        SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
-    /* Set the sample rate */
-    r = rtlsdr_set_sample_rate(dev, samp_rate);
-    if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-    else
-        fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+        /* Set the sample rate */
+        r = sdr_set_sample_rate(dev, samp_rate, !quiet_mode);
 
-    fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+        fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
-    if (0 == gain) {
-        /* Enable automatic gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 0);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
-        else
-        fprintf(stderr, "Tuner gain set to Auto.\n");
-    } else {
-        /* Enable manual gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 1);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+        if (0 == gain) {
+            /* Enable automatic gain */
+            r = sdr_set_auto_gain(dev, !quiet_mode);
+        } else {
+            /* Set manual gain */
+            r = sdr_set_tuner_gain(dev, gain, !quiet_mode);
+        }
 
-        /* Set the tuner gain */
-        r = rtlsdr_set_tuner_gain(dev, gain);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-        else
-        fprintf(stderr, "Tuner gain set to %f dB.\n", gain / 10.0);
-    }
-
-    r = rtlsdr_set_freq_correction(dev, ppm_error);
-
+        r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
     }
 
     if (out_filename) {
@@ -1565,15 +1494,15 @@ int main(int argc, char **argv) {
             } else {
                 n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
             }
-            if (n_read == 0) break;  // rtlsdr_callback() will Segmentation Fault with len=0
-            rtlsdr_callback(test_mode_buf, n_read, demod);
+            if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
+            sdr_callback(test_mode_buf, n_read, demod);
             n_blocks++;
             sample_file_pos = (float)n_blocks * n_read / samp_rate / 2 / demod->sample_size;
         } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
         memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
-        rtlsdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
+        sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
 
         //Always classify a signal at the end of the file
         classify_signal();
@@ -1586,7 +1515,7 @@ int main(int argc, char **argv) {
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
-    r = rtlsdr_reset_buffer(dev);
+    r = sdr_reset(dev);
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
@@ -1606,16 +1535,12 @@ int main(int argc, char **argv) {
         while (!do_exit) {
             /* Set the frequency */
             center_frequency = frequency[frequency_current];
-            r = rtlsdr_set_center_freq(dev, center_frequency);
-            if (r < 0)
-                fprintf(stderr, "WARNING: Failed to set center freq.\n");
-            else
-                fprintf(stderr, "Tuned to %s.\n", nice_freq(rtlsdr_get_center_freq(dev)));
+            r = sdr_set_center_freq(dev, center_frequency, !quiet_mode);
 #ifndef _WIN32
             signal(SIGALRM, sighandler);
             alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-            r = rtlsdr_read_async(dev, rtlsdr_callback, (void *) demod,
+            r = sdr_start(dev, sdr_callback, (void *) demod,
                     DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
             if (r < 0) {
                 fprintf(stderr, "WARNING: async read failed (%i).\n", r);
@@ -1643,7 +1568,7 @@ int main(int argc, char **argv) {
 
     free(demod);
 
-    rtlsdr_close(dev);
+    sdr_close(dev);
 out:
     for (int i = 0; i < last_output_handler; ++i) {
         data_output_free(output_handler[i]);
