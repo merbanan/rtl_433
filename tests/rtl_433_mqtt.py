@@ -57,8 +57,8 @@ def main():
             continue
 
         mqtt_topic = MQTT_TOPIC_PREFIX      # Build up topic string
-#        model_id = d.get('mid')
-        model_id = mid.get(d.get('model'))     # Map Model name to Model ID
+        model_id = d.get('mid')
+#        model_id = mid.get(d.get('model'))     # Map Model name to Model ID
         if model_id:
             mqtt_topic += '/' + model_id
             sensor_id = d.get('id')
@@ -68,7 +68,7 @@ def main():
         mqtt_client.publish(mqtt_topic, line)
         log.info(mqtt_topic + "\t" + line)
 
-
+"""
 # Model IDs mapping the loong Model names into a short (max 8 chars) 'mid'
 # Should probably be incorporated into rtl_433 sensor data itself
 mid = {
@@ -79,7 +79,7 @@ mid = {
     "Fine Offset Electronics, WH25" :                               "FOWH25",
     "Fine Offset Electronics, WH0530 Temperature/Rain sensor" :     "FOWH0530",
 }
-
+"""
 
 if __name__ == "__main__":
     main()

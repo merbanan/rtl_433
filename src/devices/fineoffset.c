@@ -41,6 +41,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
 
     char *model;
+    char *mid;
     int type;
     uint8_t id;
     int16_t temp;
@@ -51,22 +52,22 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
         model = "Fine Offset Electronics, WH2 Temperature/Humidity sensor";
-
+        mid = "FOWH2";
     } else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
         model = "Fine Offset WH2A sensor";
-
+        mid = "FOWH2A";
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
         model = "Fine Offset WH5 sensor";
-
+        mid = "FOWH5";
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
         model = "Telldus/Proove thermometer";
-
+        mid = "TELLTHER";
     } else
         return 0;
 
@@ -110,6 +111,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     if (b[3] == 0xFF) {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, model,
+                         "mid",           "MID",         DATA_STRING, mid,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "mic",           "Integrity",   DATA_STRING, "CRC",
@@ -120,6 +122,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     else {
         data = data_make("time",          "",            DATA_STRING, time_str,
                          "model",         "",            DATA_STRING, model,
+                         "mid",           "MID",         DATA_STRING, mid,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -249,6 +252,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
     data = data_make(
             "time",             "",                 DATA_STRING, time_str,
             "model",            "",                 DATA_STRING, "Fine Offset WH24",
+            "mid",              "MID",              DATA_STRING, "FOWH24",
             "id",               "ID",               DATA_INT, id,
             NULL);
     if (temp_raw       != 0x7ff)
@@ -349,6 +353,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH25",
+                     "mid",           "MID",         DATA_STRING, "FOWH25",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -419,6 +424,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
+                     "mid",           "MID",         DATA_STRING, "FOWH0530",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                      "rain",          "Rain",        DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
