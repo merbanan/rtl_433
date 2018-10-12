@@ -11,7 +11,13 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <strings.h>
+#ifdef _MSC_VER
+	#ifndef strncasecmp // Microsoft Visual Studio
+		#define strncasecmp  _strnicmp
+	#endif
+#else 
+	#include <strings.h>
+#endif
 //#include "optparse.h"
 #include "fileformat.h"
 
@@ -209,12 +215,19 @@ int parse_file_info(char const *filename, file_info_t *info)
     char *p = strrchr(filename, ':');
     if (p) {
         size_t len = p - filename;
-        char forced[len + 1];
+#ifdef _MSC_VER
+		char *forced = (char*) malloc(len + 1);
+#else
+		char forced[len + 1];
+#endif
         memcpy(forced, filename, len);
         forced[len] = '\0';
         p++;
         file_type(p, info);
         file_type(forced, info);
+#ifdef _MSC_VER
+		free(forced);
+#endif
         info->path = p;
     } else {
         file_type(filename, info);
