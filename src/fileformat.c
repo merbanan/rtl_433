@@ -215,7 +215,7 @@ int parse_file_info(char const *filename, file_info_t *info)
     char *p = strrchr(filename, ':');
     if (p) {
         size_t len = p - filename;
-		char forced[512];
+        char forced[512];
         memcpy(forced, filename, len);
         forced[len] = '\0';
         p++;
