@@ -53,7 +53,7 @@ require_clean_work_tree()
 # Get the help text
 try:
     help_text = subprocess.check_output(
-        ["./build/src/rtl_433", "-h"], stderr=subprocess.STDOUT)
+        ["./build/src/rtl_433", "-R"], stderr=subprocess.STDOUT)
 except subprocess.CalledProcessError as e:
     help_text = e.output
 
@@ -80,8 +80,8 @@ r_devices = [grep_lines(r'(?m)^r_device\s*(.*?)\s*=.*',
 r_devices = [item for sublist in r_devices for item in sublist]
 print("r_devices =", r_devices)
 
-# count r_devices, correct for 'template' being used twice
-r_devices_used = len(r_devices) + 1
+# count r_devices, correct for 'template' being used three times
+r_devices_used = len(r_devices) + 2
 
 # README.md
 # Replace everything between ``` with help output.

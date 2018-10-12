@@ -12,6 +12,7 @@
 #define INCLUDE_PULSE_DETECT_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define PD_MAX_PULSES 1200			// Maximum number of pulses before forcing End Of Package
 #define PD_MIN_PULSES 16			// Minimum number of pulses before declaring a proper package
@@ -23,6 +24,7 @@
 
 /// Data for a compact representation of generic pulse train
 typedef struct {
+	uint64_t offset;			// Offset to first pulse in number of samples from start of stream
 	unsigned int num_pulses;
 	int pulse[PD_MAX_PULSES];	// Contains width of a pulse	(high)
 	int gap[PD_MAX_PULSES];		// Width of gaps between pulses (low)
@@ -39,6 +41,14 @@ void pulse_data_clear(pulse_data_t *data);		// Clear the struct
 /// Print the content of a pulse_data_t structure (for debug)
 void pulse_data_print(const pulse_data_t *data);
 
+/// Dump the content of a pulse_data_t structure as raw binary
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, const pulse_data_t *data, uint8_t bits);
+
+/// Print a header for the VCD format
+void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate);
+
+/// Print the content of a pulse_data_t structure in VCD format
+void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint32_t sample_rate);
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
 ///
@@ -52,8 +62,7 @@ void pulse_data_print(const pulse_data_t *data);
 /// @return 0 if all input sample data is processed
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
-int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
-
+int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 /// Analyze and print result
 void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate);
