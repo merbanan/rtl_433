@@ -625,7 +625,7 @@ static void classify_signal(void) {
         signal_pulse_data[i][0] = 0;
         signal_pulse_data[i][1] = 0;
         signal_pulse_data[i][2] = 0;
-		signal_distance_data[i] = 0;
+        signal_distance_data[i] = 0;
     }
 
 }
