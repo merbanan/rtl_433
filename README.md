@@ -27,7 +27,6 @@ Usage:	= Tuner options =
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
-	[-S] Force sync output (default: async)
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
@@ -42,28 +41,23 @@ Usage:	= Tuner options =
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
-	[-W] Overwrite mode, disable checks to prevent files from being overwritten
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
 	[-r <filename>] Read data from input file instead of a receiver
-	[-m <mode>] Data file mode for input / output file (default: 0)
-		 0 = Raw I/Q samples (uint8, 2 channel)
-		 1 = AM demodulated samples (int16 pcm, 1 channel)
-		 2 = FM demodulated samples (int16) (output only)
-		 3 = Raw I/Q samples (cf32, 2 channel)
-		 4 = Raw I/Q samples (cs16, 2 channel)
+	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+	[-W <filename>] Save data stream to output file, overwrite existing file
 	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
-		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-		 specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-C] native|si|customary Convert units in decoded output.
-	[-T] specify number of seconds to run
+	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
 	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
-	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
+		 Use -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control
@@ -175,6 +169,7 @@ Supported device protocols:
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  WS Temperature Sensor
     [109]  WT0124 Pool Thermometer
+    [110]  Toyota TPMS (PMV-107J)
 
 * Disabled by default, use -R n or -G
 

@@ -26,6 +26,9 @@
     <ClInclude Include="..\include\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fileformat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\optparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\rtl_433_devices.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\sdr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\util.h">
@@ -58,6 +64,9 @@
     <ClCompile Include="..\src\data.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\fileformat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\optparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,6 +77,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rtl_433.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdr.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\util.c">
@@ -320,6 +332,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\tpms_ford.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_pmv107j.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\tpms_renault.c">

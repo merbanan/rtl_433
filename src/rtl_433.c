@@ -23,16 +23,18 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "rtl-sdr.h"
 #include "rtl_433.h"
+#include "sdr.h"
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 #include "data.h"
 #include "util.h"
 #include "optparse.h"
+#include "fileformat.h"
 
 #define MAX_DATA_OUTPUTS 32
+#define MAX_DUMP_OUTPUTS 8
 
 #ifdef GIT_VERSION
 #define STR_VALUE(arg) #arg
@@ -55,14 +57,13 @@ uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
 uint64_t input_pos = 0;
 float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
-static rtlsdr_dev_t *dev = NULL;
+static sdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
 int include_only = 0;  // Option -I
 int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
-int overwrite_mode = 0;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -71,24 +72,9 @@ typedef enum  {
 } conversion_mode_t;
 static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
-enum {
-    CU8_IQ    = 0,
-    S16_AM    = 1,
-    S16_FM    = 2,
-    CF32_IQ   = 3,
-    CS16_IQ   = 4,
-    F32_AM    = 5,
-    F32_FM    = 6,
-    F32_I     = 7,
-    F32_Q     = 8,
-    VCD_LOGIC = 9,
-    U8_LOGIC  = 10
-} data_format_t;
-
 uint16_t num_r_devices = 0;
 
 struct dm_state {
-    FILE *out_file;
     int32_t level_limit;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
     union {
@@ -104,8 +90,8 @@ struct dm_state {
     int enable_FM_demod;
     int analyze;
     int analyze_pulses;
-    int load_mode;
-    int dump_mode;
+    file_info_t load_info;
+    file_info_t dumper[MAX_DUMP_OUTPUTS];
     int hop_time;
 
     /* Signal grabber variables */
@@ -123,7 +109,7 @@ struct dm_state {
     pulse_data_t    fsk_pulse_data;
 };
 
-void version()
+void version(void)
 {
     fprintf(stderr, "rtl_433 " VERSION "\n");
     exit(0);
@@ -145,7 +131,6 @@ void usage(r_device *devices, int exit_code)
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
-            "\t[-S] Force sync output (default: async)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
@@ -160,44 +145,78 @@ void usage(r_device *devices, int exit_code)
             "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
-            "\t[-W] Overwrite mode, disable checks to prevent files from being overwritten\n"
             "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
             "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
-            "\t[-m <mode>] Data file mode for input / output file (default: 0)\n"
-            "\t\t 0 = Raw I/Q samples (uint8, 2 channel)\n"
-            "\t\t 1 = AM demodulated samples (int16 pcm, 1 channel)\n"
-            "\t\t 2 = FM demodulated samples (int16) (output only)\n"
-            "\t\t 3 = Raw I/Q samples (cf32, 2 channel)\n"
-            "\t\t 4 = Raw I/Q samples (cs16, 2 channel)\n"
-            "\t\t 5 = AM demodulated samples (f32) (output only)\n"
-            "\t\t 6 = FM demodulated samples (f32) (output only)\n"
-            "\t\t 7 = Raw I samples (f32, 1 channel) (output only)\n"
-            "\t\t 8 = Raw Q samples (f32, 1 channel) (output only)\n"
-            "\t\t 9 = Demodulator logic state (text, VCD) (output only)\n"
-            "\t\t 10 = Raw demodulator logic state (u8) (output only)\n"
+            "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
-            "\t\t append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "\t\t specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
-            "\t[-T] specify number of seconds to run\n"
+            "\t[-T] Specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-V] Output the version string and exit\n"
             "\t[-h] Output this usage help and exit\n"
-            "\t[<filename>] Save data stream to output file (a '-' dumps samples to stdout)\n\n",
+            "\t\t Use -R, -X, -F, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
-    fprintf(stderr, "Supported device protocols:\n");
-    for (i = 0; i < num_r_devices; i++) {
-        disabledc = devices[i].disabled ? '*' : ' ';
-        fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+    if (devices) {
+        fprintf(stderr, "Supported device protocols:\n");
+        for (i = 0; i < num_r_devices; i++) {
+            disabledc = devices[i].disabled ? '*' : ' ';
+            fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+        }
+        fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
     }
-    fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
-
     exit(exit_code);
+}
+
+void help_output(void)
+{
+    fprintf(stderr,
+            "[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+    exit(0);
+}
+
+void help_read(void)
+{
+    fprintf(stderr,
+            "[-r <filename>] Read data from input file instead of a receiver\n"
+            "\tParameters are detected from the full path, file name, and extension.\n\n"
+            "\tA center frequency is detected as (fractional) number suffixed with 'M',\n"
+            "\t'Hz', 'kHz', 'MHz', or 'GHz'.\n\n"
+            "\tA sample rate is detected as (fractional) number suffixed with 'k',\n"
+            "\t'sps', 'ksps', 'Msps', or 'Gsps'.\n\n"
+            "\tFile content and format are detected as parameters, possible options are:\n"
+            "\t'cu8', 'cs16', 'cf32' ('IQ' implied), and 'am.s16'.\n\n"
+            "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
+            "\tOverrides can be prefixed, separated by colon (':')\n\n"
+            "\tE.g. default detection by extension: path/filename.am.s16\n"
+            "\tforced overrides: am:s16:path/filename.ext\n");
+    exit(0);
+}
+
+void help_write(void)
+{
+    fprintf(stderr,
+            "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "[-W <filename>] Save data stream to output file, overwrite existing file\n"
+            "\tParameters are detected from the full path, file name, and extension.\n\n"
+            "\tFile content and format are detected as parameters, possible options are:\n"
+            "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
+            "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
+            "\t'i.f32', 'q.f32', 'logic.u8', and 'vcd'.\n\n"
+            "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
+            "\tOverrides can be prefixed, separated by colon (':')\n\n"
+            "\tE.g. default detection by extension: path/filename.am.s16\n"
+            "\tforced overrides: am:s16:path/filename.ext\n");
+    exit(0);
 }
 
 #ifdef _WIN32
@@ -206,7 +225,7 @@ sighandler(int signum) {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
         do_exit = 1;
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
         return TRUE;
     }
     return FALSE;
@@ -221,7 +240,7 @@ static void sighandler(int signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
     do_exit = 1;
-    rtlsdr_cancel_async(dev);
+    sdr_stop(dev);
 }
 #endif
 
@@ -391,7 +410,7 @@ void data_acquired_handler(data_t *data)
     data_free(data);
 }
 
-static void classify_signal() {
+static void classify_signal(void) {
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
@@ -666,7 +685,7 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                     while (1) {
                         sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, frequency[0] / 1000000.0, samp_rate / 1000.0);
                         demod->signal_grabber++;
-                        if (access(sgf_name, F_OK) == -1 || overwrite_mode) {
+                        if (access(sgf_name, F_OK) == -1) {
                             break;
                         }
                     }
@@ -722,7 +741,7 @@ err:
 }
 
 
-static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
+static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     struct dm_state *demod = ctx;
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -734,7 +753,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     if ((bytes_to_read > 0) && (bytes_to_read <= len)) {
         len = bytes_to_read;
         do_exit = 1;
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
     }
 
     n_samples = len / 2 / demod->sample_size;
@@ -773,20 +792,25 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     // Handle special input formats
-    if (demod->load_mode == S16_AM) { // The IQ buffer is really AM demodulated data
+    if (demod->load_info.format == S16_AM) { // The IQ buffer is really AM demodulated data
         memcpy(demod->am_buf, iq_buf, len);
-    } else if (demod->load_mode == S16_FM) { // The IQ buffer is really FM demodulated data
+    } else if (demod->load_info.format == S16_FM) { // The IQ buffer is really FM demodulated data
         // we would need AM for the envelope too
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
-    if (demod->analyze || (demod->out_file == stdout)) {    // We don't want to decode devices when outputting to stdout
+    if (demod->analyze) {
         pwm_analyze(demod, demod->am_buf, n_samples);
     } else {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         int p_events = 0;  // Sensor events successfully detected per package
-        if (demod->dump_mode == U8_LOGIC) memset(demod->u8_buf, 0, n_samples);
+        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+            if (dumper->format == U8_LOGIC) {
+                memset(demod->u8_buf, 0, n_samples);
+                break;
+            }
+        }
         while (package_type) {
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, samp_rate, input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
@@ -831,8 +855,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->pulse_data, '\'', samp_rate);
-                if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                }
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, samp_rate);
@@ -865,8 +891,10 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                if (demod->dump_mode == VCD_LOGIC) pulse_data_print_vcd(demod->out_file, &demod->fsk_pulse_data, '"', samp_rate);
-                if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                }
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (include_only == 0 || (include_only == 1 && p_events == 0) || (include_only == 2 && p_events > 0)) ) {
                     pulse_analyzer(&demod->fsk_pulse_data, samp_rate);
@@ -875,40 +903,47 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         } // while (package_type)...
 
         // dump partial pulse_data for this buffer
-        if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
-        if (demod->dump_mode == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+            if (dumper->format == U8_LOGIC) {
+                pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->pulse_data, 0x02);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, input_pos, &demod->fsk_pulse_data, 0x04);
+                break;
+            }
+        }
 
         if (stop_after_successful_events_flag && (p_events > 0)) {
             do_exit = do_exit_async = 1;
-            rtlsdr_cancel_async(dev);
+            sdr_stop(dev);
         }
     } // if (demod->analyze...
 
-    if (demod->out_file && demod->dump_mode != VCD_LOGIC) {
+    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+        if (!dumper->file || dumper->format == VCD_LOGIC)
+            continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
-        if (demod->dump_mode == S16_AM) {
+        if (dumper->format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_mode == S16_FM) {
+        } else if (dumper->format == S16_FM) {
             out_buf = (uint8_t *)demod->buf.fm;
             out_len = n_samples * sizeof(int16_t);
 
-        } else if (demod->dump_mode == F32_AM) {
+        } else if (dumper->format == F32_AM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_FM) {
+        } else if (dumper->format == F32_FM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_I) {
+        } else if (dumper->format == F32_I) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -918,7 +953,7 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == F32_Q) {
+        } else if (dumper->format == F32_Q) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -928,14 +963,14 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
 
-        } else if (demod->dump_mode == U8_LOGIC) { // state data
+        } else if (dumper->format == U8_LOGIC) { // state data
             out_buf = demod->u8_buf;
             out_len = n_samples;
         }
 
-        if (fwrite(out_buf, 1, out_len, demod->out_file) != out_len) {
+        if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            rtlsdr_cancel_async(dev);
+            sdr_stop(dev);
         }
     }
 
@@ -951,14 +986,14 @@ static void rtlsdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 #ifndef _WIN32
 	  alarm(0); // cancel the watchdog timer
 #endif
-	  rtlsdr_cancel_async(dev);
+	  sdr_stop(dev);
 	}
     if (duration > 0 && rawtime >= stop_time) {
         do_exit_async = do_exit = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        rtlsdr_cancel_async(dev);
+        sdr_stop(dev);
         fprintf(stderr, "Time expired, exiting!\n");
     }
 }
@@ -1086,6 +1121,32 @@ void add_syslog_output(char *param)
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
+void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
+{
+    while (dumper->spec && *dumper->spec) ++dumper; // TODO: check MAX_DUMP_OUTPUTS
+
+    parse_file_info(spec, dumper);
+    if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
+        dumper->file = stdout;
+#ifdef _WIN32
+        _setmode(_fileno(stdin), _O_BINARY);
+#endif
+    } else {
+        if (access(dumper->path, F_OK) == 0 && !overwrite) {
+            fprintf(stderr, "Output file %s already exists, exiting\n", spec);
+            exit(1);
+        }
+        dumper->file = fopen(dumper->path, "wb");
+        if (!dumper->file) {
+            fprintf(stderr, "Failed to open %s\n", spec);
+            exit(1);
+        }
+    }
+    if (dumper->format == VCD_LOGIC) {
+        pulse_data_print_vcd_header(dumper->file, samp_rate);
+    }
+}
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 int main(int argc, char **argv) {
@@ -1096,20 +1157,15 @@ int main(int argc, char **argv) {
     char *test_data = NULL;
     char *out_filename = NULL;
     char *in_filename = NULL;
-    int loaddump_mode = 0;
     FILE *in_file;
     int n_read;
     int r = 0, opt;
     int gain = 0;
-    uint32_t i = 0;
-    int sync_mode = 0;
+    int i;
     int ppm_error = 0;
     struct dm_state *demod;
-    int dev_index = 0;
     int frequency_current = 0;
     uint32_t out_block_size = DEFAULT_BUF_LENGTH;
-    uint16_t device_count;
-    char vendor[256], product[256], serial[256];
     int have_opt_R = 0;
     int register_all = 0;
     r_device *flex_device = NULL;
@@ -1133,10 +1189,10 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:l:d:f:H:g:s:b:n:SR:X:F:C:T:UWGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
         switch (opt) {
             case 'h':
-                usage(devices, 0);
+                usage(NULL, 0);
                 break;
             case 'V':
                 version();
@@ -1183,28 +1239,23 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
-                if (loaddump_mode == S16_AM) {
-                    fprintf(stderr, "FM input not supported\n");
-                    usage(devices, 1);
-                }
-                if (loaddump_mode >= F32_AM) {
-                    fprintf(stderr, "input format not supported\n");
-                    usage(devices, 1);
-                }
-                demod->load_mode = loaddump_mode;
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_read();
+                // TODO: check_read_file_info()
+                break;
+            case 'w':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
+                add_dumper(optarg, demod->dumper, 0);
+                break;
+            case 'W':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
+                add_dumper(optarg, demod->dumper, 1);
                 break;
             case 't':
                 demod->signal_grabber = 1;
                 break;
             case 'm':
-                loaddump_mode = atoi(optarg);
-                if (loaddump_mode < 0 || loaddump_mode > U8_LOGIC) {
-                    fprintf(stderr, "Invalid sample mode %s\n", optarg);
-                    usage(devices, 1);
-                }
-                break;
-            case 'S':
-                sync_mode = 1;
+                fprintf(stderr, "sample mode option is deprecated.\n");
+                usage(NULL, 1);
                 break;
             case 'D':
                 debug_output++;
@@ -1216,6 +1267,8 @@ int main(int argc, char **argv) {
                 override_long = atoi(optarg);
                 break;
             case 'R':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) usage(devices, 0);
+
                 if (!have_opt_R) {
                     for (i = 0; i < num_r_devices; i++) {
                         devices[i].disabled = 1;
@@ -1246,6 +1299,7 @@ int main(int argc, char **argv) {
                 quiet_mode = 1;
                 break;
             case 'F':
+                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_output();
                 if (strncmp(optarg, "json", 4) == 0) {
                     add_json_output(arg_param(optarg));
                 } else if (strncmp(optarg, "csv", 3) == 0) {
@@ -1256,7 +1310,7 @@ int main(int argc, char **argv) {
                     add_syslog_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(devices, 1);
+                    usage(NULL, 1);
                 }
                 break;
             case 'C':
@@ -1268,7 +1322,7 @@ int main(int argc, char **argv) {
                     conversion_mode = CONVERT_CUSTOMARY;
                 } else {
                     fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(devices, 1);
+                    usage(NULL, 1);
                 }
                 break;
             case 'U':
@@ -1280,9 +1334,6 @@ int main(int argc, char **argv) {
                 if (utc_mode != 0)
                     fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", utc_mode);
 #endif
-                break;
-            case 'W':
-                overwrite_mode = 1;
                 break;
             case 'T':
                 duration = atoi_time(optarg, "-T: ");
@@ -1297,15 +1348,22 @@ int main(int argc, char **argv) {
                 stop_after_successful_events_flag = 1;
                 break;
             default:
-                usage(devices, 1);
+                // handle missing arguments as help request
+                if (optopt == 'R') usage(devices, 0);
+                else if (optopt == 'X') flex_create_device(NULL);
+                else if (optopt == 'F') help_output();
+                else if (optopt == 'r') help_read();
+                else if (optopt == 'w') help_write();
+                else if (optopt == 'W') help_write();
+                else usage(NULL, 1);
                 break;
         }
     }
 
     if (argc <= optind - 1) {
-        usage(devices, 1);
+        usage(NULL, 1);
     } else {
-        out_filename = argv[optind];
+        out_filename = argv[optind]; // deprecated
     }
 
     if (last_output_handler < 1) {
@@ -1323,8 +1381,8 @@ int main(int argc, char **argv) {
     }
 
     if (!quiet_mode)
-    fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
-        demod->r_dev_num, num_r_devices);
+        fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
+                demod->r_dev_num, num_r_devices);
 
     if (out_block_size < MINIMAL_BUF_LENGTH ||
             out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1348,133 +1406,47 @@ int main(int argc, char **argv) {
     }
 
     if (!in_filename) {
-    device_count = rtlsdr_get_device_count();
-    if (!device_count) {
-        fprintf(stderr, "No supported devices found.\n");
-        exit(1);
-    }
-
-    if (!quiet_mode) fprintf(stderr, "Found %d device(s)\n\n", device_count);
-
-    // select rtlsdr device by serial (-d :<serial>)
-    if (dev_query && *dev_query == ':') {
-        dev_index = rtlsdr_get_index_by_serial(&dev_query[1]);
-        if (dev_index < 0) {
-            if (!quiet_mode)
-                fprintf(stderr, "Could not find device with serial '%s' (err %d)",
-                        &dev_query[1], dev_index);
+        r = sdr_open(&dev, &demod->sample_size, dev_query, !quiet_mode);
+        if (r < 0) {
             exit(1);
         }
-    }
-
-    // select rtlsdr device by number (-d <n>)
-    else if (dev_query) {
-        dev_index = atoi(dev_query);
-        // check if 0 is a parsing error?
-        if (dev_index < 0) {
-            // select first available rtlsdr device
-            dev_index = 0;
-            dev_query = NULL;
-        }
-    }
-
-    for (i = dev_query ? dev_index : 0;
-         //cast quiets -Wsign-compare; if dev_index were < 0, would have exited above
-         i < (dev_query ? (unsigned)dev_index + 1 : device_count);
-         i++) {
-        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-
-        if (!quiet_mode) fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
-                                 i, vendor, product, serial);
-
-        r = rtlsdr_open(&dev, i);
-        if (r < 0) {
-            if (!quiet_mode) fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n",
-                                     i);
-        } else {
-            if (!quiet_mode) fprintf(stderr, "Using device %d: %s\n",
-                                     i, rtlsdr_get_device_name(i));
-            demod->sample_size = sizeof(uint8_t); // CU8
-            break;
-        }
-    }
-    if (r < 0) {
-        if (!quiet_mode) fprintf(stderr, "Unable to open a device\n");
-        exit(1);
-    }
 
 #ifndef _WIN32
-    sigact.sa_handler = sighandler;
-    sigemptyset(&sigact.sa_mask);
-    sigact.sa_flags = 0;
-    sigaction(SIGINT, &sigact, NULL);
-    sigaction(SIGTERM, &sigact, NULL);
-    sigaction(SIGQUIT, &sigact, NULL);
-    sigaction(SIGPIPE, &sigact, NULL);
+        sigact.sa_handler = sighandler;
+        sigemptyset(&sigact.sa_mask);
+        sigact.sa_flags = 0;
+        sigaction(SIGINT, &sigact, NULL);
+        sigaction(SIGTERM, &sigact, NULL);
+        sigaction(SIGQUIT, &sigact, NULL);
+        sigaction(SIGPIPE, &sigact, NULL);
 #else
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
+        SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
-    /* Set the sample rate */
-    r = rtlsdr_set_sample_rate(dev, samp_rate);
-    if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set sample rate.\n");
-    else
-        fprintf(stderr, "Sample rate set to %d.\n", rtlsdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+        /* Set the sample rate */
+        r = sdr_set_sample_rate(dev, samp_rate, !quiet_mode);
 
-    fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+        fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
-    if (0 == gain) {
-        /* Enable automatic gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 0);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
-        else
-        fprintf(stderr, "Tuner gain set to Auto.\n");
-    } else {
-        /* Enable manual gain */
-        r = rtlsdr_set_tuner_gain_mode(dev, 1);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+        if (0 == gain) {
+            /* Enable automatic gain */
+            r = sdr_set_auto_gain(dev, !quiet_mode);
+        } else {
+            /* Set manual gain */
+            r = sdr_set_tuner_gain(dev, gain, !quiet_mode);
+        }
 
-        /* Set the tuner gain */
-        r = rtlsdr_set_tuner_gain(dev, gain);
-        if (r < 0)
-        fprintf(stderr, "WARNING: Failed to set tuner gain.\n");
-        else
-        fprintf(stderr, "Tuner gain set to %f dB.\n", gain / 10.0);
-    }
-
-    r = rtlsdr_set_freq_correction(dev, ppm_error);
-
+        r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
     }
 
     if (out_filename) {
-        demod->dump_mode = loaddump_mode;
-        if (strcmp(out_filename, "-") == 0) { /* Write samples to stdout */
-            demod->out_file = stdout;
-#ifdef _WIN32
-            _setmode(_fileno(stdin), _O_BINARY);
-#endif
-        } else {
-                if (access(out_filename, F_OK) == 0 && !overwrite_mode) {
-                fprintf(stderr, "Output file %s already exists, exiting\n", out_filename);
-                goto out;
-            }
-            demod->out_file = fopen(out_filename, "wb");
-            if (!demod->out_file) {
-                fprintf(stderr, "Failed to open %s\n", out_filename);
-                goto out;
-            }
-        }
-        if (demod->dump_mode == VCD_LOGIC) {
-            pulse_data_print_vcd_header(demod->out_file, samp_rate);
-        }
+        add_dumper(out_filename, demod->dumper, 0); // deprecated
     }
 
     if (demod->signal_grabber)
         demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
 
     if (in_filename) {
+        parse_file_info(in_filename, &demod->load_info);
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
         if (!test_mode_buf || !test_mode_float_buf)
@@ -1482,46 +1454,33 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Couldn't allocate read buffers!\n");
             exit(1);
         }
-        if (strcmp(in_filename, "-") == 0) { /* read samples from stdin */
+        if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
             in_file = stdin;
             in_filename = "<stdin>";
         } else {
-            in_file = fopen(in_filename, "rb");
+            in_file = fopen(demod->load_info.path, "rb");
             if (!in_file) {
                 fprintf(stderr, "Opening file: %s failed!\n", in_filename);
                 goto out;
             }
         }
         fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
-        if (demod->load_mode <= S16_FM) {
+        if (demod->load_info.format == CU8_IQ
+                || demod->load_info.format == S16_AM
+                || demod->load_info.format == S16_FM) {
             demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
         } else {
             demod->sample_size = sizeof(int16_t); // CF32, CS16
         }
         if (!quiet_mode) {
-            char *load_mode_str = NULL;
-            switch (demod->load_mode) {
-            case CU8_IQ:    load_mode_str = "CU8 IQ (2ch uint8)"; break;
-            case S16_AM:    load_mode_str = "S16 AM (1ch int16)"; break;
-            case S16_FM:    load_mode_str = "S16 FM (1ch int16)"; break;
-            case CF32_IQ:   load_mode_str = "CF32 IQ (2ch float32)"; break;
-            case CS16_IQ:   load_mode_str = "CS16 IQ (2ch int16)"; break;
-            case F32_AM:    load_mode_str = "F32 AM (1ch float32)"; break;
-            case F32_FM:    load_mode_str = "F32 FM (1ch float32)"; break;
-            case F32_I:     load_mode_str = "F32 I (1ch float32)"; break;
-            case F32_Q:     load_mode_str = "F32 Q (1ch float32)"; break;
-            case VCD_LOGIC: load_mode_str = "VCD logic (text)"; break;
-            case U8_LOGIC:  load_mode_str = "U8 logic (text)"; break;
-            default:        load_mode_str = "Unknown";  break;
-            }
-            fprintf(stderr, "Input format: %s\n", load_mode_str);
+            fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
         }
         sample_file_pos = 0.0;
 
         int n_blocks = 0;
         unsigned long n_read;
         do {
-            if (demod->load_mode == CF32_IQ) {
+            if (demod->load_info.format == CF32_IQ) {
                 n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                 // clamp float to [-1,1] and scale to Q0.15
                 for(unsigned long n = 0; n < n_read; n++) {
@@ -1535,15 +1494,15 @@ int main(int argc, char **argv) {
             } else {
                 n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
             }
-            if (n_read == 0) break;  // rtlsdr_callback() will Segmentation Fault with len=0
-            rtlsdr_callback(test_mode_buf, n_read, demod);
+            if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
+            sdr_callback(test_mode_buf, n_read, demod);
             n_blocks++;
             sample_file_pos = (float)n_blocks * n_read / samp_rate / 2 / demod->sample_size;
         } while (n_read != 0);
 
         // Call a last time with cleared samples to ensure EOP detection
         memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
-        rtlsdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
+        sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
 
         //Always classify a signal at the end of the file
         classify_signal();
@@ -1556,60 +1515,10 @@ int main(int argc, char **argv) {
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
-    r = rtlsdr_reset_buffer(dev);
+    r = sdr_reset(dev);
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-    if (sync_mode) {
-        if (!demod->out_file) {
-            fprintf(stderr, "Specify an output file for sync mode.\n");
-            exit(0);
-        }
-
-        fprintf(stderr, "Reading samples in sync mode...\n");
-        uint8_t *buffer = malloc(out_block_size * sizeof (uint8_t));
-
-        if (duration > 0) {
-            time(&stop_time);
-            stop_time += duration;
-        }
-        time_t timestamp;
-        while (!do_exit) {
-            r = rtlsdr_read_sync(dev, buffer, out_block_size, &n_read);
-            if (r < 0) {
-                fprintf(stderr, "WARNING: sync read failed.\n");
-                break;
-            }
-
-            if ((bytes_to_read > 0) && (bytes_to_read < (uint32_t) n_read)) {
-                n_read = bytes_to_read;
-                do_exit = 1;
-            }
-
-            if (fwrite(buffer, 1, n_read, demod->out_file) != (size_t) n_read) {
-                fprintf(stderr, "Short write, samples lost, exiting!\n");
-                break;
-            }
-
-            if ((uint32_t) n_read < out_block_size) {
-                fprintf(stderr, "Short read, samples lost, exiting!\n");
-                break;
-            }
-
-            if (duration > 0) {
-                time(&timestamp);
-                if (timestamp >= stop_time) {
-                    do_exit = 1;
-                    fprintf(stderr, "Time expired, exiting!\n");
-                }
-            }
-
-            if (bytes_to_read > 0)
-                bytes_to_read -= n_read;
-        }
-
-        free(buffer);
-    } else {
         if (frequencies == 0) {
             frequency[0] = DEFAULT_FREQUENCY;
             frequencies = 1;
@@ -1626,16 +1535,12 @@ int main(int argc, char **argv) {
         while (!do_exit) {
             /* Set the frequency */
             center_frequency = frequency[frequency_current];
-            r = rtlsdr_set_center_freq(dev, center_frequency);
-            if (r < 0)
-                fprintf(stderr, "WARNING: Failed to set center freq.\n");
-            else
-                fprintf(stderr, "Tuned to %s.\n", nice_freq(rtlsdr_get_center_freq(dev)));
+            r = sdr_set_center_freq(dev, center_frequency, !quiet_mode);
 #ifndef _WIN32
             signal(SIGALRM, sighandler);
             alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-            r = rtlsdr_read_async(dev, rtlsdr_callback, (void *) demod,
+            r = sdr_start(dev, sdr_callback, (void *) demod,
                     DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
             if (r < 0) {
                 fprintf(stderr, "WARNING: async read failed (%i).\n", r);
@@ -1647,13 +1552,13 @@ int main(int argc, char **argv) {
             do_exit_async = 0;
             frequency_current = (frequency_current + 1) % frequencies;
         }
-    }
 
     if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    if (demod->out_file && (demod->out_file != stdout))
-        fclose(demod->out_file);
+    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper)
+        if (dumper->file && (dumper->file != stdout))
+            fclose(dumper->file);
 
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);
@@ -1663,7 +1568,7 @@ int main(int argc, char **argv) {
 
     free(demod);
 
-    rtlsdr_close(dev);
+    sdr_close(dev);
 out:
     for (int i = 0; i < last_output_handler; ++i) {
         data_output_free(output_handler[i]);
