@@ -119,7 +119,7 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 {
     int r = rtlsdr_set_freq_correction(dev->rtlsdr_dev, ppm);
     if (verbose) {
-        if (r < 0)
+        if (r < 0 && r != -2)
             fprintf(stderr, "WARNING: Failed to set frequency correction.\n");
         else
             fprintf(stderr, "Frequency correction set to %d.\n", ppm);
