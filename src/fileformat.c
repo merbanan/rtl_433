@@ -215,19 +215,12 @@ int parse_file_info(char const *filename, file_info_t *info)
     char *p = strrchr(filename, ':');
     if (p) {
         size_t len = p - filename;
-#ifdef _MSC_VER
-		char *forced = (char*) malloc(len + 1);
-#else
-		char forced[len + 1];
-#endif
+		char forced[512];
         memcpy(forced, filename, len);
         forced[len] = '\0';
         p++;
         file_type(p, info);
         file_type(forced, info);
-#ifdef _MSC_VER
-		free(forced);
-#endif
         info->path = p;
     } else {
         file_type(filename, info);
