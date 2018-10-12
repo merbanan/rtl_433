@@ -10,8 +10,15 @@ particular device model.
     current locale unless the `-U` command line argument is used.
 
 * **model** (string) (Required)
-  * Device model. Human readable string describing the model consisting of manufacturer name 
-    and manufacturers model description
+  * Device model. Human readable string concisely describing the device by manufacturer name 
+    and manufacturers model designation according to the following syntax: `"<Manufacturer>, <Model>"`. 
+  * It is common for devices to be sold under different brands, however the Original Equipment Manufacturer name
+    shall be used, where possible to identify. 
+  * Avoid redundant word like "sensor", "wireless" etc. unless it is part of the manufacturers model designation. 
+  * Avoid adding device type designations like "Switch", "Temperature", "Thermostat", "Weather Station" etc. Device type can 
+    be inferred from the data content. 
+  * Avoid the special characters: `"/&$*#+[]()"`.
+  * Length of *model* string should be less than 32 characters.
 
 * **id** (string) (Optional)
   * Device identification. Used to differentiate between devices of same *model*. 
@@ -19,6 +26,7 @@ particular device model.
     a volatile value that changes at each power on (or battery change), or a value configurable by
     user e.g. by switch or jumpers. No assumptions should be made to the id value other than it contains
     a unique sequence of alphanumeric characters.
+  * Length of *id* should be less than 16 characters.
 
 * **channel** (string) (Optional)
   * Secondary device identification. For devices with more than one identification value 
@@ -49,7 +57,8 @@ Various data fields, which are common across devices of different types
 ## Sensor Data
 Due to the large variance in sensor types this list of common values is non-exhaustive. However 
 insofar possible the sensors should use these data types even if conversion from native low-level
-sensor data is needed.
+sensor data is needed. Additional data value fields should follow the form: `<Type>_<Unit>`, where 
+*Unit* should be in SI units.
 
 * **temperature_C** (double) (Optional)
   * Temperature from a temperature sensor in degrees Celcius.
