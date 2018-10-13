@@ -112,7 +112,8 @@
 		DECL(m_bus_mode_r) \
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
-		DECL(wt1024)
+		DECL(wt1024) \
+		DECL(xc0322)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()
