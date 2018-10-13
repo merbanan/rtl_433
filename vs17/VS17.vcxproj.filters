@@ -368,7 +368,7 @@
     <ClCompile Include="..\src\pch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="fineoffset_wh31.c">
+    <ClCompile Include="..\src\devices\fineoffset_wh31.c">
       <Filter>Source Files\Devices</Filter>
     </ClCompile>
   </ItemGroup>
