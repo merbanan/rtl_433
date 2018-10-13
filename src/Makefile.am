@@ -112,6 +112,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/x10_sec.c
+                       devices/x10_sec.c \
+                       devices/digitech_xc0324.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

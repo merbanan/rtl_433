@@ -114,7 +114,8 @@
     DECL(tpms_pmv107j) \
     DECL(ttx201) \
     DECL(ambientweather_tx8300) \
-    DECL(ambientweather_wh31e)
+    DECL(ambientweather_wh31e) \
+    DECL(digitech_xc0324)
 
 struct bitbuffer;
 struct data;
