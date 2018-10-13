@@ -223,6 +223,7 @@ void bitbuffer_print(const bitbuffer_t *bits) {
 	for (row = 0; row < bits->num_rows; ++row) {
 		fprintf(stderr, "[%02d] {%2d} ", row, bits->bits_per_row[row]);
 		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
+		  if ((col % 60) == 0) fprintf(stderr, " | "); // Chunk into useful bytes per line
 			row_len += fprintf(stderr, "%02x ", bits->bb[row][col]);
 		}
 		// Print binary values also?
