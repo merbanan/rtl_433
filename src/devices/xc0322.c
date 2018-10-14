@@ -40,6 +40,24 @@
 #include <string.h>
 
 
+int fprintf_bits2csv(FILE * stream, uint8_t byte) {
+    // Print binary values , 8 bits at a time
+    int nprint = 0;
+    
+		for (uint16_t bit = 0; bit < 8; ++bit) {
+		  if ((bit % 8) == 0)      // Separator to start a byte
+		 	  nprint += fprintf(stderr, "\t");
+			if (byte & (0x80 >> (bit % 8))) {
+		 	 nprint += fprintf(stderr, "1");
+		  } else {
+		 	 nprint += fprintf(stderr, "0");
+		  }
+		  if ((bit % 8) == 7)      // Separator to end a byte
+		 	 nprint += fprintf(stderr, ",");
+		} 
+		return nprint;
+}
+
 void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	int highest_indent, indent_this_col, indent_this_row, row_len;
 	uint16_t col, row;
@@ -64,7 +82,8 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
   
   // Filter out bad samples (too much noise, not enough sample)
   if ((bits->num_rows > 1) | (bits->bits_per_row[0] < 140)) {
-		fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bits->num_rows, 0, bits->bits_per_row[0]);
+		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%02d] ,", 
+                    bits->num_rows, 0, bits->syncs_before_row[0], bits->bits_per_row[0]);
     fprintf(stderr, "CORRUPTED data signal");
     return;
   }
@@ -74,13 +93,15 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	double* dptr;
 	
 	for (row = 0; row < bits->num_rows; ++row) {
-		fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bits->num_rows, row, bits->bits_per_row[row]);
+		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] ,", 
+                    bits->num_rows, row, bits->syncs_before_row[row], bits->bits_per_row[row]);
 		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 		  if ((col % 68) == 67) fprintf(stderr, " | \n"); // Chunk into useful bytes per line
 		  /*
       fprintf(stderr, "(%02d)", col);
       */
-			row_len += fprintf(stderr, "%02X ,", bits->bb[row][col]);
+      //fprintf_ing a tab character (\t) helps stop Excel stripping leading zeros
+			row_len += fprintf(stderr, "\t%02X ,", bits->bb[row][col]);
 	  	//fprintf(stderr, " --> %04d ,", bits->bb[row][col]);
 	  	/*
 	  	fptr = &(bits->bb[row][col]);
@@ -90,18 +111,20 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	  	//fprintf(stderr, " --> %04f ", 23.0);
 	  	*/
       // Print binary values , 8 bits at a time
-	  	
+	  	row_len += fprintf_bits2csv(stderr, bits->bb[row][col]);
+			/* 
 		 	for (uint16_t bit = 0; bit < 8; ++bit) {
-			  if ((bit % 8) == 0)      // Add byte separators
-			  	fprintf(stderr, "0b ");
+			  if ((bit % 8) == 0)      // Separator to start a byte
+			  	fprintf(stderr, "\t");
 		  	if (bits->bb[row][col] & (0x80 >> (bit % 8))) {
 			  	fprintf(stderr, "1");
 			  } else {
 			  	fprintf(stderr, "0");
 			  }
-			  if ((bit % 8) == 7)      // Add byte separators
+			  if ((bit % 8) == 7)      // Separator to end a byte
 			  	fprintf(stderr, ",");
 		  } 
+		  */
 
 			if ((col % 4) == 3) fprintf(stderr, " | ");
 		  
@@ -127,6 +150,9 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 #define MYDEVICE_CRC_POLY    0x07
 #define MYDEVICE_CRC_INIT    0x00
 
+static const uint8_t preamble_pattern[1] = {0x5F}; // Only 8 bits
+
+
 static int xc0322_template_callback(bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -138,6 +164,9 @@ static int xc0322_template_callback(bitbuffer_t *bitbuffer)
     uint16_t sensor_id;
     uint8_t msg_type;
     int16_t value;
+
+    unsigned bitpos;
+    int events = 0;
 
     /*
      * Early debugging aid to see demodulated bits in buffer and
@@ -217,20 +246,35 @@ static int xc0322_template_callback(bitbuffer_t *bitbuffer)
     //    return 0;
     //}
 
+    r = 0;
+    fprintf(stderr, "Geoff is working on row %d", r);
+
     b = bitbuffer->bb[r];
 
     /*
      * Either reject rows that don't start with the correct start byte:
      * Example message should start with 0xAA
      */
-    if (b[0] != MYDEVICE_STARTBYTE) {
-        return 0;
-    }
+    //if (b[0] != MYDEVICE_STARTBYTE) {
+    //    return 0;
+    //}
 
     /*
      * Or (preferred) search for the message preamble:
      * See bitbuffer_search()
+     * or copy the style from another file, eg ambient_weather.c
      */
+        bitpos = 0;
+        // Find a preamble with enough bits after it that it could be a complete packet
+        while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
+                (const uint8_t *)&preamble_pattern, 16)) + 8+16*8 <=
+                bitbuffer->bits_per_row[r]) {
+            //events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
+            //if (events) return events; // for now, break after first successful message
+            //bitpos += 16;
+            fprintf(stderr, "bitpos is %d", bitpos);
+            return 1;
+        }
 
     /*
      * Check message integrity (Parity example)
@@ -379,7 +423,7 @@ r_device xc0322 = {
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 190*4,
     .long_limit     = 300*4,
-    .reset_limit    = 350*4,
+    .reset_limit    = 300*4*2,
 //    .json_callback  = &xc0322_callback,
     .json_callback  = &xc0322_template_callback,
 };
