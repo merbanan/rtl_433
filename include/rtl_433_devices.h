@@ -113,7 +113,8 @@
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
 		DECL(wt1024) \
-		DECL(tpms_pmv107j)
+		DECL(tpms_pmv107j) \
+		DECL(tfa_30_3211)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()
