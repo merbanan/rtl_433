@@ -60,21 +60,20 @@ static int tfa_303211_callback (bitbuffer_t *bitbuffer)
     int const channel       = (b[1] & 0x30) >> 4;
 
     float tempC = (minus == 1 ? temp * -1 : temp);
-    {
-        char time_str[LOCAL_TIME_BUFLEN];
-        local_time_str(0, time_str);
 
-        data = data_make(
-        "time",          "",            DATA_STRING, time_str,
-        "model",         "",            DATA_STRING, "TFA 30.3211.02",
-        "id",            "",            DATA_INT, sensor_id,
-        "channel",       "",            DATA_INT, channel,
-        "battery",       "Battery",     DATA_STRING, "??",
-        "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
-        "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-        NULL);
-        data_acquired_handler(data);
-    }
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
+
+    data = data_make(
+            "time",          "",            DATA_STRING, time_str,
+            "model",         "",            DATA_STRING, "TFA 30.3211.02",
+            "id",            "",            DATA_INT, sensor_id,
+            "channel",       "",            DATA_INT, channel,
+            "battery",       "Battery",     DATA_STRING, "??",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
+    data_acquired_handler(data);
 
     return 1;
 }
