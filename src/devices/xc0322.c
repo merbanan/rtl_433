@@ -58,6 +58,18 @@ int fprintf_bits2csv(FILE * stream, uint8_t byte) {
 		return nprint;
 }
 
+char xc0322_label[7] = {0};
+
+void get_xc0322_label(char * label) {
+	// Get a 7 char label for this "line" of output read from stdin
+	// Has a hissy fit if nothing there to read!!
+	// EXTRA Bodgy!!
+  if (fgets(label, 7, stdin) != NULL) {
+    fprintf(stderr, "%s\n", label);
+  }
+}
+
+ 
 void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	int highest_indent, indent_this_col, indent_this_row, row_len;
 	uint16_t col, row;
@@ -75,8 +87,11 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	}
 	// Label this "line" of output with 7 character label read from stdin
 	// Has a hissy fit if nothing there to read!!
-  char label[7];
-  if (fgets(label, 7, stdin) != NULL) fprintf(stderr, "%s, ", label);
+
+  //fprintf(stderr, "BEFORE%s<< %d ,", xc0322_label, (int)strlen(xc0322_label) );
+	
+  if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
+  fprintf(stderr, "%s ,", xc0322_label);
 
 	// fprintf(stderr, "nr[%d] ", bits->num_rows);
   
@@ -112,19 +127,6 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	  	*/
       // Print binary values , 8 bits at a time
 	  	row_len += fprintf_bits2csv(stderr, bits->bb[row][col]);
-			/* 
-		 	for (uint16_t bit = 0; bit < 8; ++bit) {
-			  if ((bit % 8) == 0)      // Separator to start a byte
-			  	fprintf(stderr, "\t");
-		  	if (bits->bb[row][col] & (0x80 >> (bit % 8))) {
-			  	fprintf(stderr, "1");
-			  } else {
-			  	fprintf(stderr, "0");
-			  }
-			  if ((bit % 8) == 7)      // Separator to end a byte
-			  	fprintf(stderr, ",");
-		  } 
-		  */
 
 			if ((col % 4) == 3) fprintf(stderr, " | ");
 		  
@@ -151,6 +153,116 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 #define MYDEVICE_CRC_INIT    0x00
 
 static const uint8_t preamble_pattern[1] = {0x5F}; // Only 8 bits
+
+static uint8_t
+calculate_checksum(uint8_t *buff, int length)
+{
+    uint8_t mask = 0x7C;
+    uint8_t checksum = 0x64;
+    uint8_t data;
+    int byteCnt;
+
+    for (byteCnt=0; byteCnt < length; byteCnt++) {
+        int bitCnt;
+        data = buff[byteCnt];
+
+        for (bitCnt = 7; bitCnt >= 0 ; bitCnt--) {
+            uint8_t bit;
+
+            // Rotate mask right
+            bit = mask & 1;
+            mask = (mask >> 1 ) | (mask << 7);
+            if (bit) {
+                mask ^= 0x18;
+            }
+
+            // XOR mask into checksum if data bit is 1
+            if (data & 0x80) {
+                checksum ^= mask;
+            }
+            data <<= 1;
+        }
+    }
+    return checksum;
+}
+
+
+static int
+x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
+    uint8_t b[18];
+    int deviceID;
+    int isBatteryLow;
+    int channel;
+    float temperature;
+    int humidity;
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 18*8);
+
+    // Lets look at the "aligned" data
+    if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
+    fprintf(stderr, "\n%s||, , ", xc0322_label);
+    for (int col = 0; col < 18; col++) {
+    	fprintf(stderr, "\t%02X ,", b[col]);
+      // Print binary values , 8 bits at a time
+	 	  fprintf_bits2csv(stderr, b[col]);
+			if ((col % 4) == 3) fprintf(stderr, " | ");
+    }
+
+    // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB order!
+    // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
+    
+    uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
+    temperature = (temp / 10.0f) - 40.0f ;
+    fprintf(stderr, "Temp was %4.1f ,", temperature);
+    
+    //Let's look at b[5]
+    uint8_t b5 = reverse8(b[5]);
+    fprintf(stderr, "b5 is %02X, %d, reversed is %02X, %d, ", b[5], b[5], b5, b5);
+    
+
+    uint8_t expected = b[5];
+    uint8_t calculated = calculate_checksum(b, 5);
+
+    if (expected != calculated) {
+       // if (debug_output) {
+            fprintf(stderr, "Checksum error in xc0322 message.    Expected: %02x,    Calculated: %02x, ", expected, calculated);
+    //        fprintf(stderr, "Message: ");
+    //        for (int i=0; i < 6; i++)
+    //            fprintf(stderr, "%02x ", b[i]);
+    //        fprintf(stderr, "\n\n");
+        //}
+        return 0;
+    }
+    fprintf(stderr, "\n");
+
+    /* 
+
+    deviceID = b[1];
+    isBatteryLow = (b[2] & 0x80) != 0; // if not zero, battery is low
+    channel = ((b[2] & 0x70) >> 4) + 1;
+    int temp_f = ((b[2] & 0x0f) << 8) | b[3];
+    temperature = (temp_f - 400) / 10.0f;
+    humidity = b[4];
+
+    local_time_str(0, time_str);
+    data = data_make(
+            "time",           "",             DATA_STRING, time_str,
+            "model",          "",             DATA_STRING, "Ambient Weather F007TH Thermo-Hygrometer",
+            "device",         "House Code",   DATA_INT,    deviceID,
+            "channel",        "Channel",      DATA_INT,    channel,
+            "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "Ok",
+            "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
+            "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",            "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    data_acquired_handler(data);
+    */
+
+    return 1;
+}
 
 
 static int xc0322_template_callback(bitbuffer_t *bitbuffer)
@@ -262,19 +374,24 @@ static int xc0322_template_callback(bitbuffer_t *bitbuffer)
     /*
      * Or (preferred) search for the message preamble:
      * See bitbuffer_search()
-     * or copy the style from another file, eg ambient_weather.c
+     * or copy the style from another file, eg ambient_weather.c :-)
      */
         bitpos = 0;
+        fprintf(stderr, "\nbitpos starts at %03d", bitpos);
+        bitpos = bitbuffer_search(bitbuffer, r, bitpos,
+                (const uint8_t *)&preamble_pattern, 8);
+        fprintf(stderr, "\nbitpos is now at %03d", bitpos);
         // Find a preamble with enough bits after it that it could be a complete packet
+        bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 8+16*8 <=
+                (const uint8_t *)&preamble_pattern, 8)) + 8+16*8 <=
                 bitbuffer->bits_per_row[r]) {
-            //events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
-            //if (events) return events; // for now, break after first successful message
-            //bitpos += 16;
-            fprintf(stderr, "bitpos is %d", bitpos);
-            return 1;
+            events += x0322_decode(bitbuffer, r, bitpos ); //+ 8);
+            if (events) return events; // for now, break after first successful message
+            bitpos += 8;
+            fprintf(stderr, "\n | loop bitpos is %03d", bitpos);
         }
+     return 1;
 
     /*
      * Check message integrity (Parity example)
