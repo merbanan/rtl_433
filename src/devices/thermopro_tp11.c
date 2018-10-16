@@ -11,8 +11,6 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define MODEL "Thermopro TP11 Thermometer"
-
 /* normal sequence of bit rows:
 [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
@@ -73,7 +71,7 @@ static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
 
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, MODEL,
+                     "model",         "",            DATA_STRING, "Thermopro TP11 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp,
                      NULL);
@@ -90,7 +88,7 @@ static char *output_fields[] = {
 };
 
 r_device thermopro_tp11 = {
-    .name          = MODEL,
+    .name          = "Thermopro TP11 Thermometer",
     .modulation    = OOK_PULSE_PPM_RAW,
     .short_limit   = 956,
     .long_limit    = 1912,
