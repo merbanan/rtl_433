@@ -3,29 +3,35 @@
 #include "data.h"
 
 /*
- * TFA-30.3211.02
- *
- * Copyright (C) 2018 ionum - projekte
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3 as
- * published by the Free Software Foundation.
+ TFA 30.3211.02 
  
- * 2 Bits "Preamble" 72 Bits (18 nibbles)
+ 1970us pulse with variable gap (third pulse 3920 us)
+ 
+ Above 79% humidity, gap after third pulse is 5848 us
+ 
+ Bit 1 : 1970us pulse with 3888 us gap
+ Bit 0 : 1970us pulse with 1936 us gap
+ 
+ Demoding with -X "tfa_test:OOK_PPM_RAW:2900:5000:36500"
+ 
+ 74 bit (2 bit preamble and 72 bit data => 9 bytes => 18 nibbles)
+ 
+ Nibble       1   2    3   4    5   6    7   8    9   10   11  12   13  14   15  16   17  18
+           PP ?HHHhhhh ??CCNIII IIIITTTT ttttuuuu ???????? ???????? ???????? ???????? ??????
+ 
+     P = Preamble
+     H = First digit humidity 7-bit 0=8,1=9 (Range from 20 - 99%)
+     h = Second digit humidity
+     C = Channel
+     T = First digit temperatur
+     t = Second digit temperatur
+     u = Third digit temperatur
+     N = Negative temperatur
+     
 
- *  Nibble    1   2    3   4    5   6    7   8    9   10   11  12   13  14   15  16   17  18
- *         PP ?HHHhhhh ???????? II??TTTT ttttuuuu ???????? ???????? ???????? ???????? ??????
- *
- *    P = Preamble
- *    H = first digit (only to 7?) humidity
- *    h = second digit humidity
- *    I = Channel
- *    T = first digit temperatur
- *    t = second digit temperatur
- *    u = third digit temperatur
  */
 
-static int tfa_303211_callback (bitbuffer_t *bitbuffer)
-{
+static int tfa_303211_callback (bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b      = bitbuffer->bb[0];
     const uint16_t length = bitbuffer->bits_per_row[0];
@@ -36,37 +42,33 @@ static int tfa_303211_callback (bitbuffer_t *bitbuffer)
 		return 0;
 	}
 
-	/* shift preamble */
+    /* shift preamble */
     int i;
     for (i = 0; i < 9; i++) {
       uint8_t b1 = b[i] << 2;
       uint8_t b2 = (b[i+1] & 0xC0) >> 6;
       b[i] = b1 | b2;
-}
+    }
 
-    //const int negative_sign = (b[2] & 7);
-	if(debug_output) {
-		fprintf(stderr,"tfa_303211 temp*10 %i\n",((b[2] & 0x0F) * 10));
-		fprintf(stderr,"tfa_303211 temp %i\n",((b[3] & 0xF0) >> 4));
-		fprintf(stderr,"tfa_303211 temp/10 %i\n",(b[3] & 0x0F));
-	}
     const float temp        = ((b[2] & 0x0F) * 10) + ((b[3] & 0xF0) >> 4) + ((b[3] & 0x0F) *0.1F);
-    const int humidity      = ((b[0] &0x70) >> 4) * 10 + (b[1] & 0x0F);
-    const int sensor_id     = 0;
-    const int battery_low   = b[1] >> 7;
-    const int channel       = ((b[2]& 0xC0) >> 6) + 1;
+    const int minus         = (b[1] & 0x08) >> 3;
+    const int hum           = (b[0] & 0x70) >> 4;
+    const int humidity      = (hum < 2 ? hum + 8 : hum) * 10 + (b[0] & 0x0F);
+    const int sensor_id     = ((b[1] & 0x07) << 4) | ((b[2] & 0xF0) >> 4);
+    const int battery_low   = 0;
+    const int channel       = (b[1] & 0x30) >> 4;
 
-    float tempC = 0;
+    float tempC = (minus == 1 ? temp * -1 : temp);
     {
         char time_str[LOCAL_TIME_BUFLEN];
         local_time_str(0, time_str);
 
         data = data_make("time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "TFA 30.3211.02",
-            "id",            "",            DATA_INT, 0,
+            "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, "??",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             NULL);
         data_acquired_handler(data);
@@ -90,7 +92,7 @@ r_device tfa_30_3211 = {
     .name          = "TFA 30.3211.02",
     .modulation    = OOK_PULSE_PPM_RAW,
     .short_limit   = 2900,
-    .long_limit    = 5000,
+    .long_limit    = 6000,
     .reset_limit   = 36500,
     .json_callback = &tfa_303211_callback,
     .disabled      = 0,
