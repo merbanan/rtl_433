@@ -1435,7 +1435,8 @@ int main(int argc, char **argv) {
             r = sdr_set_tuner_gain(dev, gain, !quiet_mode);
         }
 
-        if(ppm_error) r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
+        if (ppm_error)
+            r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
     }
 
     if (out_filename) {
