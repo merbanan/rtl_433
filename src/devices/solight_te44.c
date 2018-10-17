@@ -38,6 +38,8 @@
 #include "rtl_433.h"
 #include "util.h"
 
+extern int rubicson_crc_check(bitrow_t *bb);
+
 static int solight_te44_callback(bitbuffer_t *bitbuffer) {
 
     data_t *data;
@@ -70,6 +72,8 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
             return 0;
         }
     }
+
+    if (!rubicson_crc_check(bb)) return 0;
 
     local_time_str(0, time_str);
 
