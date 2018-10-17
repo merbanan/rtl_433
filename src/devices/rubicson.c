@@ -19,46 +19,29 @@
  */
 
 
-/* Working routine for checking the crc, lots of magic but it works */
-
-//static uint8_t rp[] = {0xb8, 0x80, 0xea, 0xfe, 0x80};
-static uint8_t rp[] = {0xea, 0x8f, 0x6a, 0xfa, 0x50};
-
-int rubicson_crc_check(bitrow_t *bb) {
-    uint8_t crc, w;
-    uint8_t diff[9];
-    int i, ret;
-
-    // diff against ref packet
-
-    diff[0] = rp[0]^bb[1][0];
-    diff[1] = rp[1]^bb[1][1];
-    diff[2] = rp[2]^bb[1][2];
-    diff[3] = rp[3]^bb[1][3];
-    diff[4] = rp[4]^bb[1][4];
-
-//    fprintf(stdout, "%02x %02x %02x %02x %02x\n",rp[0],rp[1],rp[2],rp[3],rp[4]);
-//    fprintf(stdout, "%02x %02x %02x %02x %02x\n",bb[1][0],bb[1][1],bb[1][2],bb[1][3],bb[1][4]);
-//    fprintf(stdout, "%02x %02x %02x %02x %02x\n",diff[0],diff[1],diff[2],diff[3],diff[4]);
-
-    for (crc = 0, w = 0xf1, i = 0; i<7 ; i++){
-        uint8_t c = diff[i/2];
-        unsigned digit = (i&1) ? c&0xF : (c&0xF0)>>4;
-        unsigned j;
-        for (j=4; j-->0; ) {
-            if ((digit >> j) & 1)
-                crc ^= w;
-            w = (w >> 1) ^ ((w & 1) ? 0x98: 0);
-        }
+/* Bitwise implementation of CRC-8 with parameters:
+ * width=8  poly=0x31  init=0x6c  refin=false  refout=false  xorout=0x00
+ */
+uint8_t crc8_rubicson(uint8_t const *data, size_t len)
+{
+    unsigned crc = 0x6c;
+    while (len--) {
+        crc ^= *data++;
+        for (unsigned k = 0; k < 8; k++)
+            crc = crc & 0x80 ? (crc << 1) ^ 0x31 : crc << 1;
     }
-    if (crc == (((diff[3]<<4)&0xF0) | (diff[4]>>4)))
-//      printf ("\ncrc ok: %x\n", crc);
-        ret = 1;
-    else
-//      printf ("\ncrc fail: %x\n", crc);
-        ret = 0;
+    return crc;
+}
 
-    return ret;
+static int rubicson_crc_check(bitrow_t *bb) {
+    uint8_t tmp[5];
+    tmp[0] = bb[1][0];            // Byte 0 is nibble 0 and 1
+    tmp[1] = bb[1][1];            // Byte 1 is nibble 2 and 3
+    tmp[2] = bb[1][2];            // Byte 2 is nibble 4 and 5
+    tmp[3] = bb[1][3]&0xf0;       // Byte 3 is nibble 6 and 0-padding
+    tmp[4] = (bb[1][3]&0x0f)<<4 | // CRC is nibble 7 and 8
+             (bb[1][4]&0xf0)>>4;
+    return crc8_rubicson(tmp, 5) == 0;
 }
 
 static int rubicson_callback(bitbuffer_t *bitbuffer) {
