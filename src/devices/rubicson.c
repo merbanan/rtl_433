@@ -32,10 +32,6 @@ int rubicson_crc_check(bitrow_t *bb) {
 
 static int rubicson_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    int temperature_before_dec;
-    int temperature_after_dec, i;
-    int16_t temp;
-    int8_t rh, csum, csum_calc, sum=0;
     unsigned bits = bitbuffer->bits_per_row[0];
     data_t *data;
 
@@ -43,6 +39,7 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
     uint8_t channel;
     uint8_t sensor_id;
     uint8_t battery;
+    int16_t temp;
     float temp_c;
 
     if (!(bits == 36))
