@@ -81,6 +81,7 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
                      "id", "Id", DATA_INT, id,
                      "channel", "Channel", DATA_INT, channel + 1,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
+                     "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
     data_acquired_handler(data);
 
