@@ -80,43 +80,29 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
 	bitbuffer_t bits = {0};
 
-   //debug
-   //fprintf(stderr, "entering pulse_demod_ppm");
-   //fprintf(stderr, "num pulses %d", pulses->num_pulses);
-   //fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
-
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short gap
 		if(pulses->gap[n] < device->short_limit) {
 			bitbuffer_add_bit(&bits, 0);
-			//fprintf(stderr, "0");
 		// Long gap
 		} else if(pulses->gap[n] < device->long_limit) {
 			bitbuffer_add_bit(&bits, 1);
-			//fprintf(stderr, "1");
 		// Check for new packet in multipacket
 		} else if(pulses->gap[n] < device->reset_limit) {
 			bitbuffer_add_row(&bits);
-			//fprintf(stderr, "\nnew packet at pulse %d\n", n);
 		// End of Message?
 		} else {
-		  //fprintf(stderr, "\nend of message\n");
-		  //bitbuffer_print(&bits);
-		  fprintf(stderr, "\nabout to do callback\n");
-		  
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
 			// Debug printout
 			if(!device->callback || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
-				//bitbuffer_print(&bits);
+				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
 		}
 	} // for pulses
-  //debug
-  fprintf(stderr, "exiting pulse_demod_ppm\n");
 	return events;
 }
 
