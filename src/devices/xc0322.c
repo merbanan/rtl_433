@@ -46,16 +46,27 @@ int fprintf_bits2csv(FILE * stream, uint8_t byte) {
     
 		for (uint16_t bit = 0; bit < 8; ++bit) {
 		  if ((bit % 8) == 0)      // Separator to start a byte
-		 	  nprint += fprintf(stderr, "\t");
+		 	  nprint += fprintf(stream, "\t");
 			if (byte & (0x80 >> (bit % 8))) {
-		 	 nprint += fprintf(stderr, "1");
+		 	 nprint += fprintf(stream, "1");
 		  } else {
-		 	 nprint += fprintf(stderr, "0");
+		 	 nprint += fprintf(stream, "0");
 		  }
+		  if ((bit % 8) == 3)      // Separator between nibbles
+		 	 nprint += fprintf(stream, " ");
 		  if ((bit % 8) == 7)      // Separator to end a byte
-		 	 nprint += fprintf(stderr, ",");
+		 	 nprint += fprintf(stream, ",");
 		} 
 		return nprint;
+}
+
+int fprintf_byte2csv(FILE * stream, char * label, uint8_t byte) {
+    //Print hex and binary
+    //fprintf_ing a tab character (\t) helps stop Excel stripping leading zeros
+    int nprint = 0;
+    nprint = fprintf(stream, "\t%s  %02X  ", label, byte);
+    nprint += fprintf_bits2csv(stream, byte);
+    return nprint;
 }
 
 char xc0322_label[7] = {0};
@@ -76,25 +87,22 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 
 	/* Figure out the longest row of bit to get the highest_indent
 	 */
-	highest_indent = sizeof("[dd] {dd} ") - 1;
-	for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-		for (col = indent_this_col  = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-			indent_this_col += 2+1;
-		}
-		indent_this_row = indent_this_col;
-		if (indent_this_row > highest_indent)
-			highest_indent = indent_this_row;
-	}
+	//highest_indent = sizeof("[dd] {dd} ") - 1;
+	//for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
+	//	for (col = indent_this_col  = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
+	//		indent_this_col += 2+1;
+	//	}
+	//	indent_this_row = indent_this_col;
+	//	if (indent_this_row > highest_indent)
+	//		highest_indent = indent_this_row;
+	//}
+	
 	// Label this "line" of output with 7 character label read from stdin
 	// Has a hissy fit if nothing there to read!!
-
   //fprintf(stderr, "BEFORE%s<< %d ,", xc0322_label, (int)strlen(xc0322_label) );
-	
   if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
   fprintf(stderr, "%s ,", xc0322_label);
 
-	// fprintf(stderr, "nr[%d] ", bits->num_rows);
-  
   // Filter out bad samples (too much noise, not enough sample)
   if ((bits->num_rows > 1) | (bits->bits_per_row[0] < 140)) {
 		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%02d] ,", 
@@ -103,34 +111,12 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
     return;
   }
   
-  // Try some different format interpretations 
-	float* fptr;
-	double* dptr;
-	
 	for (row = 0; row < bits->num_rows; ++row) {
 		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] ,", 
                     bits->num_rows, row, bits->syncs_before_row[row], bits->bits_per_row[row]);
 		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 		  if ((col % 68) == 67) fprintf(stderr, " | \n"); // Chunk into useful bytes per line
-		  /*
-      fprintf(stderr, "(%02d)", col);
-      */
-      //fprintf_ing a tab character (\t) helps stop Excel stripping leading zeros
-			row_len += fprintf(stderr, "\t%02X ,", bits->bb[row][col]);
-	  	//fprintf(stderr, " --> %04d ,", bits->bb[row][col]);
-	  	/*
-	  	fptr = &(bits->bb[row][col]);
-	  	fprintf(stderr, " --> %04f ", *fptr);
-	  	dptr = &(bits->bb[row][col]);
-	  	fprintf(stderr, " --> %04f ", *dptr);
-	  	//fprintf(stderr, " --> %04f ", 23.0);
-	  	*/
-      // Print binary values , 8 bits at a time
-	  	row_len += fprintf_bits2csv(stderr, bits->bb[row][col]);
-
-			if ((col % 4) == 3) fprintf(stderr, " | ");
-		  
-	  	//fprintf(stderr, "\n");
+			fprintf_byte2csv(stderr, "", bits->bb[row][col]);
 		}
 	}
 }
@@ -190,7 +176,8 @@ calculate_checksum(uint8_t *buff, int length)
 static int
 x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    uint8_t b[18];
+    uint8_t b[19];
+    uint8_t brev[19];
     int deviceID;
     int isBatteryLow;
     int channel;
@@ -199,15 +186,24 @@ x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 18*8);
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 19*8);
+    
+    for (int i = 0; i < 19; i++) {
+      brev[i] = reverse8(b[i]);
+    }
 
     // Lets look at the "aligned" data
     if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
     fprintf(stderr, "\n%s||, , ", xc0322_label);
-    for (int col = 0; col < 18; col++) {
-    	fprintf(stderr, "\t%02X ,", b[col]);
+    
+    
+    for (int col = 0; col < 19; col++) {
+    // Concentrate on the first 6 (of 18.5 possible) bytes
+    //for (int col = 0; col < 6; col++) {
+      fprintf_byte2csv(stderr, "", b[col]);
+    	//fprintf(stderr, "\t%02X ,", b[col]);
       // Print binary values , 8 bits at a time
-	 	  fprintf_bits2csv(stderr, b[col]);
+	 	  //fprintf_bits2csv(stderr, b[col]);
 			if ((col % 4) == 3) fprintf(stderr, " | ");
     }
 
@@ -217,27 +213,51 @@ x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
     temperature = (temp / 10.0f) - 40.0f ;
     fprintf(stderr, "Temp was %4.1f ,", temperature);
-    
+
     //Let's look at b[5]
-    uint8_t b5 = reverse8(b[5]);
-    fprintf(stderr, "b5 is %02X, %d, reversed is %02X, %d, ", b[5], b[5], b5, b5);
+
+    // Finally, after many experiments  - Bingo
+    // b[5] is a check byte. 
+    // Each bit is the parity of the bits in corresponding position of b[0] to b[4]
+    // Or brev[5] == brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4]
+    fprintf_byte2csv(stderr, "brev0 ^ brev1 ^ brev2 ^ brev3 ^ brev4", brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4]);
+    fprintf_byte2csv(stderr, "brev5", brev[5]);
+    fprintf_byte2csv(stderr, "brev0 ^ brev1 ^ brev2 ^ brev3 ^ brev4 ^ brev5", brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4] ^ brev[5]);
+
+    fprintf(stderr, "\n");
     
-
+    // The ambient weather checksum
     uint8_t expected = b[5];
-    uint8_t calculated = calculate_checksum(b, 5);
+    uint8_t calculated = calculate_checksum(brev, 5);
 
-    if (expected != calculated) {
+    //if (expected != calculated) {
        // if (debug_output) {
-            fprintf(stderr, "Checksum error in xc0322 message.    Expected: %02x,    Calculated: %02x, ", expected, calculated);
+       //     fprintf(stderr, "Checksum error in xc0322 message.    Expected: %02x,    Calculated: %02x, ", expected, calculated);
     //        fprintf(stderr, "Message: ");
     //        for (int i=0; i < 6; i++)
     //            fprintf(stderr, "%02x ", b[i]);
     //        fprintf(stderr, "\n\n");
         //}
-        return 0;
-    }
-    fprintf(stderr, "\n");
+    //    return 0;
+    //}
+    fprintf(stderr, "ambient checksum Expected: %02x, Calculated: %02x, ", expected, calculated);
+    
 
+    /*
+     * Check message integrity (CRC example)
+     *
+     * Example device uses CRC-8
+     
+    uint8_t c_crc0_5 = crc8(brev,     5, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
+    uint8_t c_crc1_5 = crc8(&brev[1], 4, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
+    fprintf(stderr, "crc8 5 bytes: %02x, 4 bytes no preamble: %02x, ", c_crc0_5, c_crc1_5);
+
+    uint8_t c_crcle0_5 = crc8le(brev,     5, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
+    uint8_t c_crcle1_5 = crc8le(&brev[1], 4, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
+    fprintf(stderr, "crc8le 5 bytes: %02x, 4 bytes no preamble: %02x, ", c_crcle0_5, c_crcle1_5);
+
+    fprintf(stderr, "\n");
+    */
     /* 
 
     deviceID = b[1];
