@@ -139,10 +139,12 @@ char* local_time_str(time_t time_secs, char *buf)
 
     if (time_secs == 0) {
         extern float sample_file_pos;
-        if (sample_file_pos != -1.0) {
-            snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
-            return buf;
-        }
+        // Comment out to allow times to be reported correctly when reading
+        // from a file
+        //if (sample_file_pos != -1.0) {
+        //    snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
+        //    return buf;
+        //}
         time(&etime);
     } else {
         etime = time_secs;

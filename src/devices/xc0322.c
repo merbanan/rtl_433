@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <signal.h>
 
 int fprintf_bits2csv(FILE * stream, uint8_t byte) {
     // Print binary values , 8 bits at a time
@@ -69,15 +69,42 @@ int fprintf_byte2csv(FILE * stream, char * label, uint8_t byte) {
     return nprint;
 }
 
-char xc0322_label[7] = {0};
+
+// Get a label for my debuggng output
+// Preferably read from stdin (bodgy but easy to arrange with a pipe)
+// but failing that, use a local time string
+
+static volatile bool fgets_timeout;
+
+void fgets_timeout_handler(int sigNum) {
+    fgets_timeout = 1; // Non zero == True;
+}
+
+// Assume LOCAL_TIME_BUFLEN is at least 7!
+char xc0322_label[LOCAL_TIME_BUFLEN] = {0};
 
 void get_xc0322_label(char * label) {
 	// Get a 7 char label for this "line" of output read from stdin
 	// Has a hissy fit if nothing there to read!!
-	// EXTRA Bodgy!!
-  if (fgets(label, 7, stdin) != NULL) {
-    fprintf(stderr, "%s\n", label);
+	// so set an alarm and provide a default alternative.
+  char * lab;
+
+  // Allow fgets 2 seconds to read label from stdin
+  fgets_timeout = 0; // False;
+  signal(SIGALRM, fgets_timeout_handler);
+  alarm(2);
+
+  lab = fgets(label, 7, stdin);
+
+  if (fgets_timeout) {
+    fprintf(stderr, "\n\nfgets timed out\n");
+    local_time_str(0, label);
+    //strcpy(label, "NOlabll"); //6 chars PLUS a NULL character!
   }
+  fprintf(stderr, "lab is %s, label is %s, xc0322_label is %s\n\n",
+          lab, label, xc0322_label); 
+  //fprintf(stderr, "%s\n", label);
+
 }
 
  
