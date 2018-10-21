@@ -30,7 +30,7 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
     b[2] = ~b[2];
 
     id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
-	cmd = b[2] & 0x0F;
+    cmd = b[2] & 0x0F;
     switch (cmd) {
         case 0x1: cmd_str = "0x1 (Lock)"; break;
         case 0x2: cmd_str = "0x2 (Unlock)"; break;
@@ -42,9 +42,9 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
     if (!cmd_str)
         return 0;
 
-	local_time_str(0, time_str);
+    local_time_str(0, time_str);
     data = data_make(
-			"time",     "",             DATA_STRING, time_str,
+            "time",     "",             DATA_STRING, time_str,
             "model",    "",             DATA_STRING, "Akhan 100F14 remote keyless entry",
             "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
             "data",     "Data (4bit)",  DATA_STRING, cmd_str,
