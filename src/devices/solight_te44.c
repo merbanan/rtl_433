@@ -38,6 +38,8 @@
 #include "rtl_433.h"
 #include "util.h"
 
+extern int rubicson_crc_check(bitrow_t *bb);
+
 static int solight_te44_callback(bitbuffer_t *bitbuffer) {
 
     data_t *data;
@@ -48,28 +50,14 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
     int8_t multiplier;
     uint8_t temperature_raw;
     float temperature;
+    unsigned bits = bitbuffer->bits_per_row[0];
 
     bitrow_t *bb = bitbuffer->bb;
 
-    // simple payload structure check (as the checksum algorithm is still unclear)
-    if (bitbuffer->num_rows != 12) {
+    if (bits != 37)
         return 0;
-    }
 
-    for (int i = 0; i < 12; i++) {
-        int bits = i < 11 ? 37 : 36; // last line does not contain single 0 separator
-
-        // all lines should have correct length
-        if (bitbuffer->bits_per_row[i] != bits) {
-            return 0;
-        }
-
-        // all lines should have equal content
-        // will work also for the last, shorter line, as the separating bit is always 0 anyway
-        if (i > 0 && 0 != memcmp(bb[i], bb[i - 1], 5)) { // 5 bytes to compare 40 bits
-            return 0;
-        }
-    }
+    if (!rubicson_crc_check(bb)) return 0;
 
     local_time_str(0, time_str);
 
@@ -93,6 +81,7 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
                      "id", "Id", DATA_INT, id,
                      "channel", "Channel", DATA_INT, channel + 1,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
+                     "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
     data_acquired_handler(data);
 

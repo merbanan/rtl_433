@@ -12,11 +12,11 @@
 #include <string.h>
 #include <stdlib.h>
 #ifdef _MSC_VER
-	#ifndef strncasecmp // Microsoft Visual Studio
-		#define strncasecmp  _strnicmp
-	#endif
-#else 
-	#include <strings.h>
+#ifndef strncasecmp // Microsoft Visual Studio
+#define strncasecmp  _strnicmp
+#endif
+#else
+#include <strings.h>
 #endif
 //#include "optparse.h"
 #include "fileformat.h"
@@ -180,6 +180,18 @@ static void file_type(char const *filename, file_info_t *info)
     }
 }
 
+// return the last colon not followed by a backslash, otherwise NULL
+char const *last_plain_colon(char const *p)
+{
+    char const *found = NULL;
+    char const *next = strchr(p, ':');
+    while (next && next[1] != '\\') {
+        found = next;
+        next = strchr(next+1, ':');
+    }
+    return found;
+}
+
 /*
 This will detect file info and overrides.
 
@@ -212,10 +224,10 @@ int parse_file_info(char const *filename, file_info_t *info)
 
     info->spec = filename;
 
-    char *p = strrchr(filename, ':');
-    if (p) {
+    char const *p = last_plain_colon(filename);
+    if (p && p - filename < 64) {
         size_t len = p - filename;
-        char forced[512];
+        char forced[64];
         memcpy(forced, filename, len);
         forced[len] = '\0';
         p++;
@@ -244,9 +256,25 @@ void assert_file_type(int check, char const *spec)
     }
 }
 
+void assert_str_equal(char const *a, char const *b)
+{
+    if (a != b && strcmp(a, b)) {
+        fprintf(stderr, "\nTEST failed: \"%s\" == \"%s\"\n", a, b);
+    } else {
+        fprintf(stderr, ".");
+    }
+}
+
 int main(int argc, char **argv)
 {
     fprintf(stderr, "Testing:\n");
+
+    assert_str_equal(last_plain_colon("foo:bar:baz"), ":baz");
+    assert_str_equal(last_plain_colon("foo"), NULL);
+    assert_str_equal(last_plain_colon(":foo"), ":foo");
+    assert_str_equal(last_plain_colon("foo:"), ":");
+    assert_str_equal(last_plain_colon("foo:bar:C:\\path.txt"), ":C:\\path.txt");
+    assert_str_equal(last_plain_colon("foo:bar:C:\\path.txt:baz"), ":C:\\path.txt:baz");
 
     assert_file_type(CU8_IQ, "cu8:");
     assert_file_type(CS16_IQ, "cs16:");

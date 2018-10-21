@@ -169,7 +169,7 @@ Supported device protocols:
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  WS Temperature Sensor
     [109]  WT0124 Pool Thermometer
-    [110]  Toyota TPMS (PMV-107J)
+    [110]  PMV-107J (Toyota) TPMS
 
 * Disabled by default, use -R n or -G
 

@@ -1435,7 +1435,8 @@ int main(int argc, char **argv) {
             r = sdr_set_tuner_gain(dev, gain, !quiet_mode);
         }
 
-        r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
+        if (ppm_error)
+            r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
     }
 
     if (out_filename) {
@@ -1519,39 +1520,39 @@ int main(int argc, char **argv) {
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
 
-        if (frequencies == 0) {
-            frequency[0] = DEFAULT_FREQUENCY;
-            frequencies = 1;
-        } else {
-            time(&rawtime_old);
-        }
-        if (!quiet_mode) {
-            fprintf(stderr, "Reading samples in async mode...\n");
-        }
-        if (duration > 0) {
-            time(&stop_time);
-            stop_time += duration;
-        }
-        while (!do_exit) {
-            /* Set the frequency */
-            center_frequency = frequency[frequency_current];
-            r = sdr_set_center_freq(dev, center_frequency, !quiet_mode);
+    if (frequencies == 0) {
+        frequency[0] = DEFAULT_FREQUENCY;
+        frequencies = 1;
+    } else {
+        time(&rawtime_old);
+    }
+    if (!quiet_mode) {
+        fprintf(stderr, "Reading samples in async mode...\n");
+    }
+    if (duration > 0) {
+        time(&stop_time);
+        stop_time += duration;
+    }
+    while (!do_exit) {
+        /* Set the frequency */
+        center_frequency = frequency[frequency_current];
+        r = sdr_set_center_freq(dev, center_frequency, !quiet_mode);
 #ifndef _WIN32
-            signal(SIGALRM, sighandler);
-            alarm(3); // require callback to run every 3 second, abort otherwise
+        signal(SIGALRM, sighandler);
+        alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-            r = sdr_start(dev, sdr_callback, (void *) demod,
-                    DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
-            if (r < 0) {
-                fprintf(stderr, "WARNING: async read failed (%i).\n", r);
-                break;
-            }
-#ifndef _WIN32
-            alarm(0); // cancel the watchdog timer
-#endif
-            do_exit_async = 0;
-            frequency_current = (frequency_current + 1) % frequencies;
+        r = sdr_start(dev, sdr_callback, (void *) demod,
+                DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+        if (r < 0) {
+            fprintf(stderr, "WARNING: async read failed (%i).\n", r);
+            break;
         }
+#ifndef _WIN32
+        alarm(0); // cancel the watchdog timer
+#endif
+        do_exit_async = 0;
+        frequency_current = (frequency_current + 1) % frequencies;
+    }
 
     if (!do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);

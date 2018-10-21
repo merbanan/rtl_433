@@ -25,7 +25,6 @@
 #include "data.h"
 #include "util.h"
 
-#define MODEL "WS Temperature Sensor"
 #define WS_PACKETLEN	24
 #define WS_MINREPEATS	4
 #define WS_REPEATS	23
@@ -73,7 +72,7 @@ static int wssensor_callback(bitbuffer_t *bitbuffer) {
 
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, MODEL,
+                     "model",         "",            DATA_STRING, "WS Temperature Sensor",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel,
                      "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
@@ -95,7 +94,7 @@ static char *output_fields[] = {
 };
 
 r_device wssensor = {
-    .name           = MODEL,
+    .name           = "WS Temperature Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 1400,
     .long_limit     = 2400,
@@ -105,4 +104,3 @@ r_device wssensor = {
     .demod_arg      = 0,
     .fields         = output_fields
 };
-
