@@ -55,10 +55,8 @@ Various data fields, which are common across devices of different types
   * Battery level in %. Should always be suppleanted by *battery* status indication.
 
 ## Sensor Data
-Due to the large variance in sensor types this list of common values is non-exhaustive. However 
-insofar possible the sensors should use these data types even if conversion from native low-level
-sensor data is needed. Additional data value fields should follow the form: `<Type>_<Unit>`, where 
-*Unit* should be in SI units.
+Due to the large variance in sensor types this list of common values is non-exhaustive. Additional data value fields should follow the form: `<Type>_<Unit>`, where *Unit* should be in sensors native units insofar possible with no conversion.
+Examples:
 
 * **temperature_C** (double) (Optional)
   * Temperature from a temperature sensor in degrees Celcius.
