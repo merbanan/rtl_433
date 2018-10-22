@@ -40,6 +40,13 @@
 #include <string.h>
 #include <signal.h>
 
+#define MYDEVICE_BITLEN      148
+#define MYMESSAGE_BITLEN     48
+#define MYMESSAGE_BYTELEN    MYMESSAGE_BITLEN / 8
+#define MYDEVICE_STARTBYTE   0x5F
+#define MYDEVICE_MINREPEATS  3
+
+
 /* 
   * Begin with some utility routines for examining messages
 */
@@ -77,7 +84,7 @@ int fprintf_byte2csv(FILE * stream, char * label, uint8_t byte) {
 
 // Get a label for my debuggng output
 // Preferably read from stdin (bodgy but easy to arrange with a pipe)
-// but failing that, use a local time string
+// but failing that, after waiting 2 seconds, use a local time string
 
 static volatile bool fgets_timeout;
 
@@ -102,35 +109,43 @@ void get_xc0322_label(char * label) {
   lab = fgets(label, 7, stdin);
 
   if (fgets_timeout) {
-    //fprintf(stderr, "\n\nfgets timed out\n");
     // Use a current time string as a default label
-    local_time_str(0, label);
+    time_t current;
+    local_time_str(time(&current), label);
   }
-  //fprintf(stderr, "lab is %s, label is %s, xc0322_label is %s\n\n",
-  //        lab, label, xc0322_label); 
 }
 
 
 void bitbuffer_print_csv(const bitbuffer_t *bits) {
-	int highest_indent, indent_this_col, indent_this_row, row_len;
 	uint16_t col, row;
 
-	// Label this "line" of output with 7 character label read from stdin
-  if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
-  fprintf(stderr, "%s ,", xc0322_label);
-
 	for (row = 0; row < bits->num_rows; ++row) {
-		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] ,", 
+    // I use the XC0322 in the stderr stream to select this csv line using 
+    // grep "XC0322" 
+    fprintf(stderr,"XC0322:DD Package, ");
+  	// Label this "line" of output with (7) character label read from stdin
+    fprintf(stderr, "%s, ", xc0322_label);
+    //Echo the data from this row
+		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] , , ", 
                     bits->num_rows, row, bits->syncs_before_row[row], bits->bits_per_row[row]);
-    // Filter out bad samples (too much noise, not enough sample)
-    if (bits->bits_per_row[row] < 48) {
-      fprintf(stderr, "CORRUPTED data signal");
-      return;
-    }
-		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-		  if ((col % 68) == 67) fprintf(stderr, " | \n"); // Chunk into useful bytes per line
+		for (col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 			fprintf_byte2csv(stderr, "", bits->bb[row][col]);
 		}
+    // Flag bad samples (too much noise, not enough sample, 
+    // or package possibly segmented over multiple rows
+    if (bits->num_rows > 1) {
+      fprintf(stderr, "Bad package - more than 1 row, ");
+      // But maybe there are usable fragments somewhere?
+    }
+    if (bits->bits_per_row[row] < MYDEVICE_BITLEN) {
+      fprintf(stderr, "Bad package - less than %d bits, ", MYDEVICE_BITLEN);
+      // Mmmm, not a full package, but is there a single message?
+    }
+    if (bits->bits_per_row[row] < MYMESSAGE_BITLEN) {
+      fprintf(stderr, "Bad message - less than %d bits, ", MYMESSAGE_BITLEN);
+      // No, not even a single message :-)
+    }
+    fprintf(stderr, "\n");
 	}
 }
 
@@ -169,112 +184,107 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
  *   offset from -40.0 degrees C (minimum temp spec of the device)
  * byte 4 is constant (in all my data) 0x80
  *   ~maybe~ a battery status ???
- * byte 5 is a checksum (the XOR of bytes 0-4 inclusive)
+ * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
  *   each bit is effectively a parity bit for correspondingly positioned bit in
  *   the real message
  *
  */
-#define MYDEVICE_BITLEN      148
-#define MYMESSAGE_BITLEN     48
-#define MYMESSAGE_BYTELEN    MYMESSAGE_BITLEN / 8
-#define MYDEVICE_STARTBYTE   0x5F
-#define MYDEVICE_MINREPEATS  3
-
 static const uint8_t preamble_pattern[1] = {0x5F}; // Only 8 bits
 
 static uint8_t
-calculate_checksum(uint8_t *buff, int length)
+calculate_paritycheck(uint8_t *buff, int length)
 {
     // b[5] is a check byte. 
     // Each bit is the parity of the bits in corresponding position of b[0] to b[4]
     // ie brev[5] == brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4]
     // and brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4] ^ brev[5] == 0x00
-    // fprintf_byte2csv(stderr, "brev0 ^ brev1 ^ brev2 ^ brev3 ^ brev4", brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4]);
-    // fprintf_byte2csv(stderr, "brev5", brev[5]);
-    // fprintf_byte2csv(stderr, "brev0 ^ brev1 ^ brev2 ^ brev3 ^ brev4 ^ brev5", brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4] ^ brev[5]);
 
-    uint8_t checksum = 0x00;
+    uint8_t paritycheck = 0x00;
     int byteCnt;
 
     for (byteCnt=0; byteCnt < length; byteCnt++) {
-        checksum ^= buff[byteCnt];
+        paritycheck ^= buff[byteCnt];
     }
     // A clean message returns 0x00
-    return checksum;
+    return paritycheck;
     
 }
 
 
 static int
-x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
 {   // Working buffers
     uint8_t b[MYMESSAGE_BYTELEN];
-    uint8_t brev[MYMESSAGE_BYTELEN];
+    //uint8_t brev[MYMESSAGE_BYTELEN];
     
     // Extracted data values
     int deviceID;
-    float temperature;
+    double temperature;
     uint8_t const_byte4_0x80;
-    uint8_t mic; //message integrity check == 0x00
-    
-    // Structures to send data back to main program after a successful callback
+    uint8_t parity_check; //message integrity check == 0x00
     char time_str[LOCAL_TIME_BUFLEN];
-    data_t *data;
-
-    // Slightly (well ok more than slightly) bodgy way to get labels for the 
-    // debug outputs.
-    if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
-    fprintf(stderr, "\n%s||, , ", xc0322_label);
     
+
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
-    // and reverse each byrte for easier processing
-    for (int i = 0; i < MYMESSAGE_BYTELEN; i++) {
-      brev[i] = reverse8(b[i]);
+    // and reverse each byte for easier processing of temperature
+    //for (int i = 0; i < MYMESSAGE_BYTELEN; i++) {
+    //  brev[i] = reverse8(b[i]);
+    //}
+
+    if (debug_output > 0) {
+      // Send the aligned data to stderr, in "debug to csv" format.
+      for (int col = 0; col < MYMESSAGE_BYTELEN; col++) {
+        fprintf_byte2csv(stderr, "", b[col]);
+  			if ((col % 4) == 3) fprintf(stderr, " | ");
+      }
     }
 
-    // Look at the aligned and reversed data
-    
-    for (int col = 0; col < MYMESSAGE_BYTELEN; col++) {
-      fprintf_byte2csv(stderr, "", b[col]);
-			if ((col % 4) == 3) fprintf(stderr, " | ");
-    }
-
-    // Examine the checksum and bail out if not OK
-    mic = calculate_checksum(brev, 6);
-    if (mic != 0x00) {
-       fprintf_byte2csv(stderr, "XC0322 message checksum is not 0x00 but ", mic);
-       fprintf(stderr, "\n");
+    // Examine the paritycheck and bail out if not OK
+    //parity_check = calculate_paritycheck(brev, 6);
+    parity_check = calculate_paritycheck(b, 6);
+    if (parity_check != 0x00) {
+       if (debug_output > 0) {
+         // Close off the "debug to csv" line before giving up.
+         fprintf_byte2csv(stderr, "Bad parity check - not 0x00 but ", parity_check);
+         fprintf(stderr, "\n");
+       }
        return 0;
     }
     
-    // Extract the deviceID (arbitrary number?)
-    deviceID = brev[1];
+    // Extract the deviceID as int and as hex(arbitrary value?)
+    deviceID = b[1];
+    char id [4] = {0};
+    snprintf(id, 3, "%02X", b[1]);
     
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
     
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
     temperature = (temp / 10.0f) - 40.0f ;
-    fprintf(stderr, "Temp was %4.1f ,", temperature);
+    if (debug_output > 0) {
+      fprintf(stderr, "Temp was %4.1f ,", temperature);
+    }
 
     //Unknown byte, constant as 0x80 in all my data
-    const_byte4_0x80 = brev[4];
+    // ??maybe battery status??
+    const_byte4_0x80 = b[4];
 
-    fprintf(stderr, "\n");
+    //  Finish the "debug to csv" line.
+    if (debug_output > 0) fprintf(stderr, "\n");
 
     time_t current;
     local_time_str(time(&current), time_str);
-    data = data_make(
-            "timez",           "Time",         DATA_STRING, time_str,
-            "deviceType",      "Device Type",        DATA_STRING, "Digitech XC0322(XC0324) Thermo-Hygrometer",
-            "deviceID",        "Device ID",    DATA_INT,    deviceID,
-            "temperature",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "unknown1",       "Constant ?",   DATA_INT,    const_byte4_0x80,
-            "mic",            "Integrity",    DATA_STRING, mic ? "Corrupted" : "OK",
+    *data = data_make(
+            "time",           "Time",         DATA_STRING, time_str,
+            "model",          "Device Type",  DATA_STRING, "Digitech XC0322",
+            "id",             "ID",           DATA_STRING, id,
+            "deviceID",       "Device ID",    DATA_INT,    deviceID,
+            "temperature_C",  "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "const_0x80",       "Constant ?",   DATA_INT,    const_byte4_0x80,
+            "parity_status",  "Parity",       DATA_STRING, parity_check ? "Corrupted" : "OK",
+            "mic",            "Integrity",    DATA_STRING, "PARITY",
             NULL);
-    data_acquired_handler(data);
-    
 
     return 1;
 }
@@ -287,28 +297,37 @@ x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
  *
  */
 static char *output_fields[] = {
-    "timez",
-    "deviceType",
+    "time",
+    "model",
+    "id",
     "deviceID",
-    "temperature",
-    "unknown1",
+    "temperature_C",
+    "const_0x80",
+    "parity_status",
     "mic",
+    "message_num",
     NULL
 };
 
 
-static int xc0322_template_callback(bitbuffer_t *bitbuffer)
+static int xc0322_callback(bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
-    data_t *data;
+    //char time_str[LOCAL_TIME_BUFLEN];
+    //data_t *data;
     int r; // a row index
     uint8_t *b; // bits of a row
-    uint16_t sensor_id;
-    uint8_t msg_type;
-    int16_t value;
 
     unsigned bitpos;
     int events = 0;
+    data_t * data;
+    int result;
+    
+    if (debug_output > 0) {
+       // Slightly (well ok more than slightly) bodgy way to get labels for the 
+       // debug outputs.
+       if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
+    }
+
 
     /*
      * Early debugging aid to see demodulated bits in buffer and
@@ -319,27 +338,21 @@ static int xc0322_template_callback(bitbuffer_t *bitbuffer)
      * 2. Delete this block when your decoder is working
      */
         if (debug_output > 1) {
-            fprintf(stderr,"xc0322_template callback:\n");
+            // Send a "debug to csv" formatted version of the whole packege
+            // bitbuffer stderr
             bitbuffer_print_csv(bitbuffer);
         }
-
     /*
-     * The bit buffer will contain multiple rows.
-     * Typically a complete message will be contained in a single
-     * row if long and reset limits are set correctly.
-     * May contain multiple message repeats.
-     * Message might not appear in row 0, if protocol uses
-     * start/preamble periods of different lengths.
+     * A complete XC0322 package contains 3 repeats of a message in a single row.
+     * But there may be transmission or demodulation glitches, and so perhaps
+     * the bit buffer could contain multiple rows.
+     * So, check multiple row bit buffers just in case the full package,
+     * or (more likely) a single repeat of the message, can be found.
+     *
+     * Loop over all rows and check for recognisable messages:
      */
-
-    /*
-     * Either, if you expect just a single packet
-     * loop over all rows and collect or output data:
-     */
-
     for (r = 0; r < bitbuffer->num_rows; ++r) {
         b = bitbuffer->bb[r];
-
         /*
          * Validate message and reject invalid messages as
          * early as possible before attempting to parse data.
@@ -350,25 +363,38 @@ static int xc0322_template_callback(bitbuffer_t *bitbuffer)
          * - valid preamble/device type/fixed bits if any
          * - Data integrity checks (CRC/Checksum/Parity)
          */
-
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
-  		      fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
-            fprintf(stderr, "CORRUPTED message - not enough bits\n");
-            continue; // to the next row?  
+          if (debug_output > 0) {
+            fprintf(stderr, "\nXC0322:D  Message, %s, ", xc0322_label);
+            fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
+            fprintf(stderr, "Bad row - too few bits for a message\n");
+          }
+          continue; // to the next row  
         }
         // OK, at least we have enough bits
         /*
-         * Search for the message preamble:
-         * See bitbuffer_search() ( or copy the style from another file, eg ambient_weather.c :-)
+         * Search for a message preamble followed by enough bits 
+         * that it could be a complete message:
          */
-        // Find a preamble with enough bits after it that it could be a complete message
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
                 (const uint8_t *)&preamble_pattern, 8)) 
                 + MYMESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
-            fprintf(stderr, "\n | Message begins at bitpos %03d\n", bitpos);
-            events += x0322_decode(bitbuffer, r, bitpos ); //+ 8);
-            //if (events) return events; // for now, break after first successful message
+            if (debug_output > 0) {
+              // Start a "debug to csv" formatted version of one message's
+              //worth of the bitbuffer to stderr.
+              fprintf(stderr, "\nXC0322:D  Message, %s, ", xc0322_label);
+	            fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
+              fprintf(stderr, "at bit [%03d], ", bitpos);
+              // xc0322_decode will send the rest of the "debug to csv" formatted
+              // to stderr.
+            }
+            events += result = x0322_decode(bitbuffer, r, bitpos, &data);
+            if (result) {
+              data_append(data, "message_num",  "Message repeat count", DATA_INT, events, NULL);
+              data_acquired_handler(data);
+              //return events; // for now, break after first successful message
+            }
             bitpos += MYMESSAGE_BITLEN;
         }
     }
@@ -382,7 +408,8 @@ r_device xc0322 = {
     .short_limit    = 190*4,
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
-    .json_callback  = &xc0322_template_callback,
+    .json_callback  = &xc0322_callback,
+    .disabled       = 1, // stop the debug output from spamming unsuspecting users
     .fields        = output_fields,
 };
 
