@@ -55,7 +55,7 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int v
         }
     }
 
-    char vendor[256], product[256], serial[256];
+    char vendor[256] = "n/a", product[256] = "n/a", serial[256] = "n/a";
     int r = -1;
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
 
