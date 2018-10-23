@@ -212,7 +212,7 @@ calculate_paritycheck(uint8_t *buff, int length)
 
 
 static int
-x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
+xc0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
 {   // Working buffers
     uint8_t b[MYMESSAGE_BYTELEN];
     //uint8_t brev[MYMESSAGE_BYTELEN];
@@ -261,7 +261,7 @@ x0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** da
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
     
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
-    temperature = (temp / 10.0f) - 40.0f ;
+    temperature = (temp / 10.0) - 40.0 ;
     if (debug_output > 0) {
       fprintf(stderr, "Temp was %4.1f ,", temperature);
     }
@@ -323,8 +323,8 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
     int result;
     
     if (debug_output > 0) {
-       // Slightly (well ok more than slightly) bodgy way to get labels for the 
-       // debug outputs.
+       // Slightly (well ok more than slightly) bodgy way to get file name 
+       // labels for the "debug to csv" format outputs.
        if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
     }
 
@@ -339,7 +339,7 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
      */
         if (debug_output > 1) {
             // Send a "debug to csv" formatted version of the whole packege
-            // bitbuffer stderr
+            // bitbuffer to stderr.
             bitbuffer_print_csv(bitbuffer);
         }
     /*
@@ -389,7 +389,7 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
               // xc0322_decode will send the rest of the "debug to csv" formatted
               // to stderr.
             }
-            events += result = x0322_decode(bitbuffer, r, bitpos, &data);
+            events += result = xc0322_decode(bitbuffer, r, bitpos, &data);
             if (result) {
               data_append(data, "message_num",  "Message repeat count", DATA_INT, events, NULL);
               data_acquired_handler(data);
@@ -401,6 +401,37 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
     return events;
 }
 
+static int testhandler_callback(bitbuffer_t *bitbuffer)
+{
+  //EXPERIMENT
+  // This works
+  fprintf(stderr, "\nBefore data1\n");
+  data_t *data1;
+  data1 = data_make("foo1", "FOO1", DATA_DOUBLE, 42.0,
+                    NULL);
+  data_acquired_handler(data1);
+  
+  // This also works
+  fprintf(stderr, "\nBefore data2\n");
+  data_t *data2;
+  data2 = data_make("bar2", "BAR2", DATA_STRING, "I am Bar2",
+                    "more2", "MORE2", DATA_DATA, data_make("foo2", "FOO2", DATA_DOUBLE, 42.0,
+                                                         NULL),
+                    NULL);
+  data_acquired_handler(data2);
+  
+  //But this seems to produce an infinite loop / segmentation fault
+  fprintf(stderr, "\nBefore data3\n");
+  data_t *data3;
+  data3 = data_make("bar3", "BAR3", DATA_STRING, "I am Bar3",
+                    "more3", "MORE3", DATA_DATA, data1,
+                    NULL);
+  data_acquired_handler(data3);
+  
+  fprintf(stderr, "\nBefore return\n");
+  return 0;
+}
+
 
 r_device xc0322 = {
     .name           = "XC0322",
@@ -408,7 +439,8 @@ r_device xc0322 = {
     .short_limit    = 190*4,
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
-    .json_callback  = &xc0322_callback,
+//    .json_callback  = &xc0322_callback,
+    .json_callback  = &testhandler_callback,
     .disabled       = 1, // stop the debug output from spamming unsuspecting users
     .fields        = output_fields,
 };
