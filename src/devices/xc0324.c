@@ -46,10 +46,57 @@
 #define MYDEVICE_STARTBYTE   0x5F
 #define MYDEVICE_MINREPEATS  3
 
+//***************************************************************************//
+
+// USING THE DEBUG MESSAGES from this device.
+//
+// My debugging / deciphering strategy (copied from several helpful blog posts)
+// involves saving a set of package files (using the `-a -t` arguments)
+// then running my 'under development' device against the set of them, using 
+// `-DD` or `-D` arguments.
+//
+// The debug messages in this device emit a "debug to csv" format line.
+// This is mainly a hex and bit pattern version of (part of) the bitbuffer.
+// `-DD` echoes the whole package, row by row.
+// `-D` echoes individual messages from a package.
+//
+// Here's a sample extract of part of a "debug to csv" line:
+//
+// , 	  5F  	0101 1111,	  64  	0110 0100,	  CC  	1100 1100,	  40  	0100 0000,	  80  	1000 0000,	  37  	0011 0111,
+//
+// The line also includes some labels which 
+//    a) let me use grep to select only the csv lines and 
+//    b) tell me which line came from which test file.
+//
+// I include "XC0324:D" in the stderr stream to flag these "debug to csv" lines
+// for grep.
+//
+// I use a bash script (I call mine exam.sh) to process my set of test files :
+    //exam.sh
+    ///```
+    //#! /bin/bash
+    //
+    //for f in g*.cu8;
+    //do
+    //  printf "$f" | cut -b 1-6 | ../../src/rtl_433 -R 110 -r $f $1 $2 $3 $4 $5
+    //done
+    //```
+// which I use as follows:
+    //
+    //./exam.sh -D 2>&1 | grep "XC0324:" > xc0324.csv
+    //
+// then I open xc0324.csv in a spreadsheet package (eg Excel), 
+// manually edit in the correct observed temperatures for each test file,
+// sort into temperature order, 
+// and start looking for patterns.
+//
+
 
 /* 
-  * Begin with some utility routines for examining messages
+  * Begin with some utility routines for examining messages in my 
+  * "debug to csv" format
 */
+
 
 int fprintf_bits2csv(FILE * stream, uint8_t byte) {
     // Print binary values , 8 bits at a time
@@ -93,9 +140,9 @@ void fgets_timeout_handler(int sigNum) {
 }
 
 // Assume LOCAL_TIME_BUFLEN is at least 7!
-char xc0322_label[LOCAL_TIME_BUFLEN] = {0};
+char xc0324_label[LOCAL_TIME_BUFLEN] = {0};
 
-void get_xc0322_label(char * label) {
+void get_xc0324_label(char * label) {
 	// Get a 7 char label for this "line" of output read from stdin
 	// Has a hissy fit if nothing there to read!!
 	// so set an alarm and provide a default alternative in that case.
@@ -116,15 +163,16 @@ void get_xc0322_label(char * label) {
 }
 
 
+// Echo the complete package (all the rows in the bitbuffer) in "debug to csv"
+// format.
+
 void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	uint16_t col, row;
 
 	for (row = 0; row < bits->num_rows; ++row) {
-    // I use the XC0322 in the stderr stream to select this csv line using 
-    // grep "XC0322" 
-    fprintf(stderr,"XC0322:DD Package, ");
-  	// Label this "line" of output with (7) character label read from stdin
-    fprintf(stderr, "%s, ", xc0322_label);
+  	// Label this "line" of csv output with a filename label read from stdin.
+    
+    fprintf(stderr, "%s, XC0324:DD Package, ", xc0324_label);
     //Echo the data from this row
 		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] , , ", 
                     bits->num_rows, row, bits->syncs_before_row[row], bits->bits_per_row[row]);
@@ -149,9 +197,12 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	}
 }
 
+// End of debugging utilities
+//***************************************************************************//
+
 
 /*
- * XC0322 device
+ * XC0324 device
  *
  * The encoding is pulse position modulation 
  *(ie gap width contains the modulation information)
@@ -212,28 +263,24 @@ calculate_paritycheck(uint8_t *buff, int length)
 
 
 static int
-xc0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
-{   // Working buffers
+xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
+{   // Working buffer
     uint8_t b[MYMESSAGE_BYTELEN];
-    //uint8_t brev[MYMESSAGE_BYTELEN];
     
     // Extracted data values
     int deviceID;
+    char id [4] = {0};
     double temperature;
     uint8_t const_byte4_0x80;
-    uint8_t parity_check; //message integrity check == 0x00
+    uint8_t parity_check; //parity check == 0x00 for a good message
     char time_str[LOCAL_TIME_BUFLEN];
     
 
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
-    // and reverse each byte for easier processing of temperature
-    //for (int i = 0; i < MYMESSAGE_BYTELEN; i++) {
-    //  brev[i] = reverse8(b[i]);
-    //}
 
     if (debug_output > 0) {
-      // Send the aligned data to stderr, in "debug to csv" format.
+      // Send the aligned (message) data to stderr, in "debug to csv" format.
       for (int col = 0; col < MYMESSAGE_BYTELEN; col++) {
         fprintf_byte2csv(stderr, "", b[col]);
   			if ((col % 4) == 3) fprintf(stderr, " | ");
@@ -241,7 +288,6 @@ xc0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     }
 
     // Examine the paritycheck and bail out if not OK
-    //parity_check = calculate_paritycheck(brev, 6);
     parity_check = calculate_paritycheck(b, 6);
     if (parity_check != 0x00) {
        if (debug_output > 0) {
@@ -254,7 +300,6 @@ xc0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     
     // Extract the deviceID as int and as hex(arbitrary value?)
     deviceID = b[1];
-    char id [4] = {0};
     snprintf(id, 3, "%02X", b[1]);
     
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB order!
@@ -277,7 +322,7 @@ xc0322_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     local_time_str(time(&current), time_str);
     *data = data_make(
             "time",           "Time",         DATA_STRING, time_str,
-            "model",          "Device Type",  DATA_STRING, "Digitech XC0322",
+            "model",          "Device Type",  DATA_STRING, "Digitech XC0324",
             "id",             "ID",           DATA_STRING, id,
             "deviceID",       "Device ID",    DATA_INT,    deviceID,
             "temperature_C",  "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
@@ -310,7 +355,9 @@ static char *output_fields[] = {
 };
 
 
-static int xc0322_callback(bitbuffer_t *bitbuffer)
+#include "xc0324.correctvalues.c"
+
+static int xc0324_callback(bitbuffer_t *bitbuffer)
 {
     //char time_str[LOCAL_TIME_BUFLEN];
     //data_t *data;
@@ -325,7 +372,7 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
     if (debug_output > 0) {
        // Slightly (well ok more than slightly) bodgy way to get file name 
        // labels for the "debug to csv" format outputs.
-       if (strlen(xc0322_label) == 0 ) get_xc0322_label(xc0322_label);
+       if (strlen(xc0324_label) == 0 ) get_xc0324_label(xc0324_label);
     }
 
 
@@ -343,7 +390,7 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
             bitbuffer_print_csv(bitbuffer);
         }
     /*
-     * A complete XC0322 package contains 3 repeats of a message in a single row.
+     * A complete XC0324 package contains 3 repeats of a message in a single row.
      * But there may be transmission or demodulation glitches, and so perhaps
      * the bit buffer could contain multiple rows.
      * So, check multiple row bit buffers just in case the full package,
@@ -365,7 +412,7 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
          */
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
           if (debug_output > 0) {
-            fprintf(stderr, "\nXC0322:D  Message, %s, ", xc0322_label);
+            fprintf(stderr, "\n%s, XC0324:D  Message, ", xc0324_label);
             fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
             fprintf(stderr, "Bad row - too few bits for a message\n");
           }
@@ -383,13 +430,13 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
             if (debug_output > 0) {
               // Start a "debug to csv" formatted version of one message's
               //worth of the bitbuffer to stderr.
-              fprintf(stderr, "\nXC0322:D  Message, %s, ", xc0322_label);
+              fprintf(stderr, "\n%s, XC0324:D  Message, ", xc0324_label);
 	            fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
               fprintf(stderr, "at bit [%03d], ", bitpos);
-              // xc0322_decode will send the rest of the "debug to csv" formatted
+              // xc0324_decode will send the rest of the "debug to csv" formatted
               // to stderr.
             }
-            events += result = xc0322_decode(bitbuffer, r, bitpos, &data);
+            events += result = xc0324_decode(bitbuffer, r, bitpos, &data);
             if (result) {
               data_append(data, "message_num",  "Message repeat count", DATA_INT, events, NULL);
               data_acquired_handler(data);
@@ -401,47 +448,19 @@ static int xc0322_callback(bitbuffer_t *bitbuffer)
     return events;
 }
 
-static int testhandler_callback(bitbuffer_t *bitbuffer)
-{
-  //EXPERIMENT
-  // This works
-  fprintf(stderr, "\nBefore data1\n");
-  data_t *data1;
-  data1 = data_make("foo1", "FOO1", DATA_DOUBLE, 42.0,
-                    NULL);
-  data_acquired_handler(data1);
-  
-  // This also works
-  fprintf(stderr, "\nBefore data2\n");
-  data_t *data2;
-  data2 = data_make("bar2", "BAR2", DATA_STRING, "I am Bar2",
-                    "more2", "MORE2", DATA_DATA, data_make("foo2", "FOO2", DATA_DOUBLE, 42.0,
-                                                         NULL),
-                    NULL);
-  data_acquired_handler(data2);
-  
-  //But this seems to produce an infinite loop / segmentation fault
-  fprintf(stderr, "\nBefore data3\n");
-  data_t *data3;
-  data3 = data_make("bar3", "BAR3", DATA_STRING, "I am Bar3",
-                    "more3", "MORE3", DATA_DATA, data1,
-                    NULL);
-  data_acquired_handler(data3);
-  
-  fprintf(stderr, "\nBefore return\n");
-  return 0;
-}
+#include "xc0324.testhandler.c"
 
 
-r_device xc0322 = {
-    .name           = "XC0322",
+r_device xc0324 = {
+    .name           = "XC0324",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 190*4,
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
-//    .json_callback  = &xc0322_callback,
-    .json_callback  = &testhandler_callback,
-    .disabled       = 1, // stop the debug output from spamming unsuspecting users
+    .json_callback  = &xc0324_callback,
+    //.json_callback  = &xc0324_correct2csv_callback,
+    //.json_callback  = &testhandler_callback,
+    .disabled       = 1, // stop my debug output from spamming unsuspecting users
     .fields        = output_fields,
 };
 
