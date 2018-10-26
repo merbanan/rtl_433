@@ -22,6 +22,7 @@
 #define INCLUDE_DATA_H_
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
   /*
@@ -156,11 +157,59 @@ struct data_output *data_output_json_create(FILE *file);
 
 struct data_output *data_output_kv_create(FILE *file);
 
+struct data_output *data_output_smdl_create(const char *host, const char *port);
+
 struct data_output *data_output_syslog_create(const char *host, const char *port);
 
 /** Prints a structured data object */
 void data_output_print(struct data_output *output, data_t *data);
 
 void data_output_free(struct data_output *output);
+
+typedef void* (*array_elementwise_import_fn)(void*);
+typedef void* (*array_element_release_fn)(void*);
+typedef void* (*value_release_fn)(void*);
+
+typedef struct {
+    /* what is the element size when put inside an array? */
+    int array_element_size;
+
+    /* is the element boxed (ie. behind a pointer) when inside an array?
+       if it's not boxed ("unboxed"), json dumping function needs to make
+       a copy of the value beforehand, because the dumping function only
+       deals with boxed values.
+     */
+    bool array_is_boxed;
+
+    /* function for importing arrays. strings are specially handled (as they
+       are copied deeply), whereas other arrays are just copied shallowly
+       (but copied nevertheless) */
+    array_elementwise_import_fn array_elementwise_import;
+
+    /* a function for releasing an element when put in an array; integers
+     * don't need to be released, while ie. strings and arrays do. */
+    array_element_release_fn array_element_release;
+
+    /* a function for releasing a value. everything needs to be released. */
+    value_release_fn value_release;
+} data_meta_type_t;
+
+struct data_output;
+
+typedef struct data_output {
+    void (*print_data)(struct data_output *output, data_t *data, char *format);
+    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
+    void (*print_string)(struct data_output *output, const char *data, char *format);
+    void (*print_double)(struct data_output *output, double data, char *format);
+    void (*print_int)(struct data_output *output, int data, char *format);
+    void (*output_free)(struct data_output *output);
+    FILE *file;
+} data_output_t;
+
+void print_json_array(data_output_t *output, data_array_t *array, char *format);
+void print_json_data(data_output_t *output, data_t *data, char *format);
+void print_json_string(data_output_t *output, const char *str, char *format);
+void print_json_double(data_output_t *output, double data, char *format);
+void print_json_int(data_output_t *output, int data, char *format);
 
 #endif // INCLUDE_DATA_H_

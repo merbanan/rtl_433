@@ -27,6 +27,7 @@ add_executable(rtl_433
 	rtl_433.c
 	sdr.c
 	util.c
+	smdl.c
 	devices/acurite.c
 	devices/akhan_100F14.c
 	devices/alecto.c
@@ -131,7 +132,7 @@ target_link_libraries(rtl_433
 	${NET_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 )
-
+set(CMAKE_BUILD_TYPE Debug)
 set(INSTALL_TARGETS rtl_433)
 if(UNIX)
 target_link_libraries(rtl_433 m)

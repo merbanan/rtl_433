@@ -66,45 +66,7 @@
   }
 #endif
 
-typedef void* (*array_elementwise_import_fn)(void*);
-typedef void* (*array_element_release_fn)(void*);
-typedef void* (*value_release_fn)(void*);
 
-typedef struct {
-    /* what is the element size when put inside an array? */
-    int array_element_size;
-
-    /* is the element boxed (ie. behind a pointer) when inside an array?
-       if it's not boxed ("unboxed"), json dumping function needs to make
-       a copy of the value beforehand, because the dumping function only
-       deals with boxed values.
-     */
-    bool array_is_boxed;
-
-    /* function for importing arrays. strings are specially handled (as they
-       are copied deeply), whereas other arrays are just copied shallowly
-       (but copied nevertheless) */
-    array_elementwise_import_fn array_elementwise_import;
-
-    /* a function for releasing an element when put in an array; integers
-     * don't need to be released, while ie. strings and arrays do. */
-    array_element_release_fn array_element_release;
-
-    /* a function for releasing a value. everything needs to be released. */
-    value_release_fn value_release;
-} data_meta_type_t;
-
-struct data_output;
-
-typedef struct data_output {
-    void (*print_data)(struct data_output *output, data_t *data, char *format);
-    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
-    void (*print_string)(struct data_output *output, const char *data, char *format);
-    void (*print_double)(struct data_output *output, double data, char *format);
-    void (*print_int)(struct data_output *output, int data, char *format);
-    void (*output_free)(struct data_output *output);
-    FILE *file;
-} data_output_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
     //  DATA_DATA
@@ -323,6 +285,7 @@ void data_free(data_t *data)
 
 void data_output_print(data_output_t *output, data_t *data)
 {
+    fprintf(stderr, "data_output_print");
     output->print_data(output, data, NULL);
     if (output->file) {
         fputc('\n', output->file);
@@ -381,7 +344,7 @@ static void print_array_value(data_output_t *output, data_array_t *array, char *
 
 /* JSON printer */
 
-static void print_json_array(data_output_t *output, data_array_t *array, char *format)
+void print_json_array(data_output_t *output, data_array_t *array, char *format)
 {
     fprintf(output->file, "[");
     for (int c = 0; c < array->num_values; ++c) {
@@ -392,7 +355,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char *f
     fprintf(output->file, "]");
 }
 
-static void print_json_data(data_output_t *output, data_t *data, char *format)
+void print_json_data(data_output_t *output, data_t *data, char *format)
 {
     bool separator = false;
     fputc('{', output->file);
@@ -408,7 +371,7 @@ static void print_json_data(data_output_t *output, data_t *data, char *format)
     fputc('}', output->file);
 }
 
-static void print_json_string(data_output_t *output, const char *str, char *format)
+void print_json_string(data_output_t *output, const char *str, char *format)
 {
     fprintf(output->file, "\"");
     while (*str) {
@@ -420,17 +383,17 @@ static void print_json_string(data_output_t *output, const char *str, char *form
     fprintf(output->file, "\"");
 }
 
-static void print_json_double(data_output_t *output, double data, char *format)
+void print_json_double(data_output_t *output, double data, char *format)
 {
     fprintf(output->file, "%.3f", data);
 }
 
-static void print_json_int(data_output_t *output, int data, char *format)
+void print_json_int(data_output_t *output, int data, char *format)
 {
     fprintf(output->file, "%d", data);
 }
 
-static void data_output_json_free(data_output_t *output)
+void data_output_json_free(data_output_t *output)
 {
     if (!output)
         return;
