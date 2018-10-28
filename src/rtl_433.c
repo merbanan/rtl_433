@@ -923,7 +923,23 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
 
-        if (dumper->format == S16_AM) {
+        if (dumper->format == CU8_IQ) {
+            if (demod->sample_size == 2) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((uint8_t *)demod->buf.temp)[n] = ((int16_t *)iq_buf[n] >> 8) + 128; // scale Q0.15 to Q0.7
+                out_buf = (uint8_t *)demod->buf.temp;
+                out_len = n_samples * 2 * sizeof(uint8_t);
+            }
+
+        } else if (dumper->format == CS16_IQ) {
+            if (demod->sample_size == 1) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] - 128) << 8; // scale Q0.7 to Q0.15
+                out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
+                out_len = n_samples * 2 * sizeof(int16_t);
+            }
+
+        } else if (dumper->format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
 
