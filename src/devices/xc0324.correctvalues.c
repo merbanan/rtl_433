@@ -1,40 +1,6 @@
-// Get a label for my debuggng output
-// Preferably read from stdin (bodgy but easy to arrange with a pipe)
-// but failing that, after waiting 2 seconds, use a local time string
-
-static volatile bool fgets_timeout2;
-
-void fgets_timeout2_handler(int sigNum) {
-    fgets_timeout2 = 1; // Non zero == True;
-}
-
-// g005_433.922M_250k.cu8 is 22 chars long
-// Assume LOCAL_TIME_BUFLEN is at least 7! on my machine is 32
-// Make sure the buffer is well and truly big enough
-char xc0324_label2[LOCAL_TIME_BUFLEN + 48] = {0};
-
-//void get_xc0324_label2(char * label) {
-void get_xc0324_label2() {
-	// Get a label for this "line" of output read from stdin
-	// Has a hissy fit if nothing there to read!!
-	// so set an alarm and provide a default alternative in that case.
-  char * lab;
-
-  // Allow fgets 2 seconds to read label from stdin
-  fgets_timeout2 = 0; // False;
-  signal(SIGALRM, fgets_timeout2_handler);
-  alarm(2);
-
-  //fprintf(stderr, "Local time buflen is %d", LOCAL_TIME_BUFLEN);
-  lab = fgets(&xc0324_label2[0], 48, stdin);
-
-  if (fgets_timeout2) {
-    // Use a current time string as a default label
-    time_t current;
-    local_time_str(time(&current), &xc0324_label2[0]);
-  }
-}
-
+//
+// Handler to generate reference value csv files when run with -DD
+//
 
 static int
 xc0324_decode_temp(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** data)
@@ -61,7 +27,7 @@ xc0324_decode_temp(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
     temperature = (temp / 10.0) - 40.0 ;
     if (debug_output > 0) {
-      fprintf(stderr, "\t%4.1f ,\n", temperature);
+      fprintf(stderr, "Temperature %4.1f C, sensor id %02X\n", temperature, b[1]);
     }
 
     return 1;
@@ -86,8 +52,8 @@ static int xc0324_correct2csv_callback(bitbuffer_t *bitbuffer)
       if (debug_output > 0) {
         // Start a "debug to csv" formatted version of the filename plus
         // the correct temperature.
-        get_xc0324_label2();
-        fprintf(stderr, "\n%s, XC0324:Temperature, ", xc0324_label2);
+        get_xc0324_label();
+        fprintf(stderr, "\n%s, XC0324:Reference Values, ", xc0324_label);
         // xc0324_decode_temp will send the rest of the "debug to csv" formatted
         // to stderr.
       }
@@ -114,7 +80,8 @@ static int xc0324_correct2csv_callback(bitbuffer_t *bitbuffer)
             bitpos += MYMESSAGE_BITLEN;
         }
     }
-    // Finish off the debug to csv format line
+    // Finish off the debug to csv format line, - if we get this far we didn't
+    // find a good message
     if (debug_output > 0) {
       fprintf(stderr, "Bad transmission, \n");
     }

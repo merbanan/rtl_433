@@ -1,34 +1,55 @@
-/* Template decoder for DEVICE, tested with BRAND, BRAND.
+/* Decoder for Digitech XC-0324 temperature sensor, 
+ *  tested with two transmitters.
  *
- * Copyright (C) 2016 Benjamin Larsson
+ * Copyright (C) 2018 Geoff Lee
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * (describe the modulation, timing, and transmission, e.g.)
- * The device uses PPM encoding,
- * 0 is encoded as 102*4 us pulse and 129*4 us gap,
- * 1 is encoded as 102*4 us pulse and 158*4 us gap.
- * The device sends a transmission every 60 seconds.
- * I own 2 devices.
- * A transmission starts with a preamble of 0x5F,
- * 
- * REST IS YET TO BE REVERSE ENGINEERED
- there a 5 repeated packets, each with a 1200 us gap.
+ */
+ 
+/*
+ * XC0324 device
  *
- * (describe the data and payload, e.g.)
- * Packet nibbles:  FF PP PP II II II TT TT CC
- * F = flags, (0x40 is battery_low)
- * P = Pressure, 16-bit little-endian
- * I = id, 24-bit little-endian
- * T = Unknown, likely Temperature, 16-bit little-endian
- * C = Checksum, CRC-8 truncated poly 0x07 init 0x00
+ * The encoding is pulse position modulation 
+ *(ie gap width contains the modulation information)
+ * pulse is about 100*4 us
+ * short gap is (approx) 130*4 us
+ * long gap is (approx) 250*4 us
+ 
+ * Deciphered using two transmitters.
+ * The oldest transmits a "clean" pulse (ie a captured pulse, examined using
+ * Audacity, has pretty stable I and Q values, ie little phase wandering)
+ * The newer transmitter seems less stable (ie within a single pulse, the I and
+ * Q components of the pulse signal appear to "rotate" through several cycles).
+ * The -a -t -D -D output correctly guesses the older transmitter modulation 
+ * and gap parameters, but mistakes the newer transmitter as pulse width 
+ * modulation with "far too many" very short pulses.
+ * 
+ * A package is 148 bits 
+ * (plus or minus one or two due to demodulation or transmission errors)
+ * 
+ * Each package contains 3 repeats of the basic 48 bit message,
+ * with 2 zero bits separating each repetition.
+ * 
+ * A 48 bit message comsists of :
+ * byte 0 = preamble (for synchronisation), 0x5F
+ * byte 1 = device id
+ * byte 2 and the first nibble of byte 3 encode the temperature 
+ *    as a 12 bit integer,
+ *   transmitted in **least significant bit first** order
+ *   in tenths of degree Celsius
+ *   offset from -40.0 degrees C (minimum temp spec of the device)
+ * byte 4 is constant (in all my data) 0x80
+ *   ~maybe~ a battery status ???
+ * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
+ *   each bit is effectively a parity bit for correspondingly positioned bit in
+ *   the real message
  *
  */
 
-/* Use this as a starting point for a new decoder. */
 
 #include "rtl_433.h"
 #include "pulse_demod.h"
@@ -47,8 +68,7 @@
 #define MYDEVICE_MINREPEATS  3
 
 //***************************************************************************//
-
-// USING THE DEBUG MESSAGES from this device.
+// USING THE DEBUG MESSAGES from this device handler.
 //
 // My debugging / deciphering strategy (copied from several helpful blog posts)
 // involves saving a set of package files (using the `-a -t` arguments)
@@ -78,7 +98,7 @@
     //
     //for f in g*.cu8;
     //do
-    //  printf "$f" | cut -b 1-6 | ../../src/rtl_433 -R 110 -r $f $1 $2 $3 $4 $5
+    //  printf "$f" | ../../src/rtl_433 -R 110 -r $f $1 $2 $3 $4 $5
     //done
     //```
 // which I use as follows:
@@ -87,16 +107,56 @@
     //
 // then I open xc0324.csv in a spreadsheet package (eg Excel), 
 // manually edit in the correct observed temperatures for each test file,
+// (one test file == 1 line in the csv file)
 // sort into temperature order, 
 // and start looking for patterns.
 //
 
-
+//***************************************************************************//
 /* 
-  * Begin with some utility routines for examining messages in my 
+  * A utility routine for obtaining meaningful labels for lines in my 
   * "debug to csv" format
 */
+//***************************************************************************//
 
+// Get a (filename) label for my debuggng output.
+// Preferably read from stdin (bodgy but easy to arrange with a pipe)
+// but failing that, after waiting 2 seconds, use a local time string
+
+static volatile bool fgets_timeout;
+
+void fgets_timeout_handler(int sigNum) {
+    fgets_timeout = 1; // Non zero == True;
+}
+
+// Make sure the buffer is well and truly big enough
+char xc0324_label[LOCAL_TIME_BUFLEN + 48] = {0};
+
+void get_xc0324_label() {
+	// Get a label for this "line" of output read from stdin.
+	// fgets has a hissy fit and blocks if nothing there to read!!
+	// so set an alarm and provide a default alternative in that case.
+  if (strlen(xc0324_label) > 0 ) {
+    return; //The label has already been read!
+  }
+  // Allow fgets 2 seconds to read label from stdin
+  fgets_timeout = 0; // False;
+  signal(SIGALRM, fgets_timeout_handler);
+  alarm(2);
+  char * lab = fgets(&xc0324_label[0], 48, stdin);
+  xc0324_label[strcspn(xc0324_label, "\n")] = 0; //remove trailing newline
+  if (fgets_timeout) {
+    // Use a current time string as a default label
+    time_t current;
+    local_time_str(time(&current), &xc0324_label[0]);
+  }
+}
+
+//***************************************************************************//
+//
+// Some utility routines for printing the bitbuffer in "debug to csv" format.
+//
+//***************************************************************************//
 
 int fprintf_bits2csv(FILE * stream, uint8_t byte) {
     // Print binary values , 8 bits at a time
@@ -118,7 +178,6 @@ int fprintf_bits2csv(FILE * stream, uint8_t byte) {
 		return nprint;
 }
 
-
 int fprintf_byte2csv(FILE * stream, char * label, uint8_t byte) {
     //Print hex and binary
     //fprintf_ing a tab character (\t) helps stop Excel stripping leading zeros
@@ -128,44 +187,7 @@ int fprintf_byte2csv(FILE * stream, char * label, uint8_t byte) {
     return nprint;
 }
 
-
-// Get a label for my debuggng output
-// Preferably read from stdin (bodgy but easy to arrange with a pipe)
-// but failing that, after waiting 2 seconds, use a local time string
-
-static volatile bool fgets_timeout;
-
-void fgets_timeout_handler(int sigNum) {
-    fgets_timeout = 1; // Non zero == True;
-}
-
-// Assume LOCAL_TIME_BUFLEN is at least 7!
-char xc0324_label[LOCAL_TIME_BUFLEN] = {0};
-
-void get_xc0324_label(char * label) {
-	// Get a 7 char label for this "line" of output read from stdin
-	// Has a hissy fit if nothing there to read!!
-	// so set an alarm and provide a default alternative in that case.
-  char * lab;
-
-  // Allow fgets 2 seconds to read label from stdin
-  fgets_timeout = 0; // False;
-  signal(SIGALRM, fgets_timeout_handler);
-  alarm(2);
-
-  lab = fgets(label, 7, stdin);
-
-  if (fgets_timeout) {
-    // Use a current time string as a default label
-    time_t current;
-    local_time_str(time(&current), label);
-  }
-}
-
-
-// Echo the complete package (all the rows in the bitbuffer) in "debug to csv"
-// format.
-
+// Print all the rows in the bitbuffer in "debug to csv" format.
 void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	uint16_t col, row;
 
@@ -197,49 +219,12 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	}
 }
 
+//***************************************************************************//
+//
 // End of debugging utilities
+//
 //***************************************************************************//
 
-
-/*
- * XC0324 device
- *
- * The encoding is pulse position modulation 
- *(ie gap width contains the modulation information)
- * pulse is about 100*4 us
- * short gap is (approx) 130*4 us
- * long gap is (approx) 250*4 us
- 
- * Deciphered using two transmitters.
- * The oldest transmits a "clean" pulse (ie a captured pulse, examined using
- * Audacity, has pretty stable I and Q values, ie little phase wandering)
- * The newer transmitter seems less stable (ie within a single pulse, the I and
- * Q components of the pulse signal appear to "rotate" through several cycles).
- * The -a -t -D -D output correctly guesses the older transmitter modulation 
- * and gap parameters, but mistakes the newer transmitter as pulse width 
- * modulation with "far too many" very short pulses.
- * 
- * A package is 148 bits 
- * (plus or minus one or two due to demodulation or transmission errors)
- * 
- * Each package contains 3 repeats of the basic 48 bit message,
- * with 2 zero bits separating each repetition.
- * 
- * A 48 bit message comsists of :
- * byte 0 = preamble (for synchronisation), 0x5F
- * byte 1 = device id
- * byte 2 and the first nibble of byte 3 encode the temperature 
- *    as a 12 bit integer,
- *   transmitted in **least significant bit first** order
- *   in tenths of degree celsius
- *   offset from -40.0 degrees C (minimum temp spec of the device)
- * byte 4 is constant (in all my data) 0x80
- *   ~maybe~ a battery status ???
- * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
- *   each bit is effectively a parity bit for correspondingly positioned bit in
- *   the real message
- *
- */
 static const uint8_t preamble_pattern[1] = {0x5F}; // Only 8 bits
 
 static uint8_t
@@ -302,7 +287,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     deviceID = b[1];
     snprintf(id, 3, "%02X", b[1]);
     
-    // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB order!
+    // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
     
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
@@ -326,7 +311,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
             "id",             "ID",           DATA_STRING, id,
             "deviceID",       "Device ID",    DATA_INT,    deviceID,
             "temperature_C",  "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-            "const_0x80",       "Constant ?",   DATA_INT,    const_byte4_0x80,
+            "const_0x80",     "Constant ?",   DATA_INT,    const_byte4_0x80,
             "parity_status",  "Parity",       DATA_STRING, parity_check ? "Corrupted" : "OK",
             "mic",            "Integrity",    DATA_STRING, "PARITY",
             NULL);
@@ -355,34 +340,26 @@ static char *output_fields[] = {
 };
 
 
-#include "xc0324.correctvalues.c"
-
 static int xc0324_callback(bitbuffer_t *bitbuffer)
 {
-    //char time_str[LOCAL_TIME_BUFLEN];
-    //data_t *data;
     int r; // a row index
     uint8_t *b; // bits of a row
-
     unsigned bitpos;
+    int result;
     int events = 0;
     data_t * data;
-    int result;
     
     if (debug_output > 0) {
-       // Slightly (well ok more than slightly) bodgy way to get file name 
+       // Slightly (well ok, more than slightly) bodgy way to get file name 
        // labels for the "debug to csv" format outputs.
-       if (strlen(xc0324_label) == 0 ) get_xc0324_label(xc0324_label);
+       if (strlen(xc0324_label) == 0 ) get_xc0324_label();
     }
-
-
     /*
-     * Early debugging aid to see demodulated bits in buffer and
-     * to determine if your limit settings are matched and firing
+     * Debugging aid to see demodulated bits in buffer and
+     * to determine if the limit settings are matched and firing
      * this callback.
      *
-     * 1. Enable with -D -D (debug level of 2)
-     * 2. Delete this block when your decoder is working
+     * 1. Enabled with -D -D (debug level of 2)
      */
         if (debug_output > 1) {
             // Send a "debug to csv" formatted version of the whole packege
@@ -440,7 +417,10 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
             if (result) {
               data_append(data, "message_num",  "Message repeat count", DATA_INT, events, NULL);
               data_acquired_handler(data);
-              //return events; // for now, break after first successful message
+              // Release memory after I'm finished with it(?)
+              data_free(data);
+              // Uncomment this to break after first successful message
+              //return events; 
             }
             bitpos += MYMESSAGE_BITLEN;
         }
@@ -448,7 +428,8 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
     return events;
 }
 
-#include "xc0324.testhandler.c"
+//#include "xc0324.correctvalues.c"
+//#include "xc0324.testhandler.c"
 
 
 r_device xc0324 = {
