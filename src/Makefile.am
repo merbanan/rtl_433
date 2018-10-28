@@ -89,7 +89,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/springfield.c \
                        devices/steelmate.c \
                        devices/steffen.c \
-                       devices/tf_30.3211.c \
+                       devices/tfa_30.3211.c \
                        devices/tfa_pool_thermometer.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
