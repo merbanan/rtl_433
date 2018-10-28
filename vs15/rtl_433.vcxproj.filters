@@ -316,6 +316,9 @@
     <ClCompile Include="..\src\devices\steffen.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tfa_30.3211.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
