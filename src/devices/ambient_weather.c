@@ -1,43 +1,44 @@
+/* Ambient Weather F007TH Thermo-Hygrometer
+ * contributed by David Ediger
+ * discovered by Ron C. Lewis
+*/
 #include "rtl_433.h"
 #include "data.h"
 #include "util.h"
 
 // three repeats without gap
-// full preamble is 0x00145
+// full preamble is 0x00145 (the last bits might not be fixed, e.g. 0x00146)
 // and on decoding also 0xffd45
-static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 16 bits
-static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 16 bits
+static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
+static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
+// CRC/Checksum is actually an "LSFR-based Toeplitz hash"
 static uint8_t
-calculate_checksum(uint8_t *buff, int length)
+calculate_digest(uint8_t *buf, int len)
 {
-    uint8_t mask = 0x7C;
-    uint8_t checksum = 0x64;
+    uint8_t key = 0x7C;
+    uint8_t sum = 0x64;
     uint8_t data;
-    int byteCnt;
 
-    for (byteCnt=0; byteCnt < length; byteCnt++) {
-        int bitCnt;
-        data = buff[byteCnt];
-
-        for (bitCnt = 7; bitCnt >= 0 ; bitCnt--) {
+    for (int k = 0; k < len; ++k) {
+        data = buf[k];
+        for (int i = 7; i >= 0 ; --i) {
             uint8_t bit;
 
-            // Rotate mask right
-            bit = mask & 1;
-            mask = (mask >> 1 ) | (mask << 7);
+            // Rotate key right
+            bit = key & 1;
+            key = (key >> 1 ) | (key << 7);
             if (bit) {
-                mask ^= 0x18;
+                key ^= 0x18;
             }
-
-            // XOR mask into checksum if data bit is 1
+            // XOR key into sum if data bit is 1
             if (data & 0x80) {
-                checksum ^= mask;
+                sum ^= key;
             }
             data <<= 1;
         }
     }
-    return checksum;
+    return sum;
 }
 
 static int
@@ -55,7 +56,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 6*8);
 
     uint8_t expected = b[5];
-    uint8_t calculated = calculate_checksum(b, 5);
+    uint8_t calculated = calculate_digest(b, 5);
 
     if (expected != calculated) {
         if (debug_output) {
@@ -102,7 +103,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 8+6*8 <=
+                (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
             events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
@@ -110,7 +111,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         }
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_inverted, 16)) + 8+6*8 <=
+                (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
             events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message

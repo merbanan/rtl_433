@@ -18,7 +18,7 @@
 
 void pulse_data_clear(pulse_data_t *data) {
 	*data = (const pulse_data_t) {
-		 0,
+		0,
 	};
 }
 
@@ -30,23 +30,23 @@ void pulse_data_print(const pulse_data_t *data) {
 	}
 }
 
-static void *bounded_memset(void *b, int c, intmax_t size, intmax_t offset, intmax_t len)
+static void *bounded_memset(void *b, int c, int64_t size, int64_t offset, int64_t len)
 {
-    if (offset < 0) {
-        len += offset; // reduce len by negative offset
+	if (offset < 0) {
+		len += offset; // reduce len by negative offset
 		offset = 0;
 	}
-    if (offset + len > size) {
-        len = size - offset; // clip excessive len
+	if (offset + len > size) {
+		len = size - offset; // clip excessive len
 	}
-    if (len > 0)
-        memset((char *)b + offset, c, len);
-    return b;
+	if (len > 0)
+		memset((char *)b + offset, c, len);
+	return b;
 }
 
-void pulse_data_dump_raw(uint8_t *buf, unsigned len, intmax_t buf_offset, const pulse_data_t *data, uint8_t bits)
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, const pulse_data_t *data, uint8_t bits)
 {
-	intmax_t pos = data->offset - buf_offset;
+	int64_t pos = data->offset - buf_offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		bounded_memset(buf, 0x01 | bits, len, pos, data->pulse[n]);
 		pos += data->pulse[n];
@@ -83,18 +83,18 @@ void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint3
 		scale = 1000000 / sample_rate; // unit: 1 us
 	else
 		scale = 10000000 / sample_rate; // unit: 100 ns
-	intmax_t pos = data->offset;
+	uint64_t pos = data->offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		if (n == 0)
-			fprintf(file, "#%zd 1/ 1%c\n", (intmax_t)(pos * scale), ch_id);
+			fprintf(file, "#%.f 1/ 1%c\n", pos * scale, ch_id);
 		else
-			fprintf(file, "#%zd 1%c\n", (intmax_t)(pos * scale), ch_id);
+			fprintf(file, "#%.f 1%c\n", pos * scale, ch_id);
 		pos += data->pulse[n];
-		fprintf(file, "#%zd 0%c\n", (intmax_t)(pos * scale), ch_id);
+		fprintf(file, "#%.f 0%c\n", pos * scale, ch_id);
 		pos += data->gap[n];
 	}
 	if (data->num_pulses > 0)
-		fprintf(file, "#%zd 0/\n", (intmax_t)(pos * scale));
+		fprintf(file, "#%.f 0/\n", pos * scale);
 }
 
 
@@ -275,7 +275,7 @@ static pulse_state_t pulse_state;
 
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, intmax_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
+int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
 	const int samples_per_ms = samp_rate / 1000;
 	pulse_state_t *s = &pulse_state;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
@@ -292,8 +292,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 		switch (s->ook_state) {
 			case PD_OOK_STATE_IDLE:
 				if (am_n > (ook_threshold + ook_hysteresis)	// Above threshold?
-				 && s->lead_in_counter > OOK_EST_LOW_RATIO	// Lead in counter to stabilize noise estimate
-				 ) {
+					&& s->lead_in_counter > OOK_EST_LOW_RATIO	// Lead in counter to stabilize noise estimate
+				) {
 					// Initialize all data
 					pulse_data_clear(pulses);
 					pulse_data_clear(fsk_pulses);
@@ -318,7 +318,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 			case PD_OOK_STATE_PULSE:
 				s->pulse_length++;
 				// End of pulse detected?
-				if (am_n  < (ook_threshold - ook_hysteresis)) {	// Gap?
+				if (am_n < (ook_threshold - ook_hysteresis)) {	// Gap?
 					// Check for spurious short pulses
 					if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
 						s->ook_state = PD_OOK_STATE_IDLE;
@@ -346,7 +346,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 			case PD_OOK_STATE_GAP_START:	// Beginning of gap - it might be a spurious gap
 				s->pulse_length++;
 				// Pulse detected again already? (This is a spurious short gap)
-				if (am_n  > (ook_threshold + ook_hysteresis)) {	// New pulse?
+				if (am_n > (ook_threshold + ook_hysteresis)) {	// New pulse?
 					s->pulse_length += pulses->pulse[pulses->num_pulses];	// Restore counter
 					s->ook_state = PD_OOK_STATE_PULSE;
 				// Or this gap is for real?
@@ -373,7 +373,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 			case PD_OOK_STATE_GAP:
 				s->pulse_length++;
 				// New pulse detected?
-				if (am_n  > (ook_threshold + ook_hysteresis)) {	// New pulse?
+				if (am_n > (ook_threshold + ook_hysteresis)) {	// New pulse?
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Next pulse
 
@@ -392,9 +392,9 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 
 				// EOP if gap is too long
 				if (((s->pulse_length > (PD_MAX_GAP_RATIO * s->max_pulse))	// gap/pulse ratio exceeded
-				 && (s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)))	// Minimum gap exceeded
-				 || (s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms))	// maximum gap exceeded
-				 ) {
+					&& (s->pulse_length > (PD_MIN_GAP_MS * samples_per_ms)))	// Minimum gap exceeded
+					|| (s->pulse_length > (PD_MAX_GAP_MS * samples_per_ms))	// maximum gap exceeded
+				) {
 					pulses->gap[pulses->num_pulses] = s->pulse_length;	// Store gap width
 					pulses->num_pulses++;	// Store last pulse
 					s->ook_state = PD_OOK_STATE_IDLE;
@@ -529,9 +529,9 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance) {
 				// Fuse data for bin[n] and bin[m]
 				hist->bins[n].count += hist->bins[m].count;
 				hist->bins[n].sum	+= hist->bins[m].sum;
-				hist->bins[n].mean 	= hist->bins[n].sum / hist->bins[n].count;
-				hist->bins[n].min 	= min(hist->bins[n].min, hist->bins[m].min);
-				hist->bins[n].max 	= max(hist->bins[n].max, hist->bins[m].max);
+				hist->bins[n].mean	= hist->bins[n].sum / hist->bins[n].count;
+				hist->bins[n].min	= min(hist->bins[n].min, hist->bins[m].min);
+				hist->bins[n].max	= max(hist->bins[n].max, hist->bins[m].max);
 				// Delete bin[m]
 				histogram_delete_bin(hist, m);
 				m--;	// Compare new bin in same place!
@@ -662,7 +662,7 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		device.short_limit	= p1 < p2 ? p1 : p2;	// Set to shorter pulse width
 		device.long_limit	= p1 < p2 ? p2 : p1;	// Set to longer pulse width
 		device.sync_width	= hist_pulses.bins[0].mean;	// Set to lowest count pulse width
-		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max  +1;				// Set limit above biggest gap
+		device.reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;				// Set limit above biggest gap
 	} else {
 		fprintf(stderr, "No clue...\n");
 	}
