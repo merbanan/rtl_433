@@ -17,6 +17,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
+                       devices/ambient_weather_tx8300.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
@@ -106,6 +107,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/x10_sec.c
+                       devices/x10_sec.c 
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
