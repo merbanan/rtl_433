@@ -112,7 +112,9 @@
 		DECL(m_bus_mode_r) \
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
-		DECL(wt1024)
+		DECL(wt1024) \
+		DECL(tpms_pmv107j) \
+		DECL(ambient_weather_tx8300)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()

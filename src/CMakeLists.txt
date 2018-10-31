@@ -20,15 +20,18 @@ add_executable(rtl_433
 	baseband.c
 	bitbuffer.c
 	data.c
+	fileformat.c
 	optparse.c
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c
+	sdr.c
 	util.c
 	devices/acurite.c
 	devices/akhan_100F14.c
 	devices/alecto.c
 	devices/ambient_weather.c
+	devices/ambient_weather_tx8300.c
 	devices/blyss.c
 	devices/brennenstuhl_rcs_2044.c
 	devices/bresser_3ch.c
@@ -107,6 +110,7 @@ add_executable(rtl_433
 	devices/thermopro_tp12.c
 	devices/tpms_citroen.c
 	devices/tpms_ford.c
+	devices/tpms_pmv107j.c
 	devices/tpms_renault.c
 	devices/tpms_toyota.c
 	devices/vaillant_vrt340f.c
