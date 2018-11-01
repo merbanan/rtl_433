@@ -57,7 +57,7 @@ Usage:	= Tuner options =
 	[-E] Stop after outputting successful event(s)
 	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
-		 Use -R, -X, -F, -r, or -w without argument for more help
+		 Use -d, -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control
