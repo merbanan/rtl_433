@@ -161,7 +161,7 @@ void usage(r_device *devices, int exit_code)
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-V] Output the version string and exit\n"
             "\t[-h] Output this usage help and exit\n"
-            "\t\t Use -R, -X, -F, -r, or -w without argument for more help\n\n",
+            "\t\t Use -d, -R, -X, -F, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     if (devices) {
@@ -174,6 +174,28 @@ void usage(r_device *devices, int exit_code)
         fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
     }
     exit(exit_code);
+}
+
+void help_device(void)
+{
+    fprintf(stderr,
+#ifdef RTLSDR
+            "\tRTL-SDR device driver is available.\n"
+#else
+            "\tRTL-SDR device driver is not available.\n"
+#endif
+            "[-d <RTL-SDR USB device index>] (default: 0)\n"
+            "[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
+            "\tTo set gain for RTL-SDR use -g X to set an overall gain in tenths of dB.\n"
+#ifdef SOAPYSDR
+            "\tSoapySDR device driver is available.\n"
+#else
+            "\tSoapySDR device driver is not available.\n"
+#endif
+            "[-d \"\" Open default SoapySDR device\n"
+            "[-d driver=rtlsdr Open e.g. specific SoapySDR device\n"
+            "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n");
+    exit(0);
 }
 
 void help_output(void)
@@ -1177,7 +1199,7 @@ int main(int argc, char **argv) {
     FILE *in_file;
     int n_read;
     int r = 0, opt;
-    int gain = 0;
+    char *gain_str = NULL;
     int i;
     int ppm_error = 0;
     struct dm_state *demod;
@@ -1225,7 +1247,7 @@ int main(int argc, char **argv) {
                 demod->hop_time = atoi_time(optarg, "-H: ");
                 break;
             case 'g':
-                gain = (int) (atof(optarg) * 10); /* tenths of a dB */
+                gain_str = optarg;
                 break;
             case 'G':
                 register_all = 1;
@@ -1368,6 +1390,7 @@ int main(int argc, char **argv) {
                 // handle missing arguments as help request
                 if (optopt == 'R') usage(devices, 0);
                 else if (optopt == 'X') flex_create_device(NULL);
+                else if (optopt == 'd') help_device();
                 else if (optopt == 'F') help_output();
                 else if (optopt == 'r') help_read();
                 else if (optopt == 'w') help_write();
@@ -1445,13 +1468,8 @@ int main(int argc, char **argv) {
 
         fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
-        if (0 == gain) {
-            /* Enable automatic gain */
-            r = sdr_set_auto_gain(dev, !quiet_mode);
-        } else {
-            /* Set manual gain */
-            r = sdr_set_tuner_gain(dev, gain, !quiet_mode);
-        }
+        /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
+        r = sdr_set_tuner_gain(dev, gain_str, !quiet_mode);
 
         if (ppm_error)
             r = sdr_set_freq_correction(dev, ppm_error, !quiet_mode);
@@ -1534,9 +1552,10 @@ int main(int argc, char **argv) {
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
-    r = sdr_reset(dev);
+    r = sdr_reset(dev, !quiet_mode);
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
+    r = sdr_activate(dev);
 
     if (frequencies == 0) {
         frequency[0] = DEFAULT_FREQUENCY;
@@ -1555,6 +1574,7 @@ int main(int argc, char **argv) {
         /* Set the frequency */
         center_frequency = frequency[frequency_current];
         r = sdr_set_center_freq(dev, center_frequency, !quiet_mode);
+
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
@@ -1578,6 +1598,8 @@ int main(int argc, char **argv) {
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper)
         if (dumper->file && (dumper->file != stdout))
             fclose(dumper->file);
+
+    r = sdr_deactivate(dev);
 
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);

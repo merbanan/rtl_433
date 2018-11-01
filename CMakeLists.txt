@@ -80,7 +80,22 @@ endif()
 ########################################################################
 find_package(PkgConfig)
 find_package(LibRTLSDR)
-list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
+if(LIBRTLSDR_FOUND)
+    include_directories(${LIBRTLSDR_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
+    ADD_DEFINITIONS(-DRTLSDR)
+else()
+    message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
+endif()
+
+find_package(SoapySDR "0.6" NO_MODULE)
+if(SoapySDR_FOUND)
+    include_directories(${SoapySDR_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${SoapySDR_LIBRARIES})
+    ADD_DEFINITIONS(-DSOAPYSDR)
+else()
+    message(STATUS "Soapy SDR development files not found, Soapy SDR device input won't be possible.")
+endif()
 
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
@@ -106,7 +121,6 @@ endif()
 ########################################################################
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
-    ${LIBRTLSDR_INCLUDE_DIRS}
 )
 
 ########################################################################
