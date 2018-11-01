@@ -168,7 +168,8 @@ void usage(r_device *devices, int exit_code)
         fprintf(stderr, "Supported device protocols:\n");
         for (i = 0; i < num_r_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
-            fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+            if (devices[i].disabled <= 1) // if not hidden
+                fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
         }
         fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
     }
@@ -1388,7 +1389,8 @@ int main(int argc, char **argv) {
 
     for (i = 0; i < num_r_devices; i++) {
         devices[i].protocol_num = i + 1;
-        if (!devices[i].disabled || register_all) {
+        // if not disabled or register all and not hidden
+        if (!devices[i].disabled || (register_all && devices[i].disabled == 1)) {
             register_protocol(demod, &devices[i]);
             if (devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
