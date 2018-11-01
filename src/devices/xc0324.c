@@ -73,25 +73,27 @@
 // My debugging / deciphering strategy (copied from several helpful blog posts)
 // involves saving a set of package files (using the `-a -t` arguments)
 // then running my 'under development' device against the set of them, using 
-// `-DD` or `-D` arguments.
+// `-D` or `-DD` or `-DDD`arguments.
 //
 // The debug messages in this device emit a "debug to csv" format line.
 // This is mainly a hex and bit pattern version of (part of) the bitbuffer.
-// `-DD` echoes the whole package, row by row.
-// `-D` echoes individual messages from a package.
+// `-D` echoes the whole package, row by row.
+// `-DD` echoes one line per decoded message from a package. (ie 3 up to lines)
+// `-DDD` echoes the decoded reference values (temperature and sensor id).
 //
 // Here's a sample extract of part of a "debug to csv" line:
 //
 // , 	  5F  	0101 1111,	  64  	0110 0100,	  CC  	1100 1100,	  40  	0100 0000,	  80  	1000 0000,	  37  	0011 0111,
 //
-// The line also includes some labels which 
-//    a) let me use grep to select only the csv lines and 
+// The start of the line also includes some labels which 
+//    a) let me use grep to select only the csv lines I want and 
 //    b) tell me which line came from which test file.
 //
 // I include "XC0324:D" in the stderr stream to flag these "debug to csv" lines
 // for grep.
 //
-// I use a bash script (I call mine exam.sh) to process my set of test files :
+// I use a bash script (I call mine exam.sh) to process my test files in batches:
+//
     //exam.sh
     ///```
     //#! /bin/bash
@@ -101,14 +103,21 @@
     //  printf "$f" | ../../src/rtl_433 -R 110 -r $f $1 $2 $3 $4 $5
     //done
     //```
+//
 // which I use as follows:
+
+//
     //
     //./exam.sh -D 2>&1 | grep "XC0324:" > xc0324.csv
     //
-// then I open xc0324.csv in a spreadsheet package (eg Excel), 
+//
+// I use `-DD` or `-DDD` for progressively more detail, and adjust the grep 
+// pattern to select only those lines I require at a particular point in the
+// reverse engineering process.
+//
+// Next I open xc0324.csv in a spreadsheet package (eg Excel), 
 // manually edit in the correct observed temperatures for each test file,
-// (one test file == 1 line in the csv file)
-// sort into temperature order, 
+// sort into observed temperature order, 
 // and start looking for patterns.
 //
 
@@ -194,9 +203,9 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
 	for (row = 0; row < bits->num_rows; ++row) {
   	// Label this "line" of csv output with a filename label read from stdin.
     
-    fprintf(stderr, "%s, XC0324:DD Package, ", xc0324_label);
+    fprintf(stderr, "%s, XC0324:D Package, ", xc0324_label);
     //Echo the data from this row
-		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] , , ", 
+		fprintf(stderr, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] ,at bit [000], ", 
                     bits->num_rows, row, bits->syncs_before_row[row], bits->bits_per_row[row]);
 		for (col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
 			fprintf_byte2csv(stderr, "", bits->bb[row][col]);
@@ -218,6 +227,10 @@ void bitbuffer_print_csv(const bitbuffer_t *bits) {
     fprintf(stderr, "\n");
 	}
 }
+
+// Declare the function which processes the `-DDD` csv format line
+// Code it later so it can share functions with the .json_callback function.
+static int xc0324_referenceValues2csv(bitbuffer_t *bitbuffer);
 
 //***************************************************************************//
 //
@@ -264,7 +277,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
 
-    if (debug_output > 0) {
+    if (debug_output > 1) {
       // Send the aligned (message) data to stderr, in "debug to csv" format.
       for (int col = 0; col < MYMESSAGE_BYTELEN; col++) {
         fprintf_byte2csv(stderr, "", b[col]);
@@ -275,7 +288,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     // Examine the paritycheck and bail out if not OK
     parity_check = calculate_paritycheck(b, 6);
     if (parity_check != 0x00) {
-       if (debug_output > 0) {
+       if (debug_output > 1) {
          // Close off the "debug to csv" line before giving up.
          fprintf_byte2csv(stderr, "Bad parity check - not 0x00 but ", parity_check);
          fprintf(stderr, "\n");
@@ -292,7 +305,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     
     uint16_t temp = ( (uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
     temperature = (temp / 10.0) - 40.0 ;
-    if (debug_output > 0) {
+    if (debug_output > 1) {
       fprintf(stderr, "Temp was %4.1f ,", temperature);
     }
 
@@ -301,7 +314,7 @@ xc0324_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t ** d
     const_byte4_0x80 = b[4];
 
     //  Finish the "debug to csv" line.
-    if (debug_output > 0) fprintf(stderr, "\n");
+    if (debug_output > 1) fprintf(stderr, "\n");
 
     time_t current;
     local_time_str(time(&current), time_str);
@@ -359,10 +372,10 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
      * to determine if the limit settings are matched and firing
      * this callback.
      *
-     * 1. Enabled with -D -D (debug level of 2)
+     * 1. Enabled with -D  (debug level of 1)
      */
-        if (debug_output > 1) {
-            // Send a "debug to csv" formatted version of the whole packege
+        if (debug_output > 0) {
+            // Send a "debug to csv" formatted version of the whole
             // bitbuffer to stderr.
             bitbuffer_print_csv(bitbuffer);
         }
@@ -388,8 +401,11 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
          * - Data integrity checks (CRC/Checksum/Parity)
          */
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
-          if (debug_output > 0) {
-            fprintf(stderr, "\n%s, XC0324:D  Message, ", xc0324_label);
+          if (debug_output > 1) {
+            // -DD or above will attempt to send one line in csv format
+            // to stderr for each message encountered.  This just reports 
+            // that we haven't found a good message on this row :-(
+            fprintf(stderr, "\n%s, XC0324:DD  Message, ", xc0324_label);
             fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
             fprintf(stderr, "Bad row - too few bits for a message\n");
           }
@@ -404,10 +420,12 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
                 (const uint8_t *)&preamble_pattern, 8)) 
                 + MYMESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
-            if (debug_output > 0) {
-              // Start a "debug to csv" formatted version of one message's
-              //worth of the bitbuffer to stderr.
-              fprintf(stderr, "\n%s, XC0324:D  Message, ", xc0324_label);
+            if (debug_output > 1) {
+              // -DD or above will attempt to send one line in csv format
+              // to stderr for each message encountered.
+              // This starts the "debug to csv" formatted version of one 
+              // message's worth of the bitbuffer to stderr.
+              fprintf(stderr, "\n%s, XC0324:DD  Message, ", xc0324_label);
 	            fprintf(stderr, "nr[%d] r[%02d] nc[%2d] ,", bitbuffer->num_rows, r, bitbuffer->bits_per_row[r]);
               fprintf(stderr, "at bit [%03d], ", bitpos);
               // xc0324_decode will send the rest of the "debug to csv" formatted
@@ -417,29 +435,41 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
             if (result) {
               data_append(data, "message_num",  "Message repeat count", DATA_INT, events, NULL);
               data_acquired_handler(data);
-              // Release memory after I'm finished with it(?)
-              data_free(data);
-              // Uncomment this to break after first successful message
+              // I thought I ought to release memory after I'm finished with it.
+              // BUT if I use the following line I get a runtime error
+              // munmap_chunk():  invalid pointer
+              // SO DO NOT UNCOMMENT THE data_free call until I know more !!!
+              // data_free(data);
+              
+              // Uncomment this `return` to break after first successful message,
+              // instead of processing up to 3 repeats of the same message.
               //return events; 
             }
             bitpos += MYMESSAGE_BITLEN;
         }
     }
+    // -DDD or above (debug_output >=3) will send a line in csv format
+    // to stderr containing the correct reference values, and  either:
+    //    the 
+    // for that file (if run with the -r <filename>, and with <filename>
+    if (debug_output >2) {
+      int val2csv = xc0324_referenceValues2csv(bitbuffer);
+    }
     return events;
 }
 
-//#include "xc0324.correctvalues.c"
+// Include the code for the -DDD format "debug to csv" line
+#include "xc0324.correctvalues.c"
 //#include "xc0324.testhandler.c"
 
 
 r_device xc0324 = {
     .name           = "XC0324",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 190*4,
+    .short_limit    = 145*4,
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
     .json_callback  = &xc0324_callback,
-    //.json_callback  = &xc0324_correct2csv_callback,
     //.json_callback  = &testhandler_callback,
     .disabled       = 1, // stop my debug output from spamming unsuspecting users
     .fields        = output_fields,
