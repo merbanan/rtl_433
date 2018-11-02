@@ -17,7 +17,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
-                       devices/ambient_weather_tx8300.c \
+                       devices/ambientweather_tx8300.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
