@@ -436,7 +436,7 @@ void data_acquired_handler(data_t *data)
 static void classify_signal(void) {
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
-    unsigned int a[3], b[2], a_cnt[3], a_new[3], b_new[2];
+    unsigned int a[3], b[2], a_cnt[3], a_new[3];
     unsigned int signal_distance_data[4000] = {0};
     struct protocol_state p = {0};
     unsigned int signal_type;
@@ -1040,10 +1040,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 // find the fields output for CSV
 const char **determine_csv_fields(r_device *devices, int num_devices, r_device *extra_device, int *num_fields)
 {
-    int i, j;
+    int i;
     int cur_output_fields = 0;
     int num_output_fields = 0;
-    void *csv_aux;
     const char **output_fields = NULL;
     for (i = 0; i < num_devices; i++) {
         if (!devices[i].disabled) {
@@ -1197,7 +1196,6 @@ int main(int argc, char **argv) {
     char *out_filename = NULL;
     char *in_filename = NULL;
     FILE *in_file;
-    int n_read;
     int r = 0, opt;
     char *gain_str = NULL;
     int i;

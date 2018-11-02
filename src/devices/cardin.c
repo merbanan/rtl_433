@@ -14,7 +14,6 @@
 
 static int cardin_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
-	int i, j, k;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
 	/*

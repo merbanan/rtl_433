@@ -67,7 +67,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 	data_t *data;
 	int brow;
 	uint8_t out[8];
-	int msg_type, r_crc, c_crc;
+	int r_crc, c_crc;
 	int sensor_id, newbatt, battery_low;
 	int humidity;
 	float temp_c;

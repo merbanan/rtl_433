@@ -25,7 +25,6 @@ static int brennenstuhl_rcs_2044_process_row(int row, const bitbuffer_t *bitbuff
     const uint8_t *b = bitbuffer->bb[row];
     const int length = bitbuffer->bits_per_row[row];
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
-    int i;
     uint8_t nb[3] = {0};
     data_t *data;
 
