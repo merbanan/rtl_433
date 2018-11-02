@@ -17,9 +17,7 @@
  * t - temperature in Celsius: subtract 500 and divide by 10 (10 bits)
  * b - battery status: 0 = OK, 1 = LOW (1 bit)
  * ? - unknown: always 1 in every packet I've seen (1 bit)
- * s - CRC: non-standard CRC-4, reverse-engineered using RevEng (4 bits)
- *     http://reveng.sourceforge.net
- *     width=4  poly=0x9  init=0x1  refin=false  refout=false  xorout=0x0  check=0x5  residue=0x0  name=(none)
+ * s - CRC: non-standard CRC-4, poly 0x9, init 0x1
  *  
  * Pulse width:
  *      Short: 2000 us = 0
@@ -51,57 +49,6 @@
 /* Map channel values to their real-world counterparts */
 static const uint8_t channel_map[] = { 2, 0, 1, 0, 3 };
 
-
-/* philips_crc4_bit():
- * Compute CRC-4 for a byte sequence, one bit at a time.
- *
- * Note that Philips uses a custom CRC implementation for this device; see above
- * for details.
- * 
- * This function was generated using crcany (https://github.com/madler/crcany)
- * License information: "This code is under the zlib license, permitting free
- * commercial use."
- */
-static unsigned philips_crc4_bit(unsigned crc, void const *mem, size_t len) 
-{
-    unsigned char const *data = mem;
-    if (data == NULL)
-        return 0x1;
-    crc <<= 4;
-    while (len--) {
-        crc ^= *data++;
-        for (unsigned k = 0; k < 8; k++)
-            crc = crc & 0x80 ? (crc << 1) ^ 0x90 : crc << 1;
-    }
-    crc >>= 4;
-    crc &= 0xf;
-    return crc;
-}
-
-
-/* philips_crc4_rem():
- * Compute CRC-4 of the remaining high bits in the low byte of val.
- *
- * Note that Philips uses a custom CRC implementation for this device; see above
- * for details.
- * 
- * This function was generated using crcany (https://github.com/madler/crcany)
- * License information: "This code is under the zlib license, permitting free
- * commercial use."
- */
-static unsigned philips_crc4_rem(unsigned crc, unsigned val, unsigned bits) 
-{
-    crc <<= 4;
-    val &= ((1U << bits) - 1) << (8 - bits);
-    crc ^= val;
-    while (bits--)
-        crc = crc & 0x80 ? (crc << 1) ^ 0x90 : crc << 1;
-    crc >>= 4;
-    crc &= 0xf;
-    return crc;
-}
-
-
 static int philips_callback(bitbuffer_t *bitbuffer) 
 {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -109,7 +56,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
     unsigned int i;
     uint8_t a, b, c;
     uint8_t packet[PHILIPS_PACKETLEN];
-    uint8_t r_crc, c_crc;
+    uint8_t c_crc;
     uint8_t channel, battery_status;
     int tmp;
     float temperature;
@@ -166,14 +113,11 @@ static int philips_callback(bitbuffer_t *bitbuffer)
     }
 
     /* Correct CRC? */
-    r_crc = packet[PHILIPS_PACKETLEN - 1] & 0x0f; /* Last nibble in the packet */
-    c_crc = philips_crc4_bit(1, packet, PHILIPS_PACKETLEN - 1); /* First three bytes */
-    c_crc = philips_crc4_rem(c_crc, packet[PHILIPS_PACKETLEN - 1], 4); /* Remaining high nibble */
-
-    if (r_crc != c_crc) {
+    c_crc = crc4(packet, PHILIPS_PACKETLEN, 0x9, 1); /* Including the CRC nibble */
+    if (0 != c_crc) {
         if (debug_output) {
-            fprintf(stderr, "%s %s: CRC failed, calculated %x, received %x\n",
-                    time_str, __func__, c_crc, r_crc);
+            fprintf(stderr, "%s %s: CRC failed, calculated %x\n",
+                    time_str, __func__, c_crc);
         }
         return 0;
     }
