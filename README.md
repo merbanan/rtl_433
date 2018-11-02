@@ -1,7 +1,10 @@
 rtl_433
 =======
 
-rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
+rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, and 915 MHz ISM bands.
+
+It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
+Activly tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
 Building/installation:
 ----------------------
@@ -57,7 +60,7 @@ Usage:	= Tuner options =
 	[-E] Stop after outputting successful event(s)
 	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
-		 Use -R, -X, -F, -r, or -w without argument for more help
+		 Use -d, -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control
@@ -68,7 +71,6 @@ Supported device protocols:
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
-    [09]* Template decoder
     [10]* Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
@@ -124,8 +126,6 @@ Supported device protocols:
     [62]  Elro DB286A Doorbell
     [63]  Efergy Optical
     [64]  Honda Car Key
-    [65]* Template decoder
-    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -170,7 +170,8 @@ Supported device protocols:
     [108]  WS Temperature Sensor
     [109]  WT0124 Pool Thermometer
     [110]  PMV-107J (Toyota) TPMS
-
+    [111]  Ambient Weather TX-8300 Thermometer
+    
 * Disabled by default, use -R n or -G
 
 ```
