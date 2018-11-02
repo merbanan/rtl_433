@@ -245,8 +245,8 @@ calculate_paritycheck(uint8_t *buff, int length)
 {
     // b[5] is a check byte. 
     // Each bit is the parity of the bits in corresponding position of b[0] to b[4]
-    // ie brev[5] == brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4]
-    // and brev[0] ^ brev[1] ^ brev[2] ^ brev[3] ^ brev[4] ^ brev[5] == 0x00
+    // ie b[5] == b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4]
+    // and b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00
 
     uint8_t paritycheck = 0x00;
     int byteCnt;
@@ -466,7 +466,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
 r_device xc0324 = {
     .name           = "XC0324",
     .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 145*4,
+    .short_limit    = 190*4,// = (130 + 250)/2  * 4
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
     .json_callback  = &xc0324_callback,
