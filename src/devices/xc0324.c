@@ -24,7 +24,7 @@
  * Audacity, has pretty stable I and Q values, ie little phase wandering)
  * The newer transmitter seems less stable (ie within a single pulse, the I and
  * Q components of the pulse signal appear to "rotate" through several cycles).
- * The -a -t -D -D output correctly guesses the older transmitter modulation 
+ * The -A -D -D output correctly guesses the older transmitter modulation 
  * and gap parameters, but mistakes the newer transmitter as pulse width 
  * modulation with "far too many" very short pulses.
  * 
