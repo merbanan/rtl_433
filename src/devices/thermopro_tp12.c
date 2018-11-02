@@ -11,8 +11,6 @@
 #include "rtl_433.h"
 #include "util.h"
 
-#define MODEL "Thermopro TP12 Thermometer"
-
 /*
 A normal sequence for the TP12:
 
@@ -99,7 +97,7 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
 
     local_time_str(0, time_str);
     data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, MODEL,
+                     "model",         "",            DATA_STRING, "Thermopro TP12 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp1,
                      "temperature_2_C", "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp2,

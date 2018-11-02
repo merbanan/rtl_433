@@ -1,7 +1,10 @@
 rtl_433
 =======
 
-rtl_433 turns your Realtek RTL2832 based DVB dongle into a 433.92MHz generic data receiver
+rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, and 915 MHz ISM bands.
+
+It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
+Activly tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
 Building/installation:
 ----------------------
@@ -27,7 +30,6 @@ Usage:	= Tuner options =
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
-	[-S] Force sync output (default: async)
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
@@ -42,28 +44,23 @@ Usage:	= Tuner options =
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
-	[-W] Overwrite mode, disable checks to prevent files from being overwritten
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
 		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
 	[-r <filename>] Read data from input file instead of a receiver
-	[-m <mode>] Data file mode for input / output file (default: 0)
-		 0 = Raw I/Q samples (uint8, 2 channel)
-		 1 = AM demodulated samples (int16 pcm, 1 channel)
-		 2 = FM demodulated samples (int16) (output only)
-		 3 = Raw I/Q samples (cf32, 2 channel)
-		 4 = Raw I/Q samples (cs16, 2 channel)
+	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+	[-W <filename>] Save data stream to output file, overwrite existing file
 	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
-		 append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
-		 specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
+		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-C] native|si|customary Convert units in decoded output.
-	[-T] specify number of seconds to run
+	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
 	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
-	[<filename>] Save data stream to output file (a '-' dumps samples to stdout)
+		 Use -d, -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control
@@ -74,7 +71,6 @@ Supported device protocols:
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
-    [09]* Template decoder
     [10]* Acurite 896 Rain Gauge
     [11]  Acurite 609TXC Temperature and Humidity Sensor
     [12]  Oregon Scientific Weather Sensor
@@ -130,8 +126,6 @@ Supported device protocols:
     [62]  Elro DB286A Doorbell
     [63]  Efergy Optical
     [64]  Honda Car Key
-    [65]* Template decoder
-    [66]* Template decoder
     [67]  Radiohead ASK
     [68]  Kerui PIR Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -175,6 +169,7 @@ Supported device protocols:
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  WS Temperature Sensor
     [109]  WT0124 Pool Thermometer
+    [110]  PMV-107J (Toyota) TPMS
 
 * Disabled by default, use -R n or -G
 

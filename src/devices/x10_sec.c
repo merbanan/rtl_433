@@ -33,7 +33,7 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
     char *event_str = "UNKNOWN";         /* human-readable event     */
-    char x10_id_str[5] = "";             /* string showing hex value */
+    char x10_id_str[12] = "";            /* string showing hex value */
     char x10_code_str[5] = "";           /* string showing hex value */
 
     for (r=0; r < bitbuffer->num_rows; ++r) {

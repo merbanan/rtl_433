@@ -88,11 +88,13 @@
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\data.h" />
+    <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
+    <ClInclude Include="..\include\sdr.h" />
     <ClInclude Include="..\include\util.h" />
     <ClInclude Include="..\src\getopt\getopt.h" />
   </ItemGroup>
@@ -100,10 +102,12 @@
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\fileformat.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />
+    <ClCompile Include="..\src\sdr.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
@@ -187,6 +191,7 @@
     <ClCompile Include="..\src\devices\thermopro_tp12.c" />
     <ClCompile Include="..\src\devices\tpms_citroen.c" />
     <ClCompile Include="..\src\devices\tpms_ford.c" />
+    <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
