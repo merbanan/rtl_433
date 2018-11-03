@@ -12,9 +12,6 @@ Preamble format (2 bits):
 Payload format (31 bits):
    [9 bit unknown (humidity?)] [2 bit channel number] [1 bit negative flag] [7 bit ID]  [12 bit BCD temperature (C, 1 decimal point)]   
    UUUUUUUU UNNSIIII IIITTTTT TTTTTTT
-   
-   
-   0UUUUUUU UUNNSIII IIIITTTT TTTTTTTT
 */
 
 #include <byteswap.h>
