@@ -1,4 +1,4 @@
-/* Kerui PIR sensor
+/* Kerui PIR / Contact Sensor
  *
  * Such as
  * http://www.ebay.co.uk/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xkerui+pir.TRS0&_nkw=kerui+pir&_sacat=0
@@ -69,7 +69,7 @@ static char *output_fields[] = {
 };
 
 r_device kerui = {
-    .name          = "Kerui Security",
+    .name          = "Kerui PIR / Contact Sensor",
     .modulation    = OOK_PULSE_PWM_PRECISE,
     .short_limit   = 320,
     .long_limit    = 960,
