@@ -353,6 +353,10 @@ static void parse_getter(const char *arg, struct flex_get *getter)
             getter->name = strdup(arg);
         arg = p;
     }
+    if (!getter->name) {
+        fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
+        usage();
+    }
     if (debug_output)
         fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",
                 getter->bit_offset, getter->bit_count, getter->mask, getter->name);
