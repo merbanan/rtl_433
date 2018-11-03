@@ -47,3 +47,10 @@ build/
 
 *.orig
 *~
+*.tlog
+*.ipdb
+*.iobj
+*.idb
+*.lastbuildstate
+*.db
+*.opendb

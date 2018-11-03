@@ -34,6 +34,15 @@
 /// @return bit reversed byte
 uint8_t reverse8(uint8_t x);
 
+/// CRC-4
+///
+/// @param message[]: array of bytes to check
+/// @param nBytes: number of bytes in message
+/// @param polynomial: CRC polynomial
+/// @param init: starting crc value
+/// @return CRC value
+uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
+
 /// CRC-7
 ///
 /// @param message[]: array of bytes to check

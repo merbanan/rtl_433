@@ -62,15 +62,15 @@ help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
 
 # glob all src and device files
 os.chdir("src")
-src_files = glob.glob('*.c')
+src_files = sorted(glob.glob('*.c'))
 print("src_files =", src_files)
-device_files = glob.glob('devices/*.c')
+device_files = sorted(glob.glob('devices/*.c'))
 print("device_files =", device_files)
 os.chdir("..")
 
 # glob all includes
 os.chdir("include")
-include_files = glob.glob('*.h')
+include_files = sorted(glob.glob('*.h'))
 print("include_files =", include_files)
 os.chdir("..")
 

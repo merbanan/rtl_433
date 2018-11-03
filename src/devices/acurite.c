@@ -570,8 +570,8 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf) {
     char channel, *wind_dirstr = "";
     char channel_str[2];
     uint16_t sensor_id;
-    int raincounter, temp, battery_low;
-    uint8_t strike_count, strike_distance;
+    int raincounter, battery_low;
+    uint8_t strike_distance;
     data_t *data;
 
     local_time_str(0, time_str);
@@ -1018,7 +1018,6 @@ static int acurite_606_callback(bitbuffer_t *bitbuf) {
 
 static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
     int crc, battery_low, id, model, valid = 0;
-    uint8_t *bb;
     data_t *data;
     char *model1 = "00275rm", *model2 = "00276rm";
     float tempc, ptempc;
