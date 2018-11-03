@@ -51,7 +51,7 @@ Usage:	= Tuner options =
 	[-r <filename>] Read data from input file instead of a receiver
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
-	[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.
+	[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-C] native|si|customary Convert units in decoded output.
@@ -137,7 +137,7 @@ Supported device protocols:
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH24, HP1000 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -161,7 +161,7 @@ Supported device protocols:
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
     [101]* Dish remote 6.3
-    [102]* SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
+    [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
     [104]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
