@@ -152,7 +152,7 @@ void usage(r_device *devices, int exit_code)
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
-            "\t[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
@@ -201,7 +201,8 @@ void help_device(void)
 void help_output(void)
 {
     fprintf(stderr,
-            "[-F] kv|json|csv|syslog Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t Without this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
@@ -1159,6 +1160,11 @@ void add_syslog_output(char *param)
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
+void add_null_output(char *param)
+{
+    output_handler[last_output_handler++] = NULL;
+}
+
 void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
 {
     while (dumper->spec && *dumper->spec) ++dumper; // TODO: check MAX_DUMP_OUTPUTS
@@ -1345,6 +1351,8 @@ int main(int argc, char **argv) {
                     add_kv_output(arg_param(optarg));
                 } else if (strncmp(optarg, "syslog", 6) == 0) {
                     add_syslog_output(arg_param(optarg));
+                } else if (strncmp(optarg, "null", 4) == 0) {
+                    add_null_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
                     usage(NULL, 1);
