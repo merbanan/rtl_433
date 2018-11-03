@@ -49,7 +49,7 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
     data = data_make(
             "time",     "",               DATA_STRING, time_str,
-            "model",    "",               DATA_STRING, "Kerui PIR / Contact Sensor",
+            "model",    "",               DATA_STRING, "Kerui Security",
             "id",       "ID (20bit)",     DATA_FORMAT, "0x%x", DATA_INT, id,
             "cmd",      "Command (4bit)", DATA_FORMAT, "0x%x", DATA_INT, cmd,
             "state",    "State",          DATA_STRING, cmd_str,
@@ -69,7 +69,7 @@ static char *output_fields[] = {
 };
 
 r_device kerui = {
-    .name          = "Kerui PIR / Contact Sensor",
+    .name          = "Kerui Security",
     .modulation    = OOK_PULSE_PWM_PRECISE,
     .short_limit   = 320,
     .long_limit    = 960,
