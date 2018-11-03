@@ -59,7 +59,6 @@ static int wg_pb12v1_callback(bitbuffer_t *bitbuffer) {
     uint8_t id;
     int16_t temp;
     float temperature;
-    uint8_t humidity;
 
     const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
 

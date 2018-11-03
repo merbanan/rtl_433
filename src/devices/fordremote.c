@@ -25,7 +25,7 @@ static int fordremote_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *bytes;
-	int found = 0, i;
+	int found = 0;
 	int device_id, code;
 
 	// expect {1} {9} {1} preamble

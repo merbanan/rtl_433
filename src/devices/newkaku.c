@@ -14,7 +14,6 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
     /*- stop pulse: 1T high, 40T low */
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
-    int i;
     uint8_t tmp = 0;
     uint8_t unit = 0;
     uint8_t packet = 0;

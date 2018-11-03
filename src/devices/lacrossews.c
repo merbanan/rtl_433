@@ -86,7 +86,7 @@ static int lacrossews_callback(bitbuffer_t *bitbuffer) {
 	uint8_t msg_nybbles[(LACROSSE_WS_BITLEN / 4)];
 	uint8_t ws_id, msg_type, sensor_id, msg_data, msg_unknown, msg_checksum;
 	int msg_value_bcd, msg_value_bcd2, msg_value_bin;
-	float temp_c, temp_f, wind_dir, wind_spd, rain_mm, rain_in;
+	float temp_c, wind_dir, wind_spd, rain_mm;
 	char time_str[LOCAL_TIME_BUFLEN], *wind_key, *wind_label;
 	data_t *data;
 

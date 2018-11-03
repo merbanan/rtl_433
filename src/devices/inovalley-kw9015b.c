@@ -19,7 +19,6 @@ static int kw9015b_callback(bitbuffer_t *bitbuffer) {
 	int i,iRain,device;
 	unsigned char chksum;
 	float fTemp;
-	char buf[255];
 	for(i=0;i<5;i++){
 		if(bitbuffer->bits_per_row[i]!=36){
 			/*10 24 bits frame*/
