@@ -30,25 +30,30 @@ ss_get_id(char *id, uint8_t *b)
 }
 
 static int
-ss_sensor_parser (bitbuffer_t *bitbuffer)
+ss_sensor_parser (bitbuffer_t *bitbuffer, int row)
 {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
-	uint8_t *b = bitbuffer->bb[0];
+	uint8_t *b = bitbuffer->bb[row];
 	char id[6];
 	char extradata[30] = "";
 
 	// each row needs to have exactly 92 bits 
-	if (bitbuffer->bits_per_row[0] != 92)
+	if (bitbuffer->bits_per_row[row] != 92)
 		return 0;
+
+        uint8_t seq = reverse8(b[8]);
+        uint8_t state = reverse8(b[9]);
+        uint8_t csum = reverse8(b[10]);
+        if (((seq + state) & 0xff) != csum) return 0;
 
 	ss_get_id(id, b);
 
-	if (b[9] == 64) {
+        if (state == 1) {
+                strcpy(extradata,"Contact Open");
+        } else if (state == 2) {
 		strcpy(extradata,"Contact Closed");
-	} else if (b[9] == 128) {
-		strcpy(extradata,"Contact Open");
-	} else if (b[9] == 192) {
+        } else if (state == 3) {
 		strcpy(extradata,"Alarm Off");
 	}
 
@@ -57,8 +62,8 @@ ss_sensor_parser (bitbuffer_t *bitbuffer)
 		"time",		"",	DATA_STRING, time_str,
 		"model",	"",	DATA_STRING, "SimpliSafe Sensor",
 		"device",	"Device ID",	DATA_STRING, id,
-		"seq",		"Sequence",	DATA_INT, b[8],
-		"state",	"State",	DATA_INT, b[9],
+		"seq",		"Sequence",	DATA_INT, seq,
+		"state",	"State",	DATA_INT, state,
 		"extradata",	"Extra Data",	DATA_STRING, extradata,
 		NULL
 	);
@@ -68,11 +73,11 @@ ss_sensor_parser (bitbuffer_t *bitbuffer)
 }
 
 static int 
-ss_pinentry_parser(bitbuffer_t *bitbuffer)
+ss_pinentry_parser(bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    uint8_t *b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[row];
     char id[6];
     char extradata[30];
     // In a keypad message the pin is encoded in bytes 10 and 11 with the the digits each using 4 bits
@@ -105,11 +110,11 @@ ss_pinentry_parser(bitbuffer_t *bitbuffer)
 }
 
 static int 
-ss_keypad_commands (bitbuffer_t *bitbuffer)
+ss_keypad_commands (bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    uint8_t *b = bitbuffer->bb[0];
+    uint8_t *b = bitbuffer->bb[row];
     char id[6];
     char extradata[30]; // = "Arming: ";
 
@@ -146,18 +151,22 @@ ss_keypad_commands (bitbuffer_t *bitbuffer)
 static int
 ss_sensor_callback (bitbuffer_t *bitbuffer)
 {
-	bitbuffer_invert(bitbuffer); // Invert the Bits
-	uint8_t *b = bitbuffer->bb[0];
+        // Require two identical rows.
+        int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
+        if (row < 0) return 0;
 
-	if (b[0] != 0x33 && b[1] != 0xa0) // All Messages Must start with 0x33a0
-		return 0;
+        // The row must start with 0xcc5f (0x33a0 inverted).
+        uint8_t *b = bitbuffer->bb[row];
+	if (b[0] != 0xcc || b[1] != 0x5f) return 0;
+
+	bitbuffer_invert(bitbuffer);
 
 	if (b[2] == 0x88) {
-		return ss_sensor_parser (bitbuffer);
+		return ss_sensor_parser (bitbuffer, row);
 	} else if (b[2] == 0x66) {
-		return ss_pinentry_parser (bitbuffer);
+		return ss_pinentry_parser (bitbuffer, row);
 	} else if (b[2] == 0x44) {
-		return ss_keypad_commands (bitbuffer);
+		return ss_keypad_commands (bitbuffer, row);
 	} else {
 		if (debug_output)
 			fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);
@@ -180,9 +189,9 @@ r_device ss_sensor = {
     .modulation     = OOK_PULSE_PIWM_DC,
     .short_limit    = 500,  // half-bit width 500 us
     .long_limit     = 1000, // bit width 1000 us
-    .reset_limit    = 1500,
+    .reset_limit    = 2200,
     .tolerance      = 100, // us
     .json_callback  = &ss_sensor_callback,
-    .disabled       = 1,
+    .disabled       = 0,
     .fields         = sensor_output_fields
 };
