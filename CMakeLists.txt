@@ -140,6 +140,7 @@ add_custom_target(uninstall
 ########################################################################
 option(BUILD_DOCUMENTATION "Create and install the HTML based API
 documentation (requires Doxygen)" OFF)
+option(BUILD_TEST "Build the test elements." ON)
 
 find_package(Doxygen)
 if(BUILD_DOCUMENTATION)
@@ -167,7 +168,9 @@ endif()
 ########################################################################
 add_subdirectory(include)
 add_subdirectory(src)
-add_subdirectory(tests)
+if(BUILD_TEST)
+    add_subdirectory(tests)
+endif(BUILD_TEST)
 
 # use space-separation format for the pc file
 STRING(REPLACE ";" " " RTL433_PC_CFLAGS "${RTL433_PC_CFLAGS}")
