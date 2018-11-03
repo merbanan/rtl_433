@@ -44,26 +44,29 @@
 #define VERSION "version unknown"
 #endif
 
+r_device *flex_create_device(char *spec); // maybe put this in some header file?
+
 static int do_exit = 0;
-static int do_exit_async = 0, frequencies = 0;
-uint32_t frequency[MAX_PROTOCOLS];
-uint32_t center_frequency = 0;
-time_t rawtime_old;
-int duration = 0;
-time_t stop_time;
-int flag;
-int stop_after_successful_events_flag = 0;
-uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
-uint64_t input_pos = 0;
+static int do_exit_async = 0;
+static int frequencies = 0;
+static uint32_t frequency[MAX_PROTOCOLS];
+static uint32_t center_frequency = 0;
+static time_t rawtime_old;
+static int duration = 0;
+static time_t stop_time;
+static int flag;
+static int stop_after_successful_events_flag = 0;
+static uint32_t samp_rate = DEFAULT_SAMPLE_RATE;
+static uint64_t input_pos = 0;
 float sample_file_pos = -1;
 static uint32_t bytes_to_read = 0;
 static sdr_dev_t *dev = NULL;
 static int override_short = 0;
 static int override_long = 0;
-int include_only = 0;  // Option -I
+static int include_only = 0;  // Option -I
 int debug_output = 0;
-int quiet_mode = 0;
-int utc_mode = 0;
+static int quiet_mode = 0;
+static int utc_mode = 0;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -72,7 +75,7 @@ typedef enum  {
 } conversion_mode_t;
 static conversion_mode_t conversion_mode = CONVERT_NATIVE;
 
-uint16_t num_r_devices = 0;
+static uint16_t num_r_devices = 0;
 
 struct dm_state {
     int32_t level_limit;
@@ -109,13 +112,13 @@ struct dm_state {
     pulse_data_t    fsk_pulse_data;
 };
 
-void version(void)
+static void version(void)
 {
     fprintf(stderr, "rtl_433 " VERSION "\n");
     exit(0);
 }
 
-void usage(r_device *devices, int exit_code)
+static void usage(r_device *devices, int exit_code)
 {
     int i;
     char disabledc;
@@ -175,7 +178,7 @@ void usage(r_device *devices, int exit_code)
     exit(exit_code);
 }
 
-void help_device(void)
+static void help_device(void)
 {
     fprintf(stderr,
 #ifdef RTLSDR
@@ -197,7 +200,7 @@ void help_device(void)
     exit(0);
 }
 
-void help_gain(void)
+static void help_gain(void)
 {
     fprintf(stderr,
             "-g <gain>] (default: auto)\n"
@@ -207,7 +210,7 @@ void help_gain(void)
     exit(0);
 }
 
-void help_output(void)
+static void help_output(void)
 {
     fprintf(stderr,
             "[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
@@ -217,7 +220,7 @@ void help_output(void)
     exit(0);
 }
 
-void help_read(void)
+static void help_read(void)
 {
     fprintf(stderr,
             "[-r <filename>] Read data from input file instead of a receiver\n"
@@ -235,7 +238,7 @@ void help_read(void)
     exit(0);
 }
 
-void help_write(void)
+static void help_write(void)
 {
     fprintf(stderr,
             "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
@@ -1048,7 +1051,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-const char **determine_csv_fields(r_device *devices, int num_devices, r_device *extra_device, int *num_fields)
+static char const **determine_csv_fields(r_device *devices, int num_devices, r_device *extra_device, int *num_fields)
 {
     int i;
     int cur_output_fields = 0;
@@ -1092,7 +1095,7 @@ const char **determine_csv_fields(r_device *devices, int num_devices, r_device *
     return output_fields;
 }
 
-char *arg_param(char *arg)
+static char *arg_param(char *arg)
 {
     char *p = strchr(arg, ':');
     if (p) {
@@ -1102,7 +1105,7 @@ char *arg_param(char *arg)
     }
 }
 
-FILE *fopen_output(char *param)
+static FILE *fopen_output(char *param)
 {
     FILE *file;
     if (!param || !*param) {
@@ -1117,7 +1120,7 @@ FILE *fopen_output(char *param)
 }
 
 // e.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
-void hostport_param(char *param, char **host, char **port)
+static void hostport_param(char *param, char **host, char **port)
 {
     if (param && *param) {
         if (*param != ':') {
@@ -1141,12 +1144,12 @@ void hostport_param(char *param, char **host, char **port)
     }
 }
 
-void add_json_output(char *param)
+static void add_json_output(char *param)
 {
     output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-void add_csv_output(char *param, r_device *devices, int num_devices, r_device *extra_device)
+static void add_csv_output(char *param, r_device *devices, int num_devices, r_device *extra_device)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(devices, num_devices, extra_device, &num_output_fields);
@@ -1154,12 +1157,12 @@ void add_csv_output(char *param, r_device *devices, int num_devices, r_device *e
     free(output_fields);
 }
 
-void add_kv_output(char *param)
+static void add_kv_output(char *param)
 {
     output_handler[last_output_handler++] = data_output_kv_create(fopen_output(param));
 }
 
-void add_syslog_output(char *param)
+static void add_syslog_output(char *param)
 {
     char *host = "localhost";
     char *port = "514";
@@ -1169,12 +1172,12 @@ void add_syslog_output(char *param)
     output_handler[last_output_handler++] = data_output_syslog_create(host, port);
 }
 
-void add_null_output(char *param)
+static void add_null_output(char *param)
 {
     output_handler[last_output_handler++] = NULL;
 }
 
-void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
+static void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
 {
     while (dumper->spec && *dumper->spec) ++dumper; // TODO: check MAX_DUMP_OUTPUTS
 
@@ -1199,8 +1202,6 @@ void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
         pulse_data_print_vcd_header(dumper->file, samp_rate);
     }
 }
-
-r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
