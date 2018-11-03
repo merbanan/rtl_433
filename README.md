@@ -23,9 +23,8 @@ Running:
 
 ```
 Usage:	= Tuner options =
-	[-d <RTL-SDR USB device index>] (default: 0)
-	[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
-	[-g <gain>] (default: 0 for auto)
+	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]
+	[-g <gain>] (default: auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
 	[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
@@ -60,7 +59,7 @@ Usage:	= Tuner options =
 	[-E] Stop after outputting successful event(s)
 	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
-		 Use -d, -R, -X, -F, -r, or -w without argument for more help
+		 Use -d, -g, -R, -X, -F, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control

@@ -124,9 +124,8 @@ void usage(r_device *devices, int exit_code)
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n"
             VERSION "\n"
             "\nUsage:\t= Tuner options =\n"
-            "\t[-d <RTL-SDR USB device index>] (default: 0)\n"
-            "\t[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
-            "\t[-g <gain>] (default: 0 for auto)\n"
+            "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]\n"
+            "\t[-g <gain>] (default: auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
@@ -161,7 +160,7 @@ void usage(r_device *devices, int exit_code)
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-V] Output the version string and exit\n"
             "\t[-h] Output this usage help and exit\n"
-            "\t\t Use -d, -R, -X, -F, -r, or -w without argument for more help\n\n",
+            "\t\t Use -d, -g, -R, -X, -F, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     if (devices) {
@@ -198,13 +197,23 @@ void help_device(void)
     exit(0);
 }
 
+void help_gain(void)
+{
+    fprintf(stderr,
+            "-g <gain>] (default: auto)\n"
+            "\tFor RTL-SDR: gain in tenths of dB (\"0\" is auto).\n"
+            "\tFor SoapySDR: gain in dB for automatic distribution (\"\" is auto), or string of gain elements.\n"
+            "\tE.g. \"LNA=20,TIA=8,PGA=2\" for LimeSDR.\n");
+    exit(0);
+}
+
 void help_output(void)
 {
     fprintf(stderr,
             "[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
-            "\t Without this option the default is KV output. Use \"-F null\" to remove the default.\n"
-            "\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+            "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
+            "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }
 
@@ -1233,6 +1242,8 @@ int main(int argc, char **argv) {
     demod->hop_time = DEFAULT_HOP_TIME;
 
     while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
+        if (optarg && (!strcmp(optarg, "help") || !strcmp(optarg, "?")))
+            opt = '?'; // fall through to help
         switch (opt) {
             case 'h':
                 usage(NULL, 0);
@@ -1282,15 +1293,12 @@ int main(int argc, char **argv) {
                 break;
             case 'r':
                 in_filename = optarg;
-                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_read();
                 // TODO: check_read_file_info()
                 break;
             case 'w':
-                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
                 add_dumper(optarg, demod->dumper, 0);
                 break;
             case 'W':
-                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_write();
                 add_dumper(optarg, demod->dumper, 1);
                 break;
             case 't':
@@ -1310,8 +1318,6 @@ int main(int argc, char **argv) {
                 override_long = atoi(optarg);
                 break;
             case 'R':
-                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) usage(devices, 0);
-
                 if (!have_opt_R) {
                     for (i = 0; i < num_r_devices; i++) {
                         devices[i].disabled = 1;
@@ -1342,7 +1348,6 @@ int main(int argc, char **argv) {
                 quiet_mode = 1;
                 break;
             case 'F':
-                if (!optarg || !strcmp(optarg, "help") || !strcmp(optarg, "?")) help_output();
                 if (strncmp(optarg, "json", 4) == 0) {
                     add_json_output(arg_param(optarg));
                 } else if (strncmp(optarg, "csv", 3) == 0) {
@@ -1397,6 +1402,7 @@ int main(int argc, char **argv) {
                 if (optopt == 'R') usage(devices, 0);
                 else if (optopt == 'X') flex_create_device(NULL);
                 else if (optopt == 'd') help_device();
+                else if (optopt == 'g') help_gain();
                 else if (optopt == 'F') help_output();
                 else if (optopt == 'r') help_read();
                 else if (optopt == 'w') help_write();
