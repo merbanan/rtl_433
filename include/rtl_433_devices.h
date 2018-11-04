@@ -114,7 +114,7 @@
 		DECL(wssensor) \
 		DECL(wt1024) \
 		DECL(tpms_pmv107j) \
-		DECL(xc0324)
+		DECL(digitech_xc0324)
 
 
 typedef struct {

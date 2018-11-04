@@ -460,17 +460,15 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
 
 // Include the code for the -DDD format "debug to csv" line
 #include "xc0324.correctvalues.c"
-//#include "xc0324.testhandler.c"
 
 
-r_device xc0324 = {
-    .name           = "XC0324",
+r_device digitech_xc0324 = {
+    .name           = "Digitech XC-0324 temperature sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
     .short_limit    = 190*4,// = (130 + 250)/2  * 4
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
     .json_callback  = &xc0324_callback,
-    //.json_callback  = &testhandler_callback,
     .disabled       = 1, // stop my debug output from spamming unsuspecting users
     .fields        = output_fields,
 };
