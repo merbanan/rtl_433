@@ -81,7 +81,7 @@ ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
     data = data_make(
             "time",           "",              DATA_STRING, time_str,
             "model",          "",              DATA_STRING, "Ambient Weather TX-8300 Thermometer",
-            "device",         "ID",            DATA_INT,    deviceID,
+            "id",             "ID",            DATA_INT,    deviceID,
             "channel",        "Channel",       DATA_INT,    channel,
             "count",          "Rolling count", DATA_INT,    count,
             "temperature_C",  "Temperature",   DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
