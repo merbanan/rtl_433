@@ -10,13 +10,13 @@ xc0324_values2csv(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos, data_t 
     
     // Extracted data values
     double temperature;
-    uint8_t parity_check; //message integrity check == 0x00
+    uint8_t XORchecksum; //message integrity check == 0x00
     
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
-    // Examine the paritycheck and bail out if not OK
-    parity_check = calculate_paritycheck(b, 6);
-    if (parity_check != 0x00) {
+    // Examine the XORchecksum and bail out if not OK
+    XORchecksum = calculate_XORchecksum(b, 6);
+    if (XORchecksum != 0x00) {
        return 0;
     }
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB order!
@@ -49,8 +49,8 @@ static int xc0324_referenceValues2csv(bitbuffer_t *bitbuffer)
       if (debug_output > 2) {
         // Start a "debug to csv" formatted version of the filename plus
         // the correct temperature.
-        get_xc0324_label();
-        fprintf(stderr, "\n%s, XC0324:DDD Reference Values, ", xc0324_label);
+        get_csv_label();
+        fprintf(stderr, "\n%s, XC0324:DDD Reference Values, ", csv_label);
         // xc0324_values2csv will send the rest of the "debug to csv" formatted
         // to stderr.
       }
