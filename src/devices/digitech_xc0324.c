@@ -174,6 +174,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
     data_t * data;
     
     // Send a "debug to csv" formatted version of the bitbuffer to stderr.
+    if (debug_output > 0) csv_label[0] = 0x00;
     if (debug_output > 0) bitbuffer2csv(stderr, bitbuffer);
     if (debug_output > 2) reference_values_written = 0;
     
