@@ -106,7 +106,6 @@ rtl_433_SOURCES      = baseband.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/x10_sec.c \
-                       devices/xc0324.c
+                       devices/x10_sec.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
