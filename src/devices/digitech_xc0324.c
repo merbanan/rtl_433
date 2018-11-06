@@ -99,8 +99,6 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
 
-    //if (debug_output > 1) message2csv(stderr, bitbuffer, row, bitpos);
-
     // Examine the XORchecksum and bail out if not OK
     XORchecksum = calculate_XORchecksum(b, 6);
     if (XORchecksum != 0x00) {
