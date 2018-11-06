@@ -40,7 +40,7 @@ static void *bounded_memset(void *b, int c, int64_t size, int64_t offset, int64_
 		len = size - offset; // clip excessive len
 	}
 	if (len > 0)
-		memset((char *)b + offset, c, len);
+		memset((char *)b + offset, c, (size_t)len);
 	return b;
 }
 
