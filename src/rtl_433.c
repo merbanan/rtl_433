@@ -64,6 +64,7 @@ int include_only = 0;  // Option -I
 int debug_output = 0;
 int quiet_mode = 0;
 int utc_mode = 0;
+char *in_filename = NULL;
 
 typedef enum  {
     CONVERT_NATIVE,
@@ -1188,6 +1189,7 @@ void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -1195,7 +1197,6 @@ int main(int argc, char **argv) {
     char *dev_query = NULL;
     char *test_data = NULL;
     char *out_filename = NULL;
-    char *in_filename = NULL;
     FILE *in_file;
     int n_read;
     int r = 0, opt;

@@ -64,6 +64,8 @@
 
 extern int debug_output;
 extern float sample_file_pos;
+extern char *in_filename;
+
 
 struct protocol_state {
     int (*callback)(bitbuffer_t *bitbuffer);
