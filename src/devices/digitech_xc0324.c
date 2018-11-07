@@ -61,8 +61,8 @@
 
 
 // See the (forthcoming) tutorial entry in the rtl_433 wiki for information 
-// about using the debug messages from this device handler.
-#include "digitech_xc0324.debug2csv.c"
+// about using the debug trace messages from this device handler.
+#include "digitech_xc0324.trace.c"
 
 static const uint8_t preamble_pattern[1] = {MYDEVICE_STARTBYTE};
 
@@ -103,9 +103,9 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
     XORchecksum = calculate_XORchecksum(b, 6);
     if (XORchecksum != 0x00) {
        if (debug_output > 1) {
-           message2csv(stderr, bitbuffer, row, bitpos);
-           byte2csv(stderr, "Bad checksum status - not 0x00 but ", XORchecksum, 8);
-           endcsvline(stderr);
+           xc0324_message_trace(stderr, bitbuffer, row, bitpos);
+           bitbuffer_add_trace(stderr, "Checksum status is 0x%02X not 0x00 ,", XORchecksum);
+           bitbuffer_end_trace(stderr);
        }
        return 0;
     }
@@ -136,15 +136,15 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
 
     //  Send optional "debug to csv" lines.
     if (debug_output > 1) {
-        message2csv(stderr, bitbuffer, row, bitpos);
-        fprintf(stderr, "Temp was %4.1f ,", temperature);
-        endcsvline(stderr);
+        xc0324_message_trace(stderr, bitbuffer, row, bitpos);
+        bitbuffer_add_trace(stderr, "Temp was %4.1f ,", temperature);
+        bitbuffer_end_trace(stderr);
     }
     if ((debug_output > 2) & !reference_values_written) {
         reference_values_written = 1;
-        startcsvline(stderr, "XC0324:DDD Reference Values");
-        fprintf(stderr, "Temperature %4.1f C, sensor id %s,", temperature, id);
-        endcsvline(stderr);
+        bitbuffer_start_trace(stderr, "XC0324:DDD Reference Values");
+        bitbuffer_add_trace(stderr, "Temperature %4.1f C, sensor id %s,", temperature, id);
+        bitbuffer_end_trace(stderr);
     }
 
     return 1;
@@ -165,6 +165,8 @@ static char *output_fields[] = {
 };
 
 
+
+
 static int xc0324_callback(bitbuffer_t *bitbuffer)
 {
     int r; // a row index
@@ -174,8 +176,10 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
     data_t * data;
     
     // Send a "debug to csv" formatted version of the bitbuffer to stderr.
-    if (debug_output > 0) csv_label[0] = 0x00;
-    if (debug_output > 0) bitbuffer2csv(stderr, bitbuffer);
+    //if (debug_output > 0) bitbuffer_trace_label[0] = 0x00;
+    if (debug_output > 0) bitbuffer_basic_trace(bitbuffer, "And now BASIC has finished %s", "\nBye\n");
+    if (debug_output > 0) xc0324_bitbuffer_trace(stderr, bitbuffer, NULL);
+    if (debug_output > 0) xc0324_bitbuffer_trace(stderr, bitbuffer, "PackageTest %d", 2);
     if (debug_output > 2) reference_values_written = 0;
     
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
@@ -185,10 +189,10 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
             // bail out of this row early (after an optional debug message)
             if (debug_output > 1) {
-              message2csv(stderr, bitbuffer, r, 0);
+              xc0324_message_trace(stderr, bitbuffer, r, 0);
               fprintf(stderr, "Bad row - %0d is too few bits for a message",
                       bitbuffer -> bits_per_row[r]);
-              endcsvline(stderr);
+              bitbuffer_end_trace(stderr);
             }
             continue; // to the next row  
         }
@@ -210,8 +214,8 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
         }
     }
     if ((debug_output > 2) & !reference_values_written) {
-        startcsvline(stderr, "XC0324:DDD Reference Values, Bad transmission,");
-        endcsvline(stderr);
+        bitbuffer_start_trace(stderr, "XC0324:DDD Reference Values, Bad transmission,");
+        bitbuffer_end_trace(stderr);
     }
     return events;
 }
