@@ -9,7 +9,7 @@ void xc0324_message_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
    //via eg `fprintf(stream, " foobar, ", )`
    //PS Note the "," after foobar - needed to make it a csv line :-)
    //bitbuffer_start_trace(stream, "XC0324:DD Message");
-   //bitbuffer_pretty_print_rowbits(stream, bits, row, bitpos, MYMESSAGE_BITLEN);
+   //bitbuffer_pprint_partrow(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 1);
    //fprintf(stream, "\n\nJust before rowbits_trace\n\n");
    rowbits_pp_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN,
          "XC0324:DD TEST1 MESSAGE,", 
