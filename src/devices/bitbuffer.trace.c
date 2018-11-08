@@ -3,35 +3,6 @@
 #include <stdarg.h>
 #include "rtl_433.h"
 
-/*
-static volatile bool fgets_timeout;
-
-void fgets_timeout_handler(int sigNum) {
-    fgets_timeout = 1; // Non zero == True;
-}
-
-char bitbuffer_trace_label[LOCAL_TIME_BUFLEN + 48] = {0};
-
-void get_bitbuffer_trace_label() {
-	// Get a label for this "line" of output read from stdin.
-	// In case stdin is empty, use a timestamp instead.
-  if (strlen(bitbuffer_trace_label) > 0 ) {
-    return; //The label has already been read!
-  }
-  // Allow fgets 1 second to read label from stdin
-  fgets_timeout = 0; // False;
-  signal(SIGALRM, fgets_timeout_handler);
-  alarm(1);
-  char * lab = fgets(&bitbuffer_trace_label[0], 48, stdin);
-  alarm(0); // Cancel the alarm (I hope)
-  bitbuffer_trace_label[strcspn(bitbuffer_trace_label, "\n")] = 0; //remove trailing newline
-  if (fgets_timeout) {
-    // Use a current time string as a default label
-    time_t current;
-    local_time_str(time(&current), &bitbuffer_trace_label[0]);
-  }
-}
- */
  
  
 extern char * in_filename;    
@@ -40,15 +11,23 @@ char bitbuffer_trace_label[LOCAL_TIME_BUFLEN + 48] = {0};
 void get_bitbuffer_trace_label() {
 	// Get a label for this "line" of output read from stdin.
 	// In case stdin is empty, use a timestamp instead.
-  if (strlen(bitbuffer_trace_label) > 0 ) {
+	
+	static time_t last_time = -1;
+  time_t current;
+
+  if (in_filename & (strlen(bitbuffer_trace_label) > 0))  {
     return; //The label has already been read!
   }
   if (in_filename) {
     strncpy(bitbuffer_trace_label, in_filename, 48);
   } else {
-    // Use a current time string as a default label
-    time_t current;
-    local_time_str(time(&current), &bitbuffer_trace_label[0]);
+    // Running realtime, use the current time string as a default label
+    time(&current);
+    if (difftime(current, last_time) > 5.0) {
+        //Assume it's a new package, reset the timestamp
+        local_time_str(current, &bitbuffer_trace_label[0]);
+        last_time = current;
+    }
   }
 }
 
