@@ -165,10 +165,7 @@ static char *output_fields[] = {
 };
 
 
-
-
-static int xc0324_callback(bitbuffer_t *bitbuffer)
-{
+static int xc0324_callback(bitbuffer_t *bitbuffer){
     int r; // a row index
     uint16_t bitpos;
     int result;
