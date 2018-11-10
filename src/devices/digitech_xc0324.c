@@ -103,8 +103,8 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
     XORchecksum = calculate_XORchecksum(b, 6);
     if (XORchecksum != 0x00) {
        if (debug_output > 1) {
-           xc0324_message_trace(stderr, bitbuffer, row, bitpos);
-           fprintf(stderr, "Checksum status is 0x%02X not 0x00 \n", XORchecksum);
+           xc0324_message_trace(stderr, bitbuffer, row, bitpos, 
+             "Bad message - checksum status is 0x%02X not 0x00\n", XORchecksum);
        }
        return 0;
     }
@@ -135,8 +135,7 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
 
     //  Send optional "debug to csv" lines.
     if (debug_output > 1) {
-        xc0324_message_trace(stderr, bitbuffer, row, bitpos);
-        fprintf(stderr, "Temp was %4.1f \n", temperature);
+        xc0324_message_trace(stderr, bitbuffer, row, bitpos, "Temp was %4.1f ", temperature);
     }
     if ((debug_output > 2) & !reference_values_written) {
         reference_values_written = 1;
@@ -161,6 +160,15 @@ static char *output_fields[] = {
     NULL
 };
 
+void my_bitbuffer_trace_tests(bitbuffer_t *bitbuffer) {
+    if (debug_output > 0) {
+      fprintf(stderr , "\n\nSTART TEST\n\n-->");
+      xc0324_bitbuffer_trace(stderr, bitbuffer, NULL);
+      xc0324_bitbuffer_trace(stderr, bitbuffer, "XC0324:D Package, PackageTest %d", 2);
+      fprintf(stderr , "<--\n\nEND TEST\n\n");
+    }
+}
+
 
 static int xc0324_callback(bitbuffer_t *bitbuffer){
     int r; // a row index
@@ -169,11 +177,13 @@ static int xc0324_callback(bitbuffer_t *bitbuffer){
     int events = 0;
     data_t * data;
     
-    // Send a "debug to csv" formatted version of the bitbuffer to stderr.
-    //if (debug_output > 0) bitbuffer_trace_label[0] = 0x00;
-    if (debug_output > 0) bitbuffer_basic_trace(bitbuffer, "And now BASIC has finished %s", "\nBye\n");
-    if (debug_output > 0) xc0324_bitbuffer_trace(stderr, bitbuffer, NULL);
-    if (debug_output > 0) xc0324_bitbuffer_trace(stderr, bitbuffer, "XC0324:D Package, PackageTest %d", 2);
+    //my_bitbuffer_trace_tests(bitbuffer);
+    
+    // Send a "debug to csv" formatted version of the bitbuffer to stderr.   
+    if (debug_output > 0) {
+        xc0324_bitbuffer_trace(stderr, bitbuffer, 
+        "%s, XC0324:D Package, ", bitbuffer_label());
+    }
     if (debug_output > 2) reference_values_written = 0;
     
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
@@ -183,9 +193,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer){
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
             // bail out of this row early (after an optional debug message)
             if (debug_output > 1) {
-              xc0324_message_trace(stderr, bitbuffer, r, 0);
-              fprintf(stderr, "Bad row - %0d is too few bits for a message\n",
-                      bitbuffer -> bits_per_row[r]);
+              xc0324_message_trace(stderr, bitbuffer, r, 0, "No message found, "); 
             }
             continue; // to the next row  
         }
