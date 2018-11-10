@@ -5,7 +5,9 @@
 
 // Declarations
 char bitbuffer_trace_label[LOCAL_TIME_BUFLEN + 48] = {0};
-void get_bitbuffer_trace_label();
+
+/// Get a label (in_filename or timestamp) for trace messages
+char * bitbuffer_label();
 
 /// Format byte as bit string
 /// @param numbits : bits above numbits are masked
@@ -24,8 +26,6 @@ void byte2hexstr(const uint8_t byte, const uint16_t numbits, char * result);
 void byte2str(const uint8_t byte, const uint16_t numbits, const bool showbits,
               char * result);
 
-void bitbuffer_start_trace(FILE * stream, const char * line_label);
-
 /// Pretty print part of a bitbuffer row
 /// @param bitpos : printing starts here
 /// @param numbits : number of bits printed (provided available on row)
@@ -33,25 +33,26 @@ void bitbuffer_start_trace(FILE * stream, const char * line_label);
 void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, const uint16_t row,
                  const uint16_t bitpos, const uint16_t numbits, const bool showbits);
 
-void vbitbuffer_add_trace(FILE * stream, char *format, va_list args);
-void bitbuffer_add_trace(FILE * stream, char *format, ...);
-
-void vbitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
-                 const char * start_message, 
+/// Pretty print part of bitbuffer row, with trace messages,
+/// @param bitpos : printing starts here
+/// @param numbits : number of bits printed (provided available on row)
+/// @param showbits : if true, print bit strings as well as hex strings
+void bitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
+                 const uint16_t bitpos, const uint16_t numbits, const bool showbits, 
+                 char * format, ...);
+void vbitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
+                 const uint16_t bitpos, const uint16_t numbits, const bool showbits,
                  char * format, va_list args);
-// Print all the rows in the bitbuffer in "debug to csv" format.
+
+
+/// Print all the rows in the bitbuffer in "debug to csv" format.
 void bitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
-                 const char * start_message, 
+                 const bool showbits, 
                  char * format, ...);
-
-void vrowbits_pp_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, 
-                 const char * start_message, 
+void vbitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
+                 const bool showbits, 
                  char * format, va_list args);
-void rowbits_pp_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, 
-                 const char * start_message, 
-                 char * format, ...);
+
 
 void vbitbuffer_basic_trace(bitbuffer_t * bits, char *format, va_list args) ;
 void bitbuffer_basic_trace(bitbuffer_t * bits, char *format, ...);
@@ -61,7 +62,7 @@ void bitbuffer_basic_trace(bitbuffer_t * bits, char *format, ...);
 
 extern char * in_filename;    
 
-void get_bitbuffer_trace_label() {
+char * bitbuffer_label() {
 	// Get a label for this "line" of output read from stdin.
 	// In case stdin is empty, use a timestamp instead.
 	
@@ -69,7 +70,7 @@ void get_bitbuffer_trace_label() {
   time_t current;
 
   if (in_filename && (strlen(bitbuffer_trace_label) > 0))  {
-    return; //The label has already been read!
+    return bitbuffer_trace_label; //The label has already been read!
   }
   if (in_filename) {
     strncpy(bitbuffer_trace_label, in_filename, 48);
@@ -82,6 +83,7 @@ void get_bitbuffer_trace_label() {
         last_time = current;
     }
   }
+  return bitbuffer_trace_label;
 }
 
 
@@ -124,23 +126,16 @@ void byte2str(const uint8_t byte, const uint16_t numbits, const bool showbits,
     snprintf (result, 13,  "%s %s", hexstr, bitstr);
 }
 
-void bitbuffer_start_trace(FILE * stream, const char * line_label) {
-    // Slightly (well ok, more than slightly) bodgy way to get file name 
-    // labels for the "debug to csv" format outputs.
-    if (strlen(bitbuffer_trace_label) == 0 ) get_bitbuffer_trace_label();
-    fprintf(stream, "\n%s, %s, ", bitbuffer_trace_label, line_label);
-}
 
-void bitbuffer_end_trace(FILE * stream) {
-    fprintf(stream, "\n");
-}
-
-void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, const bool showbits){
+void vbitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
+                 const uint16_t bitpos, const uint16_t numbits, const bool showbits, 
+                 char * format, va_list args){
     uint8_t b[BITBUF_COLS];
     uint16_t col, bits_available, bitsleft;
     char bytestr[14] = {0};
-    // Extract the part row
+    
+    // Pretty print the part row
+    // a Extract the part row
     if (bitpos + numbits <= bits -> bits_per_row[row]) {
       bits_available = numbits;
     } else {
@@ -148,69 +143,59 @@ void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, const uint16_t r
     }
     bitbuffer_extract_bytes(bits, row, bitpos, b, bits_available);
     // Display the part row
-		fprintf(stream, "nr[%d] r[%02d] nsyn[%02d] nc[%2d] ,at bit [%03d], ", 
+		fprintf(stream, "\nnr[%d] r[%02d] nsyn[%02d] nc[%2d] ,at bit [%03d], ", 
                     bits->num_rows, row, bits->syncs_before_row[row], 
                     bits->bits_per_row[row], bitpos);
 		for (col = 0; col < (bits_available+7)/8; ++col) {
   		  bitsleft = bits_available - col * 8;
         byte2str(b[col], bitsleft, showbits, bytestr);
-        //`fprintf`_ing a tab character (\t) helps stop Excel stripping leading zeros
-        fprintf (stream, "\t%s,", bytestr);
+        //`leading tab character (\t) helps stop Excel stripping leading zeros
+        // trailing comma makes a "nicer" csv file
+        if (showbits) fprintf (stream, "\t%s, ", bytestr);
+        // else keep as close as possible to bitbuffer_print format
+        else fprintf(stream,"%s", bytestr);
 		}
-}
-
-void vbitbuffer_add_trace(FILE * stream, char *format, va_list args) {
+		// Print any trace messages
     vfprintf(stream, format, args);
 }
 
-void bitbuffer_add_trace(FILE * stream, char *format, ...) {
+void bitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
+                 const uint16_t bitpos, const uint16_t numbits, const bool showbits, 
+                 char * format, ...){
     va_list args;
     va_start(args, format);
-    vbitbuffer_add_trace(stream, format, args);
+    vbitbuffer_pp_partrow_trace(stream, bits, row, bitpos, numbits, showbits, 
+                                format, args);
     va_end(args);
 }
 
+void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, const uint16_t row,
+                 const uint16_t bitpos, const uint16_t numbits, const bool showbits){
+		bitbuffer_pp_partrow_trace(stream, bits, row, bitpos, numbits, showbits, NULL);
+}
+
+
 void vbitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
-                 const char * start_message, 
+                 const bool showbits, 
                  char * format, va_list args){
   // Print all the rows in the bitbuffer in "debug to csv" format.
 	uint16_t row;
 	for (row = 0; row < bits->num_rows; ++row) {
-    bitbuffer_start_trace(stream, start_message);
-    bitbuffer_pprint_partrow(stream, bits, row, 0, bits -> bits_per_row[row], 1);
+    bitbuffer_pprint_partrow(stream, bits, row, 0, bits -> bits_per_row[row], showbits);
+    fprintf(stream, " %s, ", bitbuffer_label());
     vfprintf(stream, format, args);
-    bitbuffer_end_trace(stream);
+    fprintf(stream, "\n");
 	}
 }
 
 void bitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
-                 const char * start_message, 
+                 const bool showbits, 
                  char * format, ...){
   // Print all the rows in the bitbuffer in "debug to csv" format.
   va_list args;
   va_start(args, format);
-  vbitbuffer_pp_trace( stream, bits, start_message, format, args);
+  vbitbuffer_pp_trace( stream, bits, showbits, format, args);
   va_end(args);
-}
-
-void vrowbits_pp_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, 
-                 const char * start_message, 
-                 char * format, va_list args){
-    bitbuffer_start_trace(stream, start_message);
-    bitbuffer_pprint_partrow(stream, bits, row, bitpos, numbits, 1);
-    vfprintf(stream, format, args);
-}
-
-void rowbits_pp_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, 
-                 const char * start_message, 
-                 char * format, ...){
-    va_list args;
-    va_start(args, format);
-    vrowbits_pp_trace(stream, bits, row, bitpos, numbits,
-                      start_message, format, args);
-    va_end(args);
 }
 
 
