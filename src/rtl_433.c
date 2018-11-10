@@ -73,6 +73,8 @@ struct app_cfg {
     int utc_mode;
     conversion_mode_t conversion_mode;
     uint16_t num_r_devices;
+    void *output_handler[MAX_DATA_OUTPUTS];
+    int last_output_handler;
 };
 
 static struct app_cfg cfg = {
@@ -96,6 +98,8 @@ static struct app_cfg cfg = {
     .utc_mode = 0,
     .conversion_mode = CONVERT_NATIVE,
     .num_r_devices = 0,
+    .output_handler = {0},
+    .last_output_handler = 0,
 };
 
 float sample_file_pos = -1;
@@ -346,9 +350,6 @@ static unsigned int signal_end = 0;
 static unsigned int signal_pulse_data[4000][3] = {{ 0 }};
 static unsigned int signal_pulse_counter = 0;
 
-static void *output_handler[MAX_DATA_OUTPUTS];
-static int last_output_handler = 0;
-
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
@@ -463,8 +464,8 @@ void data_acquired_handler(data_t *data)
         }
     }
 
-    for (int i = 0; i < last_output_handler; ++i) {
-        data_output_print(output_handler[i], data);
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        data_output_print(cfg.output_handler[i], data);
     }
     data_free(data);
 }
@@ -1169,20 +1170,20 @@ static void hostport_param(char *param, char **host, char **port)
 
 static void add_json_output(char *param)
 {
-    output_handler[last_output_handler++] = data_output_json_create(fopen_output(param));
+    cfg.output_handler[cfg.last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
 static void add_csv_output(char *param, r_device *devices, int num_devices, r_device *extra_device)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(devices, num_devices, extra_device, &num_output_fields);
-    output_handler[last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
+    cfg.output_handler[cfg.last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
     free(output_fields);
 }
 
 static void add_kv_output(char *param)
 {
-    output_handler[last_output_handler++] = data_output_kv_create(fopen_output(param));
+    cfg.output_handler[cfg.last_output_handler++] = data_output_kv_create(fopen_output(param));
 }
 
 static void add_syslog_output(char *param)
@@ -1192,12 +1193,12 @@ static void add_syslog_output(char *param)
     hostport_param(param, &host, &port);
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
-    output_handler[last_output_handler++] = data_output_syslog_create(host, port);
+    cfg.output_handler[cfg.last_output_handler++] = data_output_syslog_create(host, port);
 }
 
 static void add_null_output(char *param)
 {
-    output_handler[last_output_handler++] = NULL;
+    cfg.output_handler[cfg.last_output_handler++] = NULL;
 }
 
 static void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
@@ -1442,7 +1443,7 @@ int main(int argc, char **argv) {
         out_filename = argv[optind]; // deprecated
     }
 
-    if (last_output_handler < 1) {
+    if (cfg.last_output_handler < 1) {
         add_kv_output(NULL);
     }
 
@@ -1647,8 +1648,8 @@ int main(int argc, char **argv) {
 
     sdr_close(cfg.dev);
 out:
-    for (int i = 0; i < last_output_handler; ++i) {
-        data_output_free(output_handler[i]);
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        data_output_free(cfg.output_handler[i]);
     }
     return r >= 0 ? r : -r;
 }

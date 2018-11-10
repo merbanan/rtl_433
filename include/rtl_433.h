@@ -84,6 +84,7 @@ struct protocol_state {
     unsigned demod_arg;
 };
 
+/** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(data_t *data);
 
 #endif /* INCLUDE_RTL_433_H_ */

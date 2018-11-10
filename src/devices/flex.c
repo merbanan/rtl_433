@@ -186,7 +186,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
             }
         }
         // a simpler representation for csv output
-        row_codes[i] = malloc(5 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
+        row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     data = data_make(

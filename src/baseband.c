@@ -53,12 +53,12 @@ void envelope_detect_nolut(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int16_t x = 127 - iq_buf[2 * i];
         int16_t y = 127 - iq_buf[2 * i + 1];
-        y_buf[i]  = x * x + y * y; // max 16384
+        y_buf[i]  = x * x + y * y; // max 32768, fs 16384
     }
 }
 
 // note that magnitude emphasizes quiet signals / deemphasizes loud signals
-// 61/64, 13/32 Magnitude Estimator for CU8 (SIMD has min/max)
+// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max)
 void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -67,8 +67,8 @@ void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
         uint16_t y = abs(iq_buf[2 * i + 1] - 128);
         uint16_t mi = x < y ? x : y;
         uint16_t mx = x > y ? x : y;
-        uint16_t mag_est = 122 * mx + 52 * mi;
-        y_buf[i] = mag_est; // max 22272
+        uint16_t mag_est = 122 * mx + 51 * mi;
+        y_buf[i] = mag_est; // max 22144, fs 16384
     }
 }
 
@@ -79,11 +79,11 @@ void magnitude_true_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int16_t x = iq_buf[2 * i] - 128;
         int16_t y = iq_buf[2 * i + 1] - 128;
-        y_buf[i]  = sqrt(x * x + y * y) * 128.0; // max 181, scaled 23170
+        y_buf[i]  = sqrt(x * x + y * y) * 128.0; // max 181, scaled 23170, fs 16384
     }
 }
 
-// 61/64, 13/32 Magnitude Estimator for CS16 (SIMD has min/max)
+// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max)
 void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -92,8 +92,8 @@ void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
         uint32_t y = abs(iq_buf[2 * i + 1]);
         uint32_t mi = x < y ? x : y;
         uint32_t mx = x > y ? x : y;
-        uint32_t mag_est = 122 * mx + 52 * mi;
-        y_buf[i] = mag_est >> 8; // max 5701632, scaled 22272
+        uint32_t mag_est = 122 * mx + 51 * mi;
+        y_buf[i] = mag_est >> 8; // max 5668864, scaled 22144, fs 16384
     }
 }
 
@@ -104,7 +104,7 @@ void magnitude_true_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int32_t x = iq_buf[2 * i];
         int32_t y = iq_buf[2 * i + 1];
-        y_buf[i]  = (int)sqrt(x * x + y * y) >> 1; // max 46341, scaled 23170
+        y_buf[i]  = (int)sqrt(x * x + y * y) >> 1; // max 46341, scaled 23170, fs 16384
     }
 }
 
