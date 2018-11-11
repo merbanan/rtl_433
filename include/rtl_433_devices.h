@@ -101,7 +101,7 @@
     DECL(infactory) \
     DECL(ft004b) \
     DECL(fordremote) \
-    DECL(philips) \
+    DECL(philips_AJ3650) \
     DECL(schrader_EG53MA4) \
     DECL(nexa) \
     DECL(thermopro_tp12) \
@@ -133,6 +133,7 @@
     DECL(tpms_jansite) \
     DECL(lacrosse_ws7000) \
     DECL(ts_ft002) \
+    DECL(philips_AJ7010) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
