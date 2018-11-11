@@ -2,52 +2,47 @@
 
 #include "bitbuffer.trace.c"
 
-void my_pp_row_tests(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos) {
-     fprintf(stream, "\n\nTESTING\n\n-->");
-     fprintf(stream, "\n\nbitbuffer_pprint_partrow(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 0)\n");
-     bitbuffer_pprint_partrow(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 0);
-     fprintf(stream, "\n\nbitbuffer_pprint_partrow(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 1)\n");
-     bitbuffer_pprint_partrow(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 1);
-     //fprintf(stream, "\n\nJust before rowbits_trace\n\n");
-     fprintf(stream, "\n\nbitbuffer_pp_partrow_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 0, ...\n");
-     bitbuffer_pp_partrow_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 0,
-           "XC0324:DD TEST1 MESSAGE, TEST no bitstr," );
-     fprintf(stream, "\n\nbitbuffer_pp_partrow_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 1, ...\n");
-     bitbuffer_pp_partrow_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN, 1, 
-           "XC0324:DD TEST2 MESSAGE, TEST with bitstr, This is the end %s, this is the %s TEST,", "my friend", "end" );
-     fprintf(stream, "<--\n\nEND OF TESTING\n\n");
+void xc0324_row_status(bitbuffer_t *bits, const uint16_t row,
+                       char * format, ...) {
+   va_list args;
+   bool showbits = 1;
+   // Flag bad samples (too much noise, not enough sample, 
+   // or package possibly segmented over multiple rows
+   uint8_t *buffer = bits->bb[row];
+   buffer_pp_trace(stderr, buffer, bits->bits_per_row[row], showbits,
+                   "XC0324:DD MESSAGE, " ); 
+   if (bits->num_rows > 1) {
+       fprintf(stderr, "Bad package - more than 1 row, ");
+       // But maybe there are usable fragments somewhere?
+   }
+   if (bits->bits_per_row[row] < MYDEVICE_BITLEN) {
+       fprintf(stderr, "Bad row - row %d length %d is less than %d bits, ", 
+               row, bits->bits_per_row[row], MYDEVICE_BITLEN);
+       // Mmmm, not a full package, but is there a single message?
+   }
+   if (bits->bits_per_row[row] < MYMESSAGE_BITLEN) {
+       fprintf(stderr, "Bad message - row %d length %d is less than %d bits, ", 
+               row, bits->bits_per_row[row], MYMESSAGE_BITLEN);
+       // No, not even a single message :-(
+   }
+   va_start(args, format);
+   vfprintf(stderr, format, args);
+   va_end(args);
 }
 
-void xc0324_message_trace(FILE * stream, bitbuffer_t *bits, 
-                          const uint16_t row, const uint16_t bitpos,
+void xc0324_message_trace(uint8_t * buffer, 
+                         // const uint16_t row, const uint16_t bitpos,
                           char * format, ...){
    //my_pp_row_tests(stream, bits, row, bitpos);
    //Start a trace csvline containing one message's worth of bits in hex and binary
    bool showbits =1;
    va_list args;
+   buffer_pp_trace(stderr, buffer, MYMESSAGE_BITLEN, showbits, 
+         "XC0324:DD MESSAGE, " );
    va_start(args, format);
-   bitbuffer_pp_partrow_trace(stream, bits, row, bitpos, MYMESSAGE_BITLEN, showbits, 
-         "%s, XC0324:DD MESSAGE, ", bitbuffer_label() );
-   vfprintf(stream, format, args);
+   vfprintf(stderr, format, args);
    va_end(args);
-   // Flag bad samples (too much noise, not enough sample, 
-   // or package possibly segmented over multiple rows
-   if (bits->num_rows > 1) {
-       fprintf(stream, "Bad package - more than 1 row, ");
-       // But maybe there are usable fragments somewhere?
-   }
-   if (bits->bits_per_row[row] < MYDEVICE_BITLEN) {
-       fprintf(stream, "Bad package - row of %d is less than %d bits, ", 
-               bits->bits_per_row[row], MYDEVICE_BITLEN);
-       // Mmmm, not a full package, but is there a single message?
-   }
-   if (bits->bits_per_row[row] < MYMESSAGE_BITLEN) {
-       fprintf(stream, "Bad message - row of %d is less than %d bits, ", 
-               bits->bits_per_row[row], MYMESSAGE_BITLEN);
-       // No, not even a single message :-(
-   }
-   fprintf(stream, "\n");
+   fprintf(stderr, "\n");
 }
 
 void xc0324_bitbuffer_trace(FILE * stream, bitbuffer_t *bits,

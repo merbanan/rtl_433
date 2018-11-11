@@ -38,23 +38,6 @@ void vbuffer_pp_trace(FILE * stream, uint8_t * buffer,
                       const uint16_t numbits, const bool showbits, 
                       char * format, va_list args);
 
-/// Pretty print part of a bitbuffer row (including trace versions)
-/// @param row : the row, part of which will be printed
-/// @param bitpos : printing starts here
-/// @param numbits : number of bits printed (provided available on row)
-/// @param showbits : if true, print bit strings as well as hex strings
-void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, 
-                              const uint16_t row, const uint16_t bitpos, 
-                              const uint16_t numbits, const bool showbits);
-void bitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, 
-                                const uint16_t row, const uint16_t bitpos, 
-                                const uint16_t numbits, const bool showbits, 
-                                char * format, ...);
-void vbitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, 
-                                 const uint16_t row, const uint16_t bitpos, 
-                                 const uint16_t numbits, const bool showbits,
-                                 char * format, va_list args);
-
 
 /// Pretty print all the rows in the bitbuffer (including trace versions).
 /// @param showbits : if true, print bit strings as well as hex strings
@@ -138,6 +121,7 @@ void vbuffer_pp_trace(FILE * stream, uint8_t * buffer, const uint16_t numbits, c
                       char * format, va_list args){
     uint16_t col, bitsleft;
     char bytestr[14] = {0};
+    fprintf(stream, "\n%s ,", bitbuffer_label());
 		for (col = 0; col < (numbits+7)/8; ++col) {
   		  bitsleft = numbits - col * 8;
         byte2str(buffer[col], bitsleft, showbits, bytestr);
@@ -163,52 +147,17 @@ void buffer_pprint(FILE * stream, uint8_t * buffer, const uint16_t numbits, cons
 }
 
 
-void vbitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, const bool showbits, 
-                 char * format, va_list args){
-    uint8_t b[BITBUF_COLS];
-    uint16_t col, bits_available, bitsleft;
-    char bytestr[14] = {0};
-    
-    // Pretty print the part row
-    // a Extract the part row
-    if (bitpos + numbits <= bits -> bits_per_row[row]) {
-      bits_available = numbits;
-    } else {
-      bits_available = bits -> bits_per_row[row] - bitpos;
-    }
-    bitbuffer_extract_bytes(bits, row, bitpos, b, bits_available);
-    // Display the part row
-    // @todo should nc (number of columns) actually be called nb (number of bits)?
-		fprintf(stream, "\nnr[%d] r[%02d] nsyn[%02d] nc[%2d] ,at bit [%03d], ", 
-                    bits->num_rows, row, bits->syncs_before_row[row], 
-                    bits->bits_per_row[row], bitpos);
-    vbuffer_pp_trace(stream, b, bits_available, showbits, format, args);
-}
-
-void bitbuffer_pp_partrow_trace(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, const bool showbits, 
-                 char * format, ...){
-    va_list args;
-    va_start(args, format);
-    vbitbuffer_pp_partrow_trace(stream, bits, row, bitpos, numbits, showbits, 
-                                format, args);
-    va_end(args);
-}
-
-void bitbuffer_pprint_partrow(FILE * stream, bitbuffer_t *bits, const uint16_t row,
-                 const uint16_t bitpos, const uint16_t numbits, const bool showbits){
-		bitbuffer_pp_partrow_trace(stream, bits, row, bitpos, numbits, showbits, NULL);
-}
-
-
 void vbitbuffer_pp_trace(FILE * stream, bitbuffer_t *bits,
                  const bool showbits, 
                  char * format, va_list args){
 	uint16_t row;
 	va_list copied_args;
+	uint8_t * buffer;
+	
+  fprintf(stream, "\n%s ,", bitbuffer_label());
 	for (row = 0; row < bits->num_rows; ++row) {
-    bitbuffer_pprint_partrow(stream, bits, row, 0, bits -> bits_per_row[row], showbits);
+	  buffer = bits->bb[row];
+    buffer_pprint(stream, buffer,  bits->bits_per_row[row], showbits);
   	// Since args can be consumed when used, and I may loop more than once
     va_copy(copied_args, args);
     vfprintf(stream, format, copied_args);

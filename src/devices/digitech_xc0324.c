@@ -103,8 +103,9 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
     XORchecksum = calculate_XORchecksum(b, 6);
     if (XORchecksum != 0x00) {
        if (debug_output > 1) {
-           xc0324_message_trace(stderr, bitbuffer, row, bitpos, 
-             "Bad message - checksum status is 0x%02X not 0x00\n", XORchecksum);
+           xc0324_message_trace(b, 
+           "Bad message at row %d bit %d, checksum status is 0x%02X not 0x00\n",
+            row, bitpos, XORchecksum);
        }
        return 0;
     }
@@ -135,7 +136,9 @@ decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, uint16_t bitpos,
 
     //  Send optional "debug to csv" lines.
     if (debug_output > 1) {
-        xc0324_message_trace(stderr, bitbuffer, row, bitpos, "Temp was %4.1f ", temperature);
+        xc0324_message_trace(b,
+                   "Message at row %d bit %d, Temp was %4.1f \n",
+                    row, bitpos, temperature);
     }
     if ((debug_output > 2) & !reference_values_written) {
         reference_values_written = 1;
@@ -182,7 +185,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer){
     // Send a "debug to csv" formatted version of the bitbuffer to stderr.   
     if (debug_output > 0) {
         xc0324_bitbuffer_trace(stderr, bitbuffer, 
-        "%s, XC0324:D Package, ", bitbuffer_label());
+        "XC0324:D Package, ");
     }
     if (debug_output > 2) reference_values_written = 0;
     
@@ -193,7 +196,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer){
         if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
             // bail out of this row early (after an optional debug message)
             if (debug_output > 1) {
-              xc0324_message_trace(stderr, bitbuffer, r, 0, "No message found, "); 
+              xc0324_row_status(bitbuffer, r, "No message found on row %d, \n", r); 
             }
             continue; // to the next row  
         }
