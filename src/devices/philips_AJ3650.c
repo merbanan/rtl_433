@@ -2,7 +2,7 @@
  * Philips outdoor temperature sensor -- used with various Philips clock
  * radios (tested on AJ3650)
  *
- * Not tested, but these should also work: AJ7010, AJ260 ... maybe others?
+ * Not tested, but these should also work: AJ260 ... maybe others?
  *
  * A complete message is 112 bits:
  *      4-bit initial preamble, always 0
@@ -156,7 +156,7 @@ static char *philips_output_fields[] = {
 };
 
 r_device philips = {
-    .name          = "Philips outdoor temperature sensor",
+    .name          = "Philips outdoor temperature sensor (type AJ3650)",
     .modulation    = OOK_PULSE_PWM,
     .short_width   = 2000,
     .long_width    = 6000,
