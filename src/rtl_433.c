@@ -169,8 +169,9 @@ static void usage(r_device *devices, int exit_code)
             "\t[-x <value>] Override long value in data decoder\n"
             "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "\t= Analyze/Debug options =\n"
-            "\t[-a] Analyze mode. Print a textual description of the signal. Disables decoding\n"
-            "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt\n"
+            "\t[-a] Analyze mode. Print a textual description of the signal.\n"
+            "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
+            "\t\t Disable all decoders with -R 0 if you want analyzer output only.\n"
             "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-q] Quiet mode, suppress non-data messages\n"
@@ -336,20 +337,6 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     }
 }
 
-
-static unsigned int counter = 0;
-static unsigned int print = 1;
-static unsigned int print2 = 0;
-static unsigned int pulses_found = 0;
-static unsigned int prev_pulse_start = 0;
-static unsigned int pulse_start = 0;
-static unsigned int pulse_end = 0;
-static unsigned int pulse_avg = 0;
-static unsigned int signal_start = 0;
-static unsigned int signal_end = 0;
-static unsigned int signal_pulse_data[4000][3] = {{ 0 }};
-static unsigned int signal_pulse_counter = 0;
-
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
@@ -469,6 +456,8 @@ void data_acquired_handler(data_t *data)
     }
     data_free(data);
 }
+
+static unsigned int signal_pulse_data[4000][3] = {{0}};
 
 static void classify_signal(void) {
     unsigned int i, k, max = 0, min = 1000000, t;
@@ -690,6 +679,78 @@ static void classify_signal(void) {
 
 }
 
+static void signal_grabber_write(struct dm_state *demod, unsigned signal_start, unsigned signal_end, unsigned i)
+{
+    if (!demod->sg_buf)
+        return;
+
+    int start_pos, signal_bsize, wlen, wrest = 0, sg_idx, idx;
+    char f_name[64] = {0};
+    FILE *fp;
+
+    while (1) {
+        sprintf(f_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, cfg.frequency[0] / 1000000.0, cfg.samp_rate / 1000.0);
+        demod->signal_grabber++;
+        if (access(f_name, F_OK) == -1) {
+            break;
+        }
+    }
+
+    signal_bsize = 2 * (signal_end - (signal_start - 10000));
+    signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
+    sg_idx = demod->sg_index - demod->sg_len;
+    if (sg_idx < 0)
+        sg_idx = SIGNAL_GRABBER_BUFFER - demod->sg_len;
+    idx = (i - 40000) * 2;
+    start_pos = sg_idx + idx - signal_bsize;
+    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, demod->sg_index);
+    fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
+    if (signal_bsize > SIGNAL_GRABBER_BUFFER)
+        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, SIGNAL_GRABBER_BUFFER);
+
+    if (start_pos < 0) {
+        start_pos = SIGNAL_GRABBER_BUFFER + start_pos;
+        fprintf(stderr, "restart_pos = %d\n", start_pos);
+    }
+
+    fprintf(stderr, "*** Saving signal to file %s\n", f_name);
+    fp = fopen(f_name, "wb");
+    if (!fp) {
+        fprintf(stderr, "Failed to open %s\n", f_name);
+    }
+    wlen = signal_bsize;
+    if (start_pos + signal_bsize > SIGNAL_GRABBER_BUFFER) {
+        wlen  = SIGNAL_GRABBER_BUFFER - start_pos;
+        wrest = signal_bsize - wlen;
+    }
+    fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
+    fwrite(&demod->sg_buf[start_pos], 1, wlen, fp);
+
+    if (wrest) {
+        fprintf(stderr, "*** Writing data from %d, len %d\n", 0, wrest);
+        fwrite(&demod->sg_buf[0], 1, wrest, fp);
+    }
+
+    fclose(fp);
+}
+
+static unsigned int counter = 0;
+static unsigned int print = 1;
+static unsigned int print2 = 0;
+static unsigned int pulses_found = 0;
+static unsigned int prev_pulse_start = 0;
+static unsigned int pulse_start = 0;
+static unsigned int pulse_end = 0;
+static unsigned int pulse_avg = 0;
+static unsigned int signal_start = 0;
+static unsigned int signal_end = 0;
+static unsigned int signal_pulse_counter = 0;
+
+static void pwm_analyze_reset(void)
+{
+    signal_start = 0;
+}
+
 static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
     unsigned int i;
     int32_t threshold = (demod->level_limit ? demod->level_limit : 8000);  // Does not support auto level. Use old default instead.
@@ -725,7 +786,8 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
                 signal_pulse_counter++;
                 if (signal_pulse_counter >= 4000) {
                     signal_pulse_counter = 0;
-                    goto err;
+                    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+                    return;
                 }
             }
             print = 1;
@@ -738,66 +800,12 @@ static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
 
                 signal_pulse_counter = 0;
                 if (demod->sg_buf) {
-                    int start_pos, signal_bsize, wlen, wrest = 0, sg_idx, idx;
-                    char sgf_name[256] = {0};
-                    FILE *sgfp;
-
-                    while (1) {
-                        sprintf(sgf_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, cfg.frequency[0] / 1000000.0, cfg.samp_rate / 1000.0);
-                        demod->signal_grabber++;
-                        if (access(sgf_name, F_OK) == -1) {
-                            break;
-                        }
-                    }
-
-                    signal_bsize = 2 * (signal_end - (signal_start - 10000));
-                    signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
-                    sg_idx = demod->sg_index - demod->sg_len;
-                    if (sg_idx < 0)
-                        sg_idx = SIGNAL_GRABBER_BUFFER - demod->sg_len;
-                    idx = (i - 40000)*2;
-                    start_pos = sg_idx + idx - signal_bsize;
-                    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, demod->sg_index);
-                    fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
-                    if (signal_bsize > SIGNAL_GRABBER_BUFFER)
-                        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, SIGNAL_GRABBER_BUFFER);
-
-                    if (start_pos < 0) {
-                        start_pos = SIGNAL_GRABBER_BUFFER + start_pos;
-                        fprintf(stderr, "restart_pos = %d\n", start_pos);
-                    }
-
-                    fprintf(stderr, "*** Saving signal to file %s\n", sgf_name);
-                    sgfp = fopen(sgf_name, "wb");
-                    if (!sgfp) {
-                        fprintf(stderr, "Failed to open %s\n", sgf_name);
-                    }
-                    wlen = signal_bsize;
-                    if (start_pos + signal_bsize > SIGNAL_GRABBER_BUFFER) {
-                        wlen = SIGNAL_GRABBER_BUFFER - start_pos;
-                        wrest = signal_bsize - wlen;
-                    }
-                    fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
-                    fwrite(&demod->sg_buf[start_pos], 1, wlen, sgfp);
-
-                    if (wrest) {
-                        fprintf(stderr, "*** Writing data from %d, len %d\n", 0, wrest);
-                        fwrite(&demod->sg_buf[0], 1, wrest, sgfp);
-                    }
-
-                    fclose(sgfp);
+                    signal_grabber_write(demod, signal_start, signal_end, i);
                 }
                 signal_start = 0;
             }
         }
-
-
     }
-    return;
-
-err:
-    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
-    return;
 }
 
 
@@ -859,12 +867,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
-    if (demod->analyze) {
-        pwm_analyze(demod, demod->am_buf, n_samples);
-    } else {
+    int d_events = 0; // Sensor events successfully detected
+    if (demod->r_dev_num || demod->analyze_pulses || (demod->dumper->spec)) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
-        int p_events = 0;  // Sensor events successfully detected per package
         for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
             if (dumper->format == U8_LOGIC) {
                 memset(demod->u8_buf, 0, n_samples);
@@ -872,6 +878,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             }
         }
         while (package_type) {
+            int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
@@ -960,6 +967,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
                 }
             } // if (package_type == ...
+            d_events += p_events;
         } // while (package_type)...
 
         // dump partial pulse_data for this buffer
@@ -971,11 +979,19 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             }
         }
 
-        if (cfg.stop_after_successful_events_flag && (p_events > 0)) {
+        if (cfg.stop_after_successful_events_flag && (d_events > 0)) {
             cfg.do_exit = cfg.do_exit_async = 1;
             sdr_stop(cfg.dev);
         }
-    } // if (demod->analyze...
+    }
+
+    if (demod->analyze) {
+        if (cfg.include_only == 0 || (cfg.include_only == 1 && d_events == 0) || (cfg.include_only == 2 && d_events > 0)) {
+            pwm_analyze(demod, demod->am_buf, n_samples);
+        } else {
+            pwm_analyze_reset();
+        }
+    }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
         if (!dumper->file || dumper->format == VCD_LOGIC)
