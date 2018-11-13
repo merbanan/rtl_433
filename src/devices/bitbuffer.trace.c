@@ -4,7 +4,7 @@
 #include "rtl_433.h"
 
 // Declarations
-char bitbuffer_label[LOCAL_TIME_BUFLEN + 48] = {0};
+char trace_label[LOCAL_TIME_BUFLEN + 48] = {0};
 
 /// Get label for trace messages(test mode = in_filename, otherwise = timestamp).
 /// Should be invoked  **before** either of the `..._trace` functions
@@ -30,13 +30,13 @@ extern char *in_filename;
 char *get_trace_label() {
     time_t current;
     if (in_filename) {
-        strncpy(bitbuffer_label, in_filename, 48);
-        bitbuffer_label[48] = '\0';
+        strncpy(trace_label, in_filename, 48);
+        trace_label[48] = '\0';
     } else {
         // Running realtime, use the current time string as a default label
-        local_time_str(time(&current), &bitbuffer_label[0]);
+        local_time_str(time(&current), &trace_label[0]);
     }
-    return bitbuffer_label;
+    return trace_label;
 }
 
 /// Format byte as bit string
@@ -95,7 +95,7 @@ void buffer_trace(uint8_t *buffer, const uint16_t numbits, const bool showbits,
     char masked_bytestr[14] = {0};
     va_list args;
     va_start(args, format);
-    fprintf(stderr, "\n%s ,", bitbuffer_label);
+    fprintf(stderr, "\n%s, ", trace_label);
     for (col = 0; col < (numbits+7)/8; ++col) {
         bitsleft = numbits - col * 8;
         mask_bytestr(buffer[col], bitsleft, showbits, masked_bytestr);

@@ -145,7 +145,7 @@ static int decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row,
     }
     if ((debug_output > 2) & !reference_values_written) {
         reference_values_written = 1;
-        fprintf(stderr, "%s, XC0324:DDD Reference Values,", bitbuffer_label);
+        fprintf(stderr, "%s, XC0324:DDD Reference Values,", trace_label);
         fprintf(stderr, "Temperature %4.1f C, sensor id %s\n", temperature, id);
     }
 
@@ -216,7 +216,7 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
         }
     }
     if ((debug_output > 2) & !reference_values_written) {
-        fprintf(stderr, "\n%s, XC0324:DDD Reference Values, Bad transmission\n", bitbuffer_label);
+        fprintf(stderr, "\n%s, XC0324:DDD Reference Values, Bad transmission\n", trace_label);
     }
     return events;
 }
