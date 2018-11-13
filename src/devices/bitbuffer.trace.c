@@ -30,8 +30,8 @@ void bitbuffer_trace(bitbuffer_t *bits, const bool showbits,
 extern char * in_filename;    
 
 char * bitbuffer_label() {
-	// Get a label for this "line" of output read from stdin.
-	// In case stdin is empty, use a timestamp instead.
+	// Get a label for this "line" of output. In test mode use in_filename,
+	// otherwise, when running actively, use a timestamp instead.
 	
 	static time_t last_time = -1;
   time_t current;
