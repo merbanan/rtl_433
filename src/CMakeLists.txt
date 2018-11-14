@@ -17,6 +17,7 @@
 # Build utility
 ########################################################################
 add_executable(rtl_433
+	am_analyze.c
 	baseband.c
 	bitbuffer.c
 	data.c
