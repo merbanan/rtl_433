@@ -70,7 +70,7 @@ static volatile bool reference_values_written;
 
 static const uint8_t preamble_pattern[1] = {MYDEVICE_STARTBYTE};
 
-static uint8_t calculate_XORchecksum(uint8_t *buff, int length) 
+static uint8_t calculate_XORchecksum(uint8_t *b, int length)
 {
     // b[5] is a check byte, the XOR of bytes 0-4.
     // ie a checksum where the sum is "binary add no carry"
@@ -80,7 +80,7 @@ static uint8_t calculate_XORchecksum(uint8_t *buff, int length)
     uint8_t XORchecksum = 0x00;
     int byteCnt;
     for (byteCnt=0; byteCnt < length; byteCnt++) {
-        XORchecksum ^= buff[byteCnt];
+        XORchecksum ^= b[byteCnt];
     }
     return XORchecksum;
 }
