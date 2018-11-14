@@ -85,6 +85,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\am_analyze.h" />
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\data.h" />
@@ -99,6 +100,7 @@
     <ClInclude Include="..\src\getopt\getopt.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\am_analyze.c" />
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\data.c" />

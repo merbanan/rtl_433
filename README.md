@@ -38,8 +38,9 @@ Usage:	= Tuner options =
 	[-x <value>] Override long value in data decoder
 	[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
 	= Analyze/Debug options =
-	[-a] Analyze mode. Print a textual description of the signal. Disables decoding
-	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt
+	[-a] Analyze mode. Print a textual description of the signal.
+	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
+		 Disable all decoders with -R 0 if you want analyzer output only.
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-D] Print debug info on event (repeat for more info)
 	[-q] Quiet mode, suppress non-data messages
@@ -126,7 +127,7 @@ Supported device protocols:
     [63]  Efergy Optical
     [64]  Honda Car Key
     [67]  Radiohead ASK
-    [68]  Kerui PIR Sensor
+    [68]  Kerui PIR / Contact Sensor
     [69]  Fine Offset WH1050 Weather Station
     [70]  Honeywell Door/Window Sensor
     [71]  Maverick ET-732/733 BBQ Sensor
