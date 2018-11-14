@@ -66,8 +66,6 @@ struct app_cfg {
     uint64_t input_pos;
     uint32_t bytes_to_read;
     sdr_dev_t *dev;
-    int override_short;
-    int override_long;
     int include_only;  // Option -I
     int quiet_mode;
     int utc_mode;
@@ -91,8 +89,6 @@ static struct app_cfg cfg = {
     .input_pos = 0,
     .bytes_to_read = 0,
     .dev = NULL,
-    .override_short = 0,
-    .override_long = 0,
     .include_only = 0,
     .quiet_mode = 0,
     .utc_mode = 0,
@@ -104,6 +100,32 @@ static struct app_cfg cfg = {
 
 float sample_file_pos = -1;
 int debug_output = 0;
+
+typedef struct {
+    int32_t level_limit;
+    int override_short;
+    int override_long;
+
+    /* Signal grabber variables */
+    int signal_grabber;
+    int8_t *sg_buf;
+    int sg_index;
+    int sg_len;
+
+    /* state */
+    unsigned counter;
+    unsigned print;
+    unsigned print2;
+    unsigned pulses_found;
+    unsigned prev_pulse_start;
+    unsigned pulse_start;
+    unsigned pulse_end;
+    unsigned pulse_avg;
+    unsigned signal_start;
+    unsigned signal_end;
+    unsigned signal_pulse_counter;
+    unsigned signal_pulse_data[4000][3];
+} am_analyze_t;
 
 struct dm_state {
     int32_t level_limit;
@@ -119,17 +141,11 @@ struct dm_state {
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
-    int analyze;
+    am_analyze_t *am_analyze;
     int analyze_pulses;
     file_info_t load_info;
     file_info_t dumper[MAX_DUMP_OUTPUTS];
     int hop_time;
-
-    /* Signal grabber variables */
-    int signal_grabber;
-    int8_t *sg_buf;
-    int sg_index;
-    int sg_len;
 
     /* Protocol states */
     uint16_t r_dev_num;
@@ -457,9 +473,7 @@ void data_acquired_handler(data_t *data)
     data_free(data);
 }
 
-static unsigned int signal_pulse_data[4000][3] = {{0}};
-
-static void classify_signal(void) {
+static void am_analyze_classify(am_analyze_t *aa) {
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3];
@@ -467,18 +481,18 @@ static void classify_signal(void) {
     struct protocol_state p = {0};
     unsigned int signal_type;
 
-    if (!signal_pulse_data[0][0])
+    if (!aa->signal_pulse_data[0][0])
         return;
 
     for (i = 0; i < 1000; i++) {
-        if (signal_pulse_data[i][0] > 0) {
+        if (aa->signal_pulse_data[i][0] > 0) {
             //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
-            //i, signal_pulse_data[i][0], signal_pulse_data[i][1],
-            //signal_pulse_data[i][2]);
-            if (signal_pulse_data[i][2] > max)
-                max = signal_pulse_data[i][2];
-            if (signal_pulse_data[i][2] <= min)
-                min = signal_pulse_data[i][2];
+            //i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
+            //aa->signal_pulse_data[i][2]);
+            if (aa->signal_pulse_data[i][2] > max)
+                max = aa->signal_pulse_data[i][2];
+            if (aa->signal_pulse_data[i][2] <= min)
+                min = aa->signal_pulse_data[i][2];
         }
     }
     t = (max + min) / 2;
@@ -495,12 +509,12 @@ static void classify_signal(void) {
         count_max = 0;
 
         for (i = 0; i < 1000; i++) {
-            if (signal_pulse_data[i][0] > 0) {
-                if (signal_pulse_data[i][2] < t) {
-                    min_new = min_new + signal_pulse_data[i][2];
+            if (aa->signal_pulse_data[i][0] > 0) {
+                if (aa->signal_pulse_data[i][2] < t) {
+                    min_new = min_new + aa->signal_pulse_data[i][2];
                     count_min++;
                 } else {
-                    max_new = max_new + signal_pulse_data[i][2];
+                    max_new = max_new + aa->signal_pulse_data[i][2];
                     count_max++;
                 }
             }
@@ -520,8 +534,8 @@ static void classify_signal(void) {
     }
 
     for (i = 0; i < 1000; i++) {
-        if (signal_pulse_data[i][0] > 0) {
-            //fprintf(stderr, "%d\n", signal_pulse_data[i][1]);
+        if (aa->signal_pulse_data[i][0] > 0) {
+            //fprintf(stderr, "%d\n", aa->signal_pulse_data[i][1]);
         }
     }
     /* 50% decision limit */
@@ -538,11 +552,11 @@ static void classify_signal(void) {
     a[0] = 1000000;
     a[2] = 0;
     for (i = 1; i < 1000; i++) {
-        if (signal_pulse_data[i][0] > 0) {
+        if (aa->signal_pulse_data[i][0] > 0) {
             //               fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
-            //               i, signal_pulse_data[i][0], signal_pulse_data[i][1],
-            //               signal_pulse_data[i][2], signal_pulse_data[i][0]-signal_pulse_data[i-1][1]);
-            signal_distance_data[i - 1] = signal_pulse_data[i][0] - signal_pulse_data[i - 1][1];
+            //               i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
+            //               aa->signal_pulse_data[i][2], aa->signal_pulse_data[i][0]-aa->signal_pulse_data[i-1][1]);
+            signal_distance_data[i - 1] = aa->signal_pulse_data[i][0] - aa->signal_pulse_data[i - 1][1];
             if (signal_distance_data[i - 1] > a[2])
                 a[2] = signal_distance_data[i - 1];
             if (signal_distance_data[i - 1] <= a[0])
@@ -617,13 +631,13 @@ static void classify_signal(void) {
         k++;
     }
 
-    if (cfg.override_short) {
-        p_limit = cfg.override_short;
-        a[0] = cfg.override_short;
+    if (aa->override_short) {
+        p_limit = aa->override_short;
+        a[0] = aa->override_short;
     }
 
-    if (cfg.override_long) {
-        a[1] = cfg.override_long;
+    if (aa->override_long) {
+        a[1] = aa->override_long;
     }
 
     fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n", a[0], a[1], a[2]);
@@ -651,12 +665,12 @@ static void classify_signal(void) {
     }
     if (signal_type == 2) {
         for (i = 0; i < 1000; i++) {
-            if (signal_pulse_data[i][2] > 0) {
-                if (signal_pulse_data[i][2] < p_limit) {
-                    //                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_pulse_data[i][2], p_limit);
+            if (aa->signal_pulse_data[i][2] > 0) {
+                if (aa->signal_pulse_data[i][2] < p_limit) {
+                    //                     fprintf(stderr, "0 [%d] %d < %d\n",i, aa->signal_pulse_data[i][2], p_limit);
                     bitbuffer_add_bit(&p.bits, 0);
                 } else {
-                    //                     fprintf(stderr, "1 [%d] %d > %d\n",i, signal_pulse_data[i][2], p_limit);
+                    //                     fprintf(stderr, "1 [%d] %d > %d\n",i, aa->signal_pulse_data[i][2], p_limit);
                     bitbuffer_add_bit(&p.bits, 1);
                 }
                 if ((signal_distance_data[i] >= (a[1] + a[2]) / 2)) {
@@ -671,17 +685,17 @@ static void classify_signal(void) {
     }
 
     for (i = 0; i < 1000; i++) {
-        signal_pulse_data[i][0] = 0;
-        signal_pulse_data[i][1] = 0;
-        signal_pulse_data[i][2] = 0;
+        aa->signal_pulse_data[i][0] = 0;
+        aa->signal_pulse_data[i][1] = 0;
+        aa->signal_pulse_data[i][2] = 0;
         signal_distance_data[i] = 0;
     }
 
 }
 
-static void signal_grabber_write(struct dm_state *demod, unsigned signal_start, unsigned signal_end, unsigned i)
+static void signal_grabber_write(am_analyze_t *a, unsigned signal_start, unsigned signal_end, unsigned i)
 {
-    if (!demod->sg_buf)
+    if (!a->sg_buf)
         return;
 
     int start_pos, signal_bsize, wlen, wrest = 0, sg_idx, idx;
@@ -689,21 +703,21 @@ static void signal_grabber_write(struct dm_state *demod, unsigned signal_start, 
     FILE *fp;
 
     while (1) {
-        sprintf(f_name, "g%03d_%gM_%gk.cu8", demod->signal_grabber, cfg.frequency[0] / 1000000.0, cfg.samp_rate / 1000.0);
-        demod->signal_grabber++;
+        sprintf(f_name, "g%03d_%gM_%gk.cu8", a->signal_grabber, cfg.frequency[0] / 1000000.0, cfg.samp_rate / 1000.0);
+        a->signal_grabber++;
         if (access(f_name, F_OK) == -1) {
             break;
         }
     }
 
-    signal_bsize = 2 * (signal_end - (signal_start - 10000));
+    signal_bsize = 2 * (a->signal_end - (signal_start - 10000));
     signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
-    sg_idx = demod->sg_index - demod->sg_len;
+    sg_idx = a->sg_index - a->sg_len;
     if (sg_idx < 0)
-        sg_idx = SIGNAL_GRABBER_BUFFER - demod->sg_len;
+        sg_idx = SIGNAL_GRABBER_BUFFER - a->sg_len;
     idx = (i - 40000) * 2;
     start_pos = sg_idx + idx - signal_bsize;
-    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, demod->sg_index);
+    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, a->sg_index);
     fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, SIGNAL_GRABBER_BUFFER);
     if (signal_bsize > SIGNAL_GRABBER_BUFFER)
         fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, SIGNAL_GRABBER_BUFFER);
@@ -724,85 +738,106 @@ static void signal_grabber_write(struct dm_state *demod, unsigned signal_start, 
         wrest = signal_bsize - wlen;
     }
     fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
-    fwrite(&demod->sg_buf[start_pos], 1, wlen, fp);
+    fwrite(&a->sg_buf[start_pos], 1, wlen, fp);
 
     if (wrest) {
         fprintf(stderr, "*** Writing data from %d, len %d\n", 0, wrest);
-        fwrite(&demod->sg_buf[0], 1, wrest, fp);
+        fwrite(&a->sg_buf[0], 1, wrest, fp);
     }
 
     fclose(fp);
 }
 
-static unsigned int counter = 0;
-static unsigned int print = 1;
-static unsigned int print2 = 0;
-static unsigned int pulses_found = 0;
-static unsigned int prev_pulse_start = 0;
-static unsigned int pulse_start = 0;
-static unsigned int pulse_end = 0;
-static unsigned int pulse_avg = 0;
-static unsigned int signal_start = 0;
-static unsigned int signal_end = 0;
-static unsigned int signal_pulse_counter = 0;
-
-static void pwm_analyze_reset(void)
+static am_analyze_t *am_analyze_create(void)
 {
-    signal_start = 0;
+    am_analyze_t *a;
+    a = calloc(1, sizeof(am_analyze_t));
+    return a;
 }
 
-static void pwm_analyze(struct dm_state *demod, int16_t *buf, uint32_t len) {
+static void am_analyze_free(am_analyze_t *a)
+{
+    if (a->sg_buf)
+        free(a->sg_buf);
+    free(a);
+}
+
+static void am_analyze_enable_grabber(am_analyze_t *a)
+{
+    if (!a->sg_buf)
+        a->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
+    a->signal_grabber = 1;
+}
+
+static void am_analyze_add(am_analyze_t *a, unsigned char *iq_buf, uint32_t len)
+{
+    if (a->signal_grabber) {
+        //fprintf(stderr, "[%d] sg_index - len %d\n", a->sg_index, len );
+        memcpy(&a->sg_buf[a->sg_index], iq_buf, len);
+        a->sg_len = len;
+        a->sg_index += len;
+        if (a->sg_index + len > SIGNAL_GRABBER_BUFFER)
+            a->sg_index = 0;
+    }
+}
+
+static void am_analyze_reset(am_analyze_t *a)
+{
+    a->signal_start = 0;
+}
+
+static void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len) {
     unsigned int i;
-    int32_t threshold = (demod->level_limit ? demod->level_limit : 8000);  // Does not support auto level. Use old default instead.
+    int32_t threshold = (a->level_limit ? a->level_limit : 8000);  // Does not support auto level. Use old default instead.
 
     for (i = 0; i < len; i++) {
         if (buf[i] > threshold) {
-            if (!signal_start)
-                signal_start = counter;
-            if (print) {
-                pulses_found++;
-                pulse_start = counter;
-                signal_pulse_data[signal_pulse_counter][0] = counter;
-                signal_pulse_data[signal_pulse_counter][1] = -1;
-                signal_pulse_data[signal_pulse_counter][2] = -1;
-                if (debug_output) fprintf(stderr, "pulse_distance %d\n", counter - pulse_end);
-                if (debug_output) fprintf(stderr, "pulse_start distance %d\n", pulse_start - prev_pulse_start);
-                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", pulses_found, counter, buf[i]);
-                prev_pulse_start = pulse_start;
-                print = 0;
-                print2 = 1;
+            if (!a->signal_start)
+                a->signal_start = a->counter;
+            if (a->print) {
+                a->pulses_found++;
+                a->pulse_start = a->counter;
+                a->signal_pulse_data[a->signal_pulse_counter][0] = a->counter;
+                a->signal_pulse_data[a->signal_pulse_counter][1] = -1;
+                a->signal_pulse_data[a->signal_pulse_counter][2] = -1;
+                if (debug_output) fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
+                if (debug_output) fprintf(stderr, "a->pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
+                if (debug_output) fprintf(stderr, "a->pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, buf[i]);
+                a->prev_pulse_start = a->pulse_start;
+                a->print = 0;
+                a->print2 = 1;
             }
         }
-        counter++;
+        a->counter++;
         if (buf[i] < threshold) {
-            if (print2) {
-                pulse_avg += counter - pulse_start;
-                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
-                        pulses_found, counter, counter - pulse_start, pulse_avg / pulses_found);
-                pulse_end = counter;
-                print2 = 0;
-                signal_pulse_data[signal_pulse_counter][1] = counter;
-                signal_pulse_data[signal_pulse_counter][2] = counter - pulse_start;
-                signal_pulse_counter++;
-                if (signal_pulse_counter >= 4000) {
-                    signal_pulse_counter = 0;
+            if (a->print2) {
+                a->pulse_avg += a->counter - a->pulse_start;
+                if (debug_output) fprintf(stderr, "a->pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
+                        a->pulses_found, a->counter, a->counter - a->pulse_start, a->pulse_avg / a->pulses_found);
+                a->pulse_end = a->counter;
+                a->print2 = 0;
+                a->signal_pulse_data[a->signal_pulse_counter][1] = a->counter;
+                a->signal_pulse_data[a->signal_pulse_counter][2] = a->counter - a->pulse_start;
+                a->signal_pulse_counter++;
+                if (a->signal_pulse_counter >= 4000) {
+                    a->signal_pulse_counter = 0;
                     fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
                     return;
                 }
             }
-            print = 1;
-            if (signal_start && (pulse_end + 50000 < counter)) {
-                signal_end = counter - 40000;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d\n", signal_start - 10000, signal_end);
-                fprintf(stderr, "signal_len = %d,  pulses = %d\n", signal_end - (signal_start - 10000), pulses_found);
-                pulses_found = 0;
-                classify_signal();
+            a->print = 1;
+            if (a->signal_start && (a->pulse_end + 50000 < a->counter)) {
+                a->signal_end = a->counter - 40000;
+                fprintf(stderr, "*** a->signal_start = %d, a->signal_end = %d\n", a->signal_start - 10000, a->signal_end);
+                fprintf(stderr, "signal_len = %d,  pulses = %d\n", a->signal_end - (a->signal_start - 10000), a->pulses_found);
+                a->pulses_found = 0;
+                am_analyze_classify(a);
 
-                signal_pulse_counter = 0;
-                if (demod->sg_buf) {
-                    signal_grabber_write(demod, signal_start, signal_end, i);
+                a->signal_pulse_counter = 0;
+                if (a->sg_buf) {
+                    signal_grabber_write(a, a->signal_start, a->signal_end, i);
                 }
-                signal_start = 0;
+                a->signal_start = 0;
             }
         }
     }
@@ -830,13 +865,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
 
-    if (demod->signal_grabber) {
-        //fprintf(stderr, "[%d] sg_index - len %d\n", demod->sg_index, len );
-        memcpy(&demod->sg_buf[demod->sg_index], iq_buf, len);
-        demod->sg_len = len;
-        demod->sg_index += len;
-        if (demod->sg_index + len > SIGNAL_GRABBER_BUFFER)
-            demod->sg_index = 0;
+    if (demod->am_analyze) {
+        am_analyze_add(demod->am_analyze, iq_buf, len);
     }
 
     // AM demodulation
@@ -985,11 +1015,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
     }
 
-    if (demod->analyze) {
+    if (demod->am_analyze) {
         if (cfg.include_only == 0 || (cfg.include_only == 1 && d_events == 0) || (cfg.include_only == 2 && d_events > 0)) {
-            pwm_analyze(demod, demod->am_buf, n_samples);
+            am_analyze(demod->am_analyze, demod->am_buf, n_samples);
         } else {
-            pwm_analyze_reset();
+            am_analyze_reset(demod->am_analyze);
         }
     }
 
@@ -1324,7 +1354,8 @@ int main(int argc, char **argv) {
                 cfg.bytes_to_read = atouint32_metric(optarg, "-n: ") * 2;
                 break;
             case 'a':
-                demod->analyze = 1;
+                if (!demod->am_analyze)
+                    demod->am_analyze = am_analyze_create();
                 break;
             case 'A':
                 demod->analyze_pulses = 1;
@@ -1343,7 +1374,8 @@ int main(int argc, char **argv) {
                 add_dumper(optarg, demod->dumper, 1);
                 break;
             case 't':
-                demod->signal_grabber = 1;
+                if (demod->am_analyze)
+                    am_analyze_enable_grabber(demod->am_analyze);
                 break;
             case 'm':
                 fprintf(stderr, "sample mode option is deprecated.\n");
@@ -1353,10 +1385,12 @@ int main(int argc, char **argv) {
                 debug_output++;
                 break;
             case 'z':
-                cfg.override_short = atoi(optarg);
+                if (demod->am_analyze)
+                    demod->am_analyze->override_short = atoi(optarg);
                 break;
             case 'x':
-                cfg.override_long = atoi(optarg);
+                if (demod->am_analyze)
+                    demod->am_analyze->override_long = atoi(optarg);
                 break;
             case 'R':
                 if (!have_opt_R) {
@@ -1453,6 +1487,9 @@ int main(int argc, char **argv) {
         }
     }
 
+    if (demod->am_analyze)
+        demod->am_analyze->level_limit = demod->level_limit;
+
     if (argc <= optind - 1) {
         usage(NULL, 1);
     } else {
@@ -1532,9 +1569,6 @@ int main(int argc, char **argv) {
         add_dumper(out_filename, demod->dumper, 0); // deprecated
     }
 
-    if (demod->signal_grabber)
-        demod->sg_buf = malloc(SIGNAL_GRABBER_BUFFER);
-
     if (in_filename) {
         parse_file_info(in_filename, &demod->load_info);
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
@@ -1595,7 +1629,8 @@ int main(int argc, char **argv) {
         sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
 
         //Always classify a signal at the end of the file
-        classify_signal();
+        if (demod->am_analyze)
+            am_analyze_classify(demod->am_analyze);
         if (!cfg.quiet_mode) {
             fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
         }
@@ -1657,8 +1692,8 @@ int main(int argc, char **argv) {
     for (i = 0; i < demod->r_dev_num; i++)
         free(demod->r_devs[i]);
 
-    if (demod->signal_grabber)
-        free(demod->sg_buf);
+    if (demod->am_analyze)
+        am_analyze_free(demod->am_analyze);
 
     free(demod);
 
