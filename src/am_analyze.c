@@ -345,8 +345,11 @@ void signal_grabber_write(am_analyze_t *a, unsigned signal_start, unsigned signa
     char f_name[64] = {0};
     FILE *fp;
 
+    char *format = *a->sample_size == 1 ? "cu8" : "cs16";
+    double freq_mhz = *a->frequency / 1000000.0;
+    double rate_khz = *a->samp_rate / 1000.0;
     while (1) {
-        sprintf(f_name, "g%03d_%gM_%gk.cu8", a->signal_grabber, *a->frequency / 1000000.0, *a->samp_rate / 1000.0);
+        sprintf(f_name, "g%03d_%gM_%gk.%s", a->signal_grabber, freq_mhz, rate_khz, format);
         a->signal_grabber++;
         if (access(f_name, F_OK) == -1) {
             break;

@@ -17,6 +17,7 @@ typedef struct {
     int override_long;
     uint32_t *frequency;
     uint32_t *samp_rate;
+    int *sample_size;
 
     /* Signal grabber variables */
     int signal_grabber;

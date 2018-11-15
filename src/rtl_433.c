@@ -1095,6 +1095,7 @@ int main(int argc, char **argv) {
         demod->am_analyze->level_limit = &demod->level_limit;
         demod->am_analyze->frequency = &cfg.center_frequency;
         demod->am_analyze->samp_rate = &cfg.samp_rate;
+        demod->am_analyze->sample_size = &demod->sample_size;
     }
 
     if (argc <= optind - 1) {
