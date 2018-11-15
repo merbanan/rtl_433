@@ -32,8 +32,12 @@ typedef struct {
 	int ook_high_estimate;		// Estimate for the OOK high level at end of package
 	int fsk_f1_est;				// Estimate for the F1 frequency for FSK
 	int fsk_f2_est;				// Estimate for the F2 frequency for FSK
+    float freq1_hz;
+    float freq2_hz;
+    float rssi_db;
+    float snr_db;
+    float noise_db;
 } pulse_data_t;
-
 
 /// Clear the content of a pulse_data_t structure
 void pulse_data_clear(pulse_data_t *data);		// Clear the struct

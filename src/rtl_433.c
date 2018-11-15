@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "rtl_433.h"
 #include "sdr.h"
@@ -71,9 +72,11 @@ struct app_cfg {
     int quiet_mode;
     int utc_mode;
     conversion_mode_t conversion_mode;
+    int report_meta;
     uint16_t num_r_devices;
     void *output_handler[MAX_DATA_OUTPUTS];
     int last_output_handler;
+    struct dm_state *demod;
 };
 
 static struct app_cfg cfg = {
@@ -94,9 +97,11 @@ static struct app_cfg cfg = {
     .quiet_mode = 0,
     .utc_mode = 0,
     .conversion_mode = CONVERT_NATIVE,
+    .report_meta = 0,
     .num_r_devices = 0,
     .output_handler = {0},
     .last_output_handler = 0,
+    .demod = NULL,
 };
 
 float sample_file_pos = -1;
@@ -328,6 +333,25 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     }
 }
 
+static void calc_rssi_snr(pulse_data_t *pulse_data)
+{
+    float asnr   = (float)pulse_data->ook_high_estimate / ((float)pulse_data->ook_low_estimate + 1);
+    float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg.samp_rate / 2.0;
+    float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg.samp_rate / 2.0;
+    pulse_data->freq1_hz = (foffs1 + cfg.center_frequency);
+    pulse_data->freq2_hz = (foffs2 + cfg.center_frequency);
+    // NOTE: for (CU8) amplitude is 10x (because it's squares)
+    if (cfg.demod->sample_size == 1) { // amplitude (CU8)
+        pulse_data->rssi_db = 10.0f * log10f(pulse_data->ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->snr_db  = 10.0f * log10f(asnr);
+    } else { // magnitude (CS16)
+        pulse_data->rssi_db = 20.0f * log10f(pulse_data->ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->snr_db  = 20.0f * log10f(asnr);
+    }
+}
+
 /* handles incoming structured data by dumping it */
 void data_acquired_handler(data_t *data)
 {
@@ -440,6 +464,28 @@ void data_acquired_handler(data_t *data)
                 d->format = new_format_label;
             }
         }
+    }
+
+    if (cfg.report_meta && cfg.demod->fsk_pulse_data.fsk_f2_est) {
+        calc_rssi_snr(&cfg.demod->fsk_pulse_data);
+        data_append(data,
+                "mod",   "Modulation",  DATA_STRING, "FSK",
+                "freq1", "Freq1",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg.demod->fsk_pulse_data.freq1_hz / 1000000.0,
+                "freq2", "Freq2",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg.demod->fsk_pulse_data.freq2_hz / 1000000.0,
+                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->fsk_pulse_data.rssi_db,
+                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->fsk_pulse_data.snr_db,
+                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->fsk_pulse_data.noise_db,
+                NULL);
+    }
+    else if (cfg.report_meta) {
+        calc_rssi_snr(&cfg.demod->pulse_data);
+        data_append(data,
+                "mod",   "Modulation",  DATA_STRING, "ASK",
+                "freq",  "Freq",        DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg.demod->pulse_data.freq1_hz / 1000000.0,
+                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->pulse_data.rssi_db,
+                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->pulse_data.snr_db,
+                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg.demod->pulse_data.noise_db,
+                NULL);
     }
 
     for (int i = 0; i < cfg.last_output_handler; ++i) {
@@ -562,6 +608,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 }
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg.include_only == 0 || (cfg.include_only == 1 && p_events == 0) || (cfg.include_only == 2 && p_events > 0)) ) {
+                    calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
             } else if (package_type == 2) {
@@ -598,6 +645,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 }
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg.include_only == 0 || (cfg.include_only == 1 && p_events == 0) || (cfg.include_only == 2 && p_events > 0)) ) {
+                    calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
                 }
             } // if (package_type == ...
@@ -901,6 +949,7 @@ int main(int argc, char **argv) {
     setbuf(stderr, NULL);
 
     demod = calloc(1, sizeof(struct dm_state));
+    cfg.demod = demod;
 
     /* initialize tables */
     baseband_init();
@@ -916,7 +965,7 @@ int main(int argc, char **argv) {
     demod->level_limit = DEFAULT_LEVEL_LIMIT;
     demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
+    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
         if (optarg && (!strcmp(optarg, "help") || !strcmp(optarg, "?")))
             opt = '?'; // fall through to help
         switch (opt) {
@@ -984,6 +1033,9 @@ int main(int argc, char **argv) {
             case 'm':
                 fprintf(stderr, "sample mode option is deprecated.\n");
                 usage(NULL, 1);
+                break;
+            case 'M':
+                cfg.report_meta = atoi(optarg);
                 break;
             case 'D':
                 debug_output++;
