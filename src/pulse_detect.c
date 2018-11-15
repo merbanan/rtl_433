@@ -596,6 +596,8 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 	histogram_print(&hist_periods, samp_rate);
 	fprintf(stderr, "Level estimates [high, low]: %6i, %6i\n",
 		data->ook_high_estimate, data->ook_low_estimate);
+	fprintf(stderr, "RSSI: %.1f dB SNR: %.1f dB Noise: %.1f dB\n",
+		data->rssi_db, data->snr_db, data->noise_db);
 	fprintf(stderr, "Frequency offsets [F1, F2]:  %6i, %6i\t(%+.1f kHz, %+.1f kHz)\n",
 		data->fsk_f1_est, data->fsk_f2_est,
 		(float)data->fsk_f1_est/INT16_MAX*samp_rate/2.0/1000.0,
