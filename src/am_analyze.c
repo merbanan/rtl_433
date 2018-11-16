@@ -12,7 +12,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifdef _MSC_VER
+#define F_OK 0
+#endif
+#endif
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include "bitbuffer.h"
 
