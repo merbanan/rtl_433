@@ -1,7 +1,6 @@
 //some hints from http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define SL109H_MESSAGE_LENGTH 38
 #define CHECKSUM_BYTE_COUNT 4

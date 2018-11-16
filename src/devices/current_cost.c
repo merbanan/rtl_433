@@ -1,7 +1,4 @@
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 static int current_cost_callback(bitbuffer_t *bitbuffer) {
     bitbuffer_invert(bitbuffer);

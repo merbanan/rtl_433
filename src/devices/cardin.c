@@ -1,5 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
  * Cardin S466-TX2 generic garage door remote control on 27.195 Mhz

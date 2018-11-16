@@ -19,8 +19,7 @@
  * C = Checksum, XOR bytes 1 to 9 = 0
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is
 // 0101 0101  0101 0101  0101 0101  0101 0110 = 55 55 55 56

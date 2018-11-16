@@ -9,8 +9,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 static int blyss_dc5_uk_wh(bitbuffer_t *bitbuffer)
 {

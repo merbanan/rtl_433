@@ -11,10 +11,7 @@
  * License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static void
 ss_get_id(char *id, uint8_t *b)

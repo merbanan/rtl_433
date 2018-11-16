@@ -2,9 +2,7 @@
  * contributed by David Ediger
  * discovered by Ron C. Lewis
 */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 // three repeats without gap
 // full preamble is 0x00145 (the last bits might not be fixed, e.g. 0x00146)

@@ -7,9 +7,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 /* normal sequence of bit rows:
 [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1

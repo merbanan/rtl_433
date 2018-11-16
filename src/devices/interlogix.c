@@ -8,9 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices

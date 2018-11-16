@@ -23,9 +23,7 @@
  *
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int x10_sec_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];

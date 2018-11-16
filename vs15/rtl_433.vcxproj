@@ -89,6 +89,7 @@
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\data.h" />
+    <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />

@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 #define HIDEKI_MAX_BYTES_PER_ROW 14
 

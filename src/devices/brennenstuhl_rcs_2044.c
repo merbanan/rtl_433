@@ -15,9 +15,7 @@
  * https://github.com/xkonni/raspberry-remote
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int brennenstuhl_rcs_2044_process_row(bitbuffer_t const *bitbuffer, int row)
 {

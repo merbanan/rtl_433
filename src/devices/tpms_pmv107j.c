@@ -19,8 +19,7 @@
  * C: CRC over bits 0 - 57, poly 0x13, init 0
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is (7 bits) 11111 10
 static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits

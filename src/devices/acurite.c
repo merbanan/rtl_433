@@ -17,10 +17,7 @@
  */
 
 
-#include "rtl_433.h"
-#include "util.h"
-#include "pulse_demod.h"
-#include "data.h"
+#include "decoder.h"
 
 // ** Acurite 5n1 functions **
 

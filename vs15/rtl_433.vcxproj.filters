@@ -29,6 +29,9 @@
     <ClInclude Include="..\include\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\fileformat.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -1,7 +1,4 @@
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 // Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
 //     http://wiki.kainhofer.com/hardware/vaillantvrt340f

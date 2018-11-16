@@ -8,10 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
-#include "pulse_demod.h"
+#include "decoder.h"
 #include "optparse.h"
 
 /// extract a number up to 32/64 bits from given offset with given bit length

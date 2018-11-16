@@ -39,8 +39,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define PHILIPS_BITLEN       112
 #define PHILIPS_PACKETLEN    4

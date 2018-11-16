@@ -7,9 +7,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
 A normal sequence for the TP12:

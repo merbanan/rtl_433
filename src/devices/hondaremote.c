@@ -8,9 +8,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static const char* command_code[] ={"boot", "unlock" , "lock",};
 
