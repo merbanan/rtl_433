@@ -14,7 +14,7 @@ static int rev_nibble(int nib)
 	return(revnib);
 }
 
-static int oregon_scientific_callback_v1(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
 	int ret = 0;
 	char time_str[LOCAL_TIME_BUFLEN];
 	int row;
@@ -85,7 +85,7 @@ r_device oregon_scientific_v1 = {
 	.short_limit        = 300,
 	.long_limit         = 430,
 	.reset_limit        = 14000,
-	.json_callback  = &oregon_scientific_callback_v1,
+	.json_callback  = &oregon_scientific_v1_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
 	.fields         = output_fields

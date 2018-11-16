@@ -27,7 +27,7 @@ ss_get_id(char *id, uint8_t *b)
 }
 
 static int
-ss_sensor_parser (bitbuffer_t *bitbuffer, int row)
+ss_sensor_parser(bitbuffer_t *bitbuffer, int row)
 {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
@@ -107,7 +107,7 @@ ss_pinentry_parser(bitbuffer_t *bitbuffer, int row)
 }
 
 static int 
-ss_keypad_commands (bitbuffer_t *bitbuffer, int row)
+ss_keypad_commands(bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -146,7 +146,7 @@ ss_keypad_commands (bitbuffer_t *bitbuffer, int row)
 }
 
 static int
-ss_sensor_callback (bitbuffer_t *bitbuffer)
+ss_sensor_callback(bitbuffer_t *bitbuffer)
 {
         // Require two identical rows.
         int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
@@ -159,11 +159,11 @@ ss_sensor_callback (bitbuffer_t *bitbuffer)
 	bitbuffer_invert(bitbuffer);
 
 	if (b[2] == 0x88) {
-		return ss_sensor_parser (bitbuffer, row);
+		return ss_sensor_parser(bitbuffer, row);
 	} else if (b[2] == 0x66) {
-		return ss_pinentry_parser (bitbuffer, row);
+		return ss_pinentry_parser(bitbuffer, row);
 	} else if (b[2] == 0x44) {
-		return ss_keypad_commands (bitbuffer, row);
+		return ss_keypad_commands(bitbuffer, row);
 	} else {
 		if (debug_output)
 			fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);
