@@ -31,7 +31,7 @@
  * Based on reverse engineering with gnu-radio and the nice article here:
  *  http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
  */
-static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
@@ -162,7 +162,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  */
 #define MODEL_WH24 24 /* internal identifier for model WH24, family code is always 0x24 */
 #define MODEL_WH65B 65 /* internal identifier for model WH65B, family code is always 0x24 */
-static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
+static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -314,7 +314,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
  * BB = Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
  *
  */
-static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
@@ -323,7 +323,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
 
     // Validate package
     if (bitbuffer->bits_per_row[0] < 440 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 488 bit periods
-        return fineoffset_WH24_callback(bitbuffer); // abort and try WH24, WH65B, HP1000
+        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
     }
 
     // Find a data package and extract data payload
@@ -400,7 +400,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
  * CC = CRC8 with polynomium 0x31
  * CC = Checksum of previous 7 bytes (binary sum truncated to 8 bit)
  */
-static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t *bb = bitbuffer->bb;

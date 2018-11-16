@@ -11,7 +11,7 @@
  */
 #include "decoder.h"
 
-static int X10_RF_callback(bitbuffer_t *bitbuffer) {
+static int X10_RF_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x87, 0x87};

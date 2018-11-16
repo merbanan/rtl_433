@@ -40,7 +40,8 @@
 
 #include "decoder.h"
 
-static int smoke_gs558_callback(bitbuffer_t *bitbuffer) {
+static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b;

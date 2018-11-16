@@ -24,7 +24,7 @@
  */
 #include "decoder.h"
 
-static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
+static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;

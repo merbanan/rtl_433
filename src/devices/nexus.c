@@ -23,7 +23,7 @@
 
 extern int rubicson_crc_check(bitrow_t *bb);
 
-static int nexus_callback(bitbuffer_t *bitbuffer) {
+static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 

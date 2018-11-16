@@ -3,7 +3,7 @@
 // Actually 37 bits for all but last transmission which is 36 bits
 #define	NUM_BITS	36
 
-static int springfield_callback(bitbuffer_t *bitbuffer) {
+static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
 	char time_str[LOCAL_TIME_BUFLEN];
 	int row;

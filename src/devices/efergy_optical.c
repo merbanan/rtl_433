@@ -20,7 +20,7 @@
 
 #include "decoder.h"
 
-static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
+static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
 	double energy, n_imp;

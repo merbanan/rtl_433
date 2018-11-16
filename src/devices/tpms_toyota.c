@@ -80,7 +80,7 @@ static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bit
     return 1;
 }
 
-static int tpms_toyota_callback(bitbuffer_t *bitbuffer) {
+static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 

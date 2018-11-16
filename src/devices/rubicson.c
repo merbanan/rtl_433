@@ -28,7 +28,7 @@ int rubicson_crc_check(bitrow_t *bb) {
     return crc8(tmp, 5, 0x31, 0x6c) == 0;
 }
 
-static int rubicson_callback(bitbuffer_t *bitbuffer) {
+static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     unsigned bits = bitbuffer->bits_per_row[0];
     data_t *data;

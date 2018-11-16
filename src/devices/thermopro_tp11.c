@@ -34,7 +34,7 @@ static int valid(unsigned data, unsigned check) {
     return check == 0;
 }
 
-static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
+static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int i, j, iTemp, good = -1;
     float fTemp;
     bitrow_t *bb = bitbuffer->bb;

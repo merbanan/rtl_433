@@ -48,7 +48,7 @@
 /* Map channel values to their real-world counterparts */
 static const uint8_t channel_map[] = { 2, 0, 1, 0, 3 };
 
-static int philips_callback(bitbuffer_t *bitbuffer) 
+static int philips_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *bb;

@@ -63,7 +63,7 @@ static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpo
     return 1;
 }
 
-static int tpms_ford_callback(bitbuffer_t *bitbuffer) {
+static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int row;
     unsigned bitpos;
     int events = 0;

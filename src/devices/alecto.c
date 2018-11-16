@@ -51,7 +51,7 @@ uint8_t bcd_decode8(uint8_t x) {
     return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
 }
 
-static int alectov1_callback(bitbuffer_t *bitbuffer) {
+static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     int16_t temp;
     uint8_t humidity, csum = 0, csum2 = 0;

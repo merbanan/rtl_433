@@ -62,7 +62,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 				&& (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			// Debug printout
 			if(!device->json_callback || (debug_output && events > 0)) {
@@ -93,7 +93,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
 		// End of Message?
 		} else {
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			// Debug printout
 			if(!device->json_callback || (debug_output && events > 0)) {
@@ -185,7 +185,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 				|| (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			// Debug printout
 			if (!device->json_callback || (debug_output && events > 0)) {
@@ -235,7 +235,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 		if(pulses->gap[n] > device->s_reset_limit) {
 			int newevents = 0;
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			// Debug printout
 			if(!device->json_callback || (debug_output && events > 0)) {
@@ -293,7 +293,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device) {
 			&& bits.num_rows > 0) { // Only if data has been accumulated
 			//END message ?
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			if(!device->json_callback || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_dmc(): %s \n", device->name);
@@ -341,7 +341,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device) {
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			//END message ?
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			if(!device->json_callback || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_piwm_raw(): %s \n", device->name);
@@ -387,7 +387,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device) {
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			//END message ?
 			if (device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device, &bits);
 			}
 			if(!device->json_callback || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_piwm_dc(): %s \n", device->name);
@@ -458,7 +458,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 		}
 		if (n == pulses->num_pulses - 1 || pulses->gap[n] > device->s_reset_limit) {
 			if((bits.bits_per_row[bits.num_rows-1] == 32) && device->json_callback) {
-				events += device->json_callback(&bits);
+				events += device->json_callback(device,&bits);
 			}
 			return(events);
 		}
@@ -481,7 +481,7 @@ int pulse_demod_string(const char *code, r_device *device)
 	bitbuffer_parse(&bits, code);
 
 	if (device->json_callback) {
-		events += device->json_callback(&bits);
+		events += device->json_callback(device, &bits);
 	}
 	// Debug printout
 	if(!device->json_callback || (debug_output && events > 0)) {

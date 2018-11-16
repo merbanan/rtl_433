@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int mebus433_callback(bitbuffer_t *bitbuffer) {
+static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     char    time_str[LOCAL_TIME_BUFLEN];
     int16_t temp;

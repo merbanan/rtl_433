@@ -92,7 +92,7 @@ get_battery_status(uint8_t * msg)
 }
 
 static int
-vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
+vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 

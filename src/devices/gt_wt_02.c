@@ -128,7 +128,7 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
 //return 1; */
 }
 
-static int gt_wt_02_callback(bitbuffer_t *bitbuffer)
+static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
     // iterate through all rows, return on first successful

@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int newkaku_callback(bitbuffer_t *bitbuffer) {
+static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
     /*start pulse: 1T high, 10.44T low */

@@ -81,7 +81,7 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 	return 0;
 }
 
-static int lacrossews_callback(bitbuffer_t *bitbuffer) {
+static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	int m;

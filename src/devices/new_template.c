@@ -45,7 +45,7 @@
 #define MYDEVICE_CRC_POLY    0x07
 #define MYDEVICE_CRC_INIT    0x00
 
-static int template_callback(bitbuffer_t *bitbuffer)
+static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

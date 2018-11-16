@@ -11,7 +11,7 @@
  * published by the Free Software Foundation.
  */
 
-static int cardin_callback(bitbuffer_t *bitbuffer) {
+static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 

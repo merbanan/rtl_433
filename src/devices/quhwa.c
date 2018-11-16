@@ -12,7 +12,7 @@
  */
 #include "decoder.h"
 
-static int quhwa_callback(bitbuffer_t *bitbuffer)
+static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r = bitbuffer_find_repeated_row(bitbuffer, 5, 18);
     if (r < 0)

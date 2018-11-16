@@ -71,7 +71,7 @@ static int tpms_renault_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     return 1;
 }
 
-static int tpms_renault_callback(bitbuffer_t *bitbuffer) {
+static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int row;
     unsigned bitpos;
     int events = 0;

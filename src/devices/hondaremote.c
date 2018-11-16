@@ -25,7 +25,7 @@ static char const *get_command_codes(const uint8_t *bytes)
     }
 }
 
-static int hondaremote_callback(bitbuffer_t *bitbuffer)
+static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

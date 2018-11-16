@@ -15,7 +15,7 @@
  */
 #include "decoder.h"
 
-static int ec3k_callback(bitbuffer_t *bitbuffer) {
+static int ec3k_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package

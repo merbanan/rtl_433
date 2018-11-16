@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int steffen_callback(bitbuffer_t *bitbuffer) {
+static int steffen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {

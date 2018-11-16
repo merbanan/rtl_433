@@ -12,7 +12,7 @@
 
 #include "decoder.h"
 
-static int kerui_callback(bitbuffer_t *bitbuffer) {
+static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;

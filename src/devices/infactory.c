@@ -28,7 +28,7 @@
 
 #include "decoder.h"
 
-static int infactory_callback(bitbuffer_t *bitbuffer) {
+static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];

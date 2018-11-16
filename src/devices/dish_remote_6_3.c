@@ -91,7 +91,7 @@ char *button_map[] = {
 /* 63 */ "Info"
 };
 
-static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
+static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

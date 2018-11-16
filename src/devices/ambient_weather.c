@@ -63,7 +63,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 }
 
 static int
-ambient_weather_callback(bitbuffer_t *bitbuffer)
+ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     unsigned bitpos;

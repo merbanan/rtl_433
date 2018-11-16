@@ -44,7 +44,7 @@
 
 #include "decoder.h"
 
-static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
+static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[9] = {0};

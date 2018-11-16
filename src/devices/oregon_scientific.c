@@ -694,7 +694,7 @@ return 1;
   return 0;
 }
 
-static int oregon_scientific_callback(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
   int ret = oregon_scientific_v2_1_parser(bitbuffer);
   if (ret == 0)
     ret = oregon_scientific_v3_parser(bitbuffer);

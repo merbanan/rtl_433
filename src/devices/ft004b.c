@@ -32,7 +32,7 @@ get_temperature(uint8_t * msg)
 }
 
 static int
-ft004b_callback(bitbuffer_t *bitbuffer)
+ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;

@@ -44,7 +44,8 @@
 
 #include "decoder.h"
 
-static int wg_pb12v1_callback(bitbuffer_t *bitbuffer) {
+static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b;

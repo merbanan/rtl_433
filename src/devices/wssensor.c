@@ -27,7 +27,7 @@
 #define WS_MINREPEATS	4
 #define WS_REPEATS	23
 
-static int wssensor_callback(bitbuffer_t *bitbuffer) {
+static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];

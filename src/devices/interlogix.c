@@ -95,7 +95,7 @@
 // preamble message.  only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = {0x01};
 
-static int interlogix_callback(bitbuffer_t *bitbuffer)
+static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
