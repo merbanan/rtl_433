@@ -13,7 +13,7 @@
 
 uint8_t cmd_lu_tab[16] = {2,3,0,1,4,5,7,6,0xC,0xD,0xF,0xE,8,9,0xB,0xA};
 
-static int silvercrest_callback(bitbuffer_t *bitbuffer) {
+static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b; // bits of a row
     uint8_t cmd;

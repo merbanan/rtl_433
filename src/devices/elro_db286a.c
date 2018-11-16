@@ -19,7 +19,7 @@
 
 #include "decoder.h"
 
-static int elro_db286a_callback(bitbuffer_t *bitbuffer)
+static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

@@ -24,7 +24,7 @@
 
 #include "decoder.h"
 
-static int prologue_callback(bitbuffer_t *bitbuffer) {
+static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 

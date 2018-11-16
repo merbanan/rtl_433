@@ -66,7 +66,7 @@ struct flex_params {
     struct flex_get getter[GETTER_SLOTS];
 };
 
-static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
+static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_params *params)
 {
     int i;
     int match_count = 0;
@@ -266,16 +266,16 @@ static void help()
 
 #define FLEX_SLOTS 8
 static struct flex_params *params_slot[FLEX_SLOTS];
-static int cb_slot0(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[0]); }
-static int cb_slot1(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[1]); }
-static int cb_slot2(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[2]); }
-static int cb_slot3(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[3]); }
-static int cb_slot4(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[4]); }
-static int cb_slot5(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[5]); }
-static int cb_slot6(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[6]); }
-static int cb_slot7(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[7]); }
+static int cb_slot0(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[0]); }
+static int cb_slot1(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[1]); }
+static int cb_slot2(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[2]); }
+static int cb_slot3(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[3]); }
+static int cb_slot4(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[4]); }
+static int cb_slot5(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[5]); }
+static int cb_slot6(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[6]); }
+static int cb_slot7(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[7]); }
 static unsigned next_slot = 0;
-int (*callback_slot[])(bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
+int (*callback_slot[])(r_device *decoder, bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
 
 static unsigned parse_bits(const char *code, bitrow_t bitrow)
 {

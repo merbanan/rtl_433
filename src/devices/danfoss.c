@@ -66,7 +66,8 @@ static uint8_t danfoss_decode_nibble(uint8_t byte) {
 }
 
 
-static int danfoss_cfr_callback(bitbuffer_t *bitbuffer) {
+static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
 	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];

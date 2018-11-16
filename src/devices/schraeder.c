@@ -27,7 +27,7 @@
 
 #include "decoder.h"
 
-static int schraeder_callback(bitbuffer_t *bitbuffer) {
+static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	uint8_t b[8];
@@ -98,7 +98,7 @@ static int schraeder_callback(bitbuffer_t *bitbuffer) {
   *
   */
   
-static int schrader_EG53MA4_callback(bitbuffer_t *bitbuffer) {
+static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	uint8_t b[10];

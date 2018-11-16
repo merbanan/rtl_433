@@ -14,7 +14,7 @@ static int rev_nibble(int nib)
 	return(revnib);
 }
 
-static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
 	char time_str[LOCAL_TIME_BUFLEN];
 	int row;

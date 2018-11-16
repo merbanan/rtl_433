@@ -181,7 +181,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 }
 
 static int
-ttx201_callback(bitbuffer_t *bitbuffer)
+ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     int events = 0;

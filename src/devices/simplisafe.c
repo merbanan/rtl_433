@@ -146,7 +146,7 @@ ss_keypad_commands(bitbuffer_t *bitbuffer, int row)
 }
 
 static int
-ss_sensor_callback(bitbuffer_t *bitbuffer)
+ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Require two identical rows.
     int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);

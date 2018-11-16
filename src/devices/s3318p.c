@@ -47,7 +47,7 @@
 
 #include "decoder.h"
 
-static int s3318p_callback(bitbuffer_t *bitbuffer) {
+static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     int browlen;
     data_t *data;

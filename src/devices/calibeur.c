@@ -32,7 +32,7 @@
 */
 #include "decoder.h"
 
-static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
+static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
 

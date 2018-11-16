@@ -119,7 +119,7 @@ static int radiohead_ask_extract(bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ ui
     return msg_len;
 }
 
-static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
+static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -158,7 +158,7 @@ static int radiohead_ask_callback(bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static int sensible_living_callback(bitbuffer_t *bitbuffer)
+static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

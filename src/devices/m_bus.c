@@ -245,7 +245,7 @@ static void m_bus_output_data(const m_bus_data_t *out, const m_bus_block1_t *blo
 }
 
 
-static int m_bus_mode_c_t_callback(bitbuffer_t *bitbuffer) {
+static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_T[]  = {0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = {0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = {0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
@@ -318,7 +318,7 @@ static int m_bus_mode_c_t_callback(bitbuffer_t *bitbuffer) {
 }
 
 
-static int m_bus_mode_r_callback(bitbuffer_t *bitbuffer) {
+static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_RA[]  = {0x55, 0x54, 0x76, 0x96};      // Mode R, format A (B not supported)
 
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
@@ -350,7 +350,7 @@ static int m_bus_mode_r_callback(bitbuffer_t *bitbuffer) {
 }
 
 
-static int m_bus_mode_f_callback(bitbuffer_t *bitbuffer) {
+static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
 //  static const uint8_t PREAMBLE_FB[] = {0x55, 0xF6, 0x72};  // Mode F, format B Preamble

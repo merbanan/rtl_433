@@ -13,7 +13,7 @@
 
 #include "decoder.h"
 
-static int rftech_callback(bitbuffer_t *bitbuffer) {
+static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];
 	bitrow_t *bb = bitbuffer->bb;
 	uint16_t sensor_id = 0;

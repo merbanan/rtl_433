@@ -11,7 +11,7 @@ uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit) {
     return val;
 }
 
-static int em1000_callback(bitbuffer_t *bitbuffer) {
+static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // based on fs20.c
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[10];
@@ -65,7 +65,7 @@ static int em1000_callback(bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-static int ws2000_callback(bitbuffer_t *bitbuffer) {
+static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // based on http://www.dc3yc.privat.t-online.de/protocol.htm
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[13];

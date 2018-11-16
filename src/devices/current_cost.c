@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int current_cost_callback(bitbuffer_t *bitbuffer) {
+static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitbuffer_invert(bitbuffer);
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];

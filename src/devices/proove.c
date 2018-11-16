@@ -28,7 +28,7 @@
  */
 #include "decoder.h"
 
-static int proove_callback(bitbuffer_t *bitbuffer) {
+static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
 

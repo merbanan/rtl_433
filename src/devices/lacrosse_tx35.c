@@ -150,14 +150,14 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 /**
  ** Wrapper for the TX29 device
  **/
-static int lacrossetx29_callback(bitbuffer_t *bitbuffer) {
+static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	return lacrosse_it(bitbuffer, LACROSSE_TX29_MODEL);
 }
 
 /**
  ** Wrapper for the TX35 device
  **/
-static int lacrossetx35_callback(bitbuffer_t *bitbuffer) {
+static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	return lacrosse_it(bitbuffer, LACROSSE_TX35_MODEL);
 }
 

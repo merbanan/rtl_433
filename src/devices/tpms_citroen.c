@@ -88,7 +88,7 @@ static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     return 1;
 }
 
-static int tpms_citroen_callback(bitbuffer_t *bitbuffer) {
+static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 

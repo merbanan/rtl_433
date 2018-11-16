@@ -72,7 +72,7 @@
 #define DSC_CT_CRC_POLY        0xf5
 #define DSC_CT_CRC_INIT        0x3d
 
-static int dsc_callback(bitbuffer_t *bitbuffer)
+static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

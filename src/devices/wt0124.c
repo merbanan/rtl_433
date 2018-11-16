@@ -31,7 +31,7 @@ X = xor checksum
 #include "decoder.h"
 
 
-static int wt1024_callback(bitbuffer_t *bitbuffer)
+static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;

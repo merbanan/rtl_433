@@ -42,7 +42,7 @@ Layout appears to be:
 
 #define BITS_IN_VALID_ROW 40
 
-static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
+static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int iTemp1, iTemp2, good = -1;
     float fTemp1, fTemp2;
     uint8_t *bytes;

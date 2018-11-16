@@ -26,7 +26,7 @@
 
 #include "decoder.h"
 
-static int generic_motion_callback(bitbuffer_t *bitbuffer) {
+static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;

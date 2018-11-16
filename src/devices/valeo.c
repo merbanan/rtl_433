@@ -11,7 +11,7 @@
 #include "decoder.h"
 
 
-static int valeo_callback(bitbuffer_t *bitbuffer) {
+static int valeo_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package

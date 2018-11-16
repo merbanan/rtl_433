@@ -127,7 +127,7 @@ static int ge_coloreffects_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned
 
 }
 
-static int ge_coloreffects_callback(bitbuffer_t *bitbuffer) {
+static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 

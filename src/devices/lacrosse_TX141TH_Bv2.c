@@ -91,7 +91,7 @@
 #define LACROSSE_TX141_BITLEN 37
 #define LACROSSE_TX141TH_BITLEN 40
 
-static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
+static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];

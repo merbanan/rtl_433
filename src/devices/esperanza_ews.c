@@ -95,7 +95,7 @@ static char *output_fields[] = {
     NULL
 };
 
-static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
+static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // require two leading sync pulses
     if (bitbuffer->bits_per_row[0] != 0 || bitbuffer->bits_per_row[1] != 0)

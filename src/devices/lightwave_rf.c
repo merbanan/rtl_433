@@ -40,7 +40,7 @@ int lightwave_rf_nibble_from_byte(uint8_t in) {
 }
 
 
-static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
+static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package

@@ -10,7 +10,7 @@
 
 extern uint8_t reverse8(uint8_t x);
 
-static int kw9015b_callback(bitbuffer_t *bitbuffer) {
+static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
         char time_str[LOCAL_TIME_BUFLEN];

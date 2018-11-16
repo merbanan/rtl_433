@@ -95,7 +95,7 @@ static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
 	return 1;
 }
 
-static int oil_standard_callback(bitbuffer_t *bitbuffer) {
+static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	unsigned bitpos = 0;
 	int events = 0;
 

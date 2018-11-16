@@ -15,7 +15,7 @@
 
 enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TEMP, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
 
-static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
+static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b = bitbuffer->bb[0]; // TODO: handle the 3 row, need change in PULSE_CLOCK decoding

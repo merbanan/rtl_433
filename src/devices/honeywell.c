@@ -18,7 +18,7 @@
 
 #include "decoder.h"
 
-static int honeywell_callback(bitbuffer_t *bitbuffer) {
+static int honeywell_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
     const uint8_t *bb;
     int channel;

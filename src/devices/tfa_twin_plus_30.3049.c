@@ -104,7 +104,7 @@ static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffe
     return 1;
 }
 
-static int tfa_twin_plus_303049_callback(bitbuffer_t *bitbuffer)
+static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
     for(int row=0; row<bitbuffer->num_rows; row++)

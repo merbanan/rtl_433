@@ -108,7 +108,7 @@ static float get_rainfall(const uint8_t* br) {
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
-static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);

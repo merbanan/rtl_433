@@ -220,7 +220,7 @@ static int acurite_5n1_getBatteryLevel(uint8_t byte)
 }
 
 
-static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer)
+static int acurite_rain_gauge_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
     // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
@@ -276,7 +276,7 @@ static float acurite_th_temperature(uint8_t *s)
 //
 // @todo - see if the 3rd nybble is battery/status
 //
-static int acurite_th_callback(bitbuffer_t *bitbuf)
+static int acurite_th_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     uint8_t *bb = NULL;
     int cksum, battery_low, valid = 0;
@@ -571,7 +571,7 @@ static int acurite_6045_decode(bitrow_t bb, int browlen)
  * @todo - TBD Are parity and checksum the same across these devices?
  *         (opportunity to DRY-up and simplify?)
  */
-static int acurite_txr_callback(bitbuffer_t *bitbuf)
+static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     int browlen, valid = 0;
     uint8_t *bb;
@@ -823,7 +823,7 @@ static int acurite_txr_callback(bitbuffer_t *bitbuf)
  *
  */
 
-static int acurite_986_callback(bitbuffer_t *bitbuf)
+static int acurite_986_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     int const browlen = 5;
     uint8_t *bb, sensor_num, status, crc, crcc;
@@ -976,7 +976,7 @@ uint8_t acurite_606_checksum(int length, uint8_t *buff)
     return checksum;
 }
 
-static int acurite_606_callback(bitbuffer_t *bitbuf)
+static int acurite_606_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     data_t *data;
     bitrow_t *bb = bitbuf->bb;
@@ -1027,7 +1027,8 @@ static int acurite_606_callback(bitbuffer_t *bitbuf)
     return 0;
 }
 
-static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
+static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
+{
     int crc, battery_low, id, model, valid = 0;
     data_t *data;
     char *model1 = "00275rm", *model2 = "00276rm";
