@@ -39,7 +39,7 @@ ft004b_callback(bitbuffer_t *bitbuffer)
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    if(bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
+    if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
         return 0;
     }
 
@@ -57,10 +57,10 @@ ft004b_callback(bitbuffer_t *bitbuffer)
 
         local_time_str(0, time_str);
         data = data_make(
-            "time", "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            NULL);
+                "time", "", DATA_STRING, time_str,
+                "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
+                "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+                NULL);
         data_acquired_handler(data);
 
         return 1;

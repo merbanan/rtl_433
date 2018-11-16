@@ -91,7 +91,7 @@ get_battery_status(uint8_t * msg)
 }
 
 static int
-vaillant_vrt340_parser(bitbuffer_t *bitbuffer)
+vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 
@@ -190,12 +190,6 @@ vaillant_vrt340_parser(bitbuffer_t *bitbuffer)
     }
 
     return 0;
-}
-
-static int
-vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
-{
-    return vaillant_vrt340_parser(bitbuffer);
 }
 
 static char *output_fields[] = {

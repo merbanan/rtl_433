@@ -14,12 +14,10 @@
 
 #include "decoder.h"
 
-
 // Frame preamble:
 // 11001100 11001100 11001100 11001100 11001100 11111111 00000000
 // c   c    c   c    c   c    c   c    c   c    f   f    0   0
 static const unsigned char preamble_pattern[3] = {0xcc, 0xff, 0x00};
-
 
 // Helper to access single bit (copied from bitbuffer.c)
 static inline int bit(const uint8_t *bytes, unsigned bit)
@@ -27,11 +25,10 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
     return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
 }
 
-
 /*
  * Decodes the following encoding scheme:
  * 10 = 0
-*  1100 = 1
+ *  1100 = 1
  */
 unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
@@ -64,8 +61,8 @@ unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t
     return ipos;
 }
 
-char * ge_command_name(uint8_t command) {
-    char * out = "0xxx";
+char *ge_command_name(uint8_t command) {
+    char *out = "0xxx";
   
     switch(command) {    
         case 0x5a:  return "change";  break;
