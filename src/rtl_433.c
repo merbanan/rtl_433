@@ -317,7 +317,6 @@ static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     p->callback = t_dev->json_callback;
     p->name = t_dev->name;
     p->demod_arg = t_dev->demod_arg;
-    bitbuffer_clear(&p->bits);
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
