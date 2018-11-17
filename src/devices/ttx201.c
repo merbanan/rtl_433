@@ -213,6 +213,7 @@ static char *output_fields[] = {
     "channel",
     "battery",
     "temperature_C",
+    "mic",
     NULL
 };
 

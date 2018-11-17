@@ -1,12 +1,11 @@
-/* Copyright (C) 2018 ionum - projekte
+/* TFA 30.3211.02 
+ * Copyright (C) 2018 ionum - projekte
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- *
- * TFA 30.3211.02 
  * 
  * 1970us pulse with variable gap (third pulse 3920 us)
  * Above 79% humidity, gap after third pulse is 5848 us
@@ -17,39 +16,59 @@
  * Demoding with -X "tfa_test:OOK_PPM_RAW:2900:5000:36500"
  * 
  * 74 bit (2 bit preamble and 72 bit data => 9 bytes => 18 nibbles)
+ * The preamble seems to be a repeat counter (00, and 01 seen),
+ * the first 4 bytes are data,
+ * the second 4 bytes the same data inverted,
+ * the last byte is a checksum.
  * 
- * Nibble       1   2    3   4    5   6    7   8    9   10   11  12   13  14   15  16   17  18
- *           PP ?HHHhhhh ??CCNIII IIIITTTT ttttuuuu ???????? ???????? ???????? ???????? ??????
- * 
- *     P = Preamble
- *     H = First digit humidity 7-bit 0=8,1=9 (Range from 20 - 99%)
- *     h = Second digit humidity
+ * Data: HHHHhhhh ??CCNIII IIIITTTT ttttuuuu 
+ *     H = First BCD digit humidity (the MSB might be distorted by the demod)
+ *     h = Second BCD digit humidity
+ *     ? = Likely battery flag
  *     C = Channel
- *     T = First digit temperatur
- *     t = Second digit temperatur
- *     u = Third digit temperatur
- *     N = Negative temperatur
- *     
+ *     N = Negative temperature sign bit
+ *     I = Unknown
+ *     T = First BCD digit temperature
+ *     t = Second BCD digit temperature
+ *     u = Third BCD digit temperature
  * 
+ * The Checksum seems to cover the data bytes and is roughly something like:
+ *
+ *  = (b[0] & 0x5) + (b[0] & 0xf) << 4  + (b[0] & 0x50) >> 4 + (b[0] & 0xf0)
+ *  + (b[1] & 0x5) + (b[1] & 0xf) << 4  + (b[1] & 0x50) >> 4 + (b[1] & 0xf0)
+ *  + (b[2] & 0x5) + (b[2] & 0xf) << 4  + (b[2] & 0x50) >> 4 + (b[2] & 0xf0)
+ *  + (b[3] & 0x5) + (b[3] & 0xf) << 4  + (b[3] & 0x50) >> 4 + (b[3] & 0xf0)
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int tfa_303211_callback (bitbuffer_t *bitbuffer)
+static int tfa_303211_callback(bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[9] = {0};
 
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
-        if(debug_output) fprintf(stderr,"tfa_303211 wrong size (%i bits)\n",bitbuffer->bits_per_row[0]);
+        if( debug_output)
+            fprintf(stderr, "tfa_303211 wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
         return 0;
     }
 
 	/* dropping 2 bit preamle */
     bitbuffer_extract_bytes(bitbuffer, 0, 2, b, 72);
+
+    // flip inverted bytes
+    b[4] ^= 0xff;
+    b[5] ^= 0xff;
+    b[6] ^= 0xff;
+    b[7] ^= 0xff;
+
+    // restore first MSB
+    b[0] = (b[0] & 0x7f) | (b[4] & 0x80);
+
+    // check bit-wise parity
+    if (b[0] != b[4] || b[1] != b[5] || b[2] != b[6] || b[3] != b[7])
+        return 0;
 
     float const temp        = ((b[2] & 0x0F) * 10) + ((b[3] & 0xF0) >> 4) + ((b[3] & 0x0F) *0.1F);
     int const minus         = (b[1] & 0x08) >> 3;
@@ -59,7 +78,7 @@ static int tfa_303211_callback (bitbuffer_t *bitbuffer)
     int const battery_low   = 0;
     int const channel       = (b[1] & 0x30) >> 4;
 
-    float tempC = (minus == 1 ? temp * -1 : temp);
+    float temp_c = (minus == 1 ? temp * -1 : temp);
 
     char time_str[LOCAL_TIME_BUFLEN];
     local_time_str(0, time_str);
@@ -69,9 +88,10 @@ static int tfa_303211_callback (bitbuffer_t *bitbuffer)
             "model",         "",            DATA_STRING, "TFA 30.3211.02",
             "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
-            "battery",       "Battery",     DATA_STRING, "??",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
+            //"battery",       "Battery",     DATA_STRING, "??",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",           "MIC",         DATA_STRING, "CHECKSUM", // actually a per-bit parity, chksum unknown
             NULL);
     data_acquired_handler(data);
 
@@ -83,14 +103,15 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
-    "battery",
+    //"battery",
     "temperature_C",
     "humidity",
+    "mic",
     NULL
 };
 
 r_device tfa_30_3211 = {
-    .name          = "TFA 30.3211.02",
+    .name          = "TFA 30.3211.02 Temperature/Humidity Sensor",
     .modulation    = OOK_PULSE_PPM_RAW,
     .short_limit   = 2900,
     .long_limit    = 6000,
@@ -98,5 +119,5 @@ r_device tfa_30_3211 = {
     .json_callback = &tfa_303211_callback,
     .disabled      = 0,
     .demod_arg     = 0,
-    .fields         = output_fields
+    .fields        = output_fields
 };
