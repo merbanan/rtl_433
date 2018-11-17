@@ -32,6 +32,7 @@ add_executable(rtl_433
 	devices/akhan_100F14.c
 	devices/alecto.c
 	devices/ambient_weather.c
+	devices/ambientweather_tx8300.c
 	devices/blyss.c
 	devices/brennenstuhl_rcs_2044.c
 	devices/bresser_3ch.c
@@ -113,6 +114,7 @@ add_executable(rtl_433
 	devices/tpms_pmv107j.c
 	devices/tpms_renault.c
 	devices/tpms_toyota.c
+	devices/ttx201.c
 	devices/vaillant_vrt340f.c
 	devices/valeo.c
 	devices/waveman.c

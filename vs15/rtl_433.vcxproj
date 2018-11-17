@@ -116,6 +116,7 @@
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
     <ClCompile Include="..\src\devices\ambient_weather.c" />
+    <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\blyss.c" />
     <ClCompile Include="..\src\devices\brennenstuhl_rcs_2044.c" />
     <ClCompile Include="..\src\devices\bresser_3ch.c" />
@@ -197,6 +198,7 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\valeo.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
