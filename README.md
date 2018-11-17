@@ -170,6 +170,7 @@ Supported device protocols:
     [108]  WS Temperature Sensor
     [109]  WT0124 Pool Thermometer
     [110]  PMV-107J (Toyota) TPMS
+    [111]  Emos TTX201 Temperature Sensor
 
 * Disabled by default, use -R n or -G
 

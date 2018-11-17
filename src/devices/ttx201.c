@@ -62,11 +62,8 @@
  *   8  35    35  194  0x0  0  0  7   264  0x14
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-#define MODEL                "TTX201 Temperature Sensor"
 #define MSG_PREAMBLE_BITS    17
 #define MSG_PACKET_MIN_BITS  50
 #define MSG_PACKET_BITS      54
@@ -173,11 +170,12 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     local_time_str(0, time_str);
     data = data_make(
             "time",          "",            DATA_STRING, time_str,
-            "model",         "",            DATA_STRING, MODEL,
+            "model",         "",            DATA_STRING, "Emos TTX201",
             "id",            "House Code",  DATA_INT,    device_id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
     data_acquired_handler(data);
 
@@ -219,7 +217,7 @@ static char *output_fields[] = {
 };
 
 r_device ttx201 = {
-    .name          = MODEL,
+    .name          = "Emos TTX201 Temperature Sensor",
     .modulation    = OOK_PULSE_MANCHESTER_ZEROBIT,
     .short_limit   = 510,
     .long_limit    = 0, // not used
