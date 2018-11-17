@@ -14,8 +14,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // The sensor sends a single packet once every hour or twice a second
 // for 11 minutes when in pairing/test mode (pairing needs 35 sec).

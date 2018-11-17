@@ -1,7 +1,6 @@
 //some hints from http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define SL109H_MESSAGE_LENGTH 38
 #define CHECKSUM_BYTE_COUNT 4
@@ -89,7 +88,7 @@ static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int ch
 }
 
 
-static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
+static int oregon_scientific_sl109h_callback(bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *msg;
@@ -156,7 +155,7 @@ r_device oregon_scientific_sl109h = {
     .short_limit    = 2800/*760*/,
     .long_limit     = 4400/*1050*/,
     .reset_limit    = 8000/*2240*/,
-    .json_callback  = &oregon_scientific_callback_sl109h,
+    .json_callback  = &oregon_scientific_sl109h_callback,
     .disabled       = 0,
     .demod_arg      = 0,
     .fields         = output_fields

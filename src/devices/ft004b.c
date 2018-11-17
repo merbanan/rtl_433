@@ -22,26 +22,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static float
-get_temperature (uint8_t * msg)
+get_temperature(uint8_t * msg)
 {
     uint16_t temp_c = ((msg[4] & 0x7) << 8) | msg[3];
     return (temp_c * 0.05f) - 40.0f;
 }
 
 static int
-ft004b_callback (bitbuffer_t *bitbuffer)
+ft004b_callback(bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    if(bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
+    if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
         return 0;
     }
 
@@ -59,10 +57,10 @@ ft004b_callback (bitbuffer_t *bitbuffer)
 
         local_time_str(0, time_str);
         data = data_make(
-            "time", "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            NULL);
+                "time", "", DATA_STRING, time_str,
+                "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
+                "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+                NULL);
         data_acquired_handler(data);
 
         return 1;

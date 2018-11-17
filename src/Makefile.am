@@ -3,13 +3,16 @@ AM_CFLAGS = ${CFLAGS} -fPIC ${SYMBOL_VISIBILITY}
 
 bin_PROGRAMS         = rtl_433
 
-rtl_433_SOURCES      = baseband.c \
+rtl_433_SOURCES      = am_analyze.c \
+                       baseband.c \
                        bitbuffer.c \
                        data.c \
+                       fileformat.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        rtl_433.c \
+                       sdr.c \
                        util.c \
                        devices/acurite.c \
                        devices/akhan_100F14.c \
@@ -93,6 +96,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/thermopro_tp12.c \
                        devices/tpms_citroen.c \
                        devices/tpms_ford.c \
+                       devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
                        devices/ttx201.c \

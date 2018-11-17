@@ -42,9 +42,7 @@
  * - Make the time stamp output a general utility function.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 #define LACROSSE_TX_BITLEN        44
 #define LACROSSE_NYBBLE_CNT        11
@@ -126,9 +124,8 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
 
-    int i, m, valid = 0;
+    int m, valid = 0;
     int events = 0;
-    uint8_t *buf;
     uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
     uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
     int msg_value_int;

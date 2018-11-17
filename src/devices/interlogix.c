@@ -8,9 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
@@ -100,7 +98,6 @@ static unsigned char preamble[1] = {0x01};
 static int interlogix_callback(bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
-    bitrow_t *bb;
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];

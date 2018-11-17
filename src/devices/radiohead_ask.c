@@ -5,9 +5,7 @@
  * Sensible Living uses a speed of 1000, i.e. 1000 us per bit.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 // Maximum message length (including the headers, byte count and FCS) we are willing to support
 // This is pretty arbitrary

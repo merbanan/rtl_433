@@ -113,6 +113,7 @@
 		DECL(m_bus_mode_f) \
 		DECL(wssensor) \
 		DECL(wt1024) \
+		DECL(tpms_pmv107j) \
 		DECL(ttx201)
 
 typedef struct {

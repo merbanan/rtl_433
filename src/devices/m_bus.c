@@ -10,11 +10,10 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // Convert two BCD encoded nibbles to an integer
-inline unsigned bcd2int(uint8_t bcd) {
+static unsigned bcd2int(uint8_t bcd) {
     return 10*(bcd>>4) + (bcd & 0xF);
 }
 
@@ -127,8 +126,8 @@ typedef struct {
 } m_bus_block1_t;
 
 typedef struct {
-    uint8_t     data[512];
     unsigned    length;
+    uint8_t     data[512];
 } m_bus_data_t;
 
 

@@ -17,15 +17,13 @@
  * [03] {78} 03 e0 01 e4 e0 90 52 97 39 60
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int fordremote_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *bytes;
-	int found = 0, i;
+	int found = 0;
 	int device_id, code;
 
 	// expect {1} {9} {1} preamble

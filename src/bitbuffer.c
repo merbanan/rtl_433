@@ -78,24 +78,27 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 			     unsigned pos, uint8_t *out, unsigned len)
 {
 	uint8_t *bits = bitbuffer->bb[row];
-
+	if (len == 0)
+		return;
 	if ((pos & 7) == 0) {
 		memcpy(out, bits + (pos / 8), (len + 7) / 8);
 	} else {
 		unsigned shift = 8 - (pos & 7);
+		unsigned bytes = (len + 7) >> 3;
+		uint8_t *p = out;
 		uint16_t word;
-
 		pos = pos >> 3; // Convert to bytes
-		len = (len + 7) >> 3;
 
 		word = bits[pos];
 
-		while (len--) {
+		while (bytes--) {
 			word <<= 8;
 			word |= bits[++pos];
-			*(out++) = word >> shift;
+			*(p++) = word >> shift;
 		}
 	}
+	if (len & 7)
+		out[(len - 1) / 8] &= 0xff00 >> (len & 7); // mask off bottom bits
 }
 
 // If we make this an inline function instead of a macro, it means we don't
@@ -120,7 +123,8 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 			if (ppos == pattern_bits_len)
 				return ipos - pattern_bits_len;
 		} else {
-			ipos += -ppos + 1;
+			ipos -= ppos;
+			ipos++;
 			ppos = 0;
 		}
 	}

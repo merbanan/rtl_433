@@ -7,9 +7,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 /// Documentation for Oregon Scientific protocols can be found here:
 /// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
 // Sensors ID
@@ -430,7 +428,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg, sensor_id),
-            "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f mPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
             NULL);
         data_acquired_handler(data);
       //}

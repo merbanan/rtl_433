@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 #define HIDEKI_MAX_BYTES_PER_ROW 14
 
@@ -15,7 +13,7 @@
 //    00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999 AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
 //    SYNC+HEAD cha   RC                Nr.?    1° .1°  VB   10°    1° .1°  VB   10°  .1mh 1mh  ?? 10mh   ????    w°  ??    ????     ????
 
-enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
+enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TEMP, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
 
 static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -46,6 +44,10 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
             }
             if (i == 9) {
                 sensortype = HIDEKI_RAIN;
+                break;
+            }
+            if (i == 8) {
+                sensortype = HIDEKI_TEMP;
                 break;
             }
             return 0;
@@ -95,6 +97,17 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
         return 1;
     }
+    if (sensortype == HIDEKI_TEMP) {
+        data = data_make("time",          "",              DATA_STRING, time_str,
+                         "model",         "",              DATA_STRING, "HIDEKI Temperature sensor",
+                         "rc",            "Rolling Code",  DATA_INT, rc,
+                         "channel",       "Channel",       DATA_INT, channel,
+                         "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
+                         "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
+                         NULL);
+        data_acquired_handler(data);
+        return 1;
+    }
     if (sensortype == HIDEKI_RAIN) {
         rain_units = (packet[5] << 8) + packet[4];
         battery_ok = (packet[2]>>6) & 0x01;
@@ -108,7 +121,6 @@ static int hideki_ts04_callback(bitbuffer_t *bitbuffer) {
         data_acquired_handler(data);
         return 1;
     }
-
     return 0;
 }
 

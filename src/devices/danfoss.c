@@ -34,8 +34,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define NUM_BYTES 10	// Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
 static const uint8_t HEADER[] = { 0x36, 0x5c };	// Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)
@@ -67,7 +66,7 @@ static uint8_t danfoss_decode_nibble(uint8_t byte) {
 }
 
 
-static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
+static int danfoss_cfr_callback(bitbuffer_t *bitbuffer) {
 	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
 	char time_str[LOCAL_TIME_BUFLEN];
@@ -170,7 +169,7 @@ r_device danfoss_CFR = {
 	.short_limit    = 100,	// NRZ decoding
 	.long_limit     = 100,	// Bit width
 	.reset_limit    = 500,	// Maximum run is 4 zeroes/ones
-	.json_callback  = &danfoss_CFR_callback,
+	.json_callback  = &danfoss_cfr_callback,
 	.disabled       = 0,
 	.demod_arg      = 0,
 	.fields         = output_fields
