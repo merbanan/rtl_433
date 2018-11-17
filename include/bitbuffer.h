@@ -53,6 +53,15 @@ void bitbuffer_invert(bitbuffer_t *bits);
 /// Print the content of the bitbuffer
 void bitbuffer_print(const bitbuffer_t *bits);
 
+/// Debug the content of the bitbuffer
+void bitbuffer_debug(const bitbuffer_t *bits);
+
+/// Print the content of a bit row (byte buffer)
+void bitrow_print(bitrow_t const bitrow, unsigned bit_len);
+
+/// Debug the content of a bit row (byte buffer)
+void bitrow_debug(bitrow_t const bitrow, unsigned bit_len);
+
 /// Parse a string into a bitbuffer
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 

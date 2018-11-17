@@ -60,7 +60,8 @@ static int wssensor_callback(bitbuffer_t *bitbuffer) {
         fprintf(stdout, "Hyundai WS SENZOR received raw data:\n");
         bitbuffer_print(bitbuffer);
         fprintf(stdout, "Sensor ID	= %01d = 0x%02x\n",  sensor_id, sensor_id);
-        fprintf(stdout, "Bitstream HEX	= %02x %02x %02x\n", b[0], b[1], b[2]);
+        fprintf(stdout, "Bitstream HEX	= ");
+        bitrow_print(b, 24);
         fprintf(stdout, "Battery OK	= %0d\n", battery_status);
         fprintf(stdout, "Startup		= %0d\n", startup);
         fprintf(stdout, "Channel		= %0d\n", channel);

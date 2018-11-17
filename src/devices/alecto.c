@@ -169,10 +169,14 @@ static int alectov1_callback(bitbuffer_t *bitbuffer) {
             data_acquired_handler(data);
         }
         if (debug_output){
-           fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
-           fprintf(stdout, "Received Data = %02x %02x %02x %02x %02x\n", bb[1][0], bb[1][1], bb[1][2], bb[1][3], bb[1][4]);
-           if (wind) fprintf(stdout, "Rcvd Data 2   = %02x %02x %02x %02x %02x\n", bb[5][0], bb[5][1], bb[5][2], bb[5][3], bb[5][4]);
-         /*
+            fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+            fprintf(stdout, "Received Data = ");
+            bitrow_print(bb[1], 40);
+            if (wind) {
+                fprintf(stdout, "Rcvd Data 2   = ");
+                bitrow_print(bb[5], 40);
+            }
+            /*
          * fprintf(stdout, "L2M: %02x %02x %02x %02x %02x\n",reverse8(bb[1][0]),reverse8(bb[1][1]),reverse8(bb[1][2]),reverse8(bb[1][3]),reverse8(bb[1][4]));
          */
         }

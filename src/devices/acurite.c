@@ -230,7 +230,8 @@ static int acurite_rain_gauge_callback(bitbuffer_t *bitbuffer)
 
         if (debug_output > 1) {
             fprintf(stdout, "AcuRite Rain Gauge Total Rain is %2.1fmm\n", total_rain);
-            fprintf(stdout, "Raw Message (%d bits): %02x %02x %02x %02x %02x\n",bitbuffer->bits_per_row[0],bb[0][0],bb[0][1],bb[0][2],bb[0][3],bb[0][4]);
+            fprintf(stdout, "Raw Message ");
+            bitrow_print(bb[0], bitbuffer->bits_per_row[0]);
         }
 
         uint8_t id = bb[0][0];

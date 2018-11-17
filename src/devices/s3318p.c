@@ -1,5 +1,3 @@
-#include "decoder.h"
-
 /* Conrad Electronics S3318P outdoor sensor
  *
  * Transmit Interval: every ~50s
@@ -47,6 +45,7 @@
  *
  */
 
+#include "decoder.h"
 
 static int s3318p_callback(bitbuffer_t *bitbuffer) {
     uint8_t *b;
@@ -97,7 +96,8 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     if (debug_output) {
       bitbuffer_print(bitbuffer);
       fprintf(stderr, "Sensor ID            = %2x\n",  sensor_id);
-      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",b[0],b[1],b[2],b[3],b[4],b[5]);
+      fprintf(stdout, "Bitstream HEX        = ");
+      bitrow_print(b, 48);
       fprintf(stdout, "Humidity HEX         = %02x\n", b[3]);
       fprintf(stdout, "Humidity DEC         = %u\n",   humidity);
       fprintf(stdout, "Button               = %d\n",   button);
