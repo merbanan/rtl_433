@@ -115,7 +115,7 @@
 		DECL(wt1024) \
 		DECL(tpms_pmv107j) \
 		DECL(ttx201) \
-		DECL(tfa_30_3211)
+		DECL(ambientweather_tx8300)
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()

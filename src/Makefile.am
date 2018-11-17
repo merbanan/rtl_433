@@ -18,6 +18,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
+                       devices/ambientweather_tx8300.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
@@ -90,7 +91,6 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/springfield.c \
                        devices/steelmate.c \
                        devices/steffen.c \
-                       devices/tfa_30.3211.c \
                        devices/tfa_pool_thermometer.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
