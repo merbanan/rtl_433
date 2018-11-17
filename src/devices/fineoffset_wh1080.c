@@ -284,9 +284,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     }
 
     if (debug_output) {
-        for (i=0 ; i<((sens_msg)-1) ; i++)
-            fprintf(stderr, "%02x ", bbuf[i]);
-        fprintf(stderr, "\n");
+        bitrow_print(bbuf, (sens_msg - 1) * 8);
     }
 
     if (br[0] != 0xff) {

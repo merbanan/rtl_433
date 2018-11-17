@@ -105,10 +105,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
     /* If debug enabled, print the combined majority-wins packet */
     if (debug_output) {
         fprintf(stderr, "%s %s: combined packet = ", time_str, __func__);
-        for (i = 0; i < PHILIPS_PACKETLEN; i++) {
-            fprintf(stderr, "%02x ",packet[i]);
-        }
-        fprintf(stderr, "\n");
+        bitrow_print(packet, PHILIPS_PACKETLEN * 8);
     }
 
     /* Correct CRC? */

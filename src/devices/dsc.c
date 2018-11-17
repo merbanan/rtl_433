@@ -121,13 +121,8 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
             if (debug_output > 1) {
-                fprintf(stderr,
-                    "DSC Invalid start/sync bits %02x %02x %02x %02x %02x\n",
-                    b[0] & 0xF0,
-                    b[1] & 0x08,
-                    b[2] & 0x04,
-                    b[3] & 0x02,
-                    b[4] & 0x01);
+                fprintf(stderr, "DSC Invalid start/sync bits ");
+                bitrow_print(b, 40);
             }
             continue;
         }
@@ -139,9 +134,10 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
         bytes[4] = ((b[5]));
 
         // XXX change to debug_output
-        if (debug_output)
-            fprintf(stdout, "DSC Contact Raw Data: %02X %02X %02X %02X %02X\n",
-                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4]);
+        if (debug_output) {
+            fprintf(stdout, "DSC Contact Raw Data: ");
+            bitrow_print(bytes, 40);
+        }
 
         status = bytes[0];
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];

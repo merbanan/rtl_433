@@ -40,7 +40,8 @@ validate_checksum(uint8_t * msg, int from, int to, int cs_from, int cs_to)
     if (expected != calculated) {
         if (debug_output >= 1) {
             fprintf(stderr, "Checksum error in Vaillant VRT340f.  Expected: %04x  Calculated: %04x\n", expected, calculated);
-            fprintf(stderr, "Message (data content of bytes %d-%d): ", from, to); int i; for (i=from; i<=to; i++) fprintf(stderr, "%02x ", msg[i]); fprintf(stderr, "\n\n");
+            fprintf(stderr, "Message (data content of bytes %d-%d): ", from, to);
+            bitrow_print(&msg[from], (to - from + 1) * 8);
         }
     }
     return expected == calculated;
@@ -131,13 +132,8 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
     bb = bits.bb;
 
     /* DEBUG: print out the received packet */
-/*
-    fprintf (stderr, "Vaillant bitcount=%d; data=", bitcount);
-    for (int i = 0 ; i < bitcount/8 ; i++) {
-        fprintf (stderr, "%02x ", bb[0][i]);
-    }
-    fprintf(stderr, "\n");
-*/
+    //fprintf (stderr, "Vaillant ");
+    //bitrow_print(bb[0], bitcount);
 
     // A correct message has 128 bits plus potentially two extra bits for clock sync at the end
     if(!(128 <= bitcount && bitcount <= 131) && !(168 <= bitcount && bitcount <= 171))

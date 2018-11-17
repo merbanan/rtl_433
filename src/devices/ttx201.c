@@ -107,11 +107,11 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
                     fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
-				bits, MSG_PREAMBLE_BITS);
+                            bits, MSG_PREAMBLE_BITS);
                 }
             } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
                 fprintf(stderr, "Wrong packet #%d length: %d bits (expected %d)\n",
-			row, bits, MSG_PACKET_BITS);
+                        row, bits, MSG_PACKET_BITS);
             }
         }
         return 0;
@@ -127,19 +127,18 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 
     if (debug_output) {
         fprintf(stderr, "%2d  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
-		row,
-		checksum_calculated,
-		checksum,
-		b[1],				// Device Id
-		(b[2] & 0xf0) >> 4,		// Unknown 1
-		(b[2] & 0x08) >> 3,		// Battery
-		b[2] & 0x07,			// Channel
-		b[3] >> 4,			// Packet index
-		((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4],	// Temperature
-		postmark
-            );
+                row,
+                checksum_calculated,
+                checksum,
+                b[1],                                       // Device Id
+                (b[2] & 0xf0) >> 4,                         // Unknown 1
+                (b[2] & 0x08) >> 3,                         // Battery
+                b[2] & 0x07,                                // Channel
+                b[3] >> 4,                                  // Packet index
+                ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4], // Temperature
+                postmark);
         if (bits == MSG_PACKET_BITS) {
-            fprintf(stderr, "  0x%01x", b[6] >> 4);		// Packet separator
+            fprintf(stderr, "  0x%01x", b[6] >> 4);         // Packet separator
         }
         fprintf(stderr, "\n");
     }
@@ -156,7 +155,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         if (debug_output) {
             if (postmark != MSG_PACKET_POSTMARK) {
                 fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
-			row, postmark, MSG_PACKET_POSTMARK);
+                        row, postmark, MSG_PACKET_POSTMARK);
             }
             if (checksum != checksum_calculated) {
                 fprintf(stderr, "Packet #%d checksum error.\n", row);
@@ -194,7 +193,7 @@ ttx201_callback(bitbuffer_t *bitbuffer)
             fprintf(stderr, "TTX201 received raw data: ");
             bitbuffer_print(bitbuffer);
             fprintf(stderr, "Data decoded:\n" \
-		" r  cs    K   ID    S   B  C  X    T    M     J\n");
+                    " r  cs    K   ID    S   B  C  X    T    M     J\n");
         }
 
         for (row = 0; row < bitbuffer->num_rows; ++row) {

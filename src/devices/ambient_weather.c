@@ -60,9 +60,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         if (debug_output) {
             fprintf(stderr, "Checksum error in Ambient Weather message.    Expected: %02x    Calculated: %02x\n", expected, calculated);
             fprintf(stderr, "Message: ");
-            for (int i=0; i < 6; i++)
-                fprintf(stderr, "%02x ", b[i]);
-            fprintf(stderr, "\n\n");
+            bitrow_print(b, 48);
         }
         return 0;
     }

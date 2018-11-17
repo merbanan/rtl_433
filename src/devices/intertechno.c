@@ -36,7 +36,6 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
         fprintf(stdout, "ADDR Slave     = %i\n", b[7] & 0x0f);
         fprintf(stdout, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
         fprintf(stdout, "command        = %i\n",( b[6] & 0x07));
-        fprintf(stdout, "%02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
     }
 
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
