@@ -197,6 +197,7 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\valeo.c" />
     <ClCompile Include="..\src\devices\waveman.c" />

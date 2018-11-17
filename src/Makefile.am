@@ -99,6 +99,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
+                       devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
                        devices/valeo.c \
                        devices/waveman.c \
