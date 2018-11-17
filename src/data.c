@@ -646,9 +646,9 @@ static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, i
 
     // Output the CSV header
     for (i = 0; csv->fields[i]; ++i) {
-		fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+        fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
     }
-	fprintf(csv->output.file, "\n");
+    fprintf(csv->output.file, "\n");
     return csv;
 
 alloc_error:
