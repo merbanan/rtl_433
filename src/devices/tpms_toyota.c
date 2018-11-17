@@ -22,8 +22,7 @@
  * The pressure seems to be 1/4 PSI offset by -7 PSI (i.e. 28 raw = 0 PSI).
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is 0101 0101 0011 11 = 55 3c
 static const unsigned char preamble_pattern[2] = {0x54, 0xf0}; // 12 bits

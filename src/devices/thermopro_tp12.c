@@ -7,9 +7,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
 A normal sequence for the TP12:
@@ -48,7 +46,7 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
     int iTemp1, iTemp2, good = -1;
     float fTemp1, fTemp2;
     uint8_t *bytes;
-    unsigned int device, value;
+    unsigned int device;
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 

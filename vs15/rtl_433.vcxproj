@@ -21,14 +21,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -54,7 +54,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -72,7 +72,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -85,9 +85,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\am_analyze.h" />
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\data.h" />
+    <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
@@ -99,6 +101,7 @@
     <ClInclude Include="..\src\getopt\getopt.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\am_analyze.c" />
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\data.c" />
@@ -195,6 +198,7 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\valeo.c" />
     <ClCompile Include="..\src\devices\waveman.c" />

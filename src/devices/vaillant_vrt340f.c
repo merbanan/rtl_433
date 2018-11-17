@@ -1,7 +1,4 @@
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 // Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
 //     http://wiki.kainhofer.com/hardware/vaillantvrt340f
@@ -25,7 +22,7 @@
 // License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
 
 static int16_t
-calculate_checksum (uint8_t *buff, int from, int to) {
+calculate_checksum(uint8_t *buff, int from, int to) {
     int16_t checksum = 0;
     for (int byteCnt = from; byteCnt <= to; byteCnt++) {
         checksum += (int16_t)buff[byteCnt];
@@ -34,11 +31,11 @@ calculate_checksum (uint8_t *buff, int from, int to) {
 }
 
 static int
-validate_checksum (uint8_t * msg, int from, int to, int cs_from, int cs_to)
+validate_checksum(uint8_t * msg, int from, int to, int cs_from, int cs_to)
 {
     // Fields cs_from and cs_to hold the 2-byte checksum as signed int
     int16_t expected = msg[cs_from]*0x100+ msg[cs_to];
-    int16_t calculated = calculate_checksum (msg, from, to);
+    int16_t calculated = calculate_checksum(msg, from, to);
 
     if (expected != calculated) {
         if (debug_output >= 1) {
@@ -51,14 +48,14 @@ validate_checksum (uint8_t * msg, int from, int to, int cs_from, int cs_to)
 
 
 static uint16_t
-get_device_id (uint8_t * msg, int pos)
+get_device_id(uint8_t * msg, int pos)
 {
     uint16_t deviceID = msg[pos]*0x100 + msg[pos+1];
     return deviceID;
 }
 
 static uint8_t
-get_heating_mode (uint8_t * msg)
+get_heating_mode(uint8_t * msg)
 {
     uint8_t mode = 0;
     uint8_t tmp = msg[10];
@@ -94,7 +91,7 @@ get_battery_status(uint8_t * msg)
 }
 
 static int
-vaillant_vrt340_parser (bitbuffer_t *bitbuffer)
+vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 
@@ -154,9 +151,9 @@ vaillant_vrt340_parser (bitbuffer_t *bitbuffer)
         }
 
         // Device ID starts at bit 4:
-        uint16_t deviceID = get_device_id (bb[0], 3);
-        uint8_t heating_mode = get_heating_mode (bb[0]); // 0=OFF, 1=ON (2-point heating), 2=ON (analogue heating)
-        uint8_t target_temperature = get_target_temperature (bb[0]);
+        uint16_t deviceID = get_device_id(bb[0], 3);
+        uint8_t heating_mode = get_heating_mode(bb[0]); // 0=OFF, 1=ON (2-point heating), 2=ON (analogue heating)
+        uint8_t target_temperature = get_target_temperature(bb[0]);
         uint8_t water_preheated = get_water_preheated(bb[0]); // 1=Pre-heat, 0=no pre-heated water
         uint8_t isBatteryLow = get_battery_status(bb[0]);
 
@@ -176,12 +173,12 @@ vaillant_vrt340_parser (bitbuffer_t *bitbuffer)
     // "RF detection package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
 
-        if (!validate_checksum (bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
+        if (!validate_checksum(bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
             return 0;
         }
 
         // Device ID starts at bit 12:
-        uint16_t deviceID = get_device_id (bb[0], 11);
+        uint16_t deviceID = get_device_id(bb[0], 11);
 
         data = data_make("time", "", DATA_STRING, time_str,
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat (RF Detection)",
@@ -193,12 +190,6 @@ vaillant_vrt340_parser (bitbuffer_t *bitbuffer)
     }
 
     return 0;
-}
-
-static int
-vaillant_vrt340_callback (bitbuffer_t *bitbuffer)
-{
-    return vaillant_vrt340_parser (bitbuffer);
 }
 
 static char *output_fields[] = {

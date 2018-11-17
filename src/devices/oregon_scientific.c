@@ -7,9 +7,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 /// Documentation for Oregon Scientific protocols can be found here:
 /// http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
 // Sensors ID

@@ -12,8 +12,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 static int ibis_beacon_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];

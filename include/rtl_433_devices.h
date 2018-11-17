@@ -114,6 +114,7 @@
 		DECL(wssensor) \
 		DECL(wt1024) \
 		DECL(tpms_pmv107j) \
+		DECL(ttx201) \
 		DECL(tfa_30_3211)
 
 typedef struct {

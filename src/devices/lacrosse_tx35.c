@@ -48,9 +48,7 @@ handle the two signal and we use two r_device struct (only differing by the puls
 How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.html
 */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 #define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidity
 #define LACROSSE_TX35_CRC_POLY       0x31
@@ -67,7 +65,7 @@ static int lacrosse_it(bitbuffer_t *bitbuffer, uint8_t device29or35) {
 	data_t *data;
 	int brow;
 	uint8_t out[8];
-	int msg_type, r_crc, c_crc;
+	int r_crc, c_crc;
 	int sensor_id, newbatt, battery_low;
 	int humidity;
 	float temp_c;

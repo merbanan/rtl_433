@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 // Actually 37 bits for all but last transmission which is 36 bits
 #define	NUM_BITS	36

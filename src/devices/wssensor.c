@@ -21,9 +21,7 @@
  *   I = sensor ID
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 #define WS_PACKETLEN	24
 #define WS_MINREPEATS	4

@@ -28,9 +28,7 @@ X = xor checksum
 
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 
 static int wt1024_callback(bitbuffer_t *bitbuffer)
@@ -39,7 +37,6 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b; // bits of a row
     uint16_t sensor_rid;
-    uint8_t msg_type;
     int16_t value;
     float temp_c;
     uint8_t channel;

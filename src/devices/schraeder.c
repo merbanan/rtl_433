@@ -25,9 +25,7 @@
  * C = CRC8 from nibble 1 to E
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 static int schraeder_callback(bitbuffer_t *bitbuffer) {
 	char time_str[LOCAL_TIME_BUFLEN];

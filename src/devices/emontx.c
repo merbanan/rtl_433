@@ -8,8 +8,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // We don't really *use* this because there's no endianness support
 // for just using le16_to_cpu(pkt.ct1) etc. A task for another day...

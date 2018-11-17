@@ -19,9 +19,7 @@
  * X = unknown, possibly channel
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 #define MYDEVICE_BITLEN      16
 #define MYDEVICE_MINREPEATS  3

@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 /* Conrad Electronics S3318P outdoor sensor
  *

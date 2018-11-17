@@ -3,7 +3,8 @@ AM_CFLAGS = ${CFLAGS} -fPIC ${SYMBOL_VISIBILITY}
 
 bin_PROGRAMS         = rtl_433
 
-rtl_433_SOURCES      = baseband.c \
+rtl_433_SOURCES      = am_analyze.c \
+                       baseband.c \
                        bitbuffer.c \
                        data.c \
                        fileformat.c \
@@ -99,6 +100,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
+                       devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
                        devices/valeo.c \
                        devices/waveman.c \

@@ -67,8 +67,8 @@
 #endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
-typedef void* (*array_element_release_fn)(void*);
-typedef void* (*value_release_fn)(void*);
+typedef void (*array_element_release_fn)(void*);
+typedef void (*value_release_fn)(void*);
 
 typedef struct {
     /* what is the element size when put inside an array? */
