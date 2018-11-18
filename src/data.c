@@ -307,8 +307,19 @@ void data_array_free(data_array_t *array)
     free(array);
 }
 
+data_t *data_retain(data_t *data)
+{
+    if (data)
+        ++data->retain;
+    return data;
+}
+
 void data_free(data_t *data)
 {
+    if (data && data->retain) {
+        --data->retain;
+        return;
+    }
     while (data) {
         data_t *prev_data = data;
         if (dmt[data->type].value_release)
