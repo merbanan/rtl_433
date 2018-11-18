@@ -916,19 +916,19 @@ static int acurite_986_callback(bitbuffer_t *bitbuf)
                 time_str, sensor_id, sensor_num, sensor_type,
                 tempc, tempf);
 
-        data = data_make(
-                "time",            "",        DATA_STRING,    time_str,
-                "model",        "",        DATA_STRING,    "Acurite 986 Sensor",
-                "id",            NULL,        DATA_INT,    sensor_id,
-                "channel",        NULL,        DATA_STRING,    channel_str,
-                "temperature_F",    "temperature",    DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
-                "battery",        "battery",    DATA_STRING,    battery_low ? "LOW" : "OK",    // @todo convert to bool
-                "status",        "status",    DATA_INT,    status,
-                NULL);
+    data = data_make(
+            "time",            "",        DATA_STRING,    time_str,
+            "model",        "",        DATA_STRING,    "Acurite 986 Sensor",
+            "id",            NULL,        DATA_INT,    sensor_id,
+            "channel",        NULL,        DATA_STRING,    channel_str,
+            "temperature_F",    "temperature",    DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
+            "battery",        "battery",    DATA_STRING,    battery_low ? "LOW" : "OK",    // @todo convert to bool
+            "status",        "status",    DATA_INT,    status,
+            NULL);
 
-        data_acquired_handler(data);
+    data_acquired_handler(data);
 
-        valid_cnt++;
+    valid_cnt++;
 
     }
 
