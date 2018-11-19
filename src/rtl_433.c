@@ -148,6 +148,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
+            "\t\t Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
             "\t[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
@@ -1029,22 +1030,26 @@ int main(int argc, char **argv) {
                     cfg.demod->am_analyze->override_long = atoi(optarg);
                 break;
             case 'R':
-                if (!cfg.no_default_devices) {
+                i = atoi(optarg);
+                if (i > cfg.num_r_devices || -i > cfg.num_r_devices) {
+                    fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
+                    usage(cfg.devices, cfg.num_r_devices, 1);
+                }
+
+                if (i == 0 || (i > 0 && !cfg.no_default_devices)) {
                     for (i = 0; i < cfg.num_r_devices; i++) {
                         cfg.devices[i].disabled = 1;
                     }
                     cfg.no_default_devices = 1;
                 }
 
-                i = atoi(optarg);
-                if (i > cfg.num_r_devices) {
-                    fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-                    usage(cfg.devices, cfg.num_r_devices, 1);
-                }
-
                 if (i >= 1) {
                     cfg.devices[i - 1].disabled = 0;
-                } else {
+                }
+                else if (i <= -1) {
+                    cfg.devices[-i - 1].disabled = 1;
+                }
+                else {
                     fprintf(stderr, "Disabling all device decoders.\n");
                 }
                 break;
