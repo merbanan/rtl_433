@@ -47,7 +47,10 @@
 struct protocol_state {
     int (*callback)(bitbuffer_t *bitbuffer);
 
+    char *name;
     unsigned int modulation;
+    char **fields;
+    unsigned int disabled;
 
     /* pwm limits (provided by driver in µs and converted to samples) */
     float short_limit;
@@ -56,7 +59,6 @@ struct protocol_state {
     float gap_limit;
     float sync_width;
     float tolerance;
-    char *name;
     unsigned demod_arg;
 };
 
