@@ -912,8 +912,8 @@ int main(int argc, char **argv) {
 #endif
     char *out_filename = NULL;
     FILE *in_file;
-    int r = 0, opt;
-    int i;
+    int r = 0, opt, n;
+    unsigned i;
     struct dm_state *demod;
     r_device *flex_device;
 
@@ -1030,24 +1030,24 @@ int main(int argc, char **argv) {
                     cfg.demod->am_analyze->override_long = atoi(optarg);
                 break;
             case 'R':
-                i = atoi(optarg);
-                if (i > cfg.num_r_devices || -i > cfg.num_r_devices) {
+                n = atoi(optarg);
+                if (n > cfg.num_r_devices || -n > cfg.num_r_devices) {
                     fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
                     usage(cfg.devices, cfg.num_r_devices, 1);
                 }
 
-                if (i == 0 || (i > 0 && !cfg.no_default_devices)) {
+                if (n == 0 || (n > 0 && !cfg.no_default_devices)) {
                     for (i = 0; i < cfg.num_r_devices; i++) {
                         cfg.devices[i].disabled = 1;
                     }
                     cfg.no_default_devices = 1;
                 }
 
-                if (i >= 1) {
-                    cfg.devices[i - 1].disabled = 0;
+                if (n >= 1) {
+                    cfg.devices[n - 1].disabled = 0;
                 }
-                else if (i <= -1) {
-                    cfg.devices[-i - 1].disabled = 1;
+                else if (n <= -1) {
+                    cfg.devices[-n - 1].disabled = 1;
                 }
                 else {
                     fprintf(stderr, "Disabling all device decoders.\n");
