@@ -131,9 +131,9 @@ static void version(void)
     exit(0);
 }
 
-static void usage(r_device *devices, int exit_code)
+static void usage(r_device *devices, unsigned num_devices, int exit_code)
 {
-    int i;
+    unsigned i;
     char disabledc;
 
     fprintf(stderr,
@@ -182,7 +182,7 @@ static void usage(r_device *devices, int exit_code)
 
     if (devices) {
         fprintf(stderr, "Supported device protocols:\n");
-        for (i = 0; i < cfg.num_r_devices; i++) {
+        for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 1) // if not hidden
                 fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
@@ -945,7 +945,7 @@ int main(int argc, char **argv) {
             opt = '?'; // fall through to help
         switch (opt) {
             case 'h':
-                usage(NULL, 0);
+                usage(NULL, 0, 0);
                 break;
             case 'V':
                 version();
@@ -1012,7 +1012,7 @@ int main(int argc, char **argv) {
                 break;
             case 'm':
                 fprintf(stderr, "sample mode option is deprecated.\n");
-                usage(NULL, 1);
+                usage(NULL, 0, 1);
                 break;
             case 'M':
                 cfg.report_meta = atoi(optarg);
@@ -1039,7 +1039,7 @@ int main(int argc, char **argv) {
                 i = atoi(optarg);
                 if (i > cfg.num_r_devices) {
                     fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-                    usage(cfg.devices, 1);
+                    usage(cfg.devices, cfg.num_r_devices, 1);
                 }
 
                 if (i >= 1) {
@@ -1071,7 +1071,7 @@ int main(int argc, char **argv) {
                     add_null_output(arg_param(optarg));
                 } else {
                     fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(NULL, 1);
+                    usage(NULL, 0, 1);
                 }
                 break;
             case 'C':
@@ -1083,7 +1083,7 @@ int main(int argc, char **argv) {
                     cfg.conversion_mode = CONVERT_CUSTOMARY;
                 } else {
                     fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(NULL, 1);
+                    usage(NULL, 0, 1);
                 }
                 break;
             case 'U':
@@ -1110,7 +1110,7 @@ int main(int argc, char **argv) {
                 break;
             default:
                 // handle missing arguments as help request
-                if (optopt == 'R') usage(cfg.devices, 0);
+                if (optopt == 'R') usage(cfg.devices, cfg.num_r_devices, 0);
                 else if (optopt == 'X') flex_create_device(NULL);
                 else if (optopt == 'd') help_device();
                 else if (optopt == 'g') help_gain();
@@ -1118,7 +1118,7 @@ int main(int argc, char **argv) {
                 else if (optopt == 'r') help_read();
                 else if (optopt == 'w') help_write();
                 else if (optopt == 'W') help_write();
-                else usage(NULL, 1);
+                else usage(NULL, 0, 1);
                 break;
         }
     }
@@ -1131,7 +1131,7 @@ int main(int argc, char **argv) {
     }
 
     if (argc <= optind - 1) {
-        usage(NULL, 1);
+        usage(NULL, 0, 1);
     } else {
         out_filename = argv[optind]; // deprecated
     }
