@@ -906,6 +906,225 @@ static void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
     }
 }
 
+static void parse_option(struct app_cfg *cfg, int opt, char *arg)
+{
+    unsigned i;
+    int n;
+    r_device *flex_device;
+
+    if (arg && (!strcmp(arg, "help") || !strcmp(arg, "?"))) {
+        arg = NULL; // remove the arg if it's a request for the usage help
+    }
+
+    switch (opt) {
+    case 'h':
+        usage(NULL, 0, 0);
+        break;
+    case 'V':
+        version();
+        break;
+    case 'd':
+        if (!arg)
+            help_device();
+
+        cfg->dev_query = arg;
+        break;
+    case 'f':
+        if (cfg->frequencies < MAX_PROTOCOLS)
+            cfg->frequency[cfg->frequencies++] = atouint32_metric(arg, "-f: ");
+        else
+            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
+        break;
+    case 'H':
+        cfg->demod->hop_time = atoi_time(arg, "-H: ");
+        break;
+    case 'g':
+        if (!arg)
+            help_gain();
+
+        cfg->gain_str = arg;
+        break;
+    case 'G':
+        cfg->no_default_devices = 1;
+        for (i = 0; i < cfg->num_r_devices; ++i) {
+            if (cfg->devices[i].disabled == 1) {
+                cfg->devices[i].disabled = 0;
+            }
+        }
+        break;
+    case 'p':
+        cfg->ppm_error = atoi(arg);
+        break;
+    case 's':
+        cfg->samp_rate = atouint32_metric(arg, "-s: ");
+        break;
+    case 'b':
+        cfg->out_block_size = atouint32_metric(arg, "-b: ");
+        break;
+    case 'l':
+        cfg->demod->level_limit = atouint32_metric(arg, "-l: ");
+        break;
+    case 'n':
+        cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
+        break;
+    case 'a':
+        if (!cfg->demod->am_analyze)
+            cfg->demod->am_analyze = am_analyze_create();
+        break;
+    case 'A':
+        cfg->demod->analyze_pulses = 1;
+        break;
+    case 'I':
+        cfg->include_only = atoi(arg);
+        break;
+    case 'r':
+        if (!arg)
+            help_read();
+
+        cfg->in_filename = arg;
+        // TODO: check_read_file_info()
+        break;
+    case 'w':
+        if (!arg)
+            help_write();
+
+        add_dumper(arg, cfg->demod->dumper, 0);
+        break;
+    case 'W':
+        if (!arg)
+            help_write();
+
+        add_dumper(arg, cfg->demod->dumper, 1);
+        break;
+    case 't':
+        if (cfg->demod->am_analyze)
+            am_analyze_enable_grabber(cfg->demod->am_analyze, SIGNAL_GRABBER_BUFFER);
+        break;
+    case 'm':
+        fprintf(stderr, "sample mode option is deprecated.\n");
+        usage(NULL, 0, 1);
+        break;
+    case 'M':
+        cfg->report_meta = atoi(arg);
+        break;
+    case 'D':
+        debug_output++;
+        break;
+    case 'z':
+        if (cfg->demod->am_analyze)
+            cfg->demod->am_analyze->override_short = atoi(arg);
+        break;
+    case 'x':
+        if (cfg->demod->am_analyze)
+            cfg->demod->am_analyze->override_long = atoi(arg);
+        break;
+    case 'R':
+        if (!arg)
+            usage(cfg->devices, cfg->num_r_devices, 0);
+
+        n = atoi(arg);
+        if (n > cfg->num_r_devices || -n > cfg->num_r_devices) {
+            fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
+            usage(cfg->devices, cfg->num_r_devices, 1);
+        }
+
+        if (n == 0 || (n > 0 && !cfg->no_default_devices)) {
+            for (i = 0; i < cfg->num_r_devices; i++) {
+                cfg->devices[i].disabled = 1;
+            }
+            cfg->no_default_devices = 1;
+        }
+
+        if (n >= 1) {
+            cfg->devices[n - 1].disabled = 0;
+        }
+        else if (n <= -1) {
+            cfg->devices[-n - 1].disabled = 1;
+        }
+        else {
+            fprintf(stderr, "Disabling all device decoders.\n");
+        }
+        break;
+    case 'X':
+        if (!arg)
+            flex_create_device(NULL);
+
+        flex_device = flex_create_device(arg);
+        register_protocol(cfg->demod, flex_device);
+        if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
+            cfg->demod->enable_FM_demod = 1;
+        }
+        break;
+    case 'q':
+        cfg->quiet_mode = 1;
+        break;
+    case 'F':
+        if (!arg)
+            help_output();
+
+        if (strncmp(arg, "json", 4) == 0) {
+            add_json_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "csv", 3) == 0) {
+            add_csv_output(arg_param(arg), *cfg->demod->r_devs, cfg->demod->r_dev_num);
+        }
+        else if (strncmp(arg, "kv", 2) == 0) {
+            add_kv_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "syslog", 6) == 0) {
+            add_syslog_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "null", 4) == 0) {
+            add_null_output(arg_param(arg));
+        }
+        else {
+            fprintf(stderr, "Invalid output format %s\n", arg);
+            usage(NULL, 0, 1);
+        }
+        break;
+    case 'C':
+        if (strcmp(arg, "native") == 0) {
+            cfg->conversion_mode = CONVERT_NATIVE;
+        }
+        else if (strcmp(arg, "si") == 0) {
+            cfg->conversion_mode = CONVERT_SI;
+        }
+        else if (strcmp(arg, "customary") == 0) {
+            cfg->conversion_mode = CONVERT_CUSTOMARY;
+        }
+        else {
+            fprintf(stderr, "Invalid conversion mode %s\n", arg);
+            usage(NULL, 0, 1);
+        }
+        break;
+    case 'U':
+#ifdef _WIN32
+        putenv("TZ=UTC+0");
+        _tzset();
+#else
+        cfg->utc_mode = setenv("TZ", "UTC", 1);
+        if (cfg->utc_mode != 0)
+            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg->utc_mode);
+#endif
+        break;
+    case 'T':
+        cfg->duration = atoi_time(arg, "-T: ");
+        if (cfg->duration < 1) {
+            fprintf(stderr, "Duration '%s' not a positive number; will continue indefinitely\n", arg);
+        }
+        break;
+    case 'y':
+        cfg->test_data = arg;
+        break;
+    case 'E':
+        cfg->stop_after_successful_events_flag = 1;
+        break;
+    default:
+        usage(NULL, 0, 1);
+        break;
+    }
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -942,190 +1161,8 @@ int main(int argc, char **argv) {
     cfg.demod->hop_time = DEFAULT_HOP_TIME;
 
     while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
-        if (optarg && (!strcmp(optarg, "help") || !strcmp(optarg, "?")))
-            opt = '?'; // fall through to help
-        switch (opt) {
-            case 'h':
-                usage(NULL, 0, 0);
-                break;
-            case 'V':
-                version();
-                break;
-            case 'd':
-                cfg.dev_query = optarg;
-                break;
-            case 'f':
-                if (cfg.frequencies < MAX_PROTOCOLS) cfg.frequency[cfg.frequencies++] = atouint32_metric(optarg, "-f: ");
-                else fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
-                break;
-            case 'H':
-                cfg.demod->hop_time = atoi_time(optarg, "-H: ");
-                break;
-            case 'g':
-                cfg.gain_str = optarg;
-                break;
-            case 'G':
-                cfg.no_default_devices = 1;
-                for (i = 0; i < cfg.num_r_devices; ++i) {
-                    if (cfg.devices[i].disabled == 1) {
-                        cfg.devices[i].disabled = 0;
-                    }
-                }
-                break;
-            case 'p':
-                cfg.ppm_error = atoi(optarg);
-                break;
-            case 's':
-                cfg.samp_rate = atouint32_metric(optarg, "-s: ");
-                break;
-            case 'b':
-                cfg.out_block_size = atouint32_metric(optarg, "-b: ");
-                break;
-            case 'l':
-                cfg.demod->level_limit = atouint32_metric(optarg, "-l: ");
-                break;
-            case 'n':
-                cfg.bytes_to_read = atouint32_metric(optarg, "-n: ") * 2;
-                break;
-            case 'a':
-                if (!cfg.demod->am_analyze)
-                    cfg.demod->am_analyze = am_analyze_create();
-                break;
-            case 'A':
-                cfg.demod->analyze_pulses = 1;
-                break;
-            case 'I':
-                cfg.include_only = atoi(optarg);
-                break;
-            case 'r':
-                cfg.in_filename = optarg;
-                // TODO: check_read_file_info()
-                break;
-            case 'w':
-                add_dumper(optarg, cfg.demod->dumper, 0);
-                break;
-            case 'W':
-                add_dumper(optarg, cfg.demod->dumper, 1);
-                break;
-            case 't':
-                if (cfg.demod->am_analyze)
-                    am_analyze_enable_grabber(cfg.demod->am_analyze, SIGNAL_GRABBER_BUFFER);
-                break;
-            case 'm':
-                fprintf(stderr, "sample mode option is deprecated.\n");
-                usage(NULL, 0, 1);
-                break;
-            case 'M':
-                cfg.report_meta = atoi(optarg);
-                break;
-            case 'D':
-                debug_output++;
-                break;
-            case 'z':
-                if (cfg.demod->am_analyze)
-                    cfg.demod->am_analyze->override_short = atoi(optarg);
-                break;
-            case 'x':
-                if (cfg.demod->am_analyze)
-                    cfg.demod->am_analyze->override_long = atoi(optarg);
-                break;
-            case 'R':
-                n = atoi(optarg);
-                if (n > cfg.num_r_devices || -n > cfg.num_r_devices) {
-                    fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-                    usage(cfg.devices, cfg.num_r_devices, 1);
-                }
 
-                if (n == 0 || (n > 0 && !cfg.no_default_devices)) {
-                    for (i = 0; i < cfg.num_r_devices; i++) {
-                        cfg.devices[i].disabled = 1;
-                    }
-                    cfg.no_default_devices = 1;
-                }
-
-                if (n >= 1) {
-                    cfg.devices[n - 1].disabled = 0;
-                }
-                else if (n <= -1) {
-                    cfg.devices[-n - 1].disabled = 1;
-                }
-                else {
-                    fprintf(stderr, "Disabling all device decoders.\n");
-                }
-                break;
-            case 'X':
-                flex_device = flex_create_device(optarg);
-                register_protocol(cfg.demod, flex_device);
-                if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
-                    cfg.demod->enable_FM_demod = 1;
-                }
-                break;
-            case 'q':
-                cfg.quiet_mode = 1;
-                break;
-            case 'F':
-                if (strncmp(optarg, "json", 4) == 0) {
-                    add_json_output(arg_param(optarg));
-                } else if (strncmp(optarg, "csv", 3) == 0) {
-                    add_csv_output(arg_param(optarg), *cfg.demod->r_devs, cfg.demod->r_dev_num);
-                } else if (strncmp(optarg, "kv", 2) == 0) {
-                    add_kv_output(arg_param(optarg));
-                } else if (strncmp(optarg, "syslog", 6) == 0) {
-                    add_syslog_output(arg_param(optarg));
-                } else if (strncmp(optarg, "null", 4) == 0) {
-                    add_null_output(arg_param(optarg));
-                } else {
-                    fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(NULL, 0, 1);
-                }
-                break;
-            case 'C':
-                if (strcmp(optarg, "native") == 0) {
-                    cfg.conversion_mode = CONVERT_NATIVE;
-                } else if (strcmp(optarg, "si") == 0) {
-                    cfg.conversion_mode = CONVERT_SI;
-                } else if (strcmp(optarg, "customary") == 0) {
-                    cfg.conversion_mode = CONVERT_CUSTOMARY;
-                } else {
-                    fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(NULL, 0, 1);
-                }
-                break;
-            case 'U':
-#ifdef _WIN32
-                putenv("TZ=UTC+0");
-                _tzset();
-#else
-                cfg.utc_mode = setenv("TZ", "UTC", 1);
-                if (cfg.utc_mode != 0)
-                    fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg.utc_mode);
-#endif
-                break;
-            case 'T':
-                cfg.duration = atoi_time(optarg, "-T: ");
-                if (cfg.duration < 1) {
-                    fprintf(stderr, "Duration '%s' not a positive number; will continue indefinitely\n", optarg);
-                }
-                break;
-            case 'y':
-                cfg.test_data = optarg;
-                break;
-            case 'E':
-                cfg.stop_after_successful_events_flag = 1;
-                break;
-            default:
-                // handle missing arguments as help request
-                if (optopt == 'R') usage(cfg.devices, cfg.num_r_devices, 0);
-                else if (optopt == 'X') flex_create_device(NULL);
-                else if (optopt == 'd') help_device();
-                else if (optopt == 'g') help_gain();
-                else if (optopt == 'F') help_output();
-                else if (optopt == 'r') help_read();
-                else if (optopt == 'w') help_write();
-                else if (optopt == 'W') help_write();
-                else usage(NULL, 0, 1);
-                break;
-        }
+        parse_option(&cfg, optopt, optarg);
     }
 
     if (demod->am_analyze) {
