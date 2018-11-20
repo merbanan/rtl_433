@@ -111,5 +111,6 @@ r_device calibeur_RF104 = {
 	.tolerance      = 0,	// raw mode
 	.json_callback  = &calibeur_rf104_callback,
 	.disabled       = 0,
-	.demod_arg      = 0		// not used
+	.demod_arg      = 0,	// not used
+	.fields         = output_fields,
 };
