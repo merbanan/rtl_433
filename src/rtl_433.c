@@ -767,29 +767,31 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(struct protocol_state *devices, int num_devices, int *num_fields)
+static char const **determine_csv_fields(struct protocol_state **devices, int num_devices, int *num_fields)
 {
     int i;
+    struct protocol_state *device;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
 
     for (i = 0; i < num_devices; i++) {
-        if (!devices[i].disabled) {
-            if (devices[i].fields)
-                for (int c = 0; devices[i].fields[c]; ++c)
+        device = devices[i];
+        if (!device->disabled) {
+            if (device->fields)
+                for (int c = 0; device->fields[c]; ++c)
                     ++num_output_fields;
             else
                 fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-                        i, devices[i].name);
+                        i, device->name);
         }
     }
 
     output_fields = calloc(num_output_fields + 1, sizeof(char *));
     for (i = 0; i < num_devices; i++) {
-        if (!devices[i].disabled && devices[i].fields) {
-            for (int c = 0; devices[i].fields[c]; ++c) {
-                output_fields[cur_output_fields] = devices[i].fields[c];
+        if (!device->disabled && device->fields) {
+            for (int c = 0; device->fields[c]; ++c) {
+                output_fields[cur_output_fields] = device->fields[c];
                 ++cur_output_fields;
             }
         }
@@ -859,7 +861,7 @@ static void add_csv_output(char *param)
     cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
 }
 
-static void init_csv_output(struct data_output *output, struct protocol_state *devices, int num_devices)
+static void init_csv_output(struct data_output *output, struct protocol_state **devices, int num_devices)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
@@ -1203,7 +1205,7 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < cfg.last_output_handler; ++i) {
         if (cfg.csv_output_handler[i]) {
-            init_csv_output(cfg.csv_output_handler[i], *cfg.demod->r_devs, cfg.demod->r_dev_num);
+            init_csv_output(cfg.csv_output_handler[i], cfg.demod->r_devs, cfg.demod->r_dev_num);
         }
     }
 
