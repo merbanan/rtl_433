@@ -58,10 +58,10 @@ static int ht680_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
+	"time",
 	"model",
 	"tristate",
 	"address",
-	"data",
 	"button1",
 	"button2",
 	"button3",
@@ -77,5 +77,6 @@ r_device ht680 = {
 	.reset_limit   = 13000,
 	.json_callback = &ht680_callback,
 	.disabled      = 0,
-	.demod_arg     = 1
+	.demod_arg     = 1,
+    .fields        = output_fields,
 };

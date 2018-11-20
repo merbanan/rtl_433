@@ -55,9 +55,16 @@ typedef enum {
 } conversion_mode_t;
 
 struct app_cfg {
+    char *dev_query;
+    char *gain_str;
+    int ppm_error;
+    uint32_t out_block_size;
+    char const *test_data;
+    char const *in_filename;
     int do_exit;
     int do_exit_async;
     int frequencies;
+    int frequency_index;
     uint32_t frequency[MAX_PROTOCOLS];
     uint32_t center_frequency;
     time_t rawtime_old;
@@ -73,35 +80,19 @@ struct app_cfg {
     int utc_mode;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int no_default_devices;
+    r_device *devices;
     uint16_t num_r_devices;
     void *output_handler[MAX_DATA_OUTPUTS];
+    void *csv_output_handler[MAX_DATA_OUTPUTS];
     int last_output_handler;
     struct dm_state *demod;
 };
 
 static struct app_cfg cfg = {
-    .do_exit = 0,
-    .do_exit_async = 0,
-    .frequencies = 0,
-    .frequency = {0},
-    .center_frequency = 0,
-    .rawtime_old = 0,
-    .duration = 0,
-    .stop_time = 0,
-    .stop_after_successful_events_flag = 0,
+    .out_block_size = DEFAULT_BUF_LENGTH,
     .samp_rate = DEFAULT_SAMPLE_RATE,
-    .input_pos = 0,
-    .bytes_to_read = 0,
-    .dev = NULL,
-    .include_only = 0,
-    .quiet_mode = 0,
-    .utc_mode = 0,
     .conversion_mode = CONVERT_NATIVE,
-    .report_meta = 0,
-    .num_r_devices = 0,
-    .output_handler = {0},
-    .last_output_handler = 0,
-    .demod = NULL,
 };
 
 float sample_file_pos = -1;
@@ -141,9 +132,9 @@ static void version(void)
     exit(0);
 }
 
-static void usage(r_device *devices, int exit_code)
+static void usage(r_device *devices, unsigned num_devices, int exit_code)
 {
-    int i;
+    unsigned i;
     char disabledc;
 
     fprintf(stderr,
@@ -158,6 +149,7 @@ static void usage(r_device *devices, int exit_code)
             "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
             "\t= Demodulator options =\n"
             "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
+            "\t\t Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "\t[-G] Enable all device protocols, included those disabled by default\n"
             "\t[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
             "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
@@ -192,7 +184,7 @@ static void usage(r_device *devices, int exit_code)
 
     if (devices) {
         fprintf(stderr, "Supported device protocols:\n");
-        for (i = 0; i < cfg.num_r_devices; i++) {
+        for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 1) // if not hidden
                 fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
@@ -307,16 +299,19 @@ static void sighandler(int signum) {
 
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
-    p->short_limit = (float) t_dev->short_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->long_limit = (float) t_dev->long_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->reset_limit = (float) t_dev->reset_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->gap_limit = (float) t_dev->gap_limit / ( 1000000.0 / (float) cfg.samp_rate);
-    p->sync_width = (float) t_dev->sync_width / (1000000.0 / (float)cfg.samp_rate);
-    p->tolerance = (float) t_dev->tolerance / (1000000.0 / (float)cfg.samp_rate);
+
+    p->short_limit = (float)t_dev->short_limit / (1000000.0 / (float)cfg.samp_rate);
+    p->long_limit  = (float)t_dev->long_limit / (1000000.0 / (float)cfg.samp_rate);
+    p->reset_limit = (float)t_dev->reset_limit / (1000000.0 / (float)cfg.samp_rate);
+    p->gap_limit   = (float)t_dev->gap_limit / (1000000.0 / (float)cfg.samp_rate);
+    p->sync_width  = (float)t_dev->sync_width / (1000000.0 / (float)cfg.samp_rate);
+    p->tolerance   = (float)t_dev->tolerance / (1000000.0 / (float)cfg.samp_rate);
+
     p->modulation = t_dev->modulation;
-    p->callback = t_dev->json_callback;
-    p->name = t_dev->name;
-    p->demod_arg = t_dev->demod_arg;
+    p->callback   = t_dev->json_callback;
+    p->name       = t_dev->name;
+    p->fields     = t_dev->fields;
+    p->demod_arg  = t_dev->demod_arg;
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
@@ -772,43 +767,33 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(r_device *devices, int num_devices, r_device *extra_device, int *num_fields)
+static char const **determine_csv_fields(struct protocol_state **devices, int num_devices, int *num_fields)
 {
     int i;
+    struct protocol_state *device;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
+
     for (i = 0; i < num_devices; i++) {
-        if (!devices[i].disabled) {
-            if (devices[i].fields)
-                for (int c = 0; devices[i].fields[c]; ++c)
+        device = devices[i];
+        if (!device->disabled) {
+            if (device->fields)
+                for (int c = 0; device->fields[c]; ++c)
                     ++num_output_fields;
             else
                 fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-                        i, devices[i].name);
+                        i, device->name);
         }
     }
-    if (extra_device && !extra_device->disabled) {
-        if (extra_device->fields)
-            for (int c = 0; extra_device->fields[c]; ++c)
-                ++num_output_fields;
-        else
-            fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-                    i, extra_device->name);
-    }
+
     output_fields = calloc(num_output_fields + 1, sizeof(char *));
     for (i = 0; i < num_devices; i++) {
-        if (!devices[i].disabled && devices[i].fields) {
-            for (int c = 0; devices[i].fields[c]; ++c) {
-                output_fields[cur_output_fields] = devices[i].fields[c];
+        if (!device->disabled && device->fields) {
+            for (int c = 0; device->fields[c]; ++c) {
+                output_fields[cur_output_fields] = device->fields[c];
                 ++cur_output_fields;
             }
-        }
-    }
-    if (extra_device && !extra_device->disabled && extra_device->fields) {
-        for (int c = 0; extra_device->fields[c]; ++c) {
-            output_fields[cur_output_fields] = extra_device->fields[c];
-            ++cur_output_fields;
         }
     }
 
@@ -870,11 +855,17 @@ static void add_json_output(char *param)
     cfg.output_handler[cfg.last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-static void add_csv_output(char *param, r_device *devices, int num_devices, r_device *extra_device)
+static void add_csv_output(char *param)
+{
+    int i = cfg.last_output_handler++;
+    cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
+}
+
+static void init_csv_output(struct data_output *output, struct protocol_state **devices, int num_devices)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(devices, num_devices, extra_device, &num_output_fields);
-    cfg.output_handler[cfg.last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
+    const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
+    data_output_csv_init(output, output_fields, num_output_fields);
     free(output_fields);
 }
 
@@ -924,25 +915,235 @@ static void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
     }
 }
 
+static void parse_option(struct app_cfg *cfg, int opt, char *arg)
+{
+    unsigned i;
+    int n;
+    r_device *flex_device;
+
+    if (arg && (!strcmp(arg, "help") || !strcmp(arg, "?"))) {
+        arg = NULL; // remove the arg if it's a request for the usage help
+    }
+
+    switch (opt) {
+    case 'h':
+        usage(NULL, 0, 0);
+        break;
+    case 'V':
+        version();
+        break;
+    case 'd':
+        if (!arg)
+            help_device();
+
+        cfg->dev_query = arg;
+        break;
+    case 'f':
+        if (cfg->frequencies < MAX_PROTOCOLS)
+            cfg->frequency[cfg->frequencies++] = atouint32_metric(arg, "-f: ");
+        else
+            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
+        break;
+    case 'H':
+        cfg->demod->hop_time = atoi_time(arg, "-H: ");
+        break;
+    case 'g':
+        if (!arg)
+            help_gain();
+
+        cfg->gain_str = arg;
+        break;
+    case 'G':
+        cfg->no_default_devices = 1;
+        for (i = 0; i < cfg->num_r_devices; ++i) {
+            if (cfg->devices[i].disabled == 1) {
+                cfg->devices[i].disabled = 0;
+            }
+        }
+        break;
+    case 'p':
+        cfg->ppm_error = atoi(arg);
+        break;
+    case 's':
+        cfg->samp_rate = atouint32_metric(arg, "-s: ");
+        break;
+    case 'b':
+        cfg->out_block_size = atouint32_metric(arg, "-b: ");
+        break;
+    case 'l':
+        cfg->demod->level_limit = atouint32_metric(arg, "-l: ");
+        break;
+    case 'n':
+        cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
+        break;
+    case 'a':
+        if (!cfg->demod->am_analyze)
+            cfg->demod->am_analyze = am_analyze_create();
+        break;
+    case 'A':
+        cfg->demod->analyze_pulses = 1;
+        break;
+    case 'I':
+        cfg->include_only = atoi(arg);
+        break;
+    case 'r':
+        if (!arg)
+            help_read();
+
+        cfg->in_filename = arg;
+        // TODO: check_read_file_info()
+        break;
+    case 'w':
+        if (!arg)
+            help_write();
+
+        add_dumper(arg, cfg->demod->dumper, 0);
+        break;
+    case 'W':
+        if (!arg)
+            help_write();
+
+        add_dumper(arg, cfg->demod->dumper, 1);
+        break;
+    case 't':
+        if (cfg->demod->am_analyze)
+            am_analyze_enable_grabber(cfg->demod->am_analyze, SIGNAL_GRABBER_BUFFER);
+        break;
+    case 'm':
+        fprintf(stderr, "sample mode option is deprecated.\n");
+        usage(NULL, 0, 1);
+        break;
+    case 'M':
+        cfg->report_meta = atoi(arg);
+        break;
+    case 'D':
+        debug_output++;
+        break;
+    case 'z':
+        if (cfg->demod->am_analyze)
+            cfg->demod->am_analyze->override_short = atoi(arg);
+        break;
+    case 'x':
+        if (cfg->demod->am_analyze)
+            cfg->demod->am_analyze->override_long = atoi(arg);
+        break;
+    case 'R':
+        if (!arg)
+            usage(cfg->devices, cfg->num_r_devices, 0);
+
+        n = atoi(arg);
+        if (n > cfg->num_r_devices || -n > cfg->num_r_devices) {
+            fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
+            usage(cfg->devices, cfg->num_r_devices, 1);
+        }
+
+        if (n == 0 || (n > 0 && !cfg->no_default_devices)) {
+            for (i = 0; i < cfg->num_r_devices; i++) {
+                cfg->devices[i].disabled = 1;
+            }
+            cfg->no_default_devices = 1;
+        }
+
+        if (n >= 1) {
+            cfg->devices[n - 1].disabled = 0;
+        }
+        else if (n <= -1) {
+            cfg->devices[-n - 1].disabled = 1;
+        }
+        else {
+            fprintf(stderr, "Disabling all device decoders.\n");
+        }
+        break;
+    case 'X':
+        if (!arg)
+            flex_create_device(NULL);
+
+        flex_device = flex_create_device(arg);
+        register_protocol(cfg->demod, flex_device);
+        if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
+            cfg->demod->enable_FM_demod = 1;
+        }
+        break;
+    case 'q':
+        cfg->quiet_mode = 1;
+        break;
+    case 'F':
+        if (!arg)
+            help_output();
+
+        if (strncmp(arg, "json", 4) == 0) {
+            add_json_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "csv", 3) == 0) {
+            add_csv_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "kv", 2) == 0) {
+            add_kv_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "syslog", 6) == 0) {
+            add_syslog_output(arg_param(arg));
+        }
+        else if (strncmp(arg, "null", 4) == 0) {
+            add_null_output(arg_param(arg));
+        }
+        else {
+            fprintf(stderr, "Invalid output format %s\n", arg);
+            usage(NULL, 0, 1);
+        }
+        break;
+    case 'C':
+        if (strcmp(arg, "native") == 0) {
+            cfg->conversion_mode = CONVERT_NATIVE;
+        }
+        else if (strcmp(arg, "si") == 0) {
+            cfg->conversion_mode = CONVERT_SI;
+        }
+        else if (strcmp(arg, "customary") == 0) {
+            cfg->conversion_mode = CONVERT_CUSTOMARY;
+        }
+        else {
+            fprintf(stderr, "Invalid conversion mode %s\n", arg);
+            usage(NULL, 0, 1);
+        }
+        break;
+    case 'U':
+#ifdef _WIN32
+        putenv("TZ=UTC+0");
+        _tzset();
+#else
+        cfg->utc_mode = setenv("TZ", "UTC", 1);
+        if (cfg->utc_mode != 0)
+            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg->utc_mode);
+#endif
+        break;
+    case 'T':
+        cfg->duration = atoi_time(arg, "-T: ");
+        if (cfg->duration < 1) {
+            fprintf(stderr, "Duration '%s' not a positive number; will continue indefinitely\n", arg);
+        }
+        break;
+    case 'y':
+        cfg->test_data = arg;
+        break;
+    case 'E':
+        cfg->stop_after_successful_events_flag = 1;
+        break;
+    default:
+        usage(NULL, 0, 1);
+        break;
+    }
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
 #endif
-    char *dev_query = NULL;
-    char *test_data = NULL;
     char *out_filename = NULL;
-    char *in_filename = NULL;
     FILE *in_file;
-    int r = 0, opt;
-    char *gain_str = NULL;
-    int i;
-    int ppm_error = 0;
+    int r = 0, opt, n;
+    unsigned i;
     struct dm_state *demod;
-    int frequency_current = 0;
-    uint32_t out_block_size = DEFAULT_BUF_LENGTH;
-    int have_opt_R = 0;
-    int register_all = 0;
-    r_device *flex_device = NULL;
+    r_device *flex_device;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -953,193 +1154,26 @@ int main(int argc, char **argv) {
     /* initialize tables */
     baseband_init();
 
-    r_device devices[] = {
+    r_device r_devices[] = {
 #define DECL(name) name,
             DEVICES
 #undef DECL
             };
 
-    cfg.num_r_devices = sizeof(devices) / sizeof(*devices);
+    cfg.num_r_devices = sizeof(r_devices) / sizeof(*r_devices);
+    for (i = 0; i < cfg.num_r_devices; i++) {
+        r_devices[i].protocol_num = i + 1;
+    }
+    cfg.devices = r_devices;
 
-    demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    demod->hop_time = DEFAULT_HOP_TIME;
+    cfg.demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    cfg.demod->hop_time = DEFAULT_HOP_TIME;
 
     while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
-        if (optarg && (!strcmp(optarg, "help") || !strcmp(optarg, "?")))
-            opt = '?'; // fall through to help
-        switch (opt) {
-            case 'h':
-                usage(NULL, 0);
-                break;
-            case 'V':
-                version();
-                break;
-            case 'd':
-                dev_query = optarg;
-                break;
-            case 'f':
-                if (cfg.frequencies < MAX_PROTOCOLS) cfg.frequency[cfg.frequencies++] = atouint32_metric(optarg, "-f: ");
-                else fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
-                break;
-            case 'H':
-                demod->hop_time = atoi_time(optarg, "-H: ");
-                break;
-            case 'g':
-                gain_str = optarg;
-                break;
-            case 'G':
-                register_all = 1;
-                break;
-            case 'p':
-                ppm_error = atoi(optarg);
-                break;
-            case 's':
-                cfg.samp_rate = atouint32_metric(optarg, "-s: ");
-                break;
-            case 'b':
-                out_block_size = atouint32_metric(optarg, "-b: ");
-                break;
-            case 'l':
-                demod->level_limit = atouint32_metric(optarg, "-l: ");
-                break;
-            case 'n':
-                cfg.bytes_to_read = atouint32_metric(optarg, "-n: ") * 2;
-                break;
-            case 'a':
-                if (!demod->am_analyze)
-                    demod->am_analyze = am_analyze_create();
-                break;
-            case 'A':
-                demod->analyze_pulses = 1;
-                break;
-            case 'I':
-                cfg.include_only = atoi(optarg);
-                break;
-            case 'r':
-                in_filename = optarg;
-                // TODO: check_read_file_info()
-                break;
-            case 'w':
-                add_dumper(optarg, demod->dumper, 0);
-                break;
-            case 'W':
-                add_dumper(optarg, demod->dumper, 1);
-                break;
-            case 't':
-                if (demod->am_analyze)
-                    am_analyze_enable_grabber(demod->am_analyze, SIGNAL_GRABBER_BUFFER);
-                break;
-            case 'm':
-                fprintf(stderr, "sample mode option is deprecated.\n");
-                usage(NULL, 1);
-                break;
-            case 'M':
-                cfg.report_meta = atoi(optarg);
-                break;
-            case 'D':
-                debug_output++;
-                break;
-            case 'z':
-                if (demod->am_analyze)
-                    demod->am_analyze->override_short = atoi(optarg);
-                break;
-            case 'x':
-                if (demod->am_analyze)
-                    demod->am_analyze->override_long = atoi(optarg);
-                break;
-            case 'R':
-                if (!have_opt_R) {
-                    for (i = 0; i < cfg.num_r_devices; i++) {
-                        devices[i].disabled = 1;
-                    }
-                    have_opt_R = 1;
-                }
 
-                i = atoi(optarg);
-                if (i > cfg.num_r_devices) {
-                    fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-                    usage(devices, 1);
-                }
-
-                if (i >= 1) {
-                    devices[i - 1].disabled = 0;
-                } else {
-                    fprintf(stderr, "Disabling all device decoders.\n");
-                }
-                break;
-            case 'X':
-                flex_device = flex_create_device(optarg);
-                register_protocol(demod, flex_device);
-                if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
-                    demod->enable_FM_demod = 1;
-                }
-                break;
-            case 'q':
-                cfg.quiet_mode = 1;
-                break;
-            case 'F':
-                if (strncmp(optarg, "json", 4) == 0) {
-                    add_json_output(arg_param(optarg));
-                } else if (strncmp(optarg, "csv", 3) == 0) {
-                    add_csv_output(arg_param(optarg), devices, cfg.num_r_devices, flex_device);
-                } else if (strncmp(optarg, "kv", 2) == 0) {
-                    add_kv_output(arg_param(optarg));
-                } else if (strncmp(optarg, "syslog", 6) == 0) {
-                    add_syslog_output(arg_param(optarg));
-                } else if (strncmp(optarg, "null", 4) == 0) {
-                    add_null_output(arg_param(optarg));
-                } else {
-                    fprintf(stderr, "Invalid output format %s\n", optarg);
-                    usage(NULL, 1);
-                }
-                break;
-            case 'C':
-                if (strcmp(optarg, "native") == 0) {
-                    cfg.conversion_mode = CONVERT_NATIVE;
-                } else if (strcmp(optarg, "si") == 0) {
-                    cfg.conversion_mode = CONVERT_SI;
-                } else if (strcmp(optarg, "customary") == 0) {
-                    cfg.conversion_mode = CONVERT_CUSTOMARY;
-                } else {
-                    fprintf(stderr, "Invalid conversion mode %s\n", optarg);
-                    usage(NULL, 1);
-                }
-                break;
-            case 'U':
-#ifdef _WIN32
-                putenv("TZ=UTC+0");
-                _tzset();
-#else
-                cfg.utc_mode = setenv("TZ", "UTC", 1);
-                if (cfg.utc_mode != 0)
-                    fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg.utc_mode);
-#endif
-                break;
-            case 'T':
-                cfg.duration = atoi_time(optarg, "-T: ");
-                if (cfg.duration < 1) {
-                    fprintf(stderr, "Duration '%s' not a positive number; will continue indefinitely\n", optarg);
-                }
-                break;
-            case 'y':
-                test_data = optarg;
-                break;
-            case 'E':
-                cfg.stop_after_successful_events_flag = 1;
-                break;
-            default:
-                // handle missing arguments as help request
-                if (optopt == 'R') usage(devices, 0);
-                else if (optopt == 'X') flex_create_device(NULL);
-                else if (optopt == 'd') help_device();
-                else if (optopt == 'g') help_gain();
-                else if (optopt == 'F') help_output();
-                else if (optopt == 'r') help_read();
-                else if (optopt == 'w') help_write();
-                else if (optopt == 'W') help_write();
-                else usage(NULL, 1);
-                break;
-        }
+        if (opt == '?')
+            opt = optopt; // allow missing arguments
+        parse_option(&cfg, opt, optarg);
     }
 
     if (demod->am_analyze) {
@@ -1150,7 +1184,7 @@ int main(int argc, char **argv) {
     }
 
     if (argc <= optind - 1) {
-        usage(NULL, 1);
+        usage(NULL, 0, 1);
     } else {
         out_filename = argv[optind]; // deprecated
     }
@@ -1160,13 +1194,18 @@ int main(int argc, char **argv) {
     }
 
     for (i = 0; i < cfg.num_r_devices; i++) {
-        devices[i].protocol_num = i + 1;
-        // if not disabled or register all and not hidden
-        if (!devices[i].disabled || (register_all && devices[i].disabled == 1)) {
-            register_protocol(demod, &devices[i]);
-            if (devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
+        // register all device protocols that are not disabled
+        if (!cfg.devices[i].disabled) {
+            register_protocol(cfg.demod, &cfg.devices[i]);
+            if (cfg.devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
+        }
+    }
+
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        if (cfg.csv_output_handler[i]) {
+            init_csv_output(cfg.csv_output_handler[i], cfg.demod->r_devs, cfg.demod->r_dev_num);
         }
     }
 
@@ -1174,29 +1213,29 @@ int main(int argc, char **argv) {
         fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
                 demod->r_dev_num, cfg.num_r_devices);
 
-    if (out_block_size < MINIMAL_BUF_LENGTH ||
-            out_block_size > MAXIMAL_BUF_LENGTH) {
+    if (cfg.out_block_size < MINIMAL_BUF_LENGTH ||
+            cfg.out_block_size > MAXIMAL_BUF_LENGTH) {
         fprintf(stderr,
                 "Output block size wrong value, falling back to default\n");
         fprintf(stderr,
                 "Minimal length: %u\n", MINIMAL_BUF_LENGTH);
         fprintf(stderr,
                 "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
-        out_block_size = DEFAULT_BUF_LENGTH;
+        cfg.out_block_size = DEFAULT_BUF_LENGTH;
     }
 
-    if (test_data) {
+    if (cfg.test_data) {
         r = 0;
         for (i = 0; i < demod->r_dev_num; i++) {
             if (!cfg.quiet_mode)
                 fprintf(stderr, "Verifying test data with device %s.\n", demod->r_devs[i]->name);
-            r += pulse_demod_string(test_data, demod->r_devs[i]);
+            r += pulse_demod_string(cfg.test_data, demod->r_devs[i]);
         }
         exit(!r);
     }
 
-    if (!in_filename) {
-        r = sdr_open(&cfg.dev, &demod->sample_size, dev_query, !cfg.quiet_mode);
+    if (!cfg.in_filename) {
+        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, !cfg.quiet_mode);
         if (r < 0) {
             exit(1);
         }
@@ -1218,18 +1257,18 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
         /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-        r = sdr_set_tuner_gain(cfg.dev, gain_str, !cfg.quiet_mode);
+        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, !cfg.quiet_mode);
 
-        if (ppm_error)
-            r = sdr_set_freq_correction(cfg.dev, ppm_error, !cfg.quiet_mode);
+        if (cfg.ppm_error)
+            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, !cfg.quiet_mode);
     }
 
     if (out_filename) {
         add_dumper(out_filename, demod->dumper, 0); // deprecated
     }
 
-    if (in_filename) {
-        parse_file_info(in_filename, &demod->load_info);
+    if (cfg.in_filename) {
+        parse_file_info(cfg.in_filename, &demod->load_info);
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
         if (!test_mode_buf || !test_mode_float_buf)
@@ -1239,15 +1278,15 @@ int main(int argc, char **argv) {
         }
         if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
             in_file = stdin;
-            in_filename = "<stdin>";
+            cfg.in_filename = "<stdin>";
         } else {
             in_file = fopen(demod->load_info.path, "rb");
             if (!in_file) {
-                fprintf(stderr, "Opening file: %s failed!\n", in_filename);
+                fprintf(stderr, "Opening file: %s failed!\n", cfg.in_filename);
                 goto out;
             }
         }
-        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", in_filename);  // Essential information (not quiet)
+        fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg.in_filename);  // Essential information (not quiet)
         if (demod->load_info.format == CU8_IQ
                 || demod->load_info.format == S16_AM
                 || demod->load_info.format == S16_FM) {
@@ -1319,7 +1358,7 @@ int main(int argc, char **argv) {
     }
     while (!cfg.do_exit) {
         /* Set the cfg.frequency */
-        cfg.center_frequency = cfg.frequency[frequency_current];
+        cfg.center_frequency = cfg.frequency[cfg.frequency_index];
         r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, !cfg.quiet_mode);
 
 #ifndef _WIN32
@@ -1327,7 +1366,7 @@ int main(int argc, char **argv) {
         alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
         r = sdr_start(cfg.dev, sdr_callback, (void *) demod,
-                DEFAULT_ASYNC_BUF_NUMBER, out_block_size);
+                DEFAULT_ASYNC_BUF_NUMBER, cfg.out_block_size);
         if (r < 0) {
             fprintf(stderr, "WARNING: async read failed (%i).\n", r);
             break;
@@ -1336,7 +1375,7 @@ int main(int argc, char **argv) {
         alarm(0); // cancel the watchdog timer
 #endif
         cfg.do_exit_async = 0;
-        frequency_current = (frequency_current + 1) % cfg.frequencies;
+        cfg.frequency_index = (cfg.frequency_index + 1) % cfg.frequencies;
     }
 
     if (!cfg.do_exit)

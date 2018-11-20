@@ -122,4 +122,5 @@ r_device esperanza_ews = {
     .json_callback = &esperanza_ews_callback,
     .disabled      = 0,
     .demod_arg     = 0,
+    .fields        = output_fields,
 };

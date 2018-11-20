@@ -77,4 +77,5 @@ r_device kerui = {
     .json_callback = &kerui_callback,
     .disabled      = 0,
     .demod_arg     = 0,
+    .fields         = output_fields,
 };

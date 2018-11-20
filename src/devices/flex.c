@@ -262,7 +262,7 @@ static void help()
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
-            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,repeats>=3\"\n\n");
+            "E.g. -X \"doorbell:OOK_PWM:400:800:7000:1000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
 }
 

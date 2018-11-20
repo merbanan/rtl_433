@@ -103,7 +103,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
-        if (debug_output) {
+        if (debug_output > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
                     fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
@@ -117,15 +117,18 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         return 0;
     }
 
-    bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b,
-                            MSG_PACKET_BITS + MSG_PAD_BITS);
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b, MSG_PACKET_BITS + MSG_PAD_BITS);
 
     /* Aligned data: LLKKKKKK IIIIIIII S???BCCC ?XXXTTTT TTTTTTTT MMMMMMMM JJJJ */
     checksum = b[0] & 0x3f;
     checksum_calculated = checksum_calculate(b);
     postmark = b[5];
 
-    if (debug_output) {
+    if (debug_output > 1) {
+        fprintf(stderr, "TTX201 received raw data: ");
+        bitbuffer_print(bitbuffer);
+        fprintf(stderr, "Data decoded:\n" \
+                " r  cs    K   ID    S   B  C  X    T    M     J\n");
         fprintf(stderr, "%2d  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
                 row,
                 checksum_calculated,
@@ -143,27 +146,23 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
         fprintf(stderr, "\n");
     }
 
-    if (postmark == MSG_PACKET_POSTMARK && \
-        checksum == checksum_calculated) {
-
-        device_id = b[1];
-        battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
-        channel = (b[2] & 0x07) + 1;
-        temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
-
-    } else {
-        if (debug_output) {
-            if (postmark != MSG_PACKET_POSTMARK) {
-                fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
-                        row, postmark, MSG_PACKET_POSTMARK);
-            }
-            if (checksum != checksum_calculated) {
-                fprintf(stderr, "Packet #%d checksum error.\n", row);
-            }
-        }
+    if (postmark != MSG_PACKET_POSTMARK) {
+        if (debug_output > 1)
+            fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
+                    row, postmark, MSG_PACKET_POSTMARK);
         return 0;
     }
 
+    if (checksum != checksum_calculated) {
+        if (debug_output > 1)
+            fprintf(stderr, "Packet #%d checksum error.\n", row);
+        return 0;
+    }
+
+    device_id = b[1];
+    battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
+    channel = (b[2] & 0x07) + 1;
+    temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
     temperature_c = temperature / 10.0f;
 
     local_time_str(0, time_str);
@@ -188,14 +187,6 @@ ttx201_callback(bitbuffer_t *bitbuffer)
     int events = 0;
 
     if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
-
-        if (debug_output) {
-            fprintf(stderr, "TTX201 received raw data: ");
-            bitbuffer_print(bitbuffer);
-            fprintf(stderr, "Data decoded:\n" \
-                    " r  cs    K   ID    S   B  C  X    T    M     J\n");
-        }
-
         for (row = 0; row < bitbuffer->num_rows; ++row) {
             events += ttx201_decode(bitbuffer, row, 0);
             if (events && !debug_output) return events; // for now, break after first successful message

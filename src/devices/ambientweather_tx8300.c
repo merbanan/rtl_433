@@ -51,8 +51,8 @@ static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
 
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
-        if( debug_output)
-            fprintf(stderr, "tfa_303211 wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
+        if( debug_output > 1)
+            fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
         return 0;
     }
 
@@ -89,7 +89,7 @@ static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
 
     data = data_make(
             "time",          "",            DATA_STRING, time_str,
-            "model",         "",            DATA_STRING, "Ambientweather TX-8300",
+            "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
             "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
             "battery",       "Battery",     DATA_INT, battery_low, // mapping unknown

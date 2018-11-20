@@ -239,7 +239,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
 	 */
     highest_indent = sizeof("[dd] {dd} ") - 1;
     for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-        for (col = indent_this_col = 0; col < (bits->bits_per_row[row] + 7) / 8; ++col) {
+        for (col = indent_this_col = 0; col < (unsigned)(bits->bits_per_row[row] + 7) / 8; ++col) {
             indent_this_col += 2 + 1;
         }
         indent_this_row = indent_this_col;
