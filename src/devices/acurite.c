@@ -1151,6 +1151,13 @@ static int acurite_00275rm_callback(bitbuffer_t *bitbuf) {
     return 0;
 }
 
+static char *acurite_rain_gauge_output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "rain",
+    NULL
+};
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
@@ -1162,8 +1169,19 @@ r_device acurite_rain_gauge = {
 // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
     .disabled       = 1,
     .demod_arg      = 0,
+    .fields         = acurite_rain_gauge_output_fields,
 };
 
+static char *acurite_th_output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "battery",
+    "status",
+    "temperature_C",
+    "humidity",
+    NULL
+};
 
 r_device acurite_th = {
     .name           = "Acurite 609TXC Temperature and Humidity Sensor",
@@ -1174,12 +1192,34 @@ r_device acurite_th = {
     .json_callback  = &acurite_th_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = acurite_th_output_fields,
 };
 
 /*
  * For Acurite 592 TXR Temp/Humidity, but
  * Should match Acurite 592TX, 5-n-1, etc.
  */
+static char *acurite_txr_output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "sensor_id",
+    "channel",
+    "temperature_C",
+    "humidity",
+    "battery_low",
+    "sequence_num",
+    "battery",
+    "message_type",
+    "wind_speed_mph",
+    "wind_dir_deg",
+    "wind_dir",
+    "rainfall_accumulation_inch",
+    "raincounter_raw",
+    "temperature_F",
+    NULL
+};
+
 r_device acurite_txr = {
     .name           = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning",
     .modulation     = OOK_PULSE_PWM_PRECISE,
@@ -1191,6 +1231,7 @@ r_device acurite_txr = {
     .json_callback  = &acurite_txr_callback,
     .disabled       = 0,
     .demod_arg      = 0,    // not used
+    .fields         = acurite_txr_output_fields,
 };
 
 /*
@@ -1203,6 +1244,17 @@ r_device acurite_txr = {
  * A transmission consists of two packets that run into each other.
  * There should be 40 bits of data though. But the last bit can't be detected.
  */
+static char *acurite_986_output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "channel",
+    "temperature_F",
+    "battery",
+    "status",
+    NULL
+};
+
 r_device acurite_986 = {
     .name           = "Acurite 986 Refrigerator / Freezer Thermometer",
     .modulation     = OOK_PULSE_PPM_RAW,
@@ -1212,6 +1264,7 @@ r_device acurite_986 = {
     .json_callback  = &acurite_986_callback,
     .disabled       = 0,
     .demod_arg      = 0,     // not used
+    .fields         = acurite_986_output_fields,
 };
 
 /*
@@ -1220,6 +1273,16 @@ r_device acurite_986 = {
  * Temperature only
  *
  */
+
+static char *acurite_606_output_fields[] = {
+    "time",
+    "model",
+    "id",
+    "battery",
+    "temperature_C",
+    NULL
+};
+
 r_device acurite_606 = {
     .name           = "Acurite 606TX Temperature Sensor",
     .modulation     = OOK_PULSE_PPM_RAW,
@@ -1229,6 +1292,22 @@ r_device acurite_606 = {
     .json_callback  = &acurite_606_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = acurite_606_output_fields,
+};
+
+static char *acurite_00275rm_output_fields[] = {
+    "time",
+    "model",
+    "probe",
+    "id",
+    "battery",
+    "temperature_C",
+    "humidity",
+    "water",
+    "ptemperature_C",
+    "phumidity",
+    "mic",
+    NULL
 };
 
 r_device acurite_00275rm = {
@@ -1242,4 +1321,5 @@ r_device acurite_00275rm = {
     .json_callback  = &acurite_00275rm_callback,
     .disabled       = 0,
     .demod_arg      = 0,    // not used
+    .fields         = acurite_00275rm_output_fields,
 };
