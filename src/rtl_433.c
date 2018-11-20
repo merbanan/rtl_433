@@ -1162,7 +1162,7 @@ int main(int argc, char **argv) {
 
     while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
 
-        parse_option(&cfg, optopt, optarg);
+        parse_option(&cfg, opt, optarg);
     }
 
     if (demod->am_analyze) {
