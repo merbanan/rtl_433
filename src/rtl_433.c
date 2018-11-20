@@ -84,6 +84,7 @@ struct app_cfg {
     r_device *devices;
     uint16_t num_r_devices;
     void *output_handler[MAX_DATA_OUTPUTS];
+    void *csv_output_handler[MAX_DATA_OUTPUTS];
     int last_output_handler;
     struct dm_state *demod;
 };
@@ -852,11 +853,17 @@ static void add_json_output(char *param)
     cfg.output_handler[cfg.last_output_handler++] = data_output_json_create(fopen_output(param));
 }
 
-static void add_csv_output(char *param, struct protocol_state *devices, int num_devices)
+static void add_csv_output(char *param)
+{
+    int i = cfg.last_output_handler++;
+    cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
+}
+
+static void init_csv_output(struct data_output *output, struct protocol_state *devices, int num_devices)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
-    cfg.output_handler[cfg.last_output_handler++] = data_output_csv_create(fopen_output(param), output_fields, num_output_fields);
+    data_output_csv_init(output, output_fields, num_output_fields);
     free(output_fields);
 }
 
@@ -1066,7 +1073,7 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
             add_json_output(arg_param(arg));
         }
         else if (strncmp(arg, "csv", 3) == 0) {
-            add_csv_output(arg_param(arg), *cfg->demod->r_devs, cfg->demod->r_dev_num);
+            add_csv_output(arg_param(arg));
         }
         else if (strncmp(arg, "kv", 2) == 0) {
             add_kv_output(arg_param(arg));
@@ -1191,6 +1198,12 @@ int main(int argc, char **argv) {
             if (cfg.devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
               demod->enable_FM_demod = 1;
             }
+        }
+    }
+
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        if (cfg.csv_output_handler[i]) {
+            init_csv_output(cfg.csv_output_handler[i], *cfg.demod->r_devs, cfg.demod->r_dev_num);
         }
     }
 

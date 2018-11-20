@@ -155,7 +155,8 @@ struct data_output;
             You must release this object with data_csv_free once you're done with it.
 */
 
-struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields);
+struct data_output *data_output_csv_create(FILE *file);
+void data_output_csv_init(struct data_output *output, const char **fields, int num_fields);
 
 struct data_output *data_output_json_create(FILE *file);
 
