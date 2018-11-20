@@ -114,8 +114,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
     // search for preamble and exit if not found
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, (sizeof preamble) * 8);
     if (bit_offset == bitbuffer->bits_per_row[row] || bitbuffer->num_rows != 1) {
-        if (debug_output)
-            fprintf(stderr, "Preamble not found, exiting! bit_offset: %d \n", bit_offset);
+        if (debug_output > 1)
+            fprintf(stderr, "Interlogix: Preamble not found, bit_offset: %d\n", bit_offset);
         return 0;
     }
 
@@ -123,14 +123,14 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
     bit_offset += (sizeof preamble) * 8;
 
     if (bitbuffer->bits_per_row[row] - bit_offset < INTERLOGIX_MSG_BIT_LEN - 1) {
-        if (debug_output)
-            fprintf(stderr, "Found valid preamble but message size (%d) too small, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
+        if (debug_output > 1)
+            fprintf(stderr, "Interlogix: Found valid preamble but message size (%d) too small\n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
 
     if (bitbuffer->bits_per_row[row] - bit_offset > INTERLOGIX_MSG_BIT_LEN + 7) {
-        if (debug_output)
-            fprintf(stderr, "Found valid preamble but message size (%d) too long, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
+        if (debug_output > 1)
+            fprintf(stderr, "Interlogix: Found valid preamble but message size (%d) too long\n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
 
@@ -158,7 +158,7 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
 
     if (parity_error) {
         if (debug_output)
-            fprintf(stderr, "Parity check failed (%d %d)\n", parity >> 1, parity & 1);
+            fprintf(stderr, "Interlogix: Parity check failed (%d %d)\n", parity >> 1, parity & 1);
         return 0;
     }
 

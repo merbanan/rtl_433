@@ -51,8 +51,8 @@ static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
 
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
-        if( debug_output)
-            fprintf(stderr, "tfa_303211 wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
+        if( debug_output > 1)
+            fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
         return 0;
     }
 
