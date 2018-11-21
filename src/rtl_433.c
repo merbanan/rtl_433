@@ -34,6 +34,7 @@
 #include "optparse.h"
 #include "fileformat.h"
 #include "am_analyze.h"
+#include "confparse.h"
 
 #define MAX_DATA_OUTPUTS 32
 #define MAX_DUMP_OUTPUTS 8
@@ -140,7 +141,12 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
     fprintf(stderr,
             "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n"
             VERSION "\n"
-            "\nUsage:\t= Tuner options =\n"
+            "\nUsage:\t= General options =\n"
+            "\t[-q] Quiet mode, suppress non-data messages\n"
+            "\t[-D] Print debug info on event (repeat for more info)\n"
+            "\t[-V] Output the version string and exit\n"
+            "\t[-c <path>] Read config options from a file\n"
+            "\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]\n"
             "\t[-g <gain>] (default: auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
@@ -161,8 +167,6 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
             "\t\t Disable all decoders with -R 0 if you want analyzer output only.\n"
             "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
-            "\t[-D] Print debug info on event (repeat for more info)\n"
-            "\t[-q] Quiet mode, suppress non-data messages\n"
             "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
             "\t= File I/O options =\n"
             "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
@@ -177,7 +181,6 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-T] Specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
-            "\t[-V] Output the version string and exit\n"
             "\t[-h] Output this usage help and exit\n"
             "\t\t Use -d, -g, -R, -X, -F, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
@@ -915,7 +918,132 @@ static void add_dumper(char const *spec, file_info_t *dumper, int overwrite)
     }
 }
 
-static void parse_option(struct app_cfg *cfg, int opt, char *arg)
+/// string to bool with default
+int atobv(char *arg, int def)
+{
+    if (!arg)
+        return def;
+    if (!strcasecmp(arg, "true") || !strcasecmp(arg, "yes") || !strcasecmp(arg, "on") || !strcasecmp(arg, "enable"))
+        return 1;
+    return atoi(arg);
+}
+
+static int hasopt(int test, int argc, char *argv[], char const *optstring)
+{
+    int opt;
+
+    optind = 1; // reset getopt
+    while ((opt = getopt(argc, argv, optstring)) != -1) {
+        if (opt == test || optopt == test)
+            return opt;
+    }
+    return 0;
+}
+
+static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
+
+#define OPTSTRING "hqDVc:x:z:p:taAI:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E"
+
+// these should match the short options exactly
+static struct conf_keywords const conf_keywords[] = {
+        {"help", 'h'},
+        {"quiet", 'q'},
+        {"verbose", 'D'},
+        {"version", 'V'},
+        {"config_file", 'c'},
+        {"report_meta", 'M'},
+        {"device", 'd'},
+        {"gain", 'g'},
+        {"frequency", 'f'},
+        {"hop_interval", 'H'},
+        {"ppm_error", 'p'},
+        {"sample_rate", 's'},
+        {"protocol", 'R'},
+        {"decoder", 'X'},
+        {"register_all", 'G'},
+        {"out_block_size", 'b'},
+        {"level_limit", 'l'},
+        {"samples_to_read", 'n'},
+        {"analyze", 'a'},
+        {"analyze_pulses", 'A'},
+        {"include_only", 'I'},
+        {"read_file", 'r'},
+        {"write_file", 'w'},
+        {"overwrite_file", 'W'},
+        {"signal_grabber", 't'},
+        {"override_short", 'z'},
+        {"override_long", 'x'},
+        {"output", 'F'},
+        {"convert", 'C'},
+        {"utc_mode", 'U'},
+        {"duration", 'T'},
+        {"test_data", 'y'},
+        {"stop_after_successful_events", 'E'},
+        {NULL}};
+
+static void parse_conf_text(struct app_cfg *cfg, char *conf)
+{
+    int opt;
+    char *arg;
+    char *p = conf;
+
+    if (!conf || !*conf)
+        return;
+
+    while ((opt = getconf(&p, conf_keywords, &arg)) != -1) {
+        parse_conf_option(cfg, opt, arg);
+    }
+}
+
+static void parse_conf_file(struct app_cfg *cfg, char const *path)
+{
+    if (!path || !*path || !strcmp(path, "null") || !strcmp(path, "0"))
+        return;
+
+    char *conf = readconf(path);
+    parse_conf_text(cfg, conf);
+    free(conf);
+}
+
+static void parse_conf_try_default_files(struct app_cfg *cfg)
+{
+    char const *default_conf_paths[] = {
+            "rtl_433.conf",
+            "~/.rtl_433.conf",
+            "/usr/local/etc/rtl_433.conf",
+            "/etc/rtl_433.conf",
+            NULL};
+    char const *path;
+    char buf[255];
+    for (char const **pp = default_conf_paths; *pp; ++pp) {
+        path = *pp;
+        if (*path == '~') {
+            snprintf(buf, 255, "%s%s", getenv("HOME"), path + 1);
+            path = buf;
+        }
+
+        fprintf(stderr, "Trying conf file at \"%s\"...\n", path);
+        if (hasconf(path)) {
+            fprintf(stderr, "Reading conf from \"%s\".\n", path);
+            parse_conf_file(cfg, path);
+            break;
+        }
+    }
+}
+
+static void parse_conf_args(struct app_cfg *cfg, int argc, char *argv[])
+{
+    int opt;
+
+    optind = 1; // reset getopt
+    while ((opt = getopt(argc, argv, OPTSTRING)) != -1) {
+        if (opt == '?')
+            opt = optopt; // allow missing arguments
+        parse_conf_option(cfg, opt, optarg);
+    }
+}
+
+static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
 {
     unsigned i;
     int n;
@@ -931,6 +1059,9 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         break;
     case 'V':
         version();
+        break;
+    case 'c':
+        parse_conf_file(cfg, optarg);
         break;
     case 'd':
         if (!arg)
@@ -954,15 +1085,17 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->gain_str = arg;
         break;
     case 'G':
-        cfg->no_default_devices = 1;
-        for (i = 0; i < cfg->num_r_devices; ++i) {
-            if (cfg->devices[i].disabled == 1) {
-                cfg->devices[i].disabled = 0;
+        if (atobv(arg, 1)) {
+            cfg->no_default_devices = 1;
+            for (i = 0; i < cfg->num_r_devices; ++i) {
+                if (cfg->devices[i].disabled == 1) {
+                    cfg->devices[i].disabled = 0;
+                }
             }
         }
         break;
     case 'p':
-        cfg->ppm_error = atoi(arg);
+        cfg->ppm_error = atobv(arg, 0);
         break;
     case 's':
         cfg->samp_rate = atouint32_metric(arg, "-s: ");
@@ -977,11 +1110,11 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
         break;
     case 'a':
-        if (!cfg->demod->am_analyze)
+        if (atobv(arg, 1) && !cfg->demod->am_analyze)
             cfg->demod->am_analyze = am_analyze_create();
         break;
     case 'A':
-        cfg->demod->analyze_pulses = 1;
+        cfg->demod->analyze_pulses = atobv(arg, 1);
         break;
     case 'I':
         cfg->include_only = atoi(arg);
@@ -1006,7 +1139,7 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         add_dumper(arg, cfg->demod->dumper, 1);
         break;
     case 't':
-        if (cfg->demod->am_analyze)
+        if (atobv(arg, 1) && cfg->demod->am_analyze)
             am_analyze_enable_grabber(cfg->demod->am_analyze, SIGNAL_GRABBER_BUFFER);
         break;
     case 'm':
@@ -1014,10 +1147,13 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         usage(NULL, 0, 1);
         break;
     case 'M':
-        cfg->report_meta = atoi(arg);
+        cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
-        debug_output++;
+        if (!optarg)
+            debug_output++;
+        else
+            debug_output = atobv(arg, 1);
         break;
     case 'z':
         if (cfg->demod->am_analyze)
@@ -1065,7 +1201,7 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         }
         break;
     case 'q':
-        cfg->quiet_mode = 1;
+        cfg->quiet_mode = atobv(arg, 1);
         break;
     case 'F':
         if (!arg)
@@ -1126,7 +1262,7 @@ static void parse_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->test_data = arg;
         break;
     case 'E':
-        cfg->stop_after_successful_events_flag = 1;
+        cfg->stop_after_successful_events_flag = atobv(arg, 1);
         break;
     default:
         usage(NULL, 0, 1);
@@ -1140,10 +1276,9 @@ int main(int argc, char **argv) {
 #endif
     char *out_filename = NULL;
     FILE *in_file;
-    int r = 0, opt, n;
+    int r = 0;
     unsigned i;
     struct dm_state *demod;
-    r_device *flex_device;
 
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
@@ -1169,12 +1304,12 @@ int main(int argc, char **argv) {
     cfg.demod->level_limit = DEFAULT_LEVEL_LIMIT;
     cfg.demod->hop_time = DEFAULT_HOP_TIME;
 
-    while ((opt = getopt(argc, argv, "hVx:z:p:DtaAI:qm:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E")) != -1) {
-
-        if (opt == '?')
-            opt = optopt; // allow missing arguments
-        parse_option(&cfg, opt, optarg);
+    // if there is no explicit conf file option look for default conf files
+    if (!hasopt('c', argc, argv, OPTSTRING)) {
+        parse_conf_try_default_files(&cfg);
     }
+
+    parse_conf_args(&cfg, argc, argv);
 
     if (demod->am_analyze) {
         demod->am_analyze->level_limit = &demod->level_limit;
