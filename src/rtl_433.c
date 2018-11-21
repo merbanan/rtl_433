@@ -1061,7 +1061,7 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         version();
         break;
     case 'c':
-        parse_conf_file(cfg, optarg);
+        parse_conf_file(cfg, arg);
         break;
     case 'd':
         if (!arg)
@@ -1150,7 +1150,7 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
-        if (!optarg)
+        if (!arg)
             debug_output++;
         else
             debug_output = atobv(arg, 1);
