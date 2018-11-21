@@ -20,6 +20,7 @@ add_executable(rtl_433
 	am_analyze.c
 	baseband.c
 	bitbuffer.c
+	confparse.c
 	data.c
 	fileformat.c
 	optparse.c
