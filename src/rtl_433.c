@@ -1039,7 +1039,7 @@ static void parse_conf_args(struct app_cfg *cfg, int argc, char *argv[])
     while ((opt = getopt(argc, argv, OPTSTRING)) != -1) {
         if (opt == '?')
             opt = optopt; // allow missing arguments
-        parse_conf_option(cfg, optopt, optarg);
+        parse_conf_option(cfg, opt, optarg);
     }
 }
 
