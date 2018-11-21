@@ -295,6 +295,21 @@ data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
     return result;
 }
 
+data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
+{
+    va_list ap;
+    va_start(ap, pretty_key);
+    data_t *result = vdata_make(NULL, key, pretty_key, ap);
+    va_end(ap);
+
+    data_t *prev = result;
+    while (prev && prev->next)
+        prev = prev->next;
+    prev->next = first;
+
+    return result;
+}
+
 void data_array_free(data_array_t *array)
 {
     array_element_release_fn release = dmt[array->type].array_element_release;

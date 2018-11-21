@@ -84,6 +84,7 @@ struct app_cfg {
     int no_default_devices;
     r_device *devices;
     uint16_t num_r_devices;
+    char *output_tag;
     void *output_handler[MAX_DATA_OUTPUTS];
     void *csv_output_handler[MAX_DATA_OUTPUTS];
     int last_output_handler;
@@ -485,6 +486,19 @@ void data_acquired_handler(data_t *data)
                 NULL);
     }
 
+    if (cfg.output_tag) {
+        char const *output_tag = cfg.output_tag;
+        if (cfg.in_filename && !strcmp("PATH", cfg.output_tag)) {
+            output_tag = cfg.in_filename;
+        }
+        else if (cfg.in_filename && !strcmp("FILE", cfg.output_tag)) {
+            output_tag = file_basename(cfg.in_filename);
+        }
+        data = data_prepend(data,
+                "tag", "Tag", DATA_STRING, output_tag,
+                NULL);
+    }
+
     for (int i = 0; i < cfg.last_output_handler; ++i) {
         data_output_print(cfg.output_handler[i], data);
     }
@@ -770,7 +784,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(struct protocol_state **devices, int num_devices, int *num_fields)
+static char const **determine_csv_fields(char const **well_known, struct protocol_state **devices, int num_devices, int *num_fields)
 {
     int i;
     struct protocol_state *device;
@@ -790,12 +804,20 @@ static char const **determine_csv_fields(struct protocol_state **devices, int nu
         }
     }
 
+    // always add well-known fields
+    for (char const **p = well_known; *p; ++p)
+        num_output_fields++;
+
     output_fields = calloc(num_output_fields + 1, sizeof(char *));
+
+    // always add well-known fields
+    for (char const **p = well_known; *p; ++p)
+        output_fields[cur_output_fields++] = *p;
+
     for (i = 0; i < num_devices; i++) {
         if (!device->disabled && device->fields) {
             for (int c = 0; device->fields[c]; ++c) {
-                output_fields[cur_output_fields] = device->fields[c];
-                ++cur_output_fields;
+                output_fields[cur_output_fields++] = device->fields[c];
             }
         }
     }
@@ -864,10 +886,10 @@ static void add_csv_output(char *param)
     cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
 }
 
-static void init_csv_output(struct data_output *output, struct protocol_state **devices, int num_devices)
+static void init_csv_output(struct data_output *output, char const **well_known, struct protocol_state **devices, int num_devices)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(devices, num_devices, &num_output_fields);
+    const char **output_fields = determine_csv_fields(well_known, devices, num_devices, &num_output_fields);
     data_output_csv_init(output, output_fields, num_output_fields);
     free(output_fields);
 }
@@ -942,7 +964,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
 
-#define OPTSTRING "hqDVc:x:z:p:taAI:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:C:T:UGy:E"
+#define OPTSTRING "hqDVc:x:z:p:taAI:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -974,6 +996,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"override_short", 'z'},
         {"override_long", 'x'},
         {"output", 'F'},
+        {"output_tag", 'K'},
         {"convert", 'C'},
         {"utc_mode", 'U'},
         {"duration", 'T'},
@@ -1228,6 +1251,9 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
             usage(NULL, 0, 1);
         }
         break;
+    case 'K':
+        cfg->output_tag = arg;
+        break;
     case 'C':
         if (strcmp(arg, "native") == 0) {
             cfg->conversion_mode = CONVERT_NATIVE;
@@ -1268,6 +1294,18 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
     default:
         usage(NULL, 0, 1);
         break;
+    }
+}
+
+static char const *well_known_tag[]  = {"tag", NULL};
+static char const *well_known_null[] = {NULL};
+static char const **well_known_output_fields(struct app_cfg *cfg)
+{
+    if (cfg->output_tag) {
+        return well_known_tag;
+    }
+    else {
+        return well_known_null;
     }
 }
 
@@ -1341,7 +1379,8 @@ int main(int argc, char **argv) {
 
     for (int i = 0; i < cfg.last_output_handler; ++i) {
         if (cfg.csv_output_handler[i]) {
-            init_csv_output(cfg.csv_output_handler[i], cfg.demod->r_devs, cfg.demod->r_dev_num);
+            init_csv_output(cfg.csv_output_handler[i],
+                    well_known_output_fields(&cfg), cfg.demod->r_devs, cfg.demod->r_dev_num);
         }
     }
 
