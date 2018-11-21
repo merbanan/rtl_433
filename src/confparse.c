@@ -35,13 +35,8 @@
 
 static off_t fsize(const char *path)
 {
-#if _WIN32
-    struct __stat st;
-    if (_stat(path, &st) == 0)
-#else
     struct stat st;
     if (stat(path, &st) == 0)
-#endif
         return st.st_size;
 
     return -1;
