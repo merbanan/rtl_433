@@ -77,6 +77,7 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 // specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
 // bits from the input buffer). Return the bit position in the input row
 // (i.e. returns start + 2*outbuf->bits_per_row[0]).
+// per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
 				     bitbuffer_t *outbuf, unsigned max);
 

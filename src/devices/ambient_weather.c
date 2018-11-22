@@ -13,30 +13,6 @@
 static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
 static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
-// CRC/Checksum is actually an "LSFR-based Toeplitz hash"
-static uint8_t
-lfsr_digest8(uint8_t *buf, int len, uint8_t gen, uint8_t key)
-{
-    uint8_t sum = 0;
-    for (int k = 0; k < len; ++k) {
-        uint8_t data = buf[k];
-        for (int i = 7; i >= 0 ; --i) {
-            // fprintf(stderr, "key is %02x\n", key);
-            // XOR key into sum if data bit is set
-            if ((data >> i) & 1)
-                sum ^= key;
-
-            // roll the key right (actually the lsb is dropped here)
-            // and apply the gen (needs to include the dropped lsb as msb)
-            if (key & 1)
-                key = (key >> 1) ^ gen;
-            else
-                key = (key >> 1);
-        }
-    }
-    return sum;
-}
-
 static int
 ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {

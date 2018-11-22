@@ -33,27 +33,6 @@
 
 #include "decoder.h"
 
-// Checksum is actually an "LFSR-based Toeplitz hash"
-// gen needs to includes the msb if the lfsr is rolling, key is the initial key
-static uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
-{
-    uint16_t sum = 0;
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
-        // if data bit is set then xor with key
-        if ((data >> bit) & 0x01)
-            sum ^= key;
-
-        // roll the key right (actually the lsb is dropped here)
-        // and apply the gen (needs to include the dropped lsb as msb)
-        if (key & 1)
-            key = (key >> 1) ^ gen;
-        else
-            key = (key >> 1);
-    }
-    return sum;
-}
-
 static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
