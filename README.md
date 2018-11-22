@@ -22,7 +22,12 @@ Running:
     rtl_433 -h
 
 ```
-Usage:	= Tuner options =
+Usage:	= General options =
+	[-q] Quiet mode, suppress non-data messages
+	[-D] Print debug info on event (repeat for more info)
+	[-V] Output the version string and exit
+	[-c <path>] Read config options from a file
+	= Tuner options =
 	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]
 	[-g <gain>] (default: auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
@@ -31,6 +36,7 @@ Usage:	= Tuner options =
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
+		 Specify a negative number to disable a device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
 	[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
 	[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
@@ -42,8 +48,6 @@ Usage:	= Tuner options =
 	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
 		 Disable all decoders with -R 0 if you want analyzer output only.
 	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
-	[-D] Print debug info on event (repeat for more info)
-	[-q] Quiet mode, suppress non-data messages
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
 	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
@@ -58,7 +62,6 @@ Usage:	= Tuner options =
 	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
-	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
 		 Use -d, -g, -R, -X, -F, -r, or -w without argument for more help
 

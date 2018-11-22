@@ -1175,7 +1175,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
 
         if (n == 0 || (n > 0 && !cfg->no_default_devices)) {
             for (i = 0; i < cfg->num_r_devices; i++) {
-                cfg->devices[i].disabled = 1;
+                if (!cfg->devices[i].disabled)
+                    cfg->devices[i].disabled = 1;
             }
             cfg->no_default_devices = 1;
         }
