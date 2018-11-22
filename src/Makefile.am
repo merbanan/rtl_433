@@ -6,6 +6,7 @@ bin_PROGRAMS         = rtl_433
 rtl_433_SOURCES      = am_analyze.c \
                        baseband.c \
                        bitbuffer.c \
+                       confparse.c \
                        data.c \
                        fileformat.c \
                        optparse.c \
