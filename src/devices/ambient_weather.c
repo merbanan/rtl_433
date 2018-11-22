@@ -1,7 +1,10 @@
 /* Ambient Weather F007TH Thermo-Hygrometer
  * contributed by David Ediger
  * discovered by Ron C. Lewis
-*/
+ * 
+ * The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
+ */
+
 #include "decoder.h"
 
 // three repeats without gap
@@ -12,28 +15,23 @@ static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
 // CRC/Checksum is actually an "LSFR-based Toeplitz hash"
 static uint8_t
-calculate_digest(uint8_t *buf, int len)
+lfsr_digest8(uint8_t *buf, int len, uint8_t gen, uint8_t key)
 {
-    uint8_t key = 0x7C;
-    uint8_t sum = 0x64;
-    uint8_t data;
-
+    uint8_t sum = 0;
     for (int k = 0; k < len; ++k) {
-        data = buf[k];
+        uint8_t data = buf[k];
         for (int i = 7; i >= 0 ; --i) {
-            uint8_t bit;
-
-            // Rotate key right
-            bit = key & 1;
-            key = (key >> 1 ) | (key << 7);
-            if (bit) {
-                key ^= 0x18;
-            }
-            // XOR key into sum if data bit is 1
-            if (data & 0x80) {
+            // fprintf(stderr, "key is %02x\n", key);
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1)
                 sum ^= key;
-            }
-            data <<= 1;
+
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
         }
     }
     return sum;
@@ -54,7 +52,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 6*8);
 
     uint8_t expected = b[5];
-    uint8_t calculated = calculate_digest(b, 5);
+    uint8_t calculated = lfsr_digest8(b, 5, 0x98, 0x3e) ^ 0x64;
 
     if (expected != calculated) {
         if (debug_output) {
