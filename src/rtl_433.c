@@ -1002,7 +1002,7 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
 
     char *conf = readconf(path);
     parse_conf_text(cfg, conf);
-    free(conf);
+    //free(conf); // TODO: check no args are dangling, then use free
 }
 
 static void parse_conf_try_default_files(struct app_cfg *cfg)
