@@ -102,13 +102,11 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     local_time_str(0, time_str);
     data = data_make(
             "time",             "",                     DATA_STRING, time_str,
-            "brand",            "",                     DATA_STRING, "Maverick",
-            "model",            "",                     DATA_STRING, "ET-732/ET-733",
+            "model",            "",                     DATA_STRING, "Maverick-ET73x",
             "id",               "Session_ID",           DATA_INT, id,
             "status",           "Status",               DATA_STRING, status,
-            "temperature_C1",   "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
-            "temperature_C2",   "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
-            "mic",              "Integrity",            DATA_STRING, "CHECKSUM",
+            "temperature1_C",   "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
+            "temperature2_C",   "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
             NULL);
     data_acquired_handler(data);
 
