@@ -302,6 +302,9 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
     data_t *result = vdata_make(NULL, key, pretty_key, ap);
     va_end(ap);
 
+    if (!result)
+        return first;
+
     data_t *prev = result;
     while (prev && prev->next)
         prev = prev->next;
