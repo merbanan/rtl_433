@@ -20,6 +20,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
                        devices/ambientweather_tx8300.c \
+                       devices/ambientweather_wh31e.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
