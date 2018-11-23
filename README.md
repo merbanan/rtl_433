@@ -55,9 +55,11 @@ Usage:	= General options =
 	[-r <filename>] Read data from input file instead of a receiver
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
+	= Data output options =
 	[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+	[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
