@@ -93,6 +93,5 @@ r_device ibis_beacon = {
 	.reset_limit	= 100, // Maximum gap size before End Of Message [us].
 	.json_callback	= &ibis_beacon_callback,
 	.disabled		= 0,
-	.demod_arg		= 0,
 	.fields			= output_fields,
 };

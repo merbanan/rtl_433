@@ -104,6 +104,5 @@ r_device solight_te44 = {
     .reset_limit   = 6000, // packet gap = 3880 us
     .json_callback = &solight_te44_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

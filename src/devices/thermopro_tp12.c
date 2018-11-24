@@ -143,6 +143,5 @@ r_device thermopro_tp12 = {
     .reset_limit   = 4000,
     .json_callback = &thermopro_tp12_sensor_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

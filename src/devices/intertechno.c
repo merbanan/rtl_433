@@ -76,6 +76,5 @@ r_device intertechno = {
     .reset_limit    = 10000,
     .json_callback  = &intertechno_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

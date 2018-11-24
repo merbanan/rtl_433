@@ -212,6 +212,5 @@ r_device lacrossews = {
 	.reset_limit    = 8000,
 	.json_callback  = &lacrossews_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields = output_fields
 };

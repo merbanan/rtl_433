@@ -238,6 +238,5 @@ r_device interlogix = {
     .reset_limit   = 500, //Maximum gap size before End Of Message
     .json_callback = &interlogix_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

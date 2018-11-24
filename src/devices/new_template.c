@@ -260,6 +260,5 @@ r_device template = {
     .reset_limit   = (224 + 132) * 2,
     .json_callback = &template_callback,
     .disabled      = 2, // disabled and hidden
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

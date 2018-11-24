@@ -409,7 +409,6 @@ r_device m_bus_mode_c_t = {
     .reset_limit    = 500,  //
     .json_callback  = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
-    .demod_arg      = 0,
 };
 
 
@@ -424,7 +423,6 @@ r_device m_bus_mode_s = {
     .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
     .json_callback  = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
-    .demod_arg      = 0,
 };
 
 
@@ -445,7 +443,6 @@ r_device m_bus_mode_r = {
     .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
     .json_callback  = &m_bus_mode_r_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
-    .demod_arg      = 0,
 };
 
 // Mode N
@@ -471,5 +468,4 @@ r_device m_bus_mode_f = {
     .reset_limit    = 5000,         // ??
     .json_callback  = &m_bus_mode_f_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
-    .demod_arg      = 0,
 };

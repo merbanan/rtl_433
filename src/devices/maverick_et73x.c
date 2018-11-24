@@ -114,6 +114,5 @@ r_device maverick_et73x = {
     //.gap_limit      = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
     .json_callback  = &maverick_et73x_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

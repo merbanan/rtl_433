@@ -129,6 +129,5 @@ r_device ambientweather_tx8300 = {
     .reset_limit   = 8000,
     .json_callback = &ambientweather_tx8300_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

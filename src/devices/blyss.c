@@ -83,6 +83,5 @@ r_device blyss = {
 	.reset_limit    = 10000,
 	.json_callback  = &blyss_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
     .fields         = output_fields,
 };

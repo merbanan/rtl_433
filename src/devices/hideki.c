@@ -147,6 +147,5 @@ r_device hideki_ts04 = {
     .tolerance      = 240, // us
     .json_callback  = &hideki_ts04_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

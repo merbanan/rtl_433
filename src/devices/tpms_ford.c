@@ -102,6 +102,5 @@ r_device tpms_ford = {
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
     .json_callback  = &tpms_ford_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

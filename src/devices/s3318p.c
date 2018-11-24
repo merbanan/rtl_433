@@ -146,6 +146,5 @@ r_device s3318p = {
     .reset_limit    = 9400,
     .json_callback  = &s3318p_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

@@ -100,6 +100,5 @@ r_device rftech = {
 	.reset_limit    = 10000,
 	.json_callback	= &rftech_callback,
 	.disabled	= 1,
-	.demod_arg	= 0,
 	.fields		= csv_output_fields,
 };

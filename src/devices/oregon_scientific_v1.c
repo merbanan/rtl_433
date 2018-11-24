@@ -87,6 +87,5 @@ r_device oregon_scientific_v1 = {
 	.reset_limit        = 14000,
 	.json_callback  = &oregon_scientific_v1_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields         = output_fields
 };

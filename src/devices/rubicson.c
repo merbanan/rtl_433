@@ -92,6 +92,5 @@ r_device rubicson = {
     .reset_limit    = 4800,             // Two initial pulses and a gap of 9120µs is filtered out
     .json_callback  = &rubicson_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

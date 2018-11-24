@@ -36,5 +36,4 @@ r_device ec3k = {
 	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
 	.json_callback  = &ec3k_callback,
 	.disabled       = 1,
-	.demod_arg      = 0,
 };

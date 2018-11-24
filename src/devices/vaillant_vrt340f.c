@@ -208,6 +208,5 @@ r_device vaillant_vrt340f = {
     .tolerance      = 120, // us
     .json_callback  = &vaillant_vrt340_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

@@ -111,6 +111,5 @@ r_device wg_pb12v1 = {
     .reset_limit    = 2500,	// We just want 1 package
     .json_callback  = &wg_pb12v1_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

@@ -121,6 +121,5 @@ r_device nexus = {
     .reset_limit    = 5000,
     .json_callback  = &nexus_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

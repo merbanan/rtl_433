@@ -63,6 +63,5 @@ r_device quhwa = {
     .tolerance     = 80,   // us
     .json_callback = &quhwa_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

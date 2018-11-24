@@ -84,6 +84,5 @@ r_device ft004b = {
     .reset_limit   = 4000,
     .json_callback = &ft004b_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

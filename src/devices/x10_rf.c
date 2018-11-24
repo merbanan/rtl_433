@@ -90,5 +90,4 @@ r_device X10_RF = {
 	.reset_limit	= 6000, // Gap seen between messages is ~40ms so let's get them individually
 	.json_callback	= &X10_RF_callback,
 	.disabled		= 1,
-	.demod_arg		= 0,
 };

@@ -72,6 +72,5 @@ r_device tfa_pool_thermometer = {
 	.reset_limit   = 10000,
 	.json_callback = &pool_temperature_sensor_callback,
 	.disabled      = 0,
-	.demod_arg     = 0,
 	.fields        = output_fields,
 };

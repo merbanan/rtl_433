@@ -500,7 +500,6 @@ r_device fineoffset_WH2 = {
     .tolerance      = 160, // us
     .json_callback  = &fineoffset_WH2_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };
 
@@ -512,7 +511,6 @@ r_device fineoffset_WH25 = {
     .reset_limit    = 20000,	// Package starts with a huge gap of ~18900 us
     .json_callback  = &fineoffset_WH25_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields_WH25
 };
 
@@ -526,6 +524,5 @@ r_device fineoffset_WH0530 = {
     .tolerance      = 160, // us
     .json_callback  = &fineoffset_WH0530_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields_WH0530
 };

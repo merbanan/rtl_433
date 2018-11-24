@@ -1168,7 +1168,6 @@ r_device acurite_rain_gauge = {
     .json_callback  = &acurite_rain_gauge_callback,
 // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
     .disabled       = 1,
-    .demod_arg      = 0,
     .fields         = acurite_rain_gauge_output_fields,
 };
 
@@ -1191,7 +1190,6 @@ r_device acurite_th = {
     .reset_limit    = 10000,
     .json_callback  = &acurite_th_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = acurite_th_output_fields,
 };
 
@@ -1230,7 +1228,6 @@ r_device acurite_txr = {
     .reset_limit    = 4000, // packet gap is 2192 us
     .json_callback  = &acurite_txr_callback,
     .disabled       = 0,
-    .demod_arg      = 0,    // not used
     .fields         = acurite_txr_output_fields,
 };
 
@@ -1263,7 +1260,6 @@ r_device acurite_986 = {
     .reset_limit    = 4000,
     .json_callback  = &acurite_986_callback,
     .disabled       = 0,
-    .demod_arg      = 0,     // not used
     .fields         = acurite_986_output_fields,
 };
 
@@ -1291,7 +1287,6 @@ r_device acurite_606 = {
     .reset_limit    = 10000,
     .json_callback  = &acurite_606_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = acurite_606_output_fields,
 };
 
@@ -1320,6 +1315,5 @@ r_device acurite_00275rm = {
     .sync_width     = 632,  // sync pulse is 632 us
     .json_callback  = &acurite_00275rm_callback,
     .disabled       = 0,
-    .demod_arg      = 0,    // not used
     .fields         = acurite_00275rm_output_fields,
 };

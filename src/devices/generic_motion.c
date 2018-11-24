@@ -72,6 +72,5 @@ r_device generic_motion = {
     .reset_limit    = 2724*1.5,
     .json_callback  = &generic_motion_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

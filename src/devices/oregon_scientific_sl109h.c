@@ -157,6 +157,5 @@ r_device oregon_scientific_sl109h = {
     .reset_limit    = 8000/*2240*/,
     .json_callback  = &oregon_scientific_sl109h_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

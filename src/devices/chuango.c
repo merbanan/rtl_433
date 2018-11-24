@@ -96,6 +96,5 @@ r_device chuango = {
     .tolerance      = 160,  // us
     .json_callback  = &chuango_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

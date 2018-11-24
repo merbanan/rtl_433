@@ -463,6 +463,5 @@ r_device fineoffset_wh1080 = {
     .reset_limit    = 2800,    // We just want 1 package
     .json_callback  = &fineoffset_wh1080_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

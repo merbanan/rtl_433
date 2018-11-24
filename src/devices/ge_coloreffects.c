@@ -158,6 +158,5 @@ r_device ge_coloreffects = {
     .reset_limit    = 450, // Maximum gap size before End Of Message [us].
     .json_callback  = &ge_coloreffects_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

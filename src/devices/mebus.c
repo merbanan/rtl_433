@@ -59,5 +59,4 @@ r_device mebus433 = {
     .reset_limit    = 6000,
     .json_callback  = &mebus433_callback,
     .disabled       = 1, // add docs, tests, false positive checks and then reenable
-    .demod_arg      = 0,
 };

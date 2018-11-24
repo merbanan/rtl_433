@@ -171,6 +171,5 @@ r_device danfoss_CFR = {
 	.reset_limit    = 500,	// Maximum run is 4 zeroes/ones
 	.json_callback  = &danfoss_cfr_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields         = output_fields
 };

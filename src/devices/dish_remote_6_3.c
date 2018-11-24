@@ -148,6 +148,5 @@ r_device dish_remote_6_3 = {
     .reset_limit   = (1692 + 2812) * 2,
     .json_callback = &dish_remote_6_3_callback,
     .disabled      = 1,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

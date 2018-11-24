@@ -69,6 +69,5 @@ r_device akhan_100F14 = {
     .tolerance     = 80, // us
     .json_callback = &akhan_rke_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

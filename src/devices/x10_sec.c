@@ -125,6 +125,5 @@ r_device x10_sec = {
     .reset_limit    = 6000,
     .json_callback  = &x10_sec_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

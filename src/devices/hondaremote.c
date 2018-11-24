@@ -82,6 +82,5 @@ r_device hondaremote = {
 	.reset_limit	= 2000,
 	.json_callback	= &hondaremote_callback,
 	.disabled		= 0,
-	.demod_arg		= 0,
 	.fields		= output_fields
 };

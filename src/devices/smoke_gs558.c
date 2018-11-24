@@ -133,6 +133,5 @@ r_device smoke_gs558 = {
     .reset_limit    = 11764*1.5, // Maximum gap size before End Of Message [us]
     .json_callback  = &smoke_gs558_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

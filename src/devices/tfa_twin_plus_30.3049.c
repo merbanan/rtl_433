@@ -382,6 +382,5 @@ r_device tfa_twin_plus_303049 = {
     .reset_limit   = 8000,
     .json_callback = &tfa_twin_plus_303049_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields         = output_fields
 };

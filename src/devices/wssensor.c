@@ -100,6 +100,5 @@ r_device wssensor = {
     .reset_limit    = 4400,
     .json_callback  = &wssensor_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

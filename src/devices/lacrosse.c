@@ -219,6 +219,5 @@ r_device lacrossetx = {
     .tolerance      = 0,    // raw mode
     .json_callback  = &lacrossetx_callback,
     .disabled       = 0,
-    .demod_arg      = 0,  // No Startbit removal
     .fields = output_fields,
 };
