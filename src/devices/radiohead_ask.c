@@ -5,9 +5,7 @@
  * Sensible Living uses a speed of 1000, i.e. 1000 us per bit.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 // Maximum message length (including the headers, byte count and FCS) we are willing to support
 // This is pretty arbitrary
@@ -70,8 +68,8 @@ static int radiohead_ask_extract(bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ ui
 
     pos = bitbuffer_search(bitbuffer, row, 0, init_pattern, init_pattern_len);
     if (pos == len) {
-        if (debug_output) {
-            printf("RH ASK preamble not found\n");
+        if (debug_output > 1) {
+            fprintf(stderr, "RH ASK preamble not found\n");
         }
         return 0;
     }
@@ -89,14 +87,14 @@ static int radiohead_ask_extract(bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ ui
         uint8_t hi_nibble = symbol_6to4(rxBits[0]);
         if (hi_nibble > 0xF) {
             if (debug_output) {
-                fprintf(stdout, "Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
+                fprintf(stderr, "Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
             }
             return 0;
         }
         uint8_t lo_nibble = symbol_6to4(rxBits[1]);
         if (lo_nibble > 0xF) {
             if (debug_output) {
-                fprintf(stdout, "Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
+                fprintf(stderr, "Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
             }
             return 0;
         }
@@ -113,7 +111,7 @@ static int radiohead_ask_extract(bitbuffer_t *bitbuffer, uint8_t row, /*OUT*/ ui
     crc_recompute = ~crc16(payload, msg_len - 2, 0x8408, 0xFFFF);
     if (crc_recompute != crc) {
         if (debug_output) {
-            fprintf(stdout, "CRC error: %04X != %04X\n", crc_recompute, crc);
+            fprintf(stderr, "CRC error: %04X != %04X\n", crc_recompute, crc);
         }
         return 0;
     }

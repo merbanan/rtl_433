@@ -82,9 +82,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // Define the types of devices this file supports
 #define LACROSSE_TX141 1
@@ -103,10 +101,6 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
     uint8_t id, status, battery_low, test, humidity = 0;
     uint16_t temp_raw;
     float temp_c;
-
-    if (debug_output) {
-        bitbuffer_print(bitbuffer);
-    }
 
     // Find the most frequent data packet
     r = bitbuffer_find_repeated_row(bitbuffer, 5, 37);
@@ -170,7 +164,6 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
     data_acquired_handler(data);
 
     return 1;
-
 }
 
 static char *output_fields[] = {

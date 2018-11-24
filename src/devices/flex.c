@@ -8,10 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
-#include "pulse_demod.h"
+#include "decoder.h"
 #include "optparse.h"
 
 /// extract a number up to 32/64 bits from given offset with given bit length
@@ -186,7 +183,7 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
             }
         }
         // a simpler representation for csv output
-        row_codes[i] = malloc(5 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
+        row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     data = data_make(
@@ -265,7 +262,7 @@ static void help()
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
-            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,repeats>=3\"\n\n");
+            "E.g. -X \"doorbell:OOK_PWM:400:800:7000:1000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
 }
 
@@ -352,6 +349,10 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         else
             getter->name = strdup(arg);
         arg = p;
+    }
+    if (!getter->name) {
+        fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
+        usage();
     }
     if (debug_output)
         fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",

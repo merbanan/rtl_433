@@ -7,10 +7,7 @@
  *
  * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -73,4 +70,5 @@ r_device akhan_100F14 = {
     .json_callback = &akhan_rke_callback,
     .disabled      = 0,
     .demod_arg     = 0,
+    .fields        = output_fields,
 };

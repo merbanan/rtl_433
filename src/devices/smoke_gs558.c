@@ -38,9 +38,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static unsigned char reverse_byte(unsigned char b) {
     b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;

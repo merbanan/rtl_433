@@ -51,9 +51,7 @@
     [13] {0} :
     Test mode file issued 4 packets
 */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
 {
@@ -124,4 +122,5 @@ r_device esperanza_ews = {
     .json_callback = &esperanza_ews_callback,
     .disabled      = 0,
     .demod_arg     = 0,
+    .fields        = output_fields,
 };

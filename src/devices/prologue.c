@@ -22,9 +22,7 @@
  * The sensor can be bought at Clas Ohlson
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 static int prologue_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;

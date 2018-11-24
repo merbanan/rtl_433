@@ -34,9 +34,7 @@
  * (at your option) any later version.
  */
 
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 extern int rubicson_crc_check(bitrow_t *bb);
 

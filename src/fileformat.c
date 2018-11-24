@@ -21,6 +21,21 @@
 //#include "optparse.h"
 #include "fileformat.h"
 
+#ifdef _WIN32
+#define PATH_SEPARATOR '\\'
+#else
+#define PATH_SEPARATOR '/'
+#endif
+
+char const *file_basename(char const *path)
+{
+    char const *p = strrchr(path, PATH_SEPARATOR);
+    if (p)
+        return p + 1;
+    else
+        return path;
+}
+
 void check_read_file_info(file_info_t *info)
 {
     if (info->format != CU8_IQ

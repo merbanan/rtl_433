@@ -114,8 +114,10 @@
 		DECL(wssensor) \
 		DECL(wt1024) \
 		DECL(tpms_pmv107j) \
+		DECL(ttx201) \
+		DECL(ambientweather_tx8300) \
+		DECL(ambientweather_wh31e) \
 		DECL(digitech_xc0324)
-
 
 typedef struct {
 	unsigned protocol_num; // fixed sequence number, assigned in main()

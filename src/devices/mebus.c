@@ -1,5 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 static int mebus433_callback(bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;

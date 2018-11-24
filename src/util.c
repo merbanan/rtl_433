@@ -142,6 +142,78 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
 }
 
 
+uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key)
+{
+    uint8_t sum = 0;
+    for (unsigned k = 0; k < bytes; ++k) {
+        uint8_t data = message[k];
+        for (int i = 7; i >= 0; --i) {
+            // fprintf(stderr, "key is %02x\n", key);
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1)
+                sum ^= key;
+
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
+    }
+    return sum;
+}
+
+uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
+{
+    uint16_t sum = 0;
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
+        // if data bit is set then xor with key
+        if ((data >> bit) & 1)
+            sum ^= key;
+
+        // roll the key right (actually the lsb is dropped here)
+        // and apply the gen (needs to include the dropped lsb as msb)
+        if (key & 1)
+            key = (key >> 1) ^ gen;
+        else
+            key = (key >> 1);
+    }
+    return sum;
+}
+
+/*
+void lfsr_keys_fwd16(int rounds, uint16_t gen, uint16_t key)
+{
+    for (int i = 0; i <= rounds; ++i) {
+        fprintf(stderr, "key at bit %d : %04x\n", i, key);
+
+        // roll the key right (actually the lsb is dropped here)
+        // and apply the gen (needs to include the dropped lsb as msb)
+        if (key & 1)
+            key = (key >> 1) ^ gen;
+        else
+            key = (key >> 1);
+    }
+}
+
+void lfsr_keys_rwd16(int rounds, uint16_t gen, uint16_t key)
+{
+    for (int i = 0; i <= rounds; ++i) {
+        fprintf(stderr, "key at bit -%d : %04x\n", i, key);
+
+        // roll the key left (actually the msb is dropped here)
+        // and apply the gen (needs to include the dropped msb as lsb)
+        if (key & (1 << 15))
+            key = (key << 1) ^ gen;
+        else
+            key = (key << 1);
+    }
+}
+*/
+
+
 int byteParity(uint8_t inByte)
 {
     inByte ^= inByte >> 4;

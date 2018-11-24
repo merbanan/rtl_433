@@ -1,5 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
  * GT-WT-02 sensor on 433.92MHz
@@ -61,7 +60,7 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
         || !(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
         return 0;
 
-    //fprintf(stderr, "GT-WT-02: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
+    //fprintf(stderr, "GT-WT-02: "); bitrow_print(b, 40);
 
     // sum 8 nibbles (use 31 bits, the last one fill with 0 on 32nd bit)
     const int sum_nibbles =

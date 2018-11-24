@@ -11,10 +11,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
@@ -90,6 +87,15 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 }
 
 
+static char *output_fields[] = {
+    "time",
+    "model"
+    "id"
+    "cmd",
+    "tristate",
+    NULL
+};
+
 r_device generic_remote = {
 	.name			= "Generic Remote SC226x EV1527",
 	.modulation		= OOK_PULSE_PWM_PRECISE,
@@ -101,4 +107,5 @@ r_device generic_remote = {
 	.json_callback	= &generic_remote_callback,
 	.disabled		= 0,
 	.demod_arg		= 0,
+    .fields         = output_fields,
 };

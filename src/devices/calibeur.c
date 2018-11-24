@@ -30,9 +30,7 @@
  * LSB                 MSB
  * ffffff45 01236pHH hhhhh Encoding
 */
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
@@ -113,5 +111,6 @@ r_device calibeur_RF104 = {
 	.tolerance      = 0,	// raw mode
 	.json_callback  = &calibeur_rf104_callback,
 	.disabled       = 0,
-	.demod_arg      = 0		// not used
+	.demod_arg      = 0,	// not used
+	.fields         = output_fields,
 };

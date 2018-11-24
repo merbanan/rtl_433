@@ -18,10 +18,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
 static int chuango_callback(bitbuffer_t *bitbuffer) {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -100,4 +97,5 @@ r_device chuango = {
     .json_callback  = &chuango_callback,
     .disabled       = 0,
     .demod_arg      = 0,
+    .fields         = output_fields,
 };

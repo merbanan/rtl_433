@@ -67,8 +67,8 @@
 #endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
-typedef void* (*array_element_release_fn)(void*);
-typedef void* (*value_release_fn)(void*);
+typedef void (*array_element_release_fn)(void*);
+typedef void (*value_release_fn)(void*);
 
 typedef struct {
     /* what is the element size when put inside an array? */
@@ -295,6 +295,24 @@ data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
     return result;
 }
 
+data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
+{
+    va_list ap;
+    va_start(ap, pretty_key);
+    data_t *result = vdata_make(NULL, key, pretty_key, ap);
+    va_end(ap);
+
+    if (!result)
+        return first;
+
+    data_t *prev = result;
+    while (prev && prev->next)
+        prev = prev->next;
+    prev->next = first;
+
+    return result;
+}
+
 void data_array_free(data_array_t *array)
 {
     array_element_release_fn release = dmt[array->type].array_element_release;
@@ -307,8 +325,19 @@ void data_array_free(data_array_t *array)
     free(array);
 }
 
+data_t *data_retain(data_t *data)
+{
+    if (data)
+        ++data->retain;
+    return data;
+}
+
 void data_free(data_t *data)
 {
+    if (data && data->retain) {
+        --data->retain;
+        return;
+    }
     while (data) {
         data_t *prev_data = data;
         if (dmt[data->type].value_release)
@@ -589,8 +618,10 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, int num_fields)
+void data_output_csv_init(struct data_output *output, const char **fields, int num_fields)
 {
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     int csv_fields = 0;
     int i, j;
     const char **allowed = NULL;
@@ -646,10 +677,10 @@ static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, i
 
     // Output the CSV header
     for (i = 0; csv->fields[i]; ++i) {
-        printf("%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+        fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
     }
-    printf("\n");
-    return csv;
+    fprintf(csv->output.file, "\n");
+    return;
 
 alloc_error:
     free(use_count);
@@ -657,7 +688,6 @@ alloc_error:
     if (csv)
         free(csv->fields);
     free(csv);
-    return NULL;
 }
 
 static void data_output_csv_free(data_output_t *output)
@@ -668,7 +698,7 @@ static void data_output_csv_free(data_output_t *output)
     free(csv);
 }
 
-struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
+struct data_output *data_output_csv_create(FILE *file)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
@@ -683,7 +713,6 @@ struct data_output *data_output_csv_create(FILE *file, const char **fields, int 
     csv->output.print_int    = print_json_int;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
-    data_output_csv_init(csv, fields, num_fields);
 
     return &csv->output;
 }

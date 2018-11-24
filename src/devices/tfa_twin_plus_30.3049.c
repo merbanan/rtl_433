@@ -1,6 +1,4 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 /*
  * TFA-Twin-Plus-30.3049
@@ -64,7 +62,6 @@ static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffe
         || !(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
         return 0;
 
-    //fprintf(stderr, "TFA-Twin-Plus-30.3049: %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
     // reverse bit order
     const uint8_t rb[5] = { reverse_byte(b[0]), reverse_byte(b[1]), reverse_byte(b[2])
                           , reverse_byte(b[3]), reverse_byte(b[4]) };

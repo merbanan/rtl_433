@@ -19,8 +19,7 @@
  * C: CRC over bits 0 - 57, poly 0x13, init 0
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is (7 bits) 11111 10
 static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits
@@ -47,8 +46,10 @@ static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     // realign the buffer, prepending 6 bits of 0.
     b[0] = packet_bits.bb[0][0] >> 6;
     bitbuffer_extract_bytes(&packet_bits, 0, 2, b + 1, 64);
-    if (debug_output > 1)
-        fprintf(stderr, "Realigned: %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    if (debug_output > 1) {
+        fprintf(stderr, "Realigned: ");
+        bitrow_print(b, 72);
+    }
 
     crc = b[8];
     if (crc8(b, 8, 0x13, 0x00) != crc) {

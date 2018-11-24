@@ -39,8 +39,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define PHILIPS_BITLEN       112
 #define PHILIPS_PACKETLEN    4
@@ -68,7 +67,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
 
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
-        if (debug_output) {
+        if (debug_output > 1) {
             fprintf(stderr, "%s %s: wrong number of rows (%d)\n", 
                     time_str, __func__, bitbuffer->num_rows);
         }
@@ -77,7 +76,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
 
     /* Correct bit length? */
     if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
-        if (debug_output) {
+        if (debug_output > 1) {
             fprintf(stderr, "%s %s: wrong number of bits (%d)\n", 
                     time_str, __func__, bitbuffer->bits_per_row[0]);
         }
@@ -88,7 +87,7 @@ static int philips_callback(bitbuffer_t *bitbuffer)
 
     /* Correct start sequence? */
     if ((bb[0] >> 4) != PHILIPS_STARTNIBBLE) {
-        if (debug_output) {
+        if (debug_output > 1) {
             fprintf(stderr, "%s %s: wrong start nibble\n", time_str, __func__);
         }
         return 0;
@@ -104,12 +103,9 @@ static int philips_callback(bitbuffer_t *bitbuffer)
     }
 
     /* If debug enabled, print the combined majority-wins packet */
-    if (debug_output) {
+    if (debug_output > 1) {
         fprintf(stderr, "%s %s: combined packet = ", time_str, __func__);
-        for (i = 0; i < PHILIPS_PACKETLEN; i++) {
-            fprintf(stderr, "%02x ",packet[i]);
-        }
-        fprintf(stderr, "\n");
+        bitrow_print(packet, PHILIPS_PACKETLEN * 8);
     }
 
     /* Correct CRC? */

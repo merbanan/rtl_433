@@ -7,9 +7,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 
 static int pool_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
