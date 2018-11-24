@@ -109,21 +109,14 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 	int events = 0;
-	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
-	int start_bit = device->demod_arg;
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// Should we disregard startbit?
-		if(start_bit == 1 && start_bit_detected == 0) {
-			start_bit_detected = 1;
+		// Detect pulse width
+		if(pulses->pulse[n] <= device->short_limit) {
+			bitbuffer_add_bit(&bits, 1);
 		} else {
-			// Detect pulse width
-			if(pulses->pulse[n] <= device->short_limit) {
-				bitbuffer_add_bit(&bits, 1);
-			} else {
-				bitbuffer_add_bit(&bits, 0);
-			}
+			bitbuffer_add_bit(&bits, 0);
 		}
 		// End of Message?
 		if (n == pulses->num_pulses - 1					// No more pulses (FSK)
@@ -137,11 +130,9 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
-			start_bit_detected = 0;
 		// Check for new packet in multipacket
 		} else if(pulses->gap[n] > device->long_limit) {
 			bitbuffer_add_row(&bits);
-			start_bit_detected = 0;
 		}
 	}
 	return events;
@@ -151,9 +142,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
-	int start_bit_detected = 0;
 	bitbuffer_t bits = {0};
-	int start_bit = device->demod_arg;
 
 	// lower and upper bounds (non inclusive)
 	int one_l, one_u;
@@ -207,10 +196,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 	}
 
 	for (unsigned n = 0; n < pulses->num_pulses; ++n) {
-		if (start_bit == 1 && start_bit_detected == 0) {
-			// remove a startbit
-			start_bit_detected = 1;
-		} else if (pulses->pulse[n] > one_l && pulses->pulse[n] < one_u) {
+		if (pulses->pulse[n] > one_l && pulses->pulse[n] < one_u) {
 			// 'Short' 1 pulse
 			bitbuffer_add_bit(&bits, 1);
 		} else if (pulses->pulse[n] > zero_l && pulses->pulse[n] < zero_u) {
@@ -239,12 +225,10 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
-			start_bit_detected = 0;
 		} else if (device->gap_limit > 0 && pulses->gap[n] > device->gap_limit
 				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
 			// New packet in multipacket
 			bitbuffer_add_row(&bits);
-			start_bit_detected = 0;
 		}
 	}
 	return events;

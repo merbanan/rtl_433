@@ -130,7 +130,6 @@ typedef struct {
 	float tolerance;
 	int (*json_callback)(bitbuffer_t *bitbuffer);
 	unsigned int disabled;
-	unsigned demod_arg;	// Decoder specific optional argument
 	char **fields;			// List of fields this decoder produces; required for CSV output. NULL-terminated.
 } r_device;
 

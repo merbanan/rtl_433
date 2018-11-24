@@ -58,8 +58,6 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->short_limit: Threshold between short and long pulse [us]
 /// @param device->long_limit:  Maximum gap size before new row of bits [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
-/// @param device->demod_arg = 0: Do not remove any startbits
-/// @param device->demod_arg = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
 int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 
@@ -77,8 +75,6 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->gap_limit:   Maximum gap size before new row of bits [us]
 /// @param device->sync_width:  Nominal width of sync pulse (optional) [us]
 /// @param device->tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
-/// @param device->demod_arg = 0: Do not remove any startbits
-/// @param device->demod_arg = 1: First bit in each message is considered a startbit and not stored in bitbuffer
 /// @return number of events processed
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
 

@@ -59,7 +59,6 @@ struct protocol_state {
     float gap_limit;
     float sync_width;
     float tolerance;
-    unsigned demod_arg;
 };
 
 #endif /* INCLUDE_RTL_433_H_ */

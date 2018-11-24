@@ -396,7 +396,6 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Bad flex spec, missing modulation!\n");
         usage();
     }
-    // TODO: add demod_arg where needed
     if (!strcasecmp(c, "OOK_MC_ZEROBIT"))
         dev->modulation = OOK_PULSE_MANCHESTER_ZEROBIT;
     else if (!strcasecmp(c, "OOK_PCM"))
@@ -482,10 +481,7 @@ r_device *flex_create_device(char *spec)
 
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
-        if (!strcasecmp(key, "demod"))
-            dev->demod_arg = val ? atoi(val) : 0;
-
-        else if (!strcasecmp(key, "bits>"))
+        if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;
         else if (!strcasecmp(key, "bits<"))
             params->max_bits = val ? atoi(val) : 0;
@@ -540,8 +536,8 @@ r_device *flex_create_device(char *spec)
 
     if (debug_output >= 1) {
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
-        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f, demod_arg=%u\n",
-                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit, (unsigned)dev->demod_arg);
+        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f\n",
+                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit);
         fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
     }
