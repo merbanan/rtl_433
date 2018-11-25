@@ -66,7 +66,7 @@ static char *output_fields[] = {
 
 r_device generic_motion = {
     .name           = "Generic wireless motion sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 888,
     .long_limit     = (1332+1784)/2,
     .sync_width     = 1784+670,

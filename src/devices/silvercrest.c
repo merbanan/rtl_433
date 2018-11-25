@@ -54,7 +54,7 @@ static char *output_fields[] = {
 
 r_device silvercrest = {
     .name           = "Silvercrest Remote Control",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 264,
     .long_limit     = 744,
     .reset_limit    = 12000,

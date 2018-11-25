@@ -100,7 +100,7 @@ static char *output_fields[] = {
 
 r_device bresser_3ch = {
     .name           = "Bresser Thermo-/Hygro-Sensor 3CH",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 250,   // short pulse is ~250 us
     .long_limit     = 500,   // long pulse is ~500 us
     .sync_width     = 750,   // sync pulse is ~750 us

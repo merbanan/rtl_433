@@ -89,7 +89,7 @@ static char *output_fields[] = {
 
 r_device ht680 = {
     .name          = "HT680 Remote control",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 200,
     .long_limit    = 600,
     .gap_limit     = 1200,

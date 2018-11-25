@@ -1220,7 +1220,7 @@ static char *acurite_txr_output_fields[] = {
 
 r_device acurite_txr = {
     .name           = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 220,  // short pulse is 220 us + 392 us gap
     .long_limit     = 408,  // long pulse is 408 us + 204 us gap
     .sync_width     = 620,  // sync pulse is 620 us + 596 us gap
@@ -1307,7 +1307,7 @@ static char *acurite_00275rm_output_fields[] = {
 
 r_device acurite_00275rm = {
     .name           = "Acurite 00275rm,00276rm Temp/Humidity with optional probe",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 232,  // short pulse is 232 us
     .long_limit     = 420,  // long pulse is 420 us
     .gap_limit      = 520,  // long gap is 384 us, sync gap is 592 us

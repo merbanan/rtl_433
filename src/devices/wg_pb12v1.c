@@ -94,7 +94,7 @@ static char *output_fields[] = {
 
 r_device wg_pb12v1 = {
     .name           = "WG-PB12V1 Temperature Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 564,	// Short pulse 564µs, long pulse 1476µs, fixed gap 960µs
     .long_limit     = 1476,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2500,	// We just want 1 package

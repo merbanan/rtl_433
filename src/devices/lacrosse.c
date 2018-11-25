@@ -210,7 +210,7 @@ static char *output_fields[] = {
 
 r_device lacrossetx = {
     .name           = "LaCrosse TX Temperature / Humidity Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 550,  // 550 us pulse + 1000 us gap is 1
     .long_limit     = 1400, // 1400 us pulse + 1000 us gap is 0
     .gap_limit      = 3000, // max gap is 1000 us

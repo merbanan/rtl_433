@@ -61,7 +61,7 @@ static char *output_fields[] = {
 
 r_device akhan_100F14 = {
     .name          = "Akhan 100F14 remote keyless entry",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 316,
     .long_limit    = 1020,
     .reset_limit   = 1800,

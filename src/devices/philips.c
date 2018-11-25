@@ -160,7 +160,7 @@ static char *philips_output_fields[] = {
 
 r_device philips = {
     .name          = "Philips outdoor temperature sensor",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 2000,
     .long_limit    = 6000,
     .reset_limit   = 30000,

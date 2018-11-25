@@ -60,7 +60,7 @@ static char *output_fields[] = {
 
 r_device blyss = {
     .name           = "Blyss DC5-UK-WH",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 500,
     .long_limit     = 1500,
     .gap_limit      = 2500,

@@ -103,7 +103,7 @@ static char *output_fields[] = {
 
 r_device calibeur_RF104 = {
 	.name           = "Calibeur RF-104 Sensor",
-	.modulation     = OOK_PULSE_PWM_PRECISE,
+	.modulation     = OOK_PULSE_PWM,
 	.short_limit    = 760,	// Short pulse 760µs
 	.long_limit     = 2240,	// Long pulse 2240µs
 	.reset_limit    = 3200,	// Longest gap (2960-760µs)

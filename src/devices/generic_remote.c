@@ -77,7 +77,7 @@ static char *output_fields[] = {
 
 r_device generic_remote = {
     .name           = "Generic Remote SC226x EV1527",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 464,
     .long_limit     = 1404,
     .reset_limit    = 1800,

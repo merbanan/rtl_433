@@ -141,7 +141,7 @@ r_device elv_em1000 = {
 
 r_device elv_ws2000 = {
     .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 366,  // 0 => 854us, 1 => 366us according to link in top
     .long_limit     = 854, // no repetitions
     .reset_limit    = 1000, // Longest pause is 854us according to link

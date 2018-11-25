@@ -112,7 +112,7 @@ static char *output_fields[] = {
 
 r_device wt1024 = {
     .name          = "WT0124 Pool Thermometer",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 680,
     .long_limit    = 1850,
     .reset_limit   = 30000,

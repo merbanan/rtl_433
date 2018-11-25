@@ -493,7 +493,7 @@ static char *output_fields_WH0530[] = {
 
 r_device fineoffset_WH2 = {
     .name           = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
     .long_limit     = 1500,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 1200,	// We just want 1 package
@@ -516,7 +516,7 @@ r_device fineoffset_WH25 = {
 
 r_device fineoffset_WH0530 = {
     .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 504,	// Short pulse 504µs
     .long_limit     = 1480, // Long pulse 1480µs
     .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)

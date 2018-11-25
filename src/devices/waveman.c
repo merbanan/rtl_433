@@ -79,7 +79,7 @@ static char *output_fields[] = {
 
 r_device waveman = {
     .name           = "Waveman Switch Transmitter",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 357,
     .long_limit     = 1064,
     .gap_limit      = 1400,

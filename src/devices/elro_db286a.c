@@ -59,7 +59,7 @@ static char *output_fields[] = {
 
 r_device elro_db286a = {
     .name           = "Elro DB286A Doorbell",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 456,
     .long_limit     = 1448,
     .gap_limit      = 2000,

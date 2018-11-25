@@ -67,7 +67,7 @@ static char *output_fields[] = {
 
 r_device kerui = {
     .name          = "Kerui PIR / Contact Sensor",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 320,
     .long_limit    = 960,
     .reset_limit   = 1100, // 9900,

@@ -403,7 +403,7 @@ r_device *flex_create_device(char *spec)
     else if (!strcasecmp(c, "OOK_PPM_RAW"))
         dev->modulation = OOK_PULSE_PPM_RAW;
     else if (!strcasecmp(c, "OOK_PWM"))
-        dev->modulation = OOK_PULSE_PWM_PRECISE;
+        dev->modulation = OOK_PULSE_PWM;
     else if (!strcasecmp(c, "OOK_DMC"))
         dev->modulation = OOK_PULSE_DMC;
     else if (!strcasecmp(c, "OOK_PIWM_RAW"))
@@ -444,7 +444,7 @@ r_device *flex_create_device(char *spec)
     }
     dev->reset_limit = atoi(c);
 
-    if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
+    if (dev->modulation == OOK_PULSE_PWM) {
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing gap limit!\n");

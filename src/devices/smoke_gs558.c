@@ -119,7 +119,7 @@ static char *output_fields[] = {
 
 r_device smoke_gs558 = {
     .name           = "Wireless Smoke and Heat Detector GS 558",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 436, // Threshold between short and long pulse [us]
     .long_limit     = 1202, // Maximum gap size before new row of bits [us]
     .gap_limit      = 1299*1.5, // Maximum gap size before new row of bits [us]

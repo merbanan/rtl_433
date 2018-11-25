@@ -88,7 +88,7 @@ static char *output_fields[] = {
 
 r_device chuango = {
     .name           = "Chuango Security Technology",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .modulation     = OOK_PULSE_PWM,
     .short_limit    = 568,  // Pulse: Short 568µs, Long 1704µs
     .long_limit     = 1704, // Gaps:  Short 568µs, Long 1696µs
     .reset_limit    = 1800, // Intermessage Gap 17200µs (individually for now)

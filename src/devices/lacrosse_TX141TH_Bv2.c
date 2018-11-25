@@ -179,7 +179,7 @@ static char *output_fields[] = {
 
 r_device lacrosse_TX141TH_Bv2 = {
     .name          = "LaCrosse TX141-Bv2/TX141TH-Bv2 sensor",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 208,    // short pulse is 208 us + 417 us gap
     .long_limit    = 417,    // long pulse is 417 us + 208 us gap
     .sync_width    = 833,    // sync pulse is 833 us + 833 us gap

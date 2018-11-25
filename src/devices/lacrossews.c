@@ -211,7 +211,7 @@ static char *output_fields[] = {
 
 r_device lacrossews = {
 	.name           = "LaCrosse WS-2310 Weather Station",
-	.modulation     = OOK_PULSE_PWM_PRECISE,
+	.modulation     = OOK_PULSE_PWM,
 	.short_limit    = 368,
 	.long_limit     = 1464,
 	.reset_limit    = 8000,

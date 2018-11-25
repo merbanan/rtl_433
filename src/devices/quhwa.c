@@ -54,7 +54,7 @@ static char *output_fields[] = {
 
 r_device quhwa = {
     .name          = "Quhwa",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .modulation    = OOK_PULSE_PWM,
     .short_limit   = 360,  // Pulse: Short 360µs, Long 1070µs
     .long_limit    = 1070, // Gaps: Short 360µs, Long 1070µs
     .reset_limit   = 6600, // Intermessage Gap 6500µs
