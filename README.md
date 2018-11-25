@@ -207,8 +207,16 @@ Supporting Additional Devices and Test Data
 Note: Not all device protocol decoders are enabled by default. When testing to see if your device
 is decoded by rtl_433, use `-G` to enable all device protocols.
 
-The first step in decoding new devices is to record the signals using `-a -t`. The signals will be
-stored individually in files named gNNN_FFFM_RRRk.cu8 that can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
+The first step in decoding new devices is to record the signals using `-a -t`.   
+The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
+
+| Parameter | Description
+|---------|------------
+| **NNN** | signal grabbed number
+| **FFF** | frequency
+| **RRR** | sample rate   
+
+This file can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
 
 These files are vital for understanding the signal format as well as the message data.  Use both analyzers
 `-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -a -A`.
