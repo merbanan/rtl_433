@@ -389,7 +389,9 @@ r_device *flex_create_device(char *spec)
         usage();
     }
     params->name = strdup(c);
-    snprintf(dev->name, sizeof(dev->name), "General purpose decoder '%s'", c);
+    int name_size = strlen(c) + 27;
+    dev->name = malloc(name_size);
+    snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
