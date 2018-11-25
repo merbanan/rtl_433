@@ -37,10 +37,10 @@ static int ht680_callback(bitbuffer_t *bitbuffer)
             for (int bit = 7; bit > 0; bit -= 2) {
                 switch ((b[byte] >> (bit-1)) & 0x03){
                     case 0x00: *p++ = '0'; break;
-                    case 0x01: *p++ = '?'; break; // Invalid code 01
+                    case 0x01: *p++ = 'X'; break; // Invalid code 01
                     case 0x02: *p++ = 'Z'; break; // Floating state Z is 10
                     case 0x03: *p++ = '1'; break;
-                    default: *p++ = '!'; break; // Unknown error
+                    default: *p++ = '?'; break; // Unknown error
                 }
             }
         }

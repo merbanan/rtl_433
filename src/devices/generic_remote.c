@@ -53,8 +53,8 @@ static int generic_remote_callback(bitbuffer_t *bitbuffer) {
 
 			switch ((FULL>>i) & 0x03) {
 				case 0x00:	c = '0'; break;
-				case 0x01:	c = 'F'; break;
-				case 0x02:	c = '!'; break; // tristate 10 is invalid code for SC226x but valid in EV1527
+				case 0x01:	c = 'Z'; break; // floating / "open"
+				case 0x02:	c = 'X'; break; // tristate 10 is invalid code for SC226x but valid in EV1527
 				case 0x03:	c = '1'; break;
 				default:	c = '?'; break; // not possible anyway
 			}
