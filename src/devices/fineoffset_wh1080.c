@@ -457,9 +457,9 @@ static char *output_fields[] = {
 
 r_device fineoffset_wh1080 = {
     .name           = "Fine Offset Electronics WH1080/WH3080 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 800,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_limit     = 2800,    // Maximum pulse period (long pulse + fixed gap)
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 544,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_limit     = 1524,    // Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2800,    // We just want 1 package
     .json_callback  = &fineoffset_wh1080_callback,
     .disabled       = 0,

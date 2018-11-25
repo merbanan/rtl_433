@@ -191,9 +191,9 @@ static char *output_fields[] = {
 
 r_device fineoffset_wh1050 = {
     .name           = "Fine Offset WH1050 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 976,
-    .long_limit     = 2400,
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 544,
+    .long_limit     = 1524,
     .reset_limit    = 10520,
     .json_callback  = &fineoffset_wh1050_callback,
     .disabled       = 0,
