@@ -62,7 +62,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 /// @param device->sync_width:  Nominal width of sync pulse (optional) [us]
 /// @param device->tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
 /// @return number of events processed
-int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device);
+int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front

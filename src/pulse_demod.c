@@ -107,7 +107,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
 }
 
 
-int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device)
+int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 {
 	int events = 0;
 	bitbuffer_t bits = {0};
@@ -189,7 +189,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device)
 			}
 			// Debug printout
 			if (!device->json_callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm_precise(): %s \n", device->name);
+				fprintf(stderr, "pulse_demod_pwm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
