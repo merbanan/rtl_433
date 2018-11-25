@@ -309,12 +309,15 @@ static void sighandler(int signum) {
 static void register_protocol(struct dm_state *demod, r_device *t_dev) {
     struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
 
-    p->short_limit = (float)t_dev->short_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->long_limit  = (float)t_dev->long_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->reset_limit = (float)t_dev->reset_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->gap_limit   = (float)t_dev->gap_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->sync_width  = (float)t_dev->sync_width / (1000000.0 / (float)cfg.samp_rate);
-    p->tolerance   = (float)t_dev->tolerance / (1000000.0 / (float)cfg.samp_rate);
+    float samples_per_us = cfg.samp_rate / 1.0e6;
+    p->f_short_limit = 1.0 / (t_dev->short_limit * samples_per_us);
+    p->f_long_limit  = 1.0 / (t_dev->long_limit * samples_per_us);
+    p->short_limit = t_dev->short_limit * samples_per_us;
+    p->long_limit  = t_dev->long_limit * samples_per_us;
+    p->reset_limit = t_dev->reset_limit * samples_per_us;
+    p->gap_limit   = t_dev->gap_limit * samples_per_us;
+    p->sync_width  = t_dev->sync_width * samples_per_us;
+    p->tolerance   = t_dev->tolerance * samples_per_us;
 
     p->modulation = t_dev->modulation;
     p->callback   = t_dev->json_callback;

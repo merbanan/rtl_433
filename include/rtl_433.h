@@ -52,13 +52,15 @@ struct protocol_state {
     char **fields;
     unsigned int disabled;
 
-    /* pwm limits (provided by driver in µs and converted to samples) */
-    float short_limit;
-    float long_limit;
-    float reset_limit;
-    float gap_limit;
-    float sync_width;
-    float tolerance;
+    /* pulse limits (provided by decoder in us and converted to samples) */
+    float f_short_limit; // precision reciprocal for PCM
+    float f_long_limit; // precision reciprocal for PCM
+    int short_limit;
+    int long_limit;
+    int reset_limit;
+    int gap_limit;
+    int sync_width;
+    int tolerance;
 };
 
 #endif /* INCLUDE_RTL_433_H_ */

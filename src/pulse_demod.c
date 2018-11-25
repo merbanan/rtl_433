@@ -23,14 +23,14 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
 	bitbuffer_t bits = {0};
-	const int MAX_ZEROS = device->reset_limit / device->long_limit;
-	const int TOLERANCE = device->long_limit / 4;		// Tolerance is ±25% of a bit period
+	const int max_zeros = device->reset_limit / device->long_limit;
+	const int tolerance = device->long_limit / 4;		// Tolerance is ±25% of a bit period
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Determine number of high bit periods for NRZ coding, where bits may not be separated
-		int highs = (pulses->pulse[n] + device->short_limit/2) / device->short_limit;
+		int highs = (pulses->pulse[n]) * device->f_short_limit + 0.5;
 		// Determine number of bit periods in current pulse/gap length (rounded)
-		int periods = (pulses->pulse[n] + pulses->gap[n] + device->long_limit/2) / device->long_limit;
+		int periods = (pulses->pulse[n] + pulses->gap[n]) * device->f_long_limit + 0.5;
 
 		// Add run of ones (1 for RZ, many for NRZ)
 		for (int i=0; i < highs; ++i) {
@@ -38,14 +38,14 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 		}
 		// Add run of zeros
 		periods -= highs;					// Remove 1s from whole period
-		periods = min(periods, MAX_ZEROS);	// Don't overflow at end of message
+		periods = min(periods, max_zeros);	// Don't overflow at end of message
 		for (int i=0; i < periods; ++i) {
 			bitbuffer_add_bit(&bits, 0);
 		}
 
 		// Validate data
 		if ((device->short_limit != device->long_limit)		// Only for RZ coding
-				&& (fabsf(pulses->pulse[n] - device->short_limit) > TOLERANCE)	// Pulse must be within tolerance
+				&& (abs(pulses->pulse[n] - device->short_limit) > tolerance)	// Pulse must be within tolerance
 		) {
 			// Data is corrupt
 			if (debug_output > 3) {
@@ -303,10 +303,10 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
 	}
 
 	for(n = 0; n < pulses->num_pulses * 2; ++n) {
-		if ( fabsf(symbol[n] - device->short_limit) < device->tolerance) {
+		if ( abs(symbol[n] - device->short_limit) < device->tolerance) {
 			// Short - 1
 			bitbuffer_add_bit(&bits, 1);
-			if ( fabsf(symbol[++n] - device->short_limit) > device->tolerance) {
+			if ( abs(symbol[++n] - device->short_limit) > device->tolerance) {
 				if (symbol[n] >= device->reset_limit - device->tolerance ) {
 					// Don't expect another short gap at end of message
 					n--;
@@ -318,7 +318,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
 */
 				}
 			}
-		} else if ( fabsf(symbol[n] - device->long_limit) < device->tolerance) {
+		} else if ( abs(symbol[n] - device->long_limit) < device->tolerance) {
 			// Long - 0
 			bitbuffer_add_bit(&bits, 0);
 		} else if (symbol[n] >= device->reset_limit - device->tolerance
@@ -352,10 +352,10 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *devi
 	}
 
 	for (n = 0; n < pulses->num_pulses * 2; ++n) {
-		w = symbol[n] / device->short_limit + 0.5;
+		w = symbol[n] * device->f_short_limit + 0.5;
 		if (symbol[n] > device->long_limit) {
 			bitbuffer_add_row(&bits);
-		} else if (fabsf(symbol[n] - w * device->short_limit) < device->tolerance) {
+		} else if (abs(symbol[n] - w * device->short_limit) < device->tolerance) {
 			// Add w symbols
 			for (; w > 0; --w)
 				bitbuffer_add_bit(&bits, 1-n%2);
@@ -399,10 +399,10 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *devic
 	}
 
 	for (n = 0; n < pulses->num_pulses * 2; ++n) {
-		if (fabsf(symbol[n] - device->short_limit) < device->tolerance) {
+		if (abs(symbol[n] - device->short_limit) < device->tolerance) {
 			// Short - 1
 			bitbuffer_add_bit(&bits, 1);
-		} else if (fabsf(symbol[n] - device->long_limit) < device->tolerance) {
+		} else if (abs(symbol[n] - device->long_limit) < device->tolerance) {
 			// Long - 0
 			bitbuffer_add_bit(&bits, 0);
 		} else if (symbol[n] < device->reset_limit
