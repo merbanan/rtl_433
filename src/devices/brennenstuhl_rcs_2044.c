@@ -116,9 +116,10 @@ static char *output_fields[] = {
 
 r_device brennenstuhl_rcs_2044 = {
     .name          = "Brennenstuhl RCS 2044",
-    .modulation    = OOK_PULSE_PWM_RAW,
-    .short_limit   = 600,
-    .long_limit    = 4000,
+    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .short_limit   = 320,
+    .long_limit    = 968,
+    .gap_limit     = 1500,
     .reset_limit   = 4000,
     .json_callback = &brennenstuhl_rcs_2044_callback,
     .disabled      = 1,
