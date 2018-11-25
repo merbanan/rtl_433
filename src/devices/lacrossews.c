@@ -1,4 +1,9 @@
 /* LaCrosse WS-2310 433 Mhz Weather Station
+
+	long pulse 1464 us
+	short pulse 368 us
+	fixed gap 1336 us
+
 	Packet Format is 53 bits/ 13 nibbles
 
 	 bits	nibble
@@ -206,9 +211,9 @@ static char *output_fields[] = {
 
 r_device lacrossews = {
 	.name           = "LaCrosse WS-2310 Weather Station",
-	.modulation     = OOK_PULSE_PWM_RAW,
-	.short_limit    = 952,
-	.long_limit     = 3000,
+	.modulation     = OOK_PULSE_PWM_PRECISE,
+	.short_limit    = 368,
+	.long_limit     = 1464,
 	.reset_limit    = 8000,
 	.json_callback  = &lacrossews_callback,
 	.disabled       = 0,
