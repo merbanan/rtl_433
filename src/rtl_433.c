@@ -822,6 +822,7 @@ static char const **determine_csv_fields(char const **well_known, r_device **dev
         output_fields[cur_output_fields++] = *p;
 
     for (i = 0; i < num_devices; i++) {
+        device = devices[i];
         if (!device->disabled && device->fields) {
             for (int c = 0; device->fields[c]; ++c) {
                 output_fields[cur_output_fields++] = device->fields[c];
