@@ -55,12 +55,12 @@ struct protocol_state {
     /* pulse limits (provided by decoder in us and converted to samples) */
     float f_short_limit; // precision reciprocal for PCM
     float f_long_limit; // precision reciprocal for PCM
-    int short_limit;
-    int long_limit;
-    int reset_limit;
-    int gap_limit;
-    int sync_width;
-    int tolerance;
+    int s_short_limit;
+    int s_long_limit;
+    int s_reset_limit;
+    int s_gap_limit;
+    int s_sync_width;
+    int s_tolerance;
 };
 
 #endif /* INCLUDE_RTL_433_H_ */

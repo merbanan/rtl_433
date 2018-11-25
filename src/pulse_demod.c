@@ -23,8 +23,8 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 {
 	int events = 0;
 	bitbuffer_t bits = {0};
-	const int max_zeros = device->reset_limit / device->long_limit;
-	const int tolerance = device->long_limit / 4;		// Tolerance is ±25% of a bit period
+	const int max_zeros = device->s_reset_limit / device->s_long_limit;
+	const int tolerance = device->s_long_limit / 4;		// Tolerance is ±25% of a bit period
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Determine number of high bit periods for NRZ coding, where bits may not be separated
@@ -44,8 +44,8 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 		}
 
 		// Validate data
-		if ((device->short_limit != device->long_limit)		// Only for RZ coding
-				&& (abs(pulses->pulse[n] - device->short_limit) > tolerance)	// Pulse must be within tolerance
+		if ((device->s_short_limit != device->s_long_limit)		// Only for RZ coding
+				&& (abs(pulses->pulse[n] - device->s_short_limit) > tolerance)	// Pulse must be within tolerance
 		) {
 			// Data is corrupt
 			if (debug_output > 3) {
@@ -58,7 +58,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device)
 
 		// End of Message?
 		if (((n == pulses->num_pulses-1)	// No more pulses? (FSK)
-				|| (pulses->gap[n] > device->reset_limit))	// Long silence (OOK)
+				|| (pulses->gap[n] > device->s_reset_limit))	// Long silence (OOK)
 				&& (bits.bits_per_row[0] > 0)		// Only if data has been accumulated
 		) {
 			if (device->callback) {
@@ -82,13 +82,13 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Short gap
-		if(pulses->gap[n] < device->short_limit) {
+		if(pulses->gap[n] < device->s_short_limit) {
 			bitbuffer_add_bit(&bits, 0);
 		// Long gap
-		} else if(pulses->gap[n] < device->long_limit) {
+		} else if(pulses->gap[n] < device->s_long_limit) {
 			bitbuffer_add_bit(&bits, 1);
 		// Check for new packet in multipacket
-		} else if(pulses->gap[n] < device->reset_limit) {
+		} else if(pulses->gap[n] < device->s_reset_limit) {
 			bitbuffer_add_row(&bits);
 		// End of Message?
 		} else {
@@ -113,14 +113,14 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Detect pulse width
-		if(pulses->pulse[n] <= device->short_limit) {
+		if(pulses->pulse[n] <= device->s_short_limit) {
 			bitbuffer_add_bit(&bits, 1);
 		} else {
 			bitbuffer_add_bit(&bits, 0);
 		}
 		// End of Message?
 		if (n == pulses->num_pulses - 1					// No more pulses (FSK)
-			|| pulses->gap[n] > device->reset_limit) {	// Long silence (OOK)
+			|| pulses->gap[n] > device->s_reset_limit) {	// Long silence (OOK)
 			if (device->callback) {
 				events += device->callback(&bits);
 			}
@@ -131,7 +131,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device) {
 			}
 			bitbuffer_clear(&bits);
 		// Check for new packet in multipacket
-		} else if(pulses->gap[n] > device->long_limit) {
+		} else if(pulses->gap[n] > device->s_long_limit) {
 			bitbuffer_add_row(&bits);
 		}
 	}
@@ -149,48 +149,48 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 	int zero_l, zero_u;
 	int sync_l = 0, sync_u = 0;
 
-	if (device->tolerance > 0) {
+	if (device->s_tolerance > 0) {
 		// precise
-		one_l = device->short_limit - device->tolerance;
-		one_u = device->short_limit + device->tolerance;
-		zero_l = device->long_limit - device->tolerance;
-		zero_u = device->long_limit + device->tolerance;
-		if (device->sync_width > 0) {
-			sync_l = device->sync_width - device->tolerance;
-			sync_u = device->sync_width + device->tolerance;
+		one_l = device->s_short_limit - device->s_tolerance;
+		one_u = device->s_short_limit + device->s_tolerance;
+		zero_l = device->s_long_limit - device->s_tolerance;
+		zero_u = device->s_long_limit + device->s_tolerance;
+		if (device->s_sync_width > 0) {
+			sync_l = device->s_sync_width - device->s_tolerance;
+			sync_u = device->s_sync_width + device->s_tolerance;
 		}
 
-	} else if (device->sync_width <= 0) {
+	} else if (device->s_sync_width <= 0) {
 		// no sync, short=1, long=0
 		one_l = 0;
-		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		one_u = (device->s_short_limit + device->s_long_limit) / 2 + 1;
 		zero_l = one_u - 1;
 		zero_u = INT_MAX;
 
-	} else if (device->sync_width < device->short_limit) {
+	} else if (device->s_sync_width < device->s_short_limit) {
 		// short=sync, middle=1, long=0
 		sync_l = 0;
-		sync_u = (device->sync_width + device->short_limit) / 2 + 1;
+		sync_u = (device->s_sync_width + device->s_short_limit) / 2 + 1;
 		one_l = sync_u - 1;
-		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		one_u = (device->s_short_limit + device->s_long_limit) / 2 + 1;
 		zero_l = one_u - 1;
 		zero_u = INT_MAX;
 
-	} else if (device->sync_width < device->long_limit) {
+	} else if (device->s_sync_width < device->s_long_limit) {
 		// short=1, middle=sync, long=0
 		one_l = 0;
-		one_u = (device->short_limit + device->sync_width) / 2 + 1;
+		one_u = (device->s_short_limit + device->s_sync_width) / 2 + 1;
 		sync_l = one_u - 1;
-		sync_u = (device->sync_width + device->long_limit) / 2 + 1;
+		sync_u = (device->s_sync_width + device->s_long_limit) / 2 + 1;
 		zero_l = sync_u - 1;
 		zero_u = INT_MAX;
 
 	} else {
 		// short=1, middle=0, long=sync
 		one_l = 0;
-		one_u = (device->short_limit + device->long_limit) / 2 + 1;
+		one_u = (device->s_short_limit + device->s_long_limit) / 2 + 1;
 		zero_l = one_u - 1;
-		zero_u = (device->long_limit + device->sync_width) / 2 + 1;
+		zero_u = (device->s_long_limit + device->s_sync_width) / 2 + 1;
 		sync_l = zero_u - 1;
 		sync_u = INT_MAX;
 	}
@@ -214,7 +214,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 
 		// End of Message?
 		if (((n == pulses->num_pulses - 1) // No more pulses? (FSK)
-				|| (pulses->gap[n] > device->reset_limit)) // Long silence (OOK)
+				|| (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			if (device->callback) {
 				events += device->callback(&bits);
@@ -225,7 +225,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 				bitbuffer_print(&bits);
 			}
 			bitbuffer_clear(&bits);
-		} else if (device->gap_limit > 0 && pulses->gap[n] > device->gap_limit
+		} else if (device->s_gap_limit > 0 && pulses->gap[n] > device->s_gap_limit
 				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
 			// New packet in multipacket
 			bitbuffer_add_row(&bits);
@@ -245,16 +245,16 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 
 	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Falling edge is on end of pulse
-		if (device->tolerance > 0
-				&& (pulses->pulse[n] < device->short_limit - device->tolerance
-				|| pulses->pulse[n] > device->short_limit * 2 + device->tolerance
-				|| pulses->gap[n] < device->short_limit - device->tolerance
-				|| pulses->gap[n] > device->short_limit * 2 + device->tolerance)) {
+		if (device->s_tolerance > 0
+				&& (pulses->pulse[n] < device->s_short_limit - device->s_tolerance
+				|| pulses->pulse[n] > device->s_short_limit * 2 + device->s_tolerance
+				|| pulses->gap[n] < device->s_short_limit - device->s_tolerance
+				|| pulses->gap[n] > device->s_short_limit * 2 + device->s_tolerance)) {
 			// The pulse or gap is too long or too short, thus invalid
 			bitbuffer_add_row(&bits);
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
-		} else if(pulses->pulse[n] + time_since_last > (device->short_limit * 1.5)) {
+		} else if(pulses->pulse[n] + time_since_last > (device->s_short_limit * 1.5)) {
 			// Last bit was recorded more than short_limit*1.5 samples ago
 			// so this pulse start must be a data edge (falling data edge means bit = 1)
 			bitbuffer_add_bit(&bits, 1);
@@ -264,7 +264,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 		}
 
 		// End of Message?
-		if(pulses->gap[n] > device->reset_limit) {
+		if(pulses->gap[n] > device->s_reset_limit) {
 			int newevents = 0;
 			if (device->callback) {
 				events += device->callback(&bits);
@@ -278,7 +278,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
 		// Rising edge is on end of gap
-		} else if(pulses->gap[n] + time_since_last > (device->short_limit * 1.5)) {
+		} else if(pulses->gap[n] + time_since_last > (device->s_short_limit * 1.5)) {
 			// Last bit was recorded more than short_limit*1.5 samples ago
 			// so this pulse end is a data edge (rising data edge means bit = 0)
 			bitbuffer_add_bit(&bits, 0);
@@ -303,11 +303,11 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
 	}
 
 	for(n = 0; n < pulses->num_pulses * 2; ++n) {
-		if ( abs(symbol[n] - device->short_limit) < device->tolerance) {
+		if ( abs(symbol[n] - device->s_short_limit) < device->s_tolerance) {
 			// Short - 1
 			bitbuffer_add_bit(&bits, 1);
-			if ( abs(symbol[++n] - device->short_limit) > device->tolerance) {
-				if (symbol[n] >= device->reset_limit - device->tolerance ) {
+			if ( abs(symbol[++n] - device->s_short_limit) > device->s_tolerance) {
+				if (symbol[n] >= device->s_reset_limit - device->s_tolerance ) {
 					// Don't expect another short gap at end of message
 					n--;
 				} else if (bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
@@ -318,10 +318,10 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device) {
 */
 				}
 			}
-		} else if ( abs(symbol[n] - device->long_limit) < device->tolerance) {
+		} else if ( abs(symbol[n] - device->s_long_limit) < device->s_tolerance) {
 			// Long - 0
 			bitbuffer_add_bit(&bits, 0);
-		} else if (symbol[n] >= device->reset_limit - device->tolerance
+		} else if (symbol[n] >= device->s_reset_limit - device->s_tolerance
 			&& bits.num_rows > 0) { // Only if data has been accumulated
 			//END message ?
 			if (device->callback) {
@@ -353,13 +353,13 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *devi
 
 	for (n = 0; n < pulses->num_pulses * 2; ++n) {
 		w = symbol[n] * device->f_short_limit + 0.5;
-		if (symbol[n] > device->long_limit) {
+		if (symbol[n] > device->s_long_limit) {
 			bitbuffer_add_row(&bits);
-		} else if (abs(symbol[n] - w * device->short_limit) < device->tolerance) {
+		} else if (abs(symbol[n] - w * device->s_short_limit) < device->s_tolerance) {
 			// Add w symbols
 			for (; w > 0; --w)
 				bitbuffer_add_bit(&bits, 1-n%2);
-		} else if (symbol[n] < device->reset_limit
+		} else if (symbol[n] < device->s_reset_limit
 				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
 			bitbuffer_add_row(&bits);
 /*
@@ -369,7 +369,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *devi
 		}
 
 		if (((n == pulses->num_pulses * 2 - 1) // No more pulses? (FSK)
-				|| (symbol[n] > device->reset_limit)) // Long silence (OOK)
+				|| (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			//END message ?
 			if (device->callback) {
@@ -399,13 +399,13 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *devic
 	}
 
 	for (n = 0; n < pulses->num_pulses * 2; ++n) {
-		if (abs(symbol[n] - device->short_limit) < device->tolerance) {
+		if (abs(symbol[n] - device->s_short_limit) < device->s_tolerance) {
 			// Short - 1
 			bitbuffer_add_bit(&bits, 1);
-		} else if (abs(symbol[n] - device->long_limit) < device->tolerance) {
+		} else if (abs(symbol[n] - device->s_long_limit) < device->s_tolerance) {
 			// Long - 0
 			bitbuffer_add_bit(&bits, 0);
-		} else if (symbol[n] < device->reset_limit
+		} else if (symbol[n] < device->s_reset_limit
 				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
 			bitbuffer_add_row(&bits);
 /*
@@ -415,7 +415,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *devic
 		}
 
 		if (((n == pulses->num_pulses * 2 - 1) // No more pulses? (FSK)
-				|| (symbol[n] > device->reset_limit)) // Long silence (OOK)
+				|| (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
 				&& (bits.num_rows > 0)) { // Only if data has been accumulated
 			//END message ?
 			if (device->callback) {
@@ -488,7 +488,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device) 
 			manbit ^= 1;
 			if(manbit) bitbuffer_add_bit(&bits, 1);
 		}
-		if (n == pulses->num_pulses - 1 || pulses->gap[n] > device->reset_limit) {
+		if (n == pulses->num_pulses - 1 || pulses->gap[n] > device->s_reset_limit) {
 			if((bits.bits_per_row[bits.num_rows-1] == 32) && device->callback) {
 				events += device->callback(&bits);
 			}

@@ -306,29 +306,29 @@ static void sighandler(int signum) {
 #endif
 
 
-static void register_protocol(struct dm_state *demod, r_device *t_dev) {
+static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
 
     float samples_per_us = cfg.samp_rate / 1.0e6;
-    p->f_short_limit = 1.0 / (t_dev->short_limit * samples_per_us);
-    p->f_long_limit  = 1.0 / (t_dev->long_limit * samples_per_us);
-    p->short_limit = t_dev->short_limit * samples_per_us;
-    p->long_limit  = t_dev->long_limit * samples_per_us;
-    p->reset_limit = t_dev->reset_limit * samples_per_us;
-    p->gap_limit   = t_dev->gap_limit * samples_per_us;
-    p->sync_width  = t_dev->sync_width * samples_per_us;
-    p->tolerance   = t_dev->tolerance * samples_per_us;
+    p->f_short_limit = 1.0 / (r_dev->short_limit * samples_per_us);
+    p->f_long_limit  = 1.0 / (r_dev->long_limit * samples_per_us);
+    p->s_short_limit = r_dev->short_limit * samples_per_us;
+    p->s_long_limit  = r_dev->long_limit * samples_per_us;
+    p->s_reset_limit = r_dev->reset_limit * samples_per_us;
+    p->s_gap_limit   = r_dev->gap_limit * samples_per_us;
+    p->s_sync_width  = r_dev->sync_width * samples_per_us;
+    p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
-    p->modulation = t_dev->modulation;
-    p->callback   = t_dev->json_callback;
-    p->name       = t_dev->name;
-    p->fields     = t_dev->fields;
+    p->modulation = r_dev->modulation;
+    p->callback   = r_dev->json_callback;
+    p->name       = r_dev->name;
+    p->fields     = r_dev->fields;
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
     if (!cfg.quiet_mode) {
-    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", t_dev->protocol_num, t_dev->name);
+    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
