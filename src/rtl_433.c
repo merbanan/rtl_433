@@ -125,7 +125,7 @@ struct dm_state {
 
     /* Protocol states */
     uint16_t r_dev_num;
-    struct protocol_state *r_devs[MAX_PROTOCOLS];
+    r_device *r_devs[MAX_PROTOCOLS];
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
@@ -307,7 +307,7 @@ static void sighandler(int signum) {
 
 
 static void register_protocol(struct dm_state *demod, r_device *r_dev) {
-    struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
+    r_device *p = calloc(1, sizeof (r_device));
 
     float samples_per_us = cfg.samp_rate / 1.0e6;
     p->f_short_limit = 1.0 / (r_dev->short_limit * samples_per_us);
@@ -319,10 +319,10 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->s_sync_width  = r_dev->sync_width * samples_per_us;
     p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
-    p->modulation = r_dev->modulation;
-    p->callback   = r_dev->json_callback;
-    p->name       = r_dev->name;
-    p->fields     = r_dev->fields;
+    p->modulation    = r_dev->modulation;
+    p->json_callback = r_dev->json_callback;
+    p->name          = r_dev->name;
+    p->fields        = r_dev->fields;
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
@@ -791,10 +791,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(char const **well_known, struct protocol_state **devices, int num_devices, int *num_fields)
+static char const **determine_csv_fields(char const **well_known, r_device **devices, int num_devices, int *num_fields)
 {
     int i;
-    struct protocol_state *device;
+    r_device *device;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
@@ -893,7 +893,7 @@ static void add_csv_output(char *param)
     cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
 }
 
-static void init_csv_output(struct data_output *output, char const **well_known, struct protocol_state **devices, int num_devices)
+static void init_csv_output(struct data_output *output, char const **well_known, r_device **devices, int num_devices)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(well_known, devices, num_devices, &num_output_fields);

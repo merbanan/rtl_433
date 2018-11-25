@@ -44,23 +44,4 @@
 #define MAX_PROTOCOLS           113
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
-struct protocol_state {
-    int (*callback)(bitbuffer_t *bitbuffer);
-
-    char *name;
-    unsigned int modulation;
-    char **fields;
-    unsigned int disabled;
-
-    /* pulse limits (provided by decoder in us and converted to samples) */
-    float f_short_limit; // precision reciprocal for PCM
-    float f_long_limit; // precision reciprocal for PCM
-    int s_short_limit;
-    int s_long_limit;
-    int s_reset_limit;
-    int s_gap_limit;
-    int s_sync_width;
-    int s_tolerance;
-};
-
 #endif /* INCLUDE_RTL_433_H_ */

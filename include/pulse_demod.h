@@ -31,7 +31,7 @@
 /// @param device->long_limit:  Nominal width of bit period [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
-int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Pulse Position Modulation signal
@@ -45,7 +45,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->long_limit:  Maximum gap size before new row of bits [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
-int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Pulse Width Modulation signal
@@ -59,7 +59,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->long_limit:  Maximum gap size before new row of bits [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
-int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Pulse Width Modulation signal
@@ -76,7 +76,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->sync_width:  Nominal width of sync pulse (optional) [us]
 /// @param device->tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
 /// @return number of events processed
-int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front
@@ -92,7 +92,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, struct protocol_state *d
 /// @param device->long_limit:  Not used
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @return number of events processed
-int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a Differential Manchester Coded signal
@@ -114,7 +114,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, struct protocol_s
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a raw Pulse Interval and Width Modulation signal
@@ -127,7 +127,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, struct protocol_state *device);
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device);
 
 
 /// Demodulate a differential Pulse Interval and Width Modulation signal
@@ -140,10 +140,10 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, struct protocol_state *devi
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
 /// @param device->tolerance:   Maximum deviation from nominal widths [us]
 /// @return number of events processed
-int pulse_demod_piwm_dc(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device);
 
 
-int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device);
+int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device);
 
 
 /// Simulate demodulation using a given signal code string
@@ -153,6 +153,6 @@ int pulse_demod_osv1(const pulse_data_t *pulses, struct protocol_state *device);
 /// separated with a slash "/" character. Whitespace is ignored.
 /// Device params are disregarded.
 /// @return number of events processed
-int pulse_demod_string(const char *code, struct protocol_state *device);
+int pulse_demod_string(const char *code, r_device *device);
 
 #endif /* INCLUDE_PULSE_DEMOD_H_ */

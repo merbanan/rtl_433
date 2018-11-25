@@ -604,7 +604,7 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		(float)data->fsk_f2_est/INT16_MAX*samp_rate/2.0/1000.0);
 
 	fprintf(stderr, "Guessing modulation: ");
-	struct protocol_state device = { .name = "Analyzer Device", 0};
+	r_device device = { .name = "Analyzer Device", 0};
 	histogram_sort_mean(&hist_pulses);	// Easier to work with sorted data
 	histogram_sort_mean(&hist_gaps);
 	if(hist_pulses.bins[0].mean == 0) { histogram_delete_bin(&hist_pulses, 0); }	// Remove FSK initial zero-bin

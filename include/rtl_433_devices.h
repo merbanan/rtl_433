@@ -120,7 +120,7 @@
 
 typedef struct {
     unsigned protocol_num; // fixed sequence number, assigned in main()
-    char name[256];
+    char *name;
     unsigned int modulation;
     float short_limit;
     float long_limit;
@@ -131,6 +131,16 @@ typedef struct {
     int (*json_callback)(bitbuffer_t *bitbuffer);
     unsigned int disabled;
     char **fields; // List of fields this decoder produces; required for CSV output. NULL-terminated.
+
+    /* pulse limits (converted to count of samples) */
+    float f_short_limit; // precision reciprocal for PCM
+    float f_long_limit;  // precision reciprocal for PCM
+    int s_short_limit;
+    int s_long_limit;
+    int s_reset_limit;
+    int s_gap_limit;
+    int s_sync_width;
+    int s_tolerance;
 } r_device;
 
 #define DECL(name) extern r_device name;
