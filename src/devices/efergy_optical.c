@@ -149,10 +149,11 @@ static char *output_fields[] = {
 r_device efergy_optical = {
 	.name           = "Efergy Optical",
 	.modulation     = FSK_PULSE_PWM_RAW,
-	.short_limit    = 92,
-	.long_limit     = 400,
+	.short_limit    = 64,
+	.long_limit     = 136,
+	.sync_width     = 500,
 	.reset_limit    = 400,
 	.json_callback  = &efergy_optical_callback,
 	.disabled       = 0,
-	.fields        = output_fields
+	.fields         = output_fields
 };

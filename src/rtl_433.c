@@ -648,7 +648,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             p_events += pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
                             break;
                         case FSK_PULSE_PWM_RAW:
-                            p_events += pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_pwm_precise(&demod->fsk_pulse_data, demod->r_devs[i]);
                             break;
                         case FSK_PULSE_MANCHESTER_ZEROBIT:
                             p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);

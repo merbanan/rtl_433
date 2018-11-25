@@ -205,7 +205,7 @@ int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device)
 		} else if (pulses->pulse[n] > sync_l && pulses->pulse[n] < sync_u) {
 			// Sync pulse
 			bitbuffer_add_sync(&bits);
-		} else if (pulses->pulse[n] < one_l) {
+		} else if (pulses->pulse[n] <= one_l) {
 			// Ignore spurious short pulses
 		} else {
 			// Pulse outside specified timing
