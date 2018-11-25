@@ -141,9 +141,9 @@ r_device elv_em1000 = {
 
 r_device elv_ws2000 = {
     .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = (854+366)/2,  // 0 => 854us, 1 => 366us according to link in top
-    .long_limit     = 1000, // no repetitions
+    .modulation     = OOK_PULSE_PWM_PRECISE,
+    .short_limit    = 366,  // 0 => 854us, 1 => 366us according to link in top
+    .long_limit     = 854, // no repetitions
     .reset_limit    = 1000, // Longest pause is 854us according to link
     .json_callback  = &ws2000_callback,
     .disabled       = 1,
