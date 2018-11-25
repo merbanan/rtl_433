@@ -1,5 +1,8 @@
 /* HT680 based Remote control (broadly similar to x1527 protocol)
  *
+ * short is 850 us gap 260 us pulse
+ * long is 434 us gap 663 us pulse
+ *
  * Copyright (C) 2016 Igor Polovnikov
  *
  * This program is free software; you can redistribute it and/or modify
@@ -86,10 +89,11 @@ static char *output_fields[] = {
 
 r_device ht680 = {
     .name          = "HT680 Remote control",
-    .modulation    = OOK_PULSE_PWM_RAW,
-    .short_limit   = 400,
-    .long_limit    = 1200,
-    .reset_limit   = 13000,
+    .modulation    = OOK_PULSE_PWM_PRECISE,
+    .short_limit   = 200,
+    .long_limit    = 600,
+    .gap_limit     = 1200,
+    .reset_limit   = 14000,
     .json_callback = &ht680_callback,
     .disabled      = 0,
     .fields        = output_fields,
