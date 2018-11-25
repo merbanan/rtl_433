@@ -20,7 +20,7 @@
 
 #define FSK_DEMOD_MIN_VAL               16 // Dummy. FSK demodulation must start at this value
 #define FSK_PULSE_PCM                   16 // FSK, Pulse Code Modulation
-#define FSK_PULSE_PWM_RAW               17 // FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
+#define FSK_PULSE_PWM                   17 // FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
 #define FSK_PULSE_MANCHESTER_ZEROBIT    18 // FSK, Manchester encoding
 
 extern int debug_output;

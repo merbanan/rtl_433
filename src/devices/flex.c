@@ -236,14 +236,12 @@ static void help()
             "\tOOK_PIWM_DC :     Differential Pulse Interval and Width Modulation\n"
             "\tOOK_MC_OSV1 :     Manchester Code for OSv1 devices\n"
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
-            "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
+            "\tFSK_PWM :         FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
             "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
             "PPM_RAW short: Threshold between short and long gap [us]\n"
-            "         long: Maximum gap size before new row of bits [us]\n"
-            "PWM_RAW short: Threshold between short and long pulse [us]\n"
             "         long: Maximum gap size before new row of bits [us]\n"
             "PWM     short: Nominal width of '1' pulse [us]\n"
             "         long: Nominal width of '0' pulse [us]\n"
@@ -416,8 +414,8 @@ r_device *flex_create_device(char *spec)
         dev->modulation = OOK_PULSE_PWM_OSV1;
     else if (!strcasecmp(c, "FSK_PCM"))
         dev->modulation = FSK_PULSE_PCM;
-    else if (!strcasecmp(c, "FSK_PWM_RAW"))
-        dev->modulation = FSK_PULSE_PWM_RAW;
+    else if (!strcasecmp(c, "FSK_PWM"))
+        dev->modulation = FSK_PULSE_PWM;
     else if (!strcasecmp(c, "FSK_MC_ZEROBIT"))
         dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
     else {

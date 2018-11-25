@@ -67,7 +67,7 @@ static char *output_fields[] = {
 
 r_device hondaremote = {
     .name           = "Honda Car Key",
-    .modulation     = FSK_PULSE_PWM_RAW,
+    .modulation     = FSK_PULSE_PWM,
     .short_limit    = 250,
     .long_limit     = 500,
     .reset_limit    = 2000,

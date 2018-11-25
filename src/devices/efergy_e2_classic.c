@@ -108,7 +108,7 @@ static char *output_fields[] = {
 
 r_device efergy_e2_classic = {
     .name           = "Efergy e2 classic",
-    .modulation     = FSK_PULSE_PWM_RAW,
+    .modulation     = FSK_PULSE_PWM,
 	.short_limit    = 64,
 	.long_limit     = 136,
 	.sync_width     = 500,
