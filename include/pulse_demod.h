@@ -50,20 +50,6 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Pulse Width Modulation signal
 ///
-/// Demodulate a Pulse Width Modulation (PWM) signal consisting of short and long high pulses.
-/// Gap between pulses may be of fixed size or variable (e.g. fixed period)
-/// - Short pulse will add a 1 bit
-/// - Long  pulse will add a 0 bit
-/// @deprecated use pulse_demod_pwm_precise (long_limit becomes gap_limit).
-/// @param device->short_limit: Threshold between short and long pulse [us]
-/// @param device->long_limit:  Maximum gap size before new row of bits [us]
-/// @param device->reset_limit: Maximum gap size before End Of Message [us].
-/// @return number of events processed
-int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
-
-
-/// Demodulate a Pulse Width Modulation signal
-///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, long, and optional sync pulses.
 /// Gap between pulses may be of fixed size or variable (e.g. fixed period)
 /// - Short pulse will add a 1 bit

@@ -107,38 +107,6 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
 }
 
 
-int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device) {
-	int events = 0;
-	bitbuffer_t bits = {0};
-
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// Detect pulse width
-		if(pulses->pulse[n] <= device->s_short_limit) {
-			bitbuffer_add_bit(&bits, 1);
-		} else {
-			bitbuffer_add_bit(&bits, 0);
-		}
-		// End of Message?
-		if (n == pulses->num_pulses - 1					// No more pulses (FSK)
-			|| pulses->gap[n] > device->s_reset_limit) {	// Long silence (OOK)
-			if (device->json_callback) {
-				events += device->json_callback(&bits);
-			}
-			// Debug printout
-			if(!device->json_callback || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_pwm(): %s\n", device->name);
-				bitbuffer_print(&bits);
-			}
-			bitbuffer_clear(&bits);
-		// Check for new packet in multipacket
-		} else if(pulses->gap[n] > device->s_long_limit) {
-			bitbuffer_add_row(&bits);
-		}
-	}
-	return events;
-}
-
-
 int pulse_demod_pwm_precise(const pulse_data_t *pulses, r_device *device)
 {
 	int events = 0;
