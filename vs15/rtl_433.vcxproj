@@ -91,6 +91,7 @@
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
     <ClInclude Include="..\include\decoder.h" />
+    <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
@@ -107,6 +108,7 @@
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\confparse.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />

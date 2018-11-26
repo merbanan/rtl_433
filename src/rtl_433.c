@@ -1313,15 +1313,17 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
     }
 }
 
-static char const *well_known_tag[]  = {"tag", NULL};
-static char const *well_known_null[] = {NULL};
+// well-known fields "msg" and "codes" are used to output general decoder messages
+// well-known field "tag" is only used when output tagging is requested
+static char const *well_known_with_tag[]  = {"msg", "codes", "tag", NULL};
+static char const *well_known_default[] = {"msg", "codes", NULL};
 static char const **well_known_output_fields(struct app_cfg *cfg)
 {
     if (cfg->output_tag) {
-        return well_known_tag;
+        return well_known_with_tag;
     }
     else {
-        return well_known_null;
+        return well_known_default;
     }
 }
 
