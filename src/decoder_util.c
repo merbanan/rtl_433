@@ -10,10 +10,8 @@
  */
 
 #include <stdio.h>
-//#include "bitbuffer.h"
-//#include "data.h"
-//#include "util.h"
-#include "decoder.h"
+#include "data.h"
+#include "util.h"
 #include "decoder_util.h"
 
 // variadic print functions
@@ -56,49 +54,54 @@ void bitrow_debugf(bitrow_t const bitrow, unsigned bit_len, char const *restrict
 
 // variadic output functions
 
-void decoder_output_messagef(char const *restrict format, ...)
+void decoder_output_messagef(r_device *decoder, char const *restrict format, ...)
 {
     char msg[60]; // fixed length limit
     va_list ap;
     va_start(ap, format);
     vsnprintf(msg, 60, format, ap);
     va_end(ap);
-    decoder_output_message(msg);
+    decoder_output_message(decoder, msg);
 }
 
-void decoder_output_bitbufferf(bitbuffer_t const *bitbuffer, char const *restrict format, ...)
+void decoder_output_bitbufferf(r_device *decoder, bitbuffer_t const *bitbuffer, char const *restrict format, ...)
 {
     char msg[60]; // fixed length limit
     va_list ap;
     va_start(ap, format);
     vsnprintf(msg, 60, format, ap);
     va_end(ap);
-    decoder_output_bitbuffer(bitbuffer, msg);
+    decoder_output_bitbuffer(decoder, bitbuffer, msg);
 }
 
-void decoder_output_bitbuffer_arrayf(bitbuffer_t const *bitbuffer, char const *restrict format, ...)
+void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbuffer, char const *restrict format, ...)
 {
     char msg[60]; // fixed length limit
     va_list ap;
     va_start(ap, format);
     vsnprintf(msg, 60, format, ap);
     va_end(ap);
-    decoder_output_bitbuffer_array(bitbuffer, msg);
+    decoder_output_bitbuffer_array(decoder, bitbuffer, msg);
 }
 
-void decoder_output_bitrowf(bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
+void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
 {
     char msg[60]; // fixed length limit
     va_list ap;
     va_start(ap, format);
     vsnprintf(msg, 60, format, ap);
     va_end(ap);
-    decoder_output_bitrow(bitrow, bit_len, msg);
+    decoder_output_bitrow(decoder, bitrow, bit_len, msg);
 }
 
 // output functions
 
-void decoder_output_message(char const *msg)
+void decoder_output_data(r_device *decoder, data_t *data)
+{
+    decoder->output_fn(data);
+}
+
+void decoder_output_message(r_device *decoder, char const *msg)
 {
     data_t *data;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -108,10 +111,10 @@ void decoder_output_message(char const *msg)
             "time", "", DATA_STRING, time_str,
             "msg", "", DATA_STRING, msg,
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 }
 
-void decoder_output_bitbuffer(bitbuffer_t const *bitbuffer, char const *msg)
+void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg)
 {
     data_t *data;
     char *row_codes[BITBUF_ROWS];
@@ -141,14 +144,14 @@ void decoder_output_bitbuffer(bitbuffer_t const *bitbuffer, char const *msg)
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         free(row_codes[i]);
     }
 }
 
-void decoder_output_bitbuffer_array(bitbuffer_t const *bitbuffer, char const *msg)
+void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg)
 {
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
@@ -185,14 +188,14 @@ void decoder_output_bitbuffer_array(bitbuffer_t const *bitbuffer, char const *ms
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         free(row_codes[i]);
     }
 }
 
-void decoder_output_bitrow(bitrow_t const bitrow, unsigned bit_len, char const *msg)
+void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg)
 {
     data_t *data;
     char *row_code;
@@ -219,7 +222,7 @@ void decoder_output_bitrow(bitrow_t const bitrow, unsigned bit_len, char const *
             "msg", "", DATA_STRING, msg,
             "codes", "", DATA_STRING, row_code,
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     free(row_code);
 }
