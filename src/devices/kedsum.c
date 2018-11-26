@@ -61,7 +61,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temperature_with_offset =  (tnH<<8) | (tnM<<4) | tnL;
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
-    if (debug_output) {
+    if (decoder->verbose) {
       fprintf(stdout, "Bitstream HEX        = ");
       bitrow_print(b, 48);
       fprintf(stdout, "Humidity HEX         = %02x\n", b[3]);

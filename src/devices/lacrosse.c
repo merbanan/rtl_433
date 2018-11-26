@@ -58,7 +58,7 @@
 // Long bits = 0
 // short bits = 1
 //
-static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
+static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
     int i;
     uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
     uint8_t bit, checksum, parity_bit, parity = 0;
@@ -107,7 +107,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
         if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
             return 1;
         } else {
-            if (debug_output > 1) {
+            if (decoder->verbose > 1) {
                 fprintf(stdout,
                         "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
                         checksum, msg_nybbles[10], parity);
@@ -137,7 +137,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     for (m = 0; m < BITBUF_ROWS; m++) {
         valid = 0;
         // break out the message nybbles into separate bytes
-        if (lacrossetx_detect(bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
+        if (lacrossetx_detect(decoder, bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
 
             msg_len = msg_nybbles[1];
             msg_type = msg_nybbles[2];
@@ -155,7 +155,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             // message integrity.
             if (msg_nybbles[5] != msg_nybbles[8] ||
                 msg_nybbles[6] != msg_nybbles[9]) {
-                if (debug_output) {
+                if (decoder->verbose) {
                     fprintf(stderr,
                             "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
                             sensor_id, msg_type, msg_value, msg_value_int);
@@ -187,7 +187,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
             default:
                 // @todo this should be reported/counted as exception, not considered debug
-                if (debug_output) {
+                if (decoder->verbose) {
                     fprintf(stderr,
                             "%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
                             time_str, sensor_id, msg_type, msg_value, msg_value_int);

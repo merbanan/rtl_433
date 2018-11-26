@@ -56,7 +56,7 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     temperature_c = temperature / 10.0f;
 
-    if (debug_output) {
+    if (decoder->verbose) {
         fprintf(stdout, "Hyundai WS SENZOR received raw data:\n");
         bitbuffer_print(bitbuffer);
         fprintf(stdout, "Sensor ID	= %01d = 0x%02x\n",  sensor_id, sensor_id);

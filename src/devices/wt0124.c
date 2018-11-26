@@ -69,7 +69,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* unk */
     value = b[5];
 
-    if (debug_output) {
+    if (decoder->verbose) {
         fprintf(stderr, "wt1024_callback:");
         bitbuffer_print(bitbuffer);
     }

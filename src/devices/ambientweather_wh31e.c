@@ -59,20 +59,20 @@ static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuff
         unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 28);
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // no preamble detected, move to the next row
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Ambient Weather WH31E detected, buffer is %d bits length\n", bitbuffer->bits_per_row[row]);
         // remove preamble and keep only 64 bits
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 11 * 8);
 
         if (b[0] != 0x30) {
-            if (debug_output)
+            if (decoder->verbose)
                 fprintf(stderr, "Ambient Weather WH31E unknown message type %02x (expected 0x30)\n", b[0]);
             continue;
         }
 
         c_crc = crc8(b, 5, 0x31, 0x00);
         if (c_crc != b[5]) {
-            if (debug_output)
+            if (decoder->verbose)
                 fprintf(stderr, "Ambient Weather WH31E bad CRC: calculated %02x, received %02x\n", c_crc, b[5]);
             continue;
         }

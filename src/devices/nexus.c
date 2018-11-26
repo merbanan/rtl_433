@@ -29,7 +29,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     char time_str[LOCAL_TIME_BUFLEN];
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr,"Possible Nexus: ");
         bitbuffer_print(bitbuffer);
     }

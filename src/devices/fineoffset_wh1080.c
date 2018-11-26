@@ -283,7 +283,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    if (debug_output) {
+    if (decoder->verbose) {
         bitrow_print(bbuf, (sens_msg - 1) * 8);
     }
 

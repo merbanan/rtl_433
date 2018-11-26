@@ -23,7 +23,4 @@
 #define FSK_PULSE_PWM                   17 // FSK, Pulse Width Modulation. Short pulses = 1, Long = 0
 #define FSK_PULSE_MANCHESTER_ZEROBIT    18 // FSK, Manchester encoding
 
-extern int debug_output;
-extern float sample_file_pos;
-
 #endif /* INCLUDE_DECODER_H_ */

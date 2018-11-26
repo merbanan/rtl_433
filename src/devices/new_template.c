@@ -65,7 +65,7 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      * 1. Enable with -D -D (debug level of 2)
      * 2. Delete this block when your decoder is working
      */
-    //    if (debug_output > 1) {
+    //    if (decoder->verbose > 1) {
     //        fprintf(stderr,"new_tmplate callback:\n");
     //        bitbuffer_print(bitbuffer);
     //    }
@@ -151,7 +151,7 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
     if (!parity) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template parity check failed\n");
         }
         return 0;
@@ -161,7 +161,7 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      * Check message integrity (Checksum example)
      */
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template checksum error\n");
         }
         return 0;
@@ -176,7 +176,7 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     c_crc = crc8(b, MYDEVICE_BITLEN / 8, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
     if (r_crc != c_crc) {
         // example debugging output
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template bad CRC: calculated %02x, received %02x\n",
                     c_crc, r_crc);
         }

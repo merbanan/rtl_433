@@ -85,7 +85,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         /* Quit if checksum does not work out */
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
-            if(debug_output) {
+            if(decoder->verbose) {
                 fprintf(stderr,
                 "%s AlectoV1 Checksum/Parity error\n",
                 time_str);
@@ -168,7 +168,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                             NULL);
             decoder_output_data(decoder, data);
         }
-        if (debug_output){
+        if (decoder->verbose){
             fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
             fprintf(stdout, "Received Data = ");
             bitrow_print(bb[1], 40);

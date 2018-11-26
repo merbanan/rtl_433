@@ -22,7 +22,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
         return 0;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stdout, "Switch event:\n");
         fprintf(stdout, "protocol       = Intertechno\n");
         fprintf(stdout, "rid            = %x\n", b[0]);

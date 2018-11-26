@@ -61,7 +61,7 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	pressure = b[5] * 25;
 	temperature = b[6] - 50;
 
-	if (debug_output >= 1) {
+	if (decoder->verbose) {
 		fprintf(stderr, "Schrader TPMS decoder\n");
 		bitbuffer_print(bitbuffer);
 		fprintf(stderr, "id = 0x%X\n", serial_id);
@@ -138,7 +138,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 	/* Get temperature value */
 	temperature = b[8];
 
-	if (debug_output >= 1) {
+	if (decoder->verbose) {
 		fprintf(stderr, "Schrader EG53MA4 TPMS decoder\n");
 		bitbuffer_print(bitbuffer);
 		fprintf(stderr, "id = 0x%X\n", serial_id);

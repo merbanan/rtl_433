@@ -103,7 +103,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
-        if (debug_output > 1) {
+        if (decoder->verbose > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
                     fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
@@ -124,7 +124,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     checksum_calculated = checksum_calculate(b);
     postmark = b[5];
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr, "TTX201 received raw data: ");
         bitbuffer_print(bitbuffer);
         fprintf(stderr, "Data decoded:\n" \
@@ -147,14 +147,14 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     }
 
     if (postmark != MSG_PACKET_POSTMARK) {
-        if (debug_output > 1)
+        if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
                     row, postmark, MSG_PACKET_POSTMARK);
         return 0;
     }
 
     if (checksum != checksum_calculated) {
-        if (debug_output > 1)
+        if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%d checksum error.\n", row);
         return 0;
     }
@@ -189,7 +189,7 @@ ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
         for (row = 0; row < bitbuffer->num_rows; ++row) {
             events += ttx201_decode(decoder, bitbuffer, row, 0);
-            if (events && !debug_output) return events; // for now, break after first successful message
+            if (events && !decoder->verbose) return events; // for now, break after first successful message
         }
     }
 

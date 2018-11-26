@@ -75,7 +75,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(chk_data, 24, 0x8810, 0xdd38) ^ digest;
 
-    if (debug_output)
+    if (decoder->verbose)
         fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %06x, digest xor'ed: %04x\n",
                 __FUNCTION__, pre, flags, temp1, temp2, digest, chk_data, id);
 

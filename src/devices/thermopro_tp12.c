@@ -72,7 +72,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // or long-press its power button, it pairs with the first device ID it hears.
     device = bytes[0];
 
-    if(debug_output) {
+    if(decoder->verbose) {
         // There is a mysterious checksum in bytes[4].  It may be the same as the checksum used by the TP-11,
         // which consisted of a lookup table containing, for each bit in the message, a byte to be xor-ed into
         // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian

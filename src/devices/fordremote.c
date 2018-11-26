@@ -38,7 +38,7 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			continue; // no valid preamble
 		}
 
-		if (debug_output) {
+		if (decoder->verbose) {
 			bitbuffer_print(bitbuffer);
 		}
 

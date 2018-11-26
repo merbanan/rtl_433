@@ -45,7 +45,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     b[4] = ~b[4];
 
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH checksum error\n");
         }
         return 0;
@@ -64,7 +64,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     humidity = b[3];
 
     if ((channel == 0) || (humidity > 100) || (temp_f < -20.0) || (temp_f > 160.0)) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH data error\n");
         }
         return 0;

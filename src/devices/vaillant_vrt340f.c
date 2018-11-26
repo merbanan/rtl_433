@@ -31,14 +31,14 @@ calculate_checksum(uint8_t *buff, int from, int to) {
 }
 
 static int
-validate_checksum(uint8_t * msg, int from, int to, int cs_from, int cs_to)
+validate_checksum(r_device *decoder, uint8_t * msg, int from, int to, int cs_from, int cs_to)
 {
     // Fields cs_from and cs_to hold the 2-byte checksum as signed int
     int16_t expected = msg[cs_from]*0x100+ msg[cs_to];
     int16_t calculated = calculate_checksum(msg, from, to);
 
     if (expected != calculated) {
-        if (debug_output >= 1) {
+        if (decoder->verbose) {
             fprintf(stderr, "Checksum error in Vaillant VRT340f.  Expected: %04x  Calculated: %04x\n", expected, calculated);
             fprintf(stderr, "Message (data content of bytes %d-%d): ", from, to);
             bitrow_print(&msg[from], (to - from + 1) * 8);
@@ -142,7 +142,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // "Normal package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7e) && (128 <= bitcount && bitcount <= 131)) {
 
-        if (!validate_checksum (bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
+        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
             return 0;
         }
 
@@ -169,7 +169,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // "RF detection package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
 
-        if (!validate_checksum(bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
+        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
             return 0;
         }
 

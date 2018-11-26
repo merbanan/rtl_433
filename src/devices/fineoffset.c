@@ -74,7 +74,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
     type = b[0] >> 4;
     if (type != 4) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "%s: Unknown type: %d\n", model, type);
         }
         return 0;
@@ -179,7 +179,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Find a data package and extract data buffer
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH24: short package. Header index: %u\n", bit_offset);
             bitbuffer_print(bitbuffer);
         }
@@ -191,7 +191,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         model = MODEL_WH65B; // nominal 12 bits postamble
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[17 * 3 + 1];
         for (unsigned n = 0; n < sizeof(b); n++) {
             sprintf(raw_str + n * 3, "%02x ", b[n]);
@@ -209,7 +209,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         checksum += b[n];
     }
     if (crc != b[15] || checksum != b[16]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH24: Checksum error: %02x %02x\n", crc, checksum);
         }
         return 0;
@@ -329,7 +329,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Find a data package and extract data payload
     bit_offset = bitbuffer_search(bitbuffer, 0, 320, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8; // Normal index is 367, skip some bytes to find faster
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
             bitbuffer_print(bitbuffer);
         }
@@ -337,7 +337,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[8 * 3 + 1];
         for (unsigned n=0; n<sizeof(b); n++) { sprintf(raw_str+n*3, "%02x ", b[n]); }
         fprintf(stderr, "Fineoffset_WH25: Raw: %s @ bit_offset [%u]\n", raw_str, bit_offset);
@@ -351,7 +351,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     bitsum = (bitsum << 4) | (bitsum >> 4);     // Swap nibbles
     if (checksum != b[6] || bitsum != b[7]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH25: Checksum error: %02x %02x\n", checksum, bitsum);
         }
         return 0;
@@ -414,7 +414,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t buffer[8];
     bitbuffer_extract_bytes(bitbuffer, 0, 7, buffer, sizeof(buffer) * 8);     // Skip first 7 bits
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[8 * 3 + 1];
         for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str + n * 3, "%02x ", buffer[n]); }
         fprintf(stderr, "Fineoffset_WH0530: Raw %s\n", raw_str);
@@ -424,7 +424,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t crc = crc8(buffer, 6, 0x31, 0);
     uint8_t checksum = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6];
     if (crc != buffer[6] || checksum != buffer[7]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH0530: Checksum error: %02x %02x\n", crc, checksum);
         }
         return 0;
