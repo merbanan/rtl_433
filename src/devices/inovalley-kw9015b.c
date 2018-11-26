@@ -63,7 +63,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 					"rain","Rain Count", DATA_INT, iRain,
 					NULL);
 
-				data_acquired_handler(data);
+				decoder_output_data(decoder, data);
 
 
 				return 1;

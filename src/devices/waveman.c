@@ -63,7 +63,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         "button",   "",     DATA_INT,       (nb[1] & 3) + 1,
         "state",    "",     DATA_STRING,    (nb[2] == 0xe) ? "on" : "off",
         NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }

@@ -78,7 +78,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
                          "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     if (sensortype == HIDEKI_WIND) {
@@ -94,7 +94,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "windstrength",  "Wind Strength", DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_strength*0.160934f,
                          "winddirection", "Direction",     DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction/10.f,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     if (sensortype == HIDEKI_TEMP) {
@@ -105,7 +105,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
                          "temperature_C", "Temperature",   DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     if (sensortype == HIDEKI_RAIN) {
@@ -118,7 +118,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "battery",       "Battery",       DATA_STRING, battery_ok ? "OK": "LOW",
                          "rain",          "Rain",          DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units*0.7f,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     return 0;

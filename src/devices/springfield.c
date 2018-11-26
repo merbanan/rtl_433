@@ -59,7 +59,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 					"moisture",		"Moisture",		DATA_INT,		moisture,
 //					"uk1",			"uk1",			DATA_INT,		uk1,
 					NULL);
-				data_acquired_handler(data);
+				decoder_output_data(decoder, data);
 				ret++;
 			}
 		}

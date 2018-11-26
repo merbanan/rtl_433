@@ -213,8 +213,8 @@ static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bu
     return 1;
 }
 
-
-static void m_bus_output_data(const m_bus_data_t *out, const m_bus_block1_t *block1) {
+static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1)
+{
     data_t  *data;
     char    time_str[LOCAL_TIME_BUFLEN];
     char    str_buf[1024];
@@ -241,7 +241,7 @@ static void m_bus_output_data(const m_bus_data_t *out, const m_bus_block1_t *blo
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 }
 
 
@@ -313,7 +313,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(&data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1);
     return 1;
 }
 
@@ -345,7 +345,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Decode
     if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(&data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1);
     return 1;
 }
 
@@ -394,7 +394,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    m_bus_output_data(&data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1);
     return 1;
 }
 

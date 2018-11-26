@@ -172,7 +172,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
             "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

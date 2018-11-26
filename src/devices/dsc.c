@@ -201,7 +201,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "status_hex", "", DATA_STRING, status_str, // to be removed - once bits are output
                 "mic", "", DATA_STRING, "CRC",
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         valid_cnt++; // Have a valid packet.
     }

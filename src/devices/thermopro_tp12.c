@@ -100,7 +100,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
                      "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp1,
                      "temperature_2_C", "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp2,
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

@@ -169,7 +169,7 @@ static int validate_os_v2_message(unsigned char * msg, int bits_expected, int va
   return 1;
 }
 
-static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuffer) {
   bitrow_t *bb = bitbuffer->bb;
   // Check 2nd and 3rd bytes of stream for possible Oregon Scientific v2.1 sensor data (skip first byte to get past sync/startup bit errors)
   if( ((bb[0][1] == 0x55) && (bb[0][2] == 0x55)) ||
@@ -258,7 +258,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if (sensor_id == ID_WGR968) {
@@ -277,7 +277,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "average",    "Average",    DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
             "direction",  "Direction",  DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if (sensor_id == ID_BHTR968) {
@@ -307,7 +307,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "humidity",   "Humidity",       DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.0f hPa",   DATA_DOUBLE, pressure,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if (sensor_id == ID_RGR968) {
@@ -325,7 +325,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "rain_rate",  "Rain Rate",  DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
             "total_rain", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if (sensor_id == ID_THR228N && num_valid_v2_bits==153) {
@@ -341,7 +341,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if (sensor_id == ID_THN132N && num_valid_v2_bits==129) {
@@ -357,7 +357,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if ((sensor_id & 0x0fff) == ID_RTGN129 && num_valid_v2_bits==161) {
@@ -373,7 +373,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if ((sensor_id & 0x0fff) == ID_RTGN318) {
@@ -389,7 +389,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg, sensor_id),
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       } else if (num_valid_v2_bits==201 && (validate_os_v2_message(msg, 201, num_valid_v2_bits, 21) == 0)) {
 
         // RF Clock message ??
@@ -407,7 +407,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
 
       return 1;
@@ -426,7 +426,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
             "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg, sensor_id),
             "pressure_hPa",  "Pressure",    DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       //}
 
       return 1;
@@ -441,7 +441,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 		  "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
 		  //"channel",        "Channel",    DATA_INT,    get_os_channel(msg, sensor_id),
 		  NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		}
 	 return 1;
     }else if (num_valid_v2_bits > 16) {
@@ -469,7 +469,7 @@ static int oregon_scientific_v2_1_parser(bitbuffer_t *bitbuffer) {
 return 0;
 }
 
-static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer) {
   bitrow_t *bb = bitbuffer->bb;
   data_t *data;
   char time_str[LOCAL_TIME_BUFLEN];
@@ -538,7 +538,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
           "humidity",       "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;                  //msg[k] = ((msg[k] & 0x0F) << 4) + ((msg[k] & 0xF0) >> 4);
     } else if (sensor_id == ID_THN802)    {
@@ -553,7 +553,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
             "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
             "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             NULL);
-          data_acquired_handler(data);
+          decoder_output_data(decoder, data);
         }
         return 1;
     } else if (sensor_id == ID_UV800) {
@@ -568,7 +568,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "battery",        "Battery",    DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
           "uv",             "UV Index",   DATA_FORMAT, "%u", DATA_INT, uvidx,
           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
     } else if (sensor_id == ID_PCR800) {
       if (validate_os_checksum(msg, 18) == 0) {
@@ -584,7 +584,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
           "rain_rate",  "Rain Rate",  DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
           "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         }
 	return 1;
 } else if (sensor_id == ID_PCR800a) {
@@ -601,7 +601,7 @@ static int oregon_scientific_v3_parser(bitbuffer_t *bitbuffer) {
       "rain_rate",  "Rain Rate",  DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
       "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
       NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     }
 return 1;
     } else if (sensor_id == ID_WGR800) {
@@ -620,7 +620,7 @@ return 1;
           "average",    "Average",    DATA_FORMAT,  "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
           "direction",  "Direction",  DATA_FORMAT,  "%3.1f degrees",DATA_DOUBLE, quadrant,
           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
       }
       return 1;
     } else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { //  Owl CM160 Readings
@@ -635,7 +635,7 @@ return 1;
             "id",     "House Code", DATA_INT, msg[1]&0x0F,
             "power_W", "Power",     DATA_FORMAT,  "%d W", DATA_INT, ipower,
             NULL);
-          data_acquired_handler(data);
+          decoder_output_data(decoder, data);
       }
     } else if (msg[0] == 0x26) { //  Owl CM180 readings
         msg[0]=msg[0] & 0x0f;
@@ -656,7 +656,7 @@ return 1;
               "power_W",    "Power",      DATA_FORMAT,  "%d W",DATA_INT, ipower,
               "energy_kWh", "Energy",     DATA_FORMAT,  "%2.1f kWh",DATA_DOUBLE, total_energy,
               NULL);
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
         } else if (!itotal) {
             data = data_make(
               "time",   "",           DATA_STRING,  time_str,
@@ -665,7 +665,7 @@ return 1;
               "id",     "House Code", DATA_INT, msg[1]&0x0F,
               "power_W", "Power",     DATA_FORMAT,  "%d W",DATA_INT, ipower,
               NULL);
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
         }
     } else if ((msg[0] != 0) && (msg[1]!= 0)) { //  sync nibble was found  and some data is present...
       if(debug_output) {
@@ -695,9 +695,9 @@ return 1;
 }
 
 static int oregon_scientific_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-  int ret = oregon_scientific_v2_1_parser(bitbuffer);
+  int ret = oregon_scientific_v2_1_parser(decoder, bitbuffer);
   if (ret == 0)
-    ret = oregon_scientific_v3_parser(bitbuffer);
+    ret = oregon_scientific_v3_parser(decoder, bitbuffer);
   return ret;
 }
 

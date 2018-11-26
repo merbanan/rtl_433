@@ -26,7 +26,4 @@
 extern int debug_output;
 extern float sample_file_pos;
 
-/** Pass the data structure to all output handlers. Frees data afterwards. */
-void data_acquired_handler(data_t *data);
-
 #endif /* INCLUDE_DECODER_H_ */

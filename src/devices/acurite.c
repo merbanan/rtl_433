@@ -245,7 +245,7 @@ static int acurite_rain_gauge_callback(r_device *decoder, bitbuffer_t *bitbuffer
             "rain",     "Total Rain",    DATA_FORMAT,    "%.1f mm", DATA_DOUBLE, total_rain,
             NULL);
 
-        data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -315,7 +315,7 @@ static int acurite_th_callback(r_device *decoder, bitbuffer_t *bitbuf)
              "humidity",        "Humidity",    DATA_INT,    humidity,
              NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     valid++;
     }
 
@@ -472,7 +472,7 @@ static float acurite_6045_getTemp(uint8_t highbyte, uint8_t lowbyte)
  * @todo - figure out remaining status bits and how to report
  */
 
-static int acurite_6045_decode(bitrow_t bb, int browlen)
+static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
 {
     int valid = 0;
     float tempf;
@@ -552,7 +552,7 @@ static int acurite_6045_decode(bitrow_t bb, int browlen)
        "raw_msg",        "raw_message",        DATA_STRING,    raw_str,
      NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     valid++;
 
     return(valid);
@@ -664,7 +664,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
 
                     NULL);
 
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
             valid++;
         }
 
@@ -719,7 +719,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "raincounter_raw",  NULL,   DATA_INT,   raincounter,
                     NULL);
 
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
 
             } else if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY) {
                 // Wind speed, temperature and humidity
@@ -741,7 +741,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                     "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                     NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
 
             } else if (message_type == ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1) {
                 // Wind speed, temperature and humidity for 3-n-1
@@ -762,7 +762,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                     "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                     NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
 
             } else {
                 fprintf(stderr, "%s Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
@@ -772,7 +772,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
 
         if (browlen == ACURITE_6045_BITLEN / 8) {
             // @todo check parity and reject if invalid
-            valid += acurite_6045_decode(bb, browlen);
+            valid += acurite_6045_decode(decoder, bb, browlen);
         }
 
     }
@@ -926,7 +926,7 @@ static int acurite_986_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 "status",        "status",    DATA_INT,    status,
                 NULL);
 
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         valid_cnt++;
 
@@ -1019,7 +1019,7 @@ static int acurite_606_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "battery",          "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                     "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                     NULL);
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
             return 1;
         }
     }
@@ -1144,7 +1144,7 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
             } else { // suppress compiler warning
                 return 0;
             }
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
             valid=1;
         }
     }

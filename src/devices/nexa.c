@@ -54,7 +54,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                      "unit",          "Unit",        DATA_INT, unit_bit,
                       NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 0;
 }

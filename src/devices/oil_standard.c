@@ -35,64 +35,64 @@ static const unsigned char preamble_pattern1[2] = { 0x55, 0x62 };
 
 // End of frame is the last half-bit repeated additional 4 times
 
-static int oil_standard_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-	char time_str[LOCAL_TIME_BUFLEN];
-	data_t *data;
-	uint8_t *b;
-	uint16_t unit_id;
-	uint16_t depth = 0;
-	uint16_t binding_countdown = 0;
-	uint8_t flags;
-	uint8_t alarm;
-	bitbuffer_t databits = {0};
+static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
+    char time_str[LOCAL_TIME_BUFLEN];
+    data_t *data;
+    uint8_t *b;
+    uint16_t unit_id;
+    uint16_t depth             = 0;
+    uint16_t binding_countdown = 0;
+    uint8_t flags;
+    uint8_t alarm;
+    bitbuffer_t databits = {0};
 
-	bitpos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
+    bitpos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
 
-	if (databits.bits_per_row[0] < 32 || databits.bits_per_row[0] > 40
-			|| (databits.bb[0][4] & 0xfe) != 0)
-		return 0;
+    if (databits.bits_per_row[0] < 32 || databits.bits_per_row[0] > 40 || (databits.bb[0][4] & 0xfe) != 0)
+        return 0;
 
-	b = databits.bb[0];
+    b = databits.bb[0];
 
-	// The unit ID changes when you rebind by holding a magnet to the
-	// sensor for long enough.
-	unit_id = (b[0] << 8) | b[1];
+    // The unit ID changes when you rebind by holding a magnet to the
+    // sensor for long enough.
+    unit_id = (b[0] << 8) | b[1];
 
-	// 0x01: Rebinding (magnet held to sensor)
-	// 0x02: High-bit for depth
-	// 0x04: (always zero?)
-	// 0x08: Leak/theft alarm
-	// 0x10: (unknown toggle)
-	// 0x20: (unknown toggle)
-	// 0x40: (unknown toggle)
-	// 0x80: (always zero?)
-	flags = b[2] & ~0x0A;
-	alarm = (b[2] & 0x08) >> 3;
+    // 0x01: Rebinding (magnet held to sensor)
+    // 0x02: High-bit for depth
+    // 0x04: (always zero?)
+    // 0x08: Leak/theft alarm
+    // 0x10: (unknown toggle)
+    // 0x20: (unknown toggle)
+    // 0x40: (unknown toggle)
+    // 0x80: (always zero?)
+    flags = b[2] & ~0x0A;
+    alarm = (b[2] & 0x08) >> 3;
 
-	if (flags & 1)
-		// When binding, the countdown counts up from 0x40 to 0x4a
-		// (as long as you hold the magnet to it for long enough)
-		// before the device ID changes. The receiver unit needs
-		// to receive this *strongly* in order to change its
-		// allegiance.
-		binding_countdown = b[3];
-	else
-		// A depth reading of zero indicates no reading.
-		depth = ((b[2] & 0x02) << 7) | b[3];
+    if (flags & 1)
+        // When binding, the countdown counts up from 0x40 to 0x4a
+        // (as long as you hold the magnet to it for long enough)
+        // before the device ID changes. The receiver unit needs
+        // to receive this *strongly* in order to change its
+        // allegiance.
+        binding_countdown = b[3];
+    else
+        // A depth reading of zero indicates no reading.
+        depth = ((b[2] & 0x02) << 7) | b[3];
 
-	local_time_str(0, time_str);
-	data = data_make(
-		"time",		"",				DATA_STRING,	time_str,
-		"model",	"",				DATA_STRING,	"Oil Ultrasonic STANDARD",
-		"id",		"",				DATA_FORMAT,	"%04x", DATA_INT, unit_id,
-		"flags",	"",				DATA_FORMAT,	"%02x", DATA_INT, flags,
-		"alarm",	"",				DATA_INT,		alarm,
-		"binding_countdown",	"",	DATA_INT,		binding_countdown,
-		"depth_cm",	"",				DATA_INT,		depth,
-		NULL);
-	data_acquired_handler(data);
+    local_time_str(0, time_str);
+    data = data_make(
+            "time", "", DATA_STRING, time_str,
+            "model", "", DATA_STRING, "Oil Ultrasonic STANDARD",
+            "id", "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
+            "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
+            "alarm", "", DATA_INT, alarm,
+            "binding_countdown", "", DATA_INT, binding_countdown,
+            "depth_cm", "", DATA_INT, depth,
+            NULL);
+    decoder_output_data(decoder, data);
 
-	return 1;
+    return 1;
 }
 
 static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
@@ -102,14 +102,14 @@ static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	// Find a preamble with enough bits after it that it could be a complete packet
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern0, 16)) + 78 <=
 			bitbuffer->bits_per_row[0]) {
-		events += oil_standard_decode(bitbuffer, 0, bitpos + 14);
+		events += oil_standard_decode(decoder, bitbuffer, 0, bitpos + 14);
 		bitpos += 2;
 	}
 
 	bitpos = 0;
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern1, 16)) + 78 <=
 			bitbuffer->bits_per_row[0]) {
-		events += oil_standard_decode(bitbuffer, 0, bitpos + 14);
+		events += oil_standard_decode(decoder, bitbuffer, 0, bitpos + 14);
 		bitpos += 2;
 	}
 	return events;

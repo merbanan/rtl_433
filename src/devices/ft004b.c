@@ -61,7 +61,7 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }

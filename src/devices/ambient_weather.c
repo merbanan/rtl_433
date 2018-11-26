@@ -14,7 +14,7 @@ static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
 static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
 static int
-ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[6];
     int deviceID;
@@ -57,7 +57,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -75,7 +75,7 @@ ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
-            events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
+            events += ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
             bitpos += 16;
         }
@@ -83,7 +83,7 @@ ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
-            events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
+            events += ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
             bitpos += 15;
         }

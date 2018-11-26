@@ -64,7 +64,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                         "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                         "mic",           "Integrity",   DATA_STRING, "CRC",
                         NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }

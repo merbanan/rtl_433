@@ -121,7 +121,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				"pulses",	"Pulse-rate",	DATA_FORMAT,"%i", DATA_INT, imp_kwh[i],
 				"energy",       "Energy",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
 				NULL);
-			data_acquired_handler(data);
+			decoder_output_data(decoder, data);
 		}
 		return 1;
 	}

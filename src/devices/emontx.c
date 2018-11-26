@@ -126,7 +126,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[9] / 10.0,
 				 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
 				 NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		events++;
 	}
 	return events;

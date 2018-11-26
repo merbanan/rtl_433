@@ -212,7 +212,7 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     // Return 1 if message successfully decoded
     return 1;
