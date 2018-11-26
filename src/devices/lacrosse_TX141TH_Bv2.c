@@ -133,7 +133,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
     }
 
     if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "LaCrosse TX141-Bv2/TX141TH-Bv2 data error\n");
             fprintf(stderr, "id: %i, humidity:%i, temp:%f\n", id, humidity, temp_c);
         }

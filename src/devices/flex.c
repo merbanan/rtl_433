@@ -131,7 +131,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
             return 0;
     }
 
-    if (debug_output >= 1) {
+    if (decoder->verbose) {
         fprintf(stderr, "%s: ", params->name);
         bitbuffer_print(bitbuffer);
     }
@@ -352,9 +352,11 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
         usage();
     }
-    if (debug_output)
+    /*
+    if (decoder->verbose)
         fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",
                 getter->bit_offset, getter->bit_count, getter->mask, getter->name);
+    */
 }
 
 r_device *flex_create_device(char *spec)
@@ -534,13 +536,15 @@ r_device *flex_create_device(char *spec)
     if (params->min_bits > 0 && params->min_repeats < 1)
         params->min_repeats = 1;
 
-    if (debug_output >= 1) {
+    /*
+    if (decoder->verbose) {
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
         fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f\n",
                 dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit);
         fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
     }
+    */
 
     free(spec);
     next_slot++;

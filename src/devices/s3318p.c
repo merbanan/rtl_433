@@ -93,7 +93,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temperature_with_offset = ((b[2] & 0x0F) << 8) | (b[2] & 0xF0) | (b[1] & 0x0F);
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
-    if (debug_output) {
+    if (decoder->verbose) {
       bitbuffer_print(bitbuffer);
       fprintf(stderr, "Sensor ID            = %2x\n",  sensor_id);
       fprintf(stdout, "Bitstream HEX        = ");

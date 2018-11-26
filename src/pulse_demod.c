@@ -18,6 +18,7 @@
 #include <math.h>
 #include <limits.h>
 
+extern int debug_output;
 
 int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {

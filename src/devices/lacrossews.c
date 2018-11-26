@@ -26,7 +26,7 @@
 
 #define LACROSSE_WS_BITLEN	52
 
-static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
+static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum = 0, parity = 0;
@@ -65,7 +65,7 @@ static int lacrossews_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 			return 1;
 		else {
 			local_time_str(0, time_str);
-            if (debug_output) {
+            if (decoder->verbose) {
 			fprintf(stdout,
 				"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
 				time_str, checksum, msg_nybbles[12], parity);
@@ -95,7 +95,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	for (m = 0; m < BITBUF_ROWS; m++) {
 		// break out the message nybbles into separate bytes
-		if (lacrossews_detect(bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
+		if (lacrossews_detect(decoder, bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
 
 			ws_id = (msg_nybbles[0] << 4) + msg_nybbles[1];
 			msg_type = ((msg_nybbles[2] >> 1) & 0x4) + (msg_nybbles[2] & 0x3);
@@ -109,7 +109,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 			local_time_str(0, time_str);
 
-			if (debug_output)
+			if (decoder->verbose)
 				fprintf(stderr, "%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X   ",
 									msg_nybbles[0], msg_nybbles[1], msg_nybbles[2], msg_nybbles[3],
 									msg_nybbles[4], msg_nybbles[5], msg_nybbles[6], msg_nybbles[7],
@@ -164,7 +164,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				wind_dir = msg_nybbles[9] * 22.5;
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
 				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
-					if (debug_output) {
+					if (decoder->verbose) {
 					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
 						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
 					}
@@ -182,7 +182,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				}
 				break;
 			default:
-			if (debug_output) {
+			if (decoder->verbose) {
 				fprintf(stderr,
 					"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
 					time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);

@@ -63,7 +63,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		}
 	}
 
-	if (debug_output) {
+	if (decoder->verbose) {
 		fprintf(stdout,"Possible Efergy Optical: ");
 		bitbuffer_print(bitbuffer);
 	}
@@ -83,7 +83,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	if (crc == csum1)
 	{
-		if (debug_output) {
+		if (decoder->verbose) {
 			fprintf(stdout, "Checksum OK :) :)\n");
 			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
 			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
@@ -128,7 +128,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	else
 	{
-		if (debug_output)
+		if (decoder->verbose)
 		{
 			fprintf(stdout, "Checksum not OK !!!\n");
 			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);

@@ -60,12 +60,13 @@ static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, ui
 
 
 // Validate CRC
-static int m_bus_crc_valid(const uint8_t* bytes, unsigned crc_offset) {
+static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc_offset)
+{
     static const uint16_t CRC_POLY = 0x3D65;
     uint16_t crc_calc = ~crc16_ccitt(bytes, crc_offset, CRC_POLY, 0);
     uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
     if (crc_calc != crc_read) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "M-Bus: CRC error: Calculated 0x%0X, Read: 0x%0X\n", (unsigned)crc_calc, (unsigned)crc_read);
         }
         return 0;
@@ -130,8 +131,8 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
-
-static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
+static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
+{
     static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
 
     // Get Block 1
@@ -146,12 +147,12 @@ static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bu
     out->length      = block1->L-9;
 
     // Validate CRC
-    if (!m_bus_crc_valid(in->data, 10)) return 0;
+    if (!m_bus_crc_valid(decoder, in->data, 10)) return 0;
 
     // Check length of package is sufficient
     unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
     if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
-        if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        if (decoder->verbose) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
         return 0;
     }
 
@@ -162,7 +163,7 @@ static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bu
         uint8_t block_size      = min(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
 
         // Validate CRC
-        if (!m_bus_crc_valid(in_ptr, block_size-2)) return 0;
+        if (!m_bus_crc_valid(decoder, in_ptr, block_size-2)) return 0;
 
         // Get block data
         memcpy(out_ptr, in_ptr, block_size);
@@ -170,8 +171,8 @@ static int m_bus_decode_format_a(const m_bus_data_t *in, m_bus_data_t *out, m_bu
     return 1;
 }
 
-
-static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1) {
+static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
+{
     static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
     static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
     static const uint16_t BLOCK1_2B_SIZE  = 128;
@@ -189,12 +190,12 @@ static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bu
 
     // Check length of package is sufficient
     if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
-        if (debug_output) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        if (decoder->verbose) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
         return 0;
     }
 
     // Validate CRC
-    if (!m_bus_crc_valid(in->data, min(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
+    if (!m_bus_crc_valid(decoder, in->data, min(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
 
     // Get data from Block 2
     memcpy(out->data, in->data+BLOCK1B_SIZE, (min(block1->L-11, BLOCK2B_SIZE-2)));
@@ -203,7 +204,7 @@ static int m_bus_decode_format_b(const m_bus_data_t *in, m_bus_data_t *out, m_bu
     uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
     if (block1->L > (L_OFFSET+2)) {        // Any more data? (besided 2 extra CRC)
         // Validate CRC
-        if (!m_bus_crc_valid(in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;
+        if (!m_bus_crc_valid(decoder, in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;
 
         // Get Block 3
         memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
@@ -274,25 +275,25 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         bit_offset += 8;
         // Format A
         if (next_byte == 0xCD) {
-            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format A\n"); }
+            if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode C, Format A\n"); }
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
+            if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
-            if (debug_output) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
+            if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode C, Format B\n"); }
             // Extract data
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_b(&data_in, &data_out, &block1))    return 0;
+            if(!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
         }   // Format B
         // Unknown Format
         else {
-            if (debug_output) {
+            if (decoder->verbose) {
                 fprintf(stderr, "M-Bus: Mode C, Unknown format: 0x%X\n", next_byte);
                 bitbuffer_print(bitbuffer);
             }
@@ -301,16 +302,16 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }   // Mode C
     // Mode T
     else {
-        if (debug_output) { fprintf(stderr, "M-Bus: Mode T\n"); }
-        if (debug_output) { fprintf(stderr, "Experimental - Not tested\n"); }
+        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
+        if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
         if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
-            if (debug_output) fprintf(stderr, "M-Bus: Decoding error\n");
+            if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
             return 0;
         }
         // Decode
-        if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
+        if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
     m_bus_output_data(decoder, &data_out, &block1);
@@ -337,13 +338,13 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     bit_offset += sizeof(PREAMBLE_RA)*8;     // skip preamble
 
-    if (debug_output) { fprintf(stderr, "M-Bus: Mode R, Format A\n"); }
-    if (debug_output) { fprintf(stderr, "Experimental - Not tested\n"); }
+    if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode R, Format A\n"); }
+    if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
     // Extract data
     data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
     // Decode
-    if(!m_bus_decode_format_a(&data_in, &data_out, &block1))    return 0;
+    if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
     m_bus_output_data(decoder, &data_out, &block1);
     return 1;
@@ -375,19 +376,19 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bit_offset += 8;
     // Format A
     if (next_byte == 0x8D) {
-        if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
-        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode F, Format A\n"); }
+        if (decoder->verbose) { fprintf(stderr, "Not implemented\n"); }
         return 1;
     } // Format A
     // Format B
     else if (next_byte == 0x72) {
-        if (debug_output) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
-        if (debug_output) { fprintf(stderr, "Not implemented\n"); }
+        if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode F, Format B\n"); }
+        if (decoder->verbose) { fprintf(stderr, "Not implemented\n"); }
         return 1;
     }   // Format B
     // Unknown Format
     else {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "M-Bus: Mode F, Unknown format: 0x%X\n", next_byte);
             bitbuffer_print(bitbuffer);
         }

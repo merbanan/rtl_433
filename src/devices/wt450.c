@@ -77,7 +77,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     if ( bitbuffer->bits_per_row[0] != 36 )
     {
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
                     time_str, bitbuffer->bits_per_row[0]);
 
@@ -86,7 +86,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     if ( b[0]>>4 != 0xC )
     {
-        if (debug_output)
+        if (decoder->verbose)
         {
             fprintf(stderr, "%s wt450_callback: wrong preamble\n", time_str);
             bitbuffer_print(bitbuffer);
@@ -101,7 +101,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     if ( parity )
     {
-        if (debug_output)
+        if (decoder->verbose)
         {
             fprintf(stderr, "%s wt450_callback: wrong parity\n", time_str);
             bitbuffer_print(bitbuffer);

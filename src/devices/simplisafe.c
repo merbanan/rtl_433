@@ -165,7 +165,7 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (b[2] == 0x44) {
         return ss_keypad_commands(decoder, bitbuffer, row);
     } else {
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);
         return 0;
     }

@@ -100,7 +100,7 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t button;
     char *button_string;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr,"dish_remote_6_3_callback callback:\n");
         bitbuffer_print(bitbuffer);
     }

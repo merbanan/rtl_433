@@ -31,7 +31,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     uint8_t calculated = lfsr_digest8(b, 5, 0x98, 0x3e) ^ 0x64;
 
     if (expected != calculated) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Checksum error in Ambient Weather message.    Expected: %02x    Calculated: %02x\n", expected, calculated);
             fprintf(stderr, "Message: ");
             bitrow_print(b, 48);

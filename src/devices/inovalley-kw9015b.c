@@ -37,7 +37,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				(reverse8(bb[i][3])>>4)+(reverse8(bb[i][3])&0x0F));
 
 
-                        if (debug_output >= 1) {
+                        if (decoder->verbose) {
 					fprintf(stdout, "\nSensor        = Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)\n");
 					fprintf(stdout, "Device        = %d\n", device);
 					fprintf(stdout, "Temp          = %f\n",fTemp);

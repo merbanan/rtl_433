@@ -63,7 +63,7 @@ static int get_status(uint8_t fourth_byte)
     return (fourth_byte & 0x3C) >> 2;
 }
 
-static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int channel)
+static int calculate_checksum(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row_index, int channel)
 {
     uint8_t calculated_checksum, actual_checksum;
     uint8_t sum = 0;
@@ -78,7 +78,7 @@ static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int ch
     actual_checksum     = bitbuffer->bb[row_index][0] >> 4;
     actual_expected_comparison = (calculated_checksum == actual_checksum);
 
-    if(debug_output & !actual_expected_comparison) {
+    if(decoder->verbose & !actual_expected_comparison) {
         fprintf(stderr, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", actual_checksum, calculated_checksum);
         fprintf(stderr, "Message: ");
         bitbuffer_print(bitbuffer);
@@ -107,7 +107,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         channel_bits = get_channel_bits(msg[0]);
 
         if( !((bitbuffer->bits_per_row[row_index] == SL109H_MESSAGE_LENGTH)
-              && calculate_checksum(bitbuffer, row_index, channel_bits)) ) continue;
+              && calculate_checksum(decoder, bitbuffer, row_index, channel_bits)) ) continue;
 
         local_time_str(0, time_str);
 

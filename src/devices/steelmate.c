@@ -28,7 +28,7 @@
 #include "decoder.h"
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-	//if (debug_output >= 1) {
+	//if (decoder->verbose) {
 	//	fprintf(stdout, "Steelmate TPMS decoder\n");
 	//	bitbuffer_print(bitbuffer);
 	//	fprintf(stdout, "\n");

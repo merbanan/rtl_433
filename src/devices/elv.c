@@ -81,7 +81,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-        if(debug_output) fprintf(stdout, "!stopbit\n");
+        if(decoder->verbose) fprintf(stdout, "!stopbit\n");
         return 0;
     }
     check_calculated ^= dec[0];
@@ -92,17 +92,17 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            if(debug_output) fprintf(stdout, "!stopbit %i\n", bit);
+            if(decoder->verbose) fprintf(stdout, "!stopbit %i\n", bit);
             return 0;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
-    if(debug_output) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
+    if(decoder->verbose) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
 
     if (check_calculated) {
-        if(debug_output) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
+        if(decoder->verbose) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
         return 0;
     }
 
@@ -111,7 +111,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-        if(debug_output) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        if(decoder->verbose) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
         return 0;
     }
 

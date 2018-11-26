@@ -41,13 +41,13 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     if (start_pos - bitpos < 67*2) {
         return 0;
     }
-    if (debug_output > 1)
+    if (decoder->verbose > 1)
         bitbuffer_print(&packet_bits);
 
     // realign the buffer, prepending 6 bits of 0.
     b[0] = packet_bits.bb[0][0] >> 6;
     bitbuffer_extract_bytes(&packet_bits, 0, 2, b + 1, 64);
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr, "Realigned: ");
         bitrow_print(b, 72);
     }
@@ -69,7 +69,7 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     temperature_c = temp - 40.0;
 
     if (pressure1 != pressure2) {
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Toyota TPMS pressure check error: %02x vs %02x\n", pressure1, pressure2);
         return 0;
     }
