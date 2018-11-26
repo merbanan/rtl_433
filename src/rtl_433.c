@@ -324,6 +324,9 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
+    p->verbose       = debug_output;
+    p->output_fn     = data_acquired_handler;
+
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 

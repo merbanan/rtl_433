@@ -1,8 +1,6 @@
 #ifndef INCLUDE_RTL_433_DEVICES_H_
 #define INCLUDE_RTL_433_DEVICES_H_
 
-#include "bitbuffer.h"
-
 #define DEVICES \
     DECL(silvercrest) \
     DECL(rubicson) \
@@ -118,21 +116,30 @@
     DECL(ambientweather_tx8300) \
     DECL(ambientweather_wh31e)
 
-typedef struct {
+struct bitbuffer;
+struct data;
+
+typedef struct r_device {
     unsigned protocol_num; // fixed sequence number, assigned in main()
+
+    /* information provided by each decoder */
     char *name;
-    unsigned int modulation;
+    unsigned modulation;
     float short_limit;
     float long_limit;
     float reset_limit;
     float gap_limit;
     float sync_width;
     float tolerance;
-    int (*json_callback)(bitbuffer_t *bitbuffer);
-    unsigned int disabled;
+    int (*json_callback)(struct bitbuffer *bitbuffer);
+    unsigned disabled;
     char **fields; // List of fields this decoder produces; required for CSV output. NULL-terminated.
 
-    /* pulse limits (converted to count of samples) */
+    /* public for each decoder */
+    int verbose;
+    void (*output_fn)(struct data *data);
+
+    /* private pulse limits (converted to count of samples) */
     float f_short_limit; // precision reciprocal for PCM
     float f_long_limit;  // precision reciprocal for PCM
     int s_short_limit;
