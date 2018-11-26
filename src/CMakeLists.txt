@@ -22,6 +22,7 @@ add_executable(rtl_433
 	bitbuffer.c
 	confparse.c
 	data.c
+	decoder_util.c
 	fileformat.c
 	optparse.c
 	pulse_demod.c

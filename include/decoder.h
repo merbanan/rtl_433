@@ -6,6 +6,7 @@
 #include "bitbuffer.h"
 #include "data.h"
 #include "util.h"
+#include "decoder_util.h"
 
 /* Supported modulation types */
 #define OOK_PULSE_MANCHESTER_ZEROBIT    3  // Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
