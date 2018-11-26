@@ -24,7 +24,8 @@
 // full preamble is (7 bits) 11111 10
 static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits
 
-static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
+static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
@@ -90,7 +91,7 @@ static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -101,7 +102,7 @@ static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 6)) + 67*2 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_pmv107j_decode(bitbuffer, 0, bitpos + 6);
+        events += tpms_pmv107j_decode(decoder, bitbuffer, 0, bitpos + 6);
         bitpos += 2;
     }
 

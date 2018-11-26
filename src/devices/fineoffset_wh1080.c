@@ -387,7 +387,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "rain",        "Total rainfall",DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,     rain,
                 "battery",    "Battery",    DATA_STRING,                    battery,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
 
     } else if (msg_type == 1) {
@@ -405,7 +405,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "month",    "Month\t",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
                 "day",        "Day\t",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
 
     } else {
@@ -421,7 +421,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "wm",        "Watts/m\t",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
                 "fc",        "Foot-candles",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    fc,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
 }

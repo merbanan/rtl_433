@@ -26,7 +26,8 @@
 static const unsigned char preamble_pattern[2] = { 0x55, 0x56 };
 // full trailer is 01111110
 
-static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
+static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
@@ -84,7 +85,7 @@ static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -95,7 +96,7 @@ static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 16)) + 178 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_citroen_decode(bitbuffer, 0, bitpos + 16);
+        events += tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
         bitpos += 2;
     }
 

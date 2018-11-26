@@ -53,7 +53,7 @@
 */
 #include "decoder.h"
 
-static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
+static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     const uint8_t *b = bitbuffer->bb[row];
     uint8_t humidity;
@@ -80,7 +80,7 @@ static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
                      "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                       NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -106,7 +106,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row+2], sizeof(bitbuffer->bb[row])) != 0 || bitbuffer->bits_per_row[row] != 42)
                 return 0;
         }
-        esperanza_ews_process_row(bitbuffer, 2);
+        esperanza_ews_process_row(decoder, bitbuffer, 2);
         return 1;
     }
     return 0;

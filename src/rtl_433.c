@@ -50,6 +50,8 @@
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
+void data_acquired_handler(data_t *data);
+
 typedef enum {
     CONVERT_NATIVE,
     CONVERT_SI,
@@ -360,7 +362,7 @@ static void calc_rssi_snr(pulse_data_t *pulse_data)
     }
 }
 
-/* handles incoming structured data by dumping it */
+/** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(data_t *data)
 {
     if (cfg.conversion_mode == CONVERT_SI) {

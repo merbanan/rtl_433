@@ -43,7 +43,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
 
         return 1;

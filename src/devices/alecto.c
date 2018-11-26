@@ -131,7 +131,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                                     "wind_direction", "Direction",  DATA_INT,    direction,
                                     "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                                     NULL);
-                    data_acquired_handler(data);
+                    decoder_output_data(decoder, data);
                 }
             } else {
                 // Rain sensor
@@ -145,7 +145,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                                 "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
                                 "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
                                 NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
             }
         } else if (bb[2][0] == bb[3][0] && bb[3][0] == bb[4][0] && bb[4][0] == bb[5][0] &&
                 bb[5][0] == bb[6][0] && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
@@ -166,7 +166,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
                             "mic",           "",            DATA_STRING,    "CHECKSUM",
                             NULL);
-            data_acquired_handler(data);
+            decoder_output_data(decoder, data);
         }
         if (debug_output){
             fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);

@@ -144,7 +144,7 @@ static int philips_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                      "battery",       "Battery",     DATA_STRING, battery_status ? "LOW" : "OK",
                      NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }

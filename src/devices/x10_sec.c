@@ -101,7 +101,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "code",     "Code",         DATA_STRING, x10_code_str,
                 "event",    "Event",        DATA_STRING, event_str,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     return 0;

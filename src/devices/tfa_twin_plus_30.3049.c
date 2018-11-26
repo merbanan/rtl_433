@@ -52,7 +52,7 @@ inline static uint8_t reverse_byte(uint8_t byte)
     return byte;
 }
 
-static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffer)
+static int tfa_twin_plus_303049_process_row(r_device *decoder, int row, const bitbuffer_t *bitbuffer)
 {
     data_t *data;
     const uint8_t *b      = bitbuffer->bb[row];
@@ -98,7 +98,7 @@ static int tfa_twin_plus_303049_process_row(int row, const bitbuffer_t *bitbuffe
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
     }
 
     return 1;
@@ -108,7 +108,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 {
     int counter = 0;
     for(int row=0; row<bitbuffer->num_rows; row++)
-        counter += tfa_twin_plus_303049_process_row(row, bitbuffer);
+        counter += tfa_twin_plus_303049_process_row(decoder, row, bitbuffer);
     return counter;
 }
 

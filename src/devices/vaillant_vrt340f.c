@@ -161,7 +161,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                          "water",   "Pre-heated Water", DATA_STRING, water_preheated ? "ON" : "off",
                          "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "Ok",
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -180,7 +180,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat (RF Detection)",
                          "device",  "Device ID", DATA_INT, deviceID,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }

@@ -51,7 +51,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "code",         "",    DATA_STRING, code,
                 NULL);
 
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     return 0;

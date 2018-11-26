@@ -49,8 +49,7 @@
   checksum = sum modulo 64
 */
 
-
-static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
+static int gt_wt_02_process_row(r_device *decoder, int row, const bitbuffer_t *bitbuffer)
 {
     data_t *data;  /*JF*/
     const uint8_t *b = bitbuffer->bb[row];
@@ -114,7 +113,7 @@ static int gt_wt_02_process_row(int row, const bitbuffer_t *bitbuffer)
         "temperature_C",	"Temperature",	DATA_FORMAT,	"%.01f C",DATA_DOUBLE,tempC,
         "humidity",		"Humidity",	DATA_STRING,	humidity_str,
         NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 //# {
 //    /* @todo: remove timestamp printing as soon as the controller takes this task */
@@ -133,7 +132,7 @@ static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int counter = 0;
     // iterate through all rows, return on first successful
     for(int row=0; row<bitbuffer->num_rows && !counter; row++)
-        counter += gt_wt_02_process_row(row, bitbuffer);
+        counter += gt_wt_02_process_row(decoder, row, bitbuffer);
     return counter;
 }
 

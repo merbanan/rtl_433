@@ -161,7 +161,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
     }
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }

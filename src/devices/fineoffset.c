@@ -111,7 +111,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
     }
     // Thermo/Hygro
     else {
@@ -122,7 +122,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                          "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
     }
     return 1;
 }
@@ -289,7 +289,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         data_append(data,   "light_lux",        "Light",            DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux, NULL);
     data_append(data,       "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
                             "mic",              "Integrity",        DATA_STRING, "CRC", NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -376,7 +376,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                      "battery",       "Battery",     DATA_STRING, low_battery ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                       NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -445,7 +445,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                      "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }

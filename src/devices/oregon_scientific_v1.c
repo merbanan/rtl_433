@@ -60,7 +60,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 					"battery",		"Battery",		DATA_STRING,	battery ? "LOW" : "OK",
 					"temperature_C","Temperature",	DATA_FORMAT,	"%.01f C",				DATA_DOUBLE,	tempC,
 					NULL);
-				data_acquired_handler(data);
+				decoder_output_data(decoder, data);
 				ret++;
 			}
 		}

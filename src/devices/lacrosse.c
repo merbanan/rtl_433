@@ -171,7 +171,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                                  "id",            "",            DATA_INT, sensor_id,
                                  "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                                  NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
                 events++;
                 break;
 
@@ -181,7 +181,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                                  "id",            "",            DATA_INT, sensor_id,
                                  "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
                                  NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
                 events++;
                 break;
 

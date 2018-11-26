@@ -33,7 +33,7 @@
 
 #include "decoder.h"
 
-static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
+static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -99,7 +99,7 @@ static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         events++;
     }
     return events;

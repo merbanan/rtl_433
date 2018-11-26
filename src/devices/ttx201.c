@@ -87,7 +87,7 @@ checksum_calculate(uint8_t *b)
 }
 
 static int
-ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_PACKET_LEN];
     int bits = bitbuffer->bits_per_row[row];
@@ -175,7 +175,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -188,7 +188,7 @@ ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
         for (row = 0; row < bitbuffer->num_rows; ++row) {
-            events += ttx201_decode(bitbuffer, row, 0);
+            events += ttx201_decode(decoder, bitbuffer, row, 0);
             if (events && !debug_output) return events; // for now, break after first successful message
         }
     }

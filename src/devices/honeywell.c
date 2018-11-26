@@ -60,7 +60,7 @@ static int honeywell_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
           "heartbeat" , "", DATA_STRING, heartbeat ? "yes" : "no",
           NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

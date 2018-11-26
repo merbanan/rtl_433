@@ -78,7 +78,7 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                      "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
                      NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

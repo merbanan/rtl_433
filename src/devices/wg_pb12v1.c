@@ -80,7 +80,7 @@ static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 

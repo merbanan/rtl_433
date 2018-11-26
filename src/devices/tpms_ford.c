@@ -21,7 +21,8 @@
 // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
 static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
-static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
+static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
@@ -59,7 +60,7 @@ static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpo
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -76,7 +77,7 @@ static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 16)) + 144 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_ford_decode(bitbuffer, row, bitpos + 16);
+            events += tpms_ford_decode(decoder, bitbuffer, row, bitpos + 16);
             bitpos += 15;
         }
     }

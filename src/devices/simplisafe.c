@@ -27,7 +27,7 @@ ss_get_id(char *id, uint8_t *b)
 }
 
 static int
-ss_sensor_parser(bitbuffer_t *bitbuffer, int row)
+ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -64,13 +64,13 @@ ss_sensor_parser(bitbuffer_t *bitbuffer, int row)
         	"extradata",    "Extra Data",    DATA_STRING, extradata,
         	NULL
     );
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
-static int 
-ss_pinentry_parser(bitbuffer_t *bitbuffer, int row)
+static int
+ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -101,13 +101,13 @@ ss_pinentry_parser(bitbuffer_t *bitbuffer, int row)
         	"extradata",    "Extra Data",    DATA_STRING, extradata,
         	NULL
     );
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
-static int 
-ss_keypad_commands(bitbuffer_t *bitbuffer, int row)
+static int
+ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
@@ -140,7 +140,7 @@ ss_keypad_commands(bitbuffer_t *bitbuffer, int row)
         	"extradata",    "",    DATA_STRING, extradata,
         	NULL
     );
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -159,11 +159,11 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_invert(bitbuffer);
 
     if (b[2] == 0x88) {
-        return ss_sensor_parser(bitbuffer, row);
+        return ss_sensor_parser(decoder, bitbuffer, row);
     } else if (b[2] == 0x66) {
-        return ss_pinentry_parser(bitbuffer, row);
+        return ss_pinentry_parser(decoder, bitbuffer, row);
     } else if (b[2] == 0x44) {
-        return ss_keypad_commands(bitbuffer, row);
+        return ss_keypad_commands(decoder, bitbuffer, row);
     } else {
         if (debug_output)
             fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);

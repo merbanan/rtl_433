@@ -27,7 +27,8 @@
 // full preamble is 0101 0101 0011 11 = 55 3c
 static const unsigned char preamble_pattern[2] = {0x54, 0xf0}; // 12 bits
 
-static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
+static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
@@ -76,7 +77,7 @@ static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bit
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -87,7 +88,7 @@ static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 12)) + 158 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_toyota_decode(bitbuffer, 0, bitpos + 12);
+        events += tpms_toyota_decode(decoder, bitbuffer, 0, bitpos + 12);
         bitpos += 2;
     }
 

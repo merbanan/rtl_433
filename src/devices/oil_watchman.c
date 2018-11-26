@@ -89,7 +89,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			"binding_countdown", "", DATA_INT, binding_countdown,
 			"depth", "", DATA_INT, depth,
 			NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		events++;
 	}
 	return events;
