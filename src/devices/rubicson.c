@@ -33,7 +33,6 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bits = bitbuffer->bits_per_row[0];
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t channel;
     uint8_t sensor_id;
     uint8_t battery;
@@ -44,7 +43,6 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
 
     if (rubicson_crc_check(bb)) {
-        local_time_str(0, time_str);
 
         /* Nibble 3,4,5 contains 12 bits of temperature
          * The temperature is signed and scaled by 10 */
@@ -56,7 +54,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         sensor_id = bb[0][0];
         temp_c = (float) temp / 10.0;
 
-        data = data_make("time",         "",            DATA_STRING, time_str,
+        data = data_make(
                         "model",         "",            DATA_STRING, "Rubicson Temperature Sensor",
                         "id",            "House Code",  DATA_INT,    sensor_id,
                         "channel",       "Channel",     DATA_INT,    channel,
@@ -72,7 +70,6 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

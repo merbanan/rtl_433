@@ -41,7 +41,6 @@ extern int rubicson_crc_check(bitrow_t *bb);
 static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     uint8_t id;
     uint8_t channel;
@@ -57,7 +56,6 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     if (!rubicson_crc_check(bb)) return 0;
 
-    local_time_str(0, time_str);
 
     id = bb[0][0];
 
@@ -74,7 +72,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     temperature = (float) (((256 * multiplier) + temperature_raw) / 10.0);
 
-    data = data_make("time", "", DATA_STRING, time_str,
+    data = data_make(
                      "model", "", DATA_STRING, "Solight TE44",
                      "id", "Id", DATA_INT, id,
                      "channel", "Channel", DATA_INT, channel + 1,
@@ -88,7 +86,6 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

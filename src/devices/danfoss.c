@@ -70,9 +70,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 
-	local_time_str(0, time_str);
 
 	// Validate package
 	unsigned bits = bitbuffer->bits_per_row[0];
@@ -136,7 +134,6 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 		// Output data
 		data = data_make(
-			"time",		"",		DATA_STRING,	time_str,
 			"model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
 			"id",		"ID",		DATA_INT,	id,
 			"temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
@@ -153,7 +150,6 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
 static char *output_fields[] = {
-	"time",
 	"brand"
 	"model"
 	"id"

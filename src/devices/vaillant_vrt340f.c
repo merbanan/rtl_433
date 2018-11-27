@@ -96,9 +96,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    local_time_str(0, time_str);
 
     // TODO: Use repeat signal for error checking / correction!
 
@@ -153,7 +151,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t water_preheated = get_water_preheated(bb[0]); // 1=Pre-heat, 0=no pre-heated water
         uint8_t isBatteryLow = get_battery_status(bb[0]);
 
-        data = data_make("time", "", DATA_STRING, time_str,
+        data = data_make(
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat",
                          "device",  "Device ID", DATA_FORMAT, "0x%04X", DATA_INT, deviceID,
                          "heating", "Heating Mode", DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
@@ -176,7 +174,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Device ID starts at bit 12:
         uint16_t deviceID = get_device_id(bb[0], 11);
 
-        data = data_make("time", "", DATA_STRING, time_str,
+        data = data_make(
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat (RF Detection)",
                          "device",  "Device ID", DATA_INT, deviceID,
                          NULL);
@@ -189,7 +187,6 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "device",
     "heating",

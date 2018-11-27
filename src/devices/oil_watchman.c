@@ -27,13 +27,11 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	uint8_t flags;
 	uint8_t maybetemp;
 	double temperature;
-	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	unsigned bitpos = 0;
 	bitbuffer_t databits = {0};
 	int events = 0;
 
-	local_time_str(0, time_str);
 
 	// Find a preamble with enough bits after it that it could be a complete packet
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, &preamble_pattern, 6)) + 136 <=
@@ -80,7 +78,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			// the sensor flat down on a table, it still reads about 13.
 			depth = ((b[5] & 3) << 8) | b[6];
 
-		data = data_make("time", "", DATA_STRING, time_str,
+		data = data_make(
 			"model", "", DATA_STRING, "Oil Watchman",
 			"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
 			"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
@@ -96,7 +94,6 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"flags",

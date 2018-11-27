@@ -110,8 +110,6 @@ static float get_rainfall(const uint8_t* br) {
 
 static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
@@ -162,7 +160,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 //---------------------------------------------------------------------------------------
 //--------- PRESENTING DATA --------------------------------------------------------------
 
-    data = data_make("time",         "",         DATA_STRING, time_str,
+    data = data_make(
             "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
             "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
             "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",    DATA_DOUBLE, temperature,
@@ -177,7 +175,6 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

@@ -31,11 +31,8 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t id = (b[0] << 8) | b[1];
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     data_t *data = data_make(
-            "time", "", DATA_STRING, time_str,
             "model", "", DATA_STRING, "Quhwa doorbell",
             "id", "ID", DATA_INT, id,
             NULL);
@@ -46,7 +43,6 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     NULL

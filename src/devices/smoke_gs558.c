@@ -43,7 +43,6 @@
 static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b;
     int r;
     int learn = 0;
@@ -94,9 +93,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",          "",            DATA_STRING, time_str,
         "model",         "",            DATA_STRING, "Smoke detector GS 558",
         "id"   ,         "",            DATA_INT, id,
         "unit",          "",            DATA_INT, unit,
@@ -109,7 +106,6 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "unit",

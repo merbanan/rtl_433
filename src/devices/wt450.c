@@ -69,17 +69,15 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t bit;
     uint8_t parity = 0;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    local_time_str(0, time_str);
 
 //bitbuffer_print(bitbuffer);
 
     if ( bitbuffer->bits_per_row[0] != 36 )
     {
         if (decoder->verbose)
-            fprintf(stderr, "%s wt450_callback: wrong size of bit per row %d\n",
-                    time_str, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "wt450_callback: wrong size of bit per row %d\n",
+                    bitbuffer->bits_per_row[0]);
 
         return 0;
     }
@@ -88,7 +86,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     {
         if (decoder->verbose)
         {
-            fprintf(stderr, "%s wt450_callback: wrong preamble\n", time_str);
+            fprintf(stderr, "wt450_callback: wrong preamble\n");
             bitbuffer_print(bitbuffer);
         }
         return 0;
@@ -103,7 +101,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     {
         if (decoder->verbose)
         {
-            fprintf(stderr, "%s wt450_callback: wrong parity\n", time_str);
+            fprintf(stderr, "wt450_callback: wrong parity\n");
             bitbuffer_print(bitbuffer);
         }
         return 0;
@@ -117,7 +115,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temp_fraction = ((b[3] & 0xF) << 3) + (b[4] >> 5);
     temp = (temp_whole - 50) + (temp_fraction/100.0);
 
-    data = data_make("time",          "",  DATA_STRING, time_str,
+    data = data_make(
         "model",         "",	   DATA_STRING, "WT450 sensor",
         "id",            "House Code", DATA_INT, house_code,
         "channel",       "Channel",    DATA_INT, channel,
@@ -131,7 +129,6 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

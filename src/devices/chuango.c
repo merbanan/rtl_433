@@ -21,7 +21,6 @@
 #include "decoder.h"
 
 static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     int id;
@@ -64,9 +63,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         default:  cmd_str = ""; break;
     }
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "",             DATA_STRING, time_str,
             "model",    "",             DATA_STRING, "Chuango Security Technology",
             "id",       "ID",           DATA_INT,    id,
             "cmd",      "CMD",          DATA_STRING, cmd_str,
@@ -78,7 +75,6 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "cmd",

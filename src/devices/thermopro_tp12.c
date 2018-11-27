@@ -47,7 +47,6 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     float fTemp1, fTemp2;
     uint8_t *bytes;
     unsigned int device;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     // The device transmits 16 rows, let's check for 3 matching.
@@ -93,8 +92,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     fTemp1 = (iTemp1 - 200) / 10.;
     fTemp2 = (iTemp2 - 200) / 10.;
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Thermopro TP12 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp1,
@@ -105,7 +103,6 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_1_C",

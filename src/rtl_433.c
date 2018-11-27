@@ -498,6 +498,14 @@ void data_acquired_handler(data_t *data)
                 NULL);
     }
 
+    // always prepend "time"
+    char time_str[LOCAL_TIME_BUFLEN];
+    local_time_str(0, time_str);
+    data = data_prepend(data,
+            "time", "", DATA_STRING, time_str,
+            NULL);
+
+    // prepend "tag" if available
     if (cfg.output_tag) {
         char const *output_tag = cfg.output_tag;
         if (cfg.in_filename && !strcmp("PATH", cfg.output_tag)) {
@@ -1315,10 +1323,10 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
     }
 }
 
-// well-known fields "msg" and "codes" are used to output general decoder messages
+// well-known fields "time", "msg" and "codes" are used to output general decoder messages
 // well-known field "tag" is only used when output tagging is requested
-static char const *well_known_with_tag[]  = {"msg", "codes", "tag", NULL};
-static char const *well_known_default[] = {"msg", "codes", NULL};
+static char const *well_known_with_tag[]  = {"time", "msg", "codes", "tag", NULL};
+static char const *well_known_default[] = {"time", "msg", "codes", NULL};
 static char const **well_known_output_fields(struct app_cfg *cfg)
 {
     if (cfg->output_tag) {

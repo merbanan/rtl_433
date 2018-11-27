@@ -30,7 +30,6 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
 	int i;
 	uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
 	uint8_t bit, checksum = 0, parity = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
 
 	// Weather Station 2310 Packets
 	if (rowlen == LACROSSE_WS_BITLEN && pRow[0] == 0x09) {
@@ -64,11 +63,10 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
 			checksum == msg_nybbles[12])
 			return 1;
 		else {
-			local_time_str(0, time_str);
             if (decoder->verbose) {
 			fprintf(stdout,
-				"%s LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
-				time_str, checksum, msg_nybbles[12], parity);
+				"LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
+				checksum, msg_nybbles[12], parity);
 			for (i = 0; i < (LACROSSE_WS_BITLEN / 4); i++) {
 				fprintf(stderr, "%X", msg_nybbles[i]);
 			}
@@ -90,7 +88,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	uint8_t ws_id, msg_type, sensor_id, msg_data, msg_unknown, msg_checksum;
 	int msg_value_bcd, msg_value_bcd2, msg_value_bin;
 	float temp_c, wind_dir, wind_spd, rain_mm;
-	char time_str[LOCAL_TIME_BUFLEN], *wind_key, *wind_label;
+	char *wind_key, *wind_label;
 	data_t *data;
 
 	for (m = 0; m < BITBUF_ROWS; m++) {
@@ -107,7 +105,6 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			msg_value_bin = (msg_nybbles[7] * 256 + msg_nybbles[8] * 16 + msg_nybbles[9]);
 			msg_checksum = msg_nybbles[12];
 
-			local_time_str(0, time_str);
 
 			if (decoder->verbose)
 				fprintf(stderr, "%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X%1X   ",
@@ -120,7 +117,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			// Temperature
 			case 0:
 				temp_c = (msg_value_bcd - 300.0) / 10.0;
-				data = data_make("time",          "",             DATA_STRING, time_str,
+				data = data_make(
 													"model",         "",            DATA_STRING, "LaCrosse WS",
 													"ws_id",         "",            DATA_INT, ws_id,
 													"id",            "",            DATA_INT, sensor_id,
@@ -133,10 +130,10 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			// Humidity
 			case 1:
 				if(msg_nybbles[7] == 0xA && msg_nybbles[8] == 0xA)
-					fprintf(stderr, "%s LaCrosse WS %02X-%02X: Humidity Error\n",
-						time_str, ws_id, sensor_id);
+					fprintf(stderr, "LaCrosse WS %02X-%02X: Humidity Error\n",
+						ws_id, sensor_id);
 				else {
-					data = data_make("time",          "",            DATA_STRING, time_str,
+					data = data_make(
 														"model",         "",            DATA_STRING, "LaCrosse WS",
 														"ws_id",         "",            DATA_INT, ws_id,
 														"id",            "",            DATA_INT, sensor_id,
@@ -149,7 +146,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			// Rain
 			case 2:
 				rain_mm = 0.5180 * msg_value_bin;
-				data = data_make("time",          "",           DATA_STRING, time_str,
+				data = data_make(
 													"model",          "",           DATA_STRING, "LaCrosse WS",
 													"ws_id",          "",           DATA_INT, ws_id,
 													"id",             "",           DATA_INT, sensor_id,
@@ -165,13 +162,13 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8])/ 10.0;
 				if(msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
 					if (decoder->verbose) {
-					fprintf(stderr, "%s LaCrosse WS %02X-%02X: %s Not Connected\n",
-						time_str, ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
+					fprintf(stderr, "LaCrosse WS %02X-%02X: %s Not Connected\n",
+						ws_id, sensor_id, msg_type == 3 ? "Wind":"Gust");
 					}
 				} else {
 					wind_key = msg_type == 3 ? "wind_speed_ms":"gust_speed_ms";
 					wind_label = msg_type == 3 ? "Wind speed":"Gust speed";
-					data = data_make("time",          "",           DATA_STRING, time_str,
+					data = data_make(
 														"model",          "",           DATA_STRING, "LaCrosse WS",
 														"ws_id",          "",           DATA_INT, ws_id,
 														"id",             "",           DATA_INT, sensor_id,
@@ -184,8 +181,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			default:
 			if (decoder->verbose) {
 				fprintf(stderr,
-					"%s LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
-					time_str, ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
+					"LaCrosse WS %02X-%02X: Unknown data type %d, bcd %d bin %d\n",
+					ws_id, sensor_id, msg_type, msg_value_bcd, msg_value_bin);
 				}
 				events++;
 			}
@@ -196,7 +193,6 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"ws_id",
 	"id",

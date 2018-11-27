@@ -27,7 +27,6 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
 
     if (decoder->verbose > 1) {
         fprintf(stderr,"Possible Nexus: ");
@@ -57,7 +56,6 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             return 0;
 
         /* Get time now */
-        local_time_str(0, time_str);
 
         /* Nibble 0,1 contains id */
         id = bb[r][0];
@@ -76,7 +74,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         // Thermo
         if (bb[r][3] == 0xF0) {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "Nexus Temperature",
                          "id",            "House Code",  DATA_INT, id,
                          "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
@@ -87,7 +85,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         }
         // Thermo/Hygro
         else {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
                          "id",            "House Code",  DATA_INT, id,
                          "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
@@ -103,7 +101,6 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "battery",

@@ -84,11 +84,8 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     if (((b[0] & 0xf0) >> 4) > 9 || (b[0] & 0x0f) > 9) // invalid humidity
         humidity = -1;
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
             "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
@@ -110,7 +107,6 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

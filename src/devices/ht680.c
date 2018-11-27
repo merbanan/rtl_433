@@ -16,7 +16,6 @@
 static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t b[5]; // 36 bits
 
     for (uint8_t row = 0;row < bitbuffer->num_rows;row++){
@@ -57,9 +56,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int button3 = (b[3]>>6) & 0x03;
         int button4 = (b[2]>>0) & 0x03;
 
-        local_time_str(0, time_str);
         data = data_make(
-                "time",     "",     			DATA_STRING, time_str,
                 "model",   	"",					DATA_STRING, "HT680 Remote control",
                 "tristate",	"Tristate code",	DATA_STRING, tristate,
                 "address",  "Address",    		DATA_FORMAT, "0x%06X", DATA_INT, address,
@@ -76,7 +73,6 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "tristate",
     "address",

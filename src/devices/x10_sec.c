@@ -26,7 +26,6 @@
 #include "decoder.h"
 
 static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
@@ -82,20 +81,18 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 break;
         }
 
-        /* get x10_id_str, x10_code_str, and time_str ready for output */
+        /* get x10_id_str, x10_code_str ready for output */
         sprintf(x10_id_str, "%02x%02x", b[0], b[4]);
         sprintf(x10_code_str, "%02x", b[2]);
-        local_time_str(0, time_str);
 
         /* debug output */
         if (decoder->verbose) {
-            fprintf(stderr, "%20s  X10SEC: id=%02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
+            fprintf(stderr, "X10SEC: id=%02x%02x code=%02x event_str=%s\n", b[0], b[4], b[2], event_str);
             bitbuffer_print(bitbuffer);
         }
 
         /* build and handle data set for normal output */
         data = data_make(
-                "time",     "",             DATA_STRING, time_str,
                 "model",    "",             DATA_STRING, "X10 Security",
                 "id",       "Device ID",    DATA_STRING, x10_id_str,
                 "code",     "Code",         DATA_STRING, x10_code_str,
@@ -108,7 +105,6 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "code",

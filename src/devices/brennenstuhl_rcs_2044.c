@@ -85,10 +85,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t cons
     if (on_off != 0x02 && on_off != 0x01)
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "Time",     DATA_STRING, time_str,
             "model",    "Model",    DATA_STRING, "Brennenstuhl RCS 2044",
             "id",       "id",       DATA_INT, system_code,
             "key",      "key",      DATA_STRING, key,
@@ -107,7 +104,6 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "state",

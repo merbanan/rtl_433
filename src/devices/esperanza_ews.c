@@ -64,7 +64,6 @@ static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, 
 
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
 
     humidity = (uint8_t)((b[3] << 6) | ((b[4] >> 2) & 0x0F) | ((b[3] >>2) & 0xF));
     temperature_with_offset = (uint16_t)(((b[2] << 10) | ((b[3] << 2) & 0x300) | ((b[3] << 2) & 0xF0) | ((b[1] << 2) & 0x0C) |  b[2] >> 6) & 0x0FFF);
@@ -72,8 +71,7 @@ static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, 
     channel = (uint8_t)((b[1] & 0x0C)+1);
     temperature_f = (float)((temperature_with_offset-900)/10.0);
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Esperanza EWS",
                      "id",            "",            DATA_INT, device_id,
                      "channel",       "Channel",     DATA_INT, channel,
@@ -86,7 +84,6 @@ static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, 
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

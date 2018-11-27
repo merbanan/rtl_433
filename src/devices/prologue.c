@@ -28,7 +28,6 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
 
     uint8_t model;
     uint8_t id;
@@ -48,7 +47,6 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
          (bb[r][0]&0xF0) == 0x50)) {
 
         /* Get time now */
-        local_time_str(0, time_str);
 
         /* Prologue sensor */
         model = bb[r][0] >> 4;
@@ -60,7 +58,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         temp = temp >> 4;
         humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
 
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "Prologue sensor",
                          "id",            "",            DATA_INT, model, // this should be named "type"
                          "rid",           "",            DATA_INT, id, // this should be named "id"
@@ -78,7 +76,6 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "rid",

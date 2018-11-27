@@ -27,7 +27,6 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	double pulsecount;
 	double seconds;
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
  	uint16_t crc;
 	uint16_t csum1;
 
@@ -114,9 +113,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			{
 				energy = ((pulsecount/imp_kwh[i]) * (3600/30));
 			}
-			local_time_str(0, time_str);
 			data = data_make(
-				"time",          "Time",            DATA_STRING, time_str,
 				"model",         "Model",            DATA_STRING, "Efergy Optical",
 				"pulses",	"Pulse-rate",	DATA_FORMAT,"%i", DATA_INT, imp_kwh[i],
 				"energy",       "Energy",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
@@ -139,7 +136,6 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"pulses",
 	"energy",

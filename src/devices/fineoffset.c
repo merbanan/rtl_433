@@ -35,7 +35,6 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     char *model;
     int type;
@@ -101,11 +100,10 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     humidity = b[3];
 
     /* Get time now */
-    local_time_str(0, time_str);
 
     // Thermo
     if (b[3] == 0xFF) {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -115,7 +113,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     // Thermo/Hygro
     else {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -165,7 +163,6 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
@@ -265,9 +262,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     while (uv_index < 13 && uvi_upper[uv_index] < uv_raw) ++uv_index;
 
     // Output data
-    local_time_str(0, time_str);
     data = data_make(
-            "time",             "",                 DATA_STRING, time_str,
             "model",            "",                 DATA_STRING, model == MODEL_WH24 ? "Fine Offset WH24" : "Fine Offset WH65B",
             "id",               "ID",               DATA_INT, id,
             NULL);
@@ -316,7 +311,6 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  */
 static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
     uint8_t b[8];
     unsigned bit_offset;
@@ -366,8 +360,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float pressure    = (b[4] << 8 | b[5]) * 0.1;
 
     // Output data
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH25",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -402,7 +395,6 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
  */
 static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t *bb = bitbuffer->bb;
 
     // Validate package
@@ -436,8 +428,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int rainfall_raw = buffer[4] << 8 | buffer[3]; // rain tip counter
     float rainfall = rainfall_raw * 0.3; // each tip is 0.3mm
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -451,7 +442,6 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -461,7 +451,6 @@ static char *output_fields[] = {
 };
 
 static char *output_fields_WH25[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -481,7 +470,6 @@ static char *output_fields_WH25[] = {
 };
 
 static char *output_fields_WH0530[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

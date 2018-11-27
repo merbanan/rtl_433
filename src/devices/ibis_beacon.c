@@ -15,7 +15,6 @@
 #include "decoder.h"
 
 static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	uint8_t search = 0xAB; // preamble is 0xAAB
 	uint8_t msg[32];
@@ -61,9 +60,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	}
 
 	/* Get time now */
-	local_time_str(0, time_str);
 	data = data_make(
-		"time",		"",				DATA_STRING,	time_str,
 		"model",	"",				DATA_STRING,	"IBIS beacon",
 		"id",		"Vehicle No.",	DATA_INT,		id,
 		"counter",	"Counter",		DATA_INT,		counter,
@@ -76,7 +73,6 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"counter",

@@ -36,7 +36,6 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
@@ -55,9 +54,7 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (msg[0] == 0xf4) {
         temperature = get_temperature(msg);
 
-        local_time_str(0, time_str);
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
                 NULL);
@@ -70,7 +67,6 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "temperature_C",
     NULL

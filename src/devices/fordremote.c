@@ -21,7 +21,6 @@
 
 static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *bytes;
 	int found = 0;
 	int device_id, code;
@@ -47,9 +46,7 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		code = bytes[7];
 
 		/* Get time now */
-		local_time_str(0, time_str);
 		data = data_make(
-	   			"time",		"time",		DATA_STRING, time_str,
 				"model",	"model",	DATA_STRING, "Ford Car Remote",
 				"id",		"device-id",	DATA_INT, device_id,
 				"code", 	"data",		DATA_INT, code,
@@ -62,7 +59,6 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"code",

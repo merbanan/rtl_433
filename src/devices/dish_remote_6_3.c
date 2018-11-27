@@ -93,7 +93,6 @@ char *button_map[] = {
 
 static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int r; // a row index
     uint8_t *b; // bits of a row
@@ -120,10 +119,8 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     button = b[0] >> 2;
     button_string = button_map[button];
 	
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",  "", DATA_STRING, time_str,
             "model", "", DATA_STRING, "Dish remote 6.3",
             "button", "", DATA_STRING, button_string,
             NULL);
@@ -134,7 +131,6 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "button",
     NULL

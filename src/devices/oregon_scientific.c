@@ -242,14 +242,11 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
     } // for (pattern...
 
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     int sensor_id = (msg[0] << 8) | msg[1];
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)){
       if (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 15) == 0) {
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, (sensor_id == ID_THGR122N) ? "THGR122N": "THGR968",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -267,7 +264,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) / 10.0F;
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) / 10.0F;
         data = data_make(
-            "time",       "",           DATA_STRING, time_str,
             "brand",      "",           DATA_STRING, "OS",
             "model",      "",           DATA_STRING, "WGR968",
             "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -297,7 +293,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         // fprintf(stdout,"Weather Sensor BHTR968  Indoor    Temp: %3.1fC  %3.1fF   Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg, sensor_id));
         // fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
         data = data_make(
-            "time",       "",               DATA_STRING, time_str,
             "brand",      "",               DATA_STRING, "OS",
             "model",      "",               DATA_STRING, "BHTR968",
             "id",         "House Code",     DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -316,7 +311,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         float total_rain = (((msg[7]&0xf)*10000)+((msg[7]>>4)*1000) + ((msg[6]&0xf)*100)+((msg[6]>>4)*10) + (msg[5]&0xf))/10.0F;
 
         data = data_make(
-            "time",       "",           DATA_STRING, time_str,
             "brand",      "",           DATA_STRING, "OS",
             "model",      "",           DATA_STRING, "RGR968",
             "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -333,7 +327,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
 
         float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "THR228N",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -349,7 +342,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
 
         float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "THN132N",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -364,7 +356,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
       if (validate_os_v2_message(decoder, msg, 161, num_valid_v2_bits, 15) == 0) {
         float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "RTGN129",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -380,7 +371,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
       if (num_valid_v2_bits==153 && (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 15) == 0)) {
         float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "RTGN318",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -399,7 +389,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
       if ((validate_os_v2_message(decoder, msg, 137, num_valid_v2_bits, 12) == 0)) {
         float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "THN129",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -416,7 +405,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         float temp_c = get_os_temperature(msg, sensor_id);
         float pressure = get_os_pressure(decoder, msg, sensor_id);
         data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "brand",         "",            DATA_STRING, "OS",
             "model",         "",            DATA_STRING, "BTHGN129",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -434,7 +422,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
 		if ((validate_os_v2_message(decoder, msg, 297, num_valid_v2_bits, 12) == 0)) {
 		int uvidx = get_os_uv(msg, sensor_id);
 		data = data_make(
-		  "time",           "",           DATA_STRING, time_str,
 		  "model",          "",     	  DATA_STRING, "Oregon Scientific UVR128",
 		  "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
 		  "uv",             "UV Index",   DATA_FORMAT, "%u", DATA_INT, uvidx,
@@ -472,8 +459,6 @@ return 0;
 static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer) {
   bitrow_t *bb = bitbuffer->bb;
   data_t *data;
-  char time_str[LOCAL_TIME_BUFLEN];
-  local_time_str(0, time_str);
 
   // Check stream for possible Oregon Scientific v3 protocol data (skip part of first and last bytes to get past sync/startup bit errors)
   if ((((bb[0][0]&0xf) == 0x0f) && (bb[0][1] == 0xff) && ((bb[0][2]&0xc0) == 0xc0)) ||
@@ -529,7 +514,6 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
         float temp_c = get_os_temperature(msg, sensor_id);
         int humidity = get_os_humidity(msg, sensor_id);
         data = data_make(
-          "time",           "",           DATA_STRING, time_str,
           "brand",          "",           DATA_STRING, "OS",
           "model",          "",           DATA_STRING, "THGR810",
           "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -545,7 +529,6 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
         if (validate_os_checksum(decoder, msg, 12) == 0) {
           float temp_c = get_os_temperature(msg, sensor_id);
           data = data_make(
-            "time",           "",           DATA_STRING, time_str,
             "brand",          "",           DATA_STRING, "OS",
             "model",          "",           DATA_STRING, "THN802",
             "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -560,7 +543,6 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
       if (validate_os_checksum(decoder, msg, 13) == 0) {   // ok
         int uvidx = get_os_uv(msg, sensor_id);
         data = data_make(
-          "time",           "",           DATA_STRING, time_str,
           "brand",          "",           DATA_STRING, "OS",
           "model",          "",           DATA_STRING, "UV800",
           "id",             "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -575,7 +557,6 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
         float rain_rate=get_os_rain_rate(msg, sensor_id);
         float total_rain=get_os_total_rain(msg, sensor_id);
         data = data_make(
-          "time",       "",           DATA_STRING, time_str,
           "brand",      "",           DATA_STRING, "OS",
           "model",      "",           DATA_STRING, "PCR800",
           "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -592,7 +573,6 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
     float rain_rate=get_os_rain_rate(msg, sensor_id);
     float total_rain=get_os_total_rain(msg, sensor_id);
     data = data_make(
-      "time",       "",           DATA_STRING, time_str,
       "brand",      "",           DATA_STRING, "OS",
       "model",      "",           DATA_STRING, "PCR800a",
       "id",         "House Code", DATA_INT,    get_os_rollingcode(msg, sensor_id),
@@ -610,7 +590,6 @@ return 1;
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
         float quadrant = (0x0f&(msg[4]>>4))*22.5F;
         data = data_make(
-          "time",       "",           DATA_STRING,  time_str,
           "brand",      "",           DATA_STRING,  "OS",
           "model",      "",           DATA_STRING,  "WGR800",
           "id",         "House Code", DATA_INT,     get_os_rollingcode(msg, sensor_id),
@@ -629,7 +608,6 @@ return 1;
         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
         unsigned short int ipower = (rawAmp /(0.27*230)*1000);
         data = data_make(
-            "time",   "",           DATA_STRING,  time_str,
             "brand",  "",           DATA_STRING, "OS",
             "model",  "",           DATA_STRING,  "CM160",
             "id",     "House Code", DATA_INT, msg[1]&0x0F,
@@ -649,7 +627,6 @@ return 1;
         float total_energy = itotal/3600/1000.0;
         if (itotal && valid == 0) {
             data = data_make(
-              "time",       "",           DATA_STRING,  time_str,
               "brand",      "",           DATA_STRING, "OS",
               "model",      "",           DATA_STRING,  "CM180",
               "id",         "House Code", DATA_INT, msg[1]&0x0F,
@@ -659,7 +636,6 @@ return 1;
             decoder_output_data(decoder, data);
         } else if (!itotal) {
             data = data_make(
-              "time",   "",           DATA_STRING,  time_str,
               "brand",  "",           DATA_STRING, "OS",
               "model",  "",           DATA_STRING,  "CM180",
               "id",     "House Code", DATA_INT, msg[1]&0x0F,
@@ -702,7 +678,6 @@ static int oregon_scientific_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-  "time",
   "brand",
   "model",
   "id",

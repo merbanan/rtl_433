@@ -13,7 +13,6 @@ extern uint8_t reverse8(uint8_t x);
 static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
-        char time_str[LOCAL_TIME_BUFLEN];
         data_t *data;
 	int i,iRain,device;
 	unsigned char chksum;
@@ -54,9 +53,8 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			if( (chksum&0x0F) == ( reverse8(bb[i][4]) &0x0F)){
 
 				/* Get time now */
-				local_time_str(0, time_str);
 
-				data = data_make("time", "", DATA_STRING, time_str,
+				data = data_make(
 					"model", "", DATA_STRING, "Inovalley kw9015b",
 					"id", "", DATA_INT, device,
 					"temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp,
@@ -78,7 +76,6 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 
 static char *kw9015b_csv_output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

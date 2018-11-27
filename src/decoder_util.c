@@ -103,12 +103,7 @@ void decoder_output_data(r_device *decoder, data_t *data)
 
 void decoder_output_message(r_device *decoder, char const *msg)
 {
-    data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-
-    local_time_str(0, time_str);
-    data = data_make(
-            "time", "", DATA_STRING, time_str,
+    data_t *data = data_make(
             "msg", "", DATA_STRING, msg,
             NULL);
     decoder_output_data(decoder, data);
@@ -119,10 +114,7 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
     data_t *data;
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
     unsigned i;
-
-    local_time_str(0, time_str);
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
@@ -139,7 +131,6 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
     }
 
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "msg", "", DATA_STRING, msg,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
@@ -157,10 +148,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
     unsigned i;
-
-    local_time_str(0, time_str);
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
@@ -182,7 +170,6 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
     }
 
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "msg", "", DATA_STRING, msg,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
@@ -200,10 +187,7 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
     data_t *data;
     char *row_code;
     char row_bytes[BITBUF_COLS * 2 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
     unsigned i;
-
-    local_time_str(0, time_str);
 
     row_bytes[0] = '\0';
     // print byte-wide
@@ -218,7 +202,6 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
     sprintf(row_code, "{%d}%s", bit_len, row_bytes);
 
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "msg", "", DATA_STRING, msg,
             "codes", "", DATA_STRING, row_code,
             NULL);

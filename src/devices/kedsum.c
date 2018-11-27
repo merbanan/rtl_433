@@ -25,7 +25,6 @@
 static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     // the signal should start with 15 sync pulses (empty rows)
     // require at least 5 received syncs
@@ -73,8 +72,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
     }
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Kedsum Temperature & Humidity Sensor",
                      "channel",       "Channel",     DATA_INT, channel,
                      "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
@@ -86,7 +84,6 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "channel",
     "temperature_F",

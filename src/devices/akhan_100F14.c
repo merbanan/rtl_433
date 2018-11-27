@@ -10,7 +10,6 @@
 #include "decoder.h"
 
 static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     int id;
@@ -39,9 +38,7 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (!cmd_str)
         return 0;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "",             DATA_STRING, time_str,
             "model",    "",             DATA_STRING, "Akhan 100F14 remote keyless entry",
             "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
             "data",     "Data (4bit)",  DATA_STRING, cmd_str,
@@ -52,7 +49,6 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "data",

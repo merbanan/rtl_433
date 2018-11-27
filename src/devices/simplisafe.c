@@ -29,7 +29,6 @@ ss_get_id(char *id, uint8_t *b)
 static int
 ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
     char id[6];
@@ -54,9 +53,7 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     	strcpy(extradata,"Alarm Off");
     }
 
-    local_time_str(0, time_str);
     data = data_make(
-        	"time",        "",    DATA_STRING, time_str,
         	"model",    "",    DATA_STRING, "SimpliSafe Sensor",
         	"device",    "Device ID",    DATA_STRING, id,
         	"seq",        "Sequence",    DATA_INT, seq,
@@ -72,7 +69,6 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 static int
 ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
     char id[6];
@@ -92,9 +88,7 @@ ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     sprintf(extradata, "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
 
-    local_time_str(0, time_str);
     data = data_make(
-        	"time",        "",    DATA_STRING, time_str,
         	"model",    "",    DATA_STRING, "SimpliSafe Keypad",
         	"device",    "Device ID",    DATA_STRING, id,
         	"seq",        "Sequence",    DATA_INT, b[9],
@@ -109,7 +103,6 @@ ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 static int
 ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b = bitbuffer->bb[row];
     char id[6];
@@ -131,9 +124,7 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     ss_get_id(id, b);
 
-    local_time_str(0, time_str);
     data = data_make(
-        	"time",        "",    DATA_STRING, time_str,
         	"model",    "",    DATA_STRING, "SimpliSafe Keypad",
         	"device",    "",    DATA_STRING, id,
         	"seq",    "Sequence",DATA_INT, b[9],
@@ -172,7 +163,6 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *sensor_output_fields[] = {
-    "time",
     "model",
     "device",
     "seq",

@@ -87,10 +87,8 @@ static int tfa_twin_plus_303049_process_row(r_device *decoder, int row, const bi
     float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
     {
         /* @todo: remove timestamp printing as soon as the controller takes this task */
-        char time_str[LOCAL_TIME_BUFLEN];
-        local_time_str(0, time_str);
 
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
             "model",         "",            DATA_STRING, "TFA-Twin-Plus-30.3049",
             "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
@@ -364,7 +362,6 @@ Passed 74/74 positive tests
 #endif
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

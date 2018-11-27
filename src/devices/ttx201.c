@@ -99,7 +99,6 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     int channel;
     int temperature;
     float temperature_c;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
@@ -165,9 +164,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
     temperature_c = temperature / 10.0f;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Emos TTX201",
             "id",            "House Code",  DATA_INT,    device_id,
             "channel",       "Channel",     DATA_INT,    channel,
@@ -197,7 +194,6 @@ ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

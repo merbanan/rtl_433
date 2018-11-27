@@ -94,7 +94,6 @@
 static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     int r;
     int device;
     uint8_t *bytes;
@@ -140,10 +139,8 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
         return 0;
     }
 
-    local_time_str(0, time_str);
     if (device == LACROSSE_TX141) {
         data = data_make(
-                "time",          "Date and time", DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "LaCrosse TX141-Bv2 sensor",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
@@ -152,7 +149,6 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
                 NULL);
     } else {
         data = data_make(
-                "time",          "Date and time", DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "LaCrosse TX141TH-Bv2 sensor",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
@@ -167,7 +163,6 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

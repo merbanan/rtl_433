@@ -121,7 +121,6 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
 
 static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t row = 0; // we are considering only first row
     int msg_len, data_len, header_to, header_from, header_id, header_flags;
@@ -141,9 +140,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int j = 0; j < msg_len; j++) {
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
-    local_time_str(0, time_str);
     data = data_make(
-            "time",         "",             DATA_STRING, time_str,
             "model",        "",             DATA_STRING, "RadioHead ASK",
             "len",          "Data len",     DATA_INT, data_len,
             "to",           "To",           DATA_INT, header_to,
@@ -160,7 +157,6 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t row = 0; // we are considering only first row
     int msg_len, house_id, sensor_type, sensor_count, alarms;
@@ -179,9 +175,7 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sensor_value = (rh_payload[7] << 8) | rh_payload[8];
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
-    local_time_str(0, time_str);
     data = data_make(
-             "time",             "",                 DATA_STRING,  time_str,
              "model",            "",                 DATA_STRING,  "Sensible Living Plant Moisture",
              "house_id",         "House ID",         DATA_INT,     house_id,
              "module_id",        "Module ID",        DATA_INT,     module_id,
@@ -198,7 +192,6 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *radiohead_ask_output_fields[] = {
-    "time",
     "model",
     "len",
     "to",
@@ -211,7 +204,6 @@ static char *radiohead_ask_output_fields[] = {
 };
 
 static char *sensible_living_output_fields[] = {
-    "time",
     "model",
     "house_id",
     "module_id",

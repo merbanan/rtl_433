@@ -27,7 +27,6 @@
 #include "decoder.h"
 
 static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     int code;
@@ -44,9 +43,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
         sprintf(code_str, "%05x", code);
 
-        local_time_str(0, time_str);
         data = data_make(
-                "time",     "",  DATA_STRING, time_str,
                 "model",    "",  DATA_STRING, "Generic motion sensor",
                 "code",     "",  DATA_STRING, code_str,
                 NULL);
@@ -58,7 +55,6 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "code",
     NULL
