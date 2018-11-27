@@ -362,6 +362,16 @@ static void calc_rssi_snr(pulse_data_t *pulse_data)
     }
 }
 
+static char *time_pos_str(time_t time_secs, char *buf)
+{
+    if (sample_file_pos != -1.0) {
+        return sample_pos_str(sample_file_pos, buf);
+    }
+    else {
+        return local_time_str(0, buf);
+    }
+}
+
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(data_t *data)
 {
@@ -500,7 +510,7 @@ void data_acquired_handler(data_t *data)
 
     // always prepend "time"
     char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
+    time_pos_str(0, time_str);
     data = data_prepend(data,
             "time", "", DATA_STRING, time_str,
             NULL);
@@ -592,7 +602,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", time_pos_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -640,7 +650,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
             } else if (package_type == 2) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", time_pos_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders

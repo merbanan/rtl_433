@@ -121,9 +121,16 @@ int byteParity(uint8_t inByte);
 /// Printable timestamp in local time
 ///
 /// @param time_secs: 0 for now, or seconds since the epoch
-/// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
+/// @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
 /// @return buf pointer (for short hand use as operator)
 char* local_time_str(time_t time_secs, char *buf);
+
+/// Printable sample position
+///
+/// @param sample_pos sample position
+/// @param buf: output buffer, long enough for "@0.000000s"
+/// @return buf pointer (for short hand use as operator)
+char *sample_pos_str(float sample_file_pos, char *buf);
 
 /// Convert Celsius to Fahrenheit
 ///
