@@ -100,11 +100,8 @@ static int gt_wt_02_process_row(r_device *decoder, int row, const bitbuffer_t *b
 
     float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     data = data_make(
-        "time",		"",		DATA_STRING,	time_str,
         "model",		"",		DATA_STRING,	"GT_WT_02 sensor",
         "rc",		"Rolling Code",		DATA_INT,	sensor_id,
         "channel",		"Channel",	DATA_INT,	channel+1,
@@ -116,13 +113,9 @@ static int gt_wt_02_process_row(r_device *decoder, int row, const bitbuffer_t *b
     decoder_output_data(decoder, data);
     return 1;
 //# {
-//    /* @todo: remove timestamp printing as soon as the controller takes this task */
-//  char time_str[LOCAL_TIME_BUFLEN];
-//   local_time_str(0, time_str);
-//
 //   /* @todo make temperature unit configurable, not printing both */
-//  fprintf(stdout, "%s, GT-WT-02 Sensor %02x, battery %s, channel %d, button %d, temperature %3.1f C, humidity %s%%\n"
-//      , time_str, sensor_id, battery_low ? "LOW" : "OK", channel+1, button_pressed, tempC, humidity_str);
+//  fprintf(stdout, "GT-WT-02 Sensor %02x, battery %s, channel %d, button %d, temperature %3.1f C, humidity %s%%\n"
+//      , sensor_id, battery_low ? "LOW" : "OK", channel+1, button_pressed, tempC, humidity_str);
 //}
 //return 1; */
 }
@@ -137,7 +130,6 @@ static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "rc",
     "channel",

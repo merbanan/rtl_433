@@ -97,7 +97,6 @@ static unsigned char preamble[1] = {0x01};
 
 static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];
@@ -194,10 +193,8 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
 
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",        "Receiver Time", DATA_STRING, time_str,
             "model",       "Model",         DATA_STRING, "Interlogix",
             "id",          "ID",            DATA_STRING, device_serial,
             "device_type", "Device Type",   DATA_STRING, device_type,
@@ -216,7 +213,6 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "device_type",

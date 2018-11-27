@@ -16,7 +16,6 @@ static int rev_nibble(int nib)
 
 static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
 	int row;
 	int cs;
 	int i;
@@ -26,7 +25,6 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 	int battery, uk2, sign, uk3, checksum;
 	data_t *data;
 
-	local_time_str(0, time_str);
 
 	for(row = 0; row < bitbuffer->num_rows; row++) {
 		if(bitbuffer->bits_per_row[row] == OSV1_BITS) {
@@ -52,7 +50,6 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 				if(sign) tempC = -tempC;
 
 				data = data_make(
-					"time",			"",				DATA_STRING,	time_str,
 					"brand",		"",				DATA_STRING,	"OS",
 					"model",		"",				DATA_STRING,	"OSv1 Temperature Sensor",
 					"sid",			"SID",			DATA_INT,		sid,
@@ -69,7 +66,6 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 }
 
 static char *output_fields[] = {
-	"time",
 	"brand",
 	"model",
 	"id",

@@ -13,8 +13,6 @@
 static int pool_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
-	local_time_str(0, time_str);
 	int i,device,channel;
 	int iTemp;
 	float fTemp;
@@ -42,7 +40,7 @@ E: ?
 	fTemp=(iTemp > 2048 ? iTemp - 4096 : iTemp) / 10.0;
 	channel=(signed short)((bb[1][3]&0xC0)>>6);
 
-	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
+	data = data_make(
 		"model",		"", 			DATA_STRING, 	"TFA pool temperature sensor",
 		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
 		"channel",        	"Channel number",	DATA_FORMAT,	"\t %d",	DATA_INT,	channel,
@@ -55,7 +53,6 @@ E: ?
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"channel",

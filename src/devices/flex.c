@@ -74,7 +74,6 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t tmp;
 
     // discard short / unwanted bitbuffers
@@ -136,10 +135,8 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
         bitbuffer_print(bitbuffer);
     }
 
-    local_time_str(0, time_str);
     if (params->count_only) {
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, params->name,
                 "count", "", DATA_INT, match_count,
                 NULL);
@@ -187,7 +184,6 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "model", "", DATA_STRING, params->name,
             "count", "", DATA_INT, match_count,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
@@ -203,7 +199,6 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
 }
 
 static char *output_fields[] = {
-        "time",
         "model",
         "count",
         "num_rows",

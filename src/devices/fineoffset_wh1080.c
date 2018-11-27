@@ -245,14 +245,12 @@ static int get_day(const uint8_t* br) {
 
 static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     const uint8_t *br;
     int msg_type; // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 12; // 12=Weather/Time sensor  8=UV/Light sensor
     int i;
     uint8_t bbuf[11]; // max 8 / 11 bytes needed
 
-    local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
@@ -374,7 +372,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (msg_type == 0) {
 
         data = data_make(
-                "time",     "",         DATA_STRING,                    time_str,
                 "model",     "",         DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                    msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",        DATA_INT,    device_id,
@@ -393,7 +390,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (msg_type == 1) {
 
         data = data_make(
-                "time",        "",        DATA_STRING,        time_str,
                 "model",    "",        DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",    DATA_INT,    device_id,
@@ -411,7 +407,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else {
 
         data = data_make(
-                "time",        "",        DATA_STRING,                time_str,
                 "model",    "",        DATA_STRING,    "Fine Offset Electronics WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "uv_sensor_id",    "UV Sensor ID",    DATA_FORMAT,    "%d",    DATA_INT,    uv_sensor_id,
@@ -427,7 +422,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

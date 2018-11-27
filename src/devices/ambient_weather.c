@@ -22,7 +22,6 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     int channel;
     float temperature;
     int humidity;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 6*8);
@@ -46,9 +45,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     temperature = (temp_f - 400) / 10.0f;
     humidity = b[4];
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",           "",             DATA_STRING, time_str,
             "model",          "",             DATA_STRING, "Ambient Weather F007TH Thermo-Hygrometer",
             "device",         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
@@ -93,7 +90,6 @@ ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "device",
     "channel",

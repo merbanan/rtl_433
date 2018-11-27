@@ -99,7 +99,6 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
     int channel;
     uint8_t id;
     int status;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     for(int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
         msg = bitbuffer->bb[row_index];
@@ -109,7 +108,6 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         if( !((bitbuffer->bits_per_row[row_index] == SL109H_MESSAGE_LENGTH)
               && calculate_checksum(decoder, bitbuffer, row_index, channel_bits)) ) continue;
 
-        local_time_str(0, time_str);
 
         temp_c = calculate_centigrade_decidegrees(bitbuffer, row_index) / 10.0;
 
@@ -121,7 +119,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         status = get_status(msg[3]);
 
-        data = data_make("time",          "",           DATA_STRING,                         time_str,
+        data = data_make(
                          "model",         "Model",                              DATA_STRING,    "Oregon Scientific SL109H",
                          "id",            "Id",                                 DATA_INT,    id,
                          "channel",       "Channel",                            DATA_INT,    channel,
@@ -138,7 +136,6 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

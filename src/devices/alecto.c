@@ -58,13 +58,11 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int i;
 
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     unsigned bits = bitbuffer->bits_per_row[1];
 
     if (bits != 36)
         return 0;
 
-    local_time_str(0, time_str);
 
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
         && (bb[5][0] != 0 && bb[5][1] != 0)) {
@@ -86,9 +84,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
             //fprintf(stdout, "\nAlectoV1 CRC error");
             if(decoder->verbose) {
-                fprintf(stderr,
-                "%s AlectoV1 Checksum/Parity error\n",
-                time_str);
+                fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
             }
             return 0;
         } //Invalid checksum
@@ -121,7 +117,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                     double gust = reverse8(bb[5 + skip][3]);
                     int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
-                    data = data_make("time",          "",           DATA_STRING, time_str,
+                    data = data_make(
                                     "model",          "",           DATA_STRING, "AlectoV1 Wind Sensor",
                                     "id",             "House Code", DATA_INT,    sensor_id,
                                     "channel",        "Channel",    DATA_INT,    channel,
@@ -137,7 +133,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 // Rain sensor
                 double rain_mm = ((reverse8(bb[1][3]) << 8)+reverse8(bb[1][2])) * 0.25F;
 
-                data = data_make("time",         "",           DATA_STRING, time_str,
+                data = data_make(
                                 "model",         "",           DATA_STRING, "AlectoV1 Rain Sensor",
                                 "id",            "House Code", DATA_INT,    sensor_id,
                                 "channel",       "Channel",    DATA_INT,    channel,
@@ -157,7 +153,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             humidity = bcd_decode8(reverse8(bb[1][3]));
             if (humidity>100) return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
 
-            data = data_make("time",         "",            DATA_STRING, time_str,
+            data = data_make(
                             "model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
                             "id",            "House Code",  DATA_INT,    sensor_id,
                             "channel",       "Channel",     DATA_INT,    channel,
@@ -186,7 +182,6 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

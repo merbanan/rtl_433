@@ -16,7 +16,6 @@
 static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b = bitbuffer->bb[0];
     uint8_t nb[3] = {0}; // maps a pair of bits to two states, 1 0 -> 1 and 1 1 -> 0
     char id_str[2];
@@ -54,9 +53,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     id_str[0] = 'A' + nb[0];
     id_str[1] = '\0';
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",     "",     DATA_STRING,    time_str,
         "model",    "",     DATA_STRING,    "Waveman Switch Transmitter",
         "id",       "",     DATA_STRING,    id_str,
         "channel",  "",     DATA_INT,       (nb[1] >> 2) + 1,
@@ -69,7 +66,6 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

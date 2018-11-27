@@ -34,7 +34,6 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b = bb[0];
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     int id;
     int humidity;
     int temp;
@@ -49,9 +48,8 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temp = (b[2] << 4) | (b[3] >> 4);
     temp_f = (float)temp / 10 - 90;
 
-    local_time_str(0, time_str);
 
-    data = data_make( "time",		"",				DATA_STRING,	time_str,
+    data = data_make(
         "model",         "",	   DATA_STRING, "inFactory sensor",
         "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
         "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
@@ -64,7 +62,6 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 
 static char *output_fields[] = {
-    "time",
     "model"
     "id",
     "temperature_F",

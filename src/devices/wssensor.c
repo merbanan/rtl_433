@@ -30,7 +30,6 @@
 static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     // the signal should have 23 repeats
     // require at least 4 received repeats
@@ -69,8 +68,7 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         fprintf(stdout, "TemperatureC	= %.1f\n", temperature_c);
     }
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "WS Temperature Sensor",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel,
@@ -83,7 +81,6 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

@@ -19,7 +19,6 @@
 
 static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b;
 	char id_str[9];
 
@@ -37,9 +36,7 @@ static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
 
         sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
-        local_time_str(0, time_str);
         data = data_make(
-				"time", 	"", DATA_STRING, time_str,
                 "model",	"", DATA_STRING, "Blyss-DC5ukwh",
                 "id",	 	"", DATA_STRING, id_str,
                 NULL);
@@ -52,7 +49,6 @@ static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     NULL

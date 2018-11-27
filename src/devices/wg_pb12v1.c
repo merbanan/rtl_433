@@ -47,7 +47,6 @@
 static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t *b;
 
     uint8_t id;
@@ -72,9 +71,7 @@ static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp = ((b[1] & 0x0F) << 8) | b[2];
     temperature = ((float)temp / 10) - 40;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",             "",             DATA_STRING, time_str,
             "model",            "",             DATA_STRING, "WG-PB12V1",
             "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -85,7 +82,6 @@ static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

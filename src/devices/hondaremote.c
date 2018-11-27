@@ -27,7 +27,6 @@ static char const *get_command_codes(const uint8_t *bytes)
 
 static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
 	char const *code;
@@ -43,9 +42,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         code = get_command_codes(b);
         device_id = b[44]<<8 | b[45];
 
-        local_time_str(0, time_str);
         data = data_make(
-                "time",         "",     DATA_STRING, time_str,
                 "model",        "",     DATA_STRING, "Honda Remote",
                 "device id",    "",    DATA_INT, device_id,
                 "code",         "",    DATA_STRING, code,
@@ -58,7 +55,6 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "device id",
     "code",

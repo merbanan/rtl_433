@@ -28,7 +28,6 @@ static const unsigned char preamble_pattern[2] = { 0x55, 0x56 };
 
 static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -69,9 +68,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     battery = b[8];
     sprintf(code_str, "%02x%02x%02x", pressure, temperature, battery);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",         "",     DATA_STRING, time_str,
         "model",        "",     DATA_STRING, "Citroen",
         "type",         "",     DATA_STRING, "TPMS",
         "state",        "",     DATA_STRING, state_str,
@@ -104,7 +101,6 @@ static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "state",

@@ -26,7 +26,6 @@ static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits
 
 static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -76,9 +75,7 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     sprintf(id_str, "%08x", id);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "PMV-107J",
         "type",             "",     DATA_STRING,    "TPMS",
         "id",               "",     DATA_STRING,    id_str,
@@ -110,7 +107,6 @@ static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",

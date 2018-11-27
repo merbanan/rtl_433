@@ -10,7 +10,6 @@
 
 static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bitbuffer->bb[1];
@@ -43,9 +42,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     master = (b[7] & 0xf0) >> 4;
     command = b[6] & 0x07;
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "Intertechno",
         "id",               "",     DATA_STRING,    id_str,
         "slave",            "",     DATA_INT,       slave,
@@ -58,7 +55,6 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",

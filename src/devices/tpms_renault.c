@@ -23,7 +23,6 @@ static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -57,9 +56,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     maybe_temp = b[7]<<8 | b[6]; // little-endian
     sprintf(code_str, "%04x %04x", maybe_pressure, maybe_temp);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",         "",     DATA_STRING, time_str,
         "model",        "",     DATA_STRING, "Renault",
         "type",         "",     DATA_STRING, "TPMS",
         "id",           "",     DATA_STRING, id_str,
@@ -94,7 +91,6 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "flags",

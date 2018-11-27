@@ -81,7 +81,6 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     bitbuffer_t packet_bits = {0};
     uint8_t device_id;
     uint8_t command;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     ge_decode(decoder, bitbuffer, row, start_pos, &packet_bits);
     //bitbuffer_print(&packet_bits);
@@ -115,9 +114,7 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     bitbuffer_extract_bytes(&packet_bits, 0, 8, &command, 8);
     
     // Format data
-    local_time_str(0, time_str);
     data = data_make(
-        "time",          "",     DATA_STRING, time_str,
         "model",         "",     DATA_STRING, "GE Color Effects Remote",
         "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
         "command",       "",     DATA_STRING, ge_command_name(command),
@@ -144,7 +141,6 @@ static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "command",

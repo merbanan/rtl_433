@@ -16,7 +16,6 @@
 static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
     char tristate[23];
@@ -53,9 +52,7 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     *p = '\0';
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",         "",             DATA_STRING, time_str,
             "model",        "",             DATA_STRING, "Generic Remote",
             "id",           "House Code",   DATA_INT, id_16b,
             "cmd",          "Command",      DATA_INT, cmd_8b,
@@ -68,7 +65,6 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model"
     "id"
     "cmd",

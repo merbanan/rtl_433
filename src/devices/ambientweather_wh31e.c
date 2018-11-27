@@ -35,7 +35,6 @@
 
 static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int events = 0;
     uint8_t b[11]; // actually only 6 bytes, no indication what the other 5 might be
@@ -53,7 +52,6 @@ static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuff
             0x30, // type code (presumed)
     };
 
-    local_time_str(0, time_str);
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         // Validate message and reject it as fast as possible : check for preamble
         unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 28);
@@ -88,7 +86,6 @@ static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuff
 
         /* clang-format off */
         data = data_make(
-                "time",             "",             DATA_STRING, time_str,
                 "model",            "",             DATA_STRING, "AmbientWeather-WH31E",
                 "id" ,              "",             DATA_INT, id,
                 "channel",          "Channel",      DATA_INT, channel,
@@ -107,7 +104,6 @@ static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuff
 
 /* clang-format off */
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

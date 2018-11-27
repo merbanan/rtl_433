@@ -36,7 +36,6 @@
 static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     bitbuffer_t mc = {0};
 
     if(bitbuffer->num_rows != 1)
@@ -79,9 +78,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %06x, digest xor'ed: %04x\n",
                 __FUNCTION__, pre, flags, temp1, temp2, digest, chk_data, id);
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",             "",                     DATA_STRING, time_str,
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
             "id",               "Session_ID",           DATA_INT, id,
             "status",           "Status",               DATA_STRING, status,
@@ -94,7 +91,6 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "brand"
     "model"
     "id"

@@ -50,7 +50,6 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		unsigned pkt_pos;
 		uint16_t crc;
 		data_t *data;
-		char time_str[LOCAL_TIME_BUFLEN];
 		union {
 			struct emontx p;
 			uint8_t b[sizeof(struct emontx)];
@@ -108,8 +107,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 		vrms = (double)words[4] / 100.0;
 
-		local_time_str(0, time_str);
-		data = data_make("time", "", DATA_STRING, time_str,
+		data = data_make(
 				 "model", "", DATA_STRING, "emonTx",
 				 "node", "", DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
 				 "ct1", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
@@ -133,9 +131,21 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time", "model", "node", "ct1", "ct2", "ct3", "ct4", "Vrms/batt",
-	"temp1_C", "temp2_C", "temp3_C", "temp4_C", "temp5_C", "temp6_C",
-	"pulse", NULL
+	"model",
+	"node",
+	"ct1",
+	"ct2",
+	"ct3",
+	"ct4",
+	"Vrms/batt",
+	"temp1_C",
+	"temp2_C",
+	"temp3_C",
+	"temp4_C",
+	"temp5_C",
+	"temp6_C",
+	"pulse",
+	NULL
 };
 
 r_device emontx = {

@@ -12,7 +12,6 @@
 
 static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *b = bitbuffer->bb[1];
 	int i,device,battery;
 	float fTemp;
@@ -39,8 +38,7 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
 	battery=(b[1]&0xF0)>>4;
 	fTemp=(float)((signed short)(((b[1]&0x3f)*256+b[2])<<2))/160.0;
 
-	local_time_str(0, time_str);
-	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
+	data = data_make(
 		"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
 		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
 		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
@@ -53,7 +51,6 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"temperature_C",

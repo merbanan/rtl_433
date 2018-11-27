@@ -5,9 +5,7 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
 
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    local_time_str(0, time_str);
 
     uint8_t init_pattern[] = {
         0xcc, //8
@@ -40,7 +38,7 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if((packet[2] & 0x80) == 128) { watt0 = (packet[2] & 0x7F) << 8 | packet[3] ; }
         if((packet[4] & 0x80) == 128) { watt1 = (packet[4] & 0x7F) << 8 | packet[5] ; }
         if((packet[6] & 0x80) == 128) { watt2 = (packet[6] & 0x7F) << 8 | packet[7] ; }
-        data = data_make("time",          "",       DATA_STRING, time_str,
+        data = data_make(
                 "model",         "",              DATA_STRING, "CurrentCost TX", //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
                 "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
@@ -58,7 +56,7 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
        // packet[2] is "Apparently unused"
        uint16_t sensor_type = packet[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
        uint32_t c_impulse = packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
-       data = data_make("time",         "",              DATA_STRING, time_str,
+       data = data_make(
                "model",        "",              DATA_STRING, "CurrentCost Counter", //TODO: it may have different CC Model ? any ref ?
                "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                "sensor_type",  "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
@@ -73,7 +71,6 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "dev_id",
     "power0",

@@ -23,7 +23,6 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	 */
 	char *rbutton[4] = { "11R", "10R", "01R", "00L?" };
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 
 	// validate message as we can
 	if((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
@@ -103,9 +102,7 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				dip[8]='+';
 		}
 
-		local_time_str(0, time_str);
 		data = data_make(
-			"time",       "",                       DATA_STRING, time_str,
 			"model",      "",                       DATA_STRING, "Cardin S466",
 			"dipswitch",  "dipswitch",              DATA_STRING, dip,
 			"rbutton",    "right button switches",  DATA_STRING, rbutton[((bb[0][2] & 15) / 3)-1],
@@ -119,7 +116,6 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"dipswitch",
 	"rbutton",

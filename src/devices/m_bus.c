@@ -217,11 +217,9 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
 static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1)
 {
     data_t  *data;
-    char    time_str[LOCAL_TIME_BUFLEN];
     char    str_buf[1024];
 
     // Get time now
-    local_time_str(0, time_str);
 
     // Make data string
     str_buf[0] = 0;
@@ -229,7 +227,6 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
 
     // Output data
     data = data_make(
-        "time",     "",             DATA_STRING,    time_str,
         "model",    "",             DATA_STRING,    "Wireless M-Bus",
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,

@@ -51,7 +51,6 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     int browlen;
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     // ignore if two leading sync pulses (Esperanza EWS)
     if (bitbuffer->bits_per_row[0] == 0 && bitbuffer->bits_per_row[1] == 0)
@@ -109,8 +108,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
     }
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "S3318P Temperature & Humidity Sensor",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel,
@@ -126,7 +124,6 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",

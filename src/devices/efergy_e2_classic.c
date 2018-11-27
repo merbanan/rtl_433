@@ -28,7 +28,6 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     if (num_bits < 64 || num_bits > 80) {
         return 0;
@@ -77,10 +76,9 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t fact = (-(int8_t)bytes[6] + 15);
     float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
 
-    local_time_str(0, time_str);
 
     // Output data
-    data = data_make("time",     "",               DATA_STRING, time_str,
+    data = data_make(
                      "model",    "",               DATA_STRING, "Efergy e2 CT",
                      "id",       "Transmitter ID", DATA_INT, address,
                      "current",  "Current",        DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
@@ -96,7 +94,6 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "current",

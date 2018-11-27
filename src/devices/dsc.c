@@ -74,7 +74,6 @@
 
 static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     int valid_cnt = 0;
@@ -180,10 +179,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
-        local_time_str(0, time_str);
 
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "DSC Contact",
                 "id", "", DATA_INT, esn,
                 "closed", "", DATA_INT, s_closed, // @todo make bool
@@ -214,7 +211,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "status",

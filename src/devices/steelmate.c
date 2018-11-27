@@ -34,8 +34,6 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	//	fprintf(stdout, "\n");
 	//}
 
-	char time_str[LOCAL_TIME_BUFLEN];
-	local_time_str(0, time_str);
 	bitrow_t *bb = bitbuffer->bb;
 
 	//Loop through each row of data
@@ -83,7 +81,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		pressurePSI = (float)p1 / 2;
 		battery_mV = tmpbattery_mV * 2;
 
-		data = data_make("time", "", DATA_STRING, time_str,
+		data = data_make(
 			"type", "", DATA_STRING, "TPMS",
 			"model", "", DATA_STRING, "Steelmate",
 			"id", "", DATA_STRING, sensorIDhex,
@@ -102,7 +100,6 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"type",
 	"model",
 	"id",

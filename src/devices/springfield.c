@@ -5,7 +5,6 @@
 
 static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
 	int row;
 	int cs;
 	int i;
@@ -18,7 +17,6 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	unsigned tmpData;
 	unsigned savData = 0;
 
-	local_time_str(0, time_str);
 
 	for(row = 0; row < bitbuffer->num_rows; row++) {
 		if(bitbuffer->bits_per_row[row] == NUM_BITS || bitbuffer->bits_per_row[row] == NUM_BITS + 1) {
@@ -49,7 +47,6 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				uk1      =  nibble[8];	/* unknown. */
 
 				data = data_make(
-					"time",			"",				DATA_STRING,	time_str,
 					"model",		"",				DATA_STRING,	"Springfield Temperature & Moisture",
 					"sid",			"SID",			DATA_INT,		sid,
 					"channel",		"Channel",		DATA_INT,		channel,
@@ -68,7 +65,6 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"sid",
 	"channel",

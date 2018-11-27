@@ -16,7 +16,6 @@
 enum sensortypes { HIDEKI_UNKNOWN, HIDEKI_TEMP, HIDEKI_TS04, HIDEKI_WIND, HIDEKI_RAIN };
 
 static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b = bitbuffer->bb[0]; // TODO: handle the 3 row, need change in PULSE_CLOCK decoding
     uint8_t packet[HIDEKI_MAX_BYTES_PER_ROW];
@@ -67,10 +66,9 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     battery_ok = (packet[5]>>6) & 0x01;
 
-    local_time_str(0, time_str);
     if (sensortype == HIDEKI_TS04) {
         humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
-        data = data_make("time",          "",              DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",              DATA_STRING, "HIDEKI TS04 sensor",
                          "rc",            "Rolling Code",  DATA_INT, rc,
                          "channel",       "Channel",       DATA_INT, channel,
@@ -85,7 +83,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         const uint8_t wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
         wind_direction = wd[((packet[11] & 0xF0) >> 4)] * 225;
         wind_strength = (packet[9] & 0x0F) * 100 + ((packet[8] & 0xF0) >> 4) * 10 + (packet[8] & 0x0F);
-        data = data_make("time",          "",              DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",              DATA_STRING, "HIDEKI Wind sensor",
                          "rc",            "Rolling Code",  DATA_INT, rc,
                          "channel",       "Channel",       DATA_INT, channel,
@@ -98,7 +96,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 1;
     }
     if (sensortype == HIDEKI_TEMP) {
-        data = data_make("time",          "",              DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",              DATA_STRING, "HIDEKI Temperature sensor",
                          "rc",            "Rolling Code",  DATA_INT, rc,
                          "channel",       "Channel",       DATA_INT, channel,
@@ -111,7 +109,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (sensortype == HIDEKI_RAIN) {
         rain_units = (packet[5] << 8) + packet[4];
         battery_ok = (packet[2]>>6) & 0x01;
-        data = data_make("time",          "",              DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",              DATA_STRING, "HIDEKI Rain sensor",
                          "rc",            "Rolling Code",  DATA_INT, rc,
                          "channel",       "Channel",       DATA_INT, channel,
@@ -125,7 +123,6 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "rc",
     "channel",

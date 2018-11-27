@@ -131,7 +131,6 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int msg_value_int;
     float msg_value = 0, temp_c = 0;
     time_t time_now;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     for (m = 0; m < BITBUF_ROWS; m++) {
@@ -149,7 +148,6 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             msg_checksum = msg_nybbles[10];
 
             time(&time_now);
-            local_time_str(0, time_str);
 
             // Check Repeated data values as another way of verifying
             // message integrity.
@@ -166,7 +164,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             switch (msg_type) {
             case 0x00:
                 temp_c = msg_value - 50.0;
-                data = data_make("time",          "",            DATA_STRING, time_str,
+                data = data_make(
                                  "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
                                  "id",            "",            DATA_INT, sensor_id,
                                  "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -176,7 +174,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 break;
 
             case 0x0E:
-                data = data_make("time",          "",            DATA_STRING, time_str,
+                data = data_make(
                                  "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
                                  "id",            "",            DATA_INT, sensor_id,
                                  "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
@@ -189,8 +187,8 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 // @todo this should be reported/counted as exception, not considered debug
                 if (decoder->verbose) {
                     fprintf(stderr,
-                            "%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
-                            time_str, sensor_id, msg_type, msg_value, msg_value_int);
+                            "LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+                            sensor_id, msg_type, msg_value, msg_value_int);
                 }
             }
         }
@@ -200,7 +198,6 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",

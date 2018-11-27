@@ -37,7 +37,6 @@ static const unsigned char preamble_pattern1[2] = { 0x55, 0x62 };
 
 static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     uint16_t unit_id;
@@ -80,9 +79,7 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         // A depth reading of zero indicates no reading.
         depth = ((b[2] & 0x02) << 7) | b[3];
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "model", "", DATA_STRING, "Oil Ultrasonic STANDARD",
             "id", "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
             "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
@@ -116,7 +113,6 @@ static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"flags",

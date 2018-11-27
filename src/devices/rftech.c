@@ -14,7 +14,6 @@
 #include "decoder.h"
 
 static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-	char time_str[LOCAL_TIME_BUFLEN];
 	bitrow_t *bb = bitbuffer->bb;
 	uint16_t sensor_id = 0;
 	uint8_t button;
@@ -23,7 +22,6 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	int r;
 
-	local_time_str(0, time_str);
 
 	r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
@@ -54,7 +52,7 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	battery = (bb[r][2] & 0x80) == 0x80;
 	button = (bb[r][2] & 0x60) != 0;
 
-	data = data_make("time", "", DATA_STRING, time_str,
+	data = data_make(
 			 "model", "", DATA_STRING, "RF-tech",
 			 "id", "Id", DATA_INT, sensor_id,
 			 "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
@@ -78,7 +76,6 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
  *
  */
 static char *csv_output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"battery",

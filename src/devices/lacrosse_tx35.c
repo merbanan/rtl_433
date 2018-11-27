@@ -62,7 +62,6 @@ How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.ht
  **/
 static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device29or35)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int brow;
     uint8_t out[8];
@@ -79,7 +78,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
             0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
     };
 
-    local_time_str(0, time_str);
     for (brow = 0; brow < bitbuffer->num_rows; ++brow) {
         // Validate message and reject it as fast as possible : check for preamble
         unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 28);
@@ -100,8 +98,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
         c_crc = crc8(&out[3], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
         if (r_crc != c_crc) {
             if (decoder->verbose)
-                fprintf(stderr, "%s LaCrosse TX29/35 bad CRC: calculated %02x, received %02x\n",
-                        time_str, c_crc, r_crc);
+                fprintf(stderr, "LaCrosse TX29/35 bad CRC: calculated %02x, received %02x\n", c_crc, r_crc);
             // reject row
             continue;
         }
@@ -117,7 +114,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
         humidity    = out[6] & 0x7f;
         if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) {
             data = data_make(
-                    "time", "", DATA_STRING, time_str,
                     "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
                     "id", "", DATA_INT, sensor_id,
@@ -128,7 +124,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
                     NULL);
         } else {
             data = data_make(
-                    "time", "", DATA_STRING, time_str,
                     "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
                     "id", "", DATA_INT, sensor_id,
@@ -162,7 +157,6 @@ static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"brand",
 	"model",
 	"id",
