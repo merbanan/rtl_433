@@ -682,25 +682,25 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 				device.s_reset_limit*to_us, device.s_sync_width*to_us);
 		switch(device.modulation) {
 			case FSK_PULSE_PCM:
-				fprintf(stderr, "Use a flex decoder with -X name:FSK_PCM:%.0f:%.0f:%.0f\n",
+				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=FSK_PCM,s=%.0f,l=%.0f,r=%.0f'\n",
 						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us);
 				pulse_demod_pcm(data, &device);
 				break;
 			case OOK_PULSE_PPM_RAW:
-				fprintf(stderr, "Use a flex decoder with -X name:OOK_PPM_RAW:%.0f:%.0f:%.0f\n",
+				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PPM_RAW,s=%.0f,l=%.0f,r=%.0f'\n",
 						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us);
 				data->gap[data->num_pulses-1] = device.s_reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_ppm(data, &device);
 				break;
 			case OOK_PULSE_PWM:
-				fprintf(stderr, "Use a flex decoder with -X name:OOK_PWM:%.0f:%.0f:%.0f:%.0f:%.0f:%.0f\n",
+				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PWM,s=%.0f,l=%.0f,r=%.0f,g=%.0f,t=%.0f,y=%.0f'\n",
 						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us,
 						device.s_gap_limit*to_us, device.s_tolerance*to_us, device.s_sync_width*to_us);
 				data->gap[data->num_pulses-1] = device.s_reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_pwm(data, &device);
 				break;
 			case OOK_PULSE_MANCHESTER_ZEROBIT:
-				fprintf(stderr, "Use a flex decoder with -X name:OOK_MC_ZEROBIT:%.0f:%.0f:%.0f\n",
+				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_MC_ZEROBIT,s=%.0f,l=%.0f,r=%.0f'\n",
 						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us);
 				data->gap[data->num_pulses-1] = device.s_reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_manchester_zerobit(data, &device);
