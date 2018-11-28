@@ -50,7 +50,7 @@
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
-void data_acquired_handler(data_t *data);
+void data_acquired_handler(r_device *r_dev, data_t *data);
 
 typedef enum {
     CONVERT_NATIVE,
@@ -329,6 +329,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
 
     p->verbose       = debug_output;
     p->output_fn     = data_acquired_handler;
+    p->output_ctx    = &cfg;
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
@@ -374,8 +375,10 @@ static char *time_pos_str(time_t time_secs, char *buf)
 }
 
 /** Pass the data structure to all output handlers. Frees data afterwards. */
-void data_acquired_handler(data_t *data)
+void data_acquired_handler(r_device *r_dev, data_t *data)
 {
+    // struct app_cfg *cfg = r_dev->output_ctx;
+
     if (cfg.conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _F to _C

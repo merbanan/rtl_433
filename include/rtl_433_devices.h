@@ -137,10 +137,11 @@ typedef struct r_device {
 
     /* public for each decoder */
     int verbose;
-    void (*output_fn)(struct data *data);
+    void (*output_fn)(struct r_device *decoder, struct data *data);
 
     /* private for flex decoder and output callback */
     void *decode_ctx;
+    void *output_ctx;
 
     /* private pulse limits (converted to count of samples) */
     float f_short_limit; // precision reciprocal for PCM

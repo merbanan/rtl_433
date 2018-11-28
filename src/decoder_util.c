@@ -98,7 +98,7 @@ void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned b
 
 void decoder_output_data(r_device *decoder, data_t *data)
 {
-    decoder->output_fn(data);
+    decoder->output_fn(decoder, data);
 }
 
 void decoder_output_message(r_device *decoder, char const *msg)
