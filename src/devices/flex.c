@@ -66,7 +66,7 @@ struct flex_params {
     struct flex_get getter[GETTER_SLOTS];
 };
 
-static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_params *params)
+static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int i;
     int match_count = 0;
@@ -75,6 +75,8 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer, struct flex_
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
     bitrow_t tmp;
+
+    struct flex_params *params = decoder->decode_ctx;
 
     // discard short / unwanted bitbuffers
     if ((bitbuffer->num_rows < params->min_rows)
@@ -298,19 +300,6 @@ static unsigned parse_modulation(char const *str)
     return 0;
 }
 
-#define FLEX_SLOTS 8
-static struct flex_params *params_slot[FLEX_SLOTS];
-static int cb_slot0(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[0]); }
-static int cb_slot1(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[1]); }
-static int cb_slot2(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[2]); }
-static int cb_slot3(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[3]); }
-static int cb_slot4(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[4]); }
-static int cb_slot5(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[5]); }
-static int cb_slot6(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[6]); }
-static int cb_slot7(r_device *decoder, bitbuffer_t *bitbuffer) { return flex_callback(decoder, bitbuffer, params_slot[7]); }
-static unsigned next_slot = 0;
-int (*callback_slot[])(r_device *decoder, bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
-
 static unsigned parse_bits(const char *code, bitrow_t bitrow)
 {
     bitbuffer_t bits = {0};
@@ -395,18 +384,13 @@ static void parse_getter(const char *arg, struct flex_get *getter)
 
 r_device *flex_create_device(char *spec)
 {
-    if (next_slot >= FLEX_SLOTS) {
-        fprintf(stderr, "Maximum number of flex decoders reached!\n");
-        exit(1);
-    }
-
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
         help();
     }
 
-    struct flex_params *params = (struct flex_params *)calloc(1, sizeof(struct flex_params));
-    params_slot[next_slot] = params;
-    r_device *dev = (r_device *)calloc(1, sizeof(r_device));
+    struct flex_params *params = calloc(1, sizeof(*params));
+    r_device *dev = calloc(1, sizeof(*dev));
+    dev->decode_ctx = params;
     char *c, *o;
     int get_count = 0;
 
@@ -497,7 +481,7 @@ r_device *flex_create_device(char *spec)
 
     } // DEPRECATED
 
-    dev->decode_fn = callback_slot[next_slot];
+    dev->decode_fn = flex_callback;
     dev->fields = output_fields;
 
     char *key, *val;
@@ -626,6 +610,5 @@ r_device *flex_create_device(char *spec)
     */
 
     free(spec);
-    next_slot++;
     return dev;
 }

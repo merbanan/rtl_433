@@ -323,6 +323,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
 
     p->modulation    = r_dev->modulation;
     p->decode_fn     = r_dev->decode_fn;
+    p->decode_ctx    = r_dev->decode_ctx;
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
