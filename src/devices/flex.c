@@ -218,7 +218,16 @@ static void help()
 {
     fprintf(stderr,
             "Use -X <spec> to add a flexible general purpose decoder.\n\n"
-            "<spec> is \"name:modulation:short:long:reset[,key=value...]\"\n"
+            "<spec> is \"key=value[,key=value...]\"\n"
+            "Common keys are:\n"
+            "\tname=<name> (or: n=<name>)\n"
+            "\tmodulation=<modulation> (or: m=<modulation>)\n"
+            "\tshort=<short> (or: s=<short>)\n"
+            "\tlong=<long> (or: l=<long>)\n"
+            "\tsync=<sync> (or: y=<sync>)\n"
+            "\treset=<reset> (or: r=<reset>)\n"
+            "\tgap=<gap> (or: g=<gap>)\n"
+            "\ttolerance=<tolerance> (or: t=<tolerance>)\n"
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
@@ -233,7 +242,7 @@ static void help()
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
             "\tFSK_PWM :         FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
-            "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
+            "<short>, <long>, <sync>, and <reset> are the timings for the decoder in µs\n"
             "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
             "PPM_RAW short: Threshold between short and long gap [us]\n"
@@ -241,11 +250,10 @@ static void help()
             "PWM     short: Nominal width of '1' pulse [us]\n"
             "         long: Nominal width of '0' pulse [us]\n"
             "          gap: Maximum gap size before new row of bits [us]\n"
+            "         sync: Nominal width of sync pulse [us] (optional)\n"
+            "    tolerance: Maximum pulse deviation [us] (optional)\n"
             "reset: Maximum gap size before End Of Message [us].\n"
-            "for PWM use short:long:reset:gap[:tolerance[:syncwidth]]\n"
-            "for DMC use short:long:reset:tolerance\n"
             "Available options are:\n"
-            "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
             "\trows=<n> : only match if there are <n> rows\n"
             "\trepeats=<n> : only match if some row is repeated <n> times\n"
@@ -255,8 +263,39 @@ static void help()
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
-            "E.g. -X \"doorbell:OOK_PWM:400:800:7000:1000,match={24}0xa9878c,repeats>=3\"\n\n");
+            "E.g. -X \"n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
+}
+
+static unsigned parse_modulation(char const *str)
+{
+    if (!strcasecmp(str, "OOK_MC_ZEROBIT"))
+        return OOK_PULSE_MANCHESTER_ZEROBIT;
+    else if (!strcasecmp(str, "OOK_PCM"))
+        return OOK_PULSE_PCM_RZ;
+    else if (!strcasecmp(str, "OOK_PPM_RAW"))
+        return OOK_PULSE_PPM_RAW;
+    else if (!strcasecmp(str, "OOK_PWM"))
+        return OOK_PULSE_PWM;
+    else if (!strcasecmp(str, "OOK_DMC"))
+        return OOK_PULSE_DMC;
+    else if (!strcasecmp(str, "OOK_PIWM_RAW"))
+        return OOK_PULSE_PIWM_RAW;
+    else if (!strcasecmp(str, "OOK_PIWM_DC"))
+        return OOK_PULSE_PIWM_DC;
+    else if (!strcasecmp(str, "OOK_MC_OSV1"))
+        return OOK_PULSE_PWM_OSV1;
+    else if (!strcasecmp(str, "FSK_PCM"))
+        return FSK_PULSE_PCM;
+    else if (!strcasecmp(str, "FSK_PWM"))
+        return FSK_PULSE_PWM;
+    else if (!strcasecmp(str, "FSK_MC_ZEROBIT"))
+        return FSK_PULSE_MANCHESTER_ZEROBIT;
+    else {
+        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
+        usage();
+    }
+    return 0;
 }
 
 #define FLEX_SLOTS 8
@@ -383,42 +422,25 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
     }
-    params->name = strdup(c);
+    if (!strncasecmp(c, "n=", 2))
+        c += 2;
+    if (!strncasecmp(c, "name=", 5))
+        c += 5;
+    params->name  = strdup(c);
     int name_size = strlen(c) + 27;
     dev->name = malloc(name_size);
     snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
+    if (c != NULL) {
+        // old style spec, DEPRECATED
+        fprintf(stderr, "\nYou are using the deprecated positional flex spec, please read \"-X help\" and change your spec!\n\n");
+
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing modulation!\n");
         usage();
     }
-    if (!strcasecmp(c, "OOK_MC_ZEROBIT"))
-        dev->modulation = OOK_PULSE_MANCHESTER_ZEROBIT;
-    else if (!strcasecmp(c, "OOK_PCM"))
-        dev->modulation = OOK_PULSE_PCM_RZ;
-    else if (!strcasecmp(c, "OOK_PPM_RAW"))
-        dev->modulation = OOK_PULSE_PPM_RAW;
-    else if (!strcasecmp(c, "OOK_PWM"))
-        dev->modulation = OOK_PULSE_PWM;
-    else if (!strcasecmp(c, "OOK_DMC"))
-        dev->modulation = OOK_PULSE_DMC;
-    else if (!strcasecmp(c, "OOK_PIWM_RAW"))
-        dev->modulation = OOK_PULSE_PIWM_RAW;
-    else if (!strcasecmp(c, "OOK_PIWM_DC"))
-        dev->modulation = OOK_PULSE_PIWM_DC;
-    else if (!strcasecmp(c, "OOK_MC_OSV1"))
-        dev->modulation = OOK_PULSE_PWM_OSV1;
-    else if (!strcasecmp(c, "FSK_PCM"))
-        dev->modulation = FSK_PULSE_PCM;
-    else if (!strcasecmp(c, "FSK_PWM"))
-        dev->modulation = FSK_PULSE_PWM;
-    else if (!strcasecmp(c, "FSK_MC_ZEROBIT"))
-        dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
-    else {
-        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
-        usage();
-    }
+    dev->modulation = parse_modulation(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
@@ -473,12 +495,29 @@ r_device *flex_create_device(char *spec)
         dev->tolerance = atoi(c);
     }
 
-    dev->decode_fn     = callback_slot[next_slot];
+    } // DEPRECATED
+
+    dev->decode_fn = callback_slot[next_slot];
     dev->fields = output_fields;
 
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
-        if (!strcasecmp(key, "bits>"))
+        if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
+            dev->modulation = parse_modulation(val);
+        else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
+            dev->short_limit = atoi(val);
+        else if (!strcasecmp(key, "l") || !strcasecmp(key, "long"))
+            dev->long_limit = atoi(val);
+        else if (!strcasecmp(key, "y") || !strcasecmp(key, "sync"))
+            dev->sync_width = atoi(val);
+        else if (!strcasecmp(key, "g") || !strcasecmp(key, "gap"))
+            dev->gap_limit = atoi(val);
+        else if (!strcasecmp(key, "r") || !strcasecmp(key, "reset"))
+            dev->reset_limit = atoi(val);
+        else if (!strcasecmp(key, "t") || !strcasecmp(key, "tolerance"))
+            dev->tolerance = atoi(val);
+
+        else if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;
         else if (!strcasecmp(key, "bits<"))
             params->max_bits = val ? atoi(val) : 0;
@@ -530,6 +569,51 @@ r_device *flex_create_device(char *spec)
 
     if (params->min_bits > 0 && params->min_repeats < 1)
         params->min_repeats = 1;
+
+    // sanity checks
+
+    if (!params->name || !*params->name) {
+        fprintf(stderr, "Bad flex spec, missing name!\n");
+        usage();
+    }
+
+    if (!dev->modulation) {
+        fprintf(stderr, "Bad flex spec, missing modulation!\n");
+        usage();
+    }
+
+    if (!dev->short_limit) {
+        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+        usage();
+    }
+
+    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
+        if (!dev->long_limit) {
+            fprintf(stderr, "Bad flex spec, missing long limit!\n");
+            usage();
+        }
+    }
+
+    if (!dev->reset_limit) {
+        fprintf(stderr, "Bad flex spec, missing reset limit!\n");
+        usage();
+    }
+
+    if (dev->modulation == OOK_PULSE_PWM) {
+        if (!dev->gap_limit) {
+            fprintf(stderr, "Bad flex spec, missing gap limit!\n");
+            usage();
+        }
+    }
+
+    if (dev->modulation == OOK_PULSE_DMC
+            || dev->modulation == OOK_PULSE_PIWM_RAW
+            || dev->modulation == OOK_PULSE_PIWM_DC) {
+        if (!dev->tolerance) {
+            fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
+            usage();
+        }
+    }
 
     /*
     if (decoder->verbose) {
