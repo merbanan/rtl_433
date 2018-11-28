@@ -1,4 +1,3 @@
-#include "decoder.h"
 /* Currently this can decode the temperature and id from Rubicson sensors
  *
  * the sensor sends 36 bits 12 times pwm modulated
@@ -16,7 +15,9 @@
  * The sensor can be bought at Kjell&Co
  */
 
+#include "decoder.h"
 
+// NOTE: this is used in nexus.c and solight_te44.c
 int rubicson_crc_check(bitrow_t *bb) {
     uint8_t tmp[5];
     tmp[0] = bb[1][0];            // Byte 0 is nibble 0 and 1

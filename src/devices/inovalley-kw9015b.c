@@ -1,19 +1,19 @@
-#include "decoder.h"
 /* Inovalley kw9015b rain and Temperature weather station
  *
  * Copyright (C) 2015 Alexandre Coffignal
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
 
-extern uint8_t reverse8(uint8_t x);
+#include "decoder.h"
 
 static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
-        data_t *data;
+	data_t *data;
 	int i,iRain,device;
 	unsigned char chksum;
 	float fTemp;
@@ -36,7 +36,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				(reverse8(bb[i][3])>>4)+(reverse8(bb[i][3])&0x0F));
 
 
-                        if (decoder->verbose) {
+			if (decoder->verbose) {
 					fprintf(stdout, "\nSensor        = Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)\n");
 					fprintf(stdout, "Device        = %d\n", device);
 					fprintf(stdout, "Temp          = %f\n",fTemp);
@@ -74,7 +74,6 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 }
 
-
 static char *kw9015b_csv_output_fields[] = {
     "model",
     "id",
@@ -82,7 +81,6 @@ static char *kw9015b_csv_output_fields[] = {
     "rain",
     NULL
 };
-
 
 r_device kw9015b = {
 	.name          = "Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)",
@@ -92,5 +90,5 @@ r_device kw9015b = {
 	.reset_limit   = 10000,
 	.decode_fn     = &kw9015b_callback,
 	.disabled      = 1,
-        .fields        = kw9015b_csv_output_fields,
+	.fields        = kw9015b_csv_output_fields,
 };

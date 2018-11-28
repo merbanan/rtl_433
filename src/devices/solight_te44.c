@@ -36,7 +36,8 @@
 
 #include "decoder.h"
 
-extern int rubicson_crc_check(bitrow_t *bb);
+// NOTE: this should really not be here
+int rubicson_crc_check(bitrow_t *bb);
 
 static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
