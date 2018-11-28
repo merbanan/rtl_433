@@ -90,7 +90,7 @@ r_device chuango = {
     .reset_limit    = 1800, // Intermessage Gap 17200µs (individually for now)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160,  // us
-    .json_callback  = &chuango_callback,
+    .decode_fn      = &chuango_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

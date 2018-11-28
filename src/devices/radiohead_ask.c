@@ -222,7 +222,7 @@ r_device radiohead_ask = {
     .short_limit    = 500,
     .long_limit     = 500,
     .reset_limit    = 5*500,
-    .json_callback  = &radiohead_ask_callback,
+    .decode_fn      = &radiohead_ask_callback,
     .fields         = radiohead_ask_output_fields,
 };
 
@@ -232,6 +232,6 @@ r_device sensible_living = {
     .short_limit    = 1000,
     .long_limit     = 1000,
     .reset_limit    = 5*1000,
-    .json_callback  = &sensible_living_callback,
+    .decode_fn      = &sensible_living_callback,
     .fields         = sensible_living_output_fields,
 };

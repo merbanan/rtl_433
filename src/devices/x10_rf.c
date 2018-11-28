@@ -88,6 +88,6 @@ r_device X10_RF = {
 	.short_limit	= 1100,	// Short gap 500µs, long gap 1680µs
 	.long_limit		= 2800,	// Gap after sync is 4.5ms (1125)
 	.reset_limit	= 6000, // Gap seen between messages is ~40ms so let's get them individually
-	.json_callback	= &X10_RF_callback,
+	.decode_fn    	= &X10_RF_callback,
 	.disabled		= 1,
 };

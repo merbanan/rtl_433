@@ -70,7 +70,7 @@ r_device intertechno = {
     .short_limit    = 600,
     .long_limit     = 1700,
     .reset_limit    = 10000,
-    .json_callback  = &intertechno_callback,
+    .decode_fn      = &intertechno_callback,
     .disabled       = 1,
     .fields         = output_fields,
 };

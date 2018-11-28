@@ -142,7 +142,7 @@ r_device hideki_ts04 = {
     .long_limit     = 1040, // bit width 1040 us
     .reset_limit    = 4000,
     .tolerance      = 240, // us
-    .json_callback  = &hideki_ts04_callback,
+    .decode_fn      = &hideki_ts04_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

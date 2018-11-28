@@ -93,7 +93,7 @@ r_device prologue = {
     .short_limit    = 3500,
     .long_limit     = 7000,
     .reset_limit    = 10000,
-    .json_callback  = &prologue_callback,
+    .decode_fn      = &prologue_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

@@ -455,7 +455,7 @@ r_device fineoffset_wh1080 = {
     .short_limit    = 544,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
     .long_limit     = 1524,    // Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2800,    // We just want 1 package
-    .json_callback  = &fineoffset_wh1080_callback,
+    .decode_fn      = &fineoffset_wh1080_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

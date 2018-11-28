@@ -60,7 +60,7 @@ r_device elro_db286a = {
     .long_limit     = 1448,
     .gap_limit      = 2000,
     .reset_limit    = 8000,
-    .json_callback  = &elro_db286a_callback,
+    .decode_fn      = &elro_db286a_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

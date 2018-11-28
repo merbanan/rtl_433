@@ -128,7 +128,7 @@ r_device oil_standard = {
 	.short_limit	= 500,
 	.long_limit		= 500,
 	.reset_limit	= 2000,
-	.json_callback	= &oil_standard_callback,
+	.decode_fn    	= &oil_standard_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };
@@ -139,7 +139,7 @@ r_device oil_standard_ask = {
 	.short_limit	= 500,
 	.long_limit		= 500,
 	.reset_limit	= 2000,
-	.json_callback	= &oil_standard_callback,
+	.decode_fn    	= &oil_standard_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };

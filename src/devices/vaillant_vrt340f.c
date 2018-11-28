@@ -203,7 +203,7 @@ r_device vaillant_vrt340f = {
     .long_limit     = 1648, // bit width 1648 us
     .reset_limit    = 4000,
     .tolerance      = 120, // us
-    .json_callback  = &vaillant_vrt340_callback,
+    .decode_fn      = &vaillant_vrt340_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

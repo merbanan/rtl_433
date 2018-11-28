@@ -176,7 +176,7 @@ r_device lacrosse_tx29 = {
 	.short_limit    = 55,
 	.long_limit     = 55,
 	.reset_limit    = 4000,
-	.json_callback  = &lacrossetx29_callback,
+	.decode_fn      = &lacrossetx29_callback,
 	.disabled       = 0,
 	.fields         = output_fields,
 };
@@ -188,7 +188,7 @@ r_device lacrosse_tx35 = {
 	.short_limit    = 105,
 	.long_limit     = 105,
 	.reset_limit    = 4000,
-	.json_callback  = &lacrossetx35_callback,
+	.decode_fn      = &lacrossetx35_callback,
 	.disabled       = 0,
 	.fields         = output_fields,
 };

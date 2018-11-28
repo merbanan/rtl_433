@@ -111,7 +111,7 @@ r_device efergy_e2_classic = {
 	.sync_width     = 500,
 	.gap_limit      = 200,
 	.reset_limit    = 400,
-    .json_callback  = &efergy_e2_classic_callback,
+    .decode_fn      = &efergy_e2_classic_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

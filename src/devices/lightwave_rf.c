@@ -129,6 +129,6 @@ r_device lightwave_rf = {
 	.short_limit	= 750,	// Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
 	.long_limit		= 1500,	//
 	.reset_limit	= 1500, // Gap between messages is unknown so let us get them individually
-	.json_callback	= &lightwave_rf_callback,
+	.decode_fn    	= &lightwave_rf_callback,
 	.disabled		= 1,
 };

@@ -224,7 +224,7 @@ r_device DSC = {
     .short_limit   = 250,    // Pulse length, 250 µs
     .long_limit    = 500,    // Bit period, 500 µs
     .reset_limit   = 5000, // Max gap,
-    .json_callback = &dsc_callback,
+    .decode_fn     = &dsc_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

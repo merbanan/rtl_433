@@ -87,7 +87,7 @@ r_device rubicson = {
     .short_limit    = 488+970,      // Gaps:  Short 976µs, Long 1940µs, Sync 4000µs
     .long_limit     = 970+2000,     // Pulse: 500µs (Initial pulse in each package is 388µs)
     .reset_limit    = 4800,             // Two initial pulses and a gap of 9120µs is filtered out
-    .json_callback  = &rubicson_callback,
+    .decode_fn      = &rubicson_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

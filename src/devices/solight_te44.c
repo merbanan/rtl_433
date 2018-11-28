@@ -99,7 +99,7 @@ r_device solight_te44 = {
     .short_limit   = 1500, // short gap = 972 us
     .long_limit    = 3000, // long gap = 1932 us
     .reset_limit   = 6000, // packet gap = 3880 us
-    .json_callback = &solight_te44_callback,
+    .decode_fn     = &solight_te44_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

@@ -90,7 +90,7 @@ r_device kw9015b = {
 	.short_limit   = 3500,
 	.long_limit    = 4800,
 	.reset_limit   = 10000,
-	.json_callback = &kw9015b_callback,
+	.decode_fn     = &kw9015b_callback,
 	.disabled      = 1,
         .fields        = kw9015b_csv_output_fields,
 };

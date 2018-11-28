@@ -703,7 +703,7 @@ r_device oregon_scientific = {
   .short_limit    = 440, // Nominal 1024Hz (488µs), but pulses are shorter than pauses
   .long_limit     = 0, // not used
   .reset_limit    = 2400,
-  .json_callback  = &oregon_scientific_callback,
+  .decode_fn      = &oregon_scientific_callback,
   .disabled       = 0,
   .fields         = output_fields
 };

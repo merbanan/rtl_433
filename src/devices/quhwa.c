@@ -57,7 +57,7 @@ r_device quhwa = {
     .gap_limit     = 1200, // Long Gap 1120µs
     .sync_width    = 0,    // No sync bit used
     .tolerance     = 80,   // us
-    .json_callback = &quhwa_callback,
+    .decode_fn     = &quhwa_callback,
     .disabled      = 0,
     .fields        = output_fields
 };

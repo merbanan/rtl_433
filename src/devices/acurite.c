@@ -1145,7 +1145,7 @@ r_device acurite_rain_gauge = {
     .short_limit    = 1744,
     .long_limit     = 3500,
     .reset_limit    = 5000,
-    .json_callback  = &acurite_rain_gauge_callback,
+    .decode_fn      = &acurite_rain_gauge_callback,
 // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
     .disabled       = 1,
     .fields         = acurite_rain_gauge_output_fields,
@@ -1167,7 +1167,7 @@ r_device acurite_th = {
     .short_limit    = 1200,
     .long_limit     = 3000,
     .reset_limit    = 10000,
-    .json_callback  = &acurite_th_callback,
+    .decode_fn      = &acurite_th_callback,
     .disabled       = 0,
     .fields         = acurite_th_output_fields,
 };
@@ -1204,7 +1204,7 @@ r_device acurite_txr = {
     .sync_width     = 620,  // sync pulse is 620 us + 596 us gap
     .gap_limit      = 500,  // longest data gap is 392 us, sync gap is 596 us
     .reset_limit    = 4000, // packet gap is 2192 us
-    .json_callback  = &acurite_txr_callback,
+    .decode_fn      = &acurite_txr_callback,
     .disabled       = 0,
     .fields         = acurite_txr_output_fields,
 };
@@ -1235,7 +1235,7 @@ r_device acurite_986 = {
     .short_limit    = 720,   // Threshold between short 520 us and long 880 us gap
     .long_limit     = 1280,
     .reset_limit    = 4000,
-    .json_callback  = &acurite_986_callback,
+    .decode_fn      = &acurite_986_callback,
     .disabled       = 0,
     .fields         = acurite_986_output_fields,
 };
@@ -1261,7 +1261,7 @@ r_device acurite_606 = {
     .short_limit    = 3500,
     .long_limit     = 7000,
     .reset_limit    = 10000,
-    .json_callback  = &acurite_606_callback,
+    .decode_fn      = &acurite_606_callback,
     .disabled       = 0,
     .fields         = acurite_606_output_fields,
 };
@@ -1288,7 +1288,7 @@ r_device acurite_00275rm = {
     .gap_limit      = 520,  // long gap is 384 us, sync gap is 592 us
     .reset_limit    = 708,  // no packet gap, sync gap is 592 us
     .sync_width     = 632,  // sync pulse is 632 us
-    .json_callback  = &acurite_00275rm_callback,
+    .decode_fn      = &acurite_00275rm_callback,
     .disabled       = 0,
     .fields         = acurite_00275rm_output_fields,
 };

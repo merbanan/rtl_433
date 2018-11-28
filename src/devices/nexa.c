@@ -72,7 +72,7 @@ r_device nexa = {
     .short_limit    = 380,
     .long_limit     = 1400,
     .reset_limit    = 2800,
-    .json_callback  = &nexa_callback,
+    .decode_fn      = &nexa_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

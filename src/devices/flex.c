@@ -473,7 +473,7 @@ r_device *flex_create_device(char *spec)
         dev->tolerance = atoi(c);
     }
 
-    dev->json_callback = callback_slot[next_slot];
+    dev->decode_fn     = callback_slot[next_slot];
     dev->fields = output_fields;
 
     char *key, *val;

@@ -254,7 +254,7 @@ r_device template = {
     .short_limit   = (224 + 132) / 2, // short gap is 132 us, long gap is 224 us
     .long_limit    = 224 + 132,
     .reset_limit   = (224 + 132) * 2,
-    .json_callback = &template_callback,
+    .decode_fn     = &template_callback,
     .disabled      = 2, // disabled and hidden
     .fields        = output_fields,
 };

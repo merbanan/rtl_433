@@ -88,7 +88,7 @@ r_device thermopro_tp11 = {
     .short_limit   = 956,
     .long_limit    = 1912,
     .reset_limit   = 3880,
-    .json_callback = &thermopro_tp11_sensor_callback,
+    .decode_fn     = &thermopro_tp11_sensor_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

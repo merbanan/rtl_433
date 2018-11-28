@@ -81,7 +81,7 @@ r_device springfield = {
 	.short_limit    = 2000,
 	.long_limit     = 4000,
 	.reset_limit    = 9200,
-	.json_callback  = &springfield_callback,
+	.decode_fn      = &springfield_callback,
 	.disabled       = 0,
 	.fields         = output_fields
 };

@@ -34,6 +34,6 @@ r_device ec3k = {
 	.short_limit    = 50,	// NRZ decoding
 	.long_limit     = 50, 	// Bit width
 	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
-	.json_callback  = &ec3k_callback,
+	.decode_fn      = &ec3k_callback,
 	.disabled       = 1,
 };

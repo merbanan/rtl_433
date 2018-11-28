@@ -166,7 +166,7 @@ r_device danfoss_CFR = {
 	.short_limit    = 100,	// NRZ decoding
 	.long_limit     = 100,	// Bit width
 	.reset_limit    = 500,	// Maximum run is 4 zeroes/ones
-	.json_callback  = &danfoss_cfr_callback,
+	.decode_fn      = &danfoss_cfr_callback,
 	.disabled       = 0,
 	.fields         = output_fields
 };

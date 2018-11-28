@@ -80,7 +80,7 @@ r_device generic_remote = {
     .reset_limit    = 1800,
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 200, // us
-    .json_callback  = &generic_remote_callback,
+    .decode_fn      = &generic_remote_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

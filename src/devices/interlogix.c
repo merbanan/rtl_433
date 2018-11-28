@@ -232,7 +232,7 @@ r_device interlogix = {
     .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2
     .long_limit    = 1000, //Maximum gap size before new row of bits
     .reset_limit   = 500, //Maximum gap size before End Of Message
-    .json_callback = &interlogix_callback,
+    .decode_fn     = &interlogix_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

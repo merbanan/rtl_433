@@ -110,7 +110,7 @@ r_device oil_watchman = {
 	.short_limit	= 1000,
 	.long_limit     = 1000, // NRZ
 	.reset_limit    = 4000,
-	.json_callback	= &oil_watchman_callback,
+	.decode_fn    	= &oil_watchman_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };

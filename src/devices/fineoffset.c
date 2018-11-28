@@ -486,7 +486,7 @@ r_device fineoffset_WH2 = {
     .long_limit     = 1500,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 1200,	// We just want 1 package
     .tolerance      = 160, // us
-    .json_callback  = &fineoffset_WH2_callback,
+    .decode_fn      = &fineoffset_WH2_callback,
     .disabled       = 0,
     .fields         = output_fields
 };
@@ -497,7 +497,7 @@ r_device fineoffset_WH25 = {
     .short_limit    = 58,	// Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
     .long_limit     = 58,	// NRZ encoding (bit width = pulse width)
     .reset_limit    = 20000,	// Package starts with a huge gap of ~18900 us
-    .json_callback  = &fineoffset_WH25_callback,
+    .decode_fn      = &fineoffset_WH25_callback,
     .disabled       = 0,
     .fields         = output_fields_WH25
 };
@@ -510,7 +510,7 @@ r_device fineoffset_WH0530 = {
     .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160, // us
-    .json_callback  = &fineoffset_WH0530_callback,
+    .decode_fn      = &fineoffset_WH0530_callback,
     .disabled       = 0,
     .fields         = output_fields_WH0530
 };

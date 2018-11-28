@@ -102,7 +102,7 @@ r_device bresser_3ch = {
     .sync_width     = 750,   // sync pulse is ~750 us
     .gap_limit      = 625,   // long gap (with short pulse) is ~500 us, sync gap is ~750 us
     .reset_limit    = 1250,  // maximum gap is 1000 us (long gap + longer sync gap on last repeat)
-    .json_callback  = &bresser_3ch_callback,
+    .decode_fn      = &bresser_3ch_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

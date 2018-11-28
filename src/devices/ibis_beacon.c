@@ -87,7 +87,7 @@ r_device ibis_beacon = {
 	.short_limit	= 30,  // Nominal width of clock half period [us]
 	.long_limit		= 0,   // Not used
 	.reset_limit	= 100, // Maximum gap size before End Of Message [us].
-	.json_callback	= &ibis_beacon_callback,
+	.decode_fn    	= &ibis_beacon_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };

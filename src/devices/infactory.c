@@ -75,7 +75,7 @@ r_device infactory = {
     .short_limit   = 3000, // Threshold between short and long gap [us]
     .long_limit    = 5000, //  Maximum gap size before new row of bits [us]
     .reset_limit   = 6000, // Maximum gap size before End Of Message [us].
-    .json_callback = &infactory_callback,
+    .decode_fn     = &infactory_callback,
     .disabled      = 1,
     .fields        = output_fields
 };

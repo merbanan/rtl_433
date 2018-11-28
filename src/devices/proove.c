@@ -83,7 +83,7 @@ r_device proove = {
     .short_limit    = 380,
     .long_limit     = 1400,
     .reset_limit    = 2800,
-    .json_callback  = &proove_callback,
+    .decode_fn      = &proove_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

@@ -154,7 +154,7 @@ r_device emontx = {
 	.short_limit    = 2000000.0 / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
 	.long_limit     = 2000000.0 / (49230 + 49261),
 	.reset_limit    = 1200,	// 600 zeros...
-	.json_callback  = &emontx_callback,
+	.decode_fn      = &emontx_callback,
 	.disabled       = 0,
 	.fields		= output_fields,
 };

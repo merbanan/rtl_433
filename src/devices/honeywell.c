@@ -77,7 +77,7 @@ r_device honeywell = {
     .short_limit    =   39 * 4,
     .long_limit             = 0,
     .reset_limit    = 73 * 4,
-    .json_callback  = &honeywell_callback,
+    .decode_fn      = &honeywell_callback,
     .disabled               = 0,
     .fields                 = output_fields,
 };

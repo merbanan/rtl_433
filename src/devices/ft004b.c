@@ -78,7 +78,7 @@ r_device ft004b = {
     .short_limit   = (1956 + 3900) / 2,
     .long_limit    = 4000,
     .reset_limit   = 4000,
-    .json_callback = &ft004b_callback,
+    .decode_fn     = &ft004b_callback,
     .disabled      = 0,
     .fields        = output_fields
 };

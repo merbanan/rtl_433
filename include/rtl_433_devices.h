@@ -131,7 +131,7 @@ typedef struct r_device {
     float gap_limit;
     float sync_width;
     float tolerance;
-    int (*json_callback)(struct r_device *decoder, struct bitbuffer *bitbuffer);
+    int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
     unsigned disabled;
     char **fields; // List of fields this decoder produces; required for CSV output. NULL-terminated.
 

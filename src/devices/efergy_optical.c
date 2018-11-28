@@ -149,7 +149,7 @@ r_device efergy_optical = {
 	.long_limit     = 136,
 	.sync_width     = 500,
 	.reset_limit    = 400,
-	.json_callback  = &efergy_optical_callback,
+	.decode_fn      = &efergy_optical_callback,
 	.disabled       = 0,
 	.fields         = output_fields
 };

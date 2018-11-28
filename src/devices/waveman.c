@@ -83,7 +83,7 @@ r_device waveman = {
     .reset_limit    = 12000,
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 200,  // us
-    .json_callback  = &waveman_callback,
+    .decode_fn      = &waveman_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

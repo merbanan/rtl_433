@@ -55,7 +55,7 @@ r_device silvercrest = {
     .long_limit     = 744,
     .reset_limit    = 12000,
     .gap_limit      = 5000,
-    .json_callback  = &silvercrest_callback,
+    .decode_fn      = &silvercrest_callback,
     .disabled       = 0,
     .fields        = output_fields,
 };

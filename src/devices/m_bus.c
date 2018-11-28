@@ -405,7 +405,7 @@ r_device m_bus_mode_c_t = {
     .short_limit    = 10,   // Bit rate: 100 kb/s
     .long_limit     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
-    .json_callback  = &m_bus_mode_c_t_callback,
+    .decode_fn      = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
 };
 
@@ -419,7 +419,7 @@ r_device m_bus_mode_s = {
     .short_limit    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
     .long_limit     = 0,    // Unused
     .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
-    .json_callback  = &m_bus_mode_c_t_callback,
+    .decode_fn      = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
 };
 
@@ -439,7 +439,7 @@ r_device m_bus_mode_r = {
     .short_limit    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
     .long_limit     = 0,    // Unused
     .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
-    .json_callback  = &m_bus_mode_r_callback,
+    .decode_fn      = &m_bus_mode_r_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
 };
 
@@ -464,6 +464,6 @@ r_device m_bus_mode_f = {
     .short_limit    = 1000.0/2.4,   // ~417 us
     .long_limit     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 5000,         // ??
-    .json_callback  = &m_bus_mode_f_callback,
+    .decode_fn      = &m_bus_mode_f_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
 };

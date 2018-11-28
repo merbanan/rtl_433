@@ -137,7 +137,7 @@ r_device newkaku = {
     .short_limit    = 800,
     .long_limit     = 3200,
     .reset_limit    = 10000,
-    .json_callback  = &newkaku_callback,
+    .decode_fn      = &newkaku_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

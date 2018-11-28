@@ -70,7 +70,7 @@ r_device kerui = {
     //.gap_limit     = 1100,
     .sync_width    = 480,
     .tolerance     = 80, // us
-    .json_callback = &kerui_callback,
+    .decode_fn     = &kerui_callback,
     .disabled      = 0,
     .fields         = output_fields,
 };

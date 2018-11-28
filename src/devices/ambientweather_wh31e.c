@@ -122,7 +122,7 @@ r_device ambientweather_wh31e = {
     .long_limit     = 56,
     .reset_limit    = 1500,
     .gap_limit      = 1800,
-    .json_callback  = &ambientweather_wh31e_callback,
+    .decode_fn      = &ambientweather_wh31e_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

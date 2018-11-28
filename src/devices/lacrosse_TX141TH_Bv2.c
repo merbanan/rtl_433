@@ -180,7 +180,7 @@ r_device lacrosse_TX141TH_Bv2 = {
     .sync_width    = 833,    // sync pulse is 833 us + 833 us gap
     .gap_limit     = 625,    // long gap (with short pulse) is ~417 us, sync gap is ~833 us
     .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-    .json_callback = &lacrosse_tx141th_bv2_callback,
+    .decode_fn     = &lacrosse_tx141th_bv2_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

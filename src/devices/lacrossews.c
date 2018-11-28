@@ -211,7 +211,7 @@ r_device lacrossews = {
 	.short_limit    = 368,
 	.long_limit     = 1464,
 	.reset_limit    = 8000,
-	.json_callback  = &lacrossews_callback,
+	.decode_fn      = &lacrossews_callback,
 	.disabled       = 0,
 	.fields = output_fields
 };

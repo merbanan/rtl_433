@@ -85,7 +85,7 @@ r_device current_cost = {
     .short_limit    = 250,
     .long_limit     = 250, // NRZ
     .reset_limit    = 8000,
-    .json_callback  = &current_cost_callback,
+    .decode_fn      = &current_cost_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

@@ -109,7 +109,7 @@ r_device tpms_toyota = {
     .short_limit    = 52, // 12-13 samples @250k
     .long_limit     = 52, // FSK
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_toyota_callback,
+    .decode_fn      = &tpms_toyota_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

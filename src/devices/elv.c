@@ -135,7 +135,7 @@ r_device elv_em1000 = {
     .short_limit    = 750,
     .long_limit     = 7250,
     .reset_limit    = 30000,
-    .json_callback  = &em1000_callback,
+    .decode_fn      = &em1000_callback,
     .disabled       = 1,
 };
 
@@ -145,6 +145,6 @@ r_device elv_ws2000 = {
     .short_limit    = 366,  // 0 => 854us, 1 => 366us according to link in top
     .long_limit     = 854, // no repetitions
     .reset_limit    = 1000, // Longest pause is 854us according to link
-    .json_callback  = &ws2000_callback,
+    .decode_fn      = &ws2000_callback,
     .disabled       = 1,
 };

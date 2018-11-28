@@ -145,7 +145,7 @@ r_device wt450 = {
     .long_limit    = 1952, // bit width 1952 us
     .reset_limit   = 18000,
     .tolerance	   = 80, // us
-    .json_callback = &wt450_callback,
+    .decode_fn     = &wt450_callback,
     .disabled      = 0,
     .fields        = output_fields
 };

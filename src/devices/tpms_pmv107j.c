@@ -126,7 +126,7 @@ r_device tpms_pmv107j = {
     .short_limit    = 100, // 25 samples @250k
     .long_limit     = 100, // FSK
     .reset_limit    = 250, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_pmv107j_callback,
+    .decode_fn      = &tpms_pmv107j_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

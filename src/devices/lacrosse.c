@@ -214,7 +214,7 @@ r_device lacrossetx = {
     .reset_limit    = 8000, // actually: packet gap is 29000 us
     .sync_width     = 0,    // not used
     .tolerance      = 0,    // raw mode
-    .json_callback  = &lacrossetx_callback,
+    .decode_fn      = &lacrossetx_callback,
     .disabled       = 0,
     .fields = output_fields,
 };

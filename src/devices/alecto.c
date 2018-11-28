@@ -203,7 +203,7 @@ r_device alectov1 = {
     .short_limit    = 3500,
     .long_limit     = 7000,
     .reset_limit    = 10000,
-    .json_callback  = &alectov1_callback,
+    .decode_fn      = &alectov1_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

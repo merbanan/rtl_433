@@ -183,7 +183,7 @@ r_device schraeder = {
 	.short_limit	= 120,
 	.long_limit     = 0,
 	.reset_limit    = 480,
-	.json_callback	= &schraeder_callback,
+	.decode_fn    	= &schraeder_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };
@@ -194,7 +194,7 @@ r_device schrader_EG53MA4 = {
 	.short_limit	= 123,
 	.long_limit     = 0,
 	.reset_limit    = 236,
-	.json_callback	= &schrader_EG53MA4_callback,
+	.decode_fn    	= &schrader_EG53MA4_callback,
 	.disabled		= 0,
 	.fields			= output_fields_EG53MA4,
 };

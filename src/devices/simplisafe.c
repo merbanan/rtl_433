@@ -178,7 +178,7 @@ r_device ss_sensor = {
     .long_limit     = 1000, // bit width 1000 us
     .reset_limit    = 2200,
     .tolerance      = 100, // us
-    .json_callback  = &ss_sensor_callback,
+    .decode_fn      = &ss_sensor_callback,
     .disabled       = 0,
     .fields         = sensor_output_fields
 };

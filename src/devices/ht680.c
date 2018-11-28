@@ -90,7 +90,7 @@ r_device ht680 = {
     .long_limit    = 600,
     .gap_limit     = 1200,
     .reset_limit   = 14000,
-    .json_callback = &ht680_callback,
+    .decode_fn     = &ht680_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

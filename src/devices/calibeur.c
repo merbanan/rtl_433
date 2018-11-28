@@ -106,7 +106,7 @@ r_device calibeur_RF104 = {
 	.reset_limit    = 3200,	// Longest gap (2960-760µs)
 	.sync_width     = 1560,	// Startbit 1560µs
 	.tolerance      = 0,	// raw mode
-	.json_callback  = &calibeur_rf104_callback,
+	.decode_fn      = &calibeur_rf104_callback,
 	.disabled       = 0,
 	.fields         = output_fields,
 };

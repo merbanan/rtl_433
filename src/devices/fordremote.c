@@ -72,7 +72,7 @@ r_device fordremote = {
 	.long_limit		= 500,	// bit width is 500 us
 	.reset_limit	= 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
 	.tolerance		= 50,
-	.json_callback	= &fordremote_callback,
+	.decode_fn    	= &fordremote_callback,
 	.disabled		= 0,
 	.fields			= output_fields
 };

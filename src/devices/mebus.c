@@ -55,6 +55,6 @@ r_device mebus433 = {
     .short_limit    = 1200,
     .long_limit     = 2400,
     .reset_limit    = 6000,
-    .json_callback  = &mebus433_callback,
+    .decode_fn      = &mebus433_callback,
     .disabled       = 1, // add docs, tests, false positive checks and then reenable
 };

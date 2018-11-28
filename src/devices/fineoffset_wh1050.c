@@ -192,7 +192,7 @@ r_device fineoffset_wh1050 = {
     .short_limit    = 544,
     .long_limit     = 1524,
     .reset_limit    = 10520,
-    .json_callback  = &fineoffset_wh1050_callback,
+    .decode_fn      = &fineoffset_wh1050_callback,
     .disabled       = 0,
     .fields         = output_fields,
 };

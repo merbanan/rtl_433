@@ -64,7 +64,7 @@ r_device generic_temperature_sensor = {
 	.short_limit   = 3500,
 	.long_limit    = 4800,
 	.reset_limit   = 10000,
-	.json_callback = &generic_temperature_sensor_callback,
+	.decode_fn     = &generic_temperature_sensor_callback,
 	.disabled      = 0,
 	.fields        = output_fields,
 };

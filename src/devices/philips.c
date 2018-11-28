@@ -161,7 +161,7 @@ r_device philips = {
     .short_limit   = 2000,
     .long_limit    = 6000,
     .reset_limit   = 30000,
-    .json_callback = &philips_callback,
+    .decode_fn     = &philips_callback,
     .disabled      = 0,
     .fields        = philips_output_fields,
 };

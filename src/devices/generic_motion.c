@@ -68,7 +68,7 @@ r_device generic_motion = {
     .sync_width     = 1784+670,
     .gap_limit      = 1200,
     .reset_limit    = 2724*1.5,
-    .json_callback  = &generic_motion_callback,
+    .decode_fn      = &generic_motion_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

@@ -63,7 +63,7 @@ r_device akhan_100F14 = {
     .reset_limit   = 1800,
     .sync_width    = 0,
     .tolerance     = 80, // us
-    .json_callback = &akhan_rke_callback,
+    .decode_fn     = &akhan_rke_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

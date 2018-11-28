@@ -119,7 +119,7 @@ r_device x10_sec = {
     .short_limit    = 1100,
     .long_limit     = 2200,
     .reset_limit    = 6000,
-    .json_callback  = &x10_sec_callback,
+    .decode_fn      = &x10_sec_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

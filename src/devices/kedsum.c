@@ -97,7 +97,7 @@ r_device kedsum = {
     .short_limit    = 2800,
     .long_limit     = 4400,
     .reset_limit    = 9400,
-    .json_callback  = &kedsum_callback,
+    .decode_fn      = &kedsum_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

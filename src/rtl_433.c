@@ -322,7 +322,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
     p->modulation    = r_dev->modulation;
-    p->json_callback = r_dev->json_callback;
+    p->decode_fn     = r_dev->decode_fn;
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 

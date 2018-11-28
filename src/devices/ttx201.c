@@ -210,7 +210,7 @@ r_device ttx201 = {
     .long_limit    = 0, // not used
     .reset_limit   = 1700,
     .tolerance     = 250,
-    .json_callback = &ttx201_callback,
+    .decode_fn     = &ttx201_callback,
     .disabled      = 0,
     .fields        = output_fields
 };
