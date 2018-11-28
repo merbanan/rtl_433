@@ -76,7 +76,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose)
         fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %06x, digest xor'ed: %04x\n",
-                __FUNCTION__, pre, flags, temp1, temp2, digest, chk_data, id);
+                __func__, pre, flags, temp1, temp2, digest, chk_data, id);
 
     data = data_make(
             "model",            "",                     DATA_STRING, "Maverick-ET73x",

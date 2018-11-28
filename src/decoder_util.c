@@ -119,7 +119,7 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
         // print byte-wide
-        for (unsigned col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
+        for (unsigned col = 0; col < (unsigned)(bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
             sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
         }
         // remove last nibble if needed
@@ -153,7 +153,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
     for (i = 0; i < bitbuffer->num_rows; i++) {
         row_bytes[0] = '\0';
         // print byte-wide
-        for (unsigned col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
+        for (unsigned col = 0; col < (unsigned)(bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
             sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
         }
         // remove last nibble if needed
