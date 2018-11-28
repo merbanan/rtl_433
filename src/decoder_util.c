@@ -94,6 +94,16 @@ void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned b
     decoder_output_bitrow(decoder, bitrow, bit_len, msg);
 }
 
+void decoder_output_bitrow_debugf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
+{
+    char msg[60]; // fixed length limit
+    va_list ap;
+    va_start(ap, format);
+    vsnprintf(msg, 60, format, ap);
+    va_end(ap);
+    decoder_output_bitrow_debug(decoder, bitrow, bit_len, msg);
+}
+
 // output functions
 
 void decoder_output_data(r_device *decoder, data_t *data)
@@ -208,4 +218,32 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
     decoder_output_data(decoder, data);
 
     free(row_code);
+}
+
+void decoder_output_bitrow_debug(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg)
+{
+    data_t *data;
+    char *row_bits, *p;
+    unsigned i;
+
+    p = row_bits = malloc(bit_len + 1); // "1..\0"
+
+    // print bit-wide
+    for (unsigned i = 0; i < bit_len; ++i) {
+        if (bitrow[i / 8] & (0x80 >> (i % 8))) {
+            *p++ = '1';
+        }
+        else {
+            *p++ = '0';
+        }
+    }
+    *p++ = '\0';
+
+    data = data_make(
+            "msg", "", DATA_STRING, msg,
+            "codes", "", DATA_STRING, row_bits,
+            NULL);
+    decoder_output_data(decoder, data);
+
+    free(row_bits);
 }
