@@ -615,9 +615,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PPM:
                             p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_PPM_RAW:
-                            p_events += pulse_demod_ppm_raw(&demod->pulse_data, demod->r_devs[i]);
-                            break;
                         case OOK_PULSE_PWM:
                             p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
                             break;
@@ -663,7 +660,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         // OOK decoders
                         case OOK_PULSE_PCM_RZ:
                         case OOK_PULSE_PPM:
-                        case OOK_PULSE_PPM_RAW:
                         case OOK_PULSE_PWM:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                         case OOK_PULSE_PIWM_RAW:

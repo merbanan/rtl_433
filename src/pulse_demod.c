@@ -77,37 +77,6 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 }
 
 
-int pulse_demod_ppm_raw(const pulse_data_t *pulses, r_device *device) {
-	int events = 0;
-	bitbuffer_t bits = {0};
-
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
-		// Short gap
-		if(pulses->gap[n] < device->s_short_limit) {
-			bitbuffer_add_bit(&bits, 0);
-		// Long gap
-		} else if(pulses->gap[n] < device->s_long_limit) {
-			bitbuffer_add_bit(&bits, 1);
-		// Check for new packet in multipacket
-		} else if(pulses->gap[n] < device->s_reset_limit) {
-			bitbuffer_add_row(&bits);
-		// End of Message?
-		} else {
-			if (device->decode_fn) {
-				events += device->decode_fn(device, &bits);
-			}
-			// Debug printout
-			if(!device->decode_fn || (debug_output && events > 0)) {
-				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
-				bitbuffer_print(&bits);
-			}
-			bitbuffer_clear(&bits);
-		}
-	} // for pulses
-	return events;
-}
-
-
 int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
 	int events = 0;
 	bitbuffer_t bits = {0};
