@@ -59,15 +59,15 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
 
         data = data_make(
-                         "model",         "",            DATA_STRING, "Prologue sensor",
-                         "id",            "",            DATA_INT, model, // this should be named "type"
-                         "rid",           "",            DATA_INT, id, // this should be named "id"
-                         "channel",       "Channel",     DATA_INT, channel,
-                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                         "button",        "Button",      DATA_INT, button,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
-                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                          NULL);
+                "model",         "",            DATA_STRING, "Prologue sensor",
+                "id",            "",            DATA_INT, model, // this should be named "type"
+                "rid",           "",            DATA_INT, id, // this should be named "id"
+                "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                "button",        "Button",      DATA_INT, button,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                NULL);
         decoder_output_data(decoder, data);
 
         return 1;
@@ -89,9 +89,10 @@ static char *output_fields[] = {
 
 r_device prologue = {
     .name           = "Prologue Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 2000,
+    .long_limit     = 4000,
+    .gap_limit      = 7000,
     .reset_limit    = 10000,
     .decode_fn      = &prologue_callback,
     .disabled       = 0,

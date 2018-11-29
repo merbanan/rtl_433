@@ -662,6 +662,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
                         case OOK_PULSE_PCM_RZ:
+                        case OOK_PULSE_PPM:
                         case OOK_PULSE_PPM_RAW:
                         case OOK_PULSE_PWM:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:

@@ -77,9 +77,10 @@ static char *output_fields[] = {
 
 r_device springfield = {
 	.name           = "Springfield Temperature and Soil Moisture",
-	.modulation     = OOK_PULSE_PPM_RAW,
+	.modulation     = OOK_PULSE_PPM,
 	.short_limit    = 2000,
 	.long_limit     = 4000,
+	.gap_limit      = 5000,
 	.reset_limit    = 9200,
 	.decode_fn      = &springfield_callback,
 	.disabled       = 0,

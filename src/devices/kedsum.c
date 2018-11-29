@@ -2,6 +2,7 @@
    My models transmit at a bit lower freq. Around ~433.71 Mhz
 
    Copyright (C) 2016 John Lifsey
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License version 3 as
    published by the Free Software Foundation.
@@ -20,6 +21,7 @@
    hhhh humidity low nibble
    HHHH humidity high nibble
 */
+
 #include "decoder.h"
 
 static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
@@ -73,11 +75,11 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "Kedsum Temperature & Humidity Sensor",
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
-                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                      NULL);
+            "model",         "",            DATA_STRING, "Kedsum Temperature & Humidity Sensor",
+            "channel",       "Channel",     DATA_INT, channel,
+            "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
 
     decoder_output_data(decoder, data);
     return 1;
@@ -93,9 +95,10 @@ static char *output_fields[] = {
 
 r_device kedsum = {
     .name           = "Kedsum Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800,
-    .long_limit     = 4400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 2000,
+    .long_limit     = 4000,
+    .gap_limit      = 4400,
     .reset_limit    = 9400,
     .decode_fn      = &kedsum_callback,
     .disabled       = 0,

@@ -1,6 +1,5 @@
 /* Proove
  *
- *
  * Tested devices:
  * Magnetic door & window sensor
  *
@@ -21,11 +20,13 @@
  * Every message is repeated four times.
  *
  * Copyright (C) 2016 Ask Jakobsen
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+
 #include "decoder.h"
 
 static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
@@ -41,8 +42,6 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* Reject codes when Manchester decoding fails */
     if (pos != 64)
       return 0;
-
-    /* bitbuffer_print(&databits); */
 
     bitrow_t *bb = databits.bb;
     uint8_t *b = bb[0];
@@ -79,9 +78,10 @@ static char *output_fields[] = {
 
 r_device proove = {
     .name           = "Proove",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 380,
-    .long_limit     = 1400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 270,
+    .long_limit     = 1300,
+    .gap_limit      = 1500,
     .reset_limit    = 2800,
     .decode_fn      = &proove_callback,
     .disabled       = 0,
