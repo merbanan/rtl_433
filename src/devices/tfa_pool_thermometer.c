@@ -1,14 +1,15 @@
 /* TFA pool temperature sensor
  *
  * Copyright (C) 2015 Alexandre Coffignal
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  */
-#include "decoder.h"
 
+#include "decoder.h"
 
 static int pool_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
@@ -16,7 +17,6 @@ static int pool_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitb
 	int i,device,channel;
 	int iTemp;
 	float fTemp;
-
 
 	for(i=1;i<8;i++){
 		if(bitbuffer->bits_per_row[i]!=28){
@@ -61,11 +61,11 @@ static char *output_fields[] = {
 };
 
 r_device tfa_pool_thermometer = {
-
 	.name          = "TFA pool temperature sensor",
-	.modulation    = OOK_PULSE_PPM_RAW,
-	.short_limit   = 3500,
-	.long_limit    = 7800,
+	.modulation    = OOK_PULSE_PPM,
+	.short_limit   = 2000,
+	.long_limit    = 4600,
+	.gap_limit     = 7800,
 	.reset_limit   = 10000,
 	.decode_fn     = &pool_temperature_sensor_callback,
 	.disabled      = 0,

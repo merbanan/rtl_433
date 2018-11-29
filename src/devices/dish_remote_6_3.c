@@ -138,10 +138,11 @@ static char *output_fields[] = {
 
 r_device dish_remote_6_3 = {
     .name          = "Dish remote 6.3",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (1692 + 2812) / 2,
-    .long_limit    = 1692 + 2812,
-    .reset_limit   = (1692 + 2812) * 2,
+    .modulation    = OOK_PULSE_PPM,
+    .short_limit   = 1692,
+    .long_limit    = 2812,
+    .gap_limit     = 4500,
+    .reset_limit   = 9000,
     .decode_fn     = &dish_remote_6_3_callback,
     .disabled      = 1,
     .fields        = output_fields,

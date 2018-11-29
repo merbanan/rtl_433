@@ -1141,9 +1141,10 @@ static char *acurite_rain_gauge_output_fields[] = {
 
 r_device acurite_rain_gauge = {
     .name           = "Acurite 896 Rain Gauge",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1744,
-    .long_limit     = 3500,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 1000,
+    .long_limit     = 2000,
+    .gap_limit      = 3500,
     .reset_limit    = 5000,
     .decode_fn      = &acurite_rain_gauge_callback,
 // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
@@ -1163,9 +1164,10 @@ static char *acurite_th_output_fields[] = {
 
 r_device acurite_th = {
     .name           = "Acurite 609TXC Temperature and Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1200,
-    .long_limit     = 3000,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 1000,
+    .long_limit     = 2000,
+    .gap_limit      = 3000,
     .reset_limit    = 10000,
     .decode_fn      = &acurite_th_callback,
     .disabled       = 0,
@@ -1231,9 +1233,10 @@ static char *acurite_986_output_fields[] = {
 
 r_device acurite_986 = {
     .name           = "Acurite 986 Refrigerator / Freezer Thermometer",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 720,   // Threshold between short 520 us and long 880 us gap
-    .long_limit     = 1280,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 520,
+    .long_limit     = 880,
+    .gap_limit      = 1280,
     .reset_limit    = 4000,
     .decode_fn      = &acurite_986_callback,
     .disabled       = 0,
@@ -1257,9 +1260,16 @@ static char *acurite_606_output_fields[] = {
 
 r_device acurite_606 = {
     .name           = "Acurite 606TX Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
+    // actually tests/acurite/02/gfile002.cu8, check this
+    //.modulation     = OOK_PULSE_PWM,
+    //.short_limit    = 576,
+    //.long_limit     = 1076,
+    //.gap_limit      = 1200,
+    //.reset_limit    = 12000,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 2000,
+    .long_limit     = 4000,
+    .gap_limit      = 7000,
     .reset_limit    = 10000,
     .decode_fn      = &acurite_606_callback,
     .disabled       = 0,
