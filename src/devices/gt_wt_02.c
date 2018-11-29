@@ -1,9 +1,8 @@
-#include "decoder.h"
-
 /*
  * GT-WT-02 sensor on 433.92MHz
  *
  * Copyright (C) 2015 Paul Ortyl
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
  * published by the Free Software Foundation.
@@ -49,75 +48,58 @@
   checksum = sum modulo 64
 */
 
-static int gt_wt_02_process_row(r_device *decoder, int row, const bitbuffer_t *bitbuffer)
-{
-    data_t *data;  /*JF*/
-    const uint8_t *b = bitbuffer->bb[row];
-    const int length = bitbuffer->bits_per_row[row];
+#include "decoder.h"
 
-    if ( 37 != length
-        || !(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
+static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int row)
+{
+    data_t *data;
+    uint8_t *b = bitbuffer->bb[row];
+
+    if (37 != bitbuffer->bits_per_row[row]
+            || !(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
         return 0;
 
-    //fprintf(stderr, "GT-WT-02: "); bitrow_print(b, 40);
-
     // sum 8 nibbles (use 31 bits, the last one fill with 0 on 32nd bit)
-    const int sum_nibbles =
+    int sum_nibbles =
           (b[0] >> 4) + (b[0] & 0xF)
         + (b[1] >> 4) + (b[1] & 0xF)
         + (b[2] >> 4) + (b[2] & 0xF)
         + (b[3] >> 4) + (b[3] & 0xe);
 
     // put last 6 bits into a number
-    const int checksum = ((b[3] & 1 )<<5) + (b[4]>>3);
+    int checksum = ((b[3] & 1 )<<5) + (b[4]>>3);
 
     // accept only correct checksums, (sum of nibbles modulo 64)
     if ((sum_nibbles & 0x3F) != checksum)
         return 0;
 
     // humidity: see above the note about working range
-    const int humidity = (b[3]>>1);  // extract bits for humidity
-    char const * humidity_str;       // pointer passed to the final printf
-    char humidity_str_buf[4]={0};    // buffer for humidity als decimal string
-    if (10 == humidity)
-        humidity_str = "LL";           // below working range of 20%
-    else if (110 == humidity)
-        humidity_str = "HH";           // above working range of 90%
-    else if (20<= humidity && humidity <= 90)
-    {
-        snprintf(humidity_str_buf, 4, "%2d", humidity);
-        humidity_str = humidity_str_buf;
-    }
-    else
-        return 0;  // very unlikely, but the humidity is outside of valid range
+    int humidity = (b[3]>>1);  // extract bits for humidity
+    if (humidity <= 10) // actually the sensors sends 10 below working range of 20%
+        humidity = 0;
+    else if (humidity > 90) // actually the sensors sends 110 above working range of 90%
+        humidity = 100;
 
-    const int sensor_id      =  b[0];                    /* 8 x A */
-    const int battery_low    = (b[1] >> 7 & 1);          /* 1 x B */
-    const int button_pressed = (b[1] >> 6 & 1);          /* 1 x C */
-    const int channel        = (b[1] >> 4 & 3);          /* 2 x D */
-    const int negative_sign  = (b[1] >> 3 & 1);          /* 1 x E */
-    const int temp           = (((b[1] & 15) << 8) | b[2]); /* E + 11 X G */
+    int sensor_id      =  b[0];                    /* 8 x A */
+    int battery_low    = (b[1] >> 7 & 1);          /* 1 x B */
+    int button_pressed = (b[1] >> 6 & 1);          /* 1 x C */
+    int channel        = (b[1] >> 4 & 3);          /* 2 x D */
+    int negative_sign  = (b[1] >> 3 & 1);          /* 1 x E */
+    int temp           = (((b[1] & 15) << 8) | b[2]); /* E + 11 X G */
 
-    float tempC = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
-
+    float temp_c = (negative_sign ? ( temp - (1<<12) ) : temp ) * 0.1F;
 
     data = data_make(
-        "model",		"",		DATA_STRING,	"GT_WT_02 sensor",
-        "rc",		"Rolling Code",		DATA_INT,	sensor_id,
-        "channel",		"Channel",	DATA_INT,	channel+1,
-        "battery",		"Battery",	DATA_STRING,	battery_low ? "LOW" : "OK",
-        "button",		"Button ",	DATA_INT,	button_pressed,
-        "temperature_C",	"Temperature",	DATA_FORMAT,	"%.01f C",DATA_DOUBLE,tempC,
-        "humidity",		"Humidity",	DATA_STRING,	humidity_str,
-        NULL);
+            "model",		"",		DATA_STRING,	"GT_WT_02 sensor",
+            "rc",		"Rolling Code",		DATA_INT,	sensor_id,
+            "channel",		"Channel",	DATA_INT,	channel+1,
+            "battery",		"Battery",	DATA_STRING,	battery_low ? "LOW" : "OK",
+            "button",		"Button ",	DATA_INT,	button_pressed,
+            "temperature_C",	"Temperature",	DATA_FORMAT,	"%.01f C", DATA_DOUBLE, temp_c,
+            "humidity",		"Humidity",	DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
+            NULL);
     decoder_output_data(decoder, data);
     return 1;
-//# {
-//   /* @todo make temperature unit configurable, not printing both */
-//  fprintf(stdout, "GT-WT-02 Sensor %02x, battery %s, channel %d, button %d, temperature %3.1f C, humidity %s%%\n"
-//      , sensor_id, battery_low ? "LOW" : "OK", channel+1, button_pressed, tempC, humidity_str);
-//}
-//return 1; */
 }
 
 static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -125,7 +107,7 @@ static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int counter = 0;
     // iterate through all rows, return on first successful
     for(int row=0; row<bitbuffer->num_rows && !counter; row++)
-        counter += gt_wt_02_process_row(decoder, row, bitbuffer);
+        counter += gt_wt_02_process_row(decoder, bitbuffer, row);
     return counter;
 }
 
@@ -142,7 +124,7 @@ static char *output_fields[] = {
 
 r_device gt_wt_02 = {
     .name          = "GT-WT-02 Sensor",
-    .modulation    = OOK_PULSE_PPM_RAW,
+    .modulation    = OOK_PULSE_PPM,
     .short_limit   = 3000,
     .long_limit    = 6000,
     .reset_limit   = 10000,
@@ -150,36 +132,3 @@ r_device gt_wt_02 = {
     .disabled      = 0,
     .fields        = output_fields,
 };
-
-// Test code
-// gcc -I src/ -I include/ -std=gnu99 -D _TEST_DECODER src/devices/gt_wt_02.c src/util.c
-#ifdef _TEST_DECODER
-int main()
-{
-    bitbuffer_t bb;
-    bb.num_rows = 1;
-    bb.bits_per_row[0] = 37;
-    const uint8_t b[4][5] =
-    {
-        {0x00, 0x00, 0x00, 0x00, 0x00}, // this one is excluded despite the correct checksum
-        {0x34, 0x00, 0xed, 0x47, 0x60},
-        {0x34, 0x8f, 0x87, 0x15, 0x90},
-        {0x34, 0x00, 0xde, 0x77, 0x78},
-    };
-
-    for(int i=0; i<4; i++)
-    {
-        memcpy(bb.bb[0], b[i], 5);
-        gt_wt_02_callback(&bb);
-    }
-
-/*
- * Result:
-2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery OK, channel 0, button 0, temperature 23.7 C / 74.7 F, humidity 35%
-2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery low, channel 0, button 0, temperature -12.1 C / 10.2 F, humidity LL%
-2015-08-16 19:08:16 GT-WT-02 Sensor 34: battery OK, channel 0, button 0, temperature 22.2 C / 72.0 F, humidity 59%
-*/
-
-}
-
-#endif

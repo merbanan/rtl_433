@@ -24,13 +24,6 @@
 
 #include "decoder.h"
 
-static float
-get_temperature(uint8_t * msg)
-{
-    uint16_t temp_c = ((msg[4] & 0x7) << 8) | msg[3];
-    return (temp_c * 0.05f) - 40.0f;
-}
-
 static int
 ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -51,19 +44,19 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         msg[i] = reverse8((a & b) | (b & c) | (a & c));
     }
 
-    if (msg[0] == 0xf4) {
-        temperature = get_temperature(msg);
+    if (msg[0] != 0xf4)
+        return 0;
 
-        data = data_make(
-                "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-                NULL);
-        decoder_output_data(decoder, data);
+    int temp_raw = ((msg[4] & 0x7) << 8) | msg[3];
+    temperature = (temp_raw * 0.05f) - 40.0f;
 
-        return 1;
-    }
+    data = data_make(
+            "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            NULL);
+    decoder_output_data(decoder, data);
 
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
@@ -74,9 +67,10 @@ static char *output_fields[] = {
 
 r_device ft004b = {
     .name          = "FT-004-B Temperature Sensor",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (1956 + 3900) / 2,
-    .long_limit    = 4000,
+    .modulation    = OOK_PULSE_PPM,
+    .short_limit   = 1956,
+    .long_limit    = 3900,
+    .gap_limit     = 4000,
     .reset_limit   = 4000,
     .decode_fn     = &ft004b_callback,
     .disabled      = 0,

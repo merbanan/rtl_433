@@ -1,14 +1,15 @@
 /* Generic temperature sensor 1
  *
  * Copyright (C) 2015 Alexandre Coffignal
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  */
-#include "decoder.h"
 
+#include "decoder.h"
 
 static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
@@ -39,15 +40,14 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
 	fTemp=(float)((signed short)(((b[1]&0x3f)*256+b[2])<<2))/160.0;
 
 	data = data_make(
-		"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
-		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
-		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
-		"battery",      	"Battery?",		DATA_INT,					battery,
-		NULL);
+			"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
+			"id",         	"Id",			DATA_INT,	device,
+			"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
+			"battery",      	"Battery?",		DATA_INT,					battery,
+			NULL);
 	decoder_output_data(decoder, data);
 
 	return 1;
-
 }
 
 static char *output_fields[] = {
@@ -60,9 +60,10 @@ static char *output_fields[] = {
 
 r_device generic_temperature_sensor = {
 	.name          = "Generic temperature sensor 1",
-	.modulation    = OOK_PULSE_PPM_RAW,
-	.short_limit   = 3500,
-	.long_limit    = 4800,
+	.modulation    = OOK_PULSE_PPM,
+	.short_limit   = 2000,
+	.long_limit    = 4000,
+	.gap_limit     = 4800,
 	.reset_limit   = 10000,
 	.decode_fn     = &generic_temperature_sensor_callback,
 	.disabled      = 0,

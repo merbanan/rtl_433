@@ -66,9 +66,10 @@ static char *output_fields[] = {
 
 r_device intertechno = {
     .name           = "Intertechno 433",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 600,
-    .long_limit     = 1700,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 330,
+    .long_limit     = 1400,
+    .gap_limit      = 1700,
     .reset_limit    = 10000,
     .decode_fn      = &intertechno_callback,
     .disabled       = 1,

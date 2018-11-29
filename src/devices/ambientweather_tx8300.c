@@ -84,7 +84,6 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     if (((b[0] & 0xf0) >> 4) > 9 || (b[0] & 0x0f) > 9) // invalid humidity
         humidity = -1;
 
-
     data = data_make(
             "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
             "id",            "",            DATA_INT, sensor_id,
@@ -119,9 +118,10 @@ static char *output_fields[] = {
 
 r_device ambientweather_tx8300 = {
     .name          = "Ambient Weather TX-8300 Temperature/Humidity Sensor",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 2900,
-    .long_limit    = 6500,
+    .modulation    = OOK_PULSE_PPM,
+    .short_limit   = 2000,
+    .long_limit    = 4000,
+    .gap_limit     = 6500,
     .reset_limit   = 8000,
     .decode_fn     = &ambientweather_tx8300_callback,
     .disabled      = 0,

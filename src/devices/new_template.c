@@ -250,11 +250,12 @@ static char *output_fields[] = {
  */
 r_device template = {
     .name          = "Template decoder",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (224 + 132) / 2, // short gap is 132 us, long gap is 224 us
-    .long_limit    = 224 + 132,
-    .reset_limit   = (224 + 132) * 2,
+    .modulation    = OOK_PULSE_PPM,
+    .short_limit   = 132, // short gap is 132 us
+    .long_limit    = 224, // long gap is 224 us
+    .gap_limit     = 300, // some distance above long
+    .reset_limit   = 1000, // a bit longer than packet gap
     .decode_fn     = &template_callback,
-    .disabled      = 2, // disabled and hidden
+    .disabled      = 2, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields        = output_fields,
 };

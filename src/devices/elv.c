@@ -131,9 +131,10 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 r_device elv_em1000 = {
     .name           = "ELV EM 1000",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 750,
-    .long_limit     = 7250,
+    .modulation     = OOK_PULSE_PPM,
+    .short_limit    = 500, // guessed, no samples available
+    .long_limit     = 1000, // guessed, no samples available
+    .gap_limit      = 7250,
     .reset_limit    = 30000,
     .decode_fn      = &em1000_callback,
     .disabled       = 1,
