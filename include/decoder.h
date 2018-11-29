@@ -11,7 +11,8 @@
 /* Supported modulation types */
 #define OOK_PULSE_MANCHESTER_ZEROBIT    3  // Manchester encoding. Hardcoded zerobit. Rising Edge = 0, Falling edge = 1
 #define OOK_PULSE_PCM_RZ                4  // Pulse Code Modulation with Return-to-Zero encoding, Pulse = 0, No pulse = 1
-#define OOK_PULSE_PPM_RAW               5  // Pulse Position Modulation. No startbit removal. Short gap = 0, Long = 1
+#define OOK_PULSE_PPM_RAW               5  // Pulse Position Modulation. Short gap = 0, Long = 1
+#define OOK_PULSE_PPM                   12 // Pulse Position Modulation. Short gap = 0, Long = 1
 #define OOK_PULSE_PWM                   6  // Pulse Width Modulation with precise timing parameters
 #define OOK_PULSE_PIWM_RAW              8  // Level shift for each bit. Short interval = 1, Long = 0
 #define OOK_PULSE_PIWM_DC               11 // Level shift for each bit. Short interval = 1, Long = 0

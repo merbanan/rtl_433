@@ -616,9 +616,10 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 		fprintf(stderr, "Un-modulated signal. Maybe a preamble...\n");
 	} else if(hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1) {
 		fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
-		device.modulation	= OOK_PULSE_PPM_RAW;
-		device.s_short_limit	= (hist_gaps.bins[0].mean + hist_gaps.bins[1].mean) / 2;	// Set limit between two lowest gaps
-		device.s_long_limit	= hist_gaps.bins[1].max + 1;								// Set limit above next lower gap
+		device.modulation	= OOK_PULSE_PPM;
+		device.s_short_limit	= hist_gaps.bins[0].mean;
+		device.s_long_limit	= hist_gaps.bins[1].mean;
+		device.s_gap_limit	= hist_gaps.bins[1].max + 1;								// Set limit above next lower gap
 		device.s_reset_limit	= hist_gaps.bins[hist_gaps.bins_count-1].max + 1;			// Set limit above biggest gap
 	} else if(hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1) {
 		fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
@@ -686,9 +687,10 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us);
 				pulse_demod_pcm(data, &device);
 				break;
-			case OOK_PULSE_PPM_RAW:
-				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PPM_RAW,s=%.0f,l=%.0f,r=%.0f'\n",
-						device.s_short_limit*to_us, device.s_long_limit*to_us, device.s_reset_limit*to_us);
+			case OOK_PULSE_PPM:
+				fprintf(stderr, "Use a flex decoder with -X 'n=name,m=OOK_PPM,s=%.0f,l=%.0f,g=%.0f,r=%.0f'\n",
+						device.s_short_limit*to_us, device.s_long_limit*to_us,
+						device.s_gap_limit*to_us, device.s_reset_limit*to_us);
 				data->gap[data->num_pulses-1] = device.s_reset_limit + 1;	// Be sure to terminate package
 				pulse_demod_ppm(data, &device);
 				break;

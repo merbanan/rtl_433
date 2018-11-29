@@ -612,8 +612,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PCM_RZ:
                             p_events += pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_PPM_RAW:
+                        case OOK_PULSE_PPM:
                             p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+                            break;
+                        case OOK_PULSE_PPM_RAW:
+                            p_events += pulse_demod_ppm_raw(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM:
                             p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);

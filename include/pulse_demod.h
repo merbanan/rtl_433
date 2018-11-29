@@ -41,9 +41,26 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device);
 /// Gap between pulses determine the encoding:
 /// - Short gap will add a 0 bit
 /// - Long  gap will add a 1 bit
+/// @deprecated use pulse_demod_ppm()
 /// @param device->short_limit: Threshold between short and long gap [us]
 /// @param device->long_limit:  Maximum gap size before new row of bits [us]
 /// @param device->reset_limit: Maximum gap size before End Of Message [us].
+/// @return number of events processed
+int pulse_demod_ppm_raw(const pulse_data_t *pulses, r_device *device);
+
+
+/// Demodulate a Pulse Position Modulation signal
+///
+/// Demodulate a Pulse Position Modulation (PPM) signal consisting of pulses with variable gap.
+/// Pulse width may be fixed or variable.
+/// Gap between pulses determine the encoding:
+/// - Short gap will add a 0 bit
+/// - Long  gap will add a 1 bit
+/// @param device->short_limit: Nominal width of '0' [us]
+/// @param device->long_limit:  Nominal width of '1' [us]
+/// @param device->reset_limit: Maximum gap size before End Of Message [us].
+/// @param device->gap_limit:   Maximum gap size before new row of bits [us]
+/// @param device->tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
 /// @return number of events processed
 int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 

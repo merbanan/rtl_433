@@ -77,7 +77,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 }
 
 
-int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_ppm_raw(const pulse_data_t *pulses, r_device *device) {
 	int events = 0;
 	bitbuffer_t bits = {0};
 
@@ -98,6 +98,60 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
 			}
 			// Debug printout
 			if(!device->decode_fn || (debug_output && events > 0)) {
+				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
+				bitbuffer_print(&bits);
+			}
+			bitbuffer_clear(&bits);
+		}
+	} // for pulses
+	return events;
+}
+
+
+int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
+	int events = 0;
+	bitbuffer_t bits = {0};
+
+	// lower and upper bounds (non inclusive)
+	int zero_l, zero_u;
+	int one_l, one_u;
+	int sync_l = 0, sync_u = 0;
+
+	if (device->s_tolerance > 0) {
+		// precise
+		zero_l = device->s_short_limit - device->s_tolerance;
+		zero_u = device->s_short_limit + device->s_tolerance;
+		one_l = device->s_long_limit - device->s_tolerance;
+		one_u = device->s_long_limit + device->s_tolerance;
+	}
+	else {
+		// no sync, short=0, long=1
+		zero_l = 0;
+		zero_u = (device->s_short_limit + device->s_long_limit) / 2 + 1;
+		one_l = zero_u - 1;
+		one_u = device->s_gap_limit ? device->s_gap_limit : device->s_reset_limit;
+	}
+
+	for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+		// Short gap
+		if (pulses->gap[n] > zero_l && pulses->gap[n] < zero_u) {
+			bitbuffer_add_bit(&bits, 0);
+		}
+		// Long gap
+		else if (pulses->gap[n] > one_l && pulses->gap[n] < one_u) {
+			bitbuffer_add_bit(&bits, 1);
+		}
+		// Check for new packet in multipacket
+		else if (pulses->gap[n] < device->s_reset_limit) {
+			bitbuffer_add_row(&bits);
+		}
+		// End of Message?
+		else {
+			if (device->decode_fn) {
+				events += device->decode_fn(device, &bits);
+			}
+			// Debug printout
+			if (!device->decode_fn || (debug_output && events > 0)) {
 				fprintf(stderr, "pulse_demod_ppm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
