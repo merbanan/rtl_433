@@ -95,8 +95,8 @@ static char *output_fields[] = {
 r_device solight_te44 = {
     .name          = "Solight TE44",
     .modulation    = OOK_PULSE_PPM,
-    .short_limit   = 972, // short gap = 972 us
-    .long_limit    = 1932, // long gap = 1932 us
+    .short_width   = 972, // short gap = 972 us
+    .long_width    = 1932, // long gap = 1932 us
     .gap_limit     = 3000, // packet gap = 3880 us
     .reset_limit   = 6000,
     .decode_fn     = &solight_te44_callback,

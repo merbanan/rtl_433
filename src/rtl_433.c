@@ -312,10 +312,10 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     r_device *p = calloc(1, sizeof (r_device));
 
     float samples_per_us = cfg.samp_rate / 1.0e6;
-    p->f_short_limit = 1.0 / (r_dev->short_limit * samples_per_us);
-    p->f_long_limit  = 1.0 / (r_dev->long_limit * samples_per_us);
-    p->s_short_limit = r_dev->short_limit * samples_per_us;
-    p->s_long_limit  = r_dev->long_limit * samples_per_us;
+    p->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
+    p->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
+    p->s_short_width = r_dev->short_width * samples_per_us;
+    p->s_long_width  = r_dev->long_width * samples_per_us;
     p->s_reset_limit = r_dev->reset_limit * samples_per_us;
     p->s_gap_limit   = r_dev->gap_limit * samples_per_us;
     p->s_sync_width  = r_dev->sync_width * samples_per_us;

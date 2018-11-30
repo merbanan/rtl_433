@@ -35,8 +35,8 @@ static int steffen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device steffen = {
     .name           = "Steffen Switch Transmitter",
     .modulation     = OOK_PULSE_PPM,
-    .short_limit    = 370, // guesses, no samples available
-    .long_limit     = 750, // guesses, no samples available
+    .short_width    = 370, // guesses, no samples available
+    .long_width     = 750, // guesses, no samples available
     .gap_limit      = 1080,
     .reset_limit    = 6000,
     .decode_fn      = &steffen_callback,

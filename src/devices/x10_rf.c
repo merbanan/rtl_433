@@ -85,8 +85,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device X10_RF = {
 	.name			= "X10 RF",
 	.modulation		= OOK_PULSE_PPM,
-	.short_limit	= 500,	// Short gap 500µs
-	.long_limit		= 1680,	// Long gap 1680µs
+	.short_width	= 500,	// Short gap 500µs
+	.long_width		= 1680,	// Long gap 1680µs
 	.gap_limit		= 2800,	// Gap after sync is 4.5ms (1125)
 	.reset_limit	= 6000, // Gap seen between messages is ~40ms so let's get them individually
 	.decode_fn    	= &x10_rf_callback,

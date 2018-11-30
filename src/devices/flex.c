@@ -428,17 +428,17 @@ r_device *flex_create_device(char *spec)
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
         usage();
     }
-    dev->short_limit = atoi(c);
+    dev->short_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing long limit!\n");
+        fprintf(stderr, "Bad flex spec, missing long width!\n");
         usage();
     }
-    dev->long_limit = atoi(c);
+    dev->long_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
@@ -489,9 +489,9 @@ r_device *flex_create_device(char *spec)
         if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
-            dev->short_limit = atoi(val);
+            dev->short_width = atoi(val);
         else if (!strcasecmp(key, "l") || !strcasecmp(key, "long"))
-            dev->long_limit = atoi(val);
+            dev->long_width = atoi(val);
         else if (!strcasecmp(key, "y") || !strcasecmp(key, "sync"))
             dev->sync_width = atoi(val);
         else if (!strcasecmp(key, "g") || !strcasecmp(key, "gap"))
@@ -566,14 +566,14 @@ r_device *flex_create_device(char *spec)
         usage();
     }
 
-    if (!dev->short_limit) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+    if (!dev->short_width) {
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
         usage();
     }
 
     if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
-        if (!dev->long_limit) {
-            fprintf(stderr, "Bad flex spec, missing long limit!\n");
+        if (!dev->long_width) {
+            fprintf(stderr, "Bad flex spec, missing long width!\n");
             usage();
         }
     }
@@ -602,8 +602,8 @@ r_device *flex_create_device(char *spec)
     /*
     if (decoder->verbose) {
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
-        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f\n",
-                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit);
+        fprintf(stderr, "\tmodulation=%u, short_width=%.0f, long_width=%.0f, reset_limit=%.0f\n",
+                dev->modulation, dev->short_width, dev->long_width, dev->reset_limit);
         fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
     }

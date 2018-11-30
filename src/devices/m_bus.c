@@ -402,8 +402,8 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device m_bus_mode_c_t = {
     .name           = "Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)",     // Minimum samplerate = 1.2 MHz (12 samples of 100kb/s)
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 10,   // Bit rate: 100 kb/s
-    .long_limit     = 10,   // NRZ encoding (bit width = pulse width)
+    .short_width    = 10,   // Bit rate: 100 kb/s
+    .long_width     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
     .decode_fn      = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
@@ -416,8 +416,8 @@ r_device m_bus_mode_c_t = {
 r_device m_bus_mode_s = {
     .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
     .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_limit    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
-    .long_limit     = 0,    // Unused
+    .short_width    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
+    .long_width     = 0,    // Unused
     .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
     .decode_fn      = &m_bus_mode_c_t_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
@@ -436,8 +436,8 @@ r_device m_bus_mode_s = {
 r_device m_bus_mode_r = {
     .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
     .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_limit    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
-    .long_limit     = 0,    // Unused
+    .short_width    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
+    .long_width     = 0,    // Unused
     .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
     .decode_fn      = &m_bus_mode_r_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
@@ -461,8 +461,8 @@ r_device m_bus_mode_r = {
 r_device m_bus_mode_f = {
     .name           = "Wireless M-Bus, Mode F, 2.4kbps",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 1000.0/2.4,   // ~417 us
-    .long_limit     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
+    .short_width    = 1000.0/2.4,   // ~417 us
+    .long_width     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 5000,         // ??
     .decode_fn      = &m_bus_mode_f_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
