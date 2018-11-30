@@ -1,3 +1,5 @@
+// HS1527
+
 #include "decoder.h"
 
 static int steffen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {

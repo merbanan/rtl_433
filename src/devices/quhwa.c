@@ -1,4 +1,5 @@
 /* Quhwa
+ * HS1527
  *
  * Tested devices:
  * QH-C-CE-3V (which should be compatible with QH-832AC),
