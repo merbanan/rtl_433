@@ -124,8 +124,8 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device lightwave_rf = {
 	.name			= "LightwaveRF",
 	.modulation		= OOK_PULSE_PPM,
-	.short_limit	= 250,	// Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
-	.long_limit		= 1250,	//
+	.short_width	= 250,	// Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
+	.long_width		= 1250,	//
 	.reset_limit	= 1500, // Gap between messages is unknown so let us get them individually
 	.decode_fn    	= &lightwave_rf_callback,
 	.disabled		= 1,

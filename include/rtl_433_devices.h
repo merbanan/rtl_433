@@ -125,8 +125,8 @@ typedef struct r_device {
     /* information provided by each decoder */
     char *name;
     unsigned modulation;
-    float short_limit;
-    float long_limit;
+    float short_width;
+    float long_width;
     float reset_limit;
     float gap_limit;
     float sync_width;
@@ -144,10 +144,10 @@ typedef struct r_device {
     void *output_ctx;
 
     /* private pulse limits (converted to count of samples) */
-    float f_short_limit; // precision reciprocal for PCM
-    float f_long_limit;  // precision reciprocal for PCM
-    int s_short_limit;
-    int s_long_limit;
+    float f_short_width; // precision reciprocal for PCM
+    float f_long_width;  // precision reciprocal for PCM
+    int s_short_width;
+    int s_long_width;
     int s_reset_limit;
     int s_gap_limit;
     int s_sync_width;

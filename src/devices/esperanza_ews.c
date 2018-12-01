@@ -112,8 +112,8 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 r_device esperanza_ews = {
     .name          = "Esperanza EWS",
     .modulation    = OOK_PULSE_PPM,
-    .short_limit   = 2000,
-    .long_limit    = 4000,
+    .short_width   = 2000,
+    .long_width    = 4000,
     .gap_limit     = 4400,
     .reset_limit   = 9400,
     .decode_fn     = &esperanza_ews_callback,

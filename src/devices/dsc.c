@@ -98,7 +98,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // Number of bits in the packet should be 48 but due to the
         // encoding of trailing zeros is a guess based on reset_limit /
-        // long_limit (bit period).  With current values up to 10 zero
+        // long_width (bit period).  With current values up to 10 zero
         // bits could be added, so it is normal to get a 58 bit packet.
         //
         // If the limits are changed for some reason, the max number of bits
@@ -221,8 +221,8 @@ static char *output_fields[] = {
 r_device DSC = {
     .name          = "DSC Security Contact",
     .modulation    = OOK_PULSE_PCM_RZ,
-    .short_limit   = 250,    // Pulse length, 250 µs
-    .long_limit    = 500,    // Bit period, 500 µs
+    .short_width   = 250,    // Pulse length, 250 µs
+    .long_width    = 500,    // Bit period, 500 µs
     .reset_limit   = 5000, // Max gap,
     .decode_fn     = &dsc_callback,
     .disabled      = 0,

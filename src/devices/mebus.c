@@ -52,8 +52,8 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device mebus433 = {
     .name           = "Mebus 433",
     .modulation     = OOK_PULSE_PPM,
-    .short_limit    = 800, // guessed, no samples available
-    .long_limit     = 1600, // guessed, no samples available
+    .short_width    = 800, // guessed, no samples available
+    .long_width     = 1600, // guessed, no samples available
     .gap_limit      = 2400,
     .reset_limit    = 6000,
     .decode_fn      = &mebus433_callback,

@@ -482,8 +482,8 @@ static char *output_fields_WH0530[] = {
 r_device fineoffset_WH2 = {
     .name           = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
     .modulation     = OOK_PULSE_PWM,
-    .short_limit    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_limit     = 1500,	// Maximum pulse period (long pulse + fixed gap)
+    .short_width    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_width     = 1500,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 1200,	// We just want 1 package
     .tolerance      = 160, // us
     .decode_fn      = &fineoffset_WH2_callback,
@@ -494,8 +494,8 @@ r_device fineoffset_WH2 = {
 r_device fineoffset_WH25 = {
     .name           = "Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 58,	// Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
-    .long_limit     = 58,	// NRZ encoding (bit width = pulse width)
+    .short_width    = 58,	// Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
+    .long_width     = 58,	// NRZ encoding (bit width = pulse width)
     .reset_limit    = 20000,	// Package starts with a huge gap of ~18900 us
     .decode_fn      = &fineoffset_WH25_callback,
     .disabled       = 0,
@@ -505,8 +505,8 @@ r_device fineoffset_WH25 = {
 r_device fineoffset_WH0530 = {
     .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
     .modulation     = OOK_PULSE_PWM,
-    .short_limit    = 504,	// Short pulse 504µs
-    .long_limit     = 1480, // Long pulse 1480µs
+    .short_width    = 504,	// Short pulse 504µs
+    .long_width     = 1480, // Long pulse 1480µs
     .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160, // us

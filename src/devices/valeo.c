@@ -34,8 +34,8 @@ static int valeo_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 r_device valeo = {
 	.name			= "Valeo Car Key",
 	.modulation		= OOK_PULSE_MANCHESTER_ZEROBIT,
-	.short_limit	= 106,
-	.long_limit		= 0,	// Not used
+	.short_width	= 106,
+	.long_width		= 0,	// Not used
 	.reset_limit	= 400,
 	.decode_fn    	= &valeo_callback,
 	.disabled		= 1,
