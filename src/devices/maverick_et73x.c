@@ -33,9 +33,9 @@
 
 #include "decoder.h"
 
-static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
+static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     bitbuffer_t mc = {0};
 
     if(bitbuffer->num_rows != 1)
@@ -74,26 +74,23 @@ static int maverick_et73x_callback(bitbuffer_t *bitbuffer) {
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(chk_data, 24, 0x8810, 0xdd38) ^ digest;
 
-    if (debug_output)
+    if (decoder->verbose)
         fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %06x, digest xor'ed: %04x\n",
-                __FUNCTION__, pre, flags, temp1, temp2, digest, chk_data, id);
+                __func__, pre, flags, temp1, temp2, digest, chk_data, id);
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",             "",                     DATA_STRING, time_str,
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
             "id",               "Session_ID",           DATA_INT, id,
             "status",           "Status",               DATA_STRING, status,
             "temperature1_C",   "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
             "temperature2_C",   "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "brand"
     "model"
     "id"
@@ -112,8 +109,7 @@ r_device maverick_et73x = {
     .reset_limit    = 4000,
     //.reset_limit    = 6000, // if pulse_demod_manchester_zerobit implements gap_limit
     //.gap_limit      = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
-    .json_callback  = &maverick_et73x_callback,
+    .decode_fn      = &maverick_et73x_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

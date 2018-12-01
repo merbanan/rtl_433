@@ -32,11 +32,10 @@ get_temperature(uint8_t * msg)
 }
 
 static int
-ft004b_callback(bitbuffer_t *bitbuffer)
+ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
@@ -55,13 +54,11 @@ ft004b_callback(bitbuffer_t *bitbuffer)
     if (msg[0] == 0xf4) {
         temperature = get_temperature(msg);
 
-        local_time_str(0, time_str);
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -70,7 +67,6 @@ ft004b_callback(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "temperature_C",
     NULL
@@ -82,8 +78,7 @@ r_device ft004b = {
     .short_limit   = (1956 + 3900) / 2,
     .long_limit    = 4000,
     .reset_limit   = 4000,
-    .json_callback = &ft004b_callback,
+    .decode_fn     = &ft004b_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

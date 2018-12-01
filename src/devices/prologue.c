@@ -24,11 +24,10 @@
 
 #include "decoder.h"
 
-static int prologue_callback(bitbuffer_t *bitbuffer) {
+static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
 
     uint8_t model;
     uint8_t id;
@@ -48,7 +47,6 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
          (bb[r][0]&0xF0) == 0x50)) {
 
         /* Get time now */
-        local_time_str(0, time_str);
 
         /* Prologue sensor */
         model = bb[r][0] >> 4;
@@ -60,7 +58,7 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
         temp = temp >> 4;
         humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
 
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "Prologue sensor",
                          "id",            "",            DATA_INT, model, // this should be named "type"
                          "rid",           "",            DATA_INT, id, // this should be named "id"
@@ -70,7 +68,7 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
                          "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -78,7 +76,6 @@ static int prologue_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "rid",
@@ -96,8 +93,7 @@ r_device prologue = {
     .short_limit    = 3500,
     .long_limit     = 7000,
     .reset_limit    = 10000,
-    .json_callback  = &prologue_callback,
+    .decode_fn      = &prologue_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

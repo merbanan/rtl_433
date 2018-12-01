@@ -21,8 +21,8 @@
 // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
 static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
-static int tpms_renault_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -56,9 +56,7 @@ static int tpms_renault_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     maybe_temp = b[7]<<8 | b[6]; // little-endian
     sprintf(code_str, "%04x %04x", maybe_pressure, maybe_temp);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",         "",     DATA_STRING, time_str,
         "model",        "",     DATA_STRING, "Renault",
         "type",         "",     DATA_STRING, "TPMS",
         "id",           "",     DATA_STRING, id_str,
@@ -67,11 +65,11 @@ static int tpms_renault_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
         "mic",          "",     DATA_STRING, "CRC",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int tpms_renault_callback(bitbuffer_t *bitbuffer) {
+static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int row;
     unsigned bitpos;
     int events = 0;
@@ -84,7 +82,7 @@ static int tpms_renault_callback(bitbuffer_t *bitbuffer) {
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 16)) + 160 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_renault_decode(bitbuffer, row, bitpos + 16);
+            events += tpms_renault_decode(decoder, bitbuffer, row, bitpos + 16);
             bitpos += 15;
         }
     }
@@ -93,7 +91,6 @@ static int tpms_renault_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "flags",
@@ -108,8 +105,7 @@ r_device tpms_renault = {
     .short_limit    = 52, // 12-13 samples @250k
     .long_limit     = 52, // FSK
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_renault_callback,
+    .decode_fn      = &tpms_renault_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

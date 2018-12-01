@@ -243,16 +243,14 @@ static int get_day(const uint8_t* br) {
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
-static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     const uint8_t *br;
     int msg_type; // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 12; // 12=Weather/Time sensor  8=UV/Light sensor
     int i;
     uint8_t bbuf[11]; // max 8 / 11 bytes needed
 
-    local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
@@ -283,7 +281,7 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    if (debug_output) {
+    if (decoder->verbose) {
         bitrow_print(bbuf, (sens_msg - 1) * 8);
     }
 
@@ -374,7 +372,6 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
     if (msg_type == 0) {
 
         data = data_make(
-                "time",     "",         DATA_STRING,                    time_str,
                 "model",     "",         DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                    msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",        DATA_INT,    device_id,
@@ -387,13 +384,12 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
                 "rain",        "Total rainfall",DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,     rain,
                 "battery",    "Battery",    DATA_STRING,                    battery,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
 
     } else if (msg_type == 1) {
 
         data = data_make(
-                "time",        "",        DATA_STRING,        time_str,
                 "model",    "",        DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",    DATA_INT,    device_id,
@@ -405,13 +401,12 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
                 "month",    "Month\t",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
                 "day",        "Day\t",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
 
     } else {
 
         data = data_make(
-                "time",        "",        DATA_STRING,                time_str,
                 "model",    "",        DATA_STRING,    "Fine Offset Electronics WH3080 Weather Station",
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "uv_sensor_id",    "UV Sensor ID",    DATA_FORMAT,    "%d",    DATA_INT,    uv_sensor_id,
@@ -421,13 +416,12 @@ static int fineoffset_wh1080_callback(bitbuffer_t *bitbuffer) {
                 "wm",        "Watts/m\t",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
                 "fc",        "Foot-candles",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    fc,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -457,12 +451,11 @@ static char *output_fields[] = {
 
 r_device fineoffset_wh1080 = {
     .name           = "Fine Offset Electronics WH1080/WH3080 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 800,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_limit     = 2800,    // Maximum pulse period (long pulse + fixed gap)
+    .modulation     = OOK_PULSE_PWM,
+    .short_limit    = 544,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_limit     = 1524,    // Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2800,    // We just want 1 package
-    .json_callback  = &fineoffset_wh1080_callback,
+    .decode_fn      = &fineoffset_wh1080_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

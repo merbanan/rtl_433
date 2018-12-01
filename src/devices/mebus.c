@@ -1,8 +1,7 @@
 #include "decoder.h"
 
-static int mebus433_callback(bitbuffer_t *bitbuffer) {
+static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
-    char    time_str[LOCAL_TIME_BUFLEN];
     int16_t temp;
     int8_t  hum;
     uint8_t address;
@@ -13,7 +12,6 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
     data_t *data;
 
     if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0x60) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]){
-        local_time_str(0, time_str);
 
         address = bb[1][0] & 0x1f;
 
@@ -33,7 +31,7 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
         // Always 0b1111?
         unknown2 = (bb[1][3] & 0xf0) >> 4;
 
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "Mebus/433",
                          "id",            "Address",     DATA_INT, address,
                          "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
@@ -43,7 +41,7 @@ static int mebus433_callback(bitbuffer_t *bitbuffer) {
                          "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
 
         return 1;
@@ -57,7 +55,6 @@ r_device mebus433 = {
     .short_limit    = 1200,
     .long_limit     = 2400,
     .reset_limit    = 6000,
-    .json_callback  = &mebus433_callback,
+    .decode_fn      = &mebus433_callback,
     .disabled       = 1, // add docs, tests, false positive checks and then reenable
-    .demod_arg      = 0,
 };

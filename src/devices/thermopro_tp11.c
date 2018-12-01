@@ -34,12 +34,11 @@ static int valid(unsigned data, unsigned check) {
     return check == 0;
 }
 
-static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
+static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int i, j, iTemp, good = -1;
     float fTemp;
     bitrow_t *bb = bitbuffer->bb;
     unsigned int device, value;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     // Compare first four bytes of rows that have 32 or 33 bits.
@@ -67,18 +66,16 @@ static int thermopro_tp11_sensor_callback(bitbuffer_t *bitbuffer) {
     iTemp = value & 0xfff;
     fTemp = (iTemp - 200) / 10.;
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Thermopro TP11 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp,
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -91,8 +88,7 @@ r_device thermopro_tp11 = {
     .short_limit   = 956,
     .long_limit    = 1912,
     .reset_limit   = 3880,
-    .json_callback = &thermopro_tp11_sensor_callback,
+    .decode_fn     = &thermopro_tp11_sensor_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

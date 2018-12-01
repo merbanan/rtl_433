@@ -10,9 +10,8 @@
 #include "decoder.h"
 
 
-static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
+static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *b = bitbuffer->bb[1];
 	int i,device,battery;
 	float fTemp;
@@ -39,21 +38,19 @@ static int generic_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
 	battery=(b[1]&0xF0)>>4;
 	fTemp=(float)((signed short)(((b[1]&0x3f)*256+b[2])<<2))/160.0;
 
-	local_time_str(0, time_str);
-	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
+	data = data_make(
 		"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
 		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
 		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
 		"battery",      	"Battery?",		DATA_INT,					battery,
 		NULL);
-	data_acquired_handler(data);
+	decoder_output_data(decoder, data);
 
 	return 1;
 
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"temperature_C",
@@ -67,8 +64,7 @@ r_device generic_temperature_sensor = {
 	.short_limit   = 3500,
 	.long_limit    = 4800,
 	.reset_limit   = 10000,
-	.json_callback = &generic_temperature_sensor_callback,
+	.decode_fn     = &generic_temperature_sensor_callback,
 	.disabled      = 0,
-	.demod_arg     = 0,
 	.fields        = output_fields,
 };

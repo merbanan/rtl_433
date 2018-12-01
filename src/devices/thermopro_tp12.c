@@ -42,12 +42,11 @@ Layout appears to be:
 
 #define BITS_IN_VALID_ROW 40
 
-static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
+static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int iTemp1, iTemp2, good = -1;
     float fTemp1, fTemp2;
     uint8_t *bytes;
     unsigned int device;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     // The device transmits 16 rows, let's check for 3 matching.
@@ -72,7 +71,7 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
     // or long-press its power button, it pairs with the first device ID it hears.
     device = bytes[0];
 
-    if(debug_output) {
+    if(decoder->verbose) {
         // There is a mysterious checksum in bytes[4].  It may be the same as the checksum used by the TP-11,
         // which consisted of a lookup table containing, for each bit in the message, a byte to be xor-ed into
         // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian
@@ -93,19 +92,17 @@ static int thermopro_tp12_sensor_callback(bitbuffer_t *bitbuffer) {
     fTemp1 = (iTemp1 - 200) / 10.;
     fTemp2 = (iTemp2 - 200) / 10.;
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Thermopro TP12 Thermometer",
                      "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
                      "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp1,
                      "temperature_2_C", "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, fTemp2,
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_1_C",
@@ -141,8 +138,7 @@ r_device thermopro_tp12 = {
     .short_limit   = 1000,
     .long_limit    = 2000,
     .reset_limit   = 4000,
-    .json_callback = &thermopro_tp12_sensor_callback,
+    .decode_fn     = &thermopro_tp12_sensor_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

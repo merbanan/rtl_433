@@ -40,7 +40,7 @@ int lightwave_rf_nibble_from_byte(uint8_t in) {
 }
 
 
-static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
+static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package
@@ -92,7 +92,7 @@ static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
 		for(unsigned n=0; n<10; ++n) {		// We have 10 bytes/nibbles
 			int nibble = lightwave_rf_nibble_from_byte(bb[2][n]);
 			if (nibble < 0) {
-				if (debug_output) {
+				if (decoder->verbose) {
 					fprintf(stderr, "LightwaveRF. Nibble decode error %X, idx: %u\n", bb[2][n], n);
 					bitbuffer_print(bitbuffer);
 				}
@@ -111,7 +111,7 @@ static int lightwave_rf_callback(bitbuffer_t *bitbuffer) {
 		fprintf(stdout, "Command = %u\n", bb[3][1] & 0x0F);
 		fprintf(stdout, "Parameter = %u\n", bb[3][0]);
 
-		if (debug_output) {
+		if (decoder->verbose) {
 			bitbuffer_print(bitbuffer);
 			fprintf(stderr, "  Row 0 = Input, Row 1 = Zero bit stuffing, Row 2 = Stripped delimiters, Row 3 = Decoded nibbles\n");
 		}
@@ -129,7 +129,6 @@ r_device lightwave_rf = {
 	.short_limit	= 750,	// Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
 	.long_limit		= 1500,	//
 	.reset_limit	= 1500, // Gap between messages is unknown so let us get them individually
-	.json_callback	= &lightwave_rf_callback,
+	.decode_fn    	= &lightwave_rf_callback,
 	.disabled		= 1,
-	.demod_arg		= 0,
 };

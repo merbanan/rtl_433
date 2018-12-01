@@ -36,12 +36,12 @@
 
 #include "decoder.h"
 
-extern int rubicson_crc_check(bitrow_t *bb);
+// NOTE: this should really not be here
+int rubicson_crc_check(bitrow_t *bb);
 
-static int solight_te44_callback(bitbuffer_t *bitbuffer) {
+static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     uint8_t id;
     uint8_t channel;
@@ -57,7 +57,6 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
 
     if (!rubicson_crc_check(bb)) return 0;
 
-    local_time_str(0, time_str);
 
     id = bb[0][0];
 
@@ -74,21 +73,20 @@ static int solight_te44_callback(bitbuffer_t *bitbuffer) {
 
     temperature = (float) (((256 * multiplier) + temperature_raw) / 10.0);
 
-    data = data_make("time", "", DATA_STRING, time_str,
+    data = data_make(
                      "model", "", DATA_STRING, "Solight TE44",
                      "id", "Id", DATA_INT, id,
                      "channel", "Channel", DATA_INT, channel + 1,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
                      "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -102,8 +100,7 @@ r_device solight_te44 = {
     .short_limit   = 1500, // short gap = 972 us
     .long_limit    = 3000, // long gap = 1932 us
     .reset_limit   = 6000, // packet gap = 3880 us
-    .json_callback = &solight_te44_callback,
+    .decode_fn     = &solight_te44_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

@@ -22,6 +22,7 @@ add_executable(rtl_433
 	bitbuffer.c
 	confparse.c
 	data.c
+	decoder_util.c
 	fileformat.c
 	optparse.c
 	pulse_demod.c
@@ -135,7 +136,6 @@ target_link_libraries(data ${NET_LIBRARIES})
 target_link_libraries(rtl_433
 	${SDR_LIBRARIES}
 	${NET_LIBRARIES}
-	${CMAKE_THREAD_LIBS_INIT}
 )
 
 set(INSTALL_TARGETS rtl_433)

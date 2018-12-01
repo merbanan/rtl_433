@@ -8,9 +8,8 @@
 
 #include "decoder.h"
 
-static int intertechno_callback(bitbuffer_t *bitbuffer)
+static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bitbuffer->bb[1];
@@ -22,7 +21,7 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
         return 0;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stdout, "Switch event:\n");
         fprintf(stdout, "protocol       = Intertechno\n");
         fprintf(stdout, "rid            = %x\n", b[0]);
@@ -43,9 +42,7 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
     master = (b[7] & 0xf0) >> 4;
     command = b[6] & 0x07;
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "Intertechno",
         "id",               "",     DATA_STRING,    id_str,
         "slave",            "",     DATA_INT,       slave,
@@ -53,12 +50,11 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
         "command",          "",     DATA_INT,       command,
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",
@@ -74,8 +70,7 @@ r_device intertechno = {
     .short_limit    = 600,
     .long_limit     = 1700,
     .reset_limit    = 10000,
-    .json_callback  = &intertechno_callback,
+    .decode_fn      = &intertechno_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

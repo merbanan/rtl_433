@@ -36,7 +36,7 @@ static unsigned char preamble[3] = { 0xaa, 0xaa, 0xaa };
 static unsigned char pkt_hdr_inverted[3] = { 0xd2, 0x2d, 0xc0 };
 static unsigned char pkt_hdr[3] = { 0x2d, 0xd2, 0x00 };
 
-static int emontx_callback(bitbuffer_t *bitbuffer) {
+static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	unsigned bitpos = 0;
 	unsigned bits = bitbuffer->bits_per_row[0];
@@ -50,7 +50,6 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 		unsigned pkt_pos;
 		uint16_t crc;
 		data_t *data;
-		char time_str[LOCAL_TIME_BUFLEN];
 		union {
 			struct emontx p;
 			uint8_t b[sizeof(struct emontx)];
@@ -108,8 +107,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 
 		vrms = (double)words[4] / 100.0;
 
-		local_time_str(0, time_str);
-		data = data_make("time", "", DATA_STRING, time_str,
+		data = data_make(
 				 "model", "", DATA_STRING, "emonTx",
 				 "node", "", DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
 				 "ct1", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
@@ -126,16 +124,28 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 				 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[9] / 10.0,
 				 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
 				 NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		events++;
 	}
 	return events;
 }
 
 static char *output_fields[] = {
-	"time", "model", "node", "ct1", "ct2", "ct3", "ct4", "Vrms/batt",
-	"temp1_C", "temp2_C", "temp3_C", "temp4_C", "temp5_C", "temp6_C",
-	"pulse", NULL
+	"model",
+	"node",
+	"ct1",
+	"ct2",
+	"ct3",
+	"ct4",
+	"Vrms/batt",
+	"temp1_C",
+	"temp2_C",
+	"temp3_C",
+	"temp4_C",
+	"temp5_C",
+	"temp6_C",
+	"pulse",
+	NULL
 };
 
 r_device emontx = {
@@ -144,8 +154,7 @@ r_device emontx = {
 	.short_limit    = 2000000.0 / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
 	.long_limit     = 2000000.0 / (49230 + 49261),
 	.reset_limit    = 1200,	// 600 zeros...
-	.json_callback  = &emontx_callback,
+	.decode_fn      = &emontx_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields		= output_fields,
 };

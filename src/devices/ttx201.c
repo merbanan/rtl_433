@@ -87,7 +87,7 @@ checksum_calculate(uint8_t *b)
 }
 
 static int
-ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[MSG_PACKET_LEN];
     int bits = bitbuffer->bits_per_row[row];
@@ -99,11 +99,10 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     int channel;
     int temperature;
     float temperature_c;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     if (bits != MSG_PACKET_MIN_BITS && bits != MSG_PACKET_BITS) {
-        if (debug_output > 1) {
+        if (decoder->verbose > 1) {
             if (row == 0) {
                 if (bits < MSG_PREAMBLE_BITS) {
                     fprintf(stderr, "Short preamble: %d bits (expected %d)\n",
@@ -124,7 +123,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     checksum_calculated = checksum_calculate(b);
     postmark = b[5];
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr, "TTX201 received raw data: ");
         bitbuffer_print(bitbuffer);
         fprintf(stderr, "Data decoded:\n" \
@@ -147,14 +146,14 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     }
 
     if (postmark != MSG_PACKET_POSTMARK) {
-        if (debug_output > 1)
+        if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
                     row, postmark, MSG_PACKET_POSTMARK);
         return 0;
     }
 
     if (checksum != checksum_calculated) {
-        if (debug_output > 1)
+        if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%d checksum error.\n", row);
         return 0;
     }
@@ -165,9 +164,7 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
     temperature_c = temperature / 10.0f;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "Emos TTX201",
             "id",            "House Code",  DATA_INT,    device_id,
             "channel",       "Channel",     DATA_INT,    channel,
@@ -175,21 +172,21 @@ ttx201_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static int
-ttx201_callback(bitbuffer_t *bitbuffer)
+ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     int events = 0;
 
     if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
         for (row = 0; row < bitbuffer->num_rows; ++row) {
-            events += ttx201_decode(bitbuffer, row, 0);
-            if (events && !debug_output) return events; // for now, break after first successful message
+            events += ttx201_decode(decoder, bitbuffer, row, 0);
+            if (events && !decoder->verbose) return events; // for now, break after first successful message
         }
     }
 
@@ -197,7 +194,6 @@ ttx201_callback(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -214,9 +210,8 @@ r_device ttx201 = {
     .long_limit    = 0, // not used
     .reset_limit   = 1700,
     .tolerance     = 250,
-    .json_callback = &ttx201_callback,
+    .decode_fn     = &ttx201_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };
 

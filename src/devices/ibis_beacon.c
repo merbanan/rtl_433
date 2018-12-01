@@ -14,8 +14,7 @@
 
 #include "decoder.h"
 
-static int ibis_beacon_callback(bitbuffer_t *bitbuffer) {
-	char time_str[LOCAL_TIME_BUFLEN];
+static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	uint8_t search = 0xAB; // preamble is 0xAAB
 	uint8_t msg[32];
@@ -61,9 +60,7 @@ static int ibis_beacon_callback(bitbuffer_t *bitbuffer) {
 	}
 
 	/* Get time now */
-	local_time_str(0, time_str);
 	data = data_make(
-		"time",		"",				DATA_STRING,	time_str,
 		"model",	"",				DATA_STRING,	"IBIS beacon",
 		"id",		"Vehicle No.",	DATA_INT,		id,
 		"counter",	"Counter",		DATA_INT,		counter,
@@ -71,12 +68,11 @@ static int ibis_beacon_callback(bitbuffer_t *bitbuffer) {
 		"mic",		"Integrity",	DATA_STRING,	"CRC",
 		NULL);
 
-	data_acquired_handler(data);
+	decoder_output_data(decoder, data);
 	return 1;
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"counter",
@@ -91,8 +87,7 @@ r_device ibis_beacon = {
 	.short_limit	= 30,  // Nominal width of clock half period [us]
 	.long_limit		= 0,   // Not used
 	.reset_limit	= 100, // Maximum gap size before End Of Message [us].
-	.json_callback	= &ibis_beacon_callback,
+	.decode_fn    	= &ibis_beacon_callback,
 	.disabled		= 0,
-	.demod_arg		= 0,
 	.fields			= output_fields,
 };

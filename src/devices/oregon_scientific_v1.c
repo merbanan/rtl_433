@@ -14,9 +14,8 @@ static int rev_nibble(int nib)
 	return(revnib);
 }
 
-static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
 	int row;
 	int cs;
 	int i;
@@ -26,7 +25,6 @@ static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
 	int battery, uk2, sign, uk3, checksum;
 	data_t *data;
 
-	local_time_str(0, time_str);
 
 	for(row = 0; row < bitbuffer->num_rows; row++) {
 		if(bitbuffer->bits_per_row[row] == OSV1_BITS) {
@@ -52,7 +50,6 @@ static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
 				if(sign) tempC = -tempC;
 
 				data = data_make(
-					"time",			"",				DATA_STRING,	time_str,
 					"brand",		"",				DATA_STRING,	"OS",
 					"model",		"",				DATA_STRING,	"OSv1 Temperature Sensor",
 					"sid",			"SID",			DATA_INT,		sid,
@@ -60,7 +57,7 @@ static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
 					"battery",		"Battery",		DATA_STRING,	battery ? "LOW" : "OK",
 					"temperature_C","Temperature",	DATA_FORMAT,	"%.01f C",				DATA_DOUBLE,	tempC,
 					NULL);
-				data_acquired_handler(data);
+				decoder_output_data(decoder, data);
 				ret++;
 			}
 		}
@@ -69,7 +66,6 @@ static int oregon_scientific_v1_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"brand",
 	"model",
 	"id",
@@ -85,8 +81,7 @@ r_device oregon_scientific_v1 = {
 	.short_limit        = 300,
 	.long_limit         = 430,
 	.reset_limit        = 14000,
-	.json_callback  = &oregon_scientific_v1_callback,
+	.decode_fn      = &oregon_scientific_v1_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields         = output_fields
 };

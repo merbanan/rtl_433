@@ -11,7 +11,7 @@ uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit) {
     return val;
 }
 
-static int em1000_callback(bitbuffer_t *bitbuffer) {
+static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // based on fs20.c
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[10];
@@ -65,7 +65,7 @@ static int em1000_callback(bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-static int ws2000_callback(bitbuffer_t *bitbuffer) {
+static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // based on http://www.dc3yc.privat.t-online.de/protocol.htm
     bitrow_t *bb = bitbuffer->bb;
     uint8_t dec[13];
@@ -81,7 +81,7 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-        if(debug_output) fprintf(stdout, "!stopbit\n");
+        if(decoder->verbose) fprintf(stdout, "!stopbit\n");
         return 0;
     }
     check_calculated ^= dec[0];
@@ -92,17 +92,17 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            if(debug_output) fprintf(stdout, "!stopbit %i\n", bit);
+            if(decoder->verbose) fprintf(stdout, "!stopbit %i\n", bit);
             return 0;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
-    if(debug_output) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
+    if(decoder->verbose) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
 
     if (check_calculated) {
-        if(debug_output) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
+        if(decoder->verbose) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
         return 0;
     }
 
@@ -111,7 +111,7 @@ static int ws2000_callback(bitbuffer_t *bitbuffer) {
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-        if(debug_output) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        if(decoder->verbose) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
         return 0;
     }
 
@@ -135,18 +135,16 @@ r_device elv_em1000 = {
     .short_limit    = 750,
     .long_limit     = 7250,
     .reset_limit    = 30000,
-    .json_callback  = &em1000_callback,
+    .decode_fn      = &em1000_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
 };
 
 r_device elv_ws2000 = {
     .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = (854+366)/2,  // 0 => 854us, 1 => 366us according to link in top
-    .long_limit     = 1000, // no repetitions
+    .modulation     = OOK_PULSE_PWM,
+    .short_limit    = 366,  // 0 => 854us, 1 => 366us according to link in top
+    .long_limit     = 854, // no repetitions
     .reset_limit    = 1000, // Longest pause is 854us according to link
-    .json_callback  = &ws2000_callback,
+    .decode_fn      = &ws2000_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
 };

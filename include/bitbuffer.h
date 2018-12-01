@@ -23,7 +23,7 @@ typedef uint8_t bitrow_t[BITBUF_COLS];
 typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer
-typedef struct {
+typedef struct bitbuffer {
 	uint16_t	num_rows;	// Number of active rows
 	uint16_t	bits_per_row[BITBUF_ROWS];	// Number of active bits per row
 	uint16_t	syncs_before_row[BITBUF_ROWS];	// Number of sync pulses before row

@@ -45,9 +45,8 @@
 #define MYDEVICE_CRC_POLY    0x07
 #define MYDEVICE_CRC_INIT    0x00
 
-static int template_callback(bitbuffer_t *bitbuffer)
+static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int r; // a row index
     uint8_t *b; // bits of a row
@@ -65,7 +64,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
      * 1. Enable with -D -D (debug level of 2)
      * 2. Delete this block when your decoder is working
      */
-    //    if (debug_output > 1) {
+    //    if (decoder->verbose > 1) {
     //        fprintf(stderr,"new_tmplate callback:\n");
     //        bitbuffer_print(bitbuffer);
     //    }
@@ -151,7 +150,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
     parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
     if (!parity) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template parity check failed\n");
         }
         return 0;
@@ -161,7 +160,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
      * Check message integrity (Checksum example)
      */
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template checksum error\n");
         }
         return 0;
@@ -176,7 +175,7 @@ static int template_callback(bitbuffer_t *bitbuffer)
     c_crc = crc8(b, MYDEVICE_BITLEN / 8, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
     if (r_crc != c_crc) {
         // example debugging output
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "new_template bad CRC: calculated %02x, received %02x\n",
                     c_crc, r_crc);
         }
@@ -202,17 +201,15 @@ static int template_callback(bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",  "", DATA_STRING, time_str,
             "model", "", DATA_STRING, "New Template",
             "id",    "", DATA_INT,    sensor_id,
             "data",  "", DATA_INT,    value,
             "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     // Return 1 if message successfully decoded
     return 1;
@@ -226,7 +223,6 @@ static int template_callback(bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "data",
@@ -258,8 +254,7 @@ r_device template = {
     .short_limit   = (224 + 132) / 2, // short gap is 132 us, long gap is 224 us
     .long_limit    = 224 + 132,
     .reset_limit   = (224 + 132) * 2,
-    .json_callback = &template_callback,
+    .decode_fn     = &template_callback,
     .disabled      = 2, // disabled and hidden
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

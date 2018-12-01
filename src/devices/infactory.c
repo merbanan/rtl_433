@@ -28,13 +28,12 @@
 
 #include "decoder.h"
 
-static int infactory_callback(bitbuffer_t *bitbuffer) {
+static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     int id;
     int humidity;
     int temp;
@@ -49,22 +48,20 @@ static int infactory_callback(bitbuffer_t *bitbuffer) {
     temp = (b[2] << 4) | (b[3] >> 4);
     temp_f = (float)temp / 10 - 90;
 
-    local_time_str(0, time_str);
 
-    data = data_make( "time",		"",				DATA_STRING,	time_str,
+    data = data_make(
         "model",         "",	   DATA_STRING, "inFactory sensor",
         "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
         "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
         "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
         NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 
 static char *output_fields[] = {
-    "time",
     "model"
     "id",
     "temperature_F",
@@ -78,7 +75,7 @@ r_device infactory = {
     .short_limit   = 3000, // Threshold between short and long gap [us]
     .long_limit    = 5000, //  Maximum gap size before new row of bits [us]
     .reset_limit   = 6000, // Maximum gap size before End Of Message [us].
-    .json_callback = &infactory_callback,
+    .decode_fn     = &infactory_callback,
     .disabled      = 1,
     .fields        = output_fields
 };

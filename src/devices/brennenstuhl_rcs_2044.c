@@ -17,7 +17,7 @@
 
 #include "decoder.h"
 
-static int brennenstuhl_rcs_2044_process_row(bitbuffer_t const *bitbuffer, int row)
+static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t const *bitbuffer, int row)
 {
     uint8_t const *b = bitbuffer->bb[row];
     int const length = bitbuffer->bits_per_row[row];
@@ -85,29 +85,25 @@ static int brennenstuhl_rcs_2044_process_row(bitbuffer_t const *bitbuffer, int r
     if (on_off != 0x02 && on_off != 0x01)
         return 0; /* Pressing simultaneously ON and OFF key is not useful either */
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "Time",     DATA_STRING, time_str,
             "model",    "Model",    DATA_STRING, "Brennenstuhl RCS 2044",
             "id",       "id",       DATA_INT, system_code,
             "key",      "key",      DATA_STRING, key,
             "state",    "state",    DATA_STRING, (on_off == 0x02 ? "ON" : "OFF"),
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int brennenstuhl_rcs_2044_callback(bitbuffer_t *bitbuffer)
+static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
     for (int row = 0; row < bitbuffer->num_rows; row++)
-        counter += brennenstuhl_rcs_2044_process_row(bitbuffer, row);
+        counter += brennenstuhl_rcs_2044_process_row(decoder, bitbuffer, row);
     return counter;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "state",
@@ -116,12 +112,12 @@ static char *output_fields[] = {
 
 r_device brennenstuhl_rcs_2044 = {
     .name          = "Brennenstuhl RCS 2044",
-    .modulation    = OOK_PULSE_PWM_RAW,
-    .short_limit   = 600,
-    .long_limit    = 4000,
+    .modulation    = OOK_PULSE_PWM,
+    .short_limit   = 320,
+    .long_limit    = 968,
+    .gap_limit     = 1500,
     .reset_limit   = 4000,
-    .json_callback = &brennenstuhl_rcs_2044_callback,
+    .decode_fn     = &brennenstuhl_rcs_2044_callback,
     .disabled      = 1,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

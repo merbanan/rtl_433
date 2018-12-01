@@ -13,8 +13,7 @@
 
 #include "decoder.h"
 
-static int rftech_callback(bitbuffer_t *bitbuffer) {
-	char time_str[LOCAL_TIME_BUFLEN];
+static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	uint16_t sensor_id = 0;
 	uint8_t button;
@@ -23,7 +22,6 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
 	data_t *data;
 	int r;
 
-	local_time_str(0, time_str);
 
 	r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
@@ -54,7 +52,7 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
 	battery = (bb[r][2] & 0x80) == 0x80;
 	button = (bb[r][2] & 0x60) != 0;
 
-	data = data_make("time", "", DATA_STRING, time_str,
+	data = data_make(
 			 "model", "", DATA_STRING, "RF-tech",
 			 "id", "Id", DATA_INT, sensor_id,
 			 "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
@@ -62,7 +60,7 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
 			 "temperature", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
 			 NULL);
 
-	data_acquired_handler(data);
+	decoder_output_data(decoder, data);
 
 	return 1;
 	}
@@ -78,7 +76,6 @@ static int rftech_callback(bitbuffer_t *bitbuffer) {
  *
  */
 static char *csv_output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"battery",
@@ -98,8 +95,7 @@ r_device rftech = {
 	.short_limit	= 3500,
 	.long_limit     = 5000,
 	.reset_limit    = 10000,
-	.json_callback	= &rftech_callback,
+	.decode_fn    	= &rftech_callback,
 	.disabled	= 1,
-	.demod_arg	= 0,
 	.fields		= csv_output_fields,
 };

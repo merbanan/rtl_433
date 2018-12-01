@@ -16,9 +16,8 @@
  */
 #include "decoder.h"
 
-static int nexa_callback(bitbuffer_t *bitbuffer) {
+static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     /* Reject codes of wrong length */
     if (bitbuffer->bits_per_row[1] != 64 && bitbuffer->bits_per_row[1] != 72)
@@ -43,9 +42,8 @@ static int nexa_callback(bitbuffer_t *bitbuffer) {
     uint32_t unit_bit = (b[3] & 0x03);
 
     /* Get time now */
-    local_time_str(0, time_str);
 
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Nexa",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "group",         "Group",       DATA_INT, group_code,
@@ -54,13 +52,12 @@ static int nexa_callback(bitbuffer_t *bitbuffer) {
                      "unit",          "Unit",        DATA_INT, unit_bit,
                       NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -75,8 +72,7 @@ r_device nexa = {
     .short_limit    = 380,
     .long_limit     = 1400,
     .reset_limit    = 2800,
-    .json_callback  = &nexa_callback,
+    .decode_fn      = &nexa_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

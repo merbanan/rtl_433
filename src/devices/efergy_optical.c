@@ -20,14 +20,13 @@
 
 #include "decoder.h"
 
-static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
+static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	unsigned num_bits = bitbuffer->bits_per_row[0];
 	uint8_t *bytes = bitbuffer->bb[0];
 	double energy, n_imp;
 	double pulsecount;
 	double seconds;
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
  	uint16_t crc;
 	uint16_t csum1;
 
@@ -63,7 +62,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 		}
 	}
 
-	if (debug_output) {
+	if (decoder->verbose) {
 		fprintf(stdout,"Possible Efergy Optical: ");
 		bitbuffer_print(bitbuffer);
 	}
@@ -83,7 +82,7 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 
 	if (crc == csum1)
 	{
-		if (debug_output) {
+		if (decoder->verbose) {
 			fprintf(stdout, "Checksum OK :) :)\n");
 			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
 			fprintf(stdout, "Received csum1 is 0x%02X\n", csum1);
@@ -114,21 +113,19 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 			{
 				energy = ((pulsecount/imp_kwh[i]) * (3600/30));
 			}
-			local_time_str(0, time_str);
 			data = data_make(
-				"time",          "Time",            DATA_STRING, time_str,
 				"model",         "Model",            DATA_STRING, "Efergy Optical",
 				"pulses",	"Pulse-rate",	DATA_FORMAT,"%i", DATA_INT, imp_kwh[i],
 				"energy",       "Energy",     DATA_FORMAT,"%.03f KWh", DATA_DOUBLE, energy,
 				NULL);
-			data_acquired_handler(data);
+			decoder_output_data(decoder, data);
 		}
 		return 1;
 	}
 
 	else
 	{
-		if (debug_output)
+		if (decoder->verbose)
 		{
 			fprintf(stdout, "Checksum not OK !!!\n");
 			fprintf(stdout, "Calculated crc is 0x%02X\n", crc);
@@ -139,7 +136,6 @@ static int efergy_optical_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"pulses",
 	"energy",
@@ -148,12 +144,12 @@ static char *output_fields[] = {
 
 r_device efergy_optical = {
 	.name           = "Efergy Optical",
-	.modulation     = FSK_PULSE_PWM_RAW,
-	.short_limit    = 92,
-	.long_limit     = 400,
+	.modulation     = FSK_PULSE_PWM,
+	.short_limit    = 64,
+	.long_limit     = 136,
+	.sync_width     = 500,
 	.reset_limit    = 400,
-	.json_callback  = &efergy_optical_callback,
+	.decode_fn      = &efergy_optical_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
-	.fields        = output_fields
+	.fields         = output_fields
 };

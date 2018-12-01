@@ -14,7 +14,7 @@ static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
 static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
 static int
-ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     uint8_t b[6];
     int deviceID;
@@ -22,7 +22,6 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     int channel;
     float temperature;
     int humidity;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, 6*8);
@@ -31,7 +30,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     uint8_t calculated = lfsr_digest8(b, 5, 0x98, 0x3e) ^ 0x64;
 
     if (expected != calculated) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Checksum error in Ambient Weather message.    Expected: %02x    Calculated: %02x\n", expected, calculated);
             fprintf(stderr, "Message: ");
             bitrow_print(b, 48);
@@ -46,9 +45,7 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
     temperature = (temp_f - 400) / 10.0f;
     humidity = b[4];
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",           "",             DATA_STRING, time_str,
             "model",          "",             DATA_STRING, "Ambient Weather F007TH Thermo-Hygrometer",
             "device",         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
@@ -57,13 +54,13 @@ ambient_weather_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static int
-ambient_weather_callback(bitbuffer_t *bitbuffer)
+ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     unsigned bitpos;
@@ -75,7 +72,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
-            events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
+            events += ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
             bitpos += 16;
         }
@@ -83,7 +80,7 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_inverted, 12)) + 8+6*8 <=
                 bitbuffer->bits_per_row[row]) {
-            events += ambient_weather_decode(bitbuffer, row, bitpos + 8);
+            events += ambient_weather_decode(decoder, bitbuffer, row, bitpos + 8);
             if (events) return events; // for now, break after first successful message
             bitpos += 15;
         }
@@ -93,7 +90,6 @@ ambient_weather_callback(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "device",
     "channel",
@@ -110,8 +106,7 @@ r_device ambient_weather = {
     .short_limit   = 500,
     .long_limit    = 0, // not used
     .reset_limit   = 2400,
-    .json_callback = &ambient_weather_callback,
+    .decode_fn     = &ambient_weather_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

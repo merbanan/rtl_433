@@ -15,7 +15,7 @@
  */
 #include "decoder.h"
 
-static int ec3k_callback(bitbuffer_t *bitbuffer) {
+static int ec3k_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package
@@ -34,7 +34,6 @@ r_device ec3k = {
 	.short_limit    = 50,	// NRZ decoding
 	.long_limit     = 50, 	// Bit width
 	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
-	.json_callback  = &ec3k_callback,
+	.decode_fn      = &ec3k_callback,
 	.disabled       = 1,
-	.demod_arg      = 0,
 };

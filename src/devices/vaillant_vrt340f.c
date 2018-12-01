@@ -31,14 +31,14 @@ calculate_checksum(uint8_t *buff, int from, int to) {
 }
 
 static int
-validate_checksum(uint8_t * msg, int from, int to, int cs_from, int cs_to)
+validate_checksum(r_device *decoder, uint8_t * msg, int from, int to, int cs_from, int cs_to)
 {
     // Fields cs_from and cs_to hold the 2-byte checksum as signed int
     int16_t expected = msg[cs_from]*0x100+ msg[cs_to];
     int16_t calculated = calculate_checksum(msg, from, to);
 
     if (expected != calculated) {
-        if (debug_output >= 1) {
+        if (decoder->verbose) {
             fprintf(stderr, "Checksum error in Vaillant VRT340f.  Expected: %04x  Calculated: %04x\n", expected, calculated);
             fprintf(stderr, "Message (data content of bytes %d-%d): ", from, to);
             bitrow_print(&msg[from], (to - from + 1) * 8);
@@ -92,13 +92,11 @@ get_battery_status(uint8_t * msg)
 }
 
 static int
-vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
+vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
-    local_time_str(0, time_str);
 
     // TODO: Use repeat signal for error checking / correction!
 
@@ -142,7 +140,7 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
     // "Normal package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7e) && (128 <= bitcount && bitcount <= 131)) {
 
-        if (!validate_checksum (bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
+        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
             return 0;
         }
 
@@ -153,7 +151,7 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
         uint8_t water_preheated = get_water_preheated(bb[0]); // 1=Pre-heat, 0=no pre-heated water
         uint8_t isBatteryLow = get_battery_status(bb[0]);
 
-        data = data_make("time", "", DATA_STRING, time_str,
+        data = data_make(
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat",
                          "device",  "Device ID", DATA_FORMAT, "0x%04X", DATA_INT, deviceID,
                          "heating", "Heating Mode", DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
@@ -161,7 +159,7 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
                          "water",   "Pre-heated Water", DATA_STRING, water_preheated ? "ON" : "off",
                          "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "Ok",
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -169,18 +167,18 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
     // "RF detection package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
 
-        if (!validate_checksum(bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
+        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
             return 0;
         }
 
         // Device ID starts at bit 12:
         uint16_t deviceID = get_device_id(bb[0], 11);
 
-        data = data_make("time", "", DATA_STRING, time_str,
+        data = data_make(
                          "model",   "",	DATA_STRING,	"Vaillant VRT340f Central Heating Thermostat (RF Detection)",
                          "device",  "Device ID", DATA_INT, deviceID,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -189,7 +187,6 @@ vaillant_vrt340_callback(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "device",
     "heating",
@@ -206,8 +203,7 @@ r_device vaillant_vrt340f = {
     .long_limit     = 1648, // bit width 1648 us
     .reset_limit    = 4000,
     .tolerance      = 120, // us
-    .json_callback  = &vaillant_vrt340_callback,
+    .decode_fn      = &vaillant_vrt340_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

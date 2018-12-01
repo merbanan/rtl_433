@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int steffen_callback(bitbuffer_t *bitbuffer) {
+static int steffen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
 
     if (bb[0][0]==0x00 && ((bb[1][0]&0x07)==0x07) && bb[1][0]==bb[2][0] && bb[2][0]==bb[3][0]) {
@@ -39,7 +39,6 @@ r_device steffen = {
     .short_limit    = 560,
     .long_limit     = 1080,
     .reset_limit    = 6000,
-    .json_callback  = &steffen_callback,
+    .decode_fn      = &steffen_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
 };

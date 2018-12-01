@@ -50,6 +50,8 @@
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
+void data_acquired_handler(r_device *r_dev, data_t *data);
+
 typedef enum {
     CONVERT_NATIVE,
     CONVERT_SI,
@@ -125,7 +127,7 @@ struct dm_state {
 
     /* Protocol states */
     uint16_t r_dev_num;
-    struct protocol_state *r_devs[MAX_PROTOCOLS];
+    r_device *r_devs[MAX_PROTOCOLS];
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
@@ -306,27 +308,34 @@ static void sighandler(int signum) {
 #endif
 
 
-static void register_protocol(struct dm_state *demod, r_device *t_dev) {
-    struct protocol_state *p = calloc(1, sizeof (struct protocol_state));
+static void register_protocol(struct dm_state *demod, r_device *r_dev) {
+    r_device *p = calloc(1, sizeof (r_device));
 
-    p->short_limit = (float)t_dev->short_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->long_limit  = (float)t_dev->long_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->reset_limit = (float)t_dev->reset_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->gap_limit   = (float)t_dev->gap_limit / (1000000.0 / (float)cfg.samp_rate);
-    p->sync_width  = (float)t_dev->sync_width / (1000000.0 / (float)cfg.samp_rate);
-    p->tolerance   = (float)t_dev->tolerance / (1000000.0 / (float)cfg.samp_rate);
+    float samples_per_us = cfg.samp_rate / 1.0e6;
+    p->f_short_limit = 1.0 / (r_dev->short_limit * samples_per_us);
+    p->f_long_limit  = 1.0 / (r_dev->long_limit * samples_per_us);
+    p->s_short_limit = r_dev->short_limit * samples_per_us;
+    p->s_long_limit  = r_dev->long_limit * samples_per_us;
+    p->s_reset_limit = r_dev->reset_limit * samples_per_us;
+    p->s_gap_limit   = r_dev->gap_limit * samples_per_us;
+    p->s_sync_width  = r_dev->sync_width * samples_per_us;
+    p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
-    p->modulation = t_dev->modulation;
-    p->callback   = t_dev->json_callback;
-    p->name       = t_dev->name;
-    p->fields     = t_dev->fields;
-    p->demod_arg  = t_dev->demod_arg;
+    p->modulation    = r_dev->modulation;
+    p->decode_fn     = r_dev->decode_fn;
+    p->decode_ctx    = r_dev->decode_ctx;
+    p->name          = r_dev->name;
+    p->fields        = r_dev->fields;
+
+    p->verbose       = debug_output;
+    p->output_fn     = data_acquired_handler;
+    p->output_ctx    = &cfg;
 
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
     if (!cfg.quiet_mode) {
-    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", t_dev->protocol_num, t_dev->name);
+    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
@@ -355,9 +364,21 @@ static void calc_rssi_snr(pulse_data_t *pulse_data)
     }
 }
 
-/* handles incoming structured data by dumping it */
-void data_acquired_handler(data_t *data)
+static char *time_pos_str(time_t time_secs, char *buf)
 {
+    if (sample_file_pos != -1.0) {
+        return sample_pos_str(sample_file_pos, buf);
+    }
+    else {
+        return local_time_str(0, buf);
+    }
+}
+
+/** Pass the data structure to all output handlers. Frees data afterwards. */
+void data_acquired_handler(r_device *r_dev, data_t *data)
+{
+    // struct app_cfg *cfg = r_dev->output_ctx;
+
     if (cfg.conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _F to _C
@@ -491,6 +512,14 @@ void data_acquired_handler(data_t *data)
                 NULL);
     }
 
+    // always prepend "time"
+    char time_str[LOCAL_TIME_BUFLEN];
+    time_pos_str(0, time_str);
+    data = data_prepend(data,
+            "time", "", DATA_STRING, time_str,
+            NULL);
+
+    // prepend "tag" if available
     if (cfg.output_tag) {
         char const *output_tag = cfg.output_tag;
         if (cfg.in_filename && !strcmp("PATH", cfg.output_tag)) {
@@ -577,7 +606,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type == 1) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", time_pos_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -586,10 +615,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PPM_RAW:
                             p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_PWM_PRECISE:
-                            p_events += pulse_demod_pwm_precise(&demod->pulse_data, demod->r_devs[i]);
-                            break;
-                        case OOK_PULSE_PWM_RAW:
+                        case OOK_PULSE_PWM:
                             p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
@@ -609,7 +635,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             break;
                         // FSK decoders
                         case FSK_PULSE_PCM:
-                        case FSK_PULSE_PWM_RAW:
+                        case FSK_PULSE_PWM:
                             break;
                         case FSK_PULSE_MANCHESTER_ZEROBIT:
                             p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
@@ -628,14 +654,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
             } else if (package_type == 2) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", local_time_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", time_pos_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
                         case OOK_PULSE_PCM_RZ:
                         case OOK_PULSE_PPM_RAW:
-                        case OOK_PULSE_PWM_PRECISE:
-                        case OOK_PULSE_PWM_RAW:
+                        case OOK_PULSE_PWM:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                         case OOK_PULSE_PIWM_RAW:
                         case OOK_PULSE_PIWM_DC:
@@ -645,7 +670,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case FSK_PULSE_PCM:
                             p_events += pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
                             break;
-                        case FSK_PULSE_PWM_RAW:
+                        case FSK_PULSE_PWM:
                             p_events += pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
                             break;
                         case FSK_PULSE_MANCHESTER_ZEROBIT:
@@ -789,10 +814,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(char const **well_known, struct protocol_state **devices, int num_devices, int *num_fields)
+static char const **determine_csv_fields(char const **well_known, r_device **devices, int num_devices, int *num_fields)
 {
     int i;
-    struct protocol_state *device;
+    r_device *device;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
@@ -820,6 +845,7 @@ static char const **determine_csv_fields(char const **well_known, struct protoco
         output_fields[cur_output_fields++] = *p;
 
     for (i = 0; i < num_devices; i++) {
+        device = devices[i];
         if (!device->disabled && device->fields) {
             for (int c = 0; device->fields[c]; ++c) {
                 output_fields[cur_output_fields++] = device->fields[c];
@@ -891,7 +917,7 @@ static void add_csv_output(char *param)
     cfg.csv_output_handler[i] = cfg.output_handler[i] = data_output_csv_create(fopen_output(param));
 }
 
-static void init_csv_output(struct data_output *output, char const **well_known, struct protocol_state **devices, int num_devices)
+static void init_csv_output(struct data_output *output, char const **well_known, r_device **devices, int num_devices)
 {
     int num_output_fields;
     const char **output_fields = determine_csv_fields(well_known, devices, num_devices, &num_output_fields);
@@ -1311,17 +1337,20 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
     }
 }
 
-static char const *well_known_tag[]  = {"tag", NULL};
-static char const *well_known_null[] = {NULL};
+// well-known fields "time", "msg" and "codes" are used to output general decoder messages
+// well-known field "tag" is only used when output tagging is requested
+static char const *well_known_with_tag[]  = {"time", "msg", "codes", "tag", NULL};
+static char const *well_known_default[] = {"time", "msg", "codes", NULL};
 static char const **well_known_output_fields(struct app_cfg *cfg)
 {
     if (cfg->output_tag) {
-        return well_known_tag;
+        return well_known_with_tag;
     }
     else {
-        return well_known_null;
+        return well_known_default;
     }
 }
+
 
 int main(int argc, char **argv) {
 #ifndef _WIN32

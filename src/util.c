@@ -221,26 +221,27 @@ int byteParity(uint8_t inByte)
     return (0x6996 >> inByte) & 1;
 }
 
-
-char* local_time_str(time_t time_secs, char *buf)
+char *local_time_str(time_t time_secs, char *buf)
 {
     time_t etime;
     struct tm *tm_info;
 
     if (time_secs == 0) {
-        extern float sample_file_pos;
-        if (sample_file_pos != -1.0) {
-            snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
-            return buf;
-        }
         time(&etime);
-    } else {
+    }
+    else {
         etime = time_secs;
     }
 
     tm_info = localtime(&etime); // note: win32 doesn't have localtime_r()
 
     strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
+}
+
+char *sample_pos_str(float sample_file_pos, char *buf)
+{
+    snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
     return buf;
 }
 

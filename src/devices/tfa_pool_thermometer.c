@@ -10,11 +10,9 @@
 #include "decoder.h"
 
 
-static int pool_temperature_sensor_callback(bitbuffer_t *bitbuffer) {
+static int pool_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
-	local_time_str(0, time_str);
 	int i,device,channel;
 	int iTemp;
 	float fTemp;
@@ -42,20 +40,19 @@ E: ?
 	fTemp=(iTemp > 2048 ? iTemp - 4096 : iTemp) / 10.0;
 	channel=(signed short)((bb[1][3]&0xC0)>>6);
 
-	data = data_make("time", 	"", 			DATA_STRING, 					time_str,
+	data = data_make(
 		"model",		"", 			DATA_STRING, 	"TFA pool temperature sensor",
 		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
 		"channel",        	"Channel number",	DATA_FORMAT,	"\t %d",	DATA_INT,	channel,
 		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.01f C",	DATA_DOUBLE,	fTemp,
 		NULL);
-	data_acquired_handler(data);
+	decoder_output_data(decoder, data);
 
 	return 1;
 
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"channel",
@@ -70,8 +67,7 @@ r_device tfa_pool_thermometer = {
 	.short_limit   = 3500,
 	.long_limit    = 7800,
 	.reset_limit   = 10000,
-	.json_callback = &pool_temperature_sensor_callback,
+	.decode_fn     = &pool_temperature_sensor_callback,
 	.disabled      = 0,
-	.demod_arg     = 0,
 	.fields        = output_fields,
 };

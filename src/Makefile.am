@@ -8,6 +8,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        bitbuffer.c \
                        confparse.c \
                        data.c \
+                       decoder_util.c \
                        fileformat.c \
                        optparse.c \
                        pulse_demod.c \

@@ -33,9 +33,8 @@
 
 #include "decoder.h"
 
-static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
+static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int events = 0;
     uint8_t b[11]; // actually only 6 bytes, no indication what the other 5 might be
@@ -53,26 +52,25 @@ static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
             0x30, // type code (presumed)
     };
 
-    local_time_str(0, time_str);
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         // Validate message and reject it as fast as possible : check for preamble
         unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 28);
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // no preamble detected, move to the next row
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Ambient Weather WH31E detected, buffer is %d bits length\n", bitbuffer->bits_per_row[row]);
         // remove preamble and keep only 64 bits
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 11 * 8);
 
         if (b[0] != 0x30) {
-            if (debug_output)
+            if (decoder->verbose)
                 fprintf(stderr, "Ambient Weather WH31E unknown message type %02x (expected 0x30)\n", b[0]);
             continue;
         }
 
         c_crc = crc8(b, 5, 0x31, 0x00);
         if (c_crc != b[5]) {
-            if (debug_output)
+            if (decoder->verbose)
                 fprintf(stderr, "Ambient Weather WH31E bad CRC: calculated %02x, received %02x\n", c_crc, b[5]);
             continue;
         }
@@ -88,7 +86,6 @@ static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "time",             "",             DATA_STRING, time_str,
                 "model",            "",             DATA_STRING, "AmbientWeather-WH31E",
                 "id" ,              "",             DATA_INT, id,
                 "channel",          "Channel",      DATA_INT, channel,
@@ -99,7 +96,7 @@ static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         events++;
     }
     return events;
@@ -107,7 +104,6 @@ static int ambientweather_wh31e_callback(bitbuffer_t *bitbuffer)
 
 /* clang-format off */
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -126,8 +122,7 @@ r_device ambientweather_wh31e = {
     .long_limit     = 56,
     .reset_limit    = 1500,
     .gap_limit      = 1800,
-    .json_callback  = &ambientweather_wh31e_callback,
+    .decode_fn      = &ambientweather_wh31e_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

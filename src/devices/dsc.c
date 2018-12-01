@@ -72,9 +72,8 @@
 #define DSC_CT_CRC_POLY        0xf5
 #define DSC_CT_CRC_INIT        0x3d
 
-static int dsc_callback(bitbuffer_t *bitbuffer)
+static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b;
     int valid_cnt = 0;
@@ -86,13 +85,13 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr,"Possible DSC Contact: ");
         bitbuffer_print(bitbuffer);
     }
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
-        if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0 ) {
+        if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
             fprintf(stderr,"row %d bit count %d\n", row,
                 bitbuffer->bits_per_row[row]);
         }
@@ -106,7 +105,7 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
         // will need to be changed as there may be more zero bit padding
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
-            if (debug_output > 1 && bitbuffer->bits_per_row[row] > 0) {
+            if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
             fprintf(stderr,"DSC row %d invalid bit count %d\n",
                 row, bitbuffer->bits_per_row[row]);
             }
@@ -120,7 +119,7 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
               (b[2] & 0x04) &&    // every 8 data bits
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
-            if (debug_output > 1) {
+            if (decoder->verbose > 1) {
                 fprintf(stderr, "DSC Invalid start/sync bits ");
                 bitrow_print(b, 40);
             }
@@ -133,8 +132,8 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
         bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
         bytes[4] = ((b[5]));
 
-        // XXX change to debug_output
-        if (debug_output) {
+        // XXX change to decoder->verbose
+        if (decoder->verbose) {
             fprintf(stdout, "DSC Contact Raw Data: ");
             bitrow_print(bytes, 40);
         }
@@ -144,7 +143,7 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
         crc = bytes[4];
 
         if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) != 0) {
-            if (debug_output)
+            if (decoder->verbose)
                 fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
                         esn, status, crc);
             continue;
@@ -180,10 +179,8 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
-        local_time_str(0, time_str);
 
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, "DSC Contact",
                 "id", "", DATA_INT, esn,
                 "closed", "", DATA_INT, s_closed, // @todo make bool
@@ -201,7 +198,7 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
                 "status_hex", "", DATA_STRING, status_str, // to be removed - once bits are output
                 "mic", "", DATA_STRING, "CRC",
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         valid_cnt++; // Have a valid packet.
     }
@@ -214,7 +211,6 @@ static int dsc_callback(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "status",
@@ -228,8 +224,7 @@ r_device DSC = {
     .short_limit   = 250,    // Pulse length, 250 µs
     .long_limit    = 500,    // Bit period, 500 µs
     .reset_limit   = 5000, // Max gap,
-    .json_callback = &dsc_callback,
+    .decode_fn     = &dsc_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

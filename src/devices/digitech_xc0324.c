@@ -1,4 +1,4 @@
-/* Decoder for Digitech XC-0324 temperature sensor. 
+/* Decoder for Digitech XC-0324 temperature sensor.
  *
  * Copyright (C) 2018 Geoff Lee
  *
@@ -10,7 +10,7 @@
  */
  
 /*
- * XC0324 device
+ * Digitech XC-0324 device
  *
  * The encoding is pulse position modulation 
  *(ie gap width contains the modulation information)
@@ -39,36 +39,50 @@
  * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
  *     each bit is effectively a parity bit for correspondingly positioned bit
  *     in the real message
- *
+ * 
  */
 
+// This decoder is associated with a (forthcoming) tutorial entry in the
+// rtl_433 wiki describing the way the transmissions were deciphered.
+//
+// The tutorial is "by a newbie, for a newbie", ie intended to assist newcomers
+// who wish to learn how to decipher a new device, and develop a rtl_433 device
+// decoder from scratch for the first time.
+//
+// To illustrate stages in the deciphering process, this decoder includes some
+// debug style trace messages that would normally be removed. Specifically,
+// running this decoder with debug level :
+//    `-DD` simulates what might be seen early in the deciphering process, when
+//         only the modulation scheme and parameters have been discovered,
+//    `-D` simulates what might be seen once the synchronisation/preamble and
+//         message length has been uncovered, and it is time to start work on
+//         deciphering individual fields in the message,
+//     with no debug flags set provides the final (production stage) results,
+//     and
+//    `-DDD` is a special "finished development" output.  It provides a file of
+//         reference values, to be included with the test data for future
+//         regression test purposes.
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
 
-#include "bitbuffer.h"
+#include "decoder.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 
-#define MYDEVICE_BITLEN      148
-#define MYMESSAGE_BITLEN     48
-#define MYMESSAGE_BYTELEN    MYMESSAGE_BITLEN / 8
-#define MYDEVICE_STARTBYTE   0x5F
-#define MYDEVICE_MINREPEATS  3
+#define XC0324_DEVICE_BITLEN      148
+#define XC0324_MESSAGE_BITLEN     48
+#define XC0324_MESSAGE_BYTELEN    XC0324_MESSAGE_BITLEN / 8
+#define XC0324_DEVICE_STARTBYTE   0x5F
+#define XC0324_DEVICE_MINREPEATS  3
 
 
-// See the (forthcoming) tutorial entry in the rtl_433 wiki for information 
-// about using the debug trace messages from this device handler.
 
-#include "bitbuffer.trace.c"
-// Flag to ensure `-DDD` reference values output are only written once.
+// Flag to ensure the `-DDD` reference values output is only written once.
 static volatile bool reference_values_written;
 
 
-static const uint8_t preamble_pattern[1] = {MYDEVICE_STARTBYTE};
+static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
 static uint8_t calculate_XORchecksum(uint8_t *b, int length)
 {
@@ -86,28 +100,27 @@ static uint8_t calculate_XORchecksum(uint8_t *b, int length)
 }
 
 /// @param *data : returns the decoded information as a data_t * 
-static int decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row, 
-                      uint16_t bitpos, data_t **data)
+static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
+  unsigned row, uint16_t bitpos, data_t **data)
 {
-    uint8_t b[MYMESSAGE_BYTELEN];
+    uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id [4] = {0};
     double temperature;
     uint8_t const_byte4_0x80;
     uint8_t XORchecksum; // == 0x00 for a good message
     char time_str[LOCAL_TIME_BUFLEN];
-   
-    bool showbits = 1; //Change to 0 for hex only (no bit string) trace messages
     
     // Extract the message
-    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, MYMESSAGE_BITLEN);
+    bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, XC0324_MESSAGE_BITLEN);
     
     // Examine the XORchecksum and bail out now if not OK to save time
     XORchecksum = calculate_XORchecksum(b, 6);
     if (XORchecksum != 0x00) {
-        if (debug_output > 1) {
-            buffer_trace(b, MYMESSAGE_BITLEN, showbits,
-              "XC0324:DD Message, Problem at row %d bit %d, checksum status is 0x%02X not 0x00\n",
-              row, bitpos, XORchecksum);
+        if (decoder->verbose == 1) {
+            // Output the "bad" message (only for message level deciphering!)
+            decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
+              "checksum = 0x%02X not 0x00 <- XC0324:D row %d bit %d",
+              XORchecksum, row, bitpos);
         }
         return 0;
     }
@@ -124,29 +137,35 @@ static int decode_xc0324_message(bitbuffer_t *bitbuffer, unsigned row,
     // ??maybe battery status??
     const_byte4_0x80 = b[4];
     
-    // Fill in the data structure to be sent to the data_acquired_handler
+    // Create the data structure, ready for the decoder_output_data function.
     time_t current;
     local_time_str(time(&current), time_str);
-    *data = data_make(
-        "time",           "Time",            DATA_STRING, time_str,
-        "model",          "Device Type",     DATA_STRING, "Digitech XC0324",
-        "id",             "ID",              DATA_STRING, id,
-        "temperature_C",  "Temperature C",   DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-        "const_0x80",     "Constant ?",      DATA_INT,    const_byte4_0x80,
-        "checksum_status","Checksum status", DATA_STRING, XORchecksum ? "Corrupted" : "OK",
-        "mic",            "Integrity",       DATA_STRING, "CHECKSUM",
-         NULL);
-
-    //  Send optional "debug to csv" lines.
-    if (debug_output > 1) {
-        buffer_trace(b, MYMESSAGE_BITLEN, showbits, 
-          "XC0324:DD Message, At row %d bit %d, Temp was %4.1f \n",
-          row, bitpos, temperature);
+    // Separate production output (decoder->verbose == 0)
+    // from (simulated) deciphering stage output (decoder->verbose > 0)
+    if (!decoder->verbose) { // production output 
+        *data = data_make(
+            "time",           "Time",            DATA_STRING, time_str,
+            "model",          "Device Type",     DATA_STRING, "Digitech XC0324",
+            "id",             "ID",              DATA_STRING, id,
+            "temperature_C",  "Temperature C",   DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+            "const_0x80",     "Constant ?",      DATA_INT,    const_byte4_0x80,
+            "checksum_status","Checksum status", DATA_STRING, XORchecksum ? "Corrupted" : "OK",
+            "mic",            "Integrity",       DATA_STRING, "CHECKSUM",
+             NULL);
     }
-    if ((debug_output > 2) & !reference_values_written) {
+
+    // Output (simulated) message level deciphering information..
+    if (decoder->verbose == 1) {
+        decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
+          "Temp was %4.1f <- XC0324:D row %03d bit %03d",
+          temperature, row, bitpos);
+    }
+    if ((decoder->verbose == 3) & !reference_values_written) {
+        decoder_output_messagef(decoder,
+          "XC0324:DDD Reference -> Temperature %4.1f C; sensor id %s",
+          temperature, id);
+        //info from the first successful message is enough
         reference_values_written = 1;
-        fprintf(stderr, "%s, XC0324:DDD Reference Values,", trace_label);
-        fprintf(stderr, "Temperature %4.1f C, sensor id %s\n", temperature, id);
     }
 
     return 1; // Message successfully decoded
@@ -166,34 +185,37 @@ static char *output_fields[] = {
     NULL
 };
 
-static int xc0324_callback(bitbuffer_t *bitbuffer)
+static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bool showbits = 1;
     int r; // a row index
     uint16_t bitpos;
     int result;
     int events = 0;
     data_t *data;
     
-    // Send a formatted version of the bitbuffer to stderr for debug / deciphering.
-    if (debug_output > 0) {
-        get_trace_label(); // initialise label for this callback
-        bitbuffer_trace(bitbuffer, showbits, "XC0324:D Package, ");
+    // Only for initial package level deciphering / debug.
+    if (decoder->verbose == 2) {
+        // Verbosely print the bitbuffer to stderr, 
+        bitbuffer_debugf(bitbuffer, "XC0324:DD Hex and binary version ");
+        // And output each row .
+        for (r = 0; r < bitbuffer->num_rows; ++r) {
+            decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+              "XC0324:DD row %03d", r);
+        }
     }
-    if (debug_output > 2) reference_values_written = 0;
+    if (decoder->verbose == 3) reference_values_written = 0;
     
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
     //But in case of transmission or demodulation glitches, 
     //loop over all rows and check for salvageable messages.
     for (r = 0; r < bitbuffer->num_rows; ++r) {
-        if (bitbuffer->bits_per_row[r] < MYMESSAGE_BITLEN) {
-            // bail out of this row early (after an optional debug message)
-            if (debug_output > 1) {
-                buffer_trace(bitbuffer->bb[r], bitbuffer->bits_per_row[r], showbits,
-                  "XC0324:DD Message, Bad row - no message found, ");
-                fprintf(stderr, "Expected 1 row (got %d) of %d bits and %d bit messages (row %d has %d bits), ",
-                  bitbuffer->num_rows, MYDEVICE_BITLEN, MYMESSAGE_BITLEN,
-                  r, bitbuffer->bits_per_row[r]);
+        if (bitbuffer->bits_per_row[r] < XC0324_MESSAGE_BITLEN) {
+            // bail out of this "too short" row early
+            if (decoder->verbose == 1) {
+                // Output the bad row, only for message level debug / deciphering.
+                decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                  "Bad message need %d bits got %d <- XC0324:D row %d bit %d",
+                  XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
             continue; // to the next row  
         }
@@ -202,21 +224,23 @@ static int xc0324_callback(bitbuffer_t *bitbuffer)
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
           (const uint8_t *)&preamble_pattern, 8))
-          + MYMESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
-            events += result = decode_xc0324_message(bitbuffer, r, bitpos, &data);
-            if (result) {
+          + XC0324_MESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
+            events += result = decode_xc0324_message(decoder, bitbuffer, r, bitpos, &data);
+            // Keep production output (decoder->verbose == 0) separate from 
+            // (simulated) development stage output (decoder->verbose > 0)
+            if (result & !decoder->verbose) { // Production output
                 data_append(data, "message_num",  "Message repeat count",
                   DATA_INT, events, NULL);
-                data_acquired_handler(data);
-            // Uncomment this `return` to break after first successful message,
-            // instead of processing up to 3 repeats of the same message.
+                decoder_output_data(decoder, data);
+            // Uncomment the following `return` to break after first successful
+            // message, instead of processing up to 3 identical repeats.
             //return events;
             }
-            bitpos += MYMESSAGE_BITLEN;
+            bitpos += XC0324_MESSAGE_BITLEN;
         }
     }
-    if ((debug_output > 2) & !reference_values_written) {
-        fprintf(stderr, "\n%s, XC0324:DDD Reference Values, Bad transmission\n", trace_label);
+    if ((decoder->verbose == 3) & !reference_values_written) {
+        decoder_output_messagef(decoder, "XC0324:DDD Reference -> Bad transmission");
     }
     return events;
 }
@@ -228,7 +252,7 @@ r_device digitech_xc0324 = {
     .short_limit    = 190*4,// = (130 + 250)/2  * 4
     .long_limit     = 300*4,
     .reset_limit    = 300*4*2,
-    .json_callback  = &xc0324_callback,
+    .decode_fn      = &xc0324_callback,
     .disabled       = 1, // stop debug output from spamming unsuspecting users
     .fields         = output_fields,
 };

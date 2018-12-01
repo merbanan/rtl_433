@@ -28,9 +28,8 @@
  */
 #include "decoder.h"
 
-static int proove_callback(bitbuffer_t *bitbuffer) {
+static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     /* Reject codes of wrong length */
     if (bitbuffer->bits_per_row[1] != 64)
@@ -55,9 +54,8 @@ static int proove_callback(bitbuffer_t *bitbuffer) {
     uint32_t unit_bit = (b[3] & 0x03);
 
     /* Get time now */
-    local_time_str(0, time_str);
 
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Proove",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel_code,
@@ -65,13 +63,12 @@ static int proove_callback(bitbuffer_t *bitbuffer) {
                      "unit",          "Unit",        DATA_INT, unit_bit,
                       NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -86,8 +83,7 @@ r_device proove = {
     .short_limit    = 380,
     .long_limit     = 1400,
     .reset_limit    = 2800,
-    .json_callback  = &proove_callback,
+    .decode_fn      = &proove_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

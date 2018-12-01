@@ -108,10 +108,8 @@ static float get_rainfall(const uint8_t* br) {
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
-static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
@@ -162,7 +160,7 @@ static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
 //---------------------------------------------------------------------------------------
 //--------- PRESENTING DATA --------------------------------------------------------------
 
-    data = data_make("time",         "",         DATA_STRING, time_str,
+    data = data_make(
             "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
             "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
             "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",    DATA_DOUBLE, temperature,
@@ -172,12 +170,11 @@ static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
             "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
             "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -191,12 +188,11 @@ static char *output_fields[] = {
 
 r_device fineoffset_wh1050 = {
     .name           = "Fine Offset WH1050 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 976,
-    .long_limit     = 2400,
+    .modulation     = OOK_PULSE_PWM,
+    .short_limit    = 544,
+    .long_limit     = 1524,
     .reset_limit    = 10520,
-    .json_callback  = &fineoffset_wh1050_callback,
+    .decode_fn      = &fineoffset_wh1050_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

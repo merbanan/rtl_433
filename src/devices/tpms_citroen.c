@@ -26,8 +26,8 @@
 static const unsigned char preamble_pattern[2] = { 0x55, 0x56 };
 // full trailer is 01111110
 
-static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -68,9 +68,7 @@ static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     battery = b[8];
     sprintf(code_str, "%02x%02x%02x", pressure, temperature, battery);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",         "",     DATA_STRING, time_str,
         "model",        "",     DATA_STRING, "Citroen",
         "type",         "",     DATA_STRING, "TPMS",
         "state",        "",     DATA_STRING, state_str,
@@ -84,18 +82,18 @@ static int tpms_citroen_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int tpms_citroen_callback(bitbuffer_t *bitbuffer) {
+static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 16)) + 178 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_citroen_decode(bitbuffer, 0, bitpos + 16);
+        events += tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
         bitpos += 2;
     }
 
@@ -103,7 +101,6 @@ static int tpms_citroen_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "state",
@@ -124,8 +121,7 @@ r_device tpms_citroen = {
     .short_limit    = 52, // 12-13 samples @250k
     .long_limit     = 52, // FSK
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_citroen_callback,
+    .decode_fn      = &tpms_citroen_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };
