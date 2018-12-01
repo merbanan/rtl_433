@@ -115,9 +115,10 @@ static char *output_fields[] = {
 /* r_device definition */
 r_device x10_sec = {
     .name           = "X10 Security",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1100,
-    .long_limit     = 2200,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 500,  // Short gap 500µs
+    .long_width     = 1680, // Long gap 1680µs
+    .gap_limit      = 2200, // Gap after sync is 4.5ms (1125)
     .reset_limit    = 6000,
     .decode_fn      = &x10_sec_callback,
     .disabled       = 0,

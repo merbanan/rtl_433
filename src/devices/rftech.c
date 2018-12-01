@@ -10,7 +10,6 @@
  * (at your option) any later version.
  */
 
-
 #include "decoder.h"
 
 static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
@@ -22,10 +21,11 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	int r;
 
-
 	r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
-	if(r >= 0 && bitbuffer->bits_per_row[r] == 24) {
+	if(r < 0 || bitbuffer->bits_per_row[r] != 24)
+		return 0;
+
 	/* Example of message:
 	 * 01001001 00011010 00000100
 	 *
@@ -53,47 +53,33 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	button = (bb[r][2] & 0x60) != 0;
 
 	data = data_make(
-			 "model", "", DATA_STRING, "RF-tech",
-			 "id", "Id", DATA_INT, sensor_id,
-			 "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
-			 "button", "Button", DATA_INT, button,
-			 "temperature", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
-			 NULL);
+			"model", "", DATA_STRING, "RF-tech",
+			"id", "Id", DATA_INT, sensor_id,
+			"battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
+			"button", "Button", DATA_INT, button,
+			"temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
+			NULL);
 
 	decoder_output_data(decoder, data);
 
 	return 1;
-	}
-
-	return 0;
 }
 
-/*
- * List of fields to output when using CSV
- *
- * Used to determine what fields will be output in what
- * order for this device when using -F csv.
- *
- */
 static char *csv_output_fields[] = {
 	"model",
 	"id",
 	"battery",
 	"button",
-	"temperature",
+	"temperature_C",
 	NULL
 };
 
-/*
- * r_device - registers device/callback. see rtl_433_devices.h
- *
- */
-
 r_device rftech = {
 	.name		= "RF-tech",
-	.modulation	= OOK_PULSE_PPM_RAW,
-	.short_limit	= 3500,
-	.long_limit     = 5000,
+	.modulation	= OOK_PULSE_PPM,
+	.short_width	= 2000,
+	.long_width     = 4000,
+	.gap_limit      = 5000,
 	.reset_limit    = 10000,
 	.decode_fn    	= &rftech_callback,
 	.disabled	= 1,

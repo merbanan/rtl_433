@@ -51,6 +51,7 @@
     [13] {0} :
     Test mode file issued 4 packets
 */
+
 #include "decoder.h"
 
 static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int row)
@@ -64,7 +65,6 @@ static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, 
 
     data_t *data;
 
-
     humidity = (uint8_t)((b[3] << 6) | ((b[4] >> 2) & 0x0F) | ((b[3] >>2) & 0xF));
     temperature_with_offset = (uint16_t)(((b[2] << 10) | ((b[3] << 2) & 0x300) | ((b[3] << 2) & 0xF0) | ((b[1] << 2) & 0x0C) |  b[2] >> 6) & 0x0FFF);
     device_id = (uint8_t)(b[0] & 0x0F);
@@ -72,12 +72,12 @@ static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, 
     temperature_f = (float)((temperature_with_offset-900)/10.0);
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "Esperanza EWS",
-                     "id",            "",            DATA_INT, device_id,
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
-                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                      NULL);
+            "model",         "",            DATA_STRING, "Esperanza EWS",
+            "id",            "",            DATA_INT, device_id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
     decoder_output_data(decoder, data);
 
     return 1;
@@ -109,12 +109,12 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-
 r_device esperanza_ews = {
     .name          = "Esperanza EWS",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 2800,
-    .long_limit    = 4400,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 2000,
+    .long_width    = 4000,
+    .gap_limit     = 4400,
     .reset_limit   = 9400,
     .decode_fn     = &esperanza_ews_callback,
     .disabled      = 0,

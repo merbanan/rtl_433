@@ -134,12 +134,12 @@ static char *output_fields[] = {
     NULL
 };
 
-
 r_device s3318p = {
     .name           = "S3318P Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800,
-    .long_limit     = 4400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1900,
+    .long_width     = 3800,
+    .gap_limit      = 4400,
     .reset_limit    = 9400,
     .decode_fn      = &s3318p_callback,
     .disabled       = 0,

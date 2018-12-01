@@ -1,15 +1,16 @@
-#include "decoder.h"
-
 /*
  * Cardin S466-TX2 generic garage door remote control on 27.195 Mhz
  * Remember to set de freq right with -f 27195000
  * May be useful for other Cardin product too
  *
  * Copyright (C) 2015 Denis Bodor
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+
+#include "decoder.h"
 
 static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
@@ -124,11 +125,13 @@ static char *output_fields[] = {
 
 r_device cardin = {
 	.name           = "Cardin S466-TX2",
-	.modulation     = OOK_PULSE_PPM_RAW,
-	.short_limit    = 1212,
-	.long_limit     = 1600,
+	.modulation     = OOK_PULSE_PWM,
+	.short_width    = 730,
+	.long_width     = 1400,
+	.sync_width     = 6150,
+	.gap_limit      = 1600,
 	.reset_limit    = 32000,
 	.decode_fn      = &cardin_callback,
 	.disabled       = 0,
-	.fields        = output_fields,
+	.fields         = output_fields,
 };

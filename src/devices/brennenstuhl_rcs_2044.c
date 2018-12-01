@@ -1,7 +1,9 @@
 /*
  * Brennenstuhl RCS 2044 remote control on 433.92MHz
+ * likely x1527
  *
  * Copyright (C) 2015 Paul Ortyl
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
  * published by the Free Software Foundation.
@@ -113,8 +115,8 @@ static char *output_fields[] = {
 r_device brennenstuhl_rcs_2044 = {
     .name          = "Brennenstuhl RCS 2044",
     .modulation    = OOK_PULSE_PWM,
-    .short_limit   = 320,
-    .long_limit    = 968,
+    .short_width   = 320,
+    .long_width    = 968,
     .gap_limit     = 1500,
     .reset_limit   = 4000,
     .decode_fn     = &brennenstuhl_rcs_2044_callback,

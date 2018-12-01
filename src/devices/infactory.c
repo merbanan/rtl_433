@@ -6,7 +6,6 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  *
- *
  * Outdoor sensor transmits data temperature, humidity.
  * Transmissions also includes an id. The sensor transmits
  * every 60 seconds 6 packets.
@@ -28,8 +27,8 @@
 
 #include "decoder.h"
 
-static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-
+static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
     data_t *data;
@@ -48,18 +47,16 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temp = (b[2] << 4) | (b[3] >> 4);
     temp_f = (float)temp / 10 - 90;
 
-
     data = data_make(
-        "model",         "",	   DATA_STRING, "inFactory sensor",
-        "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
-        "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
-        "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
-        NULL);
+            "model",         "",	   DATA_STRING, "inFactory sensor",
+            "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
+            "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
+            "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
     decoder_output_data(decoder, data);
 
     return 1;
 }
-
 
 static char *output_fields[] = {
     "model"
@@ -71,9 +68,10 @@ static char *output_fields[] = {
 
 r_device infactory = {
     .name          = "inFactory",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 3000, // Threshold between short and long gap [us]
-    .long_limit    = 5000, //  Maximum gap size before new row of bits [us]
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 2000,
+    .long_width    = 4000,
+    .gap_limit     = 5000, // Maximum gap size before new row of bits [us]
     .reset_limit   = 6000, // Maximum gap size before End Of Message [us].
     .decode_fn     = &infactory_callback,
     .disabled      = 1,

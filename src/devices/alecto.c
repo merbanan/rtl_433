@@ -1,8 +1,8 @@
-#include "decoder.h"
-
 /* Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
  * Message Format: (9 nibbles, 36 bits):
  * Please note that bytes need to be reversed before processing!
+ *
+ * PPM with pulse width 500 us, long gap 4000 us, short gap 2000 us, sync gap 9000 us
  *
  * Format for Temperature Humidity
  *   AAAAAAAA BBBB CCCC CCCC CCCC DDDDDDDD EEEE
@@ -44,10 +44,12 @@
  *   D = Wind direction
  *   E = Windgust (bitvalue * 0.2 m/s, correction for webapp = 3600/1000 * 0.2 * 100 = 72)
  *   F = Checksum
- *********************************************************************************************
+ *
  */
 
-uint8_t bcd_decode8(uint8_t x) {
+#include "decoder.h"
+
+static uint8_t bcd_decode8(uint8_t x) {
     return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
 }
 
@@ -196,12 +198,12 @@ static char *output_fields[] = {
     NULL
 };
 
-//Timing based on 250000
 r_device alectov1 = {
     .name           = "AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 3500,
-    .long_limit     = 7000,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 2000,
+    .long_width     = 4000,
+    .gap_limit      = 7000,
     .reset_limit    = 10000,
     .decode_fn      = &alectov1_callback,
     .disabled       = 0,

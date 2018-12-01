@@ -235,7 +235,7 @@ static void help()
             "<modulation> is one of:\n"
             "\tOOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "\tOOK_PCM :         Pulse Code Modulation (RZ or NRZ)\n"
-            "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
+            "\tOOK_PPM :         Pulse Position Modulation\n"
             "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
             "\tOOK_PIWM_RAW :    Raw Pulse Interval and Width Modulation\n"
@@ -247,14 +247,14 @@ static void help()
             "<short>, <long>, <sync>, and <reset> are the timings for the decoder in µs\n"
             "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
-            "PPM_RAW short: Threshold between short and long gap [us]\n"
-            "         long: Maximum gap size before new row of bits [us]\n"
+            "PPM     short: Nominal width of '0' gap [us]\n"
+            "         long: Nominal width of '1' gap [us]\n"
             "PWM     short: Nominal width of '1' pulse [us]\n"
             "         long: Nominal width of '0' pulse [us]\n"
-            "          gap: Maximum gap size before new row of bits [us]\n"
             "         sync: Nominal width of sync pulse [us] (optional)\n"
+            "          gap: Maximum gap size before new row of bits [us]\n"
             "    tolerance: Maximum pulse deviation [us] (optional)\n"
-            "reset: Maximum gap size before End Of Message [us].\n"
+            "        reset: Maximum gap size before End Of Message [us].\n"
             "Available options are:\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
             "\trows=<n> : only match if there are <n> rows\n"
@@ -275,8 +275,8 @@ static unsigned parse_modulation(char const *str)
         return OOK_PULSE_MANCHESTER_ZEROBIT;
     else if (!strcasecmp(str, "OOK_PCM"))
         return OOK_PULSE_PCM_RZ;
-    else if (!strcasecmp(str, "OOK_PPM_RAW"))
-        return OOK_PULSE_PPM_RAW;
+    else if (!strcasecmp(str, "OOK_PPM"))
+        return OOK_PULSE_PPM;
     else if (!strcasecmp(str, "OOK_PWM"))
         return OOK_PULSE_PWM;
     else if (!strcasecmp(str, "OOK_DMC"))
@@ -428,17 +428,17 @@ r_device *flex_create_device(char *spec)
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
         usage();
     }
-    dev->short_limit = atoi(c);
+    dev->short_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing long limit!\n");
+        fprintf(stderr, "Bad flex spec, missing long width!\n");
         usage();
     }
-    dev->long_limit = atoi(c);
+    dev->long_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
@@ -489,9 +489,9 @@ r_device *flex_create_device(char *spec)
         if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
-            dev->short_limit = atoi(val);
+            dev->short_width = atoi(val);
         else if (!strcasecmp(key, "l") || !strcasecmp(key, "long"))
-            dev->long_limit = atoi(val);
+            dev->long_width = atoi(val);
         else if (!strcasecmp(key, "y") || !strcasecmp(key, "sync"))
             dev->sync_width = atoi(val);
         else if (!strcasecmp(key, "g") || !strcasecmp(key, "gap"))
@@ -566,14 +566,14 @@ r_device *flex_create_device(char *spec)
         usage();
     }
 
-    if (!dev->short_limit) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+    if (!dev->short_width) {
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
         usage();
     }
 
     if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
-        if (!dev->long_limit) {
-            fprintf(stderr, "Bad flex spec, missing long limit!\n");
+        if (!dev->long_width) {
+            fprintf(stderr, "Bad flex spec, missing long width!\n");
             usage();
         }
     }
@@ -602,8 +602,8 @@ r_device *flex_create_device(char *spec)
     /*
     if (decoder->verbose) {
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
-        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f\n",
-                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit);
+        fprintf(stderr, "\tmodulation=%u, short_width=%.0f, long_width=%.0f, reset_limit=%.0f\n",
+                dev->modulation, dev->short_width, dev->long_width, dev->reset_limit);
         fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
                 params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
     }

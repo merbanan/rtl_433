@@ -69,12 +69,12 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "WS Temperature Sensor",
-                     "id",            "House Code",  DATA_INT, sensor_id,
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
-                     "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
-                     NULL);
+            "model",         "",            DATA_STRING, "WS Temperature Sensor",
+            "id",            "House Code",  DATA_INT, sensor_id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
+            NULL);
 
     decoder_output_data(decoder, data);
     return 1;
@@ -91,9 +91,10 @@ static char *output_fields[] = {
 
 r_device wssensor = {
     .name           = "WS Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1400,
-    .long_limit     = 2400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1000,
+    .long_width     = 2000,
+    .gap_limit      = 2400,
     .reset_limit    = 4400,
     .decode_fn      = &wssensor_callback,
     .disabled       = 0,

@@ -39,10 +39,9 @@
 // NOTE: this should really not be here
 int rubicson_crc_check(bitrow_t *bb);
 
-static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-
+static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
-
     uint8_t id;
     uint8_t channel;
     int8_t multiplier;
@@ -55,8 +54,8 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bits != 37)
         return 0;
 
-    if (!rubicson_crc_check(bb)) return 0;
-
+    if (!rubicson_crc_check(bb))
+        return 0;
 
     id = bb[0][0];
 
@@ -74,16 +73,15 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     temperature = (float) (((256 * multiplier) + temperature_raw) / 10.0);
 
     data = data_make(
-                     "model", "", DATA_STRING, "Solight TE44",
-                     "id", "Id", DATA_INT, id,
-                     "channel", "Channel", DATA_INT, channel + 1,
-                     "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
-                     "mic",           "Integrity",   DATA_STRING, "CRC",
-                     NULL);
+            "model", "", DATA_STRING, "Solight TE44",
+            "id", "Id", DATA_INT, id,
+            "channel", "Channel", DATA_INT, channel + 1,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,
+            "mic",           "Integrity",   DATA_STRING, "CRC",
+            NULL);
     decoder_output_data(decoder, data);
 
     return 1;
-
 }
 
 static char *output_fields[] = {
@@ -96,10 +94,11 @@ static char *output_fields[] = {
 
 r_device solight_te44 = {
     .name          = "Solight TE44",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 1500, // short gap = 972 us
-    .long_limit    = 3000, // long gap = 1932 us
-    .reset_limit   = 6000, // packet gap = 3880 us
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 972, // short gap = 972 us
+    .long_width    = 1932, // long gap = 1932 us
+    .gap_limit     = 3000, // packet gap = 3880 us
+    .reset_limit   = 6000,
     .decode_fn     = &solight_te44_callback,
     .disabled      = 0,
     .fields        = output_fields,

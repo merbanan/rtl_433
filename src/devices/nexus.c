@@ -76,24 +76,24 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // Thermo
         if (bb[r][3] == 0xF0) {
         data = data_make(
-                         "model",         "",            DATA_STRING, "Nexus Temperature",
-                         "id",            "House Code",  DATA_INT, id,
-                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                         "channel",       "Channel",     DATA_INT, channel,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
-                         NULL);
+                "model",         "",            DATA_STRING, "Nexus Temperature",
+                "id",            "House Code",  DATA_INT, id,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                "channel",       "Channel",     DATA_INT, channel,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                NULL);
         decoder_output_data(decoder, data);
         }
         // Thermo/Hygro
         else {
         data = data_make(
-                         "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
-                         "id",            "House Code",  DATA_INT, id,
-                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                         "channel",       "Channel",     DATA_INT, channel,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
-                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                         NULL);
+                "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
+                "id",            "House Code",  DATA_INT, id,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                "channel",       "Channel",     DATA_INT, channel,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                NULL);
         decoder_output_data(decoder, data);
         }
         return 1;
@@ -113,9 +113,10 @@ static char *output_fields[] = {
 
 r_device nexus = {
     .name           = "Nexus Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1744,
-    .long_limit     = 3500,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1000,
+    .long_width     = 2000,
+    .gap_limit      = 3000,
     .reset_limit    = 5000,
     .decode_fn      = &nexus_callback,
     .disabled       = 0,

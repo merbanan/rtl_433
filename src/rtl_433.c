@@ -312,10 +312,10 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     r_device *p = calloc(1, sizeof (r_device));
 
     float samples_per_us = cfg.samp_rate / 1.0e6;
-    p->f_short_limit = 1.0 / (r_dev->short_limit * samples_per_us);
-    p->f_long_limit  = 1.0 / (r_dev->long_limit * samples_per_us);
-    p->s_short_limit = r_dev->short_limit * samples_per_us;
-    p->s_long_limit  = r_dev->long_limit * samples_per_us;
+    p->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
+    p->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
+    p->s_short_width = r_dev->short_width * samples_per_us;
+    p->s_long_width  = r_dev->long_width * samples_per_us;
     p->s_reset_limit = r_dev->reset_limit * samples_per_us;
     p->s_gap_limit   = r_dev->gap_limit * samples_per_us;
     p->s_sync_width  = r_dev->sync_width * samples_per_us;
@@ -612,7 +612,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PCM_RZ:
                             p_events += pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
                             break;
-                        case OOK_PULSE_PPM_RAW:
+                        case OOK_PULSE_PPM:
                             p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
                             break;
                         case OOK_PULSE_PWM:
@@ -659,7 +659,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
                         case OOK_PULSE_PCM_RZ:
-                        case OOK_PULSE_PPM_RAW:
+                        case OOK_PULSE_PPM:
                         case OOK_PULSE_PWM:
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
                         case OOK_PULSE_PIWM_RAW:

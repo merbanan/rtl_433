@@ -1,4 +1,5 @@
 /* Chuango Security Technology Corporation
+ * likely based on HS1527 or compatible
  *
  * Tested devices:
  * G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
@@ -85,8 +86,8 @@ static char *output_fields[] = {
 r_device chuango = {
     .name           = "Chuango Security Technology",
     .modulation     = OOK_PULSE_PWM,
-    .short_limit    = 568,  // Pulse: Short 568µs, Long 1704µs
-    .long_limit     = 1704, // Gaps:  Short 568µs, Long 1696µs
+    .short_width    = 568,  // Pulse: Short 568µs, Long 1704µs
+    .long_width     = 1704, // Gaps:  Short 568µs, Long 1696µs
     .reset_limit    = 1800, // Intermessage Gap 17200µs (individually for now)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160,  // us

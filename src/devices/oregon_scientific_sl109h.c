@@ -148,10 +148,11 @@ static char *output_fields[] = {
 
 r_device oregon_scientific_sl109h = {
     .name           = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800/*760*/,
-    .long_limit     = 4400/*1050*/,
-    .reset_limit    = 8000/*2240*/,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 2000,
+    .long_width     = 4000,
+    .gap_limit      = 5000,
+    .reset_limit    = 10000, // packet gap is 8900
     .decode_fn      = &oregon_scientific_sl109h_callback,
     .disabled       = 0,
     .fields         = output_fields

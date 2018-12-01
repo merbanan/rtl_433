@@ -228,10 +228,10 @@ static char *output_fields[] = {
 
 r_device interlogix = {
     .name          = "Interlogix GE UTC Security Devices",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2
-    .long_limit    = 1000, //Maximum gap size before new row of bits
-    .reset_limit   = 500, //Maximum gap size before End Of Message
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 122,
+    .long_width    = 244,
+    .reset_limit   = 500, // Maximum gap size before End Of Message
     .decode_fn     = &interlogix_callback,
     .disabled      = 0,
     .fields        = output_fields,
