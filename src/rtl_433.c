@@ -1351,7 +1351,6 @@ static char const **well_known_output_fields(struct app_cfg *cfg)
     }
 }
 
-
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
