@@ -182,7 +182,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t bitpos;
     int result;
     int events = 0;
-    data_t *data;
+    data_t *data = NULL;
     
     // Only for initial package level deciphering / debug.
     if (decoder->verbose == 2) {

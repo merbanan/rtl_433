@@ -196,40 +196,20 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
 {
     data_t *data;
     char *row_code;
-    char row_bytes[BITBUF_COLS * 3 + 1];
-    char row_bits[BITBUF_COLS * 9 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
+    char row_bytes[BITBUF_COLS * 2 + 1];
     unsigned i;
 
     row_bytes[0] = '\0';
     // print byte-wide
     for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
-        sprintf(&row_bytes[3 * col], "%02x ", bitrow[col]);
+        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
     }
     // remove last nibble if needed
-    row_bytes[3 * (bit_len + 3) / 8] = '\0';
-
-    // Print binary value but only in debug mode
-    row_bits[0] = '\0';
-    if (decoder->verbose > 0) {
-        uint16_t next_col = 0;
-        for (unsigned bit = 0; bit < bit_len; ++bit) {
-            if (bitrow[bit / 8] & (0x80 >> (bit % 8))) {
-                sprintf(&row_bits[next_col], "1");
-            } else {
-                sprintf(&row_bits[next_col], "0");
-            }
-            next_col++;
-            if ((bit % 8) == 7) { // Add byte separators
-                sprintf(&row_bits[next_col], " ");
-                next_col++;
-            }
-        }
-    }
+    row_bytes[2 * (bit_len + 3) / 8] = '\0';
 
     // a simpler representation for csv output
-    row_code = malloc(8 + BITBUF_COLS * 2 + 4 + BITBUF_COLS * 9 + 1); // "{nnn}..\0"
-    sprintf(row_code, "{%d}%s : %s", bit_len, row_bytes, row_bits);
+    row_code = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
+    sprintf(row_code, "{%d}%s", bit_len, row_bytes);
 
     data = data_make(
             "msg", "", DATA_STRING, msg,
