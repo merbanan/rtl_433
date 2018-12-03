@@ -36,7 +36,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int sensortype, chk;
     int channel, rc, battery_ok;
     int temp, humidity, rain_units;
-    int wind_strength, wind_direction;
+    int wind_speed, gust_speed, wind_direction, wind_approach;
 
     // Expect 8, 9, 10, or 14 unstuffed bytes
     int unstuffed_len = bitbuffer->bits_per_row[0] / 9;
@@ -132,9 +132,12 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 1;
     }
     if (sensortype == HIDEKI_WIND) {
-        const uint8_t wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
+        int const wd[] = { 0, 15, 13, 14, 9, 10, 12, 11, 1, 2, 4, 3, 8, 7, 5, 6 };
         wind_direction = wd[((packet[11] & 0xF0) >> 4)] * 225;
-        wind_strength = (packet[9] & 0x0F) * 100 + (packet[8] >> 4) * 10 + (packet[8] & 0x0F);
+        wind_speed = (packet[9] & 0x0F) * 100 + (packet[8] >> 4) * 10 + (packet[8] & 0x0F);
+        gust_speed = (packet[10] & 0xF0) * 100 + (packet[10] >> 4) * 10 + (packet[9] >> 4);
+        int const ad[] = { 0, 1, -1, 2 }; // i.e. None, CW, CCW, invalid
+        wind_approach = ad[(packet[11] >> 2) & 0x03];
 
         data = data_make(
                 "model",            "",                 DATA_STRING, "HIDEKI Wind sensor",
@@ -142,8 +145,10 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
-                "windstrength",     "Wind Strength",    DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_strength * 0.160934f,
-                "winddirection",    "Direction",        DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction * 0.1f,
+                "wind_speed_mph",   "Wind Speed",       DATA_FORMAT, "%.02f mph", DATA_DOUBLE, wind_speed * 0.1f,
+                "gust_speed_mph",   "Gust Speed",       DATA_FORMAT, "%.02f mph", DATA_DOUBLE, gust_speed * 0.1f,
+                "wind_approach",    "Wind Approach",    DATA_INT, wind_approach,
+                "wind_direction",   "Wind Direction",   DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction * 0.1f,
                 "mic",              "MIC",              DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
@@ -170,7 +175,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "rc",               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
-                "rain",             "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
+                "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
                 "mic",              "MIC",              DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
@@ -186,9 +191,11 @@ static char *output_fields[] = {
     "battery",
     "temperature_C",
     "humidity",
-    "windstrength",
-    "winddirection",
-    "rain",
+    "wind_speed_mph",
+    "gust_speed_mph",
+    "wind_approach",
+    "wind_direction",
+    "rain_mm",
     "mic",
     NULL
 };
