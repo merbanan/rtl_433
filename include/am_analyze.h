@@ -38,8 +38,8 @@ am_analyze_t *am_analyze_create(void);
 
 void am_analyze_free(am_analyze_t *a);
 
-void am_analyze_reset(am_analyze_t *a);
+void am_analyze_skip(am_analyze_t *a, unsigned n_samples);
 
-void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, samp_grab_t *g);
+void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g);
 
 void am_analyze_classify(am_analyze_t *aa);

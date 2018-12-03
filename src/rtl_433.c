@@ -714,7 +714,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         if (cfg.include_only == 0 || (cfg.include_only == 1 && d_events == 0) || (cfg.include_only == 2 && d_events > 0)) {
             am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, demod->samp_grab);
         } else {
-            am_analyze_reset(demod->am_analyze);
+            am_analyze_skip(demod->am_analyze, n_samples);
         }
     }
 

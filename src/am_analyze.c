@@ -30,18 +30,19 @@ void am_analyze_free(am_analyze_t *a)
     free(a);
 }
 
-void am_analyze_reset(am_analyze_t *a)
+void am_analyze_skip(am_analyze_t *a, unsigned n_samples)
 {
+    a->counter += n_samples;
     a->signal_start = 0;
 }
 
-void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, samp_grab_t *g)
+void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g)
 {
     unsigned int i;
     int32_t threshold = (*a->level_limit ? *a->level_limit : 8000);  // Does not support auto level. Use old default instead.
 
-    for (i = 0; i < len; i++) {
-        if (buf[i] > threshold) {
+    for (i = 0; i < n_samples; i++) {
+        if (am_buf[i] > threshold) {
             if (!a->signal_start)
                 a->signal_start = a->counter;
             if (a->print) {
@@ -52,14 +53,14 @@ void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, s
                 a->signal_pulse_data[a->signal_pulse_counter][2] = -1;
                 if (debug_output) fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
                 if (debug_output) fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
-                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, buf[i]);
+                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, am_buf[i]);
                 a->prev_pulse_start = a->pulse_start;
                 a->print = 0;
                 a->print2 = 1;
             }
         }
         a->counter++;
-        if (buf[i] < threshold) {
+        if (am_buf[i] < threshold) {
             if (a->print2) {
                 a->pulse_avg += a->counter - a->pulse_start;
                 if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
