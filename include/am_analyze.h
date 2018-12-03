@@ -11,6 +11,8 @@
 
 #include <stdint.h>
 
+#define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
+
 typedef struct {
     int32_t *level_limit;
     int override_short;
@@ -29,7 +31,6 @@ typedef struct {
     unsigned pulse_end;
     unsigned pulse_avg;
     unsigned signal_start;
-    unsigned signal_end;
     unsigned signal_pulse_counter;
     unsigned signal_pulse_data[4000][3];
 } am_analyze_t;

@@ -18,6 +18,9 @@
 
 #include "am_analyze.h"
 
+#define FRAME_END_MIN 50000 /* minimum sample count to detect frame end */
+#define FRAME_PAD 10000 /* number of samples to pad both frame start and end */
+
 am_analyze_t *am_analyze_create(void)
 {
     am_analyze_t *a;
@@ -70,23 +73,22 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_data[a->signal_pulse_counter][1] = a->counter;
                 a->signal_pulse_data[a->signal_pulse_counter][2] = a->counter - a->pulse_start;
                 a->signal_pulse_counter++;
-                if (a->signal_pulse_counter >= 4000) {
+                if (a->signal_pulse_counter >= PULSE_DATA_SIZE) {
                     a->signal_pulse_counter = 0;
                     fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
                     return;
                 }
             }
             a->print = 1;
-            if (a->signal_start && (a->pulse_end + 50000 < a->counter)) {
-                a->signal_end = a->counter - 40000;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d", a->signal_start - 10000, a->signal_end);
-                fprintf(stderr, ", signal_len = %d,  pulses = %d\n", a->signal_end - (a->signal_start - 10000), a->pulses_found);
+            if (a->signal_start && (a->pulse_end + FRAME_END_MIN < a->counter)) {
+                unsigned signal_end = a->counter - FRAME_END_MIN + FRAME_PAD;
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d", a->signal_start - FRAME_PAD, signal_end);
+                fprintf(stderr, ", signal_len = %d,  pulses = %d\n", signal_end - (a->signal_start - FRAME_PAD), a->pulses_found);
                 a->pulses_found = 0;
-                am_analyze_classify(a);
+                am_analyze_classify(a); // clears signal_pulse_data
 
-                a->signal_pulse_counter = 0;
                 if (g) {
-                    samp_grab_write(g, a->signal_start, a->signal_end, i);
+                    samp_grab_write(g, a->signal_start - FRAME_PAD, signal_end, i);
                 }
                 a->signal_start = 0;
             }
@@ -100,14 +102,14 @@ void am_analyze_classify(am_analyze_t *aa)
     unsigned int i, k, max = 0, min = 1000000, t;
     unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3];
-    unsigned int signal_distance_data[4000] = {0};
+    unsigned int signal_distance_data[PULSE_DATA_SIZE] = {0};
     bitbuffer_t bits = {0};
     unsigned int signal_type;
 
     if (!aa->signal_pulse_data[0][0])
         return;
 
-    for (i = 0; i < 1000; i++) {
+    for (i = 0; i < aa->signal_pulse_counter; i++) {
         if (aa->signal_pulse_data[i][0] > 0) {
             //fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\n",
             //i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
@@ -131,7 +133,7 @@ void am_analyze_classify(am_analyze_t *aa)
         max_new = 0;
         count_max = 0;
 
-        for (i = 0; i < 1000; i++) {
+        for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (aa->signal_pulse_data[i][0] > 0) {
                 if (aa->signal_pulse_data[i][2] < t) {
                     min_new = min_new + aa->signal_pulse_data[i][2];
@@ -156,7 +158,7 @@ void am_analyze_classify(am_analyze_t *aa)
         k++;
     }
 
-    for (i = 0; i < 1000; i++) {
+    for (i = 0; i < aa->signal_pulse_counter; i++) {
         if (aa->signal_pulse_data[i][0] > 0) {
             //fprintf(stderr, "%d\n", aa->signal_pulse_data[i][1]);
         }
@@ -174,7 +176,7 @@ void am_analyze_classify(am_analyze_t *aa)
     /* Initial guesses */
     a[0] = 1000000;
     a[2] = 0;
-    for (i = 1; i < 1000; i++) {
+    for (i = 1; i < aa->signal_pulse_counter; i++) {
         if (aa->signal_pulse_data[i][0] > 0) {
             //               fprintf(stderr, "[%03d] s: %d\t  e:\t %d\t l:%d\t  d:%d\n",
             //               i, aa->signal_pulse_data[i][0], aa->signal_pulse_data[i][1],
@@ -205,7 +207,7 @@ void am_analyze_classify(am_analyze_t *aa)
             a_cnt[i] = 0;
         }
 
-        for (i = 0; i < 1000; i++) {
+        for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (signal_distance_data[i] > 0) {
                 if (signal_distance_data[i] < b[0]) {
                     a_new[0] += signal_distance_data[i];
@@ -268,7 +270,7 @@ void am_analyze_classify(am_analyze_t *aa)
 
     bitbuffer_clear(&bits);
     if (signal_type == 1) {
-        for (i = 0; i < 1000; i++) {
+        for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (signal_distance_data[i] > 0) {
                 if (signal_distance_data[i] < (a[0] + a[1]) / 2) {
                     //                     fprintf(stderr, "0 [%d] %d < %d\n",i, signal_distance_data[i], (a[0]+a[1])/2);
@@ -287,7 +289,7 @@ void am_analyze_classify(am_analyze_t *aa)
         bitbuffer_print(&bits);
     }
     if (signal_type == 2) {
-        for (i = 0; i < 1000; i++) {
+        for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (aa->signal_pulse_data[i][2] > 0) {
                 if (aa->signal_pulse_data[i][2] < p_limit) {
                     //                     fprintf(stderr, "0 [%d] %d < %d\n",i, aa->signal_pulse_data[i][2], p_limit);
@@ -307,11 +309,6 @@ void am_analyze_classify(am_analyze_t *aa)
         bitbuffer_print(&bits);
     }
 
-    for (i = 0; i < 1000; i++) {
-        aa->signal_pulse_data[i][0] = 0;
-        aa->signal_pulse_data[i][1] = 0;
-        aa->signal_pulse_data[i][2] = 0;
-        signal_distance_data[i] = 0;
-    }
-
+    // clear signal_pulse_data
+    aa->signal_pulse_counter = 0;
 }

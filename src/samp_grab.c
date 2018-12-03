@@ -90,7 +90,7 @@ void samp_grab_write(samp_grab_t *g, unsigned signal_start, unsigned signal_end,
         }
     }
 
-    signal_bsize = 2 * (signal_end - (signal_start - 10000));
+    signal_bsize = 2 * (signal_end - signal_start);
     signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
     sg_idx = g->sg_index - g->sg_len;
     if (sg_idx < 0)
