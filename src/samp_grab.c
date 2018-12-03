@@ -56,12 +56,26 @@ void samp_grab_free(samp_grab_t *g)
 
 void samp_grab_push(samp_grab_t *g, unsigned char *iq_buf, uint32_t len)
 {
-    //fprintf(stderr, "[%d] sg_index - len %d\n", g->sg_index, len );
-    memcpy(&g->sg_buf[g->sg_index], iq_buf, len);
-    g->sg_len = len;
-    g->sg_index += len;
-    if (g->sg_index + len > g->sg_size)
-        g->sg_index = 0;
+    //fprintf(stderr, "sg_index %d + len %d (size %d ", g->sg_index, len, g->sg_len);
+
+    g->sg_len += len;
+    if (g->sg_len > g->sg_size)
+        g->sg_len = g->sg_size;
+
+    //fprintf(stderr, "-> %d)\n", g->sg_len);
+
+    while (len) {
+        unsigned chunk_len = len;
+        if (g->sg_index + chunk_len > g->sg_size)
+            chunk_len = g->sg_size - g->sg_index;
+
+        memcpy(&g->sg_buf[g->sg_index], iq_buf, chunk_len);
+        iq_buf += chunk_len;
+        len -= chunk_len;
+        g->sg_index += chunk_len;
+        if (g->sg_index >= g->sg_size)
+            g->sg_index = 0;
+    }
 }
 
 void samp_grab_reset(samp_grab_t *g)
@@ -95,9 +109,9 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     signal_bsize = *g->sample_size * 2 * grab_len;
     signal_bsize += BLOCK_SIZE - (signal_bsize % BLOCK_SIZE);
 
-    if (signal_bsize > g->sg_size) { // actually sg_len
-        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, g->sg_size);
-        signal_bsize = g->sg_size;
+    if (signal_bsize > g->sg_len) {
+        fprintf(stderr, "Signal bigger then buffer, signal = %u > buffer %u !!\n", signal_bsize, g->sg_len);
+        signal_bsize = g->sg_len;
     }
 
     // relative end in bytes from current sg_index down
