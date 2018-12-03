@@ -31,4 +31,5 @@ void samp_grab_push(samp_grab_t *g, unsigned char *iq_buf, uint32_t len);
 
 void samp_grab_reset(samp_grab_t *g);
 
-void samp_grab_write(samp_grab_t *g, unsigned signal_start, unsigned signal_end, unsigned i);
+// grab_end is counted in samples from end of buf
+void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end);

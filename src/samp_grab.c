@@ -70,12 +70,14 @@ void samp_grab_reset(samp_grab_t *g)
     g->sg_index = 0;
 }
 
-void samp_grab_write(samp_grab_t *g, unsigned signal_start, unsigned signal_end, unsigned i)
+#define BLOCK_SIZE (128 * 1024) /* bytes */
+
+void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
 {
     if (!g->sg_buf)
         return;
 
-    int start_pos, signal_bsize, wlen, wrest = 0, sg_idx, idx;
+    unsigned end_pos, start_pos, signal_bsize, wlen, wrest;
     char f_name[64] = {0};
     FILE *fp;
 
@@ -90,30 +92,39 @@ void samp_grab_write(samp_grab_t *g, unsigned signal_start, unsigned signal_end,
         }
     }
 
-    signal_bsize = 2 * (signal_end - signal_start);
-    signal_bsize = (131072 - (signal_bsize % 131072)) + signal_bsize;
-    sg_idx = g->sg_index - g->sg_len;
-    if (sg_idx < 0)
-        sg_idx = g->sg_size - g->sg_len;
-    idx = (i - 40000) * 2;
-    start_pos = sg_idx + idx - signal_bsize;
+    signal_bsize = *g->sample_size * 2 * grab_len;
+    signal_bsize += BLOCK_SIZE - (signal_bsize % BLOCK_SIZE);
+
+    if (signal_bsize > g->sg_size) { // actually sg_len
+        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, g->sg_size);
+        signal_bsize = g->sg_size;
+    }
+
+    // relative end in bytes from current sg_index down
+    end_pos = *g->sample_size * 2 * grab_end;
+    if (g->sg_index >= end_pos)
+        end_pos = g->sg_index - end_pos;
+    else
+        end_pos = g->sg_size - end_pos + g->sg_index;
+    // end_pos is now absolute in sg_buf
+
+    if (end_pos >= signal_bsize)
+        start_pos = end_pos - signal_bsize;
+    else
+        start_pos = g->sg_size - signal_bsize + end_pos;
+
     fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, g->sg_index);
     fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, g->sg_size);
-    if (signal_bsize > (int)g->sg_size)
-        fprintf(stderr, "Signal bigger then buffer, signal = %d > buffer %d !!\n", signal_bsize, g->sg_size);
-
-    if (start_pos < 0) {
-        start_pos = g->sg_size + start_pos;
-        fprintf(stderr, "restart_pos = %d\n", start_pos);
-    }
 
     fprintf(stderr, "*** Saving signal to file %s\n", f_name);
     fp = fopen(f_name, "wb");
     if (!fp) {
         fprintf(stderr, "Failed to open %s\n", f_name);
     }
+
     wlen = signal_bsize;
-    if (start_pos + signal_bsize > (int)g->sg_size) {
+    wrest = 0;
+    if (start_pos + signal_bsize > g->sg_size) {
         wlen  = g->sg_size - start_pos;
         wrest = signal_bsize - wlen;
     }

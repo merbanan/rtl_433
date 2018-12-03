@@ -81,14 +81,17 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
             }
             a->print = 1;
             if (a->signal_start && (a->pulse_end + FRAME_END_MIN < a->counter)) {
-                unsigned signal_end = a->counter - FRAME_END_MIN + FRAME_PAD;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d", a->signal_start - FRAME_PAD, signal_end);
-                fprintf(stderr, ", signal_len = %d,  pulses = %d\n", signal_end - (a->signal_start - FRAME_PAD), a->pulses_found);
-                a->pulses_found = 0;
+                unsigned padded_start = a->signal_start - FRAME_PAD;
+                unsigned padded_end   = a->counter - FRAME_END_MIN + FRAME_PAD;
+                unsigned padded_len   = padded_end - padded_start;
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d, signal_len = %d, pulses_found = %d\n",
+                        padded_start, padded_end, padded_len, a->pulses_found);
+
                 am_analyze_classify(a); // clears signal_pulse_data
+                a->pulses_found = 0;
 
                 if (g) {
-                    samp_grab_write(g, a->signal_start - FRAME_PAD, signal_end, i);
+                    samp_grab_write(g, padded_len, n_samples - i - 1);
                 }
                 a->signal_start = 0;
             }
