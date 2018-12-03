@@ -14,6 +14,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        rtl_433.c \
+                       samp_grab.c \
                        sdr.c \
                        util.c \
                        devices/acurite.c \

@@ -19,13 +19,6 @@ typedef struct {
     uint32_t *samp_rate;
     int *sample_size;
 
-    /* Signal grabber variables */
-    int signal_grabber;
-    char *sg_buf;
-    unsigned sg_size;
-    unsigned sg_index;
-    unsigned sg_len;
-
     /* state */
     unsigned counter;
     unsigned print;
@@ -45,14 +38,8 @@ am_analyze_t *am_analyze_create(void);
 
 void am_analyze_free(am_analyze_t *a);
 
-void am_analyze_enable_grabber(am_analyze_t *a, unsigned size);
-
-void am_analyze_add(am_analyze_t *a, unsigned char *iq_buf, uint32_t len);
-
 void am_analyze_reset(am_analyze_t *a);
 
-void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output);
+void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, samp_grab_t *g);
 
 void am_analyze_classify(am_analyze_t *aa);
-
-void signal_grabber_write(am_analyze_t *a, unsigned signal_start, unsigned signal_end, unsigned i);

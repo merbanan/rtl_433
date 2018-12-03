@@ -33,6 +33,7 @@
 #include "util.h"
 #include "optparse.h"
 #include "fileformat.h"
+#include "samp_grab.h"
 #include "am_analyze.h"
 #include "confparse.h"
 
@@ -119,6 +120,7 @@ struct dm_state {
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
+    samp_grab_t *samp_grab;
     am_analyze_t *am_analyze;
     int analyze_pulses;
     file_info_t load_info;
@@ -560,8 +562,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
 
-    if (demod->am_analyze) {
-        am_analyze_add(demod->am_analyze, iq_buf, len);
+    if (demod->samp_grab) {
+        samp_grab_push(demod->samp_grab, iq_buf, len);
     }
 
     // AM demodulation
@@ -710,7 +712,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     if (demod->am_analyze) {
         if (cfg.include_only == 0 || (cfg.include_only == 1 && d_events == 0) || (cfg.include_only == 2 && d_events > 0)) {
-            am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output);
+            am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, demod->samp_grab);
         } else {
             am_analyze_reset(demod->am_analyze);
         }
@@ -1202,8 +1204,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         add_dumper(arg, cfg->demod->dumper, 1);
         break;
     case 't':
-        if (atobv(arg, 1) && cfg->demod->am_analyze)
-            am_analyze_enable_grabber(cfg->demod->am_analyze, SIGNAL_GRABBER_BUFFER);
+        if (atobv(arg, 1) && !cfg->demod->samp_grab)
+            cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER);
         break;
     case 'm':
         fprintf(stderr, "sample mode option is deprecated.\n");
@@ -1399,9 +1401,15 @@ int main(int argc, char **argv) {
 
     if (demod->am_analyze) {
         demod->am_analyze->level_limit = &demod->level_limit;
-        demod->am_analyze->frequency = &cfg.center_frequency;
-        demod->am_analyze->samp_rate = &cfg.samp_rate;
+        demod->am_analyze->frequency   = &cfg.center_frequency;
+        demod->am_analyze->samp_rate   = &cfg.samp_rate;
         demod->am_analyze->sample_size = &demod->sample_size;
+    }
+
+    if (demod->samp_grab) {
+        demod->samp_grab->frequency   = &cfg.center_frequency;
+        demod->samp_grab->samp_rate   = &cfg.samp_rate;
+        demod->samp_grab->sample_size = &demod->sample_size;
     }
 
     if (cfg.last_output_handler < 1) {

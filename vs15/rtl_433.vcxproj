@@ -98,6 +98,7 @@
     <ClInclude Include="..\include\pulse_detect.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
+    <ClInclude Include="..\include\samp_grab.h" />
     <ClInclude Include="..\include\sdr.h" />
     <ClInclude Include="..\include\util.h" />
     <ClInclude Include="..\src\getopt\getopt.h" />
@@ -114,6 +115,7 @@
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />
+    <ClCompile Include="..\src\samp_grab.c" />
     <ClCompile Include="..\src\sdr.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
