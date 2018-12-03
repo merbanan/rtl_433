@@ -51,8 +51,8 @@ void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, s
                 a->signal_pulse_data[a->signal_pulse_counter][1] = -1;
                 a->signal_pulse_data[a->signal_pulse_counter][2] = -1;
                 if (debug_output) fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
-                if (debug_output) fprintf(stderr, "a->pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
-                if (debug_output) fprintf(stderr, "a->pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, buf[i]);
+                if (debug_output) fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
+                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, buf[i]);
                 a->prev_pulse_start = a->pulse_start;
                 a->print = 0;
                 a->print2 = 1;
@@ -62,7 +62,7 @@ void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, s
         if (buf[i] < threshold) {
             if (a->print2) {
                 a->pulse_avg += a->counter - a->pulse_start;
-                if (debug_output) fprintf(stderr, "a->pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
+                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
                         a->pulses_found, a->counter, a->counter - a->pulse_start, a->pulse_avg / a->pulses_found);
                 a->pulse_end = a->counter;
                 a->print2 = 0;
@@ -78,8 +78,8 @@ void am_analyze(am_analyze_t *a, int16_t *buf, uint32_t len, int debug_output, s
             a->print = 1;
             if (a->signal_start && (a->pulse_end + 50000 < a->counter)) {
                 a->signal_end = a->counter - 40000;
-                fprintf(stderr, "*** a->signal_start = %d, a->signal_end = %d\n", a->signal_start - 10000, a->signal_end);
-                fprintf(stderr, "signal_len = %d,  pulses = %d\n", a->signal_end - (a->signal_start - 10000), a->pulses_found);
+                fprintf(stderr, "*** signal_start = %d, signal_end = %d", a->signal_start - 10000, a->signal_end);
+                fprintf(stderr, ", signal_len = %d,  pulses = %d\n", a->signal_end - (a->signal_start - 10000), a->pulses_found);
                 a->pulses_found = 0;
                 am_analyze_classify(a);
 
