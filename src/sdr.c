@@ -35,9 +35,11 @@ struct sdr_dev {
     double fullScale;
     int running;
 #endif
+
 #ifdef RTLSDR
     rtlsdr_dev_t *rtlsdr_dev;
 #endif
+
     int sample_size;
 };
 
@@ -477,6 +479,8 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint3
             cb((unsigned char *)buffer, n_read * 2 * 2, ctx);
 
     } while (dev->running);
+
+    free(buffer);
     return 0;
 }
 
@@ -491,15 +495,18 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
         fprintf(stderr, "No input drivers (RTL-SDR or SoapySDR) compiled in.\n");
     return -1;
 #endif
+
 #ifdef RTLSDR
     /* Open RTLSDR by default or if index or serial given, if available */
     if (!dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9'))
         return sdr_open_rtl(out_dev, sample_size, dev_query, verbose);
 #endif
+
 #ifdef SOAPYSDR
     /* Open SoapySDR otherwise, if available */
     return sdr_open_soapy(out_dev, sample_size, dev_query, verbose);
 #endif
+
     return -1;
 }
 
@@ -509,26 +516,31 @@ int sdr_close(sdr_dev_t *dev)
     if (dev->soapy_dev)
         return SoapySDRDevice_unmake(dev->soapy_dev);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_close(dev->rtlsdr_dev);
 #endif
+
     return -1;
 }
 
 int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 {
     int r = -1;
+
 #ifdef SOAPYSDR
     SoapySDRKwargs args = {0};
     if (dev->soapy_dev) {
         r = SoapySDRDevice_setFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)freq, &args);
     }
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         r = rtlsdr_set_center_freq(dev->rtlsdr_dev, freq);
 #endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set center freq.\n");
@@ -544,24 +556,29 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev)
     if (dev->soapy_dev)
         return (int)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_get_center_freq(dev->rtlsdr_dev);
 #endif
+
     return 0;
 }
 
 int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 {
     int r = -1;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         r = SoapySDRDevice_setFrequencyComponent(dev->soapy_dev, SOAPY_SDR_RX, 0, "CORR", (double)ppm, NULL);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         r = rtlsdr_set_freq_correction(dev->rtlsdr_dev, ppm);
 #endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set frequency correction.\n");
@@ -574,14 +591,17 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 {
     int r = -1;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         r = soapysdr_auto_gain(dev->soapy_dev, verbose);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 0);
 #endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to enable automatic gain.\n");
@@ -597,11 +617,13 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
         /* Enable automatic gain */
         return sdr_set_auto_gain(dev, verbose);
     }
+
 #ifdef SOAPYSDR
     /* Enable manual gain */
     if (dev->soapy_dev)
         return soapysdr_gain_str_set(dev->soapy_dev, gain_str, verbose);
 #endif
+
 #ifdef RTLSDR
     int gain = (int)(atof(gain_str) * 10); /* tenths of a dB */
     if (gain == 0) {
@@ -625,20 +647,24 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
     }
     return r;
 #endif
+
     return -1;
 }
 
 int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 {
     int r = -1;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         r = SoapySDRDevice_setSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)rate);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         r = rtlsdr_set_sample_rate(dev->rtlsdr_dev, rate);
 #endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set sample rate.\n");
@@ -654,10 +680,12 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
     if (dev->soapy_dev)
         return (int)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_get_sample_rate(dev->rtlsdr_dev);
 #endif
+
     return 0;
 }
 
@@ -671,6 +699,7 @@ int sdr_activate(sdr_dev_t *dev)
         }
     }
 #endif
+
     return 0;
 }
 
@@ -682,16 +711,19 @@ int sdr_deactivate(sdr_dev_t *dev)
         SoapySDRDevice_closeStream(dev->soapy_dev, dev->soapy_stream);
     }
 #endif
+
     return 0;
 }
 
 int sdr_reset(sdr_dev_t *dev, int verbose)
 {
     int r = 0;
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         r = rtlsdr_reset_buffer(dev->rtlsdr_dev);
 #endif
+
     if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to reset buffers.\n");
@@ -705,10 +737,12 @@ int sdr_start(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_t buf_num, uin
     if (dev->soapy_dev)
         return soapysdr_read_loop(dev, cb, ctx, buf_num, buf_len);
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_read_async(dev->rtlsdr_dev, cb, ctx, buf_num, buf_len);
 #endif
+
     return -1;
 }
 
@@ -720,9 +754,11 @@ int sdr_stop(sdr_dev_t *dev)
         return 0;
     }
 #endif
+
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         return rtlsdr_cancel_async(dev->rtlsdr_dev);
 #endif
+
     return -1;
 }
