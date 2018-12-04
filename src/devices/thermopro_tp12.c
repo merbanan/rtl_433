@@ -68,6 +68,9 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         return 0; // reduce false positives
     }
 
+    if (bitbuffer->bits_per_row[row] != 41)
+        return 0;
+
     // Note: the device ID changes randomly each time you replace the battery, so we can't early out based on it.
     // This is probably to allow multiple devices to be used at once.  When you replace the receiver batteries
     // or long-press its power button, it pairs with the first device ID it hears.
