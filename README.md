@@ -178,6 +178,7 @@ Supported device protocols:
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
+    [114]  Maverick et73
 
 * Disabled by default, use -R n or -G
 

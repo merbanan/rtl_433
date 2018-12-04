@@ -69,6 +69,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/lightwave_rf.c \
                        devices/m_bus.c \
                        devices/maverick_et73x.c \
+                       devices/maverick_et73.c \
                        devices/mebus.c \
                        devices/new_template.c \
                        devices/newkaku.c \
