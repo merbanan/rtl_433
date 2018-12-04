@@ -859,16 +859,6 @@ static char const **determine_csv_fields(char const **well_known, r_device **dev
     return output_fields;
 }
 
-static char *arg_param(char *arg)
-{
-    char *p = strchr(arg, ':');
-    if (p) {
-        return ++p;
-    } else {
-        return p;
-    }
-}
-
 static FILE *fopen_output(char *param)
 {
     FILE *file;
@@ -881,31 +871,6 @@ static FILE *fopen_output(char *param)
         exit(1);
     }
     return file;
-}
-
-// e.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
-static void hostport_param(char *param, char **host, char **port)
-{
-    if (param && *param) {
-        if (*param != ':') {
-            *host = param;
-            if (*param == '[') {
-                (*host)++;
-                param = strchr(param, ']');
-                if (param) {
-                    *param++ = '\0';
-                } else {
-                    fprintf(stderr, "Malformed Ipv6 address!\n");
-                    exit(1);
-                }
-            }
-        }
-        param = strchr(param, ':');
-        if (param) {
-            *param++ = '\0';
-            *port = param;
-        }
-    }
 }
 
 static void add_json_output(char *param)
@@ -980,16 +945,6 @@ static void add_infile(char const *in_file)
         return;
     }
     cfg.in_file[cfg.in_files++] = in_file;
-}
-
-/// string to bool with default
-int atobv(char *arg, int def)
-{
-    if (!arg)
-        return def;
-    if (!strcasecmp(arg, "true") || !strcasecmp(arg, "yes") || !strcasecmp(arg, "on") || !strcasecmp(arg, "enable"))
-        return 1;
-    return atoi(arg);
 }
 
 static int hasopt(int test, int argc, char *argv[], char const *optstring)

@@ -15,6 +15,57 @@
 #include <limits.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+    #include <string.h>
+    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
+    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
+#else
+    #include <strings.h>
+#endif
+
+int atobv(char *arg, int def)
+{
+    if (!arg)
+        return def;
+    if (!strcasecmp(arg, "true") || !strcasecmp(arg, "yes") || !strcasecmp(arg, "on") || !strcasecmp(arg, "enable"))
+        return 1;
+    return atoi(arg);
+}
+
+char *arg_param(char *arg)
+{
+    char *p = strchr(arg, ':');
+    if (p)
+        return ++p;
+    else
+        return p;
+}
+
+void hostport_param(char *param, char **host, char **port)
+{
+    if (param && *param) {
+        if (*param != ':') {
+            *host = param;
+            if (*param == '[') {
+                (*host)++;
+                param = strchr(param, ']');
+                if (param) {
+                    *param++ = '\0';
+                }
+                else {
+                    fprintf(stderr, "Malformed Ipv6 address!\n");
+                    exit(1);
+                }
+            }
+        }
+        param = strchr(param, ':');
+        if (param) {
+            *param++ = '\0';
+            *port    = param;
+        }
+    }
+}
+
 uint32_t atouint32_metric(const char *str, const char *error_hint)
 {
     if (!str) {
