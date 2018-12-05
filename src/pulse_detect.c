@@ -280,6 +280,9 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 	pulse_state_t *s = &pulse_state;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
 
+	pulses->start_ago += len;
+	fsk_pulses->start_ago += len;
+
 	// Process all new samples
 	while(s->data_counter < len) {
 		// Calculate OOK detection threshold and hysteresis
@@ -299,6 +302,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					pulse_data_clear(fsk_pulses);
 					pulses->offset = sample_offset + s->data_counter;
 					fsk_pulses->offset = sample_offset + s->data_counter;
+					pulses->start_ago = len - s->data_counter;
+					fsk_pulses->start_ago = len - s->data_counter;
 					s->pulse_length = 0;
 					s->max_pulse = 0;
 					s->FSK_state = (pulse_FSK_state_t){0};
@@ -361,6 +366,8 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 						fsk_pulses->fsk_f2_est = s->FSK_state.fm_f2_est;
 						fsk_pulses->ook_low_estimate = s->ook_low_estimate;
 						fsk_pulses->ook_high_estimate = s->ook_high_estimate;
+						pulses->end_ago = len - s->data_counter;
+						fsk_pulses->end_ago = len - s->data_counter;
 						s->ook_state = PD_OOK_STATE_IDLE;	// Ensure everything is reset
 						return 2;	// FSK package detected!!!
 					}
@@ -383,6 +390,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 						// Store estimates
 						pulses->ook_low_estimate = s->ook_low_estimate;
 						pulses->ook_high_estimate = s->ook_high_estimate;
+						pulses->end_ago = len - s->data_counter;
 						return 1;	// End Of Package!!
 					}
 
@@ -401,6 +409,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					// Store estimates
 					pulses->ook_low_estimate = s->ook_low_estimate;
 					pulses->ook_high_estimate = s->ook_high_estimate;
+					pulses->end_ago = len - s->data_counter;
 					return 1;	// End Of Package!!
 				}
 				break;

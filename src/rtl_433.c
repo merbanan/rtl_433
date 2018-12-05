@@ -133,6 +133,9 @@ struct dm_state {
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
+    unsigned frame_event_count;
+    unsigned frame_start_ago;
+    unsigned frame_end_ago;
 };
 
 static void version(void)
@@ -561,6 +564,12 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     n_samples = len / 2 / demod->sample_size;
 
+    // age the frame position if there is one
+    if (demod->frame_start_ago)
+        demod->frame_start_ago += n_samples;
+    if (demod->frame_end_ago)
+        demod->frame_end_ago += n_samples;
+
 #ifndef _WIN32
     alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
@@ -598,7 +607,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     int d_events = 0; // Sensor events successfully detected
-    if (demod->r_dev_num || demod->analyze_pulses || (demod->dumper->spec)) {
+    if (demod->r_dev_num || demod->analyze_pulses || demod->dumper->spec || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -610,6 +619,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
+            if (package_type) {
+                // new package: set a first frame start if we are not tracking one already
+                if (!demod->frame_start_ago)
+                    demod->frame_start_ago = demod->pulse_data.start_ago;
+                // always update the last frame end
+                demod->frame_end_ago = demod->pulse_data.end_ago;
+            }
             if (package_type == 1) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", time_pos_str(0, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
@@ -698,6 +714,26 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             d_events += p_events;
         } // while (package_type)...
 
+        // add event counter to the frames currently tracked
+        demod->frame_event_count += d_events;
+
+        // end frame tracking if older than a whole buffer
+        if (demod->frame_start_ago && demod->frame_end_ago > n_samples) {
+            if (demod->samp_grab) {
+                if (cfg.include_only == 0
+                        || (cfg.include_only == 1 && demod->frame_event_count == 0)
+                        || (cfg.include_only == 2 && demod->frame_event_count > 0)) {
+                    unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
+                    unsigned start_padded = demod->frame_start_ago + frame_pad;
+                    unsigned end_padded = demod->frame_end_ago - frame_pad;
+                    unsigned len_padded = start_padded - end_padded;
+                    samp_grab_write(demod->samp_grab, len_padded, end_padded);
+                }
+            }
+            demod->frame_start_ago = 0;
+            demod->frame_event_count = 0;
+        }
+
         // dump partial pulse_data for this buffer
         for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
             if (dumper->format == U8_LOGIC) {
@@ -714,11 +750,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     if (demod->am_analyze) {
-        if (cfg.include_only == 0 || (cfg.include_only == 1 && d_events == 0) || (cfg.include_only == 2 && d_events > 0)) {
-            am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, demod->samp_grab);
-        } else {
-            am_analyze_skip(demod->am_analyze, n_samples);
-        }
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
