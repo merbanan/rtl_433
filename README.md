@@ -28,7 +28,7 @@ Usage:	= General options =
 	[-V] Output the version string and exit
 	[-c <path>] Read config options from a file
 	= Tuner options =
-	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]
+	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]
 	[-g <gain>] (default: auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
