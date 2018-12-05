@@ -186,6 +186,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "\t[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.\n"
             "\t[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.\n"
             "\t[-C] native|si|customary Convert units in decoded output.\n"
             "\t[-T] Specify number of seconds to run\n"
@@ -1167,7 +1168,10 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         usage(NULL, 0, 1);
         break;
     case 'M':
-        cfg->report_meta = atobv(arg, 1);
+        if (strcasecmp(arg, "level") == 0)
+            cfg->report_meta = 1;
+        else
+            cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
         if (!arg)

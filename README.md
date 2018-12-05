@@ -59,6 +59,7 @@ Usage:	= General options =
 	[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+	[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.
 	[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] Specify number of seconds to run
@@ -105,7 +106,7 @@ Supported device protocols:
     [36]  Efergy e2 classic
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
-    [39]  WG-PB12V1
+    [39]  WG-PB12V1 Temperature Sensor
     [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
@@ -124,7 +125,7 @@ Supported device protocols:
     [55]  Acurite 606TX Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor
-    [58]  blyss DC5-UK-WH (433.92 MHz)
+    [58]  Blyss DC5-UK-WH
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
     [61]* LightwaveRF
