@@ -82,7 +82,7 @@ struct app_cfg {
     uint64_t input_pos;
     uint32_t bytes_to_read;
     sdr_dev_t *dev;
-    int include_only;  // Option -I
+    int grab_mode;
     int quiet_mode;
     int utc_mode;
     conversion_mode_t conversion_mode;
@@ -177,11 +177,10 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-a] Analyze mode. Print a textual description of the signal.\n"
             "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
             "\t\t Disable all decoders with -R 0 if you want analyzer output only.\n"
-            "\t[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices\n"
             "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
             "\t= File I/O options =\n"
-            "\t[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal\n"
-            "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files\n"
+            "\t[-S none|all|unknown|known] Signal auto save. Creates one file per signal.\n"
+            "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.\n"
             "\t[-r <filename>] Read data from input file instead of a receiver\n"
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
@@ -668,7 +667,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
-                if (demod->analyze_pulses && (cfg.include_only == 0 || (cfg.include_only == 1 && p_events == 0) || (cfg.include_only == 2 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
@@ -704,7 +703,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg.include_only == 0 || (cfg.include_only == 1 && p_events == 0) || (cfg.include_only == 2 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
                 }
@@ -718,9 +717,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         // end frame tracking if older than a whole buffer
         if (demod->frame_start_ago && demod->frame_end_ago > n_samples) {
             if (demod->samp_grab) {
-                if (cfg.include_only == 0
-                        || (cfg.include_only == 1 && demod->frame_event_count == 0)
-                        || (cfg.include_only == 2 && demod->frame_event_count > 0)) {
+                if (cfg.grab_mode == 1
+                        || (cfg.grab_mode == 2 && demod->frame_event_count == 0)
+                        || (cfg.grab_mode == 3 && demod->frame_event_count > 0)) {
                     unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
                     unsigned start_padded = demod->frame_start_ago + frame_pad;
                     unsigned end_padded = demod->frame_end_ago - frame_pad;
@@ -994,7 +993,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
 
-#define OPTSTRING "hqDVc:x:z:p:taAI:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hqDVc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -1022,7 +1021,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"read_file", 'r'},
         {"write_file", 'w'},
         {"overwrite_file", 'W'},
-        {"signal_grabber", 't'},
+        {"signal_grabber", 'S'},
         {"override_short", 'z'},
         {"override_long", 'x'},
         {"output", 'F'},
@@ -1170,7 +1169,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->demod->analyze_pulses = atobv(arg, 1);
         break;
     case 'I':
-        cfg->include_only = atoi(arg);
+        fprintf(stderr, "include_only (-I) is deprecated. Use -S none|all|unknown|known\n");
+        exit(1);
         break;
     case 'r':
         if (!arg)
@@ -1192,7 +1192,19 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         add_dumper(arg, cfg->demod->dumper, 1);
         break;
     case 't':
-        if (atobv(arg, 1) && !cfg->demod->samp_grab)
+        fprintf(stderr, "test_mode (-t) is deprecated. Use -S none|all|unknown|known\n");
+        exit(1);
+        break;
+    case 'S':
+        if (strcasecmp(arg, "all") == 0)
+            cfg->grab_mode = 1;
+        else if (strcasecmp(arg, "unknown") == 0)
+            cfg->grab_mode = 2;
+        else if (strcasecmp(arg, "known") == 0)
+            cfg->grab_mode = 3;
+        else
+            cfg->grab_mode = atobv(arg, 1);
+        if (cfg->grab_mode && !cfg->demod->samp_grab)
             cfg->demod->samp_grab = samp_grab_create(SIGNAL_GRABBER_BUFFER);
         break;
     case 'm':

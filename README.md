@@ -47,11 +47,10 @@ Usage:	= General options =
 	[-a] Analyze mode. Print a textual description of the signal.
 	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
 		 Disable all decoders with -R 0 if you want analyzer output only.
-	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
-	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
-		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
+	[-S none|all|unknown|known] Signal auto save. Creates one file per signal.
+		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.
 	[-r <filename>] Read data from input file instead of a receiver
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
