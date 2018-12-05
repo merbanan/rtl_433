@@ -268,10 +268,10 @@
     <ClCompile Include="..\src\devices\m_bus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\maverick_et73x.c">
+    <ClCompile Include="..\src\devices\maverick_et73.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\maverick_et73.c">
+    <ClCompile Include="..\src\devices\maverick_et73x.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\mebus.c">

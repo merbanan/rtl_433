@@ -169,8 +169,8 @@
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
-    <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\maverick_et73.c" />
+    <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
     <ClCompile Include="..\src\devices\newkaku.c" />
