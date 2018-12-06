@@ -32,6 +32,7 @@
     DECL(valeo) \
     DECL(chuango) \
     DECL(generic_remote) \
+    DECL(generic_rc_power_socket) \
     DECL(tfa_twin_plus_303049) \
     DECL(fineoffset_wh1080) \
     DECL(wt450) \
