@@ -54,6 +54,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/hideki.c \
                        devices/hondaremote.c \
                        devices/honeywell.c \
+                       devices/honeywell_wdt.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
                        devices/infactory.c \
