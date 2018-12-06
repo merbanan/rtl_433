@@ -179,6 +179,8 @@ Supported device protocols:
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
     [114]  Maverick et73
+    [115] "Honeywell Wireless Doorbell"
+    [116] "Honeywell Wireless Doorbell (FSK)"
 
 * Disabled by default, use -R n or -G
 
