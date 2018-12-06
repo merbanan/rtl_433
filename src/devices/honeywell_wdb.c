@@ -103,7 +103,14 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 
 static char *output_fields[] = {
-    "payload",
+    "model",
+    "id",
+    "class",
+    "alert",
+    "secret_knock",
+    "relay",
+    "battery",
+    "mic",
     NULL
 };
 
