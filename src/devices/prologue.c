@@ -23,11 +23,12 @@
  */
 
 #include "decoder.h"
+extern int alecto_checksum(r_device *decoder, bitrow_t *bb);
 
 static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-
+    int ret;
 
     uint8_t model;
     uint8_t id;
@@ -40,6 +41,11 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bitbuffer->bits_per_row[0] <= 8 && bitbuffer->bits_per_row[0] != 0)
         return 0; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
     int r = bitbuffer_find_repeated_row(bitbuffer, 4, 36); // only 3 repeats will give false positives for Alecto/Auriol-v2
+
+    /* Check for Alecto checksum */
+    ret = alecto_checksum(decoder, bb);
+    if (ret)
+        return 0;
 
     if (r >= 0 &&
         bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
