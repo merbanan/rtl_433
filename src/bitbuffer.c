@@ -164,7 +164,7 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     uint8_t *bits = inbuf->bb[row];
     unsigned int len  = inbuf->bits_per_row[row];
     unsigned int ipos = start;
-    uint8_t bit1, bit2, bit3;
+    uint8_t bit1, bit2=0, bit3;
 
     if (max && len > start + (max * 2))
         len = start + (max * 2);
