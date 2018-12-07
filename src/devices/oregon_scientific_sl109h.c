@@ -1,7 +1,6 @@
 //some hints from http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define SL109H_MESSAGE_LENGTH 38
 #define CHECKSUM_BYTE_COUNT 4
@@ -64,7 +63,7 @@ static int get_status(uint8_t fourth_byte)
     return (fourth_byte & 0x3C) >> 2;
 }
 
-static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int channel)
+static int calculate_checksum(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row_index, int channel)
 {
     uint8_t calculated_checksum, actual_checksum;
     uint8_t sum = 0;
@@ -79,7 +78,7 @@ static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int ch
     actual_checksum     = bitbuffer->bb[row_index][0] >> 4;
     actual_expected_comparison = (calculated_checksum == actual_checksum);
 
-    if(debug_output & !actual_expected_comparison) {
+    if(decoder->verbose & !actual_expected_comparison) {
         fprintf(stderr, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", actual_checksum, calculated_checksum);
         fprintf(stderr, "Message: ");
         bitbuffer_print(bitbuffer);
@@ -89,7 +88,7 @@ static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int ch
 }
 
 
-static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
+static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *msg;
@@ -100,7 +99,6 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
     int channel;
     uint8_t id;
     int status;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     for(int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
         msg = bitbuffer->bb[row_index];
@@ -108,9 +106,8 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
         channel_bits = get_channel_bits(msg[0]);
 
         if( !((bitbuffer->bits_per_row[row_index] == SL109H_MESSAGE_LENGTH)
-              && calculate_checksum(bitbuffer, row_index, channel_bits)) ) continue;
+              && calculate_checksum(decoder, bitbuffer, row_index, channel_bits)) ) continue;
 
-        local_time_str(0, time_str);
 
         temp_c = calculate_centigrade_decidegrees(bitbuffer, row_index) / 10.0;
 
@@ -122,7 +119,7 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
 
         status = get_status(msg[3]);
 
-        data = data_make("time",          "",           DATA_STRING,                         time_str,
+        data = data_make(
                          "model",         "Model",                              DATA_STRING,    "Oregon Scientific SL109H",
                          "id",            "Id",                                 DATA_INT,    id,
                          "channel",       "Channel",                            DATA_INT,    channel,
@@ -131,7 +128,7 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
                          "status",        "Status",                             DATA_INT,    status,
                          "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
 
@@ -139,7 +136,6 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -152,12 +148,12 @@ static char *output_fields[] = {
 
 r_device oregon_scientific_sl109h = {
     .name           = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800/*760*/,
-    .long_limit     = 4400/*1050*/,
-    .reset_limit    = 8000/*2240*/,
-    .json_callback  = &oregon_scientific_callback_sl109h,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 2000,
+    .long_width     = 4000,
+    .gap_limit      = 5000,
+    .reset_limit    = 10000, // packet gap is 8900
+    .decode_fn      = &oregon_scientific_sl109h_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

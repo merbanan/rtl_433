@@ -1,7 +1,3 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
-
 /* Conrad Electronics S3318P outdoor sensor
  *
  * Transmit Interval: every ~50s
@@ -49,12 +45,12 @@
  *
  */
 
+#include "decoder.h"
 
-static int s3318p_callback(bitbuffer_t *bitbuffer) {
+static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     int browlen;
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     // ignore if two leading sync pulses (Esperanza EWS)
     if (bitbuffer->bits_per_row[0] == 0 && bitbuffer->bits_per_row[1] == 0)
@@ -96,10 +92,11 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
     temperature_with_offset = ((b[2] & 0x0F) << 8) | (b[2] & 0xF0) | (b[1] & 0x0F);
     temperature_f = (temperature_with_offset - 900) / 10.0;
 
-    if (debug_output) {
+    if (decoder->verbose) {
       bitbuffer_print(bitbuffer);
       fprintf(stderr, "Sensor ID            = %2x\n",  sensor_id);
-      fprintf(stdout, "Bitstream HEX        = %02x %02x %02x %02x %02x %02x\n",b[0],b[1],b[2],b[3],b[4],b[5]);
+      fprintf(stdout, "Bitstream HEX        = ");
+      bitrow_print(b, 48);
       fprintf(stdout, "Humidity HEX         = %02x\n", b[3]);
       fprintf(stdout, "Humidity DEC         = %u\n",   humidity);
       fprintf(stdout, "Button               = %d\n",   button);
@@ -111,8 +108,7 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
       fprintf(stdout, "TemperatureF         = %.1f\n", temperature_f);
     }
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "S3318P Temperature & Humidity Sensor",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel,
@@ -122,13 +118,12 @@ static int s3318p_callback(bitbuffer_t *bitbuffer) {
                      "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                       NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -139,15 +134,14 @@ static char *output_fields[] = {
     NULL
 };
 
-
 r_device s3318p = {
     .name           = "S3318P Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800,
-    .long_limit     = 4400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1900,
+    .long_width     = 3800,
+    .gap_limit      = 4400,
     .reset_limit    = 9400,
-    .json_callback  = &s3318p_callback,
+    .decode_fn      = &s3318p_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

@@ -22,6 +22,26 @@ uint8_t reverse8(uint8_t x)
 }
 
 
+uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
+    unsigned remainder = init << 4; // LSBs are unused
+    unsigned poly = polynomial << 4;
+    unsigned bit;
+
+    while (nBytes--) {
+        remainder ^= *message++;
+        for (bit = 0; bit < 8; bit++) {
+            if (remainder & 0x80) {
+                remainder = (remainder << 1) ^ poly;
+            } else {
+                remainder = (remainder << 1);
+            }
+        }
+    }
+    return remainder >> 4 & 0x0f; // discard the LSBs
+}
+
+
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 1; // LSB is unused
@@ -33,8 +53,7 @@ uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
         for (bit = 0; bit < 8; ++bit) {
             if (remainder & 0x80) {
                 remainder = (remainder << 1) ^ poly;
-            }
-            else {
+            } else {
                 remainder = (remainder << 1);
             }
         }
@@ -52,8 +71,7 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
         for (bit = 0; bit < 8; ++bit) {
             if (remainder & 0x80) {
                 remainder = (remainder << 1) ^ polynomial;
-            }
-            else {
+            } else {
                 remainder = (remainder << 1);
             }
         }
@@ -124,6 +142,78 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
 }
 
 
+uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key)
+{
+    uint8_t sum = 0;
+    for (unsigned k = 0; k < bytes; ++k) {
+        uint8_t data = message[k];
+        for (int i = 7; i >= 0; --i) {
+            // fprintf(stderr, "key is %02x\n", key);
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1)
+                sum ^= key;
+
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
+    }
+    return sum;
+}
+
+uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
+{
+    uint16_t sum = 0;
+    for (int bit = bits - 1; bit >= 0; --bit) {
+        // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
+        // if data bit is set then xor with key
+        if ((data >> bit) & 1)
+            sum ^= key;
+
+        // roll the key right (actually the lsb is dropped here)
+        // and apply the gen (needs to include the dropped lsb as msb)
+        if (key & 1)
+            key = (key >> 1) ^ gen;
+        else
+            key = (key >> 1);
+    }
+    return sum;
+}
+
+/*
+void lfsr_keys_fwd16(int rounds, uint16_t gen, uint16_t key)
+{
+    for (int i = 0; i <= rounds; ++i) {
+        fprintf(stderr, "key at bit %d : %04x\n", i, key);
+
+        // roll the key right (actually the lsb is dropped here)
+        // and apply the gen (needs to include the dropped lsb as msb)
+        if (key & 1)
+            key = (key >> 1) ^ gen;
+        else
+            key = (key >> 1);
+    }
+}
+
+void lfsr_keys_rwd16(int rounds, uint16_t gen, uint16_t key)
+{
+    for (int i = 0; i <= rounds; ++i) {
+        fprintf(stderr, "key at bit -%d : %04x\n", i, key);
+
+        // roll the key left (actually the msb is dropped here)
+        // and apply the gen (needs to include the dropped msb as lsb)
+        if (key & (1 << 15))
+            key = (key << 1) ^ gen;
+        else
+            key = (key << 1);
+    }
+}
+*/
+
+
 int byteParity(uint8_t inByte)
 {
     inByte ^= inByte >> 4;
@@ -131,26 +221,27 @@ int byteParity(uint8_t inByte)
     return (0x6996 >> inByte) & 1;
 }
 
-
-char* local_time_str(time_t time_secs, char *buf)
+char *local_time_str(time_t time_secs, char *buf)
 {
     time_t etime;
     struct tm *tm_info;
 
     if (time_secs == 0) {
-        extern float sample_file_pos;
-        if (sample_file_pos != -1.0) {
-            snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
-            return buf;
-        }
         time(&etime);
-    } else {
+    }
+    else {
         etime = time_secs;
     }
 
     tm_info = localtime(&etime); // note: win32 doesn't have localtime_r()
 
     strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
+}
+
+char *sample_pos_str(float sample_file_pos, char *buf)
+{
+    snprintf(buf, LOCAL_TIME_BUFLEN, "@%fs", sample_file_pos);
     return buf;
 }
 

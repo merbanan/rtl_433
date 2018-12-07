@@ -25,6 +25,8 @@
 /// Data for a compact representation of generic pulse train
 typedef struct {
 	uint64_t offset;			// Offset to first pulse in number of samples from start of stream
+	unsigned start_ago;			// Start of first pulse in number of samples ago
+	unsigned end_ago;			// End of last pulse in number of samples ago
 	unsigned int num_pulses;
 	int pulse[PD_MAX_PULSES];	// Contains width of a pulse	(high)
 	int gap[PD_MAX_PULSES];		// Width of gaps between pulses (low)
@@ -32,8 +34,12 @@ typedef struct {
 	int ook_high_estimate;		// Estimate for the OOK high level at end of package
 	int fsk_f1_est;				// Estimate for the F1 frequency for FSK
 	int fsk_f2_est;				// Estimate for the F2 frequency for FSK
+    float freq1_hz;
+    float freq2_hz;
+    float rssi_db;
+    float snr_db;
+    float noise_db;
 } pulse_data_t;
-
 
 /// Clear the content of a pulse_data_t structure
 void pulse_data_clear(pulse_data_t *data);		// Clear the struct

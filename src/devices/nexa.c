@@ -1,6 +1,5 @@
 /* Nexa
  *
- *
  * Tested devices:
  * Magnetic sensor - LMST-606
  *
@@ -8,19 +7,18 @@
  * The proove decoder will capture the OFF-state but not the ON-state
  * since the Nexa uses two different bit lengths for ON and OFF.
  *
- * Copyright (C) 2017 Christian Juncker Brædstrup 
+ * Copyright (C) 2017 Christian Juncker Brædstrup
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
 
-static int nexa_callback(bitbuffer_t *bitbuffer) {
+#include "decoder.h"
+
+static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     /* Reject codes of wrong length */
     if (bitbuffer->bits_per_row[1] != 64 && bitbuffer->bits_per_row[1] != 72)
@@ -28,11 +26,10 @@ static int nexa_callback(bitbuffer_t *bitbuffer) {
 
 
     bitbuffer_t databits = {0};
-    unsigned pos_off = bitbuffer_manchester_decode(bitbuffer, 1, 0, &databits, 64);
-    unsigned pos_on  = bitbuffer_manchester_decode(bitbuffer, 1, 0, &databits, 72);
+    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 1, 0, &databits, 80);
 
     /* Reject codes when Manchester decoding fails */
-    if (pos_off != 64 && pos_on != 72)
+    if (pos != 64 && pos != 72)
       return 0;
 
     bitrow_t *bb = databits.bb;
@@ -45,9 +42,8 @@ static int nexa_callback(bitbuffer_t *bitbuffer) {
     uint32_t unit_bit = (b[3] & 0x03);
 
     /* Get time now */
-    local_time_str(0, time_str);
 
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Nexa",
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "group",         "Group",       DATA_INT, group_code,
@@ -56,13 +52,12 @@ static int nexa_callback(bitbuffer_t *bitbuffer) {
                      "unit",          "Unit",        DATA_INT, unit_bit,
                       NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -73,12 +68,12 @@ static char *output_fields[] = {
 
 r_device nexa = {
     .name           = "Nexa",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 380,
-    .long_limit     = 1400,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 270,
+    .long_width     = 1300,
+    .gap_limit      = 1500,
     .reset_limit    = 2800,
-    .json_callback  = &nexa_callback,
+    .decode_fn      = &nexa_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

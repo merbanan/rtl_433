@@ -10,9 +10,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 
 // Start of frame preamble is 111000xx
@@ -21,7 +19,7 @@ static const unsigned char preamble_pattern = 0xe0;
 // End of frame is 00xxxxxx or 11xxxxxx depending on final data bit
 static const unsigned char postamble_pattern[2] = { 0x00, 0xc0 };
 
-static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
+static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	uint8_t *b;
 	uint32_t unit_id;
 	uint16_t depth = 0;
@@ -29,13 +27,11 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 	uint8_t flags;
 	uint8_t maybetemp;
 	double temperature;
-	char time_str[LOCAL_TIME_BUFLEN];
 	data_t *data;
 	unsigned bitpos = 0;
 	bitbuffer_t databits = {0};
 	int events = 0;
 
-	local_time_str(0, time_str);
 
 	// Find a preamble with enough bits after it that it could be a complete packet
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, &preamble_pattern, 6)) + 136 <=
@@ -82,7 +78,7 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 			// the sensor flat down on a table, it still reads about 13.
 			depth = ((b[5] & 3) << 8) | b[6];
 
-		data = data_make("time", "", DATA_STRING, time_str,
+		data = data_make(
 			"model", "", DATA_STRING, "Oil Watchman",
 			"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
 			"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
@@ -91,14 +87,13 @@ static int oil_watchman_callback(bitbuffer_t *bitbuffer) {
 			"binding_countdown", "", DATA_INT, binding_countdown,
 			"depth", "", DATA_INT, depth,
 			NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		events++;
 	}
 	return events;
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"flags",
@@ -112,10 +107,10 @@ static char *output_fields[] = {
 r_device oil_watchman = {
 	.name			= "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
 	.modulation		= FSK_PULSE_PCM,
-	.short_limit	= 1000,
-	.long_limit     = 1000, // NRZ
+	.short_width	= 1000,
+	.long_width     = 1000, // NRZ
 	.reset_limit    = 4000,
-	.json_callback	= &oil_watchman_callback,
+	.decode_fn    	= &oil_watchman_callback,
 	.disabled		= 0,
 	.fields			= output_fields,
 };

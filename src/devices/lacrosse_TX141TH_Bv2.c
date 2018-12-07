@@ -82,9 +82,7 @@
  * (at your option) any later version.
  *
  */
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // Define the types of devices this file supports
 #define LACROSSE_TX141 1
@@ -93,20 +91,15 @@
 #define LACROSSE_TX141_BITLEN 37
 #define LACROSSE_TX141TH_BITLEN 40
 
-static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
+static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     int r;
     int device;
     uint8_t *bytes;
     uint8_t id, status, battery_low, test, humidity = 0;
     uint16_t temp_raw;
     float temp_c;
-
-    if (debug_output) {
-        bitbuffer_print(bitbuffer);
-    }
 
     // Find the most frequent data packet
     r = bitbuffer_find_repeated_row(bitbuffer, 5, 37);
@@ -139,17 +132,15 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
     }
 
     if (0 == id || (device == LACROSSE_TX141TH && (0 == humidity || humidity > 100)) || temp_c < -40.0 || temp_c > 140.0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "LaCrosse TX141-Bv2/TX141TH-Bv2 data error\n");
             fprintf(stderr, "id: %i, humidity:%i, temp:%f\n", id, humidity, temp_c);
         }
         return 0;
     }
 
-    local_time_str(0, time_str);
     if (device == LACROSSE_TX141) {
         data = data_make(
-                "time",          "Date and time", DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "LaCrosse TX141-Bv2 sensor",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
@@ -158,7 +149,6 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
                 NULL);
     } else {
         data = data_make(
-                "time",          "Date and time", DATA_STRING, time_str,
                 "model",         "",              DATA_STRING, "LaCrosse TX141TH-Bv2 sensor",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
@@ -167,14 +157,12 @@ static int lacrosse_tx141th_bv2_callback(bitbuffer_t *bitbuffer)
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
     }
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
-
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -186,13 +174,13 @@ static char *output_fields[] = {
 
 r_device lacrosse_TX141TH_Bv2 = {
     .name          = "LaCrosse TX141-Bv2/TX141TH-Bv2 sensor",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
-    .short_limit   = 208,    // short pulse is 208 us + 417 us gap
-    .long_limit    = 417,    // long pulse is 417 us + 208 us gap
+    .modulation    = OOK_PULSE_PWM,
+    .short_width   = 208,    // short pulse is 208 us + 417 us gap
+    .long_width    = 417,    // long pulse is 417 us + 208 us gap
     .sync_width    = 833,    // sync pulse is 833 us + 833 us gap
     .gap_limit     = 625,    // long gap (with short pulse) is ~417 us, sync gap is ~833 us
     .reset_limit   = 1500,   // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
-    .json_callback = &lacrosse_tx141th_bv2_callback,
+    .decode_fn     = &lacrosse_tx141th_bv2_callback,
     .disabled      = 0,
     .fields        = output_fields,
 };

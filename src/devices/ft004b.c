@@ -22,26 +22,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
-
-static float
-get_temperature (uint8_t * msg)
-{
-    uint16_t temp_c = ((msg[4] & 0x7) << 8) | msg[3];
-    return (temp_c * 0.05f) - 40.0f;
-}
+#include "decoder.h"
 
 static int
-ft004b_callback (bitbuffer_t *bitbuffer)
+ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t* msg;
     float temperature;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
-    if(bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
+    if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
         return 0;
     }
 
@@ -54,25 +44,22 @@ ft004b_callback (bitbuffer_t *bitbuffer)
         msg[i] = reverse8((a & b) | (b & c) | (a & c));
     }
 
-    if (msg[0] == 0xf4) {
-        temperature = get_temperature(msg);
+    if (msg[0] != 0xf4)
+        return 0;
 
-        local_time_str(0, time_str);
-        data = data_make(
-            "time", "", DATA_STRING, time_str,
+    int temp_raw = ((msg[4] & 0x7) << 8) | msg[3];
+    temperature = (temp_raw * 0.05f) - 40.0f;
+
+    data = data_make(
             "model", "", DATA_STRING, "FT-004-B Temperature Sensor",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
             NULL);
-        data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
-        return 1;
-    }
-
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "temperature_C",
     NULL
@@ -80,12 +67,12 @@ static char *output_fields[] = {
 
 r_device ft004b = {
     .name          = "FT-004-B Temperature Sensor",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (1956 + 3900) / 2,
-    .long_limit    = 4000,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 1956,
+    .long_width    = 3900,
+    .gap_limit     = 4000,
     .reset_limit   = 4000,
-    .json_callback = &ft004b_callback,
+    .decode_fn     = &ft004b_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

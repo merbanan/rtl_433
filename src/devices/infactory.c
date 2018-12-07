@@ -6,7 +6,6 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  *
- *
  * Outdoor sensor transmits data temperature, humidity.
  * Transmissions also includes an id. The sensor transmits
  * every 60 seconds 6 packets.
@@ -24,49 +23,60 @@
  *
  *    # rtl_433 -f 434052000 -R 91 -F json:log.json
  *
+ * Payload looks like this:
+ *
+ * [00] { 4} 00             : 0000
+ * [01] {40} 0f 30 5c e7 61 : 00001111 00110000 01011100 11100111 01100001 
+ *
+ * First row is actually the preample part. This is added to make the signal more unique.
+ *
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int infactory_callback(bitbuffer_t *bitbuffer) {
-
-    bitrow_t *bb = bitbuffer->bb;
-    uint8_t *b = bb[0];
+static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    bitrow_t *bb;
     data_t *data;
-
-    char time_str[LOCAL_TIME_BUFLEN];
-    int id;
-    int humidity;
-    int temp;
+    uint8_t *b;
+    int id, humidity, temp;
     float temp_f;
 
-    if (bitbuffer->bits_per_row[0] != 40) {
+    if (bitbuffer->bits_per_row[0] != 4) {
         return 0;
     }
+    if (bitbuffer->bits_per_row[1] != 40) {
+        return 0;
+    }
+    bb = bitbuffer->bb;
+
+    /* Check that 4 bits of preamble is 0 */
+    b = bb[0];
+    if (b[0]&0x0F)
+        return 0;
+
+    /* Check that last 4 bits of message is 0x1 */
+    b = bb[1];
+    if (!(b[4]&0x0F))
+        return 0;
 
     id = b[0];
     humidity = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD
     temp = (b[2] << 4) | (b[3] >> 4);
     temp_f = (float)temp / 10 - 90;
 
-    local_time_str(0, time_str);
-
-    data = data_make( "time",		"",				DATA_STRING,	time_str,
-        "model",         "",	   DATA_STRING, "inFactory sensor",
-        "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
-        "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
-        "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
-        NULL);
-    data_acquired_handler(data);
+    data = data_make(
+            "model",         "",	   DATA_STRING, "inFactory sensor",
+            "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
+            "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
+            "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
-
 static char *output_fields[] = {
-    "time",
     "model"
     "id",
     "temperature_F",
@@ -76,11 +86,13 @@ static char *output_fields[] = {
 
 r_device infactory = {
     .name          = "inFactory",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 3000, // Threshold between short and long gap [us]
-    .long_limit    = 5000, //  Maximum gap size before new row of bits [us]
-    .reset_limit   = 6000, // Maximum gap size before End Of Message [us].
-    .json_callback = &infactory_callback,
-    .disabled      = 1,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 1850,
+    .long_width    = 4050,
+    .gap_limit     = 4000, // Maximum gap size before new row of bits [us]
+    .reset_limit   = 8500, // Maximum gap size before End Of Message [us].
+    .tolerance     = 1000,
+    .decode_fn     = &infactory_callback,
+    .disabled      = 0,
     .fields        = output_fields
 };

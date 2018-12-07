@@ -2,12 +2,12 @@
 
 if [ -z "$1" ] ; then
   echo input file missing
-  echo "Usage: $0 input.cu8 output.sr [sample rate in kHz]"
+  echo "Usage: $0 input.cu8 [sample rate in kHz]"
   exit 1
 fi
 if [ ! -r "$1" ] ; then
   echo input not found
-  echo "Usage: $0 input.cu8 output.sr [sample rate in kHz]"
+  echo "Usage: $0 input.cu8 [sample rate in kHz]"
   exit 1
 fi
 file=$1
@@ -25,7 +25,7 @@ fi
 
 if [ ! -z "$3" ] ; then
   echo too many arguments
-  echo "Usage: $0 input.cu8 output.sr [sample rate in kHz]"
+  echo "Usage: $0 input.cu8 [sample rate in kHz]"
   exit 1
 fi
 

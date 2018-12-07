@@ -17,13 +17,25 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\am_analyze.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\baseband.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\bitbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\confparse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\decoder_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\fileformat.h">
@@ -44,6 +56,9 @@
     <ClInclude Include="..\include\rtl_433_devices.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\samp_grab.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\sdr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -53,15 +68,27 @@
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\confparse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\am_analyze.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\baseband.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\bitbuffer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\confparse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\decoder_util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fileformat.c">
@@ -77,6 +104,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\rtl_433.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\samp_grab.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\sdr.c">
@@ -98,6 +128,12 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ambient_weather.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ambientweather_tx8300.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ambientweather_wh31e.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\blyss.c">
@@ -193,6 +229,9 @@
     <ClCompile Include="..\src\devices\honeywell.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\honeywell_wdt.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ht680.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -233,6 +272,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\m_bus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\maverick_et73.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\maverick_et73x.c">
@@ -343,6 +385,9 @@
     <ClCompile Include="..\src\devices\tpms_toyota.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ttx201.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -369,6 +414,9 @@
     </ClCompile>
     <ClCompile Include="..\src\devices\x10_sec.c">
       <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\confparse.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

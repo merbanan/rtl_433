@@ -1,87 +1,66 @@
-/* Doorbell implementation for Elro DB286A devices
+/* Generic doorbell implementation for Elro DB286A devices
  *
  * Note that each device seems to have two codes, which alternate
  * for every other button press.
  *
+ * short is 456 us pulse, 1540 us gap
+ * long is 1448 us pulse, 544 us gap
+ * packet gap is 7016 us
+ *
  * Example code: 37f62a6c80
  *
  * Copyright (C) 2016 Fabian Zaremba <fabian@youremail.eu>
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-//33 pulses per data pattern
-#define	DB286A_PULSECOUNT		33
-//5*8 = 40 bits, 7 trailing zero bits are encoded, too
-#define DB286A_CODEBYTES		5
-//Hex character count for code:
-//(DB286A_CODEBYTES*8)/4 (8 bits per byte, 4 bits per hex character)
-#define DB286A_CODECHARS		DB286A_CODEBYTES*2
-//Minimum data pattern repetitions (14 is maximum)
-#define	DB286A_MINPATTERN		5
+static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    uint8_t *b;
+    char id_str[4*2+1];
 
-static int doorbell_db286a_callback(bitbuffer_t *bitbuffer) {
+    // 33 bits expected, 5 minimum packet repetitions (14 expected)
+    int row = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
 
-	char time_str[LOCAL_TIME_BUFLEN];
-	data_t *data;
-	bitrow_t *bb = bitbuffer->bb;
-	uint8_t *b = bb[1];
-	unsigned bits = bitbuffer->bits_per_row[1];
+    if (row < 0 || bitbuffer->bits_per_row[row] != 33)
+        return 0;
 
-	char id_string[DB286A_CODECHARS+1];
-	char *idsp = id_string;
+    b = bitbuffer->bb[row];
 
-	unsigned i;
+    // 32 bits, trailing bit is dropped
+    sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
 
-	if (bits != DB286A_PULSECOUNT) {
-		return 0;
-	}
+    data = data_make(
+            "model",    "",        DATA_STRING, "Elro-DB286A",
+            "id",       "ID",      DATA_STRING, id_str,
+            NULL);
 
-	if (count_repeats(bitbuffer, 1) < DB286A_MINPATTERN) {
-		return 0;
-	}
+	decoder_output_data(decoder, data);
 
-	//Get hex string representation of code pattern
-	for (i = 0; i <= DB286A_CODEBYTES; i++) {
-	    idsp += sprintf(idsp, "%02x", b[i]);
-	}
-	id_string[DB286A_CODECHARS] = '\0';
-
-	local_time_str(0, time_str);
-
-	data = data_make(
-				"time",			"",		DATA_STRING, time_str,
-				"model",		"",		DATA_STRING, "Elro DB286A",
-				"code",			"Code",	DATA_STRING, id_string,
-				NULL);
-
-	data_acquired_handler(data);
-
-	return 1;
+    return 1;
 
 }
 
 static char *output_fields[] = {
-	"time",
-	"model",
-	"code",
-	NULL
+    "model",
+    "id",
+    NULL
 };
 
 r_device elro_db286a = {
-	.name			= "Elro DB286A Doorbell",
-	.modulation     = OOK_PULSE_PWM_RAW,
-	.short_limit    = 800,
-	.long_limit     = 1500*4,
-	.reset_limit    = 2000*4,
-	.json_callback	= &doorbell_db286a_callback,
-	.disabled		= 0,
-	.fields         = output_fields
+    .name           = "Elro DB286A Doorbell",
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 456,
+    .long_width     = 1448,
+    .gap_limit      = 2000,
+    .reset_limit    = 8000,
+    .decode_fn      = &elro_db286a_callback,
+    .disabled       = 0,
+    .fields         = output_fields
 };

@@ -23,7 +23,7 @@ typedef uint8_t bitrow_t[BITBUF_COLS];
 typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer
-typedef struct {
+typedef struct bitbuffer {
 	uint16_t	num_rows;	// Number of active rows
 	uint16_t	bits_per_row[BITBUF_ROWS];	// Number of active bits per row
 	uint16_t	syncs_before_row[BITBUF_ROWS];	// Number of sync pulses before row
@@ -53,6 +53,15 @@ void bitbuffer_invert(bitbuffer_t *bits);
 /// Print the content of the bitbuffer
 void bitbuffer_print(const bitbuffer_t *bits);
 
+/// Debug the content of the bitbuffer
+void bitbuffer_debug(const bitbuffer_t *bits);
+
+/// Print the content of a bit row (byte buffer)
+void bitrow_print(bitrow_t const bitrow, unsigned bit_len);
+
+/// Debug the content of a bit row (byte buffer)
+void bitrow_debug(bitrow_t const bitrow, unsigned bit_len);
+
 /// Parse a string into a bitbuffer
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
 
@@ -68,6 +77,7 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 // specified row and start bit. Decode at most 'max' data bits (i.e. 2*max)
 // bits from the input buffer). Return the bit position in the input row
 // (i.e. returns start + 2*outbuf->bits_per_row[0]).
+// per IEEE 802.3 conventions, i.e. high-low is a 0 bit, low-high is a 1 bit.
 unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
 				     bitbuffer_t *outbuf, unsigned max);
 

@@ -42,61 +42,46 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-static int wg_pb12v1_callback(bitbuffer_t *bitbuffer) {
-    /* This function detects if the packet (bitbuffer) is from a WG-PB12V1
-     * sensor, and decodes it if it passes the checks.
-     */
-
-    bitrow_t *bb = bitbuffer->bb;
+static int wg_pb12v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
-
-    char time_str[LOCAL_TIME_BUFLEN];
+    uint8_t *b;
 
     uint8_t id;
     int16_t temp;
     float temperature;
-    uint8_t humidity;
 
     const uint8_t polynomial = 0x31;    // x8 + x5 + x4 + 1 (x8 is implicit)
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] >= 48 &&              // Don't waste time on a short packages
-        bb[0][0] == 0xFF &&                              // Preamble
-        bb[0][5] == crc8(&bb[0][1], 4, polynomial, 0) && // CRC (excluding preamble)
-        bb[0][4] == 0xFF                                 // Humidity set to 11111111
-        ){
+    b = bitbuffer->bb[0];
+    if (bitbuffer->bits_per_row[0] < 48 ||               // Don't waste time on a short packages
+            b[0] != 0xFF ||                              // Preamble
+            b[5] != crc8(&b[1], 4, polynomial, 0) || // CRC (excluding preamble)
+            b[4] != 0xFF)                                // Humidity set to 11111111
+        return 0;
 
-        /* Get time now */
-        local_time_str(0, time_str);
+    // Nibble 7,8 contains id
+    id = b[3] & 0x1F;
 
-         // Nibble 7,8 contains id
-        id = ((bb[0][3]&0x1F));
+    // Nibble 5,6,7 contains 12 bits of temperature
+    // The temperature is "milli-celsius", ie 1000 mC = 1C, offset by -40 C.
+    temp = ((b[1] & 0x0F) << 8) | b[2];
+    temperature = ((float)temp / 10) - 40;
 
-        // Nibble 5,6,7 contains 12 bits of temperature
-        // The temperature is "milli-celsius", ie 1000 mC = 1C, offset by -40 C.
-        temp = ((bb[0][1] & 0x0F) << 8) | bb[0][2];
-        temperature = ((float)temp / 10)-40;
-
-        data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "WG-PB12V1",
-                         "id",            "ID",          DATA_INT, id,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-                         "mic",           "Integrity",   DATA_STRING, "CRC",
-                          NULL);
-        data_acquired_handler(data);
-        return 1;
-    }
-    return 0;
+    data = data_make(
+            "model",            "",             DATA_STRING, "WG-PB12V1",
+            "id",               "ID",           DATA_INT, id,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char *output_fields[] = {
-    /* Defines the output files for this device function.
-     */
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -105,15 +90,12 @@ static char *output_fields[] = {
 };
 
 r_device wg_pb12v1 = {
-    /* Defines object information for use in other parts of RTL_433.
-     */
-     .name           = "WG-PB12V1",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 650,	// Short pulse 564µs, long pulse 1476µs, fixed gap 960µs
-    .long_limit     = 1550,	// Maximum pulse period (long pulse + fixed gap)
+    .name           = "WG-PB12V1 Temperature Sensor",
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 564,	// Short pulse 564µs, long pulse 1476µs, fixed gap 960µs
+    .long_width     = 1476,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 2500,	// We just want 1 package
-    .json_callback  = &wg_pb12v1_callback,
+    .decode_fn      = &wg_pb12v1_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

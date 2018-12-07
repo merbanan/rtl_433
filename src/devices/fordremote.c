@@ -17,15 +17,12 @@
  * [03] {78} 03 e0 01 e4 e0 90 52 97 39 60
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-static int fordremote_callback(bitbuffer_t *bitbuffer) {
+static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 	uint8_t *bytes;
-	int found = 0, i;
+	int found = 0;
 	int device_id, code;
 
 	// expect {1} {9} {1} preamble
@@ -40,7 +37,7 @@ static int fordremote_callback(bitbuffer_t *bitbuffer) {
 			continue; // no valid preamble
 		}
 
-		if (debug_output) {
+		if (decoder->verbose) {
 			bitbuffer_print(bitbuffer);
 		}
 
@@ -49,14 +46,12 @@ static int fordremote_callback(bitbuffer_t *bitbuffer) {
 		code = bytes[7];
 
 		/* Get time now */
-		local_time_str(0, time_str);
 		data = data_make(
-	   			"time",		"time",		DATA_STRING, time_str,
 				"model",	"model",	DATA_STRING, "Ford Car Remote",
 				"id",		"device-id",	DATA_INT, device_id,
 				"code", 	"data",		DATA_INT, code,
 				NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 
 		found++;
 	}
@@ -64,7 +59,6 @@ static int fordremote_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"code",
@@ -74,12 +68,11 @@ static char *output_fields[] = {
 r_device fordremote = {
 	.name			= "Ford Car Key",
 	.modulation		= OOK_PULSE_DMC,
-	.short_limit	= 250,  // half-bit width is 250 us
-	.long_limit		= 500,	// bit width is 500 us
+	.short_width	= 250,  // half-bit width is 250 us
+	.long_width		= 500,	// bit width is 500 us
 	.reset_limit	= 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
 	.tolerance		= 50,
-	.json_callback	= &fordremote_callback,
+	.decode_fn    	= &fordremote_callback,
 	.disabled		= 0,
-	.demod_arg		= 0,
 	.fields			= output_fields
 };

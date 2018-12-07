@@ -8,9 +8,7 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
@@ -97,10 +95,8 @@
 // preamble message.  only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
 static unsigned char preamble[1] = {0x01};
 
-static int interlogix_callback(bitbuffer_t *bitbuffer)
+static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
-    bitrow_t *bb;
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];
@@ -117,8 +113,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
     // search for preamble and exit if not found
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, preamble, (sizeof preamble) * 8);
     if (bit_offset == bitbuffer->bits_per_row[row] || bitbuffer->num_rows != 1) {
-        if (debug_output)
-            fprintf(stderr, "Preamble not found, exiting! bit_offset: %d \n", bit_offset);
+        if (decoder->verbose > 1)
+            fprintf(stderr, "Interlogix: Preamble not found, bit_offset: %d\n", bit_offset);
         return 0;
     }
 
@@ -126,14 +122,14 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
     bit_offset += (sizeof preamble) * 8;
 
     if (bitbuffer->bits_per_row[row] - bit_offset < INTERLOGIX_MSG_BIT_LEN - 1) {
-        if (debug_output)
-            fprintf(stderr, "Found valid preamble but message size (%d) too small, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
+        if (decoder->verbose > 1)
+            fprintf(stderr, "Interlogix: Found valid preamble but message size (%d) too small\n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
 
     if (bitbuffer->bits_per_row[row] - bit_offset > INTERLOGIX_MSG_BIT_LEN + 7) {
-        if (debug_output)
-            fprintf(stderr, "Found valid preamble but message size (%d) too long, exiting! \n", bitbuffer->bits_per_row[row] - bit_offset);
+        if (decoder->verbose > 1)
+            fprintf(stderr, "Interlogix: Found valid preamble but message size (%d) too long\n", bitbuffer->bits_per_row[row] - bit_offset);
         return 0;
     }
 
@@ -160,8 +156,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
     int parity_error = parity ^ 0x3; // both parities are odd, i.e. 1 on success
 
     if (parity_error) {
-        if (debug_output)
-            fprintf(stderr, "Parity check failed (%d %d)\n", parity >> 1, parity & 1);
+        if (decoder->verbose)
+            fprintf(stderr, "Interlogix: Parity check failed (%d %d)\n", parity >> 1, parity & 1);
         return 0;
     }
 
@@ -197,10 +193,8 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
         f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
 
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",        "Receiver Time", DATA_STRING, time_str,
             "model",       "Model",         DATA_STRING, "Interlogix",
             "id",          "ID",            DATA_STRING, device_serial,
             "device_type", "Device Type",   DATA_STRING, device_type,
@@ -213,13 +207,12 @@ static int interlogix_callback(bitbuffer_t *bitbuffer)
             "switch5",     "Switch5 State", DATA_STRING, f5_latch_state,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "device_type",
@@ -235,12 +228,11 @@ static char *output_fields[] = {
 
 r_device interlogix = {
     .name          = "Interlogix GE UTC Security Devices",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 168, //NOTE: the nominal timing should be (122+244)/2
-    .long_limit    = 1000, //Maximum gap size before new row of bits
-    .reset_limit   = 500, //Maximum gap size before End Of Message
-    .json_callback = &interlogix_callback,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 122,
+    .long_width    = 244,
+    .reset_limit   = 500, // Maximum gap size before End Of Message
+    .decode_fn     = &interlogix_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

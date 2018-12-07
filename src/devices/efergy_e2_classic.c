@@ -22,15 +22,12 @@
  * (at your option) any later version.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
+static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     if (num_bits < 64 || num_bits > 80) {
         return 0;
@@ -79,10 +76,9 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
     uint8_t fact = (-(int8_t)bytes[6] + 15);
     float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
 
-    local_time_str(0, time_str);
 
     // Output data
-    data = data_make("time",     "",               DATA_STRING, time_str,
+    data = data_make(
                      "model",    "",               DATA_STRING, "Efergy e2 CT",
                      "id",       "Transmitter ID", DATA_INT, address,
                      "current",  "Current",        DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
@@ -92,13 +88,12 @@ static int efergy_e2_classic_callback(bitbuffer_t *bitbuffer) {
                      "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
                      NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "current",
@@ -110,12 +105,13 @@ static char *output_fields[] = {
 
 r_device efergy_e2_classic = {
     .name           = "Efergy e2 classic",
-    .modulation     = FSK_PULSE_PWM_RAW,
-    .short_limit    = 92,
-    .long_limit     = 400,
-    .reset_limit    = 400,
-    .json_callback  = &efergy_e2_classic_callback,
+    .modulation     = FSK_PULSE_PWM,
+	.short_width    = 64,
+	.long_width     = 136,
+	.sync_width     = 500,
+	.gap_limit      = 200,
+	.reset_limit    = 400,
+    .decode_fn      = &efergy_e2_classic_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

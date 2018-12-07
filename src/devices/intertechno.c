@@ -6,12 +6,10 @@
  * There is another type of remotes that have an ID prefix of 0x56 and slightly shorter timing.
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
-static int intertechno_callback(bitbuffer_t *bitbuffer)
+static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bitbuffer->bb[1];
@@ -23,7 +21,7 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
         return 0;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stdout, "Switch event:\n");
         fprintf(stdout, "protocol       = Intertechno\n");
         fprintf(stdout, "rid            = %x\n", b[0]);
@@ -37,7 +35,6 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
         fprintf(stdout, "ADDR Slave     = %i\n", b[7] & 0x0f);
         fprintf(stdout, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
         fprintf(stdout, "command        = %i\n",( b[6] & 0x07));
-        fprintf(stdout, "%02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4]);
     }
 
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);
@@ -45,9 +42,7 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
     master = (b[7] & 0xf0) >> 4;
     command = b[6] & 0x07;
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "Intertechno",
         "id",               "",     DATA_STRING,    id_str,
         "slave",            "",     DATA_INT,       slave,
@@ -55,12 +50,11 @@ static int intertechno_callback(bitbuffer_t *bitbuffer)
         "command",          "",     DATA_INT,       command,
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",
@@ -72,12 +66,12 @@ static char *output_fields[] = {
 
 r_device intertechno = {
     .name           = "Intertechno 433",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 600,
-    .long_limit     = 1700,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 330,
+    .long_width     = 1400,
+    .gap_limit      = 1700,
     .reset_limit    = 10000,
-    .json_callback  = &intertechno_callback,
+    .decode_fn      = &intertechno_callback,
     .disabled       = 1,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

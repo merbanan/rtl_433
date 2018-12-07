@@ -78,24 +78,27 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 			     unsigned pos, uint8_t *out, unsigned len)
 {
 	uint8_t *bits = bitbuffer->bb[row];
-
+	if (len == 0)
+		return;
 	if ((pos & 7) == 0) {
 		memcpy(out, bits + (pos / 8), (len + 7) / 8);
 	} else {
 		unsigned shift = 8 - (pos & 7);
+		unsigned bytes = (len + 7) >> 3;
+		uint8_t *p = out;
 		uint16_t word;
-
 		pos = pos >> 3; // Convert to bytes
-		len = (len + 7) >> 3;
 
 		word = bits[pos];
 
-		while (len--) {
+		while (bytes--) {
 			word <<= 8;
 			word |= bits[++pos];
-			*(out++) = word >> shift;
+			*(p++) = word >> shift;
 		}
 	}
+	if (len & 7)
+		out[(len - 1) / 8] &= 0xff00 >> (len & 7); // mask off bottom bits
 }
 
 // If we make this an inline function instead of a macro, it means we don't
@@ -203,46 +206,75 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     return ipos;
 }
 
-void bitbuffer_print(const bitbuffer_t *bits) {
-	int highest_indent, indent_this_col, indent_this_row, row_len;
-	uint16_t col, row;
+static void print_bitrow(bitrow_t const bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
+{
+    unsigned row_len = 0;
 
-	/* Figure out the longest row of bit to get the highest_indent
+    fprintf(stderr, "{%2d} ", bit_len);
+    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
+        row_len += fprintf(stderr, "%02x ", bitrow[col]);
+    }
+    // Print binary values also?
+    if (always_binary || bit_len <= BITBUF_MAX_PRINT_BITS) {
+        fprintf(stderr, "%-*s: ", highest_indent > row_len ? highest_indent - row_len : 0, "");
+        for (unsigned bit = 0; bit < bit_len; ++bit) {
+            if (bitrow[bit / 8] & (0x80 >> (bit % 8))) {
+                fprintf(stderr, "1");
+            } else {
+                fprintf(stderr, "0");
+            }
+            if ((bit % 8) == 7) // Add byte separators
+                fprintf(stderr, " ");
+        }
+    }
+    fprintf(stderr, "\n");
+}
+
+static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
+{
+    unsigned highest_indent, indent_this_col, indent_this_row;
+    unsigned col, row;
+
+    /* Figure out the longest row of bit to get the highest_indent
 	 */
-	highest_indent = sizeof("[dd] {dd} ") - 1;
-	for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
-		for (col = indent_this_col  = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-			indent_this_col += 2+1;
-		}
-		indent_this_row = indent_this_col;
-		if (indent_this_row > highest_indent)
-			highest_indent = indent_this_row;
-	}
+    highest_indent = sizeof("[dd] {dd} ") - 1;
+    for (row = indent_this_row = 0; row < bits->num_rows; ++row) {
+        for (col = indent_this_col = 0; col < (unsigned)(bits->bits_per_row[row] + 7) / 8; ++col) {
+            indent_this_col += 2 + 1;
+        }
+        indent_this_row = indent_this_col;
+        if (indent_this_row > highest_indent)
+            highest_indent = indent_this_row;
+    }
 
-	fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
-	for (row = 0; row < bits->num_rows; ++row) {
-		fprintf(stderr, "[%02d] {%2d} ", row, bits->bits_per_row[row]);
-		for (col = row_len = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-			row_len += fprintf(stderr, "%02x ", bits->bb[row][col]);
-		}
-		// Print binary values also?
-		if (bits->bits_per_row[row] <= BITBUF_MAX_PRINT_BITS) {
-			fprintf(stderr, "%-*s: ", highest_indent-row_len, "");
-			for (uint16_t bit = 0; bit < bits->bits_per_row[row]; ++bit) {
-				if (bits->bb[row][bit/8] & (0x80 >> (bit % 8))) {
-					fprintf(stderr, "1");
-				} else {
-					fprintf(stderr, "0");
-				}
-				if ((bit % 8) == 7)      // Add byte separators
-					fprintf(stderr, " ");
-			}
-		}
-		fprintf(stderr, "\n");
-	}
-	if(bits->num_rows >= BITBUF_ROWS) {
-		fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
-	}
+    fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
+    for (row = 0; row < bits->num_rows; ++row) {
+        fprintf(stderr, "[%02d] ", row);
+        print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
+    }
+    if (bits->num_rows >= BITBUF_ROWS) {
+        fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");
+    }
+}
+
+void bitbuffer_print(const bitbuffer_t *bits)
+{
+    print_bitbuffer(bits, 0);
+}
+
+void bitbuffer_debug(const bitbuffer_t *bits)
+{
+    print_bitbuffer(bits, 1);
+}
+
+void bitrow_print(bitrow_t const bitrow, unsigned bit_len)
+{
+    print_bitrow(bitrow, bit_len, 0, 0);
+}
+
+void bitrow_debug(bitrow_t const bitrow, unsigned bit_len)
+{
+    print_bitrow(bitrow, bit_len, 0, 1);
 }
 
 void bitbuffer_parse(bitbuffer_t *bits, const char *code)

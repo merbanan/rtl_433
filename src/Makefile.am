@@ -3,20 +3,26 @@ AM_CFLAGS = ${CFLAGS} -fPIC ${SYMBOL_VISIBILITY}
 
 bin_PROGRAMS         = rtl_433
 
-rtl_433_SOURCES      = baseband.c \
+rtl_433_SOURCES      = am_analyze.c \
+                       baseband.c \
                        bitbuffer.c \
+                       confparse.c \
                        data.c \
+                       decoder_util.c \
                        fileformat.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        rtl_433.c \
+                       samp_grab.c \
                        sdr.c \
                        util.c \
                        devices/acurite.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
                        devices/ambient_weather.c \
+                       devices/ambientweather_tx8300.c \
+                       devices/ambientweather_wh31e.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
@@ -48,6 +54,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/hideki.c \
                        devices/hondaremote.c \
                        devices/honeywell.c \
+                       devices/honeywell_wdt.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
                        devices/infactory.c \
@@ -62,6 +69,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/lacrossews.c \
                        devices/lightwave_rf.c \
                        devices/m_bus.c \
+                       devices/maverick_et73.c \
                        devices/maverick_et73x.c \
                        devices/mebus.c \
                        devices/new_template.c \
@@ -98,6 +106,7 @@ rtl_433_SOURCES      = baseband.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
+                       devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
                        devices/valeo.c \
                        devices/waveman.c \

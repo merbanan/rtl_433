@@ -16,12 +16,9 @@
 *
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
-static int honeywell_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int honeywell_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     const uint8_t *bb;
     int channel;
     int device_id;
@@ -50,10 +47,8 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
     state = (event & 0x80) >> 7;
     heartbeat = (event & 0x04) >> 2;
 
-    local_time_str(0, time_str);
 
     data_t *data = data_make(
-          "time",     "", DATA_STRING, time_str,
           "model", "", DATA_STRING, "Honeywell Door/Window Sensor",
           "id",       "", DATA_FORMAT, "%05x", DATA_INT, device_id,
           "channel","", DATA_INT, channel,
@@ -62,12 +57,11 @@ static int honeywell_callback(bitbuffer_t *bitbuffer) {
           "heartbeat" , "", DATA_STRING, heartbeat ? "yes" : "no",
           NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -80,11 +74,10 @@ static char *output_fields[] = {
 r_device honeywell = {
     .name                   = "Honeywell Door/Window Sensor",
     .modulation             = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_limit    =   39 * 4,
-    .long_limit             = 0,
+    .short_width    =   39 * 4,
+    .long_width             = 0,
     .reset_limit    = 73 * 4,
-    .json_callback  = &honeywell_callback,
+    .decode_fn      = &honeywell_callback,
     .disabled               = 0,
-    .demod_arg              = 0,
     .fields                 = output_fields,
 };

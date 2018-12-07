@@ -30,13 +30,10 @@
  * LSB                 MSB
  * ffffff45 01236pHH hhhhh Encoding
 */
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
+static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 
 	uint8_t ID;
 	float temperature;
@@ -79,22 +76,20 @@ static int calibeur_rf104_callback(bitbuffer_t *bitbuffer) {
 		bits |= ((bb[1][2] & 0x08) << 1);	// [4]
 		humidity = bits;
 
-		local_time_str(0, time_str);
-		data = data_make("time",          "",            DATA_STRING, time_str,
+		data = data_make(
 						"model",         "",            DATA_STRING, "Calibeur RF-104",
 						"id",            "ID",          DATA_INT, ID,
 						"temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
 						"humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
 						"mic",           "Integrity",   DATA_STRING,    "CRC",
 						NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		return 1;
 	}
 	return 0;
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"id",
 	"temperature_C",
@@ -105,13 +100,13 @@ static char *output_fields[] = {
 
 r_device calibeur_RF104 = {
 	.name           = "Calibeur RF-104 Sensor",
-	.modulation     = OOK_PULSE_PWM_PRECISE,
-	.short_limit    = 760,	// Short pulse 760µs
-	.long_limit     = 2240,	// Long pulse 2240µs
+	.modulation     = OOK_PULSE_PWM,
+	.short_width    = 760,	// Short pulse 760µs
+	.long_width     = 2240,	// Long pulse 2240µs
 	.reset_limit    = 3200,	// Longest gap (2960-760µs)
 	.sync_width     = 1560,	// Startbit 1560µs
 	.tolerance      = 0,	// raw mode
-	.json_callback  = &calibeur_rf104_callback,
+	.decode_fn      = &calibeur_rf104_callback,
 	.disabled       = 0,
-	.demod_arg      = 0		// not used
+	.fields         = output_fields,
 };

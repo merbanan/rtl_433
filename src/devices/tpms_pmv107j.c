@@ -19,14 +19,13 @@
  * C: CRC over bits 0 - 57, poly 0x13, init 0
  */
 
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is (7 bits) 11111 10
 static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits
 
-static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -41,14 +40,16 @@ static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     if (start_pos - bitpos < 67*2) {
         return 0;
     }
-    if (debug_output > 1)
+    if (decoder->verbose > 1)
         bitbuffer_print(&packet_bits);
 
     // realign the buffer, prepending 6 bits of 0.
     b[0] = packet_bits.bb[0][0] >> 6;
     bitbuffer_extract_bytes(&packet_bits, 0, 2, b + 1, 64);
-    if (debug_output > 1)
-        fprintf(stderr, "Realigned: %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    if (decoder->verbose > 1) {
+        fprintf(stderr, "Realigned: ");
+        bitrow_print(b, 72);
+    }
 
     crc = b[8];
     if (crc8(b, 8, 0x13, 0x00) != crc) {
@@ -67,16 +68,14 @@ static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
     temperature_c = temp - 40.0;
 
     if (pressure1 != pressure2) {
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Toyota TPMS pressure check error: %02x vs %02x\n", pressure1, pressure2);
         return 0;
     }
 
     sprintf(id_str, "%08x", id);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "PMV-107J",
         "type",             "",     DATA_STRING,    "TPMS",
         "id",               "",     DATA_STRING,    id_str,
@@ -89,18 +88,18 @@ static int tpms_pmv107j_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bi
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int tpms_pmv107j_callback(bitbuffer_t *bitbuffer) {
+static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 6)) + 67*2 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_pmv107j_decode(bitbuffer, 0, bitpos + 6);
+        events += tpms_pmv107j_decode(decoder, bitbuffer, 0, bitpos + 6);
         bitpos += 2;
     }
 
@@ -108,7 +107,6 @@ static int tpms_pmv107j_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",
@@ -125,11 +123,10 @@ static char *output_fields[] = {
 r_device tpms_pmv107j = {
     .name           = "PMV-107J (Toyota) TPMS",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 100, // 25 samples @250k
-    .long_limit     = 100, // FSK
+    .short_width    = 100, // 25 samples @250k
+    .long_width     = 100, // FSK
     .reset_limit    = 250, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_pmv107j_callback,
+    .decode_fn      = &tpms_pmv107j_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

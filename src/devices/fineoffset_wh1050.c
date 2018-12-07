@@ -1,7 +1,5 @@
 /*
  * *** Fine Offset WH1050 Weather Station ***
- * (aka )
- * (aka .....)
  *
  * This module is a cut-down version of the WH1080 decoder.
  * The WH1050 sensor unit is like the WH1080 unit except it has no
@@ -32,16 +30,9 @@
  *
  * The 'Total rainfall' field is a cumulative counter, increased by 0.3 millimeters of rain at once.
  *
- *
- *
- *
  */
 
-
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
-#include "math.h"
+#include "decoder.h"
 
 #define CRC_POLY 0x31
 #define CRC_INIT 0xff
@@ -114,16 +105,11 @@ static float get_rainfall(const uint8_t* br) {
     return ((((unsigned short)br[7] & 0x0f) << 8) | br[8]) * 0.3f;
 }
 
-
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
-
-
-static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     if (bitbuffer->num_rows != 1) {
         return 0;
@@ -174,22 +160,21 @@ static int fineoffset_wh1050_callback(bitbuffer_t *bitbuffer) {
 //---------------------------------------------------------------------------------------
 //--------- PRESENTING DATA --------------------------------------------------------------
 
-    data = data_make("time",         "",         DATA_STRING, time_str,
-        "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
-        "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-        "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",    DATA_DOUBLE, temperature,
-        "humidity",      "Humidity",    DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-        "speed",         "Wind avg speed",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, speed,
-        "gust",          "Wind gust",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, gust,
-        "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
-        "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
-        NULL);
-    data_acquired_handler(data);
+    data = data_make(
+            "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
+            "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",    DATA_DOUBLE, temperature,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
+            "speed",         "Wind avg speed",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, speed,
+            "gust",          "Wind gust",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, gust,
+            "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
+            "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
+            NULL);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -203,12 +188,11 @@ static char *output_fields[] = {
 
 r_device fineoffset_wh1050 = {
     .name           = "Fine Offset WH1050 Weather Station",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = 976,
-    .long_limit     = 2400,
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 544,
+    .long_width     = 1524,
     .reset_limit    = 10520,
-    .json_callback  = &fineoffset_wh1050_callback,
+    .decode_fn      = &fineoffset_wh1050_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

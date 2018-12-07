@@ -51,11 +51,10 @@
     [13] {0} :
     Test mode file issued 4 packets
 */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
 
-static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
+#include "decoder.h"
+
+static int esperanza_ews_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     const uint8_t *b = bitbuffer->bb[row];
     uint8_t humidity;
@@ -66,29 +65,25 @@ static int esperanza_ews_process_row(const bitbuffer_t *bitbuffer, int row)
 
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
-
     humidity = (uint8_t)((b[3] << 6) | ((b[4] >> 2) & 0x0F) | ((b[3] >>2) & 0xF));
     temperature_with_offset = (uint16_t)(((b[2] << 10) | ((b[3] << 2) & 0x300) | ((b[3] << 2) & 0xF0) | ((b[1] << 2) & 0x0C) |  b[2] >> 6) & 0x0FFF);
     device_id = (uint8_t)(b[0] & 0x0F);
     channel = (uint8_t)((b[1] & 0x0C)+1);
     temperature_f = (float)((temperature_with_offset-900)/10.0);
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, "Esperanza EWS",
-                     "id",            "",            DATA_INT, device_id,
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
-                     "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                      NULL);
-    data_acquired_handler(data);
+    data = data_make(
+            "model",         "",            DATA_STRING, "Esperanza EWS",
+            "id",            "",            DATA_INT, device_id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "temperature_F", "Temperature", DATA_FORMAT, "%.02f F", DATA_DOUBLE, temperature_f,
+            "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            NULL);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -97,7 +92,7 @@ static char *output_fields[] = {
     NULL
 };
 
-static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
+static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // require two leading sync pulses
     if (bitbuffer->bits_per_row[0] != 0 || bitbuffer->bits_per_row[1] != 0)
@@ -108,20 +103,20 @@ static int esperanza_ews_callback(bitbuffer_t *bitbuffer)
             if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row+2], sizeof(bitbuffer->bb[row])) != 0 || bitbuffer->bits_per_row[row] != 42)
                 return 0;
         }
-        esperanza_ews_process_row(bitbuffer, 2);
+        esperanza_ews_process_row(decoder, bitbuffer, 2);
         return 1;
     }
     return 0;
 }
 
-
 r_device esperanza_ews = {
     .name          = "Esperanza EWS",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 2800,
-    .long_limit    = 4400,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 2000,
+    .long_width    = 4000,
+    .gap_limit     = 4400,
     .reset_limit   = 9400,
-    .json_callback = &esperanza_ews_callback,
+    .decode_fn     = &esperanza_ews_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
+    .fields        = output_fields,
 };

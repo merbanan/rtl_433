@@ -34,6 +34,15 @@
 /// @return bit reversed byte
 uint8_t reverse8(uint8_t x);
 
+/// CRC-4
+///
+/// @param message[]: array of bytes to check
+/// @param nBytes: number of bytes in message
+/// @param polynomial: CRC polynomial
+/// @param init: starting crc value
+/// @return CRC value
+uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
+
 /// CRC-7
 ///
 /// @param message[]: array of bytes to check
@@ -84,6 +93,22 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
 /// @return CRC value
 uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
+/// Digest-8 by "LFSR-based Toeplitz hash"
+/// @param message bytes of message data
+/// @param bytes number of bytes to digest
+/// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
+/// @param key initial key
+/// @return digest value
+uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key);
+
+/// Digest-16 by "LFSR-based Toeplitz hash"
+/// @param data up to 32 bits data, LSB aligned
+/// @param bits number of bits to digest
+/// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
+/// @param key initial key
+/// @return digest value
+uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key);
+
 /// compute bit parity of a single byte
 ///
 /// @param inByte: single byte to check
@@ -96,9 +121,16 @@ int byteParity(uint8_t inByte);
 /// Printable timestamp in local time
 ///
 /// @param time_secs: 0 for now, or seconds since the epoch
-/// @param buf: output buffer, long enough for YYYY-MM-DD HH:MM:SS
+/// @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
 /// @return buf pointer (for short hand use as operator)
 char* local_time_str(time_t time_secs, char *buf);
+
+/// Printable sample position
+///
+/// @param sample_pos sample position
+/// @param buf: output buffer, long enough for "@0.000000s"
+/// @return buf pointer (for short hand use as operator)
+char *sample_pos_str(float sample_file_pos, char *buf);
 
 /// Convert Celsius to Fahrenheit
 ///
