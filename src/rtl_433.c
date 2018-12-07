@@ -155,7 +155,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-V] Output the version string and exit\n"
             "\t[-c <path>] Read config options from a file\n"
             "\t= Tuner options =\n"
-            "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]\n"
+            "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]\n"
             "\t[-g <gain>] (default: auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
@@ -226,7 +226,9 @@ static void help_device(void)
 #endif
             "[-d \"\" Open default SoapySDR device\n"
             "[-d driver=rtlsdr Open e.g. specific SoapySDR device\n"
-            "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n");
+            "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
+            "[-d rtl_tcp[:host[:port]] (default: localhost:1234)\n"
+            "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
     exit(0);
 }
 
