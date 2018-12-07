@@ -20,7 +20,7 @@
 static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
-	char id_str[9];
+	char id_str[16];
 
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
         if (bitbuffer->bits_per_row[i] != 33) // last row is 32
