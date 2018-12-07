@@ -110,7 +110,7 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     signal_bsize += BLOCK_SIZE - (signal_bsize % BLOCK_SIZE);
 
     if (signal_bsize > g->sg_len) {
-        fprintf(stderr, "Signal bigger then buffer, signal = %u > buffer %u !!\n", signal_bsize, g->sg_len);
+        fprintf(stderr, "Signal bigger than buffer, signal = %u > buffer %u !!\n", signal_bsize, g->sg_len);
         signal_bsize = g->sg_len;
     }
 
