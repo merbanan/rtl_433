@@ -283,7 +283,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 }
 
 int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device) {
-	int symbol[PD_MAX_PULSES * 2];
+	int symbol[PD_MAX_PULSES * 2] = {0};
 	unsigned int n;
 
 	bitbuffer_t bits = {0};
