@@ -40,6 +40,7 @@
 
   #include <winsock2.h>
   #include <ws2tcpip.h>
+  #define SHUT_RDWR SD_BOTH
 #else
   #include <netdb.h>
   #include <netinet/in.h>
