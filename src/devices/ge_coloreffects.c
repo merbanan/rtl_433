@@ -30,7 +30,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
  * 10 = 0
  *  1100 = 1
  */
-unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
+unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
     uint8_t *bits = inbuf->bb[row];
     unsigned int len = inbuf->bits_per_row[row];
@@ -75,14 +75,14 @@ char *ge_command_name(uint8_t command) {
     }
 }
 
-static int ge_coloreffects_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos) {
+static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos)
+{
     data_t *data;
     bitbuffer_t packet_bits = {0};
     uint8_t device_id;
     uint8_t command;
-    char time_str[LOCAL_TIME_BUFLEN];
 
-    ge_decode(bitbuffer, row, start_pos, &packet_bits);
+    ge_decode(decoder, bitbuffer, row, start_pos, &packet_bits);
     //bitbuffer_print(&packet_bits);
 
     /* From http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
@@ -114,20 +114,18 @@ static int ge_coloreffects_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned
     bitbuffer_extract_bytes(&packet_bits, 0, 8, &command, 8);
     
     // Format data
-    local_time_str(0, time_str);
     data = data_make(
-        "time",          "",     DATA_STRING, time_str,
         "model",         "",     DATA_STRING, "GE Color Effects Remote",
         "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
         "command",       "",     DATA_STRING, ge_command_name(command),
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 
 }
 
-static int ge_coloreffects_callback(bitbuffer_t *bitbuffer) {
+static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 
@@ -135,7 +133,7 @@ static int ge_coloreffects_callback(bitbuffer_t *bitbuffer) {
     // (if the device id and command were all zeros)
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 24)) + 57 <=
             bitbuffer->bits_per_row[0]) {
-        events += ge_coloreffects_decode(bitbuffer, 0, bitpos + 24);
+        events += ge_coloreffects_decode(decoder, bitbuffer, 0, bitpos + 24);
         bitpos++;
     }
 
@@ -143,7 +141,6 @@ static int ge_coloreffects_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "command",
@@ -153,11 +150,10 @@ static char *output_fields[] = {
 r_device ge_coloreffects = {
     .name           = "GE Color Effects",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 52,
-    .long_limit     = 52,
+    .short_width    = 52,
+    .long_width     = 52,
     .reset_limit    = 450, // Maximum gap size before End Of Message [us].
-    .json_callback  = &ge_coloreffects_callback,
+    .decode_fn      = &ge_coloreffects_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

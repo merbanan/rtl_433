@@ -31,11 +31,10 @@
  * Based on reverse engineering with gnu-radio and the nice article here:
  *  http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
  */
-static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     char *model;
     int type;
@@ -74,7 +73,7 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
     type = b[0] >> 4;
     if (type != 4) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "%s: Unknown type: %d\n", model, type);
         }
         return 0;
@@ -101,28 +100,27 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
     humidity = b[3];
 
     /* Get time now */
-    local_time_str(0, time_str);
 
     // Thermo
     if (b[3] == 0xFF) {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
     }
     // Thermo/Hygro
     else {
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, model,
                          "id",            "ID",          DATA_INT, id,
                          "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                          "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                          "mic",           "Integrity",   DATA_STRING, "CRC",
                           NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
     }
     return 1;
 }
@@ -162,10 +160,9 @@ static int fineoffset_WH2_callback(bitbuffer_t *bitbuffer) {
  */
 #define MODEL_WH24 24 /* internal identifier for model WH24, family code is always 0x24 */
 #define MODEL_WH65B 65 /* internal identifier for model WH65B, family code is always 0x24 */
-static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
+static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
@@ -179,7 +176,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
     // Find a data package and extract data buffer
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) { // Did not find a big enough package
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH24: short package. Header index: %u\n", bit_offset);
             bitbuffer_print(bitbuffer);
         }
@@ -191,7 +188,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
         model = MODEL_WH65B; // nominal 12 bits postamble
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[17 * 3 + 1];
         for (unsigned n = 0; n < sizeof(b); n++) {
             sprintf(raw_str + n * 3, "%02x ", b[n]);
@@ -209,7 +206,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
         checksum += b[n];
     }
     if (crc != b[15] || checksum != b[16]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH24: Checksum error: %02x %02x\n", crc, checksum);
         }
         return 0;
@@ -265,9 +262,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
     while (uv_index < 13 && uvi_upper[uv_index] < uv_raw) ++uv_index;
 
     // Output data
-    local_time_str(0, time_str);
     data = data_make(
-            "time",             "",                 DATA_STRING, time_str,
             "model",            "",                 DATA_STRING, model == MODEL_WH24 ? "Fine Offset WH24" : "Fine Offset WH65B",
             "id",               "ID",               DATA_INT, id,
             NULL);
@@ -289,7 +284,7 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
         data_append(data,   "light_lux",        "Light",            DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux, NULL);
     data_append(data,       "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
                             "mic",              "Integrity",        DATA_STRING, "CRC", NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -314,22 +309,21 @@ static int fineoffset_WH24_callback(bitbuffer_t *bitbuffer)
  * BB = Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
  *
  */
-static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
     uint8_t b[8];
     unsigned bit_offset;
 
     // Validate package
     if (bitbuffer->bits_per_row[0] < 440 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 488 bit periods
-        return fineoffset_WH24_callback(bitbuffer); // abort and try WH24, WH65B, HP1000
+        return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
     }
 
     // Find a data package and extract data payload
     bit_offset = bitbuffer_search(bitbuffer, 0, 320, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8; // Normal index is 367, skip some bytes to find faster
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
             bitbuffer_print(bitbuffer);
         }
@@ -337,7 +331,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[8 * 3 + 1];
         for (unsigned n=0; n<sizeof(b); n++) { sprintf(raw_str+n*3, "%02x ", b[n]); }
         fprintf(stderr, "Fineoffset_WH25: Raw: %s @ bit_offset [%u]\n", raw_str, bit_offset);
@@ -351,7 +345,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     }
     bitsum = (bitsum << 4) | (bitsum >> 4);     // Swap nibbles
     if (checksum != b[6] || bitsum != b[7]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH25: Checksum error: %02x %02x\n", checksum, bitsum);
         }
         return 0;
@@ -366,8 +360,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
     float pressure    = (b[4] << 8 | b[5]) * 0.1;
 
     // Output data
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH25",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -376,7 +369,7 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
                      "battery",       "Battery",     DATA_STRING, low_battery ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
                       NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
@@ -400,9 +393,8 @@ static int fineoffset_WH25_callback(bitbuffer_t *bitbuffer) {
  * CC = CRC8 with polynomium 0x31
  * CC = Checksum of previous 7 bytes (binary sum truncated to 8 bit)
  */
-static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
+static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t *bb = bitbuffer->bb;
 
     // Validate package
@@ -414,7 +406,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     uint8_t buffer[8];
     bitbuffer_extract_bytes(bitbuffer, 0, 7, buffer, sizeof(buffer) * 8);     // Skip first 7 bits
 
-    if (debug_output) {
+    if (decoder->verbose) {
         char raw_str[8 * 3 + 1];
         for (unsigned n=0; n<sizeof(buffer); n++) { sprintf(raw_str + n * 3, "%02x ", buffer[n]); }
         fprintf(stderr, "Fineoffset_WH0530: Raw %s\n", raw_str);
@@ -424,7 +416,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     uint8_t crc = crc8(buffer, 6, 0x31, 0);
     uint8_t checksum = buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6];
     if (crc != buffer[6] || checksum != buffer[7]) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH0530: Checksum error: %02x %02x\n", crc, checksum);
         }
         return 0;
@@ -436,8 +428,7 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
     int rainfall_raw = buffer[4] << 8 | buffer[3]; // rain tip counter
     float rainfall = rainfall_raw * 0.3; // each tip is 0.3mm
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
+    data = data_make(
                      "model",         "",            DATA_STRING, "Fine Offset Electronics, WH0530 Temperature/Rain sensor",
                      "id",            "ID",          DATA_INT, id,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -445,13 +436,12 @@ static int fineoffset_WH0530_callback(bitbuffer_t *bitbuffer) {
                      "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
                      "mic",           "Integrity",   DATA_STRING, "CRC",
                      NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -461,7 +451,6 @@ static char *output_fields[] = {
 };
 
 static char *output_fields_WH25[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -481,7 +470,6 @@ static char *output_fields_WH25[] = {
 };
 
 static char *output_fields_WH0530[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -493,39 +481,36 @@ static char *output_fields_WH0530[] = {
 
 r_device fineoffset_WH2 = {
     .name           = "Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_limit     = 1500,	// Maximum pulse period (long pulse + fixed gap)
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 500,	// Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+    .long_width     = 1500,	// Maximum pulse period (long pulse + fixed gap)
     .reset_limit    = 1200,	// We just want 1 package
     .tolerance      = 160, // us
-    .json_callback  = &fineoffset_WH2_callback,
+    .decode_fn      = &fineoffset_WH2_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };
 
 r_device fineoffset_WH25 = {
     .name           = "Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 58,	// Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
-    .long_limit     = 58,	// NRZ encoding (bit width = pulse width)
+    .short_width    = 58,	// Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
+    .long_width     = 58,	// NRZ encoding (bit width = pulse width)
     .reset_limit    = 20000,	// Package starts with a huge gap of ~18900 us
-    .json_callback  = &fineoffset_WH25_callback,
+    .decode_fn      = &fineoffset_WH25_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields_WH25
 };
 
 r_device fineoffset_WH0530 = {
     .name           = "Fine Offset Electronics, WH0530 Temperature/Rain Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 504,	// Short pulse 504µs
-    .long_limit     = 1480, // Long pulse 1480µs
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 504,	// Short pulse 504µs
+    .long_width     = 1480, // Long pulse 1480µs
     .reset_limit    = 1200,	// Fixed gap 960µs (We just want 1 package)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160, // us
-    .json_callback  = &fineoffset_WH0530_callback,
+    .decode_fn      = &fineoffset_WH0530_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields_WH0530
 };

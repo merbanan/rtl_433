@@ -3,9 +3,8 @@
 // Actually 37 bits for all but last transmission which is 36 bits
 #define	NUM_BITS	36
 
-static int springfield_callback(bitbuffer_t *bitbuffer) {
+static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	int ret = 0;
-	char time_str[LOCAL_TIME_BUFLEN];
 	int row;
 	int cs;
 	int i;
@@ -18,7 +17,6 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 	unsigned tmpData;
 	unsigned savData = 0;
 
-	local_time_str(0, time_str);
 
 	for(row = 0; row < bitbuffer->num_rows; row++) {
 		if(bitbuffer->bits_per_row[row] == NUM_BITS || bitbuffer->bits_per_row[row] == NUM_BITS + 1) {
@@ -49,7 +47,6 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 				uk1      =  nibble[8];	/* unknown. */
 
 				data = data_make(
-					"time",			"",				DATA_STRING,	time_str,
 					"model",		"",				DATA_STRING,	"Springfield Temperature & Moisture",
 					"sid",			"SID",			DATA_INT,		sid,
 					"channel",		"Channel",		DATA_INT,		channel,
@@ -59,7 +56,7 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 					"moisture",		"Moisture",		DATA_INT,		moisture,
 //					"uk1",			"uk1",			DATA_INT,		uk1,
 					NULL);
-				data_acquired_handler(data);
+				decoder_output_data(decoder, data);
 				ret++;
 			}
 		}
@@ -68,7 +65,6 @@ static int springfield_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"time",
 	"model",
 	"sid",
 	"channel",
@@ -81,12 +77,12 @@ static char *output_fields[] = {
 
 r_device springfield = {
 	.name           = "Springfield Temperature and Soil Moisture",
-	.modulation     = OOK_PULSE_PPM_RAW,
-	.short_limit    = 2000,
-	.long_limit     = 4000,
+	.modulation     = OOK_PULSE_PPM,
+	.short_width    = 2000,
+	.long_width     = 4000,
+	.gap_limit      = 5000,
 	.reset_limit    = 9200,
-	.json_callback  = &springfield_callback,
+	.decode_fn      = &springfield_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields         = output_fields
 };

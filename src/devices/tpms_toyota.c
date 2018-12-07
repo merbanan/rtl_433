@@ -27,8 +27,8 @@
 // full preamble is 0101 0101 0011 11 = 55 3c
 static const unsigned char preamble_pattern[2] = {0x54, 0xf0}; // 12 bits
 
-static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -57,16 +57,14 @@ static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bit
     pressure2 = b[7] ^ 0xff;
 
     if (pressure1 != pressure2) {
-        if (debug_output)
+        if (decoder->verbose)
             fprintf(stderr, "Toyota TPMS pressure check error: %02x vs %02x\n", pressure1, pressure2);
         return 0;
     }
 
     sprintf(id_str, "%08x", id);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",             "",     DATA_STRING,    time_str,
         "model",            "",     DATA_STRING,    "Toyota",
         "type",             "",     DATA_STRING,    "TPMS",
         "id",               "",     DATA_STRING,    id_str,
@@ -76,18 +74,18 @@ static int tpms_toyota_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bit
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int tpms_toyota_callback(bitbuffer_t *bitbuffer) {
+static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 12)) + 158 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_toyota_decode(bitbuffer, 0, bitpos + 12);
+        events += tpms_toyota_decode(decoder, bitbuffer, 0, bitpos + 12);
         bitpos += 2;
     }
 
@@ -95,7 +93,6 @@ static int tpms_toyota_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",
@@ -109,11 +106,10 @@ static char *output_fields[] = {
 r_device tpms_toyota = {
     .name           = "Toyota TPMS",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 52, // 12-13 samples @250k
-    .long_limit     = 52, // FSK
+    .short_width    = 52, // 12-13 samples @250k
+    .long_width     = 52, // FSK
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_toyota_callback,
+    .decode_fn      = &tpms_toyota_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

@@ -22,8 +22,13 @@ Running:
     rtl_433 -h
 
 ```
-Usage:	= Tuner options =
-	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query>]
+Usage:	= General options =
+	[-q] Quiet mode, suppress non-data messages
+	[-D] Print debug info on event (repeat for more info)
+	[-V] Output the version string and exit
+	[-c <path>] Read config options from a file
+	= Tuner options =
+	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]
 	[-g <gain>] (default: auto)
 	[-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
 	[-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
@@ -31,6 +36,7 @@ Usage:	= Tuner options =
 	[-s <sample rate>] Set sample rate (default: 250000 Hz)
 	= Demodulator options =
 	[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)
+		 Specify a negative number to disable a device decoding protocol (can be used multiple times)
 	[-G] Enable all device protocols, included those disabled by default
 	[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
 	[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
@@ -41,24 +47,23 @@ Usage:	= Tuner options =
 	[-a] Analyze mode. Print a textual description of the signal.
 	[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
 		 Disable all decoders with -R 0 if you want analyzer output only.
-	[-I] Include only: 0 = all (default), 1 = unknown devices, 2 = known devices
-	[-D] Print debug info on event (repeat for more info)
-	[-q] Quiet mode, suppress non-data messages
 	[-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 	= File I/O options =
-	[-t] Test signal auto save. Use it together with analyze mode (-a -t). Creates one file per signal
-		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files
+	[-S none|all|unknown|known] Signal auto save. Creates one file per signal.
+		 Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.
 	[-r <filename>] Read data from input file instead of a receiver
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
+	= Data output options =
 	[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
+	[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.
+	[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.
 	[-C] native|si|customary Convert units in decoded output.
 	[-T] Specify number of seconds to run
 	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
-	[-V] Output the version string and exit
 	[-h] Output this usage help and exit
 		 Use -d, -g, -R, -X, -F, -r, or -w without argument for more help
 
@@ -100,7 +105,7 @@ Supported device protocols:
     [36]  Efergy e2 classic
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
-    [39]  WG-PB12V1
+    [39]  WG-PB12V1 Temperature Sensor
     [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
@@ -119,7 +124,7 @@ Supported device protocols:
     [55]  Acurite 606TX Temperature Sensor
     [56]  TFA pool temperature sensor
     [57]  Kedsum Temperature & Humidity Sensor
-    [58]  blyss DC5-UK-WH (433.92 MHz)
+    [58]  Blyss DC5-UK-WH
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
     [61]* LightwaveRF
@@ -172,6 +177,10 @@ Supported device protocols:
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
+    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
+    [114]  Maverick et73
+    [115] "Honeywell Wireless Doorbell"
+    [116] "Honeywell Wireless Doorbell (FSK)"
 
 * Disabled by default, use -R n or -G
 
@@ -201,8 +210,16 @@ Supporting Additional Devices and Test Data
 Note: Not all device protocol decoders are enabled by default. When testing to see if your device
 is decoded by rtl_433, use `-G` to enable all device protocols.
 
-The first step in decoding new devices is to record the signals using `-a -t`. The signals will be
-stored individually in files named gNNN_FFFM_RRRk.cu8 that can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
+The first step in decoding new devices is to record the signals using `-a -t`.   
+The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
+
+| Parameter | Description
+|---------|------------
+| **NNN** | signal grabbed number
+| **FFF** | frequency
+| **RRR** | sample rate   
+
+This file can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
 
 These files are vital for understanding the signal format as well as the message data.  Use both analyzers
 `-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -a -A`.

@@ -1,17 +1,18 @@
 /* X10 sensor
  *
- *
  * Stub for decoding test data only
  *
  * Copyright (C) 2015 Tommy Vestermark
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+
 #include "decoder.h"
 
-static int X10_RF_callback(bitbuffer_t *bitbuffer) {
+static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x87, 0x87};
@@ -81,14 +82,13 @@ static int X10_RF_callback(bitbuffer_t *bitbuffer) {
 	return 0;
 }
 
-
 r_device X10_RF = {
 	.name			= "X10 RF",
-	.modulation		= OOK_PULSE_PPM_RAW,
-	.short_limit	= 1100,	// Short gap 500µs, long gap 1680µs
-	.long_limit		= 2800,	// Gap after sync is 4.5ms (1125)
+	.modulation		= OOK_PULSE_PPM,
+	.short_width	= 500,	// Short gap 500µs
+	.long_width		= 1680,	// Long gap 1680µs
+	.gap_limit		= 2800,	// Gap after sync is 4.5ms (1125)
 	.reset_limit	= 6000, // Gap seen between messages is ~40ms so let's get them individually
-	.json_callback	= &X10_RF_callback,
+	.decode_fn    	= &x10_rf_callback,
 	.disabled		= 1,
-	.demod_arg		= 0,
 };

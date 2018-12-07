@@ -11,7 +11,7 @@
 #include "decoder.h"
 
 
-static int valeo_callback(bitbuffer_t *bitbuffer) {
+static int valeo_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package
@@ -34,10 +34,9 @@ static int valeo_callback(bitbuffer_t *bitbuffer) {
 r_device valeo = {
 	.name			= "Valeo Car Key",
 	.modulation		= OOK_PULSE_MANCHESTER_ZEROBIT,
-	.short_limit	= 106,
-	.long_limit		= 0,	// Not used
+	.short_width	= 106,
+	.long_width		= 0,	// Not used
 	.reset_limit	= 400,
-	.json_callback	= &valeo_callback,
+	.decode_fn    	= &valeo_callback,
 	.disabled		= 1,
-	.demod_arg		= 0,
 };

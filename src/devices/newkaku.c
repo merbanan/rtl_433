@@ -1,6 +1,6 @@
 #include "decoder.h"
 
-static int newkaku_callback(bitbuffer_t *bitbuffer) {
+static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
     /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
     /*start pulse: 1T high, 10.44T low */
@@ -19,8 +19,6 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
     uint32_t kakuid = 0;
     uint8_t dv = 0;
     char *group_call, *command, *dim;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
     if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//always starts with ac or b2
         // first bit is from startbit sequence, not part of payload!
@@ -106,7 +104,7 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
             dim = "No";
         }
 
-        data = data_make("time",          "",            DATA_STRING, time_str,
+        data = data_make(
                          "model",         "",            DATA_STRING, "KlikAanKlikUit Wireless Switch",
                          "id",            "",            DATA_INT, kakuid,
                          "unit",          "Unit",        DATA_INT, unit,
@@ -115,7 +113,7 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
                          "dim",           "Dim",         DATA_STRING, dim,
                          "dim_value",     "Dim Value",   DATA_INT, dv,
                          NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -123,7 +121,6 @@ static int newkaku_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "unit",
@@ -136,12 +133,11 @@ static char *output_fields[] = {
 
 r_device newkaku = {
     .name           = "KlikAanKlikUit Wireless Switch",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 800,
-    .long_limit     = 3200,
-    .reset_limit    = 10000,
-    .json_callback  = &newkaku_callback,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 300,
+    .long_width     = 1400,
+    .reset_limit    = 3200,
+    .decode_fn      = &newkaku_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

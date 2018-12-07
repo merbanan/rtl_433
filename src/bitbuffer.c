@@ -250,7 +250,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
     fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
         fprintf(stderr, "[%02d] ", row);
-        print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, 0);
+        print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
     }
     if (bits->num_rows >= BITBUF_ROWS) {
         fprintf(stderr, "... Maximum number of rows reached. Message is likely truncated.\n");

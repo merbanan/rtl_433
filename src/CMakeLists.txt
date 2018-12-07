@@ -22,11 +22,13 @@ add_executable(rtl_433
 	bitbuffer.c
 	confparse.c
 	data.c
+	decoder_util.c
 	fileformat.c
 	optparse.c
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c
+	samp_grab.c
 	sdr.c
 	util.c
 	devices/acurite.c
@@ -34,6 +36,7 @@ add_executable(rtl_433
 	devices/alecto.c
 	devices/ambient_weather.c
 	devices/ambientweather_tx8300.c
+	devices/ambientweather_wh31e.c
 	devices/blyss.c
 	devices/brennenstuhl_rcs_2044.c
 	devices/bresser_3ch.c
@@ -65,6 +68,7 @@ add_executable(rtl_433
 	devices/hideki.c
 	devices/hondaremote.c
 	devices/honeywell.c
+	devices/honeywell_wdb.c
 	devices/ht680.c
 	devices/ibis_beacon.c
 	devices/infactory.c
@@ -79,6 +83,7 @@ add_executable(rtl_433
 	devices/lacrossews.c
 	devices/lightwave_rf.c
 	devices/m_bus.c
+	devices/maverick_et73.c
 	devices/maverick_et73x.c
 	devices/mebus.c
 	devices/new_template.c
@@ -133,7 +138,6 @@ target_link_libraries(data ${NET_LIBRARIES})
 target_link_libraries(rtl_433
 	${SDR_LIBRARIES}
 	${NET_LIBRARIES}
-	${CMAKE_THREAD_LIBS_INIT}
 )
 
 set(INSTALL_TARGETS rtl_433)

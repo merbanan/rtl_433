@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+char const *file_basename(char const *path);
+
 // a single handy number to define the file type.
 // bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
 enum file_type {

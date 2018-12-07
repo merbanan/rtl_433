@@ -44,14 +44,14 @@
 
 #include "decoder.h"
 
-static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
+static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[9] = {0};
 
     /* length check */
     if (74 != bitbuffer->bits_per_row[0]) {
-        if( debug_output > 1)
+        if( decoder->verbose > 1)
             fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
         return 0;
     }
@@ -84,11 +84,7 @@ static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
     if (((b[0] & 0xf0) >> 4) > 9 || (b[0] & 0x0f) > 9) // invalid humidity
         humidity = -1;
 
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
-
     data = data_make(
-            "time",          "",            DATA_STRING, time_str,
             "model",         "",            DATA_STRING, "AmbientWeather-TX8300",
             "id",            "",            DATA_INT, sensor_id,
             "channel",       "",            DATA_INT, channel,
@@ -104,13 +100,12 @@ static int ambientweather_tx8300_callback(bitbuffer_t *bitbuffer)
     data = data_append(data,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM", // actually a per-bit parity, chksum unknown
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -123,12 +118,12 @@ static char *output_fields[] = {
 
 r_device ambientweather_tx8300 = {
     .name          = "Ambient Weather TX-8300 Temperature/Humidity Sensor",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = 2900,
-    .long_limit    = 6500,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 2000,
+    .long_width    = 4000,
+    .gap_limit     = 6500,
     .reset_limit   = 8000,
-    .json_callback = &ambientweather_tx8300_callback,
+    .decode_fn     = &ambientweather_tx8300_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields
 };

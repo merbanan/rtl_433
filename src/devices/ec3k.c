@@ -15,7 +15,7 @@
  */
 #include "decoder.h"
 
-static int ec3k_callback(bitbuffer_t *bitbuffer) {
+static int ec3k_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 
 	// Validate package
@@ -31,10 +31,9 @@ static int ec3k_callback(bitbuffer_t *bitbuffer) {
 r_device ec3k = {
 	.name           = "Energy Count 3000 (868.3 MHz)",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 50,	// NRZ decoding
-	.long_limit     = 50, 	// Bit width
+	.short_width    = 50,	// NRZ decoding
+	.long_width     = 50, 	// Bit width
 	.reset_limit    = 800,	// 16 zeros (up to 12 seen)...
-	.json_callback  = &ec3k_callback,
+	.decode_fn      = &ec3k_callback,
 	.disabled       = 1,
-	.demod_arg      = 0,
 };

@@ -91,12 +91,14 @@
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
     <ClInclude Include="..\include\decoder.h" />
+    <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
+    <ClInclude Include="..\include\samp_grab.h" />
     <ClInclude Include="..\include\sdr.h" />
     <ClInclude Include="..\include\util.h" />
     <ClInclude Include="..\src\getopt\getopt.h" />
@@ -107,11 +109,13 @@
     <ClCompile Include="..\src\bitbuffer.c" />
     <ClCompile Include="..\src\confparse.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />
+    <ClCompile Include="..\src\samp_grab.c" />
     <ClCompile Include="..\src\sdr.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
@@ -119,6 +123,7 @@
     <ClCompile Include="..\src\devices\alecto.c" />
     <ClCompile Include="..\src\devices\ambient_weather.c" />
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
+    <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
     <ClCompile Include="..\src\devices\blyss.c" />
     <ClCompile Include="..\src\devices\brennenstuhl_rcs_2044.c" />
     <ClCompile Include="..\src\devices\bresser_3ch.c" />
@@ -150,6 +155,7 @@
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />
+    <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
@@ -164,6 +170,7 @@
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
+    <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
