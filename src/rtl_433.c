@@ -342,13 +342,13 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     demod->r_dev_num++;
 
     if (!cfg.quiet_mode) {
-    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
         fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
-    fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
-    exit(-1);
+        fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
+        exit(-1);
     }
 }
 
