@@ -18,11 +18,11 @@
 #include <string.h>
 #include "sdr.h"
 #include "util.h"
+#include "optparse.h"
 #ifdef RTLSDR
 #include "rtl-sdr.h"
 #endif
 #ifdef SOAPYSDR
-#include "optparse.h"
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Logger.h>
@@ -55,13 +55,13 @@ struct sdr_dev {
     SoapySDRDevice *soapy_dev;
     SoapySDRStream *soapy_stream;
     double fullScale;
-    int running;
 #endif
 
 #ifdef RTLSDR
     rtlsdr_dev_t *rtlsdr_dev;
 #endif
 
+    int running;
     void *buffer;
     size_t buffer_size;
 
