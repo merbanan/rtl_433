@@ -1033,7 +1033,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
-        {NULL}};
+        {NULL, 0}};
 
 static void parse_conf_text(struct app_cfg *cfg, char *conf)
 {
