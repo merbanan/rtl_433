@@ -42,8 +42,8 @@ E: ?
 
 	data = data_make(
 		"model",		"", 			DATA_STRING, 	"TFA pool temperature sensor",
-		"id",         	"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
-		"channel",        	"Channel number",	DATA_FORMAT,	"\t %d",	DATA_INT,	channel,
+		"id",			"Id",			DATA_FORMAT,	"\t %d",	DATA_INT,	device,
+		"channel",		"Channel",		DATA_FORMAT,	"%d",		DATA_INT,	channel,
 		"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.01f C",	DATA_DOUBLE,	fTemp,
 		NULL);
 	decoder_output_data(decoder, data);
