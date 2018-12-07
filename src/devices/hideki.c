@@ -36,7 +36,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int sensortype, chk;
     int channel, rc, battery_ok;
     int temp, humidity, rain_units;
-    int wind_strength, gust_speed, wind_direction;
+    int wind_strength, wind_direction;
 
     // Expect 8, 9, 10, or 14 unstuffed bytes
     int unstuffed_len = bitbuffer->bits_per_row[0] / 9;

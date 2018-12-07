@@ -575,7 +575,6 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
     char channel_str[2];
     uint16_t sensor_id;
     int raincounter, battery_low;
-    uint8_t strike_distance;
     data_t *data;
 
     bitbuffer_invert(bitbuf);

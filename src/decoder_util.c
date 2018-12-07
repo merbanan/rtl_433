@@ -197,7 +197,6 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
     data_t *data;
     char *row_code;
     char row_bytes[BITBUF_COLS * 2 + 1];
-    unsigned i;
 
     row_bytes[0] = '\0';
     // print byte-wide
@@ -224,7 +223,6 @@ void decoder_output_bitrow_debug(r_device *decoder, bitrow_t const bitrow, unsig
 {
     data_t *data;
     char *row_bits, *p;
-    unsigned i;
 
     p = row_bits = malloc(bit_len + 1); // "1..\0"
 
