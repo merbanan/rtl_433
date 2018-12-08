@@ -393,12 +393,12 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",    DATA_INT,    device_id,
                 "signal",    "Signal Type",    DATA_STRING,                signal,
-                "hours",    "Hours\t",    DATA_FORMAT,    "%02d",    DATA_INT,    hours,
+                "hours",    "Hours",    DATA_FORMAT,    "%02d",    DATA_INT,    hours,
                 "minutes",    "Minutes",    DATA_FORMAT,    "%02d",    DATA_INT,    minutes,
                 "seconds",    "Seconds",    DATA_FORMAT,    "%02d",    DATA_INT,    seconds,
-                "year",        "Year\t",    DATA_FORMAT,    "%02d",    DATA_INT,    year,
-                "month",    "Month\t",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
-                "day",        "Day\t",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
+                "year",        "Year",    DATA_FORMAT,    "%02d",    DATA_INT,    year,
+                "month",    "Month",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
+                "day",        "Day",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -411,8 +411,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "uv_sensor_id",    "UV Sensor ID",    DATA_FORMAT,    "%d",    DATA_INT,    uv_sensor_id,
                 "uv_status",    "Sensor Status",DATA_STRING,                uv_status,
                 "uv_index",    "UV Index",    DATA_INT,                uv_index,
-                "lux",        "Lux\t",    DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    lux,
-                "wm",        "Watts/m\t",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
+                "lux",        "Lux",    DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    lux,
+                "wm",        "Watts/m",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
                 "fc",        "Foot-candles",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    fc,
                 NULL);
         decoder_output_data(decoder, data);

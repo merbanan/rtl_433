@@ -68,7 +68,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // based on http://www.dc3yc.privat.t-online.de/protocol.htm
     bitrow_t *bb = bitbuffer->bb;
-    uint8_t dec[13];
+    uint8_t dec[13]={0};
     uint8_t nibbles=0;
     uint8_t bit=11; // preamble
     char* types[]={"!AS3", "AS2000/ASH2000/S2000/S2001A/S2001IA/ASH2200/S300IA", "!S2000R", "!S2000W", "S2001I/S2001ID", "!S2500H", "!Pyrano", "!KS200/KS300"};
