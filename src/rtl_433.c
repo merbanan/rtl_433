@@ -1077,7 +1077,7 @@ static char **getDefaultConfPaths() {
     static char *pointers[4] = { NULL };
     if (pointers[0]) return pointers;
 
-    // Local per user configuration files (e.g. Win7: )
+    // Working directory, i.e. where the binary is located
     if (GetModuleFileName(NULL, bufs[0], sizeof(bufs[0]))) {
         char *last_slash = max(strrchr(bufs[0], '\\'), strrchr(bufs[0], '/'));
         if (last_slash) *last_slash = 0;
@@ -1088,8 +1088,7 @@ static char **getDefaultConfPaths() {
         pointers[0] = NULL;
     }
 
-
-    // Local per user configuration files (e.g. Win7: )
+    // Local per user configuration files (e.g. Win7: C:\Users\myusername\AppData\Local\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, bufs[1]) == S_OK) {
         strcat_s(bufs[1], sizeof(bufs[1]), "\\rtl_433\\rtl_433.conf");
         pointers[1] = bufs[1];
@@ -1098,7 +1097,7 @@ static char **getDefaultConfPaths() {
         pointers[1] = NULL;
     }
 
-    // Per machine configuration data (e.g. Win7: )
+    // Per machine configuration data (e.g. Win7: C:\ProgramData\rtl_433\rtl_433.conf)
     if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, bufs[2]) == S_OK) {
         strcat_s(bufs[2], sizeof(bufs[2]), "\\rtl_433\\rtl_433.conf");
         pointers[2] = bufs[2];
