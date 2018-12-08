@@ -669,7 +669,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
                 if (debug_output > 1) pulse_data_print(&demod->pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
@@ -705,7 +705,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
                 if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
+                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
                 }
