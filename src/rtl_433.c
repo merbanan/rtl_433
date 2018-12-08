@@ -23,6 +23,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <math.h>
+#ifdef _WIN32
+#include <Shlobj.h>
+#endif
 
 #include "rtl_433.h"
 #include "sdr.h"
@@ -839,14 +842,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     time_t rawtime;
     time(&rawtime);
-	if (cfg.frequencies > 1 && difftime(rawtime, cfg.rawtime_old) > demod->hop_time) {
-	  cfg.rawtime_old = rawtime;
-	  cfg.do_exit_async = 1;
+    if (cfg.frequencies > 1 && difftime(rawtime, cfg.rawtime_old) > demod->hop_time) {
+        cfg.rawtime_old = rawtime;
+        cfg.do_exit_async = 1;
 #ifndef _WIN32
-	  alarm(0); // cancel the watchdog timer
+        alarm(0); // cancel the watchdog timer
 #endif
-	  sdr_stop(cfg.dev);
-	}
+        sdr_stop(cfg.dev);
+    }
     if (cfg.duration > 0 && rawtime >= cfg.stop_time) {
         cfg.do_exit_async = cfg.do_exit = 1;
 #ifndef _WIN32
@@ -1067,27 +1070,73 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
     //free(conf); // TODO: check no args are dangling, then use free
 }
 
+#ifdef _WIN32 // Default paths under Windows
+
+static char **getDefaultConfPaths() {
+    static char bufs[3][256];
+    static char *pointers[4] = { NULL };
+    if (pointers[0]) return pointers;
+
+    // Local per user configuration files (e.g. Win7: )
+    if (GetModuleFileName(NULL, bufs[0], sizeof(bufs[0]))) {
+        char *last_slash = max(strrchr(bufs[0], '\\'), strrchr(bufs[0], '/'));
+        if (last_slash) *last_slash = 0;
+        strcat_s(bufs[0], sizeof(bufs[0]), "\\rtl_433\\rtl_433.conf");
+        pointers[0] = bufs[0];
+    }
+    else {
+        pointers[0] = NULL;
+    }
+
+
+    // Local per user configuration files (e.g. Win7: )
+    if (SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, bufs[1]) == S_OK) {
+        strcat_s(bufs[1], sizeof(bufs[1]), "\\rtl_433\\rtl_433.conf");
+        pointers[1] = bufs[1];
+    }
+    else {
+        pointers[1] = NULL;
+    }
+
+    // Per machine configuration data (e.g. Win7: )
+    if (SHGetFolderPath(NULL, CSIDL_COMMON_APPDATA, NULL, 0, bufs[2]) == S_OK) {
+        strcat_s(bufs[2], sizeof(bufs[2]), "\\rtl_433\\rtl_433.conf");
+        pointers[2] = bufs[2];
+    }
+    else {
+        pointers[2] = NULL;
+    }
+
+    pointers[3] = NULL;
+    return pointers;
+}
+
+#else // Default paths under Linux
+
+static char **getDefaultConfPaths() {
+    static char *pointers[5] = { NULL };
+    static char buf[256] = "";
+    if (!pointers[0]) {
+        pointers[0] = "rtl_433.conf";
+        snprintf(buf, sizeof(buf), "%s%s", getenv("HOME"), "/.rtl_433.conf");
+        pointers[1] = buf;
+        pointers[2] = "/usr/local/etc/rtl_433.conf";
+        pointers[3] = "/etc/rtl_433.conf";
+        pointers[4] = NULL;
+    };
+    return pointers;
+}
+
+#endif
+
 static void parse_conf_try_default_files(struct app_cfg *cfg)
 {
-    char const *default_conf_paths[] = {
-            "rtl_433.conf",
-            "~/.rtl_433.conf",
-            "/usr/local/etc/rtl_433.conf",
-            "/etc/rtl_433.conf",
-            NULL};
-    char const *path;
-    char buf[255];
-    for (char const **pp = default_conf_paths; *pp; ++pp) {
-        path = *pp;
-        if (*path == '~') {
-            snprintf(buf, 255, "%s%s", getenv("HOME"), path + 1);
-            path = buf;
-        }
-
-        fprintf(stderr, "Trying conf file at \"%s\"...\n", path);
-        if (hasconf(path)) {
-            fprintf(stderr, "Reading conf from \"%s\".\n", path);
-            parse_conf_file(cfg, path);
+    char **paths = getDefaultConfPaths();
+    for (int a = 0; paths[a]; a++) {
+        fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
+        if (hasconf(paths[a])) {
+            fprintf(stderr, "Reading conf from \"%s\".\n", paths[a]);
+            parse_conf_file(cfg, paths[a]);
             break;
         }
     }
