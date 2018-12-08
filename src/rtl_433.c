@@ -1081,7 +1081,7 @@ static char **getDefaultConfPaths() {
     if (GetModuleFileName(NULL, bufs[0], sizeof(bufs[0]))) {
         char *last_slash = max(strrchr(bufs[0], '\\'), strrchr(bufs[0], '/'));
         if (last_slash) *last_slash = 0;
-        strcat_s(bufs[0], sizeof(bufs[0]), "\\rtl_433\\rtl_433.conf");
+        strcat_s(bufs[0], sizeof(bufs[0]), "\\rtl_433.conf");
         pointers[0] = bufs[0];
     }
     else {
