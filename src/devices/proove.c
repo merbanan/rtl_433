@@ -2,6 +2,11 @@
  *
  * Tested devices:
  * Magnetic door & window sensor
+ * "Proove" from 'Kjell & Company'
+ * "Anslut" from "Jula"
+ * "Telecontrol Plus" remote by "REV Ritter GmbH" (Germany) , model number "008341C-1"
+ * "Nexa"
+ * "Intertechno ITLS-16" (OEM model # "ITAPT-821")
  *
  * From http://elektronikforumet.com/wiki/index.php/RF_Protokoll_-_Proove_self_learning
  * Proove packet structure (32 bits):
@@ -60,6 +65,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                      "channel",       "Channel",     DATA_INT, channel_code,
                      "state",         "State",       DATA_STRING, on_bit ? "OFF" : "ON",
                      "unit",          "Unit",        DATA_INT, unit_bit,
+                     "group",         "Group",       DATA_INT, group_code,
                       NULL);
 
     decoder_output_data(decoder, data);
@@ -73,6 +79,7 @@ static char *output_fields[] = {
     "channel",
     "state",
     "unit",
+    "group",
     NULL
 };
 
