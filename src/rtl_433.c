@@ -185,17 +185,17 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t= Data output options =\n"
-            "\t[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.\n"
-            "\t[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.\n"
-            "\t[-C] native|si|customary Convert units in decoded output.\n"
-            "\t[-T] Specify number of seconds to run\n"
+            "\t[-M none|level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.\n"
+            "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
+            "\t[-C native|si|customary] Convert units in decoded output.\n"
+            "\t[-T <seconds>] Specify number of seconds to run\n"
             "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-h] Output this usage help and exit\n"
-            "\t\t Use -d, -g, -R, -X, -F, -r, or -w without argument for more help\n\n",
+            "\t\t Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     if (devices) {
@@ -247,10 +247,18 @@ static void help_gain(void)
 static void help_output(void)
 {
     fprintf(stderr,
-            "[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+    exit(0);
+}
+
+static void help_meta(void)
+{
+    fprintf(stderr,
+            "[-M none|level] Add meta data to each data output line.\n"
+            "\tThe \"levels\" option will add Modulation, Frequency, RSSI, SNR, and Noise.\n");
     exit(0);
 }
 
@@ -1214,6 +1222,9 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         usage(NULL, 0, 1);
         break;
     case 'M':
+        if (!arg)
+            help_meta();
+
         if (strcasecmp(arg, "level") == 0)
             cfg->report_meta = 1;
         else
