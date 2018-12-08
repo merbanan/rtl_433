@@ -382,6 +382,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "gust",        "Wind gust",    DATA_FORMAT,    "%.02f",    DATA_DOUBLE,     gust,
                 "rain",        "Total rainfall",DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,     rain,
                 "battery",    "Battery",    DATA_STRING,                    battery,
+                "mic",             "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -399,6 +400,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "year",        "Year",    DATA_FORMAT,    "%02d",    DATA_INT,    year,
                 "month",    "Month",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
                 "day",        "Day",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
+                "mic",       "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -414,6 +416,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "lux",        "Lux",    DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    lux,
                 "wm",        "Watts/m",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
                 "fc",        "Foot-candles",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    fc,
+                "mic",             "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
