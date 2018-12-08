@@ -58,11 +58,10 @@ Usage:	= General options =
 	[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-	[-M none|level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.
+	[-M time|reltime|notime|hires|utc|noutc|level] Add various meta data to every output line.
 	[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.
 	[-C native|si|customary] Convert units in decoded output.
 	[-T <seconds>] Specify number of seconds to run
-	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
 	[-E] Stop after outputting successful event(s)
 	[-h] Output this usage help and exit
 		 Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help

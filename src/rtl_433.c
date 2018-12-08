@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "rtl_433.h"
 #include "sdr.h"
@@ -59,6 +60,13 @@ typedef enum {
     CONVERT_CUSTOMARY
 } conversion_mode_t;
 
+typedef enum {
+    REPORT_TIME_DEFAULT,
+    REPORT_TIME_DATE,
+    REPORT_TIME_SAMPLES,
+    REPORT_TIME_OFF,
+} time_mode_t;
+
 struct app_cfg {
     char *dev_query;
     char *gain_str;
@@ -84,9 +92,11 @@ struct app_cfg {
     sdr_dev_t *dev;
     int grab_mode;
     int quiet_mode;
-    int utc_mode;
     conversion_mode_t conversion_mode;
     int report_meta;
+    time_mode_t report_time;
+    int report_time_hires;
+    int report_time_utc;
     int no_default_devices;
     r_device *devices;
     uint16_t num_r_devices;
@@ -103,7 +113,6 @@ static struct app_cfg cfg = {
     .conversion_mode = CONVERT_NATIVE,
 };
 
-float sample_file_pos = -1;
 int debug_output = 0;
 
 struct dm_state {
@@ -136,6 +145,8 @@ struct dm_state {
     unsigned frame_event_count;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
+    struct timeval now;
+    float sample_file_pos;
 };
 
 static void version(void)
@@ -188,11 +199,10 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M none|level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.\n"
+            "\t[-M time|reltime|notime|hires|utc|noutc|level] Add various meta data to every output line.\n"
             "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
             "\t[-C native|si|customary] Convert units in decoded output.\n"
             "\t[-T <seconds>] Specify number of seconds to run\n"
-            "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-h] Output this usage help and exit\n"
             "\t\t Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help\n\n",
@@ -257,8 +267,13 @@ static void help_output(void)
 static void help_meta(void)
 {
     fprintf(stderr,
-            "[-M none|level] Add meta data to each data output line.\n"
-            "\tThe \"levels\" option will add Modulation, Frequency, RSSI, SNR, and Noise.\n");
+            "[-M time|reltime|notime|hires|level] Add various metadata to every output line.\n"
+            "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
+            "\tUse \"reltime\" to add sample position meta data (preset for read-file and stdin).\n"
+            "\tUse \"notime\" to remove time meta data.\n"
+            "\tUse \"hires\" to add microsecods to date time meta data.\n"
+            "\tUse \"utc\" to output timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n");
     exit(0);
 }
 
@@ -379,13 +394,26 @@ static void calc_rssi_snr(pulse_data_t *pulse_data)
     }
 }
 
-static char *time_pos_str(time_t time_secs, char *buf)
+static char *time_pos_str(unsigned samples_ago, char *buf)
 {
-    if (sample_file_pos != -1.0) {
-        return sample_pos_str(sample_file_pos, buf);
+    if (cfg.report_time == REPORT_TIME_SAMPLES) {
+        double s_per_sample = 1.0 / cfg.samp_rate;
+        return sample_pos_str(cfg.demod->sample_file_pos - samples_ago * s_per_sample, buf);
     }
     else {
-        return local_time_str(0, buf);
+        struct timeval ago = cfg.demod->now;
+        double us_per_sample = 1e6 / cfg.samp_rate;
+        unsigned usecs_ago   = samples_ago * us_per_sample;
+        while (ago.tv_usec < (int)usecs_ago) {
+            ago.tv_sec -= 1;
+            ago.tv_usec += 1000000;
+        }
+        ago.tv_usec -= usecs_ago;
+
+        if (cfg.report_time_hires)
+            return usecs_time_str(&ago, buf);
+        else
+            return local_time_str(ago.tv_sec, buf);
     }
 }
 
@@ -527,12 +555,14 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    // always prepend "time"
-    char time_str[LOCAL_TIME_BUFLEN];
-    time_pos_str(0, time_str);
-    data = data_prepend(data,
-            "time", "", DATA_STRING, time_str,
-            NULL);
+    // prepend "time" if requested
+    if (cfg.report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg.demod->pulse_data.start_ago, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
 
     // prepend "tag" if available
     if (cfg.output_tag) {
@@ -568,6 +598,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         cfg.do_exit = 1;
         sdr_stop(cfg.dev);
     }
+
+    get_time_now(&demod->now);
 
     n_samples = len / 2 / demod->sample_size;
 
@@ -634,7 +666,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == 1) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", time_pos_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(demod->pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -682,7 +714,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
             } else if (package_type == 2) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", time_pos_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(demod->fsk_pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
@@ -1037,7 +1069,6 @@ static struct conf_keywords const conf_keywords[] = {
         {"output", 'F'},
         {"output_tag", 'K'},
         {"convert", 'C'},
-        {"utc_mode", 'U'},
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
@@ -1225,7 +1256,19 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         if (!arg)
             help_meta();
 
-        if (strcasecmp(arg, "level") == 0)
+        if (!strcasecmp(arg, "time"))
+            cfg->report_time = REPORT_TIME_DATE;
+        else if (!strcasecmp(arg, "reltime"))
+            cfg->report_time = REPORT_TIME_SAMPLES;
+        else if (!strcasecmp(arg, "notime"))
+            cfg->report_time = REPORT_TIME_OFF;
+        else if (!strcasecmp(arg, "hires"))
+            cfg->report_time_hires = 1;
+        else if (!strcasecmp(arg, "utc"))
+            cfg->report_time_utc = 1;
+        else if (!strcasecmp(arg, "noutc"))
+            cfg->report_time_utc = 0;
+        else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
         else
             cfg->report_meta = atobv(arg, 1);
@@ -1328,14 +1371,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         }
         break;
     case 'U':
-#ifdef _WIN32
-        putenv("TZ=UTC+0");
-        _tzset();
-#else
-        cfg->utc_mode = setenv("TZ", "UTC", 1);
-        if (cfg->utc_mode != 0)
-            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg->utc_mode);
-#endif
+        fprintf(stderr, "UTC mode option (-U) is deprecated. Please use \"-M utc\".\n");
+        exit(1);
         break;
     case 'T':
         cfg->duration = atoi_time(arg, "-T: ");
@@ -1426,6 +1463,23 @@ int main(int argc, char **argv) {
         demod->samp_grab->frequency   = &cfg.center_frequency;
         demod->samp_grab->samp_rate   = &cfg.samp_rate;
         demod->samp_grab->sample_size = &demod->sample_size;
+    }
+
+    if (cfg.report_time == REPORT_TIME_DEFAULT) {
+        if (cfg.in_files)
+            cfg.report_time = REPORT_TIME_SAMPLES;
+        else
+            cfg.report_time = REPORT_TIME_DATE;
+    }
+    if (cfg.report_time_utc) {
+#ifdef _WIN32
+        putenv("TZ=UTC+0");
+        _tzset();
+#else
+        r = setenv("TZ", "UTC", 1);
+        if (r != 0)
+            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", r);
+#endif
     }
 
     if (cfg.last_output_handler < 1) {
@@ -1546,7 +1600,7 @@ int main(int argc, char **argv) {
             if (!cfg.quiet_mode) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
             }
-            sample_file_pos = 0.0;
+            demod->sample_file_pos = 0.0;
 
             int n_blocks = 0;
             unsigned long n_read;
@@ -1566,9 +1620,9 @@ int main(int argc, char **argv) {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
-                sdr_callback(test_mode_buf, n_read, demod);
                 n_blocks++;
-                sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
+                demod->sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
+                sdr_callback(test_mode_buf, n_read, demod);
             } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
