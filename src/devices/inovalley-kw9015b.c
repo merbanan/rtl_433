@@ -15,7 +15,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     int row;
     uint8_t *b;
-    int i, temp_raw, rain, device;
+    int temp_raw, rain, device;
     unsigned char chksum;
     float temp_c;
 

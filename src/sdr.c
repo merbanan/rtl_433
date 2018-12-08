@@ -40,6 +40,7 @@
 
   #include <winsock2.h>
   #include <ws2tcpip.h>
+  #define close closesocket
   #define SHUT_RDWR SD_BOTH
 #else
   #include <netdb.h>
@@ -136,7 +137,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     return 0;
 }
 
-static int rtltcp_close(int sock)
+static int rtltcp_close(SOCKET sock)
 {
     int ret = shutdown(sock, SHUT_RDWR);
     if (ret == -1) {
@@ -228,7 +229,7 @@ static int rtltcp_command(sdr_dev_t *dev, char cmd, int param)
     command.cmd   = cmd;
     command.param = htonl(param);
 
-    return sizeof(command) == send(dev->rtl_tcp, &command, sizeof(command), 0) ? 0 : -1;
+    return sizeof(command) == send(dev->rtl_tcp, (const char*) &command, sizeof(command), 0) ? 0 : -1;
 }
 
 /* RTL-SDR helpers */

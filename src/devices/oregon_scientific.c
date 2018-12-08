@@ -447,7 +447,6 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
   } else {
     if (bb[0][3] != 0) {
       if(decoder->verbose) {
-        int i;
         fprintf(stdout, "\nBadly formatted OS v2.1 message encountered.\n");
         bitrow_print(bb[0], bitbuffer->bits_per_row[0]);
       }

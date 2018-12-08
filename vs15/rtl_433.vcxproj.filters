@@ -68,6 +68,9 @@
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\confparse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\am_analyze.c">
@@ -411,6 +414,9 @@
     </ClCompile>
     <ClCompile Include="..\src\devices\x10_sec.c">
       <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\confparse.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

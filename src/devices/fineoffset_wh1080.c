@@ -248,7 +248,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     const uint8_t *br;
     int msg_type; // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 12; // 12=Weather/Time sensor  8=UV/Light sensor
-    int i;
     uint8_t bbuf[11]; // max 8 / 11 bytes needed
 
 
