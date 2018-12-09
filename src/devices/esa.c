@@ -15,17 +15,14 @@
 #define _BV(bit) (1 << (bit))
 #define MAXMSG 40               // ESA messages
 
-typedef struct {
-    uint8_t data[MAXMSG];
-} bucket_t;
-
 typedef struct  {
     uint8_t *data;
     uint8_t byte, bit;
 } input_t;
 
 // Helper functions
-uint8_t getbit(input_t *in) {
+uint8_t getbit(input_t *in)
+{
     uint8_t bit = (in->data[in->byte] & _BV(in->bit)) ? 1 : 0;
     if(in->bit-- == 0) {
         in->byte++;
@@ -34,7 +31,8 @@ uint8_t getbit(input_t *in) {
     return bit;
 }
 
-uint8_t getpacket_bits(input_t* in, uint8_t npacket_bits, uint8_t msb) {
+uint8_t getpacket_bits(input_t* in, uint8_t npacket_bits, uint8_t msb)
+{
     uint8_t ret = 0, i;
     for (i = 0; i < npacket_bits; i++) {
         if (getbit(in) )
@@ -43,11 +41,12 @@ uint8_t getpacket_bits(input_t* in, uint8_t npacket_bits, uint8_t msb) {
     return ret;
 }
 
-uint8_t analyze_esa(bucket_t *b, uint8_t obuf[MAXMSG]) {
+uint8_t analyze_esa(uint8_t *b, uint8_t *obuf)
+{
     input_t in;
     in.byte = 0;
     in.bit = 7;
-    in.data = b->data;
+    in.data = b;
 
     uint8_t oby = 0;
     uint8_t salt = 0x89;
@@ -72,39 +71,24 @@ uint8_t analyze_esa(bucket_t *b, uint8_t obuf[MAXMSG]) {
     return 1;
 }
 
-void bitstobytes(const bitbuffer_t *bits, uint8_t skip, bucket_t *bucket) {
-    int bufc = 0;
-    int bufc_cnt = 0;
-    for (uint16_t row = 0; row < bits->num_rows; ++row) {
-        for (uint16_t col = 0; col < (bits->bits_per_row[row]+7)/8; ++col) {
-            if(bufc_cnt>skip)
-            {
-                bucket->data[bufc] = bits->bb[row][col];
-                bufc++;
-            }
-            bufc_cnt++;
-        }
-    }
-}
 //done helpers
 
-
-static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {	
+static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
+    uint8_t packet[MAXMSG];
     uint8_t obuf[MAXMSG]; // parity-stripped output
-    bucket_t bucket = {0};
+    unsigned impulse_constant_val, impulses_val, impulses_total_val;
+    float energy_total_val, energy_impulse_val;
 
-    if(bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1) 
+    if (bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1) 
         return 0;
 
-    bitstobytes(bitbuffer, 1, &bucket);
+    // remove first two bytes?
+    bitbuffer_extract_bytes(bitbuffer, 0, 16, packet, 160 - 16);
 
-    if(!analyze_esa(&bucket, obuf)) 
-        return 0;   // checksum check
-
-    unsigned int impulse_constant_val, impulses_val, impulses_total_val;
-    float energy_total_val, energy_impulse_val;
-    char model[10];
+    if(!analyze_esa(packet, obuf)) 
+        return 0;   // checksum fail
 
     impulse_constant_val = (((uint16_t)obuf[14] << 8) |obuf[15]) ^ obuf[1];
     impulses_total_val = ((uint32_t)obuf[5] << 24) | ((uint32_t)obuf[6] << 16) | ((uint32_t)obuf[7] << 8) |obuf[8];
@@ -113,7 +97,6 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     energy_impulse_val = 1.0 * impulses_val / impulse_constant_val;
 
     uint8_t deviceid = obuf[1];
-    snprintf(model, sizeof(model), "ESA %04x", ((uint16_t)obuf[3] << 8) | obuf[4]);
     uint8_t sequence_id = (obuf[0] << 1) >> 1;
     uint16_t impulses = (obuf[3] << 8) | obuf[4];
     uint32_t impulses_total = (obuf[5] << 24) | (obuf[6] << 16) | (obuf[7] << 8) | obuf[8];
@@ -121,29 +104,32 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t is_retry = ((obuf[0])>>7);
 
     data = data_make(
-                    "model",     "",                DATA_STRING, model,
-                    "id",     "",                   DATA_INT, deviceid,
-                    "impulse",     "",              DATA_INT, impulses,
-                    "impulses_total",     "",       DATA_INT, impulses_total,
-                    "impulse_constant",     "",     DATA_INT, impulse_constant,
-                    "energy_total",     "",         DATA_DOUBLE, energy_total_val,
-                    "energy_impulse",     "",       DATA_DOUBLE, energy_impulse_val,
-                    "sequence_id",     "",      	DATA_INT, sequence_id,
-                    "is_retry",     "",             DATA_INT, is_retry,
-                    "mic",           "Integrity",   DATA_STRING, "CRC",
-                    NULL);
+            "model",            "Model",            DATA_STRING, "ESA-x000",
+            "id",               "Id",               DATA_INT, deviceid,
+            "impulses",         "Impulses",          DATA_INT, impulses,
+            "impulses_total",   "Impulses Total",   DATA_INT, impulses_total,
+            "impulse_constant", "Impulse Constant", DATA_INT, impulse_constant,
+            "total_kWh",        "Energy Total",     DATA_DOUBLE, energy_total_val,
+            "impulse_kWh",      "Energy Impulse",   DATA_DOUBLE, energy_impulse_val,
+            "sequence_id",      "Sequence ID",      DATA_INT, sequence_id,
+            "is_retry",         "Is Retry",         DATA_INT, is_retry,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
+            NULL);
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
     "model",
-    "device_id",
+    "id",
     "impulses",
     "impulses_total",
     "impulse_constant",
-	"kwh",
-	"kwh_total",
+    "total_kWh",
+    "impulse_kWh",
+    "sequence_id",
+    "is_retry",
+    "mic",
     NULL
 };
 
