@@ -42,55 +42,9 @@
  *
  */
 
-/* Use this as a starting point for a new decoder. */
-
 #include "decoder.h"
 
 static const uint8_t preamble_pattern[] = { 0xaa, 0xaa, 0xaa, 0x2d, 0xd4 };
-
-static float get_temperature(const uint8_t* br) {
-    int temp_raw = (br[20] & 0x0f)
-                + ((br[20] & 0xf0) >> 4) * 10
-                + (br[21] &0x0f) * 100;
-    if (br[25] & 0x0f) {
-        temp_raw *= -1;
-    }
-    return temp_raw / 10.0f;
-}
-
-static int get_humidity(const uint8_t* br) {
-    return (br[22] & 0x0f) + ((br[22] & 0xf0) >> 4) * 10;
-}
-
-static const char* get_wind_direction_str(const uint8_t* br) {
-    static const char* wind_dir_string[] = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",};
-    return wind_dir_string[(br[17] & 0xf0) >> 4];
-}
-
-static float get_wind_direction_deg(const uint8_t* br) {
-    return ((br[17] & 0xf0) >> 4) * 22.5f;
-}
-
-static float get_wind_gust(const uint8_t* br) {
-    int wind_raw = (br[16] & 0x0f)
-                + ((br[16] & 0xf0) >> 4) * 10
-                + (br[15] & 0x0f) * 100;
-    return wind_raw / 10.0f;
-}
-
-static float get_wind_avg(const uint8_t* br) {
-    int wind_raw = (br[18] & 0x0f)
-                + ((br[18] & 0xf0) >> 4) * 10
-                + (br[17] & 0x0f) * 100;
-    return wind_raw / 10.0f;
-}
-
-static float get_rain(const uint8_t* br) {
-    int rain_raw = (br[23] & 0x0f)
-                + ((br[23] & 0xf0) >> 4) * 10
-                + (br[24] & 0x0f) * 100;
-    return rain_raw / 10.0f;
-}
 
 static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -98,18 +52,18 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[26];
     char msg_hex[sizeof(msg) * 2 + 1];
     uint16_t sensor_id;
-    unsigned int len = 0;
+    unsigned len = 0;
 
     if (bitbuffer->num_rows != 1
-        || bitbuffer->bits_per_row[0] < 248
-        || bitbuffer->bits_per_row[0] > 440) {
+            || bitbuffer->bits_per_row[0] < 248
+            || bitbuffer->bits_per_row[0] > 440) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
         }
         return 0; // Unrecognized data
     }
 
-    unsigned int start_pos = bitbuffer_search(bitbuffer, 0, 0,
+    unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof (preamble_pattern) * 8);
 
     if (start_pos == bitbuffer->bits_per_row[0]) {
@@ -129,48 +83,55 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, len);
 
     // convert binary message to hex string
-    for (unsigned int col = 0; col < (len + 7) / 8; ++col) {
+    for (unsigned col = 0; col < (len + 7) / 8; ++col) {
         sprintf(&msg_hex[2 * col], "%02x", msg[col]);
     }
 
-    /*
-     * Check message integrity
-     * First 13 bytes need to match inverse of last 13 bytes
-     */
-    for (unsigned int col = 0; col < (sizeof (msg) / 2); ++col) {
-        uint8_t inv_msg = (msg[col] ^ 0xFF);
-        if (inv_msg != msg[col + 13]) {
+    // First 13 bytes need to match inverse of last 13 bytes
+    for (unsigned col = 0; col < sizeof (msg) / 2; ++col) {
+        if (~msg[col] != msg[col + 13]) {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "%s MIC wrong at %u: %s\n", __func__, col, msg_hex);
+                fprintf(stderr, "%s Parity wrong at %u: %s\n", __func__, col, msg_hex);
             }
             return 0; // message isn't correct
         }
     }
 
-    /*
-     * Now that message "envelope" has been validated,
-     * start parsing data.
-     */
-
     sensor_id = msg[14];
 
+    int temp_raw = (msg[20] & 0x0f) + ((msg[20] & 0xf0) >> 4) * 10 + (msg[21] &0x0f) * 100;
+    if (msg[25] & 0x0f)
+        temp_raw = -temp_raw;
+    float temperature = temp_raw * 0.1f;
+
+    int humidity = (msg[22] & 0x0f) + ((msg[22] & 0xf0) >> 4) * 10;
+
+    float wind_direction_deg = ((msg[17] & 0xf0) >> 4) * 22.5f;
+
+    int gust_raw = (msg[16] & 0x0f) + ((msg[16] & 0xf0) >> 4) * 10 + (msg[15] & 0x0f) * 100;
+    float wind_gust = gust_raw * 0.1f;
+
+    int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[17] & 0x0f) * 100;
+    float wind_avg = wind_raw * 0.1f;
+
+    int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
+    float rain = rain_raw * 0.1f;
+
     data = data_make(
-            "model", "", DATA_STRING, "Bresser Weather Center 5-in-1",
-            "id",    "", DATA_INT,    sensor_id,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, get_temperature(msg),
-            "humidity","Humidity",  DATA_INT, get_humidity(msg),
-            "gust",         "Gust",       DATA_FORMAT,  "%2.1f m/s",DATA_DOUBLE, get_wind_gust(msg),
-            "speed",        "Average",    DATA_FORMAT,  "%2.1f m/s",DATA_DOUBLE, get_wind_avg(msg),
-            "direction_deg","Direction",  DATA_FORMAT,  "%3.1f degrees",DATA_DOUBLE, get_wind_direction_deg(msg),
-            "direction_str","Direction",  DATA_STRING,  get_wind_direction_str(msg),
-            "rain",         "Rain",       DATA_FORMAT,  "%2.1f mm",DATA_DOUBLE, get_rain(msg),
-            "data",         "Raw data",   DATA_STRING,  msg_hex,
-            "mic",          "Integrity",  DATA_STRING,  "CHECKSUM",
+            "model",            "",             DATA_STRING, "Bresser-5in1",
+            "id",               "",             DATA_INT,    sensor_id,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",     DATA_INT, humidity,
+            "wind_gust",        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
+            "wind_speed",       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
+            "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f °",DATA_DOUBLE, wind_direction_deg,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+            "data",             "Raw data",     DATA_STRING, msg_hex, // TODO: remove this
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
 
     decoder_output_data(decoder, data);
 
-    // Return 1 if message successfully decoded
     return 1;
 }
 
@@ -179,12 +140,12 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
-    "direction_str",
-    "direction_deg",
-    "speed",
-    "gust",
-    "rain",
+    "wind_gust",
+    "wind_speed",
+    "wind_dir_deg",
+    "rain_mm",
     "data",
+    "mic",
     NULL
 };
 
