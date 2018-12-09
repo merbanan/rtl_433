@@ -182,7 +182,7 @@ Supported device protocols:
     [115]  Honeywell Wireless Doorbell
     [116]  Honeywell Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
-
+    [118]* Biltema rain gauge
 * Disabled by default, use -R n or -G
 
 ```

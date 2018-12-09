@@ -40,6 +40,7 @@ add_executable(rtl_433
 	devices/blyss.c
 	devices/brennenstuhl_rcs_2044.c
 	devices/bresser_3ch.c
+	devices/bt_rain.c
 	devices/calibeur.c
 	devices/cardin.c
 	devices/chuango.c

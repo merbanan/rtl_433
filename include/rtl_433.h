@@ -41,7 +41,7 @@
 
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
-#define MAX_PROTOCOLS           117
+#define MAX_PROTOCOLS           118
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 
 #endif /* INCLUDE_RTL_433_H_ */
