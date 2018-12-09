@@ -1,3 +1,15 @@
+/* OSv1 protocol
+ *
+ * MC with nominal bit width of 2930 us.
+ * Pulses are somewhat longer than nominal half-bit width, 1748 us / 3216 us,
+ * Gaps are somewhat shorter than nominal half-bit width, 1176 us / 2640 us.
+ * After 12 preamble bits there is 4200 us gap, 5780 us pulse, 5200 us gap.
+ *
+ * Care must be taken with the gap after the sync pulse since it
+ * is outside of the normal clocking.  Because of this a data stream
+ * beginning with a 0 will have data in this gap.
+ */
+
 #include "decoder.h"
 
 #define	OSV1_BITS	32
@@ -78,9 +90,10 @@ static char *output_fields[] = {
 r_device oregon_scientific_v1 = {
 	.name           = "OSv1 Temperature Sensor",
 	.modulation     = OOK_PULSE_PWM_OSV1,
-	.short_width        = 300,
-	.long_width         = 430,
-	.reset_limit        = 14000,
+	.short_width    = 1465, // nominal half-bit width
+	.sync_width     = 5780,
+	.gap_limit      = 3500,
+	.reset_limit    = 14000,
 	.decode_fn      = &oregon_scientific_v1_callback,
 	.disabled       = 0,
 	.fields         = output_fields

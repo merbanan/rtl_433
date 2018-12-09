@@ -441,12 +441,15 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 	int events = 0;
 	int manbit = 0;
 	bitbuffer_t bits = {0};
+	int halfbit_min = device->s_short_width / 2;
+	int halfbit_max = device->s_short_width * 3 / 2;
+	int sync_min = 2 * halfbit_max;
 
 	/* preamble */
 	for(n = 0; n < pulses->num_pulses; ++n) {
-		if(pulses->pulse[n] >= 350 && pulses->gap[n] >= 200) {
+		if(pulses->pulse[n] > halfbit_min && pulses->gap[n] > halfbit_min) {
 			preamble++;
-			if(pulses->gap[n] >= 400)
+			if(pulses->gap[n] > halfbit_max)
 				break;
 		} else
 			return(events);
@@ -458,7 +461,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 
 	/* sync */
 	++n;
-	if(pulses->pulse[n] < 1000 || pulses->gap[n] < 1000) {
+	if(pulses->pulse[n] < sync_min || pulses->gap[n] < sync_min) {
 		return(events);
 	}
 
@@ -474,19 +477,22 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 	for(n++; n < pulses->num_pulses; ++n) {
 		manbit ^= 1;
 		if(manbit) bitbuffer_add_bit(&bits, 1);
-		if(pulses->pulse[n] > 615) {
+		if(pulses->pulse[n] > halfbit_max) {
 			manbit ^= 1;
 			if(manbit) bitbuffer_add_bit(&bits, 1);
 		}
-		if (n == pulses->num_pulses - 1 || pulses->gap[n] > device->s_reset_limit) {
-			if((bits.bits_per_row[bits.num_rows-1] == 32) && device->decode_fn) {
-				events += device->decode_fn(device,&bits);
+		if ((n == pulses->num_pulses - 1
+				|| pulses->gap[n] > device->s_reset_limit)
+				&& (bits.num_rows > 0)) { // Only if data has been accumulated
+			//END message ?
+			if (device->decode_fn) {
+				events += device->decode_fn(device, &bits);
 			}
 			return(events);
 		}
 		manbit ^= 1;
 		if(manbit) bitbuffer_add_bit(&bits, 0);
-		if(pulses->gap[n] > 450) {
+		if(pulses->gap[n] > halfbit_max) {
 			manbit ^= 1;
 			if(manbit) bitbuffer_add_bit(&bits, 0);
 		}
