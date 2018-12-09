@@ -7,101 +7,59 @@
  * (at your option) any later version.
  */
 
-/* TODO: Replace the helper functions with native code */
-
-
 #include "decoder.h"
 
-#define _BV(bit) (1 << (bit))
 #define MAXMSG 40               // ESA messages
 
-typedef struct  {
-    uint8_t *data;
-    uint8_t byte, bit;
-} input_t;
-
-// Helper functions
-uint8_t getbit(input_t *in)
+static uint8_t decrypt_esa(uint8_t *b)
 {
-    uint8_t bit = (in->data[in->byte] & _BV(in->bit)) ? 1 : 0;
-    if(in->bit-- == 0) {
-        in->byte++;
-        in->bit=7;
-    }
-    return bit;
-}
-
-uint8_t getpacket_bits(input_t* in, uint8_t npacket_bits, uint8_t msb)
-{
-    uint8_t ret = 0, i;
-    for (i = 0; i < npacket_bits; i++) {
-        if (getbit(in) )
-            ret = ret | _BV( msb ? npacket_bits-i-1 : i );
-    }
-    return ret;
-}
-
-uint8_t analyze_esa(uint8_t *b, uint8_t *obuf)
-{
-    input_t in;
-    in.byte = 0;
-    in.bit = 7;
-    in.data = b;
-
-    uint8_t oby = 0;
+    uint8_t pos = 0;
+    uint8_t i = 0;
     uint8_t salt = 0x89;
     uint16_t crc = 0xf00f;
+    uint8_t byte;
 
-    for (oby = 0; oby < 15; oby++) {
-        uint8_t byte = getpacket_bits(&in, 8, 1);
+    for (i = 0; i < 15; i++) {
+        byte = b[pos];
         crc += byte;
-        obuf[oby] = byte ^ salt;
+        b[pos++] ^= salt;
         salt = byte + 0x24;
     }
-    obuf[oby] = getpacket_bits(&in, 8, 1);
-    crc += obuf[oby];
-    obuf[oby++] ^= 0xff;
+    byte = b[pos];
+    crc += byte;
+    b[pos++] ^= 0xff;
 
-    crc -= (getpacket_bits(&in, 8, 1)<<8);
-    crc -= getpacket_bits(&in, 8, 1);
-
-    if (crc)
-        return 0;
-
-    return 1;
+    crc -= (b[pos] << 8) | b[pos+1];
+    return crc;
 }
-
-//done helpers
 
 static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    uint8_t packet[MAXMSG];
-    uint8_t obuf[MAXMSG]; // parity-stripped output
-    unsigned impulse_constant_val, impulses_val, impulses_total_val;
+    uint8_t b[MAXMSG];
+
+    unsigned is_retry, sequence_id, deviceid, impulses;
+    unsigned impulse_constant, impulses_val, impulses_total;
     float energy_total_val, energy_impulse_val;
 
     if (bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1) 
         return 0;
 
     // remove first two bytes?
-    bitbuffer_extract_bytes(bitbuffer, 0, 16, packet, 160 - 16);
+    bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 160 - 16);
 
-    if(!analyze_esa(packet, obuf)) 
-        return 0;   // checksum fail
+    if (decrypt_esa(b))
+        return 0; // checksum fail
 
-    impulse_constant_val = (((uint16_t)obuf[14] << 8) |obuf[15]) ^ obuf[1];
-    impulses_total_val = ((uint32_t)obuf[5] << 24) | ((uint32_t)obuf[6] << 16) | ((uint32_t)obuf[7] << 8) |obuf[8];
-    impulses_val = ((uint16_t)obuf[9] << 8) |obuf[10];
-    energy_total_val = 1.0 * impulses_total_val / impulse_constant_val;
-    energy_impulse_val = 1.0 * impulses_val / impulse_constant_val;
-
-    uint8_t deviceid = obuf[1];
-    uint8_t sequence_id = (obuf[0] << 1) >> 1;
-    uint16_t impulses = (obuf[3] << 8) | obuf[4];
-    uint32_t impulses_total = (obuf[5] << 24) | (obuf[6] << 16) | (obuf[7] << 8) | obuf[8];
-    uint16_t impulse_constant = ((obuf[14] << 8) |obuf[15]) ^ obuf[1];
-    uint8_t is_retry = ((obuf[0])>>7);
+    is_retry           = (b[0] >> 7);
+    sequence_id        = (b[0] & 0x7f);
+    deviceid           = (b[1]);
+    impulses           = (b[3] << 8) | b[4];
+    impulse_constant   = ((b[14] << 8) | b[15]) ^ b[1];
+    impulses_total     = (b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8];
+    impulses_val       = (b[9] << 8) | b[10];
+    energy_total_val   = 1.0 * impulses_total / impulse_constant;
+    energy_impulse_val = 1.0 * impulses_val / impulse_constant;
 
     data = data_make(
             "model",            "Model",            DATA_STRING, "ESA-x000",
