@@ -117,7 +117,8 @@
     DECL(ambientweather_wh31e) \
     DECL(maverick_et73) \
     DECL(honeywell_wdb) \
-    DECL(honeywell_wdb_fsk)
+    DECL(honeywell_wdb_fsk) \
+    DECL(esa)
 
 struct bitbuffer;
 struct data;

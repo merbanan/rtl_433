@@ -181,6 +181,7 @@ Supported device protocols:
     [114]  Maverick et73
     [115]  Honeywell Wireless Doorbell
     [116]  Honeywell Wireless Doorbell (FSK)
+    [117]* ESA1000 / ESA2000 Energy Monitor
 
 * Disabled by default, use -R n or -G
 

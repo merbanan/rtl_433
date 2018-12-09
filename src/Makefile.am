@@ -39,6 +39,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
+                       devices/esa.c \
                        devices/esperanza_ews.c \
                        devices/fineoffset.c \
                        devices/fineoffset_wh1050.c \
