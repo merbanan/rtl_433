@@ -1516,6 +1516,11 @@ int main(int argc, char **argv) {
             exit(1);
         }
 
+        if (cfg.duration > 0) {
+            time(&cfg.stop_time);
+            cfg.stop_time += cfg.duration;
+        }
+
         for (i = 0; i < cfg.in_files; ++i) {
             cfg.in_filename = cfg.in_file[i];
 
@@ -1564,7 +1569,7 @@ int main(int argc, char **argv) {
                 sdr_callback(test_mode_buf, n_read, demod);
                 n_blocks++;
                 sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
-            } while (n_read != 0);
+            } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
             memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
