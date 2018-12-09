@@ -25,7 +25,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 	const int max_zeros = device->s_reset_limit / device->s_long_width;
 	const int tolerance = device->s_long_width / 4;		// Tolerance is ±25% of a bit period
 
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+	for (unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Determine number of high bit periods for NRZ coding, where bits may not be separated
 		int highs = (pulses->pulse[n]) * device->f_short_width + 0.5;
 		// Determine number of bit periods in current pulse/gap length (rounded)
@@ -64,7 +64,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 				events += device->decode_fn(device, &bits);
 			}
 			// Debug printout
-			if(!device->decode_fn || (device->verbose && events > 0)) {
+			if (!device->decode_fn || (device->verbose && events > 0)) {
 				fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
@@ -75,7 +75,8 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 }
 
 
-int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
+{
 	int events = 0;
 	bitbuffer_t bits = {0};
 
@@ -225,7 +226,8 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 }
 
 
-int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
+{
 	int events = 0;
 	int time_since_last = 0;
 	bitbuffer_t bits = {0};
@@ -233,7 +235,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 	// First rising edge is always counted as a zero (Seems to be hardcoded policy for the Oregon Scientific sensors...)
 	bitbuffer_add_bit(&bits, 0);
 
-	for(unsigned n = 0; n < pulses->num_pulses; ++n) {
+	for (unsigned n = 0; n < pulses->num_pulses; ++n) {
 		// Falling edge is on end of pulse
 		if (device->s_tolerance > 0
 				&& (pulses->pulse[n] < device->s_short_width - device->s_tolerance
@@ -244,7 +246,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 			bitbuffer_add_row(&bits);
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
-		} else if(pulses->pulse[n] + time_since_last > (device->s_short_width * 1.5)) {
+		} else if (pulses->pulse[n] + time_since_last > (device->s_short_width * 1.5)) {
 			// Last bit was recorded more than short_width*1.5 samples ago
 			// so this pulse start must be a data edge (falling data edge means bit = 1)
 			bitbuffer_add_bit(&bits, 1);
@@ -254,13 +256,13 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 		}
 
 		// End of Message?
-		if(pulses->gap[n] > device->s_reset_limit) {
+		if (pulses->gap[n] > device->s_reset_limit) {
 			int newevents = 0;
 			if (device->decode_fn) {
 				events += device->decode_fn(device, &bits);
 			}
 			// Debug printout
-			if(!device->decode_fn || (device->verbose && events > 0)) {
+			if (!device->decode_fn || (device->verbose && events > 0)) {
 				fprintf(stderr, "pulse_demod_manchester_zerobit(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
@@ -268,7 +270,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 			bitbuffer_add_bit(&bits, 0);		// Prepare for new message with hardcoded 0
 			time_since_last = 0;
 		// Rising edge is on end of gap
-		} else if(pulses->gap[n] + time_since_last > (device->s_short_width * 1.5)) {
+		} else if (pulses->gap[n] + time_since_last > (device->s_short_width * 1.5)) {
 			// Last bit was recorded more than short_width*1.5 samples ago
 			// so this pulse end is a data edge (rising data edge means bit = 0)
 			bitbuffer_add_bit(&bits, 0);
@@ -280,19 +282,20 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 	return events;
 }
 
-int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
+{
 	int symbol[PD_MAX_PULSES * 2] = {0};
 	unsigned int n;
 
 	bitbuffer_t bits = {0};
 	int events = 0;
 
-	for(n = 0; n < pulses->num_pulses; n++) {
+	for (n = 0; n < pulses->num_pulses; n++) {
 		symbol[n*2] = pulses->pulse[n];
 		symbol[(n*2)+1] = pulses->gap[n];
 	}
 
-	for(n = 0; n < pulses->num_pulses * 2; ++n) {
+	for (n = 0; n < pulses->num_pulses * 2; ++n) {
 		if ( abs(symbol[n] - device->s_short_width) < device->s_tolerance) {
 			// Short - 1
 			bitbuffer_add_bit(&bits, 1);
@@ -317,7 +320,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device) {
 			if (device->decode_fn) {
 				events += device->decode_fn(device, &bits);
 			}
-			if(!device->decode_fn || (device->verbose && events > 0)) {
+			if (!device->decode_fn || (device->verbose && events > 0)) {
 				fprintf(stderr, "pulse_demod_dmc(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
@@ -328,7 +331,8 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device) {
 	return events;
 }
 
-int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
+{
 	int symbol[PD_MAX_PULSES * 2];
 	unsigned int n;
 	int w;
@@ -365,7 +369,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device) {
 			if (device->decode_fn) {
 				events += device->decode_fn(device, &bits);
 			}
-			if(!device->decode_fn || (device->verbose && events > 0)) {
+			if (!device->decode_fn || (device->verbose && events > 0)) {
 				fprintf(stderr, "pulse_demod_piwm_raw(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
@@ -376,7 +380,8 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device) {
 	return events;
 }
 
-int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
+{
 	int symbol[PD_MAX_PULSES * 2];
 	unsigned int n;
 
@@ -411,7 +416,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device) {
 			if (device->decode_fn) {
 				events += device->decode_fn(device, &bits);
 			}
-			if(!device->decode_fn || (device->verbose && events > 0)) {
+			if (!device->decode_fn || (device->verbose && events > 0)) {
 				fprintf(stderr, "pulse_demod_piwm_dc(): %s \n", device->name);
 				bitbuffer_print(&bits);
 			}
@@ -435,7 +440,8 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device) {
  * bit is discarded.
  */
 
-int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
+int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
+{
 	unsigned int n;
 	int preamble = 0;
 	int events = 0;
@@ -446,40 +452,40 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 	int sync_min = 2 * halfbit_max;
 
 	/* preamble */
-	for(n = 0; n < pulses->num_pulses; ++n) {
-		if(pulses->pulse[n] > halfbit_min && pulses->gap[n] > halfbit_min) {
+	for (n = 0; n < pulses->num_pulses; ++n) {
+		if (pulses->pulse[n] > halfbit_min && pulses->gap[n] > halfbit_min) {
 			preamble++;
-			if(pulses->gap[n] > halfbit_max)
+			if (pulses->gap[n] > halfbit_max)
 				break;
 		} else
 			return(events);
 	}
-	if(preamble != 12) {
-		if(device->verbose) fprintf(stderr, "preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
+	if (preamble != 12) {
+		if (device->verbose) fprintf(stderr, "preamble %d  %d %d\n", preamble, pulses->pulse[0], pulses->gap[0]);
 		return(events);
 	}
 
 	/* sync */
 	++n;
-	if(pulses->pulse[n] < sync_min || pulses->gap[n] < sync_min) {
+	if (pulses->pulse[n] < sync_min || pulses->gap[n] < sync_min) {
 		return(events);
 	}
 
 	/* data bits - manchester encoding */
 
 	/* sync gap could be part of data when the first bit is 0 */
-	if(pulses->gap[n] > pulses->pulse[n]) {
+	if (pulses->gap[n] > pulses->pulse[n]) {
 		manbit ^= 1;
-		if(manbit) bitbuffer_add_bit(&bits, 0);
+		if (manbit) bitbuffer_add_bit(&bits, 0);
 	}
 
 	/* remaining data bits */
-	for(n++; n < pulses->num_pulses; ++n) {
+	for (n++; n < pulses->num_pulses; ++n) {
 		manbit ^= 1;
-		if(manbit) bitbuffer_add_bit(&bits, 1);
-		if(pulses->pulse[n] > halfbit_max) {
+		if (manbit) bitbuffer_add_bit(&bits, 1);
+		if (pulses->pulse[n] > halfbit_max) {
 			manbit ^= 1;
-			if(manbit) bitbuffer_add_bit(&bits, 1);
+			if (manbit) bitbuffer_add_bit(&bits, 1);
 		}
 		if ((n == pulses->num_pulses - 1
 				|| pulses->gap[n] > device->s_reset_limit)
@@ -491,10 +497,10 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device) {
 			return(events);
 		}
 		manbit ^= 1;
-		if(manbit) bitbuffer_add_bit(&bits, 0);
-		if(pulses->gap[n] > halfbit_max) {
+		if (manbit) bitbuffer_add_bit(&bits, 0);
+		if (pulses->gap[n] > halfbit_max) {
 			manbit ^= 1;
-			if(manbit) bitbuffer_add_bit(&bits, 0);
+			if (manbit) bitbuffer_add_bit(&bits, 0);
 		}
 	}
 	return events;
@@ -512,7 +518,7 @@ int pulse_demod_string(const char *code, r_device *device)
 		events += device->decode_fn(device, &bits);
 	}
 	// Debug printout
-	if(!device->decode_fn || (device->verbose && events > 0)) {
+	if (!device->decode_fn || (device->verbose && events > 0)) {
 		fprintf(stderr, "pulse_demod_pcm(): %s \n", device->name);
 		bitbuffer_print(&bits);
 	}
