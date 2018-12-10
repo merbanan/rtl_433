@@ -221,6 +221,33 @@ int byteParity(uint8_t inByte)
     return (0x6996 >> inByte) & 1;
 }
 
+#if _WIN32
+#include <windows.h>
+#if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
+#define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
+#else
+#define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
+#endif
+
+#endif
+void get_time_now(struct timeval *tv)
+{
+#ifdef _WIN32
+    FILETIME ft;
+    unsigned __int64 t64;
+    GetSystemTimeAsFileTime(&ft);
+    t64 = (ft.dwHighDateTime << 32) | ft.dwLowDateTime;
+    t64 /= 10; // convert to microseconds
+    t64 -= DELTA_EPOCH_IN_MICROSECS; // convert file time to unix epoch
+    tv->tv_sec  = (long)(t64 / 1000000UL);
+    tv->tv_usec = (long)(t64 % 1000000UL);
+#else
+    int ret = gettimeofday(tv, NULL);
+    if (ret)
+        perror("gettimeofday");
+#endif
+}
+
 char *local_time_str(time_t time_secs, char *buf)
 {
     time_t etime;
@@ -236,6 +263,23 @@ char *local_time_str(time_t time_secs, char *buf)
     tm_info = localtime(&etime); // note: win32 doesn't have localtime_r()
 
     strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
+}
+
+char *usecs_time_str(struct timeval *tv, char *buf)
+{
+    struct timeval now;
+    struct tm *tm_info;
+
+    if (!tv) {
+        tv = &now;
+        get_time_now(tv);
+    }
+
+    tm_info = localtime(&tv->tv_sec); // note: win32 doesn't have localtime_r()
+
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     return buf;
 }
 
