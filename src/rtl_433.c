@@ -23,7 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <math.h>
-#include <sys/time.h>
+#include <time.h>
 
 #include "rtl_433.h"
 #include "sdr.h"

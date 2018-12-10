@@ -15,7 +15,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-#include <sys/time.h>
 
 #if defined _MSC_VER // Microsoft Visual Studio
 	#define restrict  __restrict
