@@ -101,6 +101,7 @@ struct app_cfg {
     int report_time_hires;
     int report_time_utc;
     int no_default_devices;
+    int duplicate_check;
     r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
@@ -423,6 +424,41 @@ static char *time_pos_str(unsigned samples_ago, char *buf)
     }
 }
 
+struct proto_hash {
+    int protocol;
+    time_t time;
+};
+
+#define HASH_MOD 101
+
+static struct proto_hash duptable[HASH_MOD] = {0};
+
+/** Duplicate check of signals that spawns multiple events
+ *
+ * return 0 if duplicate found
+ * return 1 if no duplicate found
+*/
+int duplicate_check(data_t *data, int protocol_num) {
+    time_t second = time(NULL);
+    int idx = protocol_num % HASH_MOD;
+
+    if (duptable[idx].protocol == protocol_num) {
+        if((second-duptable[idx].time) < cfg.duplicate_check) {
+            //duplicate found
+            return 0;
+        } else {
+            //no duplicate found, insert time of last found message
+            duptable[idx].time = second;
+            return 1;
+        }
+    } else {
+        // no previous record, update record
+        duptable[idx].protocol = protocol_num;
+        duptable[idx].time = second;
+        return 1;
+    }
+}
+
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {
@@ -590,9 +626,10 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    for (int i = 0; i < cfg.last_output_handler; ++i) {
-        data_output_print(cfg.output_handler[i], data);
-    }
+    if (!cfg.duplicate_check || duplicate_check(data, r_dev->protocol_num))
+        for (int i = 0; i < cfg.last_output_handler; ++i) {
+                data_output_print(cfg.output_handler[i], data);
+        }
     data_free(data);
 }
 
@@ -1047,7 +1084,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
 
-#define OPTSTRING "hqDVc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hqDVc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:EY:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -1084,6 +1121,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
+        {"duplicate_check", 'Y'},
         {NULL, 0}};
 
 static void parse_conf_text(struct app_cfg *cfg, char *conf)
@@ -1403,6 +1441,9 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         break;
     case 'E':
         cfg->stop_after_successful_events_flag = atobv(arg, 1);
+        break;
+    case 'Y':
+        cfg->duplicate_check = atoi(arg);
         break;
     default:
         usage(NULL, 0, 1);
