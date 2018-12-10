@@ -537,9 +537,9 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         }
     }
 
-    if (cfg.report_protocol) {
+    if (cfg.report_protocol && r_dev->protocol_num) {
         data = data_prepend(data,
-                "p",   "Protocol",  DATA_INT, r_dev->protocol_num,
+                "protocol", "Protocol", DATA_INT, r_dev->protocol_num,
                 NULL);
     }
 
