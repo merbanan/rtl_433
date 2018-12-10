@@ -67,7 +67,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
             if (a->print2) {
                 a->pulse_avg += a->counter - a->pulse_start;
                 if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
-                        a->pulses_found, a->counter, a->counter - a->pulse_start, a->pulse_avg / a->pulses_found);
+                        a->pulses_found, a->counter, a->counter - a->pulse_start, (a->pulses_found) ? (a->pulse_avg / a->pulses_found) : 0);
                 a->pulse_end = a->counter;
                 a->print2 = 0;
                 a->signal_pulse_data[a->signal_pulse_counter][1] = a->counter;

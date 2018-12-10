@@ -23,6 +23,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <math.h>
+#include <sys/time.h>
 
 #include "rtl_433.h"
 #include "sdr.h"
@@ -59,6 +60,13 @@ typedef enum {
     CONVERT_CUSTOMARY
 } conversion_mode_t;
 
+typedef enum {
+    REPORT_TIME_DEFAULT,
+    REPORT_TIME_DATE,
+    REPORT_TIME_SAMPLES,
+    REPORT_TIME_OFF,
+} time_mode_t;
+
 struct app_cfg {
     char *dev_query;
     char *gain_str;
@@ -84,9 +92,14 @@ struct app_cfg {
     sdr_dev_t *dev;
     int grab_mode;
     int quiet_mode;
-    int utc_mode;
+    int verbose;
+    int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int report_protocol;
+    time_mode_t report_time;
+    int report_time_hires;
+    int report_time_utc;
     int no_default_devices;
     r_device *devices;
     uint16_t num_r_devices;
@@ -102,9 +115,6 @@ static struct app_cfg cfg = {
     .samp_rate = DEFAULT_SAMPLE_RATE,
     .conversion_mode = CONVERT_NATIVE,
 };
-
-float sample_file_pos = -1;
-int debug_output = 0;
 
 struct dm_state {
     int32_t level_limit;
@@ -136,6 +146,8 @@ struct dm_state {
     unsigned frame_event_count;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
+    struct timeval now;
+    float sample_file_pos;
 };
 
 static void version(void)
@@ -185,17 +197,16 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t= Data output options =\n"
-            "\t[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.\n"
-            "\t[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.\n"
-            "\t[-C] native|si|customary Convert units in decoded output.\n"
-            "\t[-T] Specify number of seconds to run\n"
-            "\t[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\t[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.\n"
+            "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
+            "\t[-C native|si|customary] Convert units in decoded output.\n"
+            "\t[-T <seconds>] Specify number of seconds to run\n"
             "\t[-E] Stop after outputting successful event(s)\n"
             "\t[-h] Output this usage help and exit\n"
-            "\t\t Use -d, -g, -R, -X, -F, -r, or -w without argument for more help\n\n",
+            "\t\t Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     if (devices) {
@@ -247,10 +258,26 @@ static void help_gain(void)
 static void help_output(void)
 {
     fprintf(stderr,
-            "[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
+    exit(0);
+}
+
+static void help_meta(void)
+{
+    fprintf(stderr,
+            "[-M time|reltime|notime|hires|level] Add various metadata to every output line.\n"
+            "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
+            "\tUse \"reltime\" to add sample position meta data (preset for read-file and stdin).\n"
+            "\tUse \"notime\" to remove time meta data.\n"
+            "\tUse \"hires\" to add microsecods to date time meta data.\n"
+            "\tUse \"utc\" / \"noutc\" to output timestamps in UTC.\n"
+            "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
+            "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
+            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");
     exit(0);
 }
 
@@ -328,13 +355,15 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->s_sync_width  = r_dev->sync_width * samples_per_us;
     p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
+    p->protocol_num  = r_dev->protocol_num;
     p->modulation    = r_dev->modulation;
     p->decode_fn     = r_dev->decode_fn;
     p->decode_ctx    = r_dev->decode_ctx;
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
-    p->verbose       = debug_output;
+    p->verbose       = cfg.verbose;
+    p->verbose_bits  = cfg.verbose_bits;
     p->output_fn     = data_acquired_handler;
     p->output_ctx    = &cfg;
 
@@ -342,13 +371,13 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     demod->r_dev_num++;
 
     if (!cfg.quiet_mode) {
-    fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
     if (demod->r_dev_num > MAX_PROTOCOLS) {
         fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
-    fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
-    exit(-1);
+        fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
+        exit(-1);
     }
 }
 
@@ -371,13 +400,26 @@ static void calc_rssi_snr(pulse_data_t *pulse_data)
     }
 }
 
-static char *time_pos_str(time_t time_secs, char *buf)
+static char *time_pos_str(unsigned samples_ago, char *buf)
 {
-    if (sample_file_pos != -1.0) {
-        return sample_pos_str(sample_file_pos, buf);
+    if (cfg.report_time == REPORT_TIME_SAMPLES) {
+        double s_per_sample = 1.0 / cfg.samp_rate;
+        return sample_pos_str(cfg.demod->sample_file_pos - samples_ago * s_per_sample, buf);
     }
     else {
-        return local_time_str(0, buf);
+        struct timeval ago = cfg.demod->now;
+        double us_per_sample = 1e6 / cfg.samp_rate;
+        unsigned usecs_ago   = samples_ago * us_per_sample;
+        while (ago.tv_usec < (int)usecs_ago) {
+            ago.tv_sec -= 1;
+            ago.tv_usec += 1000000;
+        }
+        ago.tv_usec -= usecs_ago;
+
+        if (cfg.report_time_hires)
+            return usecs_time_str(&ago, buf);
+        else
+            return local_time_str(ago.tv_sec, buf);
     }
 }
 
@@ -497,6 +539,12 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         }
     }
 
+    if (cfg.report_protocol && r_dev->protocol_num) {
+        data = data_prepend(data,
+                "protocol", "Protocol", DATA_INT, r_dev->protocol_num,
+                NULL);
+    }
+
     if (cfg.report_meta && cfg.demod->fsk_pulse_data.fsk_f2_est) {
         calc_rssi_snr(&cfg.demod->fsk_pulse_data);
         data_append(data,
@@ -519,12 +567,14 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    // always prepend "time"
-    char time_str[LOCAL_TIME_BUFLEN];
-    time_pos_str(0, time_str);
-    data = data_prepend(data,
-            "time", "", DATA_STRING, time_str,
-            NULL);
+    // prepend "time" if requested
+    if (cfg.report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg.demod->pulse_data.start_ago, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
 
     // prepend "tag" if available
     if (cfg.output_tag) {
@@ -560,6 +610,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         cfg.do_exit = 1;
         sdr_stop(cfg.dev);
     }
+
+    get_time_now(&demod->now);
 
     n_samples = len / 2 / demod->sample_size;
 
@@ -626,7 +678,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == 1) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t@ %s\n", time_pos_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(demod->pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -668,13 +720,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
-                if (debug_output > 1) pulse_data_print(&demod->pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
+                if (cfg.verbose > 1) pulse_data_print(&demod->pulse_data);
+                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
                 }
             } else if (package_type == 2) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t@ %s\n", time_pos_str(0, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(demod->fsk_pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
@@ -704,8 +756,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
-                if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode == 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
+                if (cfg.verbose > 1) pulse_data_print(&demod->fsk_pulse_data);
+                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
                 }
@@ -749,7 +801,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbose, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -1029,11 +1081,10 @@ static struct conf_keywords const conf_keywords[] = {
         {"output", 'F'},
         {"output_tag", 'K'},
         {"convert", 'C'},
-        {"utc_mode", 'U'},
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
-        {NULL}};
+        {NULL, 0}};
 
 static void parse_conf_text(struct app_cfg *cfg, char *conf)
 {
@@ -1214,16 +1265,37 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         usage(NULL, 0, 1);
         break;
     case 'M':
-        if (strcasecmp(arg, "level") == 0)
+        if (!arg)
+            help_meta();
+
+        if (!strcasecmp(arg, "time"))
+            cfg->report_time = REPORT_TIME_DATE;
+        else if (!strcasecmp(arg, "reltime"))
+            cfg->report_time = REPORT_TIME_SAMPLES;
+        else if (!strcasecmp(arg, "notime"))
+            cfg->report_time = REPORT_TIME_OFF;
+        else if (!strcasecmp(arg, "hires"))
+            cfg->report_time_hires = 1;
+        else if (!strcasecmp(arg, "utc"))
+            cfg->report_time_utc = 1;
+        else if (!strcasecmp(arg, "noutc"))
+            cfg->report_time_utc = 0;
+        else if (!strcasecmp(arg, "protocol"))
+            cfg->report_protocol = 1;
+        else if (!strcasecmp(arg, "noprotocol"))
+            cfg->report_protocol = 0;
+        else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
+        else if (!strcasecmp(arg, "bits"))
+            cfg->verbose_bits = 1;
         else
             cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
         if (!arg)
-            debug_output++;
+            cfg->verbose++;
         else
-            debug_output = atobv(arg, 1);
+            cfg->verbose = atobv(arg, 1);
         break;
     case 'z':
         if (cfg->demod->am_analyze)
@@ -1317,14 +1389,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         }
         break;
     case 'U':
-#ifdef _WIN32
-        putenv("TZ=UTC+0");
-        _tzset();
-#else
-        cfg->utc_mode = setenv("TZ", "UTC", 1);
-        if (cfg->utc_mode != 0)
-            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", cfg->utc_mode);
-#endif
+        fprintf(stderr, "UTC mode option (-U) is deprecated. Please use \"-M utc\".\n");
+        exit(1);
         break;
     case 'T':
         cfg->duration = atoi_time(arg, "-T: ");
@@ -1345,17 +1411,22 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
 }
 
 // well-known fields "time", "msg" and "codes" are used to output general decoder messages
+// well-known field "bits" is only used when verbose bits (-M bits) is requested
 // well-known field "tag" is only used when output tagging is requested
-static char const *well_known_with_tag[]  = {"time", "msg", "codes", "tag", NULL};
 static char const *well_known_default[] = {"time", "msg", "codes", NULL};
+static char const *well_known_with_tag[] = {"time", "msg", "codes", "tag", NULL};
+static char const *well_known_with_bits[] = {"time", "msg", "codes", "bits", NULL};
+static char const *well_known_with_bits_tag[] = {"time", "msg", "codes", "bits", "tag", NULL};
 static char const **well_known_output_fields(struct app_cfg *cfg)
 {
-    if (cfg->output_tag) {
+    if (cfg->output_tag && cfg->verbose_bits)
+        return well_known_with_bits_tag;
+    else if (cfg->output_tag)
         return well_known_with_tag;
-    }
-    else {
+    else if (cfg->verbose_bits)
+        return well_known_with_bits;
+    else
         return well_known_default;
-    }
 }
 
 int main(int argc, char **argv) {
@@ -1415,6 +1486,23 @@ int main(int argc, char **argv) {
         demod->samp_grab->frequency   = &cfg.center_frequency;
         demod->samp_grab->samp_rate   = &cfg.samp_rate;
         demod->samp_grab->sample_size = &demod->sample_size;
+    }
+
+    if (cfg.report_time == REPORT_TIME_DEFAULT) {
+        if (cfg.in_files)
+            cfg.report_time = REPORT_TIME_SAMPLES;
+        else
+            cfg.report_time = REPORT_TIME_DATE;
+    }
+    if (cfg.report_time_utc) {
+#ifdef _WIN32
+        putenv("TZ=UTC+0");
+        _tzset();
+#else
+        r = setenv("TZ", "UTC", 1);
+        if (r != 0)
+            fprintf(stderr, "Unable to set TZ to UTC; error code: %d\n", r);
+#endif
     }
 
     if (cfg.last_output_handler < 1) {
@@ -1505,6 +1593,11 @@ int main(int argc, char **argv) {
             exit(1);
         }
 
+        if (cfg.duration > 0) {
+            time(&cfg.stop_time);
+            cfg.stop_time += cfg.duration;
+        }
+
         for (i = 0; i < cfg.in_files; ++i) {
             cfg.in_filename = cfg.in_file[i];
 
@@ -1530,7 +1623,7 @@ int main(int argc, char **argv) {
             if (!cfg.quiet_mode) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
             }
-            sample_file_pos = 0.0;
+            demod->sample_file_pos = 0.0;
 
             int n_blocks = 0;
             unsigned long n_read;
@@ -1550,10 +1643,10 @@ int main(int argc, char **argv) {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
-                sdr_callback(test_mode_buf, n_read, demod);
                 n_blocks++;
-                sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
-            } while (n_read != 0);
+                demod->sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
+                sdr_callback(test_mode_buf, n_read, demod);
+            } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
             memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data

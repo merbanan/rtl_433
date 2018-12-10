@@ -26,6 +26,8 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
+                       devices/bresser_5in1.c \
+                       devices/bt_rain.c \
                        devices/calibeur.c \
                        devices/cardin.c \
                        devices/chuango.c \
@@ -39,6 +41,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
+                       devices/esa.c \
                        devices/esperanza_ews.c \
                        devices/fineoffset.c \
                        devices/fineoffset_wh1050.c \
@@ -54,7 +57,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/hideki.c \
                        devices/hondaremote.c \
                        devices/honeywell.c \
-                       devices/honeywell_wdt.c \
+                       devices/honeywell_wdb.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
                        devices/infactory.c \

@@ -89,8 +89,8 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     data = data_make(
             "model",         "",            DATA_STRING, "TFA-Twin-Plus-30.3049",
-            "id",            "",            DATA_INT, sensor_id,
-            "channel",       "",            DATA_INT, channel,
+            "id",            "Id",          DATA_INT, sensor_id,
+            "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,

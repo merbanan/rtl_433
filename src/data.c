@@ -653,7 +653,7 @@ void data_output_csv_init(struct data_output *output, const char **fields, int n
     }
     num_unique_fields = i;
 
-    csv->fields = calloc(num_unique_fields + 1, sizeof(const char **));
+    csv->fields = calloc(num_unique_fields + 1, sizeof(const char *));
     if (!csv->fields)
         goto alloc_error;
 

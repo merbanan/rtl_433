@@ -127,6 +127,8 @@
     <ClCompile Include="..\src\devices\blyss.c" />
     <ClCompile Include="..\src\devices\brennenstuhl_rcs_2044.c" />
     <ClCompile Include="..\src\devices\bresser_3ch.c" />
+    <ClCompile Include="..\src\devices\bresser_5in1.c" />
+    <ClCompile Include="..\src\devices\bt_rain.c" />
     <ClCompile Include="..\src\devices\calibeur.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
@@ -140,6 +142,7 @@
     <ClCompile Include="..\src\devices\elro_db286a.c" />
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
+    <ClCompile Include="..\src\devices\esa.c" />
     <ClCompile Include="..\src\devices\esperanza_ews.c" />
     <ClCompile Include="..\src\devices\fineoffset.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1050.c" />

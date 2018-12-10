@@ -55,17 +55,16 @@ Usage:	= General options =
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
 	= Data output options =
-	[-F] kv|json|csv|syslog|null Produce decoded output in given format. Not yet supported by all drivers.
+	[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-	[-M level] Add metadata on modulation, frequency, RSSI, SNR, and noise to every output line.
-	[-K] FILE|PATH|<tag> Add an expanded token or fixed tag to every output line.
-	[-C] native|si|customary Convert units in decoded output.
-	[-T] Specify number of seconds to run
-	[-U] Print timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).
+	[-M time|reltime|notime|hires|utc|protocol|level] Add various meta data to every output line.
+	[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.
+	[-C native|si|customary] Convert units in decoded output.
+	[-T <seconds>] Specify number of seconds to run
 	[-E] Stop after outputting successful event(s)
 	[-h] Output this usage help and exit
-		 Use -d, -g, -R, -X, -F, -r, or -w without argument for more help
+		 Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help
 
 Supported device protocols:
     [01]  Silvercrest Remote Control
@@ -155,7 +154,7 @@ Supported device protocols:
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
-    [91]* inFactory
+    [91]  inFactory
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor
@@ -179,8 +178,11 @@ Supported device protocols:
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
     [114]  Maverick et73
-    [115] "Honeywell Wireless Doorbell"
-    [116] "Honeywell Wireless Doorbell (FSK)"
+    [115]  Honeywell Wireless Doorbell
+    [116]  Honeywell Wireless Doorbell (FSK)
+    [117]* ESA1000 / ESA2000 Energy Monitor
+    [118]* Biltema rain gauge
+    [119]* Bresser Weather Center 5-in-1
 
 * Disabled by default, use -R n or -G
 
