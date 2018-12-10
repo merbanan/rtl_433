@@ -93,6 +93,7 @@ struct app_cfg {
     int grab_mode;
     int quiet_mode;
     int verbose;
+    int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
     int report_protocol;
@@ -199,7 +200,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M time|reltime|notime|hires|utc|protocol|level] Add various meta data to every output line.\n"
+            "\t[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.\n"
             "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
             "\t[-C native|si|customary] Convert units in decoded output.\n"
             "\t[-T <seconds>] Specify number of seconds to run\n"
@@ -275,7 +276,8 @@ static void help_meta(void)
             "\tUse \"utc\" / \"noutc\" to output timestamps in UTC.\n"
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
-            "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n");
+            "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
+            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");
     exit(0);
 }
 
@@ -361,6 +363,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->fields        = r_dev->fields;
 
     p->verbose       = cfg.verbose;
+    p->verbose_bits  = cfg.verbose_bits;
     p->output_fn     = data_acquired_handler;
     p->output_ctx    = &cfg;
 
@@ -1283,6 +1286,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
             cfg->report_protocol = 0;
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
+        else if (!strcasecmp(arg, "bits"))
+            cfg->verbose_bits = 1;
         else
             cfg->report_meta = atobv(arg, 1);
         break;
@@ -1406,17 +1411,22 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
 }
 
 // well-known fields "time", "msg" and "codes" are used to output general decoder messages
+// well-known field "bits" is only used when verbose bits (-M bits) is requested
 // well-known field "tag" is only used when output tagging is requested
-static char const *well_known_with_tag[]  = {"time", "msg", "codes", "tag", NULL};
 static char const *well_known_default[] = {"time", "msg", "codes", NULL};
+static char const *well_known_with_tag[] = {"time", "msg", "codes", "tag", NULL};
+static char const *well_known_with_bits[] = {"time", "msg", "codes", "bits", NULL};
+static char const *well_known_with_bits_tag[] = {"time", "msg", "codes", "bits", "tag", NULL};
 static char const **well_known_output_fields(struct app_cfg *cfg)
 {
-    if (cfg->output_tag) {
+    if (cfg->output_tag && cfg->verbose_bits)
+        return well_known_with_bits_tag;
+    else if (cfg->output_tag)
         return well_known_with_tag;
-    }
-    else {
+    else if (cfg->verbose_bits)
+        return well_known_with_bits;
+    else
         return well_known_default;
-    }
 }
 
 int main(int argc, char **argv) {

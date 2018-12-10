@@ -143,6 +143,7 @@ typedef struct r_device {
 
     /* public for each decoder */
     int verbose;
+    int verbose_bits;
     void (*output_fn)(struct r_device *decoder, struct data *data);
 
     /* private for flex decoder and output callback */
