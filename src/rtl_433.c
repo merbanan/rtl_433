@@ -92,6 +92,7 @@ struct app_cfg {
     sdr_dev_t *dev;
     int grab_mode;
     int quiet_mode;
+    int verbose;
     conversion_mode_t conversion_mode;
     int report_meta;
     int report_protocol;
@@ -113,8 +114,6 @@ static struct app_cfg cfg = {
     .samp_rate = DEFAULT_SAMPLE_RATE,
     .conversion_mode = CONVERT_NATIVE,
 };
-
-int debug_output = 0;
 
 struct dm_state {
     int32_t level_limit;
@@ -361,7 +360,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
-    p->verbose       = debug_output;
+    p->verbose       = cfg.verbose;
     p->output_fn     = data_acquired_handler;
     p->output_ctx    = &cfg;
 
@@ -718,7 +717,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
-                if (debug_output > 1) pulse_data_print(&demod->pulse_data);
+                if (cfg.verbose > 1) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
@@ -754,7 +753,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
-                if (debug_output > 1) pulse_data_print(&demod->fsk_pulse_data);
+                if (cfg.verbose > 1) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
@@ -799,7 +798,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, debug_output, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbose, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -1289,9 +1288,9 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         break;
     case 'D':
         if (!arg)
-            debug_output++;
+            cfg->verbose++;
         else
-            debug_output = atobv(arg, 1);
+            cfg->verbose = atobv(arg, 1);
         break;
     case 'z':
         if (cfg->demod->am_analyze)
