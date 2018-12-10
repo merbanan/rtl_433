@@ -94,6 +94,7 @@ struct app_cfg {
     int quiet_mode;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
     int report_time_utc;
@@ -199,7 +200,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M time|reltime|notime|hires|utc|noutc|level] Add various meta data to every output line.\n"
+            "\t[-M time|reltime|notime|hires|utc|protocol|level] Add various meta data to every output line.\n"
             "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
             "\t[-C native|si|customary] Convert units in decoded output.\n"
             "\t[-T <seconds>] Specify number of seconds to run\n"
@@ -272,7 +273,9 @@ static void help_meta(void)
             "\tUse \"reltime\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"notime\" to remove time meta data.\n"
             "\tUse \"hires\" to add microsecods to date time meta data.\n"
-            "\tUse \"utc\" to output timestamps in UTC (this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\tUse \"utc\" / \"noutc\" to output timestamps in UTC.\n"
+            "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n");
     exit(0);
 }
@@ -351,6 +354,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->s_sync_width  = r_dev->sync_width * samples_per_us;
     p->s_tolerance   = r_dev->tolerance * samples_per_us;
 
+    p->protocol_num  = r_dev->protocol_num;
     p->modulation    = r_dev->modulation;
     p->decode_fn     = r_dev->decode_fn;
     p->decode_ctx    = r_dev->decode_ctx;
@@ -531,6 +535,12 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
         }
+    }
+
+    if (cfg.report_protocol) {
+        data = data_prepend(data,
+                "p",   "Protocol",  DATA_INT, r_dev->protocol_num,
+                NULL);
     }
 
     if (cfg.report_meta && cfg.demod->fsk_pulse_data.fsk_f2_est) {
@@ -1268,6 +1278,10 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
             cfg->report_time_utc = 1;
         else if (!strcasecmp(arg, "noutc"))
             cfg->report_time_utc = 0;
+        else if (!strcasecmp(arg, "protocol"))
+            cfg->report_protocol = 1;
+        else if (!strcasecmp(arg, "noprotocol"))
+            cfg->report_protocol = 0;
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
         else
