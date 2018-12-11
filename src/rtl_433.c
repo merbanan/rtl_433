@@ -127,6 +127,7 @@ struct dm_state {
     uint8_t u8_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 1, CS16: 2
+    pulse_detect_t *pulse_detect;
     FilterState lowpass_filter_state;
     DemodFM_State demod_FM_state;
     int enable_FM_demod;
@@ -669,7 +670,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago)
@@ -1445,6 +1446,8 @@ int main(int argc, char **argv) {
     demod = calloc(1, sizeof(struct dm_state));
     cfg.demod = demod;
 
+    demod->pulse_detect = pulse_detect_create();
+
     /* initialize tables */
     baseband_init();
 
@@ -1722,6 +1725,7 @@ int main(int argc, char **argv) {
     if (demod->am_analyze)
         am_analyze_free(demod->am_analyze);
 
+    pulse_detect_free(demod->pulse_detect);
     free(demod);
 
     sdr_close(cfg.dev);
