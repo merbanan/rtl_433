@@ -21,7 +21,6 @@ uint8_t reverse8(uint8_t x)
     return x;
 }
 
-
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 4; // LSBs are unused
@@ -40,7 +39,6 @@ uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     }
     return remainder >> 4 & 0x0f; // discard the LSBs
 }
-
 
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
@@ -61,8 +59,8 @@ uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     return remainder >> 1 & 0x7f; // discard the LSB
 }
 
-
-uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
     uint8_t remainder = init;
     unsigned byte, bit;
 
@@ -79,31 +77,26 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     return remainder;
 }
 
-
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
-    uint8_t crc = init, i;
-    unsigned byte;
-    uint8_t bit;
+    uint8_t remainder = reverse8(init);
+    unsigned byte, bit;
+    polynomial = reverse8(polynomial);
 
     for (byte = 0; byte < nBytes; ++byte) {
-    for (i = 0x01; i & 0xff; i <<= 1) {
-        bit = (crc & 0x80) == 0x80;
-        if (message[byte] & i) {
-        bit = !bit;
-        }
-        crc <<= 1;
-        if (bit) {
-        crc ^= polynomial;
+        remainder ^= message[byte];
+        for (bit = 0; bit < 8; ++bit) {
+            if (remainder & 1) {
+                remainder = (remainder >> 1) ^ polynomial;
+            } else {
+                remainder = (remainder >> 1);
+            }
         }
     }
-    crc &= 0xff;
-    }
-
-    return reverse8(crc);
+    return remainder;
 }
 
-uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
 {
     uint16_t remainder = init;
     unsigned byte, bit;
@@ -140,7 +133,6 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
     }
     return remainder;
 }
-
 
 uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key)
 {

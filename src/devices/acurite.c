@@ -1051,7 +1051,7 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     (signal[2][i] & signal[0][i]);
         }
         // CRC check fails?
-        if ((crc=crc16(&(signal[0][0]), 11/*len*/, 0xb2/*poly*/, 0xd0/*seed*/)) != 0) {
+        if ((crc=crc16lsb(&(signal[0][0]), 11/*len*/, 0x00b2/*poly*/, 0x00d0/*seed*/)) != 0) {
             if (decoder->verbose) {
                 fprintf(stderr,"Acurite 00275rm sensor bad CRC: %02x -",
                     crc);

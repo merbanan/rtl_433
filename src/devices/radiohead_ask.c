@@ -108,7 +108,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
 
     // Check CRC
     crc = (payload[msg_len - 1] << 8) | payload[msg_len - 2];
-    crc_recompute = ~crc16(payload, msg_len - 2, 0x8408, 0xFFFF);
+    crc_recompute = ~crc16lsb(payload, msg_len - 2, 0x8408, 0xFFFF);
     if (crc_recompute != crc) {
         if (decoder->verbose) {
             fprintf(stderr, "CRC error: %04X != %04X\n", crc_recompute, crc);
