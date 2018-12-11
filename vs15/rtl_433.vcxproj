@@ -94,6 +94,7 @@
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
     <ClInclude Include="..\include\optparse.h" />
+    <ClInclude Include="..\include\platform.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
     <ClInclude Include="..\include\rtl_433.h" />
@@ -112,6 +113,8 @@
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
     <ClCompile Include="..\src\optparse.c" />
+    <ClCompile Include="..\src\platform_lin.c" />
+    <ClCompile Include="..\src\platform_win.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />

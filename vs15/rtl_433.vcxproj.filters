@@ -71,6 +71,9 @@
     <ClInclude Include="..\include\confparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\am_analyze.c">
@@ -236,9 +239,6 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\devices\honeywell_wdt.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ht680.c">
@@ -425,6 +425,15 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\confparse.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\honeywell_wdb.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\platform_lin.c.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\platform_win.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
