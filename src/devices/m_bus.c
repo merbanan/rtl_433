@@ -63,7 +63,7 @@ static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, ui
 static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc_offset)
 {
     static const uint16_t CRC_POLY = 0x3D65;
-    uint16_t crc_calc = ~crc16_ccitt(bytes, crc_offset, CRC_POLY, 0);
+    uint16_t crc_calc = ~crc16(bytes, crc_offset, CRC_POLY, 0);
     uint16_t crc_read = (((uint16_t)bytes[crc_offset] << 8) | bytes[crc_offset+1]);
     if (crc_calc != crc_read) {
         if (decoder->verbose) {

@@ -115,7 +115,7 @@ uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial,
     return remainder;
 }
 
-uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
 {
     uint16_t remainder = init;
     unsigned byte, bit;

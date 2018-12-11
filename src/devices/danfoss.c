@@ -38,7 +38,6 @@
 
 #define NUM_BYTES 10	// Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
 static const uint8_t HEADER[] = { 0x36, 0x5c };	// Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)
-static const uint16_t CRC_POLY = 0x1021;
 
 // Mapping from 6 bits to 4 bits
 static uint8_t danfoss_decode_nibble(uint8_t byte) {
@@ -110,7 +109,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 		}
 
 		// Validate Prefix and CRC
-		uint16_t crc_calc = crc16_ccitt(bytes, NUM_BYTES-2, CRC_POLY, 0);
+		uint16_t crc_calc = crc16(bytes, NUM_BYTES-2, 0x1021, 0x0000);
 		if (bytes[0] != 0x02		// Somewhat redundant to header search, but checks last bits
 		 || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
 		) {

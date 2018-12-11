@@ -36,7 +36,7 @@ static int honeywell_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     bb = bitbuffer->bb[0];
 
-    crc_calculated = crc16_ccitt(bb, 6, 0x8005, 0xfffe);
+    crc_calculated = crc16(bb, 6, 0x8005, 0xfffe);
     crc = (((uint16_t) bb[6]) << 8) + ((uint16_t) bb[7]);
     if(crc != crc_calculated)
         return 0; // Not a valid packet

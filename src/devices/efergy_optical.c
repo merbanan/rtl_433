@@ -72,7 +72,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     csum1 = ((bytes[10]<<8)|(bytes[11]));
 
-    crc = crc16_ccitt(bytes, 10, 0x1021, 0x0);
+    crc = crc16(bytes, 10, 0x1021, 0x0000);
 
     if (crc != csum1) {
         if (decoder->verbose)

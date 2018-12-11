@@ -92,7 +92,7 @@ uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial,
 /// @param polynomial: CRC polynomial
 /// @param init: starting crc value
 /// @return CRC value
-uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
+uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
 /// Digest-8 by "LFSR-based Toeplitz hash"
 /// @param message bytes of message data
