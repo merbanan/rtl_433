@@ -61,7 +61,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         packet[i] = (b[i+offset] << (i%8)) | (b[i+offset+1] >> (8 - i%8));
         // check parity
         uint8_t parity = (b[i+offset+1] >> (7 - i%8)) & 1;
-        if (parity != byteParity(packet[i])) {
+        if (parity != parity8(packet[i])) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: Parity error at %d\n", __func__, i);
             return 0;
@@ -69,10 +69,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // XOR check all bytes
-    chk = 0;
-    for (int i = 1; i < unstuffed_len - 1; ++i) {
-        chk ^= packet[i];
-    }
+    chk = xor_bytes(&packet[1], unstuffed_len - 2);
     if (chk) {
         if (decoder->verbose)
             fprintf(stderr, "%s: XOR error\n", __func__);
@@ -87,8 +84,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // Reflect LSB first to LSB last
-    for (int i = 0; i < unstuffed_len; ++i)
-        packet[i] = reverse8(packet[i]);
+    reflect_bytes(packet, unstuffed_len);
 
     // Parse data
     if (packet[0] != 0x9f) // NOTE: other valid ids might exist

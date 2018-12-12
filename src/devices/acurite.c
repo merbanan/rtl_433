@@ -524,7 +524,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
         sensor_id, channel, message_type, tempf, humidity, strike_count, strike_distance, l_status);
     for (int i=0; i < browlen; i++) {
         char pc;
-        pc = byteParity(bb[i]) == 0 ? ' ' : '*';
+        pc = parity8(bb[i]) == 0 ? ' ' : '*';
         fprintf(stdout, " %02x%c", bb[i], pc);
     }
     printf("\n");
@@ -617,7 +617,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
         if (decoder->verbose) {
             fprintf(stderr, "acurite_txr Parity: ");
             for (uint8_t i = 0; i < browlen; i++) {
-                fprintf(stderr,"%d",byteParity(bb[i]));
+                fprintf(stderr, "%d", parity8(bb[i]));
             }
             fprintf(stderr,"\n");
         }

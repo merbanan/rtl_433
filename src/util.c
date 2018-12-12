@@ -21,6 +21,13 @@ uint8_t reverse8(uint8_t x)
     return x;
 }
 
+void reflect_bytes(uint8_t message[], unsigned num_bytes)
+{
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        message[i] = reverse8(message[i]);
+    }
+}
+
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 4; // LSBs are unused
@@ -205,12 +212,39 @@ void lfsr_keys_rwd16(int rounds, uint16_t gen, uint16_t key)
 }
 */
 
-
-int byteParity(uint8_t inByte)
+// we could use popcount intrinsic, but don't actually need the performance
+int parity8(uint8_t byte)
 {
-    inByte ^= inByte >> 4;
-    inByte &= 0xf;
-    return (0x6996 >> inByte) & 1;
+    byte ^= byte >> 4;
+    byte &= 0xf;
+    return (0x6996 >> byte) & 1;
+}
+
+int parity_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result ^= parity8(message[i]);
+    }
+    return result;
+}
+
+uint8_t xor_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    uint8_t result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result ^= message[i];
+    }
+    return result;
+}
+
+int add_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result += message[i];
+    }
+    return result;
 }
 
 #if _WIN32
