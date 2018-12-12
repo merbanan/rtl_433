@@ -10,15 +10,15 @@
 /* Based on the springfield.c code, there is a lack of samples and data
  * thus the decoder is disabled by default.
  *
- * Nibble[0] and nibble[1] is the id, changes with every reset.
- * Nibble[2] first bit is battery (0=OK).
- * Nibble[3] bit 1 is tx button pressed.
- * Nibble[3] bit 2 = below zero, subtract temperature with 1024.
- * Nibble[3](bit 3 and 4) + nibble[4] + nibble[5] is the temperature in Celsius with one decimal.
- * Nibble[2](bit 2-4) + nibble[6] + nibble[7] is the rain rate, increases 25!? with every tilt of
+ * nibble[0] and nibble[1] is the id, changes with every reset.
+ * nibble[2] first bit is battery (0=OK).
+ * nibble[3] bit 1 is tx button pressed.
+ * nibble[3] bit 2 = below zero, subtract temperature with 1024. I.e. 11 bit 2's complement.
+ * nibble[3](bit 3 and 4) + nibble[4] + nibble[5] is the temperature in Celsius with one decimal.
+ * nibble[2](bit 2-4) + nibble[6] + nibble[7] is the rain rate, increases 25!? with every tilt of
  * the teeter (1.3 mm rain) after 82 tilts it starts over but carries the rest to the next round
  * e.g tilt 82 = 2 divide by 19.23 to get mm.
- * Nibble[8] is checksum, have not figured it out yet. Last bit is sync? or included in checksum?.
+ * nibble[8] is checksum, have not figured it out yet. Last bit is sync? or included in checksum?.
  */
 
 #include "decoder.h"
@@ -27,60 +27,55 @@
 #define	NUM_BITS	36
 
 static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    int ret = 0;
-    int row, i;
-    int nibble[NUM_BITS/4+1];
-    int sid, battery, rain, transmit, channel, temp;
-    float tempC, rainrate;
     data_t *data;
-    unsigned tmpData;
+    uint8_t *b;
+    int row, i;
+    int id, battery, rain, transmit, channel;
+    int16_t temp_raw;
+    float temp_c, rainrate;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 4, NUM_BITS);
 
-    if(bitbuffer->bits_per_row[row] == NUM_BITS || bitbuffer->bits_per_row[row] == NUM_BITS+1) {
-        tmpData = (bitbuffer->bb[row][0] << 24) + (bitbuffer->bb[row][1] << 16) + (bitbuffer->bb[row][2] << 8) + bitbuffer->bb[row][3];
-        if (tmpData == 0xffffffff)
-            return 0; // prevent false positive checksum
+    if (bitbuffer->bits_per_row[row] != NUM_BITS && bitbuffer->bits_per_row[row] != NUM_BITS + 1)
+        return 0;
 
-        for(i = 0; i < (NUM_BITS/4); i++) {
-            if((i & 0x01) == 0x01)
-                nibble[i] = bitbuffer->bb[row][i >> 1] & 0x0f;
-            else
-                nibble[i] = bitbuffer->bb[row][i >> 1] >> 0x04;
-        }
+    b = bitbuffer->bb[row];
 
-        sid = (nibble[0] << 4) + nibble[1];
-        battery = (nibble[2] >> 3) & 0x01;
-        transmit = (nibble[3] >> 3) & 0x01;
-        channel = (nibble[2] & 0x03) + 1;
-        temp = (((nibble[3]&0x03) << 8) + (nibble[4] << 4) + nibble[5]);
-        if(nibble[3]&0x04) temp = temp - 0x1000;
-        tempC = temp / 10.0;
-        rain = (((nibble[2]&0x07)<<8) + (nibble[6] << 4) + nibble[7]);
-        int rest = rain % 25;
-        if(rest % 2)
-            rain + ((rest / 2) * 2048);
-        else
-            (rain + ((rest+1) / 2) * 2048) + 24576;
-        rainrate = rain/19.23F;
-        data = data_make(
-            "model",        "",         DATA_STRING, "Biltema rain gauge",
-            "sid",          "SID",      DATA_INT, sid,
-            "channel",      "Channel",  DATA_INT, channel,
-            "battery",      "Battery",  DATA_STRING, battery ? "LOW" : "OK",
-            "transmit",     "Transmit", DATA_STRING, transmit ? "MANUAL" : "AUTO",
-            "temperature_C","Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE,tempC,
-            "rainrate",     "Rainrate/hour", DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE,rainrate,
+    if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)
+        return 0; // prevent false positive checksum
+
+    id       = b[0];
+    battery  = b[1] >> 7;
+    channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
+    transmit = (b[1] & 0x08) >> 3;
+
+    temp_raw = ((b[1] & 0x07) << 13) | (b[2] << 5); // use sign extend
+    temp_c = (temp_raw >> 5) * 0.1f;
+
+    rain = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
+    int rest = rain % 25;
+    if (rest % 2)
+        rain += ((rest / 2) * 2048);
+    else
+        rain += ((rest + 1) / 2) * 2048 + 12 * 2048;
+    rainrate = rain * 0.052f; // 19.23mm per tip
+
+    data = data_make(
+            "model",            "",                 DATA_STRING, "Biltema-Rain",
+            "id",               "ID",               DATA_INT, id,
+            "channel",          "Channel",          DATA_INT, channel,
+            "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
+            "transmit",         "Transmit",         DATA_STRING, transmit ? "MANUAL" : "AUTO",
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "rainrate",         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
             NULL);
-        decoder_output_data(decoder, data);
-        return 1;
-    }
-    return 0;
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char *output_fields[] = {
     "model",
-    "sid",
+    "id",
     "channel",
     "battery",
     "transmit",
