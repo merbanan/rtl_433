@@ -23,7 +23,6 @@ void compat_get_time_now(struct timeval *tv)
 #include <stdbool.h>
 #include <stddef.h>
 #include <winsock2.h>
-#include <Shlobj.h> // note: this strictly has to be included _after_ winsock2.h
 
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
