@@ -36,7 +36,8 @@
 #include "samp_grab.h"
 #include "am_analyze.h"
 #include "confparse.h"
-#include "platform.h" // only used for single functions needing different treatment
+#include "compat_paths.h"
+#include "compat_time.h"
 
 #define MAX_DATA_OUTPUTS 32
 #define MAX_DUMP_OUTPUTS 8
@@ -147,7 +148,7 @@ struct dm_state {
     unsigned frame_event_count;
     unsigned frame_start_ago;
     unsigned frame_end_ago;
-    pf_timeval now;
+    struct timeval now;
     float sample_file_pos;
 };
 
@@ -408,7 +409,7 @@ static char *time_pos_str(unsigned samples_ago, char *buf)
         return sample_pos_str(cfg.demod->sample_file_pos - samples_ago * s_per_sample, buf);
     }
     else {
-        pf_timeval ago = cfg.demod->now;
+        struct timeval ago = cfg.demod->now;
         double us_per_sample = 1e6 / cfg.samp_rate;
         unsigned usecs_ago   = samples_ago * us_per_sample;
         while (ago.tv_usec < (int)usecs_ago) {
@@ -1113,7 +1114,7 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
 
 static void parse_conf_try_default_files(struct app_cfg *cfg)
 {
-    char **paths = pf_getDefaultConfPaths();
+    char **paths = compat_getDefaultConfPaths();
     for (int a = 0; paths[a]; a++) {
         fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
         if (hasconf(paths[a])) {

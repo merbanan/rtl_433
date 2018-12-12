@@ -71,7 +71,10 @@
     <ClInclude Include="..\include\confparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\platform.h">
+    <ClInclude Include="..\include\compat_paths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\compat_time.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -430,10 +433,10 @@
     <ClCompile Include="..\src\devices\honeywell_wdb.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\platform_lin.c.c">
+    <ClCompile Include="..\src\compat_time.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\platform_win.c">
+    <ClCompile Include="..\src\compat_paths.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

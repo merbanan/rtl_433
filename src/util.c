@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "platform.h"
+#include "compat_time.h"
 
 uint8_t reverse8(uint8_t x)
 {
@@ -214,9 +214,9 @@ int byteParity(uint8_t inByte)
     return (0x6996 >> inByte) & 1;
 }
 
-void get_time_now(pf_timeval *tv)
+void get_time_now(struct timeval *tv)
 {
-	pf_get_time_now(tv);
+    compat_get_time_now(tv);
 }
 
 char *local_time_str(time_t time_secs, char *buf)
@@ -237,9 +237,9 @@ char *local_time_str(time_t time_secs, char *buf)
     return buf;
 }
 
-char *usecs_time_str(pf_timeval *tv, char *buf)
+char *usecs_time_str(struct timeval *tv, char *buf)
 {
-	pf_timeval now;
+    struct timeval now;
     struct tm *tm_info;
 
     if (!tv) {
@@ -247,8 +247,8 @@ char *usecs_time_str(pf_timeval *tv, char *buf)
         get_time_now(tv);
     }
 
-	time_t t_secs = tv->tv_sec;
-	tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
+    time_t t_secs = tv->tv_sec;
+    tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
     snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);

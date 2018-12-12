@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-#include "platform.h"
+#include "compat_time.h"
 
 #if defined _MSC_VER // Microsoft Visual Studio
 	#define restrict  __restrict
@@ -122,7 +122,7 @@ int byteParity(uint8_t inByte);
 /// Get current time with usec precision.
 ///
 /// @param tv: output for current time
-void get_time_now(pf_timeval *tv);
+void get_time_now(struct timeval *tv);
 
 /// Printable timestamp in local time
 ///
@@ -136,7 +136,7 @@ char* local_time_str(time_t time_secs, char *buf);
 /// @param tv: NULL for now, or seconds and microseconds since the epoch
 /// @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
 /// @return buf pointer (for short hand use as operator)
-char *usecs_time_str(pf_timeval *tv, char *buf);
+char *usecs_time_str(struct timeval *tv, char *buf);
 
 /// Printable sample position
 ///
