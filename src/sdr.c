@@ -728,6 +728,7 @@ int sdr_close(sdr_dev_t *dev)
 #endif
 
     free(dev->buffer);
+    free(dev);
     return ret;
 }
 
