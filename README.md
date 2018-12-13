@@ -58,7 +58,7 @@ Usage:	= General options =
 	[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-	[-M time|reltime|notime|hires|utc|protocol|level] Add various meta data to every output line.
+	[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.
 	[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.
 	[-C native|si|customary] Convert units in decoded output.
 	[-T <seconds>] Specify number of seconds to run
@@ -71,7 +71,6 @@ Supported device protocols:
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
-    [05]* Steffen Switch Transmitter
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
@@ -92,8 +91,6 @@ Supported device protocols:
     [24]* Brennenstuhl RCS 2044
     [25]  GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
-    [27]* Energy Count 3000 (868.3 MHz)
-    [28]* Valeo Car Key
     [29]  Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
     [31]  TFA-Twin-Plus-30.3049 and Ea2 BL999

@@ -6,7 +6,7 @@
     DECL(rubicson) \
     DECL(prologue) \
     DECL(waveman) \
-    DECL(steffen) \
+    DECL(template) \
     DECL(elv_em1000) \
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
@@ -28,8 +28,8 @@
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
-    DECL(ec3k) \
-    DECL(valeo) \
+    DECL(template) \
+    DECL(template) \
     DECL(chuango) \
     DECL(generic_remote) \
     DECL(tfa_twin_plus_303049) \

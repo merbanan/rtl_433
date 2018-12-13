@@ -1,4 +1,5 @@
-/**
+/** ELV Energy Counter ESA 1000/2000.
+ *
  * Copyright (C) 2016 TylerDurden23, initial cleanup by Benjamin Larsson
  *
  * This program is free software; you can redistribute it and/or modify

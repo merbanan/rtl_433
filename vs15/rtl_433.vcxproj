@@ -136,7 +136,6 @@
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
-    <ClCompile Include="..\src\devices\ec3k.c" />
     <ClCompile Include="..\src\devices\efergy_e2_classic.c" />
     <ClCompile Include="..\src\devices\efergy_optical.c" />
     <ClCompile Include="..\src\devices\elro_db286a.c" />
@@ -200,7 +199,6 @@
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
-    <ClCompile Include="..\src\devices\steffen.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
@@ -212,7 +210,6 @@
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
-    <ClCompile Include="..\src\devices\valeo.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
     <ClCompile Include="..\src\devices\wssensor.c" />
