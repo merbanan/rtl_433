@@ -89,7 +89,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // First 13 bytes need to match inverse of last 13 bytes
     for (unsigned col = 0; col < sizeof (msg) / 2; ++col) {
-        if (~msg[col] != msg[col + 13]) {
+        if ((0xff ^ msg[col]) != msg[col + 13]) {
             if (decoder->verbose > 1) {
                 fprintf(stderr, "%s Parity wrong at %u: %s\n", __func__, col, msg_hex);
             }
