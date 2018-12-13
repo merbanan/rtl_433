@@ -198,7 +198,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t= Data output options =\n"
-            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.\n"
@@ -259,7 +259,7 @@ static void help_gain(void)
 static void help_output(void)
 {
     fprintf(stderr,
-            "[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");

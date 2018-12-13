@@ -55,7 +55,7 @@ Usage:	= General options =
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
 	= Data output options =
-	[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.
+	[-F kv|json|csv|syslog|null] Produce decoded output in given format.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 	[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.
