@@ -23,8 +23,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Row [0] is sync pulse
     // Validate package
     if (bitbuffer->bits_per_row[1] != 32 // Don't waste time on a short package
-            //|| b[0] != (0xff ^ b[1]) // Check integrity - apparently some chips may use both bytes..
-            || b[2] != (0xff ^ b[3])) // Check integrity
+            //|| (b[0] ^ b[1]) != 0xff // Check integrity - apparently some chips may use both bytes..
+            || (b[2] ^ b[3]) != 0xff) // Check integrity
         return 0;
 
     unsigned code = b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
