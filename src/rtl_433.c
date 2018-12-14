@@ -91,8 +91,7 @@ struct app_cfg {
     uint32_t bytes_to_read;
     sdr_dev_t *dev;
     int grab_mode;
-    int quiet_mode;
-    int verbose;
+    int verbosity; // 0=quiet, 1=normal, 2=verbose, 3=debug, 4=trace
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
@@ -363,7 +362,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
-    p->verbose       = cfg.verbose;
+    p->verbose       = cfg.verbosity > 0 ? cfg.verbosity - 1 : 0;
     p->verbose_bits  = cfg.verbose_bits;
     p->output_fn     = data_acquired_handler;
     p->output_ctx    = &cfg;
@@ -371,7 +370,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
-    if (!cfg.quiet_mode) {
+    if (cfg.verbosity) {
         fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
@@ -721,7 +720,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
-                if (cfg.verbose > 1) pulse_data_print(&demod->pulse_data);
+                if (cfg.verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
@@ -757,7 +756,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
-                if (cfg.verbose > 1) pulse_data_print(&demod->fsk_pulse_data);
+                if (cfg.verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
@@ -802,7 +801,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbose, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbosity > 1, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -1294,9 +1293,9 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         break;
     case 'D':
         if (!arg)
-            cfg->verbose++;
+            cfg->verbosity++;
         else
-            cfg->verbose = atobv(arg, 1);
+            cfg->verbosity = atobv(arg, 1);
         break;
     case 'z':
         if (cfg->demod->am_analyze)
@@ -1345,7 +1344,8 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         }
         break;
     case 'q':
-        cfg->quiet_mode = atobv(arg, 1);
+        if (atobv(arg, 1))
+            cfg->verbosity = 0;
         break;
     case 'F':
         if (!arg)
@@ -1466,6 +1466,9 @@ int main(int argc, char **argv) {
     cfg.demod->level_limit = DEFAULT_LEVEL_LIMIT;
     cfg.demod->hop_time = DEFAULT_HOP_TIME;
 
+    // default to normal verbosity (not quiet)
+    cfg.verbosity = 1;
+
     // if there is no explicit conf file option look for default conf files
     if (!hasopt('c', argc, argv, OPTSTRING)) {
         parse_conf_try_default_files(&cfg);
@@ -1529,7 +1532,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (!cfg.quiet_mode)
+    if (cfg.verbosity)
         fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
                 demod->r_dev_num, cfg.num_r_devices);
 
@@ -1547,7 +1550,7 @@ int main(int argc, char **argv) {
     if (cfg.test_data) {
         r = 0;
         for (i = 0; i < demod->r_dev_num; i++) {
-            if (!cfg.quiet_mode)
+            if (cfg.verbosity)
                 fprintf(stderr, "Verifying test data with device %s.\n", demod->r_devs[i]->name);
             r += pulse_demod_string(cfg.test_data, demod->r_devs[i]);
         }
@@ -1555,7 +1558,7 @@ int main(int argc, char **argv) {
     }
 
     if (!cfg.in_files) {
-        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, !cfg.quiet_mode);
+        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, cfg.verbosity);
         if (r < 0) {
             exit(1);
         }
@@ -1572,15 +1575,15 @@ int main(int argc, char **argv) {
         SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
         /* Set the sample rate */
-        r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, !cfg.quiet_mode);
+        r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, cfg.verbosity);
 
         fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
         /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, !cfg.quiet_mode);
+        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, cfg.verbosity);
 
         if (cfg.ppm_error)
-            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, !cfg.quiet_mode);
+            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, cfg.verbosity);
     }
 
     if (out_filename) {
@@ -1623,7 +1626,7 @@ int main(int argc, char **argv) {
             } else {
                 demod->sample_size = sizeof(int16_t); // CF32, CS16
             }
-            if (!cfg.quiet_mode) {
+            if (cfg.verbosity) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
             }
             demod->sample_file_pos = 0.0;
@@ -1659,7 +1662,7 @@ int main(int argc, char **argv) {
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
                 am_analyze_classify(demod->am_analyze);
-            if (!cfg.quiet_mode) {
+            if (cfg.verbosity) {
                 fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
             }
 
@@ -1671,7 +1674,7 @@ int main(int argc, char **argv) {
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
-    r = sdr_reset(cfg.dev, !cfg.quiet_mode);
+    r = sdr_reset(cfg.dev, cfg.verbosity);
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
     r = sdr_activate(cfg.dev);
@@ -1682,7 +1685,7 @@ int main(int argc, char **argv) {
     } else {
         time(&cfg.rawtime_old);
     }
-    if (!cfg.quiet_mode) {
+    if (cfg.verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");
     }
     if (cfg.duration > 0) {
@@ -1692,7 +1695,7 @@ int main(int argc, char **argv) {
     while (!cfg.do_exit) {
         /* Set the cfg.frequency */
         cfg.center_frequency = cfg.frequency[cfg.frequency_index];
-        r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, !cfg.quiet_mode);
+        r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, cfg.verbosity);
 
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
