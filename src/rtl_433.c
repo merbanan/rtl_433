@@ -425,7 +425,7 @@ static char *time_pos_str(unsigned samples_ago, char *buf)
 }
 
 struct proto_hash {
-    int protocol;
+    int key;
     time_t time;
 };
 
@@ -438,11 +438,11 @@ static struct proto_hash duptable[HASH_MOD] = {0};
  * return 0 if duplicate found
  * return 1 if no duplicate found
 */
-int duplicate_check(data_t *data, int protocol_num) {
+int duplicate_check(data_t *data, int key) {
     time_t second = time(NULL);
-    int idx = protocol_num % HASH_MOD;
+    int idx = key % HASH_MOD;
 
-    if (duptable[idx].protocol == protocol_num) {
+    if (duptable[idx].key == key) {
         if((second-duptable[idx].time) < cfg.duplicate_check) {
             //duplicate found
             return 0;
@@ -453,7 +453,7 @@ int duplicate_check(data_t *data, int protocol_num) {
         }
     } else {
         // no previous record, update record
-        duptable[idx].protocol = protocol_num;
+        duptable[idx].key = key;
         duptable[idx].time = second;
         return 1;
     }
@@ -625,8 +625,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 "tag", "Tag", DATA_STRING, output_tag,
                 NULL);
     }
-
-    if (!cfg.duplicate_check || duplicate_check(data, r_dev->protocol_num))
+    if (!cfg.duplicate_check || duplicate_check(data, (int)(uintptr_t) r_dev))
         for (int i = 0; i < cfg.last_output_handler; ++i) {
                 data_output_print(cfg.output_handler[i], data);
         }
