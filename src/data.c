@@ -50,6 +50,8 @@
 
 #include <time.h>
 
+#include "term_ctl.h"
+
 #include "data.h"
 
 #ifdef _WIN32
@@ -486,75 +488,190 @@ struct data_output *data_output_json_create(FILE *file)
     return output;
 }
 
-/* Key-Value printer */
+/* Pretty Key-Value printer */
+
+static int kv_color_for_key(char const *key)
+{
+    if (!key || !*key)
+        return TERM_COLOR_RESET;
+    if (!strcmp(key, "tag") || !strcmp(key, "time"))
+        return TERM_COLOR_BLUE;
+    if (!strcmp(key, "model") || !strcmp(key, "type") || !strcmp(key, "id"))
+        return TERM_COLOR_RED;
+    if (!strcmp(key, "mic"))
+        return TERM_COLOR_CYAN;
+    if (!strcmp(key, "mod") || !strcmp(key, "freq") || !strcmp(key, "freq1") || !strcmp(key, "freq2"))
+        return TERM_COLOR_MAGENTA;
+    if (!strcmp(key, "rssi") || !strcmp(key, "snr") || !strcmp(key, "noise"))
+        return TERM_COLOR_YELLOW;
+    return TERM_COLOR_GREEN;
+}
+
+static int kv_break_before_key(char const *key)
+{
+    if (!key || !*key)
+        return 0;
+    if (!strcmp(key, "model") || !strcmp(key, "mod") || !strcmp(key, "rssi") || !strcmp(key, "codes"))
+        return 1;
+    return 0;
+}
+
+static int kv_break_after_key(char const *key)
+{
+    if (!key || !*key)
+        return 0;
+    if (!strcmp(key, "id") || !strcmp(key, "mic"))
+        return 1;
+    return 0;
+}
+
+typedef struct {
+    struct data_output output;
+    int color;
+    int ring_bell;
+    int term_width;
+    int data_recursion;
+    int column;
+} data_output_kv_t;
+
+#define KV_SEP "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ "
 
 static void print_kv_data(data_output_t *output, data_t *data, char *format)
 {
-    bool separator = false;
-    bool was_labeled = false;
-    bool written_title = false;
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    int color = kv->color;
+    int ring_bell = kv->ring_bell;
+
+    // top-level: update width and print separator
+    if (!kv->data_recursion) {
+        kv->term_width = term_get_columns(fileno(output->file)); // update current term width
+        if (color)
+            term_set_fg(output->file, TERM_COLOR_BLACK);
+        if (ring_bell)
+            term_ring_bell(output->file);
+        char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
+        if (kv->term_width < (int)sizeof(sep))
+            sep[kv->term_width - 1] = '\0';
+        fprintf(output->file, "%s\n", sep);
+        if (color)
+            term_set_fg(output->file, TERM_COLOR_RESET);
+    }
+    // nested data object: break before
+    else {
+        if (color)
+            term_set_fg(output->file, TERM_COLOR_RESET);
+        fprintf(output->file, "\n");
+        kv->column = 0;
+    }
+
+    ++kv->data_recursion;
     while (data) {
-        bool labeled = data->pretty_key[0];
-        /* put a : between the first non-labeled and labeled */
-        if (separator) {
-            if (labeled && !was_labeled && !written_title) {
-                fprintf(output->file, "\n");
-                written_title = true;
-                separator = false;
-            } else {
-                if (was_labeled)
-                    fprintf(output->file, "\n");
-                else
-                    fprintf(output->file, " ");
-            }
+        // break before some known keys
+        if (kv->column > 0 && kv_break_before_key(data->key)) {
+            fprintf(output->file, "\n");
+            kv->column = 0;
         }
-        if (!strcmp(data->key, "time"))
-            /* fprintf(output->file, "") */;
-        else if (!strcmp(data->key, "model"))
-            fprintf(output->file, ":\t");
-        else
-            fprintf(output->file, "\t%s:\t", data->pretty_key);
-        if (labeled)
-            fputc(' ', output->file);
+        // break if not enough width left
+        else if (kv->column >= kv->term_width - 26) {
+            fprintf(output->file, "\n");
+            kv->column = 0;
+        }
+        // pad to next alignment if there is enough width left
+        else if (kv->column > 0 && kv->column < kv->term_width - 26) {
+            kv->column += fprintf(output->file, "%*s", 25 - kv->column % 26, " ");
+        }
+
+        // print key
+        char *key = *data->pretty_key ? data->pretty_key : data->key;
+        kv->column += fprintf(output->file, "%-10s: ", key);
+        // print value
+        if (color)
+            term_set_fg(output->file, kv_color_for_key(data->key));
         print_value(output, data->type, data->value, data->format);
-        separator = true;
-        was_labeled = labeled;
+        if (color)
+            term_set_fg(output->file, TERM_COLOR_RESET);
+
+        // force break after some known keys
+        if (kv->column > 0 && kv_break_after_key(data->key)) {
+            kv->column = kv->term_width; // force break;
+        }
+
         data = data->next;
     }
+    --kv->data_recursion;
+
+    // top-level: always end with newline
+    if (!kv->data_recursion && kv->column > 0) {
+        //fprintf(output->file, "\n"); // data_output_print() already adds a newline
+        kv->column = 0;
+    }
+}
+
+static void print_kv_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    //fprintf(output->file, "[ ");
+    for (int c = 0; c < array->num_values; ++c) {
+        if (c)
+            fprintf(output->file, ", ");
+        print_array_value(output, array, format, c);
+    }
+    //fprintf(output->file, " ]");
 }
 
 static void print_kv_double(data_output_t *output, double data, char *format)
 {
-    fprintf(output->file, format ? format : "%.3f", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_output_t *output, int data, char *format)
 {
-    fprintf(output->file, format ? format : "%d", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%d", data);
 }
 
 static void print_kv_string(data_output_t *output, const char *data, char *format)
 {
-    fprintf(output->file, format ? format : "%s", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%s", data);
 }
 
+static void data_output_kv_free(data_output_t *output)
+{
+    if (!output)
+        return;
+
+    free(output);
+}
 struct data_output *data_output_kv_create(FILE *file)
 {
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
+    data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
+    if (!kv) {
         fprintf(stderr, "calloc() failed");
         return NULL;
     }
 
-    output->print_data   = print_kv_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_kv_string;
-    output->print_double = print_kv_double;
-    output->print_int    = print_kv_int;
-    output->output_free  = data_output_json_free;
-    output->file         = file;
+    kv->output.print_data   = print_kv_data;
+    kv->output.print_array  = print_kv_array;
+    kv->output.print_string = print_kv_string;
+    kv->output.print_double = print_kv_double;
+    kv->output.print_int    = print_kv_int;
+    kv->output.output_free  = data_output_kv_free;
+    kv->output.file         = file;
 
-    return output;
+    kv->color = term_has_color(file);
+    if (kv->color)
+        term_init(file);
+
+    kv->ring_bell = kv->color; // && requested...
+
+    return &kv->output;
 }
 
 /* CSV printer; doesn't really support recursive data objects yet */

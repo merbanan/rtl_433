@@ -62,6 +62,9 @@
     <ClInclude Include="..\include\sdr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\term_ctl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -110,6 +113,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\sdr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\term_ctl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\util.c">

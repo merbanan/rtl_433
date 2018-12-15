@@ -30,6 +30,7 @@ add_executable(rtl_433
 	rtl_433.c
 	samp_grab.c
 	sdr.c
+	term_ctl.c
 	util.c
 	devices/acurite.c
 	devices/akhan_100F14.c
@@ -132,7 +133,7 @@ add_executable(rtl_433
 	devices/x10_sec.c
 )
 
-add_library(data data.c)
+add_library(data data.c term_ctl.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433
