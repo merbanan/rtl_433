@@ -54,3 +54,5 @@ build/
 *.lastbuildstate
 *.db
 *.opendb
+
+rtl_433_tests/*
