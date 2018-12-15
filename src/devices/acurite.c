@@ -67,50 +67,25 @@
 // From draythomp/Desert-home-rtl_433
 // matches acu-link internet bridge values
 // The mapping isn't circular, it jumps around.
-char * acurite_5n1_winddirection_str[] = {
-    "NW",  // 0  315
-    "WSW", // 1  247.5
-    "WNW", // 2  292.5
-    "W",   // 3  270
-    "NNW", // 4  337.5
-    "SW",  // 5  225
-    "N",   // 6  0
-    "SSW", // 7  202.5
-    "ENE", // 8  67.5
-    "SE",  // 9  135
-    "E",   // 10 90
-    "ESE", // 11 112.5
-    "NE",  // 12 45
-    "SSE", // 13 157.5
-    "NNE", // 14 22.5
-    "S",  // 15 180
+// units are 22.5 deg
+int const acurite_5n1_winddirections[] = {
+    14, // 0 - NW
+    11, // 1 - WSW
+    13, // 2 - WNW
+    12, // 3 - W
+    15, // 4 - NNW
+    10, // 5 - SW
+    0,   // 6 - N
+    9, // 7 - SSW
+    3,  // 8 - ENE
+    6, // 9 - SE
+    4,  // a - E
+    5, // b - ESE
+    2,  // c - NE
+    7, // d - SSE
+    1,  // e - NNE
+    8, // f - S
 };
-
-const float acurite_5n1_winddirections[] = {
-    315.0, // 0 - NW
-    247.5, // 1 - WSW
-    292.5, // 2 - WNW
-    270.0, // 3 - W
-    337.5, // 4 - NNW
-    225.0, // 5 - SW
-    0.0,   // 6 - N
-    202.5, // 7 - SSW
-    67.5,  // 8 - ENE
-    135.0, // 9 - SE
-    90.0,  // a - E
-    112.5, // b - ESE
-    45.0,  // c - NE
-    157.5, // d - SSE
-    22.5,  // e - NNE
-    180.0, // f - S
-};
-
-
-// @todo remove for 1.0 release, shouldn't keep state in rtl_433.
-//      See bug #466
-// 5n1 keep state for how much rain has been seen so far
-static int acurite_5n1raincounter = 0;  // for 5n1 decoder
-static int acurite_5n1t_raincounter = 0;  // for combined 5n1/TXR decoder
 
 static int acurite_checksum(uint8_t *row, int cols)
 {
@@ -569,9 +544,9 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     int browlen, valid = 0;
     uint8_t *bb;
-    float tempc, tempf, wind_dird, rainfall = 0.0, wind_speed_kph, wind_speed_mph;
+    float tempc, tempf, wind_dir, wind_speed_kph, wind_speed_mph;
     uint8_t humidity, sensor_status, sequence_num, message_type;
-    char channel, *wind_dirstr = "";
+    char channel;
     char channel_str[2];
     uint16_t sensor_id;
     int raincounter, battery_low;
@@ -675,25 +650,8 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 // Wind speed, wind direction, and rain fall
                 wind_speed_kph = acurite_getWindSpeed_kph(bb[3], bb[4]);
                 wind_speed_mph = kmph2mph(wind_speed_kph);
-                wind_dird = acurite_5n1_winddirections[bb[4] & 0x0f];
-                wind_dirstr = acurite_5n1_winddirection_str[bb[4] & 0x0f];
+                wind_dir = acurite_5n1_winddirections[bb[4] & 0x0f] * 22.5f;
                 raincounter = acurite_getRainfallCounter(bb[5], bb[6]);
-                if (acurite_5n1t_raincounter > 0) {
-                    // track rainfall difference after first run
-                    // FIXME when converting to structured output, just output
-                    // the reading, let consumer track state/wrap around, etc.
-                    rainfall = ( raincounter - acurite_5n1t_raincounter ) * 0.01;
-                    if (raincounter < acurite_5n1t_raincounter) {
-                        fprintf(stderr, "Acurite 5n1 sensor 0x%04X Ch %c, rain counter reset or wrapped around (old %d, new %d)\n",
-                        sensor_id, channel, acurite_5n1t_raincounter, raincounter);
-                        acurite_5n1t_raincounter = raincounter;
-                    }
-                } else {
-                    // capture starting counter
-                    acurite_5n1t_raincounter = raincounter;
-                    fprintf(stderr, "Acurite 5n1 sensor 0x%04X Ch %c, Total rain fall since last reset: %0.2f\n",
-                    sensor_id, channel, raincounter * 0.01);
-                }
 
                 data = data_make(
                     "model",        "",   DATA_STRING,    "Acurite 5n1 sensor",
@@ -703,10 +661,8 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                     "message_type", NULL,   DATA_INT,       message_type,
                     "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
-                    "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dird,
-                    "wind_dir",     NULL,   DATA_STRING,    wind_dirstr,
-                    "rainfall_accumulation_inch", "rainfall_accumulation",   DATA_FORMAT,    "%.2f in", DATA_DOUBLE,    rainfall,
-                    "raincounter_raw",  NULL,   DATA_INT,   raincounter,
+                    "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
+                    "rain_inch", "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
                     NULL);
 
                 decoder_output_data(decoder, data);
@@ -1191,8 +1147,7 @@ static char *acurite_txr_output_fields[] = {
     "wind_speed_mph",
     "wind_dir_deg",
     "wind_dir",
-    "rainfall_accumulation_inch",
-    "raincounter_raw",
+    "rain_inch",
     "temperature_F",
     NULL
 };
