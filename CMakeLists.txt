@@ -109,6 +109,7 @@ endif()
 # Setup the include and linker paths
 ########################################################################
 include_directories(
+    BEFORE
     ${CMAKE_SOURCE_DIR}/include
 )
 
