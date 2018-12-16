@@ -58,16 +58,16 @@ Various data fields, which are common across devices of different types
 Due to the large variance in sensor types this list of common values is non-exhaustive. Additional data value fields should follow the form: `<Type>_<Unit>`, where *Unit* should be in sensors native units insofar possible with no conversion.
 Examples:
 
-* **temperature_C** (double) (Optional)
-  * Temperature from a temperature sensor in degrees Celcius.
+* **temperature_C** (**temperature_f**) (double) (Optional)
+  * Temperature from a temperature sensor in degrees Celcius (Fahrenheit).
   
-* **setpoint_C** (double) (Optional)
-  * Thermal set point of a thermostat device in degrees Celcius.
+* **setpoint_C** (**setpoint_f**) (double) (Optional)
+  * Thermal set point of a thermostat device in degrees Celcius (Fahrenheit).
   
 * **humidity** (double) (Optional)
   * Humidity from a hygrometer sensor in % relative humidity
   
-* **wind_dir_deg** (int) (Optional)
+* **wind_dir_deg** (double) (Optional)
   * Wind direction from wind sensor in compass direction degrees.
   
 * **wind_speed_ms** (double) (Optional)
@@ -76,9 +76,12 @@ Examples:
 * **gust_speed_ms** (double) (Optional)
   * Gust wind speed from wind sensor in m/s. 
 
-* **rainfall_mm** (double) (Optional)
-  * Rainfall from rain sensor in mm since last reset. Reset method is device dependant.
+* **rain_mm** (**rain_in**) (double) (Optional)
+  * Rainfall from rain sensor in mm (inches) since last reset. Reset method is device dependant.
   
-* **pressure_hPa** (double) (Optional)
-  * Air pressure from barometer or Tire Pressure Monitor in hPa (millibar)
+* **rain_rate_mmph** (**rain_rate_inph**) (double) (Optional)
+  * Rainfall rate from rain sensor in mm per hour (inches per hour).
+  
+* **pressure_hPa** (**pressure_psi**) (double) (Optional)
+  * Air pressure from barometer or Tire Pressure Monitor in hPa (psi)
   
