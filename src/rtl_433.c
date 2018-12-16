@@ -39,10 +39,6 @@
 #include "compat_paths.h"
 #include "compat_time.h"
 
-#define MAX_DATA_OUTPUTS 32
-#define MAX_DUMP_OUTPUTS 8
-#define MAX_IN_FILES 100
-
 #ifdef GIT_VERSION
 #define STR_VALUE(arg) #arg
 #define STR_EXPAND(s) STR_VALUE(s)
@@ -54,61 +50,6 @@
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
-
-typedef enum {
-    CONVERT_NATIVE,
-    CONVERT_SI,
-    CONVERT_CUSTOMARY
-} conversion_mode_t;
-
-typedef enum {
-    REPORT_TIME_DEFAULT,
-    REPORT_TIME_DATE,
-    REPORT_TIME_SAMPLES,
-    REPORT_TIME_OFF,
-} time_mode_t;
-
-struct app_cfg {
-    char *dev_query;
-    char *gain_str;
-    int ppm_error;
-    uint32_t out_block_size;
-    char const *test_data;
-    unsigned in_files;
-    char const *in_file[MAX_IN_FILES];
-    char const *in_filename;
-    int do_exit;
-    int do_exit_async;
-    int frequencies;
-    int frequency_index;
-    uint32_t frequency[MAX_PROTOCOLS];
-    uint32_t center_frequency;
-    time_t rawtime_old;
-    int duration;
-    time_t stop_time;
-    int stop_after_successful_events_flag;
-    uint32_t samp_rate;
-    uint64_t input_pos;
-    uint32_t bytes_to_read;
-    sdr_dev_t *dev;
-    int grab_mode;
-    int verbosity; // 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding
-    int verbose_bits;
-    conversion_mode_t conversion_mode;
-    int report_meta;
-    int report_protocol;
-    time_mode_t report_time;
-    int report_time_hires;
-    int report_time_utc;
-    int no_default_devices;
-    r_device *devices;
-    uint16_t num_r_devices;
-    char *output_tag;
-    void *output_handler[MAX_DATA_OUTPUTS];
-    void *csv_output_handler[MAX_DATA_OUTPUTS];
-    int last_output_handler;
-    struct dm_state *demod;
-};
 
 static struct app_cfg cfg = {
     .out_block_size = DEFAULT_BUF_LENGTH,
@@ -1166,10 +1107,10 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->dev_query = arg;
         break;
     case 'f':
-        if (cfg->frequencies < MAX_PROTOCOLS)
+        if (cfg->frequencies < MAX_FREQS)
             cfg->frequency[cfg->frequencies++] = atouint32_metric(arg, "-f: ");
         else
-            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
+            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_FREQS);
         break;
     case 'H':
         cfg->demod->hop_time = atoi_time(arg, "-H: ");
