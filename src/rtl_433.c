@@ -542,6 +542,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        data_output_poll(cfg.output_handler[i]);
+    }
+
     if (cfg.do_exit || cfg.do_exit_async)
         return;
 

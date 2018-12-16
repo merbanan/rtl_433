@@ -149,6 +149,7 @@ typedef struct data_output {
     void (*print_string)(struct data_output *output, const char *data, char *format);
     void (*print_double)(struct data_output *output, double data, char *format);
     void (*print_int)(struct data_output *output, int data, char *format);
+    void (*output_poll)(struct data_output *output);
     void (*output_free)(struct data_output *output);
     FILE *file;
 } data_output_t;
@@ -175,6 +176,9 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 
 /** Prints a structured data object */
 void data_output_print(struct data_output *output, data_t *data);
+
+/** Allows to polls an event loop, if necessary */
+void data_output_poll(struct data_output *output);
 
 void data_output_free(struct data_output *output);
 

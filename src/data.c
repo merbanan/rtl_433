@@ -342,11 +342,20 @@ void data_free(data_t *data)
 
 void data_output_print(data_output_t *output, data_t *data)
 {
+    if (!output)
+        return;
     output->print_data(output, data, NULL);
     if (output->file) {
         fputc('\n', output->file);
         fflush(output->file);
     }
+}
+
+void data_output_poll(struct data_output *output)
+{
+    if (!output || !output->output_poll)
+        return;
+    output->output_poll(output);
 }
 
 void data_output_free(data_output_t *output)
