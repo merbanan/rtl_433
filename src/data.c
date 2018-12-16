@@ -51,6 +51,7 @@
 #include <time.h>
 
 #include "term_ctl.h"
+#include "abuf.h"
 
 #include "data.h"
 
@@ -156,6 +157,8 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
     }
     return true; // error is returned early
 }
+
+/* data */
 
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
@@ -340,6 +343,8 @@ void data_free(data_t *data)
     }
 }
 
+/* data output */
+
 void data_output_print(data_output_t *output, data_t *data)
 {
     if (!output)
@@ -365,7 +370,9 @@ void data_output_free(data_output_t *output)
     output->output_free(output);
 }
 
-static void print_value(data_output_t *output, data_type_t type, void *value, char *format)
+/* output helpers */
+
+void print_value(data_output_t *output, data_type_t type, void *value, char *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -390,7 +397,7 @@ static void print_value(data_output_t *output, data_type_t type, void *value, ch
     }
 }
 
-static void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
+void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
 #ifdef RTL_433_NO_VLAs
@@ -902,65 +909,6 @@ static void datagram_client_send(datagram_client_t *client, const char *message,
     if (r == -1) {
         perror("sendto");
     }
-}
-
-/* array buffer (string builder) */
-
-typedef struct {
-    char *head;
-    char *tail;
-    size_t left;
-} abuf_t;
-
-static void abuf_init(abuf_t *buf, char *dst, size_t len)
-{
-    buf->head = dst;
-    buf->tail = dst;
-    buf->left = len;
-}
-
-static void abuf_setnull(abuf_t *buf)
-{
-    buf->head = NULL;
-    buf->tail = NULL;
-    buf->left = 0;
-}
-
-static char *abuf_push(abuf_t *buf)
-{
-    return buf->tail;
-}
-
-static void abuf_pop(abuf_t *buf, char *end)
-{
-    buf->left += buf->tail - end;
-    buf->tail = end;
-}
-
-static void abuf_cat(abuf_t *buf, const char *str)
-{
-    size_t len = strlen(str);
-    if (buf->left >= len + 1) {
-        strcpy(buf->tail, str);
-        buf->tail += len;
-        buf->left -= len;
-    }
-}
-
-static int abuf_printf(abuf_t *buf, const char *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-
-    int n = vsnprintf(buf->tail, buf->left, format, ap);
-    size_t len = 0;
-    if (n > 0) {
-        len = (size_t)n < buf->left ? (size_t)n : buf->left;
-        buf->tail += len;
-        buf->left -= len;
-    }
-    va_end(ap);
-    return n;
 }
 
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */

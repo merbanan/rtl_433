@@ -2,6 +2,7 @@
 # Build libraries and executables
 ########################################################################
 add_executable(rtl_433
+	abuf.c
 	am_analyze.c
 	baseband.c
 	bitbuffer.c
@@ -125,7 +126,7 @@ if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
 endif()
 
-add_library(data data.c term_ctl.c mongoose.c)
+add_library(data data.c abuf.c term_ctl.c mongoose.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433

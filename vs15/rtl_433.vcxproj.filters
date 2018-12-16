@@ -17,6 +17,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\abuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\am_analyze.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -82,6 +85,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\abuf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\am_analyze.c">
       <Filter>Source Files</Filter>
     </ClCompile>

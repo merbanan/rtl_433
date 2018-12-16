@@ -182,4 +182,10 @@ void data_output_poll(struct data_output *output);
 
 void data_output_free(struct data_output *output);
 
+/* data output helpers */
+
+void print_value(data_output_t *output, data_type_t type, void *value, char *format);
+
+void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
+
 #endif // INCLUDE_DATA_H_
