@@ -3,8 +3,8 @@
 // issue: <sys/time.h> is not available on Windows systems
 // solution: provide a compatible version for Windows systems
 
-#ifndef COMPAT_TIME_H
-#define COMPAT_TIME_H
+#ifndef INCLUDE_COMPAT_TIME_H_
+#define INCLUDE_COMPAT_TIME_H_
 
 // ensure struct timeval is known
 #ifdef _WIN32
@@ -19,4 +19,4 @@
 int gettimeofday(struct timeval *tv, void *tz);
 #endif
 
-#endif  // COMPAT_TIME_H
+#endif  /* INCLUDE_COMPAT_TIME_H_ */

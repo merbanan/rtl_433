@@ -9,8 +9,8 @@
  * (at your option) any later version.
  */
 
-#ifndef OPTPARSE_H_
-#define OPTPARSE_H_
+#ifndef INCLUDE_OPTPARSE_H_
+#define INCLUDE_OPTPARSE_H_
 
 #include <stdint.h>
 
@@ -63,4 +63,4 @@ char *asepc(char **stringp, char delim);
 /// @return the original value of *stringp (the keyword found)
 char *getkwargs(char **s, char **key, char **val);
 
-#endif /* OPTPARSE_H_ */
+#endif /* INCLUDE_OPTPARSE_H_ */

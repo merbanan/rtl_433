@@ -9,6 +9,9 @@
  * (at your option) any later version.
  */
 
+#ifndef INCLUDE_AM_ANALYZE_H_
+#define INCLUDE_AM_ANALYZE_H_
+
 #include <stdint.h>
 
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
@@ -44,3 +47,5 @@ void am_analyze_skip(am_analyze_t *a, unsigned n_samples);
 void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g);
 
 void am_analyze_classify(am_analyze_t *aa);
+
+#endif /* INCLUDE_AM_ANALYZE_H_ */
