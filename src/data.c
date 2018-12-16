@@ -96,18 +96,6 @@ typedef struct {
     value_release_fn value_release;
 } data_meta_type_t;
 
-struct data_output;
-
-typedef struct data_output {
-    void (*print_data)(struct data_output *output, data_t *data, char *format);
-    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
-    void (*print_string)(struct data_output *output, const char *data, char *format);
-    void (*print_double)(struct data_output *output, double data, char *format);
-    void (*print_int)(struct data_output *output, int data, char *format);
-    void (*output_free)(struct data_output *output);
-    FILE *file;
-} data_output_t;
-
 static data_meta_type_t dmt[DATA_COUNT] = {
     //  DATA_DATA
     { .array_element_size       = sizeof(data_t*),
