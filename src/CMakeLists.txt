@@ -122,6 +122,9 @@ add_executable(rtl_433
 	devices/x10_sec.c
 )
 
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
+endif()
 if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
 endif()
