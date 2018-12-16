@@ -205,9 +205,6 @@
     <ClCompile Include="..\src\devices\dsc.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\ec3k.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\efergy_e2_classic.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -394,9 +391,6 @@
     <ClCompile Include="..\src\devices\steelmate.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\steffen.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -430,9 +424,6 @@
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\valeo.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\waveman.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -455,10 +446,7 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell_wdb.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\devices\honeywell_wdb.c">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\compat_time.c">
       <Filter>Source Files</Filter>
