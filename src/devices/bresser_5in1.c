@@ -50,7 +50,6 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t msg[26];
-    char msg_hex[sizeof(msg) * 2 + 1];
     uint16_t sensor_id;
     unsigned len = 0;
 
@@ -82,16 +81,11 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, len);
 
-    // convert binary message to hex string
-    for (unsigned col = 0; col < (len + 7) / 8; ++col) {
-        sprintf(&msg_hex[2 * col], "%02x", msg[col]);
-    }
-
     // First 13 bytes need to match inverse of last 13 bytes
     for (unsigned col = 0; col < sizeof (msg) / 2; ++col) {
         if ((msg[col] ^ msg[col + 13]) != 0xff) {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "%s Parity wrong at %u: %s\n", __func__, col, msg_hex);
+                fprintf(stderr, "%s Parity wrong at %u\n", __func__, col);
             }
             return 0; // message isn't correct
         }
@@ -126,7 +120,6 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_speed",       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
             "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f °",DATA_DOUBLE, wind_direction_deg,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
-            "data",             "Raw data",     DATA_STRING, msg_hex, // TODO: remove this
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
 
@@ -144,7 +137,6 @@ static char *output_fields[] = {
     "wind_speed",
     "wind_dir_deg",
     "rain_mm",
-    "data",
     "mic",
     NULL
 };
@@ -156,6 +148,6 @@ r_device bresser_5in1 = {
     .long_width    = 124,
     .reset_limit   = 25000,
     .decode_fn     = &bresser_5in1_callback,
-    .disabled      = 1,
+    .disabled      = 0,
     .fields        = output_fields,
 };
