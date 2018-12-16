@@ -23,7 +23,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <math.h>
-#include <sys/time.h>
 
 #include "rtl_433.h"
 #include "sdr.h"
@@ -37,6 +36,8 @@
 #include "samp_grab.h"
 #include "am_analyze.h"
 #include "confparse.h"
+#include "compat_paths.h"
+#include "compat_time.h"
 
 #define MAX_DATA_OUTPUTS 32
 #define MAX_DUMP_OUTPUTS 8
@@ -1109,25 +1110,12 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
 
 static void parse_conf_try_default_files(struct app_cfg *cfg)
 {
-    char const *default_conf_paths[] = {
-            "rtl_433.conf",
-            "~/.rtl_433.conf",
-            "/usr/local/etc/rtl_433.conf",
-            "/etc/rtl_433.conf",
-            NULL};
-    char const *path;
-    char buf[255];
-    for (char const **pp = default_conf_paths; *pp; ++pp) {
-        path = *pp;
-        if (*path == '~') {
-            snprintf(buf, 255, "%s%s", getenv("HOME"), path + 1);
-            path = buf;
-        }
-
-        fprintf(stderr, "Trying conf file at \"%s\"...\n", path);
-        if (hasconf(path)) {
-            fprintf(stderr, "Reading conf from \"%s\".\n", path);
-            parse_conf_file(cfg, path);
+    char **paths = compat_getDefaultConfPaths();
+    for (int a = 0; paths[a]; a++) {
+        fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
+        if (hasconf(paths[a])) {
+            fprintf(stderr, "Reading conf from \"%s\".\n", paths[a]);
+            parse_conf_file(cfg, paths[a]);
             break;
         }
     }

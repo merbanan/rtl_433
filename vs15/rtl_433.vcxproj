@@ -88,6 +88,8 @@
     <ClInclude Include="..\include\am_analyze.h" />
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
+    <ClInclude Include="..\include\compat_paths.h" />
+    <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
     <ClInclude Include="..\include\decoder.h" />
@@ -108,6 +110,8 @@
     <ClCompile Include="..\src\am_analyze.c" />
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
+    <ClCompile Include="..\src\compat_paths.c" />
+    <ClCompile Include="..\src\compat_time.c" />
     <ClCompile Include="..\src\confparse.c" />
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\decoder_util.c" />
