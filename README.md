@@ -23,9 +23,9 @@ Running:
 
 ```
 Usage:	= General options =
-	[-q] Quiet mode, suppress non-data messages
-	[-D] Print debug info on event (repeat for more info)
 	[-V] Output the version string and exit
+	[-v] Increase verbosity (can be used multiple times).
+		 -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
 	[-c <path>] Read config options from a file
 	= Tuner options =
 	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]
