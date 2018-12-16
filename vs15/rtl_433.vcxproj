@@ -95,6 +95,7 @@
     <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
+    <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
@@ -116,6 +117,7 @@
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
+    <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />

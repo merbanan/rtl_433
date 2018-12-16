@@ -12,6 +12,7 @@ rtl_433_SOURCES      = am_analyze.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
+                       mongoose.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
