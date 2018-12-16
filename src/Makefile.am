@@ -6,11 +6,14 @@ bin_PROGRAMS         = rtl_433
 rtl_433_SOURCES      = am_analyze.c \
                        baseband.c \
                        bitbuffer.c \
+                       compat_paths.c \
+                       compat_time.c \
                        confparse.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
                        optparse.c \
+                       platform_win.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        rtl_433.c \
