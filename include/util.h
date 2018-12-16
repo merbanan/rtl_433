@@ -18,7 +18,10 @@
 #include "compat_time.h"
 
 #if defined _MSC_VER // Microsoft Visual Studio
+    // MSC has something like C99 restrict as __restrict
+    #ifndef restrict
 	#define restrict  __restrict
+    #endif
 #endif
 
 // Helper macros

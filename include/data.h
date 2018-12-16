@@ -33,16 +33,9 @@
     #include <malloc.h>
     #define RTL_433_NO_VLAs
 
-    /* gcc uses the syntax:
-     *   foo (char *restict ptr);
-     *
-     * But MSVC needs the syntax:
-     *   foo (char *ptr __declspec(restrict));
-     *
-     * Hence just make 'restrict' a NOOP.
-     */
+    // MSVC has something like C99 restrict as __restrict
     #ifndef restrict
-    #define restrict
+	#define restrict  __restrict
     #endif
 #endif
 
