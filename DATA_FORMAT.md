@@ -66,10 +66,10 @@ Examples:
 * **wind_dir_deg** (double) (Optional)
   * Wind direction from wind sensor in compass direction degrees.
   
-* **wind_speed_ms** (double) (Optional)
+* **wind_speed_mps** (double) (Optional)
   * Average wind speed from wind sensor in m/s. Averaging time is sensor dependant.
 
-* **gust_speed_ms** (double) (Optional)
+* **gust_speed_mps** (double) (Optional)
   * Gust wind speed from wind sensor in m/s. 
 
 * **rain_mm** (**rain_in**) (double) (Optional)
