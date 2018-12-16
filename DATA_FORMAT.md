@@ -44,24 +44,20 @@ particular device model.
 ## Common Device Data
 Various data fields, which are common across devices of different types 
 
-* **battery** (string) (Optional)
-  * Battery status indication
-  * Possible values: "OK", "LOW"
+* **battery** (double) (Optional)
+  * Battery status indication as a level between 0 (empty) and 1 (full). If the sensor can only report a binary status the value shall be 1 for "OK" and 0 for "LOW".
 
 * **battery_V** (double) (Optional)
-  * Battery level in Volts. Should always be suppleanted by *battery* status indication.
-
-* **battery_level** (double) (Optional)
-  * Battery level in %. Should always be suppleanted by *battery* status indication.
+  * Battery level in Volts. Should be suppleanted by *battery* status indication if possible.
 
 ## Sensor Data
 Due to the large variance in sensor types this list of common values is non-exhaustive. Additional data value fields should follow the form: `<Type>_<Unit>`, where *Unit* should be in sensors native units insofar possible with no conversion.
 Examples:
 
-* **temperature_C** (**temperature_f**) (double) (Optional)
+* **temperature_C** (**temperature_F**) (double) (Optional)
   * Temperature from a temperature sensor in degrees Celcius (Fahrenheit).
   
-* **setpoint_C** (**setpoint_f**) (double) (Optional)
+* **setpoint_C** (**setpoint_F**) (double) (Optional)
   * Thermal set point of a thermostat device in degrees Celcius (Fahrenheit).
   
 * **humidity** (double) (Optional)
