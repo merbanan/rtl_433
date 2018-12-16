@@ -109,9 +109,6 @@
     <ClCompile Include="..\src\optparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\platform_win.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\pulse_demod.c">
       <Filter>Source Files</Filter>
     </ClCompile>

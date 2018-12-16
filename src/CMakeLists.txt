@@ -27,7 +27,6 @@ add_executable(rtl_433
 	decoder_util.c
 	fileformat.c
 	optparse.c
-	platform_win.c
 	pulse_demod.c
 	pulse_detect.c
 	rtl_433.c

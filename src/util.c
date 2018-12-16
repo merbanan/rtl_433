@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "compat_time.h"
 
 uint8_t reverse8(uint8_t x)
 {
@@ -250,7 +249,9 @@ int add_bytes(uint8_t const message[], unsigned num_bytes)
 
 void get_time_now(struct timeval *tv)
 {
-    compat_get_time_now(tv);
+    int ret = gettimeofday(tv, NULL);
+    if (ret)
+        perror("gettimeofday");
 }
 
 char *local_time_str(time_t time_secs, char *buf)

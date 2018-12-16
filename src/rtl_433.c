@@ -1110,7 +1110,7 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
 
 static void parse_conf_try_default_files(struct app_cfg *cfg)
 {
-    char **paths = compat_getDefaultConfPaths();
+    char **paths = compat_get_default_conf_paths();
     for (int a = 0; paths[a]; a++) {
         fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
         if (hasconf(paths[a])) {
