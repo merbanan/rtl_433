@@ -11,7 +11,7 @@ particular device model.
 
 * **model** (string) (Required)
   * Device model. Human readable string concisely describing the device by manufacturer name 
-    and manufacturers model designation according to the following syntax: `"<Manufacturer>, <Model>"`. 
+    and manufacturers model designation according to the following syntax: `"<Manufacturer>-<Model>"`. 
   * It is common for devices to be sold under different brands, however the Original Equipment Manufacturer name
     shall be used, where possible to identify. 
   * Avoid redundant word like "sensor", "wireless" etc. unless it is part of the manufacturers model designation. 
