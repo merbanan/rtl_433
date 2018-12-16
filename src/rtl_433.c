@@ -445,6 +445,8 @@ int duplicate_check(data_t *data, int key) {
     if (duptable[idx].key == key) {
         if((second-duptable[idx].time) < cfg.duplicate_check) {
             //duplicate found
+            if (cfg.verbose > 0)
+                fprintf(stderr,"Duplicate signal received\n");
             return 0;
         } else {
             //no duplicate found, insert time of last found message
