@@ -188,30 +188,30 @@ Supported device protocols:
 ```
 
 
-Examples:
+Some examples:
 
 | Command | Description
 |---------|------------
-| `rtl_433 -G` | Default receive mode, attempt to decode all known devices
-| `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40` | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
-| `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
-| `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
-| `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (`g###_###M_###k.cu8`). Format is uint8, 2 channels.
-| `rtl_433 -r file_name` | Play back a saved data file.
-| `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files with `rtl_433 -a -t` is preferred.
+| `rtl_433` | Default receive mode, use the first device found, listen at 433.92 MHz at 250k sample rate.
+| `rtl_433 -C si` | Default receive mode, also convert units to metric system.
+| `rtl_433 -f 868M -s 1024k` | Listen at 868 MHz and 1024k sample rate.
+| `rtl_433 -M hires -M level` | Report microsecond accurate timestamps and add reception levels (depending on gain).
+| `rtl_433 -R 1 -R 8 -R 43` | Enable only specific decoders for desired devices.
+| `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used with `-R 0` to disable decoders.
+| `rtl_433 -S all -T 120` | Save all detected signals (`g###_###M_###k.cu8`). Run for 2 minutes.
+| `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
 | `rtl_433 -F json -U \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
-| `rtl_433 -f 433535000 -f 434019000 -H 15` | Will poll two frequencies with 15 seconds interval.
-
-This software is mostly usable for developers right now.
+| `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
 
 
 Supporting Additional Devices and Test Data
 -------------------------------------------
 
-Note: Not all device protocol decoders are enabled by default. When testing to see if your device
+Some device protocol decoders are disabled by default. When testing to see if your device
 is decoded by rtl_433, use `-G` to enable all device protocols.
+This will likely produce false positives, use with caution.
 
-The first step in decoding new devices is to record the signals using `-a -t`.   
+The first step in decoding new devices is to record the signals using `-S all`.
 The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
 
 | Parameter | Description
