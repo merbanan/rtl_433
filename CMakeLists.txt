@@ -1,14 +1,3 @@
-# rtl_433 is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with GNU Radio; see the file COPYING.  If not, write to
-# the Free Software Foundation, Inc., 51 Franklin Street,
-# Boston, MA 02110-1301, USA.
-
-
 ########################################################################
 # Project setup
 ########################################################################
@@ -120,6 +109,7 @@ endif()
 # Setup the include and linker paths
 ########################################################################
 include_directories(
+    BEFORE
     ${CMAKE_SOURCE_DIR}/include
 )
 
@@ -171,6 +161,7 @@ add_subdirectory(src)
 if(BUILD_TEST)
     add_subdirectory(tests)
 endif(BUILD_TEST)
+add_subdirectory(conf)
 
 # use space-separation format for the pc file
 STRING(REPLACE ";" " " RTL433_PC_CFLAGS "${RTL433_PC_CFLAGS}")

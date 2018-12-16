@@ -39,10 +39,6 @@
 #include "compat_paths.h"
 #include "compat_time.h"
 
-#define MAX_DATA_OUTPUTS 32
-#define MAX_DUMP_OUTPUTS 8
-#define MAX_IN_FILES 100
-
 #ifdef GIT_VERSION
 #define STR_VALUE(arg) #arg
 #define STR_EXPAND(s) STR_VALUE(s)
@@ -54,62 +50,6 @@
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
-
-typedef enum {
-    CONVERT_NATIVE,
-    CONVERT_SI,
-    CONVERT_CUSTOMARY
-} conversion_mode_t;
-
-typedef enum {
-    REPORT_TIME_DEFAULT,
-    REPORT_TIME_DATE,
-    REPORT_TIME_SAMPLES,
-    REPORT_TIME_OFF,
-} time_mode_t;
-
-struct app_cfg {
-    char *dev_query;
-    char *gain_str;
-    int ppm_error;
-    uint32_t out_block_size;
-    char const *test_data;
-    unsigned in_files;
-    char const *in_file[MAX_IN_FILES];
-    char const *in_filename;
-    int do_exit;
-    int do_exit_async;
-    int frequencies;
-    int frequency_index;
-    uint32_t frequency[MAX_PROTOCOLS];
-    uint32_t center_frequency;
-    time_t rawtime_old;
-    int duration;
-    time_t stop_time;
-    int stop_after_successful_events_flag;
-    uint32_t samp_rate;
-    uint64_t input_pos;
-    uint32_t bytes_to_read;
-    sdr_dev_t *dev;
-    int grab_mode;
-    int quiet_mode;
-    int verbose;
-    int verbose_bits;
-    conversion_mode_t conversion_mode;
-    int report_meta;
-    int report_protocol;
-    time_mode_t report_time;
-    int report_time_hires;
-    int report_time_utc;
-    int no_default_devices;
-    r_device *devices;
-    uint16_t num_r_devices;
-    char *output_tag;
-    void *output_handler[MAX_DATA_OUTPUTS];
-    void *csv_output_handler[MAX_DATA_OUTPUTS];
-    int last_output_handler;
-    struct dm_state *demod;
-};
 
 static struct app_cfg cfg = {
     .out_block_size = DEFAULT_BUF_LENGTH,
@@ -152,10 +92,9 @@ struct dm_state {
     float sample_file_pos;
 };
 
-static void version(void)
+static void print_version(void)
 {
     fprintf(stderr, "rtl_433 " VERSION "\n");
-    exit(0);
 }
 
 static void usage(r_device *devices, unsigned num_devices, int exit_code)
@@ -164,12 +103,11 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
     char disabledc;
 
     fprintf(stderr,
-            "rtl_433, an ISM band generic data receiver for RTL2832 based DVB-T receivers\n"
-            VERSION "\n"
+            "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
             "\nUsage:\t= General options =\n"
-            "\t[-q] Quiet mode, suppress non-data messages\n"
-            "\t[-D] Print debug info on event (repeat for more info)\n"
             "\t[-V] Output the version string and exit\n"
+            "\t[-v] Increase verbosity (can be used multiple times).\n"
+            "\t\t -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
             "\t[-c <path>] Read config options from a file\n"
             "\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]\n"
@@ -199,7 +137,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\t= Data output options =\n"
-            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
             "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "\t[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.\n"
@@ -260,7 +198,7 @@ static void help_gain(void)
 static void help_output(void)
 {
     fprintf(stderr,
-            "[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.\n"
+            "[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
@@ -364,7 +302,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     p->name          = r_dev->name;
     p->fields        = r_dev->fields;
 
-    p->verbose       = cfg.verbose;
+    p->verbose       = cfg.verbosity > 0 ? cfg.verbosity - 1 : 0;
     p->verbose_bits  = cfg.verbose_bits;
     p->output_fn     = data_acquired_handler;
     p->output_ctx    = &cfg;
@@ -372,7 +310,7 @@ static void register_protocol(struct dm_state *demod, r_device *r_dev) {
     demod->r_devs[demod->r_dev_num] = p;
     demod->r_dev_num++;
 
-    if (!cfg.quiet_mode) {
+    if (cfg.verbosity) {
         fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 
@@ -604,6 +542,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
+    for (int i = 0; i < cfg.last_output_handler; ++i) {
+        data_output_poll(cfg.output_handler[i]);
+    }
+
     if (cfg.do_exit || cfg.do_exit_async)
         return;
 
@@ -722,7 +664,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
                 }
-                if (cfg.verbose > 1) pulse_data_print(&demod->pulse_data);
+                if (cfg.verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->pulse_data);
                     pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
@@ -758,7 +700,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg.samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
                 }
-                if (cfg.verbose > 1) pulse_data_print(&demod->fsk_pulse_data);
+                if (cfg.verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
                     calc_rssi_snr(&demod->fsk_pulse_data);
                     pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
@@ -803,7 +745,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbose, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbosity > 1, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -1049,13 +991,12 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
 
-#define OPTSTRING "hqDVc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hVvqDc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
         {"help", 'h'},
-        {"quiet", 'q'},
-        {"verbose", 'D'},
+        {"verbose", 'v'},
         {"version", 'V'},
         {"config_file", 'c'},
         {"report_meta", 'M'},
@@ -1114,7 +1055,7 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
 
 static void parse_conf_try_default_files(struct app_cfg *cfg)
 {
-    char **paths = compat_getDefaultConfPaths();
+    char **paths = compat_get_default_conf_paths();
     for (int a = 0; paths[a]; a++) {
         fprintf(stderr, "Trying conf file at \"%s\"...\n", paths[a]);
         if (hasconf(paths[a])) {
@@ -1152,7 +1093,13 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         usage(NULL, 0, 0);
         break;
     case 'V':
-        version();
+        exit(0); // we already printed the version
+        break;
+    case 'v':
+        if (!arg)
+            cfg->verbosity++;
+        else
+            cfg->verbosity = atobv(arg, 1);
         break;
     case 'c':
         parse_conf_file(cfg, arg);
@@ -1164,10 +1111,10 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         cfg->dev_query = arg;
         break;
     case 'f':
-        if (cfg->frequencies < MAX_PROTOCOLS)
+        if (cfg->frequencies < MAX_FREQS)
             cfg->frequency[cfg->frequencies++] = atouint32_metric(arg, "-f: ");
         else
-            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_PROTOCOLS);
+            fprintf(stderr, "Max number of frequencies reached %d\n", MAX_FREQS);
         break;
     case 'H':
         cfg->demod->hop_time = atoi_time(arg, "-H: ");
@@ -1281,10 +1228,7 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
             cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
-        if (!arg)
-            cfg->verbose++;
-        else
-            cfg->verbose = atobv(arg, 1);
+        fprintf(stderr, "debug option (-D) is deprecated. See -v to increase verbosity\n");
         break;
     case 'z':
         if (cfg->demod->am_analyze)
@@ -1333,7 +1277,7 @@ static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
         }
         break;
     case 'q':
-        cfg->quiet_mode = atobv(arg, 1);
+        fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");
         break;
     case 'F':
         if (!arg)
@@ -1428,6 +1372,8 @@ int main(int argc, char **argv) {
     unsigned i;
     struct dm_state *demod;
 
+    print_version(); // always print the version info
+
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
@@ -1510,16 +1456,34 @@ int main(int argc, char **argv) {
         }
     }
 
+    fprintf(stderr, "Registered %d out of %d device decoding protocols",
+            demod->r_dev_num, cfg.num_r_devices);
+
+    if (!cfg.verbosity) {
+        // print registered decoder ranges
+        fprintf(stderr, " [");
+        for (int i = 0; i < demod->r_dev_num; ++i) {
+            unsigned num = demod->r_devs[i]->protocol_num;
+            if (num == 0)
+                continue;
+            while (i + 1 < demod->r_dev_num
+                    && demod->r_devs[i]->protocol_num + 1 == demod->r_devs[i + 1]->protocol_num)
+                i++;
+            if (num == demod->r_devs[i]->protocol_num)
+                fprintf(stderr, " %d", num);
+            else
+                fprintf(stderr, " %d-%d", num, demod->r_devs[i]->protocol_num);
+        }
+        fprintf(stderr, " ]");
+    }
+    fprintf(stderr, "\n");
+
     for (int i = 0; i < cfg.last_output_handler; ++i) {
         if (cfg.csv_output_handler[i]) {
             init_csv_output(cfg.csv_output_handler[i],
                     well_known_output_fields(&cfg), cfg.demod->r_devs, cfg.demod->r_dev_num);
         }
     }
-
-    if (!cfg.quiet_mode)
-        fprintf(stderr,"Registered %d out of %d device decoding protocols\n",
-                demod->r_dev_num, cfg.num_r_devices);
 
     if (cfg.out_block_size < MINIMAL_BUF_LENGTH ||
             cfg.out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1535,7 +1499,7 @@ int main(int argc, char **argv) {
     if (cfg.test_data) {
         r = 0;
         for (i = 0; i < demod->r_dev_num; i++) {
-            if (!cfg.quiet_mode)
+            if (cfg.verbosity)
                 fprintf(stderr, "Verifying test data with device %s.\n", demod->r_devs[i]->name);
             r += pulse_demod_string(cfg.test_data, demod->r_devs[i]);
         }
@@ -1543,7 +1507,7 @@ int main(int argc, char **argv) {
     }
 
     if (!cfg.in_files) {
-        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, !cfg.quiet_mode);
+        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, cfg.verbosity);
         if (r < 0) {
             exit(1);
         }
@@ -1560,15 +1524,16 @@ int main(int argc, char **argv) {
         SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
 #endif
         /* Set the sample rate */
-        r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, !cfg.quiet_mode);
+        r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, 1); // always verbose
 
-        fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+        if (cfg.verbosity || demod->level_limit)
+            fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
         /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, !cfg.quiet_mode);
+        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, 1); // always verbose
 
         if (cfg.ppm_error)
-            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, !cfg.quiet_mode);
+            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, 1); // always verbose
     }
 
     if (out_filename) {
@@ -1611,7 +1576,7 @@ int main(int argc, char **argv) {
             } else {
                 demod->sample_size = sizeof(int16_t); // CF32, CS16
             }
-            if (!cfg.quiet_mode) {
+            if (cfg.verbosity) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
             }
             demod->sample_file_pos = 0.0;
@@ -1634,19 +1599,20 @@ int main(int argc, char **argv) {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
-                n_blocks++;
-                demod->sample_file_pos = (float)n_blocks * n_read / cfg.samp_rate / 2 / demod->sample_size;
+                demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg.samp_rate / 2 / demod->sample_size;
+                n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, demod);
             } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
             memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
+            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg.samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
                 am_analyze_classify(demod->am_analyze);
-            if (!cfg.quiet_mode) {
+            if (cfg.verbosity) {
                 fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
             }
 
@@ -1658,7 +1624,7 @@ int main(int argc, char **argv) {
     }
 
     /* Reset endpoint before we start reading from it (mandatory) */
-    r = sdr_reset(cfg.dev, !cfg.quiet_mode);
+    r = sdr_reset(cfg.dev, cfg.verbosity);
     if (r < 0)
         fprintf(stderr, "WARNING: Failed to reset buffers.\n");
     r = sdr_activate(cfg.dev);
@@ -1669,7 +1635,7 @@ int main(int argc, char **argv) {
     } else {
         time(&cfg.rawtime_old);
     }
-    if (!cfg.quiet_mode) {
+    if (cfg.verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");
     }
     if (cfg.duration > 0) {
@@ -1679,7 +1645,7 @@ int main(int argc, char **argv) {
     while (!cfg.do_exit) {
         /* Set the cfg.frequency */
         cfg.center_frequency = cfg.frequency[cfg.frequency_index];
-        r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, !cfg.quiet_mode);
+        r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, 1); // always verbose
 
 #ifndef _WIN32
         signal(SIGALRM, sighandler);

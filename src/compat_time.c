@@ -6,23 +6,19 @@
 #ifndef _WIN32
 // Linux variant
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h> 
-#include <sys/time.h>
-
-void compat_get_time_now(struct timeval *tv)
+// just so the compilation unit isn't empty
+int _compat_time(void)
 {
-    int ret = gettimeofday(tv, NULL);
-    if (ret)
-        perror("gettimeofday");
+    return 0;
 }
 
 #else
 // Windows variant
+
 #include <stdbool.h>
 #include <stddef.h>
-#include <winsock2.h>
+
+#include "compat_time.h"
 
 #if defined(_MSC_VER) || defined(_MSC_EXTENSIONS)
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000Ui64
@@ -30,8 +26,11 @@ void compat_get_time_now(struct timeval *tv)
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
 #endif
 
-void compat_get_time_now(struct timeval *tv)
+int gettimeofday(struct timeval *tv, void *tz)
 {
+    if (tz)
+        return -1; // we don't support TZ
+
     FILETIME ft;
     unsigned __int64 t64;
     GetSystemTimeAsFileTime(&ft);
@@ -40,6 +39,8 @@ void compat_get_time_now(struct timeval *tv)
     t64 -= DELTA_EPOCH_IN_MICROSECS; // convert file time to unix epoch
     tv->tv_sec = (long)(t64 / 1000000UL);
     tv->tv_usec = (long)(t64 % 1000000UL);
+
+    return 0;
 }
 
 #endif // _WIN32 / !_WIN32

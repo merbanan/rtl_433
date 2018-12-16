@@ -3,19 +3,24 @@ AM_CFLAGS = ${CFLAGS} -fPIC ${SYMBOL_VISIBILITY}
 
 bin_PROGRAMS         = rtl_433
 
-rtl_433_SOURCES      = am_analyze.c \
+rtl_433_SOURCES      = abuf.c \
+                       am_analyze.c \
                        baseband.c \
                        bitbuffer.c \
+                       compat_paths.c \
+                       compat_time.c \
                        confparse.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
+                       mongoose.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        rtl_433.c \
                        samp_grab.c \
                        sdr.c \
+                       term_ctl.c \
                        util.c \
                        devices/acurite.c \
                        devices/akhan_100F14.c \
@@ -35,7 +40,6 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/danfoss.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
-                       devices/ec3k.c \
                        devices/efergy_e2_classic.c \
                        devices/efergy_optical.c \
                        devices/elro_db286a.c \
@@ -99,7 +103,6 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/solight_te44.c \
                        devices/springfield.c \
                        devices/steelmate.c \
-                       devices/steffen.c \
                        devices/tfa_pool_thermometer.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
@@ -111,7 +114,6 @@ rtl_433_SOURCES      = am_analyze.c \
                        devices/tpms_toyota.c \
                        devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
-                       devices/valeo.c \
                        devices/waveman.c \
                        devices/wg_pb12v1.c \
                        devices/wssensor.c \

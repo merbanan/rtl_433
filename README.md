@@ -6,6 +6,8 @@ rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
 Activly tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
+![rtl_433 screenshot](screenshot.png)
+
 Building/installation:
 ----------------------
 
@@ -23,9 +25,9 @@ Running:
 
 ```
 Usage:	= General options =
-	[-q] Quiet mode, suppress non-data messages
-	[-D] Print debug info on event (repeat for more info)
 	[-V] Output the version string and exit
+	[-v] Increase verbosity (can be used multiple times).
+		 -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
 	[-c <path>] Read config options from a file
 	= Tuner options =
 	[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]
@@ -55,10 +57,10 @@ Usage:	= General options =
 	[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
 	[-W <filename>] Save data stream to output file, overwrite existing file
 	= Data output options =
-	[-F kv|json|csv|syslog|null] Produce decoded output in given format. Not yet supported by all drivers.
+	[-F kv|json|csv|syslog|null] Produce decoded output in given format.
 		 Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 		 Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-	[-M time|reltime|notime|hires|utc|protocol|level] Add various meta data to every output line.
+	[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.
 	[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.
 	[-C native|si|customary] Convert units in decoded output.
 	[-T <seconds>] Specify number of seconds to run
@@ -71,7 +73,6 @@ Supported device protocols:
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
     [04]  Waveman Switch Transmitter
-    [05]* Steffen Switch Transmitter
     [06]* ELV EM 1000
     [07]* ELV WS 2000
     [08]  LaCrosse TX Temperature / Humidity Sensor
@@ -92,8 +93,6 @@ Supported device protocols:
     [24]* Brennenstuhl RCS 2044
     [25]  GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
-    [27]* Energy Count 3000 (868.3 MHz)
-    [28]* Valeo Car Key
     [29]  Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
     [31]  TFA-Twin-Plus-30.3049 and Ea2 BL999
@@ -189,30 +188,30 @@ Supported device protocols:
 ```
 
 
-Examples:
+Some examples:
 
 | Command | Description
 |---------|------------
-| `rtl_433 -G` | Default receive mode, attempt to decode all known devices
-| `rtl_433 -p NN -R 1 -R 9 -R 36 -R 40` | Typical usage: Enable device decoders for desired devices. Correct rtl-sdr tuning error (ppm offset).
-| `rtl_433 -a` | Will run in analyze mode and you will get a text description of the received signal.
-| `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used in either the normal decode mode, or analyze mode.
-| `rtl_433 -a -t` | Will run in analyze mode and save a test file per detected signal (`g###_###M_###k.cu8`). Format is uint8, 2 channels.
-| `rtl_433 -r file_name` | Play back a saved data file.
-| `rtl_433 file_name` | Will save everything received from the rtl-sdr during the session into a single file. The saves file may become quite large depending on how long rtl_433 is left running. Note: saving signals into individual files with `rtl_433 -a -t` is preferred.
+| `rtl_433` | Default receive mode, use the first device found, listen at 433.92 MHz at 250k sample rate.
+| `rtl_433 -C si` | Default receive mode, also convert units to metric system.
+| `rtl_433 -f 868M -s 1024k` | Listen at 868 MHz and 1024k sample rate.
+| `rtl_433 -M hires -M level` | Report microsecond accurate timestamps and add reception levels (depending on gain).
+| `rtl_433 -R 1 -R 8 -R 43` | Enable only specific decoders for desired devices.
+| `rtl_433 -A` | Enable pulse analyzer. Summarizes the timings of pulses, gaps, and periods. Can be used with `-R 0` to disable decoders.
+| `rtl_433 -S all -T 120` | Save all detected signals (`g###_###M_###k.cu8`). Run for 2 minutes.
+| `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
 | `rtl_433 -F json -U \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `tests/mqtt_rtl_433_test.py`.
-| `rtl_433 -f 433535000 -f 434019000 -H 15` | Will poll two frequencies with 15 seconds interval.
-
-This software is mostly usable for developers right now.
+| `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
 
 
 Supporting Additional Devices and Test Data
 -------------------------------------------
 
-Note: Not all device protocol decoders are enabled by default. When testing to see if your device
+Some device protocol decoders are disabled by default. When testing to see if your device
 is decoded by rtl_433, use `-G` to enable all device protocols.
+This will likely produce false positives, use with caution.
 
-The first step in decoding new devices is to record the signals using `-a -t`.   
+The first step in decoding new devices is to record the signals using `-S all`.
 The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
 
 | Parameter | Description

@@ -80,8 +80,8 @@ r_devices = [grep_lines(r'(?m)^r_device\s*(.*?)\s*=.*',
 r_devices = [item for sublist in r_devices for item in sublist]
 print("r_devices =", r_devices)
 
-# count r_devices, correct for 'template' being used three times
-r_devices_used = len(r_devices) + 2
+# count r_devices, correct for 'template' being used six times
+r_devices_used = len(r_devices) + 5
 
 # README.md
 # Replace everything between ``` with help output.

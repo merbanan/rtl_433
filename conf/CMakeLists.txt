@@ -1,8 +1,9 @@
 ########################################################################
-# Install public header files
+# Install example configuration files
 ########################################################################
+file(GLOB RTL433_CONF_FILES "*.conf")
+
 install(FILES
-    rtl_433.h
-    rtl_433_devices.h
-    DESTINATION include
+    ${RTL433_CONF_FILES}
+    DESTINATION etc/rtl_433
 )

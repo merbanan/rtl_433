@@ -85,6 +85,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\abuf.h" />
     <ClInclude Include="..\include\am_analyze.h" />
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
@@ -95,6 +96,7 @@
     <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
+    <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
@@ -102,10 +104,12 @@
     <ClInclude Include="..\include\rtl_433_devices.h" />
     <ClInclude Include="..\include\samp_grab.h" />
     <ClInclude Include="..\include\sdr.h" />
+    <ClInclude Include="..\include\term_ctl.h" />
     <ClInclude Include="..\include\util.h" />
     <ClInclude Include="..\src\getopt\getopt.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\abuf.c" />
     <ClCompile Include="..\src\am_analyze.c" />
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
@@ -115,12 +119,14 @@
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
+    <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />
     <ClCompile Include="..\src\sdr.c" />
+    <ClCompile Include="..\src\term_ctl.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
@@ -140,7 +146,6 @@
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
-    <ClCompile Include="..\src\devices\ec3k.c" />
     <ClCompile Include="..\src\devices\efergy_e2_classic.c" />
     <ClCompile Include="..\src\devices\efergy_optical.c" />
     <ClCompile Include="..\src\devices\elro_db286a.c" />
@@ -204,7 +209,6 @@
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
-    <ClCompile Include="..\src\devices\steffen.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
@@ -216,7 +220,6 @@
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
-    <ClCompile Include="..\src\devices\valeo.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
     <ClCompile Include="..\src\devices\wssensor.c" />

@@ -287,8 +287,11 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 	pulse_detect_t *s = pulse_detect;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
 
-	pulses->start_ago += len;
-	fsk_pulses->start_ago += len;
+	if (s->data_counter == 0) {
+		// age the pulse_data if this is a fresh buffer
+		pulses->start_ago += len;
+		fsk_pulses->start_ago += len;
+	}
 
 	// Process all new samples
 	while(s->data_counter < len) {

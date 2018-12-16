@@ -57,8 +57,8 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     bitbuffer_invert(bitbuffer);
 
-    /* Pairity check (must be EVEN) */
-    parity = byteParity(bytes[0]) ^ byteParity(bytes[1]) ^ byteParity(bytes[2]) ^ byteParity(bytes[3]) ^ byteParity(bytes[4]) ^ byteParity(bytes[5]);
+    /* Parity check (must be EVEN) */
+    parity = parity_bytes(bytes, 6);
 
     if (parity) { // ODD parity detected
         if (decoder->verbose > 1) {
