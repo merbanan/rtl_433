@@ -163,6 +163,9 @@ int term_get_columns(void *ctx)
      * we called '_term_init()'.
      */
     CONSOLE_SCREEN_BUFFER_INFO c_info;
+    
+    if (!console->hnd || console->hnd == INVALID_HANDLE_VALUE)
+       return (80);
 
     GetConsoleScreenBufferInfo(console->hnd, &c_info);
     return (c_info.srWindow.Right - c_info.srWindow.Left + 1);
