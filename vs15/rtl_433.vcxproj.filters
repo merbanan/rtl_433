@@ -83,12 +83,6 @@
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\compat_paths.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\compat_time.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\abuf.c">
@@ -447,12 +441,6 @@
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell_wdb.c">
       <Filter>Source Files\devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\compat_time.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\compat_paths.c">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
