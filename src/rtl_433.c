@@ -90,7 +90,8 @@ struct dm_state {
     am_analyze_t *am_analyze;
     int analyze_pulses;
     file_info_t load_info;
-    file_info_t dumper[MAX_DUMP_OUTPUTS];
+	int num_dumpers;
+	file_info_t dumper[MAX_DUMP_OUTPUTS];
     int hop_time;
 
     /* Protocol states */
@@ -601,10 +602,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     int d_events = 0; // Sensor events successfully detected
-    if (demod->r_dev_num || demod->analyze_pulses || demod->dumper->spec || demod->samp_grab) {
+    if (demod->r_dev_num || demod->analyze_pulses || demod->num_dumpers > 0 || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
-        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+        for (int d = 0; d < demod->num_dumpers; d++) {
+            file_info_t const *dumper = &demod->dumper[d];
             if (dumper->format == U8_LOGIC) {
                 memset(demod->u8_buf, 0, n_samples);
                 break;
@@ -659,7 +661,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+				for (int d = 0; d < demod->num_dumpers; d++) {
+                    file_info_t const *dumper = &demod->dumper[d];
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg->samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
                 }
@@ -695,7 +698,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                             fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
                     }
                 } // for demodulators
-                for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+                for (int d = 0; d < demod->num_dumpers; d++){
+                    file_info_t const *dumper = &demod->dumper[d];
                     if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg->samp_rate);
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
                 }
@@ -729,7 +733,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
 
         // dump partial pulse_data for this buffer
-        for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+        for (int d = 0; d < demod->num_dumpers; d++){
+            file_info_t const *dumper = &demod->dumper[d];
             if (dumper->format == U8_LOGIC) {
                 pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
                 pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
@@ -747,7 +752,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg->verbosity > 1, NULL);
     }
 
-    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
+    for (int d = 0; d < demod->num_dumpers; d++){
+        file_info_t const *dumper = &demod->dumper[d];
         if (!dumper->file || dumper->format == VCD_LOGIC)
             continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
@@ -941,9 +947,14 @@ static void add_null_output(r_cfg_t *cfg, char *param)
     cfg->output_handler[cfg->last_output_handler++] = NULL;
 }
 
-static void add_dumper(r_cfg_t *cfg, char const *spec, file_info_t *dumper, int overwrite)
+static void add_dumper(struct dm_state *demod, char const *spec, int overwrite, uint32_t samp_rate)
 {
-    while (dumper->spec && *dumper->spec) ++dumper; // TODO: check MAX_DUMP_OUTPUTS
+	if (demod->num_dumpers >= MAX_DUMP_OUTPUTS) {
+		fprintf(stderr, "Max number of %d dumpers reached, current one is ignored.\n", MAX_DUMP_OUTPUTS);
+		return;
+	}
+
+	file_info_t *dumper = &demod->dumper[demod->num_dumpers];
 
     parse_file_info(spec, dumper);
     if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
@@ -963,8 +974,10 @@ static void add_dumper(r_cfg_t *cfg, char const *spec, file_info_t *dumper, int 
         }
     }
     if (dumper->format == VCD_LOGIC) {
-        pulse_data_print_vcd_header(dumper->file, cfg->samp_rate);
+        pulse_data_print_vcd_header(dumper->file, samp_rate);
     }
+
+	demod->num_dumpers++;
 }
 
 static void add_infile(r_cfg_t *cfg, char const *in_file)
@@ -1171,13 +1184,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!arg)
             help_write();
 
-        add_dumper(cfg, arg, cfg->demod->dumper, 0);
+        add_dumper(cfg->demod, arg, 0, cfg->samp_rate);
         break;
     case 'W':
         if (!arg)
             help_write();
 
-        add_dumper(cfg, arg, cfg->demod->dumper, 1);
+        add_dumper(cfg->demod, arg, 1, cfg->samp_rate);
         break;
     case 't':
         fprintf(stderr, "test_mode (-t) is deprecated. Use -S none|all|unknown|known\n");
@@ -1400,7 +1413,6 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
 #endif
-    char *out_filename = NULL;
     FILE *in_file;
     int r = 0;
     unsigned i;
@@ -1414,6 +1426,7 @@ int main(int argc, char **argv) {
     demod = calloc(1, sizeof(struct dm_state));
     cfg.demod = demod;
 
+    demod->num_dumpers = 0;
     demod->pulse_detect = pulse_detect_create();
 
     /* initialize tables */
@@ -1570,10 +1583,6 @@ int main(int argc, char **argv) {
             r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, 1); // always verbose
     }
 
-    if (out_filename) {
-        add_dumper(&cfg, out_filename, demod->dumper, 0); // deprecated
-    }
-
     if (cfg.in_files) {
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
@@ -1709,9 +1718,11 @@ int main(int argc, char **argv) {
     if (!cfg.do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper)
-        if (dumper->file && (dumper->file != stdout))
-            fclose(dumper->file);
+	for (int d = 0; d < demod->num_dumpers; d++) {
+		file_info_t const *dumper = &demod->dumper[d];
+		if (dumper->file && (dumper->file != stdout))
+			fclose(dumper->file);
+    }
 
     r = sdr_deactivate(cfg.dev);
 
