@@ -537,22 +537,23 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 }
 
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
-    struct dm_state *demod = ctx;
+    r_cfg_t *cfg = ctx;
+    struct dm_state *demod = cfg->demod;
     int i;
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    for (int i = 0; i < cfg.last_output_handler; ++i) {
-        data_output_poll(cfg.output_handler[i]);
+    for (int i = 0; i < cfg->last_output_handler; ++i) {
+        data_output_poll(cfg->output_handler[i]);
     }
 
-    if (cfg.do_exit || cfg.do_exit_async)
+    if (cfg->do_exit || cfg->do_exit_async)
         return;
 
-    if ((cfg.bytes_to_read > 0) && (cfg.bytes_to_read <= len)) {
-        len = cfg.bytes_to_read;
-        cfg.do_exit = 1;
-        sdr_stop(cfg.dev);
+    if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
+        len = cfg->bytes_to_read;
+        cfg->do_exit = 1;
+        sdr_stop(cfg->dev);
     }
 
     get_time_now(&demod->now);
@@ -613,7 +614,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         }
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg.samp_rate, cfg.input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago)
@@ -622,7 +623,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == 1) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(&cfg, demod->pulse_data.start_ago, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         case OOK_PULSE_PCM_RZ:
@@ -661,16 +662,16 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     }
                 } // for demodulators
                 for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg.samp_rate);
-                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg->samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
                 }
-                if (cfg.verbosity > 2) pulse_data_print(&demod->pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
-                    calc_rssi_snr(&cfg, &demod->pulse_data);
-                    pulse_analyzer(&demod->pulse_data, cfg.samp_rate);
+                if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
+                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                    calc_rssi_snr(cfg, &demod->pulse_data);
+                    pulse_analyzer(&demod->pulse_data, cfg->samp_rate);
                 }
             } else if (package_type == 2) {
-                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(&cfg, demod->fsk_pulse_data.start_ago, time_str));
+                if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
                 for (i = 0; i < demod->r_dev_num; i++) {
                     switch (demod->r_devs[i]->modulation) {
                         // OOK decoders
@@ -697,13 +698,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                     }
                 } // for demodulators
                 for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg.samp_rate);
-                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg->samp_rate);
+                    if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
                 }
-                if (cfg.verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg.grab_mode <= 1 || (cfg.grab_mode == 2 && p_events == 0) || (cfg.grab_mode == 3 && p_events > 0)) ) {
-                    calc_rssi_snr(&cfg, &demod->fsk_pulse_data);
-                    pulse_analyzer(&demod->fsk_pulse_data, cfg.samp_rate);
+                if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
+                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                    calc_rssi_snr(cfg, &demod->fsk_pulse_data);
+                    pulse_analyzer(&demod->fsk_pulse_data, cfg->samp_rate);
                 }
             } // if (package_type == ...
             d_events += p_events;
@@ -715,9 +716,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         // end frame tracking if older than a whole buffer
         if (demod->frame_start_ago && demod->frame_end_ago > n_samples) {
             if (demod->samp_grab) {
-                if (cfg.grab_mode == 1
-                        || (cfg.grab_mode == 2 && demod->frame_event_count == 0)
-                        || (cfg.grab_mode == 3 && demod->frame_event_count > 0)) {
+                if (cfg->grab_mode == 1
+                        || (cfg->grab_mode == 2 && demod->frame_event_count == 0)
+                        || (cfg->grab_mode == 3 && demod->frame_event_count > 0)) {
                     unsigned frame_pad = n_samples / 8; // this could also be a fixed value, e.g. 10000 samples
                     unsigned start_padded = demod->frame_start_ago + frame_pad;
                     unsigned end_padded = demod->frame_end_ago - frame_pad;
@@ -732,20 +733,20 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
         // dump partial pulse_data for this buffer
         for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
             if (dumper->format == U8_LOGIC) {
-                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->pulse_data, 0x02);
-                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg.input_pos, &demod->fsk_pulse_data, 0x04);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
+                pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
                 break;
             }
         }
 
-        if (cfg.stop_after_successful_events_flag && (d_events > 0)) {
-            cfg.do_exit = cfg.do_exit_async = 1;
-            sdr_stop(cfg.dev);
+        if (cfg->stop_after_successful_events_flag && (d_events > 0)) {
+            cfg->do_exit = cfg->do_exit_async = 1;
+            sdr_stop(cfg->dev);
         }
     }
 
     if (demod->am_analyze) {
-        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg.verbosity > 1, NULL);
+        am_analyze(demod->am_analyze, demod->am_buf, n_samples, cfg->verbosity > 1, NULL);
     }
 
     for (file_info_t const *dumper = demod->dumper; dumper->spec && *dumper->spec; ++dumper) {
@@ -817,30 +818,30 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            sdr_stop(cfg.dev);
+            sdr_stop(cfg->dev);
         }
     }
 
-    cfg.input_pos += n_samples;
-    if (cfg.bytes_to_read > 0)
-        cfg.bytes_to_read -= len;
+    cfg->input_pos += n_samples;
+    if (cfg->bytes_to_read > 0)
+        cfg->bytes_to_read -= len;
 
     time_t rawtime;
     time(&rawtime);
-	if (cfg.frequencies > 1 && difftime(rawtime, cfg.rawtime_old) > demod->hop_time) {
-	  cfg.rawtime_old = rawtime;
-	  cfg.do_exit_async = 1;
+	if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > demod->hop_time) {
+	  cfg->rawtime_old = rawtime;
+	  cfg->do_exit_async = 1;
 #ifndef _WIN32
 	  alarm(0); // cancel the watchdog timer
 #endif
-	  sdr_stop(cfg.dev);
+	  sdr_stop(cfg->dev);
 	}
-    if (cfg.duration > 0 && rawtime >= cfg.stop_time) {
-        cfg.do_exit_async = cfg.do_exit = 1;
+    if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
+        cfg->do_exit_async = cfg->do_exit = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg.dev);
+        sdr_stop(cfg->dev);
         fprintf(stderr, "Time expired, exiting!\n");
     }
 }
@@ -1601,13 +1602,13 @@ int main(int argc, char **argv) {
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg.samp_rate / 2 / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
-                sdr_callback(test_mode_buf, n_read, demod);
+                sdr_callback(test_mode_buf, n_read, &cfg);
             } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
             memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg.samp_rate / 2 / demod->sample_size;
-            sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, demod);
+            sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, &cfg);
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
@@ -1651,7 +1652,7 @@ int main(int argc, char **argv) {
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-        r = sdr_start(cfg.dev, sdr_callback, (void *) demod,
+        r = sdr_start(cfg.dev, sdr_callback, (void *)&cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg.out_block_size);
         if (r < 0) {
             fprintf(stderr, "WARNING: async read failed (%i).\n", r);
