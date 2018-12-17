@@ -14,13 +14,15 @@
 
 #include <stdio.h>
 
-int term_get_columns(int fd);
+void *term_init(FILE *fp);
 
-int term_has_color(FILE *fp);
+void term_free(void *ctx);
 
-void term_init(FILE *fp);
+int term_get_columns(void *ctx);
 
-void term_ring_bell(FILE *fp);
+int term_has_color(void *ctx);
+
+void term_ring_bell(void *ctx);
 
 typedef enum term_color {
     TERM_COLOR_RESET          = 0,
@@ -42,8 +44,8 @@ typedef enum term_color {
     TERM_COLOR_BRIGHT_WHITE   = 97,
 } term_color_t;
 
-void term_set_fg(FILE *fp, term_color_t color);
+void term_set_fg(void *ctx, term_color_t color);
 
-void term_set_bg(FILE *fp, term_color_t color);
+void term_set_bg(void *ctx, term_color_t color);
 
 #endif /* INCLUDE_TERM_CTL_H_ */

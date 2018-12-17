@@ -531,6 +531,7 @@ static int kv_break_after_key(char const *key)
 
 typedef struct {
     struct data_output output;
+    void *term;
     int color;
     int ring_bell;
     int term_width;
@@ -549,22 +550,22 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
 
     // top-level: update width and print separator
     if (!kv->data_recursion) {
-        kv->term_width = term_get_columns(fileno(output->file)); // update current term width
+        kv->term_width = term_get_columns(kv->term); // update current term width
         if (color)
-            term_set_fg(output->file, TERM_COLOR_BLACK);
+            term_set_fg(kv->term, TERM_COLOR_BLACK);
         if (ring_bell)
-            term_ring_bell(output->file);
+            term_ring_bell(kv->term);
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
             sep[kv->term_width - 1] = '\0';
         fprintf(output->file, "%s\n", sep);
         if (color)
-            term_set_fg(output->file, TERM_COLOR_RESET);
+            term_set_fg(kv->term, TERM_COLOR_RESET);
     }
     // nested data object: break before
     else {
         if (color)
-            term_set_fg(output->file, TERM_COLOR_RESET);
+            term_set_fg(kv->term, TERM_COLOR_RESET);
         fprintf(output->file, "\n");
         kv->column = 0;
     }
@@ -591,10 +592,10 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
         kv->column += fprintf(output->file, "%-10s: ", key);
         // print value
         if (color)
-            term_set_fg(output->file, kv_color_for_key(data->key));
+            term_set_fg(kv->term, kv_color_for_key(data->key));
         print_value(output, data->type, data->value, data->format);
         if (color)
-            term_set_fg(output->file, TERM_COLOR_RESET);
+            term_set_fg(kv->term, TERM_COLOR_RESET);
 
         // force break after some known keys
         if (kv->column > 0 && kv_break_after_key(data->key)) {
@@ -648,8 +649,13 @@ static void print_kv_string(data_output_t *output, const char *data, char *forma
 
 static void data_output_kv_free(data_output_t *output)
 {
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
     if (!output)
         return;
+
+    if (kv->color)
+        term_free(kv->term);
 
     free(output);
 }
@@ -669,9 +675,8 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.output_free  = data_output_kv_free;
     kv->output.file         = file;
 
-    kv->color = term_has_color(file);
-    if (kv->color)
-        term_init(file);
+    kv->term = term_init(file);
+    kv->color = term_has_color(kv->term);
 
     kv->ring_bell = kv->color; // && requested...
 
