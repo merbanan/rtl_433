@@ -1,29 +1,7 @@
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
-#include <errno.h>
-#include <signal.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <time.h>
-#include <stdint.h>
-
-#include "rtl_433_devices.h"
-#include "decoder.h"
-
-#ifdef _WIN32
-#include <io.h>
-#include <fcntl.h>
-#ifdef _MSC_VER
-#include "getopt/getopt.h"
-#define F_OK 0
-#endif
-#endif
-#ifndef _MSC_VER
-#include <unistd.h>
-#include <getopt.h>
-#endif
 
 #define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
@@ -48,6 +26,7 @@
 #define MAX_IN_FILES 100
 
 struct sdr_dev;
+struct r_device devices;
 
 typedef enum {
     CONVERT_NATIVE,
@@ -95,7 +74,7 @@ typedef struct r_cfg {
     int report_time_hires;
     int report_time_utc;
     int no_default_devices;
-    r_device *devices;
+    struct r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
     void *output_handler[MAX_DATA_OUTPUTS];

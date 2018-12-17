@@ -13,9 +13,8 @@
 #ifndef INCLUDE_PULSE_DEMOD_H_
 #define INCLUDE_PULSE_DEMOD_H_
 
-#include <stdint.h>
 #include "pulse_detect.h"
-#include "rtl_433.h"
+#include "rtl_433_devices.h"
 
 
 /// Demodulate a Pulse Code Modulation signal

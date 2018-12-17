@@ -20,15 +20,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
-#include <stddef.h>
+#include <string.h>
 #include <math.h>
+#include <errno.h>
+#include <signal.h>
 
 #include "rtl_433.h"
+#include "rtl_433_devices.h"
 #include "sdr.h"
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
+#include "decoder.h"
 #include "data.h"
 #include "util.h"
 #include "optparse.h"
@@ -38,6 +45,19 @@
 #include "confparse.h"
 #include "compat_paths.h"
 #include "compat_time.h"
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifdef _MSC_VER
+#include "getopt/getopt.h"
+#define F_OK 0
+#endif
+#endif
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <getopt.h>
+#endif
 
 #ifdef GIT_VERSION
 #define STR_VALUE(arg) #arg
