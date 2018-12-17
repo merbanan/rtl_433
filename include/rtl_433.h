@@ -62,7 +62,7 @@ typedef enum {
     REPORT_TIME_OFF,
 } time_mode_t;
 
-struct app_cfg {
+typedef struct r_cfg {
     char *dev_query;
     char *gain_str;
     int ppm_error;
@@ -102,6 +102,6 @@ struct app_cfg {
     void *csv_output_handler[MAX_DATA_OUTPUTS];
     int last_output_handler;
     struct dm_state *demod;
-};
+} r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

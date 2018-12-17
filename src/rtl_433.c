@@ -51,7 +51,7 @@ r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
 
-static struct app_cfg cfg = {
+static r_cfg_t cfg = {
     .out_block_size = DEFAULT_BUF_LENGTH,
     .samp_rate = DEFAULT_SAMPLE_RATE,
     .conversion_mode = CONVERT_NATIVE,
@@ -366,7 +366,7 @@ static char *time_pos_str(unsigned samples_ago, char *buf)
 /** Pass the data structure to all output handlers. Frees data afterwards. */
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {
-    // struct app_cfg *cfg = r_dev->output_ctx;
+    // r_cfg_t *cfg = r_dev->output_ctx;
 
     if (cfg.conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
@@ -989,7 +989,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
     return 0;
 }
 
-static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg);
+static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
 #define OPTSTRING "hVvqDc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
 
@@ -1029,7 +1029,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"stop_after_successful_events", 'E'},
         {NULL, 0}};
 
-static void parse_conf_text(struct app_cfg *cfg, char *conf)
+static void parse_conf_text(r_cfg_t *cfg, char *conf)
 {
     int opt;
     char *arg;
@@ -1043,7 +1043,7 @@ static void parse_conf_text(struct app_cfg *cfg, char *conf)
     }
 }
 
-static void parse_conf_file(struct app_cfg *cfg, char const *path)
+static void parse_conf_file(r_cfg_t *cfg, char const *path)
 {
     if (!path || !*path || !strcmp(path, "null") || !strcmp(path, "0"))
         return;
@@ -1053,7 +1053,7 @@ static void parse_conf_file(struct app_cfg *cfg, char const *path)
     //free(conf); // TODO: check no args are dangling, then use free
 }
 
-static void parse_conf_try_default_files(struct app_cfg *cfg)
+static void parse_conf_try_default_files(r_cfg_t *cfg)
 {
     char **paths = compat_get_default_conf_paths();
     for (int a = 0; paths[a]; a++) {
@@ -1066,7 +1066,7 @@ static void parse_conf_try_default_files(struct app_cfg *cfg)
     }
 }
 
-static void parse_conf_args(struct app_cfg *cfg, int argc, char *argv[])
+static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 {
     int opt;
 
@@ -1078,7 +1078,7 @@ static void parse_conf_args(struct app_cfg *cfg, int argc, char *argv[])
     }
 }
 
-static void parse_conf_option(struct app_cfg *cfg, int opt, char *arg)
+static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 {
     unsigned i;
     int n;
@@ -1350,7 +1350,7 @@ static char const *well_known_default[] = {"time", "msg", "codes", NULL};
 static char const *well_known_with_tag[] = {"time", "msg", "codes", "tag", NULL};
 static char const *well_known_with_bits[] = {"time", "msg", "codes", "bits", NULL};
 static char const *well_known_with_bits_tag[] = {"time", "msg", "codes", "bits", "tag", NULL};
-static char const **well_known_output_fields(struct app_cfg *cfg)
+static char const **well_known_output_fields(r_cfg_t *cfg)
 {
     if (cfg->output_tag && cfg->verbose_bits)
         return well_known_with_bits_tag;
