@@ -250,30 +250,31 @@ static void help_write(void)
     exit(0);
 }
 
+static void update_protocol(r_cfg_t *cfg, r_device *r_dev)
+{
+    float samples_per_us = cfg->samp_rate / 1.0e6;
+
+    r_dev->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
+    r_dev->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
+    r_dev->s_short_width = r_dev->short_width * samples_per_us;
+    r_dev->s_long_width  = r_dev->long_width * samples_per_us;
+    r_dev->s_reset_limit = r_dev->reset_limit * samples_per_us;
+    r_dev->s_gap_limit   = r_dev->gap_limit * samples_per_us;
+    r_dev->s_sync_width  = r_dev->sync_width * samples_per_us;
+    r_dev->s_tolerance   = r_dev->tolerance * samples_per_us;
+
+    r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
+    r_dev->verbose_bits = cfg->verbose_bits;
+}
+
 static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
     r_device *p = calloc(1, sizeof (r_device));
+    *p = *r_dev; // copy
 
-    float samples_per_us = cfg->samp_rate / 1.0e6;
-    p->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
-    p->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
-    p->s_short_width = r_dev->short_width * samples_per_us;
-    p->s_long_width  = r_dev->long_width * samples_per_us;
-    p->s_reset_limit = r_dev->reset_limit * samples_per_us;
-    p->s_gap_limit   = r_dev->gap_limit * samples_per_us;
-    p->s_sync_width  = r_dev->sync_width * samples_per_us;
-    p->s_tolerance   = r_dev->tolerance * samples_per_us;
+    update_protocol(cfg, p);
 
-    p->protocol_num  = r_dev->protocol_num;
-    p->modulation    = r_dev->modulation;
-    p->decode_fn     = r_dev->decode_fn;
-    p->decode_ctx    = r_dev->decode_ctx;
-    p->name          = r_dev->name;
-    p->fields        = r_dev->fields;
-
-    p->verbose       = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
-    p->verbose_bits  = cfg->verbose_bits;
-    p->output_fn     = data_acquired_handler;
-    p->output_ctx    = cfg;
+    p->output_fn  = data_acquired_handler;
+    p->output_ctx = cfg;
 
     cfg->demod->r_devs[cfg->demod->r_dev_num] = p;
     cfg->demod->r_dev_num++;
@@ -286,6 +287,15 @@ static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
         fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
         fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
         exit(-1);
+    }
+}
+
+static void update_protocols(r_cfg_t *cfg)
+{
+    float samples_per_us = cfg->samp_rate / 1.0e6;
+
+    for (unsigned i = 0; i < cfg->demod->r_dev_num; ++i) {
+        update_protocol(cfg, cfg->demod->r_devs[i]);
     }
 }
 
@@ -1646,10 +1656,18 @@ int main(int argc, char **argv) {
         time(&cfg.stop_time);
         cfg.stop_time += cfg.duration;
     }
+
+    uint32_t samp_rate = cfg.samp_rate;
     while (!cfg.do_exit) {
         /* Set the cfg.frequency */
         cfg.center_frequency = cfg.frequency[cfg.frequency_index];
         r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, 1); // always verbose
+
+        if (samp_rate != cfg.samp_rate) {
+            r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, 1); // always verbose
+            update_protocols(&cfg);
+            samp_rate = cfg.samp_rate;
+        }
 
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
