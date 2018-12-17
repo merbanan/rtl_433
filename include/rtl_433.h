@@ -26,7 +26,7 @@
 #define MAX_IN_FILES 100
 
 struct sdr_dev;
-struct r_device devices;
+struct r_device;
 
 typedef enum {
     CONVERT_NATIVE,
