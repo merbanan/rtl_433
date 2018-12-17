@@ -29,7 +29,7 @@
 static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
-    int row, i;
+    int row;
     int id, battery, rain, transmit, channel;
     int16_t temp_raw;
     float temp_c, rainrate;

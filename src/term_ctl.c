@@ -10,8 +10,8 @@
  */
 
 #include <stdio.h>
-#include <unistd.h>
 #ifndef _WIN32
+#include <unistd.h>
 #include <sys/ioctl.h>
 #endif
 

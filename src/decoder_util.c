@@ -111,7 +111,6 @@ void decoder_output_message(r_device *decoder, char const *msg)
 
 static char *bitrow_print_bits(bitrow_t const bitrow, unsigned bit_len)
 {
-    data_t *data;
     char *row_bits, *p;
 
     p = row_bits = malloc(bit_len + bit_len / 4 + 1); // "1..\0" (1 space per nibble)

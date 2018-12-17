@@ -12,6 +12,13 @@
 #ifndef INCLUDE_ABUF_H_
 #define INCLUDE_ABUF_H_
 
+#if defined _MSC_VER // Microsoft Visual Studio
+ // MSC has something like C99 restrict as __restrict
+#ifndef restrict
+#define restrict  __restrict
+#endif
+#endif
+
 #include <stddef.h>
 
 typedef struct abuf {
