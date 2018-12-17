@@ -212,6 +212,7 @@ void term_ring_bell(void *ctx)
 {
 #ifdef _WIN32
     Beep(800, 20);
+    (void) ctx;
 #else
     FILE *fp = (FILE *)ctx;
     fprintf(fp, "\a");
