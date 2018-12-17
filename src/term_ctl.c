@@ -105,8 +105,10 @@ static void _term_set_color(console_t *console, BOOL fore, term_color_t color)
     /* Hack: as WinCon does not have color-themes (as Linux have) and no 'TERM_COLOR_BRIGHT_x'
      * codes are used, always use a high-intensity foreground color. This look best in
      * CMD with the default black background color.
+     *
+     * Note: do not do this for "BLACK" as that would turn it into "GREY".
      */
-    if (fore && color != TERM_COLOR_RESET)
+    if (fore && color != TERM_COLOR_RESET && color != TERM_COLOR_BLACK)
         win_color |= FOREGROUND_INTENSITY;
 
     fflush(console->file);
