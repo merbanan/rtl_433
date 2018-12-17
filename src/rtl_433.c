@@ -51,12 +51,6 @@ r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
 
-static r_cfg_t cfg = {
-    .out_block_size = DEFAULT_BUF_LENGTH,
-    .samp_rate = DEFAULT_SAMPLE_RATE,
-    .conversion_mode = CONVERT_NATIVE,
-};
-
 struct dm_state {
     int32_t level_limit;
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
@@ -255,32 +249,6 @@ static void help_write(void)
             "\tforced overrides: am:s16:path/filename.ext\n");
     exit(0);
 }
-
-#ifdef _WIN32
-BOOL WINAPI
-sighandler(int signum) {
-    if (CTRL_C_EVENT == signum) {
-        fprintf(stderr, "Signal caught, exiting!\n");
-        cfg.do_exit = 1;
-        sdr_stop(cfg.dev);
-        return TRUE;
-    }
-    return FALSE;
-}
-#else
-static void sighandler(int signum) {
-    if (signum == SIGPIPE) {
-        signal(SIGPIPE,SIG_IGN);
-    } else if (signum == SIGALRM) {
-        fprintf(stderr, "Async read stalled, exiting!\n");
-    } else {
-        fprintf(stderr, "Signal caught, exiting!\n");
-    }
-    cfg.do_exit = 1;
-    sdr_stop(cfg.dev);
-}
-#endif
-
 
 static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
     r_device *p = calloc(1, sizeof (r_device));
@@ -1362,6 +1330,41 @@ static char const **well_known_output_fields(r_cfg_t *cfg)
     else
         return well_known_default;
 }
+
+static r_cfg_t cfg = {
+        .out_block_size  = DEFAULT_BUF_LENGTH,
+        .samp_rate       = DEFAULT_SAMPLE_RATE,
+        .conversion_mode = CONVERT_NATIVE,
+};
+
+#ifdef _WIN32
+BOOL WINAPI
+sighandler(int signum)
+{
+    if (CTRL_C_EVENT == signum) {
+        fprintf(stderr, "Signal caught, exiting!\n");
+        cfg.do_exit = 1;
+        sdr_stop(cfg.dev);
+        return TRUE;
+    }
+    return FALSE;
+}
+#else
+static void sighandler(int signum)
+{
+    if (signum == SIGPIPE) {
+        signal(SIGPIPE, SIG_IGN);
+    }
+    else if (signum == SIGALRM) {
+        fprintf(stderr, "Async read stalled, exiting!\n");
+    }
+    else {
+        fprintf(stderr, "Signal caught, exiting!\n");
+    }
+    cfg.do_exit = 1;
+    sdr_stop(cfg.dev);
+}
+#endif
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
