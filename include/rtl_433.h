@@ -1,6 +1,7 @@
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
+#include "list.h"
 #include <time.h>
 
 #define DEFAULT_SAMPLE_RATE     250000
@@ -21,7 +22,6 @@
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
 #define MAX_DATA_OUTPUTS 32
-#define MAX_IN_FILES 100
 
 struct sdr_dev;
 struct r_device;
@@ -45,8 +45,7 @@ typedef struct r_cfg {
     int ppm_error;
     uint32_t out_block_size;
     char const *test_data;
-    unsigned in_files;
-    char const *in_file[MAX_IN_FILES];
+    list_t in_files;
     char const *in_filename;
     int do_exit;
     int do_exit_async;

@@ -45,7 +45,6 @@
 #include "confparse.h"
 #include "compat_paths.h"
 #include "compat_time.h"
-#include "list.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -967,13 +966,9 @@ static void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     }
 }
 
-static void add_infile(r_cfg_t *cfg, char const *in_file)
+static void add_infile(r_cfg_t *cfg, char *in_file)
 {
-    if (cfg->in_files >= MAX_IN_FILES) {
-        fprintf(stderr, "Max input files reached, ignoring \"%s\"!\n", in_file);
-        return;
-    }
-    cfg->in_file[cfg->in_files++] = in_file;
+    list_push(&cfg->in_files, in_file);
 }
 
 static int hasopt(int test, int argc, char *argv[], char const *optstring)
@@ -1410,6 +1405,8 @@ int main(int argc, char **argv) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
+    list_ensure_size(&cfg.in_files, 100);
+
     demod = calloc(1, sizeof(struct dm_state));
     list_ensure_size(&demod->r_devs, 100);
     list_ensure_size(&demod->dumper, 32);
@@ -1461,7 +1458,7 @@ int main(int argc, char **argv) {
     }
 
     if (cfg.report_time == REPORT_TIME_DEFAULT) {
-        if (cfg.in_files)
+        if (cfg.in_files.len)
             cfg.report_time = REPORT_TIME_SAMPLES;
         else
             cfg.report_time = REPORT_TIME_DATE;
@@ -1543,7 +1540,7 @@ int main(int argc, char **argv) {
         exit(!r);
     }
 
-    if (!cfg.in_files) {
+    if (!cfg.in_files.len) {
         r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, cfg.verbosity);
         if (r < 0) {
             exit(1);
@@ -1573,7 +1570,7 @@ int main(int argc, char **argv) {
             r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, 1); // always verbose
     }
 
-    if (cfg.in_files) {
+    if (cfg.in_files.len) {
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
         if (!test_mode_buf || !test_mode_float_buf)
@@ -1587,8 +1584,8 @@ int main(int argc, char **argv) {
             cfg.stop_time += cfg.duration;
         }
 
-        for (i = 0; i < cfg.in_files; ++i) {
-            cfg.in_filename = cfg.in_file[i];
+        for (void **iter = cfg.in_files.elems; iter && *iter; ++iter) {
+            cfg.in_filename = *iter;
 
             parse_file_info(cfg.in_filename, &demod->load_info);
             if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
@@ -1658,6 +1655,7 @@ int main(int argc, char **argv) {
 
         free(test_mode_buf);
         free(test_mode_float_buf);
+        free(cfg.in_files.elems);
         exit(0);
     }
 
