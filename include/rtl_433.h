@@ -21,7 +21,6 @@
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
-#define MAX_DATA_OUTPUTS 32
 
 struct sdr_dev;
 struct r_device;
@@ -74,9 +73,8 @@ typedef struct r_cfg {
     struct r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
-    void *output_handler[MAX_DATA_OUTPUTS];
-    void *csv_output_handler[MAX_DATA_OUTPUTS];
-    int last_output_handler;
+    list_t output_handler;
+    list_t csv_output_handler;
     struct dm_state *demod;
 } r_cfg_t;
 

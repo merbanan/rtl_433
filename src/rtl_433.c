@@ -521,8 +521,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    for (int i = 0; i < cfg->last_output_handler; ++i) {
-        data_output_print(cfg->output_handler[i], data);
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_print(cfg->output_handler.elems[i], data);
     }
     data_free(data);
 }
@@ -534,8 +534,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    for (int i = 0; i < cfg->last_output_handler; ++i) {
-        data_output_poll(cfg->output_handler[i]);
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_poll(cfg->output_handler.elems[i]);
     }
 
     if (cfg->do_exit || cfg->do_exit_async)
@@ -902,13 +902,14 @@ static FILE *fopen_output(char *param)
 
 static void add_json_output(r_cfg_t *cfg, char *param)
 {
-    cfg->output_handler[cfg->last_output_handler++] = data_output_json_create(fopen_output(param));
+    list_push(&cfg->output_handler, data_output_json_create(fopen_output(param)));
 }
 
 static void add_csv_output(r_cfg_t *cfg, char *param)
 {
-    int i = cfg->last_output_handler++;
-    cfg->csv_output_handler[i] = cfg->output_handler[i] = data_output_csv_create(fopen_output(param));
+    struct data_output *output = data_output_csv_create(fopen_output(param));
+    list_push(&cfg->output_handler, output);
+    list_push(&cfg->csv_output_handler, output);
 }
 
 static void init_csv_output(struct data_output *output, char const **well_known, list_t *r_devs)
@@ -921,7 +922,7 @@ static void init_csv_output(struct data_output *output, char const **well_known,
 
 static void add_kv_output(r_cfg_t *cfg, char *param)
 {
-    cfg->output_handler[cfg->last_output_handler++] = data_output_kv_create(fopen_output(param));
+    list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
 }
 
 static void add_syslog_output(r_cfg_t *cfg, char *param)
@@ -931,12 +932,12 @@ static void add_syslog_output(r_cfg_t *cfg, char *param)
     hostport_param(param, &host, &port);
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
-    cfg->output_handler[cfg->last_output_handler++] = data_output_syslog_create(host, port);
+    list_push(&cfg->output_handler, data_output_syslog_create(host, port));
 }
 
 static void add_null_output(r_cfg_t *cfg, char *param)
 {
-    cfg->output_handler[cfg->last_output_handler++] = NULL;
+    list_push(&cfg->output_handler, NULL);
 }
 
 static void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
@@ -1406,6 +1407,8 @@ int main(int argc, char **argv) {
     setbuf(stderr, NULL);
 
     list_ensure_size(&cfg.in_files, 100);
+    list_ensure_size(&cfg.output_handler, 16);
+    list_ensure_size(&cfg.csv_output_handler, 16);
 
     demod = calloc(1, sizeof(struct dm_state));
     list_ensure_size(&demod->r_devs, 100);
@@ -1474,7 +1477,7 @@ int main(int argc, char **argv) {
 #endif
     }
 
-    if (cfg.last_output_handler < 1) {
+    if (!cfg.output_handler.len) {
         add_kv_output(&cfg, NULL);
     }
 
@@ -1511,11 +1514,8 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "\n");
 
-    for (int i = 0; i < cfg.last_output_handler; ++i) {
-        if (cfg.csv_output_handler[i]) {
-            init_csv_output(cfg.csv_output_handler[i],
-                    well_known_output_fields(&cfg), &cfg.demod->r_devs);
-        }
+    for (void **iter = cfg.csv_output_handler.elems; iter && *iter; ++iter) {
+        init_csv_output(*iter, well_known_output_fields(&cfg), &cfg.demod->r_devs);
     }
 
     if (cfg.out_block_size < MINIMAL_BUF_LENGTH ||
@@ -1730,8 +1730,11 @@ int main(int argc, char **argv) {
 
     sdr_close(cfg.dev);
 out:
-    for (int i = 0; i < cfg.last_output_handler; ++i) {
-        data_output_free(cfg.output_handler[i]);
+    for (size_t i = 0; i < cfg.output_handler.len; ++i) { // list might contain NULLs
+        data_output_free(cfg.output_handler.elems[i]);
     }
+    free(cfg.output_handler.elems);
+    free(cfg.csv_output_handler.elems);
+
     return r >= 0 ? r : -r;
 }
