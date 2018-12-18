@@ -22,7 +22,6 @@
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
 #define MAX_DATA_OUTPUTS 32
-#define MAX_DUMP_OUTPUTS 8
 #define MAX_IN_FILES 100
 
 struct sdr_dev;
