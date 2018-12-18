@@ -12,6 +12,7 @@ add_executable(rtl_433
 	data.c
 	decoder_util.c
 	fileformat.c
+	list.c
 	mongoose.c
 	optparse.c
 	pulse_demod.c
