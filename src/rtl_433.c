@@ -1639,7 +1639,10 @@ int main(int argc, char **argv) {
             } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
-            memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH);  // 128 is 0 in unsigned data
+            if (demod->sample_size == 1) // CU8
+                memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
+            else // CF32, CS16
+                memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg.samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, &cfg);
 
@@ -1650,6 +1653,8 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Test mode file issued %d packets\n", n_blocks);
             }
 
+            if (in_file != stdin)
+                fclose(in_file = stdin);
         }
 
         free(test_mode_buf);
