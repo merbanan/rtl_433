@@ -95,8 +95,7 @@ struct dm_state {
     int hop_time;
 
     /* Protocol states */
-    uint16_t r_dev_num;
-    r_device *r_devs[MAX_PROTOCOLS];
+    list_t r_devs;
 
     pulse_data_t    pulse_data;
     pulse_data_t    fsk_pulse_data;
@@ -297,17 +296,10 @@ static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
 
-    cfg->demod->r_devs[cfg->demod->r_dev_num] = p;
-    cfg->demod->r_dev_num++;
+    list_push(&cfg->demod->r_devs, p);
 
     if (cfg->verbosity) {
         fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
-    }
-
-    if (cfg->demod->r_dev_num > MAX_PROTOCOLS) {
-        fprintf(stderr, "\n\nMax number of protocols reached %d\n", MAX_PROTOCOLS);
-        fprintf(stderr, "Increase MAX_PROTOCOLS and recompile\n");
-        exit(-1);
     }
 }
 
@@ -315,8 +307,9 @@ static void update_protocols(r_cfg_t *cfg)
 {
     float samples_per_us = cfg->samp_rate / 1.0e6;
 
-    for (unsigned i = 0; i < cfg->demod->r_dev_num; ++i) {
-        update_protocol(cfg, cfg->demod->r_devs[i]);
+    for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        update_protocol(cfg, r_dev);
     }
 }
 
@@ -602,7 +595,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     }
 
     int d_events = 0; // Sensor events successfully detected
-    if (demod->r_dev_num || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
+    if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
         int package_type = 1;  // Just to get us started
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -624,41 +617,42 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
             }
             if (package_type == 1) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
-                for (i = 0; i < demod->r_dev_num; i++) {
-                    switch (demod->r_devs[i]->modulation) {
+                for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+                    r_device *r_dev = *iter;
+                    switch (r_dev->modulation) {
                         case OOK_PULSE_PCM_RZ:
-                            p_events += pulse_demod_pcm(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_pcm(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_PPM:
-                            p_events += pulse_demod_ppm(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_ppm(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_PWM:
-                            p_events += pulse_demod_pwm(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_pwm(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_PIWM_RAW:
-                            p_events += pulse_demod_piwm_raw(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_piwm_raw(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_PIWM_DC:
-                            p_events += pulse_demod_piwm_dc(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_piwm_dc(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_DMC:
-                            p_events += pulse_demod_dmc(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_dmc(&demod->pulse_data, r_dev);
                             break;
                         case OOK_PULSE_PWM_OSV1:
-                            p_events += pulse_demod_osv1(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_osv1(&demod->pulse_data, r_dev);
                             break;
                         // FSK decoders
                         case FSK_PULSE_PCM:
                         case FSK_PULSE_PWM:
                             break;
                         case FSK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, r_dev);
                             break;
                         default:
-                            fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+                            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
                     }
                 } // for demodulators
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -673,8 +667,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 }
             } else if (package_type == 2) {
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
-                for (i = 0; i < demod->r_dev_num; i++) {
-                    switch (demod->r_devs[i]->modulation) {
+                for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+                    r_device *r_dev = *iter;
+                    switch (r_dev->modulation) {
                         // OOK decoders
                         case OOK_PULSE_PCM_RZ:
                         case OOK_PULSE_PPM:
@@ -686,16 +681,16 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                         case OOK_PULSE_PWM_OSV1:
                             break;
                         case FSK_PULSE_PCM:
-                            p_events += pulse_demod_pcm(&demod->fsk_pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_pcm(&demod->fsk_pulse_data, r_dev);
                             break;
                         case FSK_PULSE_PWM:
-                            p_events += pulse_demod_pwm(&demod->fsk_pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_pwm(&demod->fsk_pulse_data, r_dev);
                             break;
                         case FSK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, demod->r_devs[i]);
+                            p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, r_dev);
                             break;
                         default:
-                            fprintf(stderr, "Unknown modulation %d in protocol!\n", demod->r_devs[i]->modulation);
+                            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
                     }
                 } // for demodulators
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
@@ -851,23 +846,21 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(char const **well_known, r_device **devices, int num_devices, int *num_fields)
+static char const **determine_csv_fields(char const **well_known, list_t *r_devs, int *num_fields)
 {
-    int i;
-    r_device *device;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
 
-    for (i = 0; i < num_devices; i++) {
-        device = devices[i];
-        if (!device->disabled) {
-            if (device->fields)
-                for (int c = 0; device->fields[c]; ++c)
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (!r_dev->disabled) {
+            if (r_dev->fields)
+                for (int c = 0; r_dev->fields[c]; ++c)
                     ++num_output_fields;
             else
                 fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-                        i, device->name);
+                        r_dev->protocol_num, r_dev->name);
         }
     }
 
@@ -881,11 +874,11 @@ static char const **determine_csv_fields(char const **well_known, r_device **dev
     for (char const **p = well_known; *p; ++p)
         output_fields[cur_output_fields++] = *p;
 
-    for (i = 0; i < num_devices; i++) {
-        device = devices[i];
-        if (!device->disabled && device->fields) {
-            for (int c = 0; device->fields[c]; ++c) {
-                output_fields[cur_output_fields++] = device->fields[c];
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (!r_dev->disabled && r_dev->fields) {
+            for (int c = 0; r_dev->fields[c]; ++c) {
+                output_fields[cur_output_fields++] = r_dev->fields[c];
             }
         }
     }
@@ -919,10 +912,10 @@ static void add_csv_output(r_cfg_t *cfg, char *param)
     cfg->csv_output_handler[i] = cfg->output_handler[i] = data_output_csv_create(fopen_output(param));
 }
 
-static void init_csv_output(struct data_output *output, char const **well_known, r_device **devices, int num_devices)
+static void init_csv_output(struct data_output *output, char const **well_known, list_t *r_devs)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(well_known, devices, num_devices, &num_output_fields);
+    const char **output_fields = determine_csv_fields(well_known, r_devs, &num_output_fields);
     data_output_csv_init(output, output_fields, num_output_fields);
     free(output_fields);
 }
@@ -1418,6 +1411,7 @@ int main(int argc, char **argv) {
     setbuf(stderr, NULL);
 
     demod = calloc(1, sizeof(struct dm_state));
+    list_ensure_size(&demod->r_devs, 100);
     list_ensure_size(&demod->dumper, 32);
     cfg.demod = demod;
 
@@ -1497,23 +1491,24 @@ int main(int argc, char **argv) {
         }
     }
 
-    fprintf(stderr, "Registered %d out of %d device decoding protocols",
-            demod->r_dev_num, cfg.num_r_devices);
+    fprintf(stderr, "Registered %zu out of %d device decoding protocols",
+            demod->r_devs.len, cfg.num_r_devices);
 
     if (!cfg.verbosity) {
         // print registered decoder ranges
         fprintf(stderr, " [");
-        for (int i = 0; i < demod->r_dev_num; ++i) {
-            unsigned num = demod->r_devs[i]->protocol_num;
+        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+            unsigned num = r_dev->protocol_num;
             if (num == 0)
                 continue;
-            while (i + 1 < demod->r_dev_num
-                    && demod->r_devs[i]->protocol_num + 1 == demod->r_devs[i + 1]->protocol_num)
-                i++;
-            if (num == demod->r_devs[i]->protocol_num)
+            while (iter[1]
+                    && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
+                r_dev = *++iter;
+            if (num == r_dev->protocol_num)
                 fprintf(stderr, " %d", num);
             else
-                fprintf(stderr, " %d-%d", num, demod->r_devs[i]->protocol_num);
+                fprintf(stderr, " %d-%d", num, r_dev->protocol_num);
         }
         fprintf(stderr, " ]");
     }
@@ -1522,7 +1517,7 @@ int main(int argc, char **argv) {
     for (int i = 0; i < cfg.last_output_handler; ++i) {
         if (cfg.csv_output_handler[i]) {
             init_csv_output(cfg.csv_output_handler[i],
-                    well_known_output_fields(&cfg), cfg.demod->r_devs, cfg.demod->r_dev_num);
+                    well_known_output_fields(&cfg), &cfg.demod->r_devs);
         }
     }
 
@@ -1539,10 +1534,11 @@ int main(int argc, char **argv) {
 
     if (cfg.test_data) {
         r = 0;
-        for (i = 0; i < demod->r_dev_num; i++) {
+        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
             if (cfg.verbosity)
-                fprintf(stderr, "Verifying test data with device %s.\n", demod->r_devs[i]->name);
-            r += pulse_demod_string(cfg.test_data, demod->r_devs[i]);
+                fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+            r += pulse_demod_string(cfg.test_data, r_dev);
         }
         exit(!r);
     }
@@ -1726,8 +1722,7 @@ int main(int argc, char **argv) {
 
     r = sdr_deactivate(cfg.dev);
 
-    for (i = 0; i < demod->r_dev_num; i++)
-        free(demod->r_devs[i]);
+    list_free(&demod->r_devs);
 
     if (demod->am_analyze)
         am_analyze_free(demod->am_analyze);

@@ -104,8 +104,8 @@ replace_block(r'rtl_433_SOURCES      = ',
 
 # include/rtl_433.h
 # update '#define MAX_PROTOCOLS ?' with actual count
-replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',
-             r'\g<1>%d' % r_devices_used, 'include/rtl_433.h')
+#replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',
+#             r'\g<1>%d' % r_devices_used, 'include/rtl_433.h')
 
 # include/rtl_433_devices.h
 # check that everything between '#define DEVICES' and \n\n with DECL(device_name) matches r_devices
