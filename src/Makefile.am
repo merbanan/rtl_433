@@ -13,6 +13,7 @@ rtl_433_SOURCES      = abuf.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
+                       http_server.c \
                        jsmn.c \
                        list.c \
                        mongoose.c \

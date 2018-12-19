@@ -105,6 +105,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fatal.h" />
     <ClInclude Include="..\include\fileformat.h" />
+    <ClInclude Include="..\include\http_server.h" />
     <ClInclude Include="..\include\jsmn.h" />
     <ClInclude Include="..\include\list.h" />
     <ClInclude Include="..\include\mongoose.h" />
@@ -140,6 +141,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
+    <ClCompile Include="..\src\http_server.c" />
     <ClCompile Include="..\src\jsmn.c" />
     <ClCompile Include="..\src\list.c" />
     <ClCompile Include="..\src\mongoose.c" />

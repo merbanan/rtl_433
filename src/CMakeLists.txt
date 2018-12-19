@@ -15,6 +15,7 @@ add_library(r_433 STATIC
     data.c
     decoder_util.c
     fileformat.c
+    http_server.c
     jsmn.c
     list.c
     mongoose.c
@@ -197,7 +198,7 @@ if(MSVC)
     target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
-add_library(data data.c abuf.c term_ctl.c mongoose.c)
+add_library(data data.c abuf.c term_ctl.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433
