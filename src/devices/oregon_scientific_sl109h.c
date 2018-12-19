@@ -27,7 +27,7 @@ static uint8_t calculate_humidity(bitbuffer_t *bitbuffer, unsigned row_index)
 
 static int calculate_centigrade_decidegrees(bitbuffer_t *bitbuffer, unsigned row_index)
 {
-    int decidegrees = 0;
+    unsigned int decidegrees = 0;
 
     uint8_t out[2] = {0};
     bitbuffer_extract_bytes(bitbuffer, row_index, TEMPERATURE_START_POSITION, out, TEMPERATURE_BIT_COUNT);

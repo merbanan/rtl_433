@@ -94,16 +94,6 @@ void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned b
     decoder_output_bitrow(decoder, bitrow, bit_len, msg);
 }
 
-void decoder_output_bitrow_debugf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
-{
-    char msg[60]; // fixed length limit
-    va_list ap;
-    va_start(ap, format);
-    vsnprintf(msg, 60, format, ap);
-    va_end(ap);
-    decoder_output_bitrow_debug(decoder, bitrow, bit_len, msg);
-}
-
 // output functions
 
 void decoder_output_data(r_device *decoder, data_t *data)
@@ -119,10 +109,34 @@ void decoder_output_message(r_device *decoder, char const *msg)
     decoder_output_data(decoder, data);
 }
 
+static char *bitrow_print_bits(bitrow_t const bitrow, unsigned bit_len)
+{
+    char *row_bits, *p;
+
+    p = row_bits = malloc(bit_len + bit_len / 4 + 1); // "1..\0" (1 space per nibble)
+
+    // print bit-wide with a space every nibble
+    for (unsigned i = 0; i < bit_len; ++i) {
+        if (i > 0 && i % 4 == 0) {
+            *p++ = ' ';
+        }
+        if (bitrow[i / 8] & (0x80 >> (i % 8))) {
+            *p++ = '1';
+        }
+        else {
+            *p++ = '0';
+        }
+    }
+    *p++ = '\0';
+
+    return row_bits;
+}
+
 void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg)
 {
     data_t *data;
     char *row_codes[BITBUF_ROWS];
+    char *row_bits[BITBUF_ROWS] = {0};
     char row_bytes[BITBUF_COLS * 2 + 1];
     unsigned i;
 
@@ -138,6 +152,10 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+
+        if (decoder->verbose_bits) {
+            row_bits[i] = bitrow_print_bits(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
+        }
     }
 
     data = data_make(
@@ -145,10 +163,18 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
+
+    if (decoder->verbose_bits) {
+        data_append(data,
+                "bits", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_bits),
+                NULL);
+    }
+
     decoder_output_data(decoder, data);
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         free(row_codes[i]);
+        free(row_bits[i]);
     }
 }
 
@@ -196,8 +222,8 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
 {
     data_t *data;
     char *row_code;
+    char *row_bits = NULL;
     char row_bytes[BITBUF_COLS * 2 + 1];
-    unsigned i;
 
     row_bytes[0] = '\0';
     // print byte-wide
@@ -215,35 +241,16 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
             "msg", "", DATA_STRING, msg,
             "codes", "", DATA_STRING, row_code,
             NULL);
+
+    if (decoder->verbose_bits) {
+        row_bits = bitrow_print_bits(bitrow, bit_len);
+        data_append(data,
+                "bits", "", DATA_STRING, row_bits,
+                NULL);
+    }
+
     decoder_output_data(decoder, data);
 
     free(row_code);
-}
-
-void decoder_output_bitrow_debug(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg)
-{
-    data_t *data;
-    char *row_bits, *p;
-    unsigned i;
-
-    p = row_bits = malloc(bit_len + 1); // "1..\0"
-
-    // print bit-wide
-    for (unsigned i = 0; i < bit_len; ++i) {
-        if (bitrow[i / 8] & (0x80 >> (i % 8))) {
-            *p++ = '1';
-        }
-        else {
-            *p++ = '0';
-        }
-    }
-    *p++ = '\0';
-
-    data = data_make(
-            "msg", "", DATA_STRING, msg,
-            "codes", "", DATA_STRING, row_bits,
-            NULL);
-    decoder_output_data(decoder, data);
-
     free(row_bits);
 }

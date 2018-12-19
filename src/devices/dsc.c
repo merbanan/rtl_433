@@ -57,7 +57,7 @@
  *
  * The ESN in practice is 24 bits, The type + remaining 5 nybbles,
  *
- * The CRC is 8 bit, "little endian", Polynomial 0xf5, Initial value 0x3d
+ * The CRC is 8 bit, reflected (lsb first), Polynomial 0xf5, Initial value 0x3d
  *
  * CRC algorithm found with CRC reveng (reveng.sourceforge.net)
  *
@@ -69,8 +69,6 @@
 #include "decoder.h"
 
 #define DSC_CT_MSGLEN        5
-#define DSC_CT_CRC_POLY        0xf5
-#define DSC_CT_CRC_INIT        0x3d
 
 static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -142,7 +140,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 
-        if (crc8le(bytes, DSC_CT_MSGLEN, DSC_CT_CRC_POLY, DSC_CT_CRC_INIT) != 0) {
+        if (crc8le(bytes, DSC_CT_MSGLEN, 0xf5, 0x3d) != 0) {
             if (decoder->verbose)
                 fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
                         esn, status, crc);

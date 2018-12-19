@@ -68,6 +68,9 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         return 0; // reduce false positives
     }
 
+    if (bitbuffer->bits_per_row[row] != 41)
+        return 0;
+
     // Note: the device ID changes randomly each time you replace the battery, so we can't early out based on it.
     // This is probably to allow multiple devices to be used at once.  When you replace the receiver batteries
     // or long-press its power button, it pairs with the first device ID it hears.
@@ -92,10 +95,10 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     temp2_c = (temp2_raw - 200) * 0.1;
 
     data = data_make(
-            "model",         "",            DATA_STRING, "Thermopro TP12 Thermometer",
-            "id",            "Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
-            "temperature_1_C", "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C", "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
+            "model",            "",            DATA_STRING, "Thermopro TP12 Thermometer",
+            "id",               "Id",          DATA_INT,    device,
+            "temperature_1_C",  "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
+            "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             NULL);
     decoder_output_data(decoder, data);
     return 1;

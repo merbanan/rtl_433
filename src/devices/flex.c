@@ -58,6 +58,7 @@ struct flex_params {
     unsigned min_repeats;
     unsigned max_repeats;
     unsigned invert;
+    unsigned reflect;
     unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
@@ -68,7 +69,7 @@ struct flex_params {
 
 static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int i;
+    int i, j;
     int match_count = 0;
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
@@ -100,6 +101,15 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (params->invert) {
         bitbuffer_invert(bitbuffer);
+    }
+
+    if (params->reflect) {
+        // TODO: refactor to utils
+        for (i = 0; i < bitbuffer->num_rows; ++i) {
+            for (j = 0; j < (bitbuffer->bits_per_row[i] + 7) / 8; ++j) {
+                bitbuffer->bb[i][j] = reverse8(bitbuffer->bb[i][j]);
+            }
+        }
     }
 
     // discard unless match
@@ -261,6 +271,7 @@ static void help()
             "\trepeats=<n> : only match if some row is repeated <n> times\n"
             "\t\tuse opt>=n to match at least <n> and opt<=n to match at most <n>\n"
             "\tinvert : invert all bits\n"
+            "\treflect : reflect each byte (MSB first to MSB last)\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
@@ -382,6 +393,40 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
+static char *strip_ws(char *str)
+{
+    if (!str)
+        return str;
+    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
+        ++str;
+    char *e = str; // end pointer (last non ws)
+    char *p = str; // scanning pointer
+    while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+            ++p;
+        if (*p)
+            e = p++;
+    }
+    *++e = '\0';
+    return str;
+}
+
+static char *remove_ws(char *str)
+{
+    if (!str)
+        return str;
+    char *d = str; // dst pointer
+    char *s = str; // src pointer
+    while (*s) {
+        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n')
+            ++s;
+        if (*s)
+            *d++ = *s++;
+    }
+    *d++ = '\0';
+    return str;
+}
+
 r_device *flex_create_device(char *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
@@ -401,7 +446,7 @@ r_device *flex_create_device(char *spec)
         *args++ = '\0';
     }
 
-    c = strtok(spec, ":");
+    c = strip_ws(strtok(spec, ":"));
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
@@ -486,7 +531,11 @@ r_device *flex_create_device(char *spec)
 
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
-        if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
+        key = remove_ws(key);
+        val = strip_ws(val);
+        if (!key || !*key)
+            continue;
+        else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
             dev->short_width = atoi(val);
@@ -524,6 +573,8 @@ r_device *flex_create_device(char *spec)
 
         else if (!strcasecmp(key, "invert"))
             params->invert = val ? atoi(val) : 1;
+        else if (!strcasecmp(key, "reflect"))
+            params->reflect = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
@@ -604,8 +655,8 @@ r_device *flex_create_device(char *spec)
         fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
         fprintf(stderr, "\tmodulation=%u, short_width=%.0f, long_width=%.0f, reset_limit=%.0f\n",
                 dev->modulation, dev->short_width, dev->long_width, dev->reset_limit);
-        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
-                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
+        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, reflect=%u, match_len=%u, preamble_len=%u\n",
+                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->reflect, params->match_len, params->preamble_len);
     }
     */
 

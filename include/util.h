@@ -15,10 +15,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-
+#include "compat_time.h"
 
 #if defined _MSC_VER // Microsoft Visual Studio
+    // MSC has something like C99 restrict as __restrict
+    #ifndef restrict
 	#define restrict  __restrict
+    #endif
 #endif
 
 // Helper macros
@@ -29,10 +32,17 @@
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
-/// Reverse the bits in an 8 bit byte
+/// Reverse (reflect) the bits in an 8 bit byte.
+///
 /// @param x: input byte
 /// @return bit reversed byte
 uint8_t reverse8(uint8_t x);
+
+/// Reflect (reverse LSB to MSB) each byte of a number of bytes.
+///
+/// @param message bytes of message data
+/// @param num_bytes number of bytes to reflect
+void reflect_bytes(uint8_t message[], unsigned num_bytes);
 
 /// CRC-4
 ///
@@ -65,8 +75,7 @@ uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
 /// "Little-endian" Cyclic Redundancy Check CRC-8 LE
-///
-/// Based on code generated from PyCyc, (pycrc.org)
+/// Input and output are reflected, i.e. least significant bit is shifted in first.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -74,6 +83,17 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// @param init: starting crc value
 /// @return CRC value
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
+
+/// CRC-16 LSB
+/// Input and output are reflected, i.e. least significant bit is shifted in first.
+/// Note that poly and init already need to be reflected.
+///
+/// @param message[]: array of bytes to check
+/// @param nBytes: number of bytes in message
+/// @param polynomial: CRC polynomial
+/// @param init: starting crc value
+/// @return CRC value
+uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
 /// CRC-16
 ///
@@ -84,16 +104,8 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 /// @return CRC value
 uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
-/// CRC-16 CCITT
+/// Digest-8 by "LFSR-based Toeplitz hash".
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
-/// @return CRC value
-uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
-
-/// Digest-8 by "LFSR-based Toeplitz hash"
 /// @param message bytes of message data
 /// @param bytes number of bytes to digest
 /// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
@@ -101,7 +113,8 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
 /// @return digest value
 uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key);
 
-/// Digest-16 by "LFSR-based Toeplitz hash"
+/// Digest-16 by "LFSR-based Toeplitz hash".
+///
 /// @param data up to 32 bits data, LSB aligned
 /// @param bits number of bits to digest
 /// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
@@ -109,14 +122,40 @@ uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8
 /// @return digest value
 uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key);
 
-/// compute bit parity of a single byte
+/// Compute bit parity of a single byte (8 bits).
 ///
-/// @param inByte: single byte to check
+/// @param byte: single byte to check
 /// @return 1 odd parity, 0 even parity
-int byteParity(uint8_t inByte);
+int parity8(uint8_t byte);
 
-// buffer to hold localized timestamp YYYY-MM-DD HH:MM:SS
+/// Compute bit parity of a number of bytes.
+///
+/// @param message bytes of message data
+/// @param num_bytes number of bytes to sum
+/// @return 1 odd parity, 0 even parity
+int parity_bytes(uint8_t const message[], unsigned num_bytes);
+
+/// Compute XOR (byte-wide parity) of a number of bytes.
+///
+/// @param message bytes of message data
+/// @param num_bytes number of bytes to sum
+/// @return summation value, per bit-position 1 odd parity, 0 even parity
+uint8_t xor_bytes(uint8_t const message[], unsigned num_bytes);
+
+/// Compute Addition of a number of bytes.
+///
+/// @param message bytes of message data
+/// @param num_bytes number of bytes to sum
+/// @return summation value
+int add_bytes(uint8_t const message[], unsigned num_bytes);
+
+// buffer to hold localized timestamp "YYYY-MM-DD HH:MM:SS.000000"
 #define LOCAL_TIME_BUFLEN	32
+
+/// Get current time with usec precision.
+///
+/// @param tv: output for current time
+void get_time_now(struct timeval *tv);
 
 /// Printable timestamp in local time
 ///
@@ -124,6 +163,13 @@ int byteParity(uint8_t inByte);
 /// @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
 /// @return buf pointer (for short hand use as operator)
 char* local_time_str(time_t time_secs, char *buf);
+
+/// Printable timestamp in local time with microseconds.
+///
+/// @param tv: NULL for now, or seconds and microseconds since the epoch
+/// @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
+/// @return buf pointer (for short hand use as operator)
+char *usecs_time_str(struct timeval *tv, char *buf);
 
 /// Printable sample position
 ///

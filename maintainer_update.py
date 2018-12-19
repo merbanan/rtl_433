@@ -80,8 +80,8 @@ r_devices = [grep_lines(r'(?m)^r_device\s*(.*?)\s*=.*',
 r_devices = [item for sublist in r_devices for item in sublist]
 print("r_devices =", r_devices)
 
-# count r_devices, correct for 'template' being used three times
-r_devices_used = len(r_devices) + 2
+# count r_devices, correct for 'template' being used six times
+r_devices_used = len(r_devices) + 5
 
 # README.md
 # Replace everything between ``` with help output.
@@ -104,8 +104,8 @@ replace_block(r'rtl_433_SOURCES      = ',
 
 # include/rtl_433.h
 # update '#define MAX_PROTOCOLS ?' with actual count
-replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',
-             r'\g<1>%d' % r_devices_used, 'include/rtl_433.h')
+#replace_text(r'(?m)(#define\s+MAX_PROTOCOLS\s+)\d+',
+#             r'\g<1>%d' % r_devices_used, 'include/rtl_433.h')
 
 # include/rtl_433_devices.h
 # check that everything between '#define DEVICES' and \n\n with DECL(device_name) matches r_devices

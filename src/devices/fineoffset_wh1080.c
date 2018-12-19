@@ -243,13 +243,20 @@ static int get_day(const uint8_t* br) {
 //-------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------
 
+/* Model defines, for some values different calculations need to be performed
+ *
+ * The transmission differences are 8 preamble bits (EPB) and 7 preamble bits (SPB)
+ */
+#define EPB 0
+#define SPB 1
+
 static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     const uint8_t *br;
     int msg_type; // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 12; // 12=Weather/Time sensor  8=UV/Light sensor
-    int i;
     uint8_t bbuf[11]; // max 8 / 11 bytes needed
+    int model; // 7 or 8 preamble bits
 
 
     if (bitbuffer->num_rows != 1) {
@@ -257,9 +264,11 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if(bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
+        model = EPB;
         sens_msg = 12;
         br = bitbuffer->bb[0];
     } else if(bitbuffer->bits_per_row[0] == 87) { // FineOffset WH1080/3080 Weather data msg (different version (newest?))
+        model = SPB;
         sens_msg = 12;
         /* 7 bits of preamble, bit shift the whole buffer and fix the bytestream */
         bitbuffer_extract_bytes(bitbuffer, 0, 7,
@@ -267,10 +276,12 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         br = bbuf;
         bbuf[0] = 0xFF;
     } else if(bitbuffer->bits_per_row[0] == 64) {  // FineOffset WH3080 UV/Light data msg
+        model = EPB;
         sens_msg = 8;
         br = bitbuffer->bb[0];
 
     } else if(bitbuffer->bits_per_row[0] == 63) { // FineOffset WH3080 UV/Light data msg (different version (newest?))
+        model = SPB;
         sens_msg = 8;
         /* 7 bits of preamble, bit shift the whole buffer and fix the bytestream */
         bitbuffer_extract_bytes(bitbuffer, 0, 7,
@@ -350,11 +361,14 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //---------------------------------------------------------------------------------------
     //-------- GETTING LIGHT DATA -----------------------------------------------------------
-
+    float wm;
     const float light = get_rawlight(br);
     const float lux = (get_rawlight(br)/10);
-    const float wm = (get_rawlight(br)/6830);
     const float fc = ((get_rawlight(br)/10.76)/10.0);
+    if (model == SPB)
+        wm = (get_rawlight(br)*0.00079);
+    else //EPB
+        wm = (get_rawlight(br)/6830);
 
     //---------------------------------------------------------------------------------------
     //-------- GETTING TIME DATA ------------------------------------------------------------
@@ -383,6 +397,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "gust",        "Wind gust",    DATA_FORMAT,    "%.02f",    DATA_DOUBLE,     gust,
                 "rain",        "Total rainfall",DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,     rain,
                 "battery",    "Battery",    DATA_STRING,                    battery,
+                "mic",             "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -394,12 +409,13 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "msg_type",    "Msg type",    DATA_INT,                msg_type,
                 "id",        "Station ID",    DATA_FORMAT,    "%d",    DATA_INT,    device_id,
                 "signal",    "Signal Type",    DATA_STRING,                signal,
-                "hours",    "Hours\t",    DATA_FORMAT,    "%02d",    DATA_INT,    hours,
+                "hours",    "Hours",    DATA_FORMAT,    "%02d",    DATA_INT,    hours,
                 "minutes",    "Minutes",    DATA_FORMAT,    "%02d",    DATA_INT,    minutes,
                 "seconds",    "Seconds",    DATA_FORMAT,    "%02d",    DATA_INT,    seconds,
-                "year",        "Year\t",    DATA_FORMAT,    "%02d",    DATA_INT,    year,
-                "month",    "Month\t",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
-                "day",        "Day\t",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
+                "year",        "Year",    DATA_FORMAT,    "%02d",    DATA_INT,    year,
+                "month",    "Month",    DATA_FORMAT,    "%02d",    DATA_INT,    month,
+                "day",        "Day",    DATA_FORMAT,    "%02d",    DATA_INT,    day,
+                "mic",       "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -412,9 +428,10 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "uv_sensor_id",    "UV Sensor ID",    DATA_FORMAT,    "%d",    DATA_INT,    uv_sensor_id,
                 "uv_status",    "Sensor Status",DATA_STRING,                uv_status,
                 "uv_index",    "UV Index",    DATA_INT,                uv_index,
-                "lux",        "Lux\t",    DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    lux,
-                "wm",        "Watts/m\t",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
+                "lux",        "Lux",    DATA_FORMAT,    "%.1f",    DATA_DOUBLE,    lux,
+                "wm",        "Watts/m",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    wm,
                 "fc",        "Foot-candles",    DATA_FORMAT,    "%.2f",    DATA_DOUBLE,    fc,
+                "mic",             "Integrity",    DATA_STRING,    "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;

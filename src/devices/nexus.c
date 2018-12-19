@@ -78,8 +78,8 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         data = data_make(
                 "model",         "",            DATA_STRING, "Nexus Temperature",
                 "id",            "House Code",  DATA_INT, id,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                 NULL);
         decoder_output_data(decoder, data);
@@ -89,8 +89,8 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         data = data_make(
                 "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
                 "id",            "House Code",  DATA_INT, id,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
@@ -104,8 +104,8 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "model",
     "id",
-    "battery",
     "channel",
+    "battery",
     "temperature_C",
     "humidity",
     NULL

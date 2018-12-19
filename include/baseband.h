@@ -23,14 +23,14 @@
 /// @param *iq_buf: input samples (I/Q samples in interleaved uint8)
 /// @param *y_buf: output 
 /// @param len: number of samples to process
-void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 // for evaluation
-void envelope_detect_nolut(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_true_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_true_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len);
+void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 #define FILTER_ORDER 1
 
@@ -53,7 +53,7 @@ typedef struct {
 /// @param *y_buf: output from filter
 /// @param len: number of samples to process
 /// @param FilterState: State to store between chunk processing
-void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t len, FilterState *state);
+void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, FilterState *state);
 
 /// FM demodulator
 ///
@@ -62,16 +62,13 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
 /// @param *y_buf: output from FM demodulator
 /// @param len: number of samples to process
 /// @param DemodFM_State: State to store between chunk processing
-void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
 
 // for evaluation
-void baseband_demod_FM_cs16(const int16_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state);
 
 /// Initialize tables and constants
 /// Should be called once at startup
 void baseband_init(void);
-
-/// Dump binary data (for debug purposes)
-void baseband_dumpfile(const uint8_t *buf, uint32_t len);
 
 #endif /* INCLUDE_BASEBAND_H_ */

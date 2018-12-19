@@ -35,7 +35,7 @@ static void calc_squares()
  *  The output will be written in the input buffer
  *  @returns   pointer to the input buffer
  */
-void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -47,7 +47,7 @@ void envelope_detect(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
  *  Subtracts the bias (-128) and calculates the norm (scaled by 16384).
  *  Using a LUT is slower for O1 and above.
  */
-void envelope_detect_nolut(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -59,7 +59,7 @@ void envelope_detect_nolut(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
 
 // note that magnitude emphasizes quiet signals / deemphasizes loud signals
 // 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max)
-void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -73,7 +73,7 @@ void magnitude_est_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
 }
 
 // True Magnitude for CU8 (sqrt can SIMD but float is slow)
-void magnitude_true_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -84,7 +84,7 @@ void magnitude_true_cu8(const uint8_t *iq_buf, uint16_t *y_buf, uint32_t len)
 }
 
 // 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max)
-void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -98,7 +98,7 @@ void magnitude_est_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
 }
 
 // True Magnitude for CS16 (sqrt can SIMD but float is slow)
-void magnitude_true_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
+void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     for (i = 0; i < len; i++) {
@@ -123,14 +123,14 @@ void magnitude_true_cs16(const int16_t *iq_buf, uint16_t *y_buf, uint32_t len)
  *  but the b coeffs are small so it wont happen
  *  Q15.14>>14 = Q15.0 \o/
  */
-void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t len, FilterState *state)
+void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, FilterState *state)
 {
     ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
-    //static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
-    //static int b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
+    //static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
+    //static int const b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
     ///  [b,a] = butter(1, 0.05) -> 3x tau (95%) ~20 samples
-    static int a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.85408)};
-    static int b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
+    static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.85408)};
+    static int const b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
 
     unsigned long i;
     // Fixme: Will Segmentation Fault if len < FILTERORDER
@@ -158,10 +158,10 @@ void baseband_low_pass_filter(const uint16_t *x_buf, int16_t *y_buf, uint32_t le
 /// @return angle in radians (Pi equals INT16_MAX)
 int16_t atan2_int16(int16_t y, int16_t x)
 {
-    static const int32_t I_PI_4 = INT16_MAX/4;      // M_PI/4
-    static const int32_t I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
+    static int32_t const I_PI_4 = INT16_MAX/4;      // M_PI/4
+    static int32_t const I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
 
-    const int32_t abs_y = abs(y);
+    int32_t const abs_y = abs(y);
     int32_t angle;
 
     if (x >= 0) {    // Quadrant I and IV
@@ -177,14 +177,14 @@ int16_t atan2_int16(int16_t y, int16_t x)
     return angle;
 }
 
-void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-    //static int alp[2] = {FIX(1.00000), FIX(0.72654)};
-    //static int blp[2] = {FIX(0.13673), FIX(0.13673)};
+    //static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
+    //static int const blp[2] = {FIX(0.13673), FIX(0.13673)};
     ///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
-    static int alp[2] = {FIX(1.00000), FIX(0.50953)};
-    static int blp[2] = {FIX(0.24524), FIX(0.24524)};
+    static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
+    static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
 
     int16_t ar, ai;  // New IQ sample: x[n]
     int16_t br, bi;  // Old IQ sample: x[n-1]
@@ -228,10 +228,10 @@ void baseband_demod_FM(const uint8_t *x_buf, int16_t *y_buf, unsigned long num_s
 // for evaluation
 int32_t atan2_int32(int32_t y, int32_t x)
 {
-    static const int64_t I_PI_4 = INT32_MAX / 4;          // M_PI/4
-    static const int64_t I_3_PI_4 = 3ll * INT32_MAX / 4;  // 3*M_PI/4
+    static int64_t const I_PI_4 = INT32_MAX / 4;          // M_PI/4
+    static int64_t const I_3_PI_4 = 3ll * INT32_MAX / 4;  // 3*M_PI/4
 
-    const int64_t abs_y = abs(y);
+    int64_t const abs_y = abs(y);
     int64_t angle;
 
     if (x >= 0) { // Quadrant I and IV
@@ -248,14 +248,14 @@ int32_t atan2_int32(int32_t y, int32_t x)
 }
 
 // for evaluation
-void baseband_demod_FM_cs16(const int16_t *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-    //static int alp[2] = {FIX32(1.00000), FIX32(0.72654)};
-    //static int blp[2] = {FIX32(0.13673), FIX32(0.13673)};
+    //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
+    //static int const blp[2] = {FIX32(0.13673), FIX32(0.13673)};
     ///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
-    static int64_t alp[2] = {FIX32(1.00000), FIX32(0.50953)};
-    static int64_t blp[2] = {FIX32(0.24524), FIX32(0.24524)};
+    static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.50953)};
+    static int64_t const blp[2] = {FIX32(0.24524), FIX32(0.24524)};
 
     int32_t ar, ai;  // New IQ sample: x[n]
     int32_t br, bi;  // Old IQ sample: x[n-1]
@@ -295,21 +295,4 @@ void baseband_demod_FM_cs16(const int16_t *x_buf, int16_t *y_buf, unsigned long 
 void baseband_init(void)
 {
     calc_squares();
-}
-
-
-static FILE *dumpfile = NULL;
-
-void baseband_dumpfile(const uint8_t *buf, uint32_t len)
-{
-    if (dumpfile == NULL) {
-        dumpfile = fopen("dumpfile.dat", "wb");
-    }
-
-    if (dumpfile == NULL) {
-        fprintf(stderr, "Error: could not open dumpfile.dat\n");
-    } else {
-        fwrite(buf, 1, len, dumpfile);
-        fflush(dumpfile);  // Flush as file is not closed cleanly...
-    }
 }

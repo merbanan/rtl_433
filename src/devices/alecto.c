@@ -49,6 +49,37 @@
 
 #include "decoder.h"
 
+/* return 1 if the checksum passes and 0 if it fails */
+int alecto_checksum(r_device *decoder, bitrow_t *bb) {
+    int i, csum = 0, csum2 = 0;
+    for (i = 0; i < 4; i++) {
+        uint8_t tmp = reverse8(bb[1][i]);
+        csum += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
+        tmp = reverse8(bb[5][i]);
+        csum2 += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
+    }
+
+    csum = ((bb[1][1] & 0x7f) == 0x6c) ? (csum + 0x7) : (0xf - csum);
+    csum2 = ((bb[5][1] & 0x7f) == 0x6c) ? (csum2 + 0x7) : (0xf - csum2);
+
+    csum = reverse8((csum & 0xf) << 4);
+    csum2 = reverse8((csum2 & 0xf) << 4);
+    /* Quit if checksum does not work out */
+    if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
+        //fprintf(stdout, "\nAlectoV1 CRC error");
+        if(decoder->verbose) {
+            fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
+        }
+        return 0;
+    } //Invalid checksum
+    if (decoder->verbose){
+        fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
+    }
+
+    return 1;
+}
+
+
 static uint8_t bcd_decode8(uint8_t x) {
     return ((x & 0xF0) >> 4) * 10 + (x & 0x0F);
 }
@@ -56,8 +87,8 @@ static uint8_t bcd_decode8(uint8_t x) {
 static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     int16_t temp;
-    uint8_t humidity, csum = 0, csum2 = 0;
-    int i;
+    uint8_t humidity;
+    int ret;
 
     data_t *data;
     unsigned bits = bitbuffer->bits_per_row[1];
@@ -69,27 +100,9 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bb[1][0] == bb[5][0] && bb[2][0] == bb[6][0] && (bb[1][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0
         && (bb[5][0] != 0 && bb[5][1] != 0)) {
 
-        for (i = 0; i < 4; i++) {
-            uint8_t tmp = reverse8(bb[1][i]);
-            csum += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
-
-            tmp = reverse8(bb[5][i]);
-            csum2 += (tmp & 0xf) + ((tmp & 0xf0) >> 4);
-        }
-
-        csum = ((bb[1][1] & 0x7f) == 0x6c) ? (csum + 0x7) : (0xf - csum);
-        csum2 = ((bb[5][1] & 0x7f) == 0x6c) ? (csum2 + 0x7) : (0xf - csum2);
-
-        csum = reverse8((csum & 0xf) << 4);
-        csum2 = reverse8((csum2 & 0xf) << 4);
-        /* Quit if checksum does not work out */
-        if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
-            //fprintf(stdout, "\nAlectoV1 CRC error");
-            if(decoder->verbose) {
-                fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
-            }
+        ret = alecto_checksum(decoder, bb);
+        if (!ret)
             return 0;
-        } //Invalid checksum
 
 
         uint8_t wind = 0;
@@ -162,12 +175,11 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
                             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
                             "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
-                            "mic",           "",            DATA_STRING,    "CHECKSUM",
+                            "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                             NULL);
             decoder_output_data(decoder, data);
         }
         if (decoder->verbose){
-            fprintf(stdout, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
             fprintf(stdout, "Received Data = ");
             bitrow_print(bb[1], 40);
             if (wind) {

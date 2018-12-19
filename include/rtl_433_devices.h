@@ -6,7 +6,7 @@
     DECL(rubicson) \
     DECL(prologue) \
     DECL(waveman) \
-    DECL(steffen) \
+    DECL(template) \
     DECL(elv_em1000) \
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
@@ -28,8 +28,8 @@
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
-    DECL(ec3k) \
-    DECL(valeo) \
+    DECL(template) \
+    DECL(template) \
     DECL(chuango) \
     DECL(generic_remote) \
     DECL(tfa_twin_plus_303049) \
@@ -115,6 +115,12 @@
     DECL(ttx201) \
     DECL(ambientweather_tx8300) \
     DECL(ambientweather_wh31e) \
+    DECL(maverick_et73) \
+    DECL(honeywell_wdb) \
+    DECL(honeywell_wdb_fsk) \
+    DECL(esa) \
+    DECL(bt_rain) \
+    DECL(bresser_5in1) \
     DECL(digitech_xc0324)
 
 struct bitbuffer;
@@ -138,6 +144,7 @@ typedef struct r_device {
 
     /* public for each decoder */
     int verbose;
+    int verbose_bits;
     void (*output_fn)(struct r_device *decoder, struct data *data);
 
     /* private for flex decoder and output callback */

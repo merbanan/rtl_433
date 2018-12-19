@@ -9,10 +9,21 @@
  * (at your option) any later version.
  */
 
-#ifndef OPTPARSE_H_
-#define OPTPARSE_H_
+#ifndef INCLUDE_OPTPARSE_H_
+#define INCLUDE_OPTPARSE_H_
 
 #include <stdint.h>
+
+/// Convert string to bool with fallback default.
+/// Parses "true", "yes", "on", "enable" (not case-sensitive) to 1, atoi() otherwise.
+int atobv(char *arg, int def);
+
+/// Get the next colon separated arg, NULL otherwise.
+char *arg_param(char *arg);
+
+/// Parse parm string to host and port.
+/// E.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
+void hostport_param(char *param, char **host, char **port);
 
 /// Convert a string to an unsigned integer, uses strtod() and accepts
 /// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
@@ -52,4 +63,4 @@ char *asepc(char **stringp, char delim);
 /// @return the original value of *stringp (the keyword found)
 char *getkwargs(char **s, char **key, char **val);
 
-#endif /* OPTPARSE_H_ */
+#endif /* INCLUDE_OPTPARSE_H_ */

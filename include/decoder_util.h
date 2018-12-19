@@ -35,10 +35,6 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
 /// Output a message and the content of a bit row (byte buffer).
 void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg);
 
-/// Output a message and the content of a bit row (byte buffer) as bit string for debugging.
-/// For quick and easy debugging, not for regular usage.
-void decoder_output_bitrow_debug(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg);
-
 // print helpers
 
 /// Output a message with args.
@@ -52,10 +48,6 @@ void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbu
 
 /// Output a message with args and the content of a bit row (byte buffer).
 void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...);
-
-/// Output a message with args and the content of a bit row (byte buffer) as bit string for debugging.
-/// For quick and easy debugging, not for regular usage.
-void decoder_output_bitrow_debugf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...);
 
 /// Print the content of the bitbuffer.
 void bitbuffer_printf(const bitbuffer_t *bitbuffer, char const *restrict format, ...);
