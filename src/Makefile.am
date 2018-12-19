@@ -39,6 +39,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/chuango.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
+                       devices/digitech_xc0324.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
                        devices/efergy_e2_classic.c \
@@ -121,7 +122,6 @@ rtl_433_SOURCES      = abuf.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/x10_sec.c \
-                       devices/digitech_xc0324.c
+                       devices/x10_sec.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)

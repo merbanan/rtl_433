@@ -182,6 +182,7 @@ Supported device protocols:
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
+    [120]* Digitech XC-0324 temperature sensor
 
 * Disabled by default, use -R n or -G
 
