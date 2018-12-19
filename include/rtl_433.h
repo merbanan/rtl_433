@@ -74,7 +74,6 @@ typedef struct r_cfg {
     uint16_t num_r_devices;
     char *output_tag;
     list_t output_handler;
-    list_t csv_output_handler;
     struct dm_state *demod;
 } r_cfg_t;
 

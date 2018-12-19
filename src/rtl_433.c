@@ -845,8 +845,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 }
 
 // find the fields output for CSV
-static char const **determine_csv_fields(char const **well_known, list_t *r_devs, int *num_fields)
+static char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *num_fields)
 {
+    list_t *r_devs = &cfg->demod->r_devs;
     int cur_output_fields = 0;
     int num_output_fields = 0;
     const char **output_fields = NULL;
@@ -882,7 +883,8 @@ static char const **determine_csv_fields(char const **well_known, list_t *r_devs
         }
     }
 
-    *num_fields = num_output_fields;
+    if (num_fields)
+        *num_fields = num_output_fields;
     return output_fields;
 }
 
@@ -907,16 +909,18 @@ static void add_json_output(r_cfg_t *cfg, char *param)
 
 static void add_csv_output(r_cfg_t *cfg, char *param)
 {
-    struct data_output *output = data_output_csv_create(fopen_output(param));
-    list_push(&cfg->output_handler, output);
-    list_push(&cfg->csv_output_handler, output);
+    list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
 }
 
-static void init_csv_output(struct data_output *output, char const **well_known, list_t *r_devs)
+static void start_outputs(r_cfg_t *cfg, char const **well_known)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(well_known, r_devs, &num_output_fields);
-    data_output_csv_init(output, output_fields, num_output_fields);
+    const char **output_fields = determine_csv_fields(cfg, well_known, &num_output_fields);
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_start(cfg->output_handler.elems[i], output_fields, num_output_fields);
+    }
+
     free(output_fields);
 }
 
@@ -1408,7 +1412,6 @@ int main(int argc, char **argv) {
 
     list_ensure_size(&cfg.in_files, 100);
     list_ensure_size(&cfg.output_handler, 16);
-    list_ensure_size(&cfg.csv_output_handler, 16);
 
     demod = calloc(1, sizeof(struct dm_state));
     list_ensure_size(&demod->r_devs, 100);
@@ -1514,9 +1517,7 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "\n");
 
-    for (void **iter = cfg.csv_output_handler.elems; iter && *iter; ++iter) {
-        init_csv_output(*iter, well_known_output_fields(&cfg), &cfg.demod->r_devs);
-    }
+    start_outputs(&cfg, well_known_output_fields(&cfg));
 
     if (cfg.out_block_size < MINIMAL_BUF_LENGTH ||
             cfg.out_block_size > MAXIMAL_BUF_LENGTH) {
@@ -1734,7 +1735,6 @@ out:
         data_output_free(cfg.output_handler.elems[i]);
     }
     free(cfg.output_handler.elems);
-    free(cfg.csv_output_handler.elems);
 
     return r >= 0 ? r : -r;
 }
