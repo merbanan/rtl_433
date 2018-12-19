@@ -46,7 +46,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	bitbuffer_extract_bytes(bitbuffer, 0, pos, (uint8_t *)&msg, len);
 
-	crc_calculated = crc16_ccitt(msg, 26, 0x8005, 0x0000);
+	crc_calculated = crc16(msg, 26, 0x8005, 0x0000);
 	crc = (msg[26] << 8) | msg[27];
 	if (crc != crc_calculated) {
 		return 0; // bad crc

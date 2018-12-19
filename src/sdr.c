@@ -728,6 +728,7 @@ int sdr_close(sdr_dev_t *dev)
 #endif
 
     free(dev->buffer);
+    free(dev);
     return ret;
 }
 
@@ -974,6 +975,9 @@ int sdr_start(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_t buf_num, uin
 
 int sdr_stop(sdr_dev_t *dev)
 {
+    if (!dev)
+        return -1;
+
     if (dev->rtl_tcp) {
         dev->running = 0;
         return 0;

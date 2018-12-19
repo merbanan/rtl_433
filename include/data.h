@@ -33,16 +33,9 @@
     #include <malloc.h>
     #define RTL_433_NO_VLAs
 
-    /* gcc uses the syntax:
-     *   foo (char *restict ptr);
-     *
-     * But MSVC needs the syntax:
-     *   foo (char *ptr __declspec(restrict));
-     *
-     * Hence just make 'restrict' a NOOP.
-     */
+    // MSVC has something like C99 restrict as __restrict
     #ifndef restrict
-    #define restrict
+	#define restrict  __restrict
     #endif
 #endif
 
@@ -150,6 +143,17 @@ void data_free(data_t *data);
 
 struct data_output;
 
+typedef struct data_output {
+    void (*print_data)(struct data_output *output, data_t *data, char *format);
+    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
+    void (*print_string)(struct data_output *output, const char *data, char *format);
+    void (*print_double)(struct data_output *output, double data, char *format);
+    void (*print_int)(struct data_output *output, int data, char *format);
+    void (*output_poll)(struct data_output *output);
+    void (*output_free)(struct data_output *output);
+    FILE *file;
+} data_output_t;
+
 /** Construct data output for CSV printer
 
     @param file the output stream
@@ -173,6 +177,15 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 /** Prints a structured data object */
 void data_output_print(struct data_output *output, data_t *data);
 
+/** Allows to polls an event loop, if necessary */
+void data_output_poll(struct data_output *output);
+
 void data_output_free(struct data_output *output);
+
+/* data output helpers */
+
+void print_value(data_output_t *output, data_type_t type, void *value, char *format);
+
+void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
 
 #endif // INCLUDE_DATA_H_

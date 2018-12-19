@@ -11,19 +11,18 @@
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 #include "util.h"
-#include "rtl_433.h"
+#include "decoder.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void pulse_data_clear(pulse_data_t *data) {
-	*data = (const pulse_data_t) {
-		0,
-	};
+	*data = (pulse_data_t const) {0};
 }
 
 
-void pulse_data_print(const pulse_data_t *data) {
+void pulse_data_print(pulse_data_t const *data) {
 	fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);
 	for(unsigned n = 0; n < data->num_pulses; ++n) {
 		fprintf(stderr, "[%3u] Pulse: %4u, Gap: %4u, Period: %4u\n", n, data->pulse[n], data->gap[n], data->pulse[n] + data->gap[n]);
@@ -44,7 +43,7 @@ static void *bounded_memset(void *b, int c, int64_t size, int64_t offset, int64_
 	return b;
 }
 
-void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, const pulse_data_t *data, uint8_t bits)
+void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, pulse_data_t const *data, uint8_t bits)
 {
 	int64_t pos = data->offset - buf_offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
@@ -76,7 +75,7 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 	fprintf(file, "#0 0/ 0' 0\"\n");
 }
 
-void pulse_data_print_vcd(FILE *file, const pulse_data_t *data, int ch_id, uint32_t sample_rate)
+void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id, uint32_t sample_rate)
 {
 	float scale;
 	if (sample_rate <= 500000)
@@ -141,8 +140,8 @@ typedef struct {
 /// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @param *s: Internal state
 void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
-	const int fm_f1_delta = abs(fm_n - s->fm_f1_est);	// Get delta from F1 frequency estimate
-	const int fm_f2_delta = abs(fm_n - s->fm_f2_est);	// Get delta from F2 frequency estimate
+	int const fm_f1_delta = abs(fm_n - s->fm_f1_est);	// Get delta from F1 frequency estimate
+	int const fm_f2_delta = abs(fm_n - s->fm_f2_est);	// Get delta from F2 frequency estimate
 	s->fsk_pulse_length++;
 
 	switch(s->fsk_state) {
@@ -252,7 +251,7 @@ void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s) {
 
 
 /// Internal state data for pulse_pulse_package()
-typedef struct {
+struct pulse_detect {
 	enum {
 		PD_OOK_STATE_IDLE		= 0,
 		PD_OOK_STATE_PULSE		= 1,
@@ -270,26 +269,38 @@ typedef struct {
 
 	pulse_FSK_state_t	FSK_state;
 
-} pulse_state_t;
-static pulse_state_t pulse_state;
+};
 
+pulse_detect_t *pulse_detect_create()
+{
+	return calloc(1, sizeof(pulse_detect_t));
+}
+
+void pulse_detect_free(pulse_detect_t *pulse_detect)
+{
+	free(pulse_detect);
+}
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses) {
-	const int samples_per_ms = samp_rate / 1000;
-	pulse_state_t *s = &pulse_state;
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses)
+{
+	int const samples_per_ms = samp_rate / 1000;
+	pulse_detect_t *s = pulse_detect;
 	s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);	// Be sure to set initial minimum level
 
-	pulses->start_ago += len;
-	fsk_pulses->start_ago += len;
+	if (s->data_counter == 0) {
+		// age the pulse_data if this is a fresh buffer
+		pulses->start_ago += len;
+		fsk_pulses->start_ago += len;
+	}
 
 	// Process all new samples
 	while(s->data_counter < len) {
 		// Calculate OOK detection threshold and hysteresis
-		const int16_t am_n = envelope_data[s->data_counter];
+		int16_t const am_n = envelope_data[s->data_counter];
 		int16_t ook_threshold = s->ook_low_estimate + (s->ook_high_estimate - s->ook_low_estimate) / 2;
 		if (level_limit != 0) ook_threshold = level_limit;	// Manual override
-		const int16_t ook_hysteresis = ook_threshold / 8;	// ±12%
+		int16_t const ook_hysteresis = ook_threshold / 8;	// ±12%
 
 		// OOK State machine
 		switch (s->ook_state) {
@@ -310,7 +321,7 @@ int pulse_detect_package(const int16_t *envelope_data, const int16_t *fm_data, i
 					s->ook_state = PD_OOK_STATE_PULSE;
 				} else {	// We are still idle..
 					// Estimate low (noise) level
-					const int ook_low_delta = am_n - s->ook_low_estimate;
+					int const ook_low_delta = am_n - s->ook_low_estimate;
 					s->ook_low_estimate += ook_low_delta / OOK_EST_LOW_RATIO;
 					s->ook_low_estimate += ((ook_low_delta > 0) ? 1 : -1);	// Hack to compensate for lack of fixed-point scaling
 					// Calculate default OOK high level estimate
@@ -444,7 +455,7 @@ typedef struct {
 
 
 /// Generate a histogram (unsorted)
-void histogram_sum(histogram_t *hist, const int *data, unsigned len, float tolerance) {
+void histogram_sum(histogram_t *hist, int const *data, unsigned len, float tolerance) {
 	unsigned bin;	// Iterator will be used outside for!
 
 	for(unsigned n = 0; n < len; ++n) {
@@ -476,7 +487,7 @@ void histogram_sum(histogram_t *hist, const int *data, unsigned len, float toler
 
 /// Delete bin from histogram
 void histogram_delete_bin(histogram_t *hist, unsigned index) {
-	const hist_bin_t	zerobin = {0};
+	hist_bin_t const zerobin = {0};
 	if (hist->bins_count < 1) return;	// Avoid out of bounds
 	// Move all bins afterwards one forward
 	for(unsigned n = index; n < hist->bins_count-1; ++n) {
@@ -551,15 +562,15 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance) {
 
 
 /// Print a histogram
-void histogram_print(const histogram_t *hist, uint32_t samp_rate) {
+void histogram_print(histogram_t const *hist, uint32_t samp_rate) {
 	for(unsigned n = 0; n < hist->bins_count; ++n) {
 		fprintf(stderr, " [%2u] count: %4u,  width: %4.0f us [%.0f;%.0f]\t(%4i S)\n", n,
 				hist->bins[n].count,
 				hist->bins[n].mean * 1e6 / samp_rate,
 				hist->bins[n].min * 1e6 / samp_rate,
 				hist->bins[n].max * 1e6 / samp_rate,
-                hist->bins[n].mean);
-        }
+				hist->bins[n].mean);
+		}
 }
 
 

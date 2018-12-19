@@ -55,6 +55,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 					"temperature_C","Temperature",	DATA_FORMAT,	"%.01f C",				DATA_DOUBLE,	tempC,
 					"moisture",		"Moisture",		DATA_INT,		moisture,
 //					"uk1",			"uk1",			DATA_INT,		uk1,
+                    "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
 					NULL);
 				decoder_output_data(decoder, data);
 				ret++;

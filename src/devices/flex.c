@@ -393,6 +393,40 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
+static char *strip_ws(char *str)
+{
+    if (!str)
+        return str;
+    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
+        ++str;
+    char *e = str; // end pointer (last non ws)
+    char *p = str; // scanning pointer
+    while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+            ++p;
+        if (*p)
+            e = p++;
+    }
+    *++e = '\0';
+    return str;
+}
+
+static char *remove_ws(char *str)
+{
+    if (!str)
+        return str;
+    char *d = str; // dst pointer
+    char *s = str; // src pointer
+    while (*s) {
+        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n')
+            ++s;
+        if (*s)
+            *d++ = *s++;
+    }
+    *d++ = '\0';
+    return str;
+}
+
 r_device *flex_create_device(char *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
@@ -412,7 +446,7 @@ r_device *flex_create_device(char *spec)
         *args++ = '\0';
     }
 
-    c = strtok(spec, ":");
+    c = strip_ws(strtok(spec, ":"));
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
@@ -497,7 +531,11 @@ r_device *flex_create_device(char *spec)
 
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
-        if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
+        key = remove_ws(key);
+        val = strip_ws(val);
+        if (!key || !*key)
+            continue;
+        else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
             dev->short_width = atoi(val);

@@ -21,6 +21,12 @@ uint8_t reverse8(uint8_t x)
     return x;
 }
 
+void reflect_bytes(uint8_t message[], unsigned num_bytes)
+{
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        message[i] = reverse8(message[i]);
+    }
+}
 
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
@@ -41,7 +47,6 @@ uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     return remainder >> 4 & 0x0f; // discard the LSBs
 }
 
-
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 1; // LSB is unused
@@ -61,8 +66,8 @@ uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     return remainder >> 1 & 0x7f; // discard the LSB
 }
 
-
-uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init) {
+uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+{
     uint8_t remainder = init;
     unsigned byte, bit;
 
@@ -79,31 +84,26 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
     return remainder;
 }
 
-
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
-    uint8_t crc = init, i;
-    unsigned byte;
-    uint8_t bit;
+    uint8_t remainder = reverse8(init);
+    unsigned byte, bit;
+    polynomial = reverse8(polynomial);
 
     for (byte = 0; byte < nBytes; ++byte) {
-    for (i = 0x01; i & 0xff; i <<= 1) {
-        bit = (crc & 0x80) == 0x80;
-        if (message[byte] & i) {
-        bit = !bit;
-        }
-        crc <<= 1;
-        if (bit) {
-        crc ^= polynomial;
+        remainder ^= message[byte];
+        for (bit = 0; bit < 8; ++bit) {
+            if (remainder & 1) {
+                remainder = (remainder >> 1) ^ polynomial;
+            } else {
+                remainder = (remainder >> 1);
+            }
         }
     }
-    crc &= 0xff;
-    }
-
-    return reverse8(crc);
+    return remainder;
 }
 
-uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
 {
     uint16_t remainder = init;
     unsigned byte, bit;
@@ -122,7 +122,7 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
     return remainder;
 }
 
-uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
+uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init)
 {
     uint16_t remainder = init;
     unsigned byte, bit;
@@ -140,7 +140,6 @@ uint16_t crc16_ccitt(uint8_t const message[], unsigned nBytes, uint16_t polynomi
     }
     return remainder;
 }
-
 
 uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key)
 {
@@ -213,12 +212,46 @@ void lfsr_keys_rwd16(int rounds, uint16_t gen, uint16_t key)
 }
 */
 
-
-int byteParity(uint8_t inByte)
+// we could use popcount intrinsic, but don't actually need the performance
+int parity8(uint8_t byte)
 {
-    inByte ^= inByte >> 4;
-    inByte &= 0xf;
-    return (0x6996 >> inByte) & 1;
+    byte ^= byte >> 4;
+    byte &= 0xf;
+    return (0x6996 >> byte) & 1;
+}
+
+int parity_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result ^= parity8(message[i]);
+    }
+    return result;
+}
+
+uint8_t xor_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    uint8_t result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result ^= message[i];
+    }
+    return result;
+}
+
+int add_bytes(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result += message[i];
+    }
+    return result;
+}
+
+void get_time_now(struct timeval *tv)
+{
+    int ret = gettimeofday(tv, NULL);
+    if (ret)
+        perror("gettimeofday");
 }
 
 char *local_time_str(time_t time_secs, char *buf)
@@ -236,6 +269,24 @@ char *local_time_str(time_t time_secs, char *buf)
     tm_info = localtime(&etime); // note: win32 doesn't have localtime_r()
 
     strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
+}
+
+char *usecs_time_str(struct timeval *tv, char *buf)
+{
+    struct timeval now;
+    struct tm *tm_info;
+
+    if (!tv) {
+        tv = &now;
+        get_time_now(tv);
+    }
+
+    time_t t_secs = tv->tv_sec;
+    tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
+
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     return buf;
 }
 

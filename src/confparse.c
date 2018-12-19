@@ -116,7 +116,7 @@ int getconf(char **conf, struct conf_keywords const keywords[], char **arg)
             if (*p)
                 p++;
             // skip ws
-            while (*p == ' ' || *p != '\t')
+            while (*p == ' ' || *p == '\t')
                 p++;
             // check if proper end-quote
             if (!*p || *p == '\r' || *p == '\n' || *p == '#') {

@@ -77,10 +77,10 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     temp2_c = temp2_raw * 0.1;
 
     data = data_make(
-            "model",         "",            DATA_STRING, "Maverick ET73",
-            "rid",            "Random Id",          DATA_FORMAT, "\t %d",   DATA_INT,    device,
-            "temperature_1_C", "Temperature 1", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C", "Temperature 2", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
+            "model",            "",                 DATA_STRING, "Maverick ET73",
+            "rid",              "Random Id",        DATA_INT, device,
+            "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
+            "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             NULL);
     decoder_output_data(decoder, data);
     return 1;

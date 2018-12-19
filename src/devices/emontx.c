@@ -97,7 +97,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		}
 		if (pkt.p.len != 0x1a || pkt.p.postamble != 0xaa)
 			continue;
-		crc = crc16((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
+		crc = crc16lsb((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
 
 		// Ick. If we could just do le16_to_cpu(pkt.p.ct1) we wouldn't need this.
 		for (i=0; i<14; i++)

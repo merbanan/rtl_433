@@ -169,6 +169,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "gust",          "Wind gust",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, gust,
             "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
             "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
+            "mic",             "Integrity",    DATA_STRING,    "CRC",
             NULL);
     decoder_output_data(decoder, data);
     return 1;

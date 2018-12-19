@@ -34,8 +34,8 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         data = data_make(
                 "model",         "",            DATA_STRING, "Mebus/433",
                 "id",            "Address",     DATA_INT, address,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "unknown1",      "Unknown 1",   DATA_INT, unknown1,
                 "unknown2",      "Unknown 2",   DATA_INT, unknown2,
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
@@ -49,6 +49,18 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 0;
 }
 
+static char *output_fields[] = {
+    "model",
+    "id",
+    "channel",
+    "battery",
+    "unknown1",
+    "unknown2",
+    "temperature_C",
+    "humidity",
+    NULL
+};
+
 r_device mebus433 = {
     .name           = "Mebus 433",
     .modulation     = OOK_PULSE_PPM,
@@ -58,4 +70,5 @@ r_device mebus433 = {
     .reset_limit    = 6000,
     .decode_fn      = &mebus433_callback,
     .disabled       = 1, // add docs, tests, false positive checks and then reenable
+    .fields         = output_fields
 };

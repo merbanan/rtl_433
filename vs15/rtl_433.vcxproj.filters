@@ -17,6 +17,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\abuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\am_analyze.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -24,6 +27,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\bitbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\compat_paths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\compat_time.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\confparse.h">
@@ -39,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\fileformat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\mongoose.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\optparse.h">
@@ -62,6 +74,9 @@
     <ClInclude Include="..\include\sdr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\term_ctl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -73,6 +88,9 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\abuf.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\am_analyze.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -80,6 +98,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\bitbuffer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\compat_paths.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\compat_time.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\confparse.c">
@@ -92,6 +116,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fileformat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\mongoose.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\optparse.c">
@@ -110,6 +137,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\sdr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\term_ctl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\util.c">
@@ -145,6 +175,12 @@
     <ClCompile Include="..\src\devices\bresser_3ch.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\bresser_5in1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\bt_rain.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\calibeur.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -166,9 +202,6 @@
     <ClCompile Include="..\src\devices\dsc.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\ec3k.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\efergy_e2_classic.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -182,6 +215,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\emontx.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\esa.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\esperanza_ews.c">
@@ -227,9 +263,6 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\devices\honeywell_wdt.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ht680.c">
@@ -355,9 +388,6 @@
     <ClCompile Include="..\src\devices\steelmate.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\steffen.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -391,9 +421,6 @@
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\valeo.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\waveman.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -415,8 +442,8 @@
     <ClCompile Include="..\src\devices\x10_sec.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\confparse.c">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="..\src\devices\honeywell_wdb.c">
+      <Filter>Source Files\devices</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
