@@ -1,6 +1,7 @@
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
+#include <stdint.h>
 #include "list.h"
 #include <time.h>
 
