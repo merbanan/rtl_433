@@ -120,7 +120,8 @@
     DECL(honeywell_wdb_fsk) \
     DECL(esa) \
     DECL(bt_rain) \
-    DECL(bresser_5in1)
+    DECL(bresser_5in1) \
+    DECL(digitech_xc0324)
 
 struct bitbuffer;
 struct data;
