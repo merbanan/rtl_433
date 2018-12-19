@@ -33,6 +33,7 @@
 #include "mongoose.h"
 #include "compat_time.h"
 #include "fatal.h"
+#include "http_server.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -919,6 +920,16 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
+}
+
+void add_http_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "0.0.0.0";
+    char *port = "8433";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "HTTP server at %s port %s\n", host, port);
+
+    list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
 
 void add_null_output(r_cfg_t *cfg, char *param)
