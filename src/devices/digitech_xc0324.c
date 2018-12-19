@@ -76,24 +76,7 @@
 #define XC0324_DEVICE_STARTBYTE   0x5F
 #define XC0324_DEVICE_MINREPEATS  3
 
-
-
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
-
-static uint8_t calculate_XORchecksum(uint8_t *b, int length)
-{
-    // b[5] is a check byte, the XOR of bytes 0-4.
-    // ie a checksum where the sum is "binary add no carry"
-    // Effectively, each bit of b[5] is the parity of the bits in the 
-    // corresponding position of b[0] to b[4]
-    // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
-    uint8_t XORchecksum = 0x00;
-    int byteCnt;
-    for (byteCnt=0; byteCnt < length; byteCnt++) {
-        XORchecksum ^= b[byteCnt];
-    }
-    return XORchecksum;
-}
 
 /// @param *data : returns the decoded information as a data_t * 
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
@@ -102,21 +85,25 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id [4] = {0};
     double temperature;
-    uint8_t const_byte4_0x80;
-    uint8_t XORchecksum; // == 0x00 for a good message
-    char time_str[LOCAL_TIME_BUFLEN];
+    uint8_t flags;
+    uint8_t chksum; // == 0x00 for a good message
     
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, XC0324_MESSAGE_BITLEN);
-    
-    // Examine the XORchecksum and bail out now if not OK to save time
-    XORchecksum = calculate_XORchecksum(b, 6);
-    if (XORchecksum != 0x00) {
+
+    // Examine the chksum and bail out now if not OK to save time
+    // b[5] is a check byte, the XOR of bytes 0-4.
+    // ie a checksum where the sum is "binary add no carry"
+    // Effectively, each bit of b[5] is the parity of the bits in the
+    // corresponding position of b[0] to b[4]
+    // NB : b[0] ^ b[1] ^ b[2] ^ b[3] ^ b[4] ^ b[5] == 0x00 for a clean message
+    chksum = xor_bytes(b, 6);
+    if (chksum != 0x00) {
         if (decoder->verbose == 1) {
             // Output the "bad" message (only for message level deciphering!)
-            decoder_output_bitrow_debugf(decoder, b, XC0324_MESSAGE_BITLEN,
+            decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
               "checksum = 0x%02X not 0x00 <- XC0324:D row %d bit %d",
-              XORchecksum, row, bitpos);
+              chksum, row, bitpos);
         }
         return 0;
     }
@@ -131,7 +118,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     
     //Unknown byte, constant as 0x80 in all my data
     // ??maybe battery status??
-    const_byte4_0x80 = b[4];
+    flags = b[4];
     
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
@@ -141,15 +128,14 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
             "model",          "Device Type",     DATA_STRING, "Digitech XC0324",
             "id",             "ID",              DATA_STRING, id,
             "temperature_C",  "Temperature C",   DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            "const_0x80",     "Constant ?",      DATA_INT,    const_byte4_0x80,
-            "checksum_status","Checksum status", DATA_STRING, XORchecksum ? "Corrupted" : "OK",
+            "flags",          "Constant ?",      DATA_INT,    flags,
             "mic",            "Integrity",       DATA_STRING, "CHECKSUM",
              NULL);
     }
 
     // Output (simulated) message level deciphering information..
     if (decoder->verbose == 1) {
-        decoder_output_bitrow_debugf(decoder, b, XC0324_MESSAGE_BITLEN,
+        decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
           "Temp was %4.1f <- XC0324:D row %03d bit %03d",
           temperature, row, bitpos);
     }
@@ -163,14 +149,12 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1; // Message successfully decoded
 }
 
-
 // List of fields to appear in the `-F csv` output
 static char *output_fields[] = {
     "model",
     "id",
     "temperature_C",
-    "const_0x80",
-    "checksum_status",
+    "flags",
     "mic",
     "message_num",
     NULL
@@ -190,7 +174,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_debugf(bitbuffer, "XC0324:DD Hex and binary version ");
         // And output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
-            decoder_output_bitrow_debugf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+            decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
               "XC0324:DD row %03d", r);
         }
     }
@@ -202,7 +186,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             // bail out of this "too short" row early
             if (decoder->verbose == 1) {
                 // Output the bad row, only for message level debug / deciphering.
-                decoder_output_bitrow_debugf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
+                decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
                   "Bad message need %d bits got %d <- XC0324:D row %d bit %d",
                   XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
@@ -236,7 +220,6 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return events;
 }
 
-
 r_device digitech_xc0324 = {
     .name           = "Digitech XC-0324 temperature sensor",
     .modulation     = OOK_PULSE_PPM,
@@ -247,4 +230,3 @@ r_device digitech_xc0324 = {
     .disabled       = 1, // stop debug output from spamming unsuspecting users
     .fields         = output_fields,
 };
-
