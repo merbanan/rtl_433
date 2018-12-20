@@ -1342,6 +1342,71 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     }
 }
 
+void r_init_cfg(r_cfg_t *cfg)
+{
+    cfg->out_block_size  = DEFAULT_BUF_LENGTH;
+    cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
+    cfg->conversion_mode = CONVERT_NATIVE;
+
+    list_ensure_size(&cfg->in_files, 100);
+    list_ensure_size(&cfg->output_handler, 16);
+
+    cfg->demod = calloc(1, sizeof(*cfg->demod));
+    if (!cfg->demod) {
+        fprintf(stderr, "Could not create demod!\n");
+        exit(1);
+    }
+
+    cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    cfg->demod->hop_time    = DEFAULT_HOP_TIME;
+
+    list_ensure_size(&cfg->demod->r_devs, 100);
+    list_ensure_size(&cfg->demod->dumper, 32);
+}
+
+r_cfg_t *r_create_cfg(void)
+{
+    r_cfg_t *cfg = calloc(1, sizeof(*cfg));
+    if (!cfg) {
+        fprintf(stderr, "Could not create cfg!\n");
+        exit(1);
+    }
+
+    r_init_cfg(cfg);
+
+    return cfg;
+}
+
+void r_free_cfg(r_cfg_t *cfg)
+{
+    if (cfg->dev)
+        sdr_deactivate(cfg->dev);
+    if (cfg->dev)
+        sdr_close(cfg->dev);
+
+    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t const *dumper = *iter;
+        if (dumper->file && (dumper->file != stdout))
+            fclose(dumper->file);
+    }
+    list_free_elems(&cfg->demod->dumper, free);
+
+    list_free_elems(&cfg->demod->r_devs, free);
+
+    if (cfg->demod->am_analyze)
+        am_analyze_free(cfg->demod->am_analyze);
+
+    pulse_detect_free(cfg->demod->pulse_detect);
+
+    free(cfg->demod);
+
+    list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
+
+    list_free_elems(&cfg->in_files, NULL);
+
+    //free(cfg);
+}
+
 // well-known fields "time", "msg" and "codes" are used to output general decoder messages
 // well-known field "bits" is only used when verbose bits (-M bits) is requested
 // well-known field "tag" is only used when output tagging is requested
@@ -1361,11 +1426,7 @@ static char const **well_known_output_fields(r_cfg_t *cfg)
         return well_known_default;
 }
 
-static r_cfg_t cfg = {
-        .out_block_size  = DEFAULT_BUF_LENGTH,
-        .samp_rate       = DEFAULT_SAMPLE_RATE,
-        .conversion_mode = CONVERT_NATIVE,
-};
+static r_cfg_t cfg;
 
 #ifdef _WIN32
 BOOL WINAPI
@@ -1407,16 +1468,12 @@ int main(int argc, char **argv) {
 
     print_version(); // always print the version info
 
+    r_init_cfg(&cfg);
+
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 
-    list_ensure_size(&cfg.in_files, 100);
-    list_ensure_size(&cfg.output_handler, 16);
-
-    demod = calloc(1, sizeof(struct dm_state));
-    list_ensure_size(&demod->r_devs, 100);
-    list_ensure_size(&demod->dumper, 32);
-    cfg.demod = demod;
+    demod = cfg.demod;
 
     demod->pulse_detect = pulse_detect_create();
 
@@ -1434,9 +1491,6 @@ int main(int argc, char **argv) {
         r_devices[i].protocol_num = i + 1;
     }
     cfg.devices = r_devices;
-
-    cfg.demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    cfg.demod->hop_time = DEFAULT_HOP_TIME;
 
     // if there is no explicit conf file option look for default conf files
     if (!hasopt('c', argc, argv, OPTSTRING)) {
@@ -1596,7 +1650,7 @@ int main(int argc, char **argv) {
                 in_file = fopen(demod->load_info.path, "rb");
                 if (!in_file) {
                     fprintf(stderr, "Opening file: %s failed!\n", cfg.in_filename);
-                    goto out;
+                    break;
                 }
             }
             fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg.in_filename);  // Essential information (not quiet)
@@ -1656,7 +1710,7 @@ int main(int argc, char **argv) {
 
         free(test_mode_buf);
         free(test_mode_float_buf);
-        free(cfg.in_files.elems);
+        r_free_cfg(&cfg);
         exit(0);
     }
 
@@ -1712,28 +1766,7 @@ int main(int argc, char **argv) {
     if (!cfg.do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
-        file_info_t const *dumper = *iter;
-        if (dumper->file && (dumper->file != stdout))
-            fclose(dumper->file);
-    }
-    list_free_elems(&demod->dumper, free);
-
-    r = sdr_deactivate(cfg.dev);
-
-    list_free_elems(&demod->r_devs, free);
-
-    if (demod->am_analyze)
-        am_analyze_free(demod->am_analyze);
-
-    pulse_detect_free(demod->pulse_detect);
-    free(demod);
-
-    sdr_close(cfg.dev);
-out:
-    list_free_elems(&cfg.output_handler, (list_elem_free_fn)data_output_free);
-
-    list_free_elems(&cfg.in_files, NULL);
+    r_free_cfg(&cfg);
 
     return r >= 0 ? r : -r;
 }
