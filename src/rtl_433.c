@@ -847,45 +847,29 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 // find the fields output for CSV
 static char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *num_fields)
 {
-    list_t *r_devs = &cfg->demod->r_devs;
-    int cur_output_fields = 0;
-    int num_output_fields = 0;
-    const char **output_fields = NULL;
+    list_t field_list = {0};
+    list_ensure_size(&field_list, 100);
 
+    // always add well-known fields
+    for (char const **p = well_known; *p; ++p)
+        list_push(&field_list, (void *)*p);
+
+    list_t *r_devs = &cfg->demod->r_devs;
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         if (!r_dev->disabled) {
             if (r_dev->fields)
                 for (int c = 0; r_dev->fields[c]; ++c)
-                    ++num_output_fields;
+                    list_push(&field_list, r_dev->fields[c]);
             else
                 fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
                         r_dev->protocol_num, r_dev->name);
         }
     }
 
-    // always add well-known fields
-    for (char const **p = well_known; *p; ++p)
-        num_output_fields++;
-
-    output_fields = calloc(num_output_fields + 1, sizeof(char *));
-
-    // always add well-known fields
-    for (char const **p = well_known; *p; ++p)
-        output_fields[cur_output_fields++] = *p;
-
-    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
-        r_device *r_dev = *iter;
-        if (!r_dev->disabled && r_dev->fields) {
-            for (int c = 0; r_dev->fields[c]; ++c) {
-                output_fields[cur_output_fields++] = r_dev->fields[c];
-            }
-        }
-    }
-
     if (num_fields)
-        *num_fields = num_output_fields;
-    return output_fields;
+        *num_fields = field_list.len;
+    return (char const **)field_list.elems;
 }
 
 static FILE *fopen_output(char *param)
