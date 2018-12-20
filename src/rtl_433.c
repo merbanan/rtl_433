@@ -1566,6 +1566,7 @@ int main(int argc, char **argv) {
         cfg.out_block_size = DEFAULT_BUF_LENGTH;
     }
 
+    // Special case for test data
     if (cfg.test_data) {
         r = 0;
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
@@ -1574,39 +1575,11 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
             r += pulse_demod_string(cfg.test_data, r_dev);
         }
+        r_free_cfg(&cfg);
         exit(!r);
     }
 
-    if (!cfg.in_files.len) {
-        r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, cfg.verbosity);
-        if (r < 0) {
-            exit(1);
-        }
-
-#ifndef _WIN32
-        sigact.sa_handler = sighandler;
-        sigemptyset(&sigact.sa_mask);
-        sigact.sa_flags = 0;
-        sigaction(SIGINT, &sigact, NULL);
-        sigaction(SIGTERM, &sigact, NULL);
-        sigaction(SIGQUIT, &sigact, NULL);
-        sigaction(SIGPIPE, &sigact, NULL);
-#else
-        SetConsoleCtrlHandler((PHANDLER_ROUTINE) sighandler, TRUE);
-#endif
-        /* Set the sample rate */
-        r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, 1); // always verbose
-
-        if (cfg.verbosity || demod->level_limit)
-            fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
-
-        /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
-        r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, 1); // always verbose
-
-        if (cfg.ppm_error)
-            r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, 1); // always verbose
-    }
-
+    // Special case for in files
     if (cfg.in_files.len) {
         unsigned char *test_mode_buf = malloc(DEFAULT_BUF_LENGTH * sizeof(unsigned char));
         float *test_mode_float_buf = malloc(DEFAULT_BUF_LENGTH / sizeof(int16_t) * sizeof(float));
@@ -1695,6 +1668,35 @@ int main(int argc, char **argv) {
         r_free_cfg(&cfg);
         exit(0);
     }
+
+    // Normal case, no test data, no in files
+    r = sdr_open(&cfg.dev, &demod->sample_size, cfg.dev_query, cfg.verbosity);
+    if (r < 0) {
+        exit(1);
+    }
+
+#ifndef _WIN32
+    sigact.sa_handler = sighandler;
+    sigemptyset(&sigact.sa_mask);
+    sigact.sa_flags = 0;
+    sigaction(SIGINT, &sigact, NULL);
+    sigaction(SIGTERM, &sigact, NULL);
+    sigaction(SIGQUIT, &sigact, NULL);
+    sigaction(SIGPIPE, &sigact, NULL);
+#else
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
+#endif
+    /* Set the sample rate */
+    r = sdr_set_sample_rate(cfg.dev, cfg.samp_rate, 1); // always verbose
+
+    if (cfg.verbosity || demod->level_limit)
+        fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+
+    /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
+    r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, 1); // always verbose
+
+    if (cfg.ppm_error)
+        r = sdr_set_freq_correction(cfg.dev, cfg.ppm_error, 1); // always verbose
 
     /* Reset endpoint before we start reading from it (mandatory) */
     r = sdr_reset(cfg.dev, cfg.verbosity);
