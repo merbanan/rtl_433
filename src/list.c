@@ -32,6 +32,12 @@ void list_push(list_t *list, void *p)
     list->elems[list->len] = NULL; // ensure a terminating NULL
 }
 
+void list_push_all(list_t *list, void **p)
+{
+    for (void **iter = p; iter && *iter; ++iter)
+        list_push(list, *iter);
+}
+
 void list_clear(list_t *list, list_elem_free_fn elem_free)
 {
     if (elem_free) {

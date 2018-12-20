@@ -26,6 +26,9 @@ void list_ensure_size(list_t *list, size_t min_size);
 /// Add to the end of elems, allocs or grows the list if needed and ensures the list has a terminating NULL.
 void list_push(list_t *list, void *p);
 
+/// Adds all elements of a NULL terminated list to the end of elems, allocs or grows the list if needed and ensures the list has a terminating NULL.
+void list_push_all(list_t *list, void **p);
+
 /// Clear the list, frees each element with fn, does not free backing or list itself.
 void list_clear(list_t *list, list_elem_free_fn elem_free);
 

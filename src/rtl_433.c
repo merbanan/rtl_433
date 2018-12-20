@@ -851,16 +851,14 @@ static char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, 
     list_ensure_size(&field_list, 100);
 
     // always add well-known fields
-    for (char const **p = well_known; *p; ++p)
-        list_push(&field_list, (void *)*p);
+    list_push_all(&field_list, (void **)well_known);
 
     list_t *r_devs = &cfg->demod->r_devs;
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         if (!r_dev->disabled) {
             if (r_dev->fields)
-                for (int c = 0; r_dev->fields[c]; ++c)
-                    list_push(&field_list, r_dev->fields[c]);
+                list_push_all(&field_list, (void **)r_dev->fields);
             else
                 fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
                         r_dev->protocol_num, r_dev->name);
