@@ -1717,11 +1717,11 @@ int main(int argc, char **argv) {
         if (dumper->file && (dumper->file != stdout))
             fclose(dumper->file);
     }
-    list_free(&demod->dumper);
+    list_free_elems(&demod->dumper, free);
 
     r = sdr_deactivate(cfg.dev);
 
-    list_free(&demod->r_devs);
+    list_free_elems(&demod->r_devs, free);
 
     if (demod->am_analyze)
         am_analyze_free(demod->am_analyze);
@@ -1731,10 +1731,9 @@ int main(int argc, char **argv) {
 
     sdr_close(cfg.dev);
 out:
-    for (size_t i = 0; i < cfg.output_handler.len; ++i) { // list might contain NULLs
-        data_output_free(cfg.output_handler.elems[i]);
-    }
-    free(cfg.output_handler.elems);
+    list_free_elems(&cfg.output_handler, (list_elem_free_fn)data_output_free);
+
+    list_free_elems(&cfg.in_files, NULL);
 
     return r >= 0 ? r : -r;
 }

@@ -18,11 +18,16 @@ typedef struct list {
     size_t len;
 } list_t;
 
+typedef void (*list_elem_free_fn)(void *);
+
 /// Alloc elems if needed and ensure the list has room for at least min_size elements.
 void list_ensure_size(list_t *list, size_t min_size);
 
 /// Add to the end of elems, allocs or grows the list if needed and ensures the list has a terminating NULL.
 void list_push(list_t *list, void *p);
 
-/// Free each element and elems, does not free list itself.
-void list_free(list_t *list);
+/// Clear the list, frees each element with fn, does not free backing or list itself.
+void list_clear(list_t *list, list_elem_free_fn elem_free);
+
+/// Clear the list, free backing, does not free list itself.
+void list_free_elems(list_t *list, list_elem_free_fn elem_free);

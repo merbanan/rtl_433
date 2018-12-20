@@ -32,15 +32,23 @@ void list_push(list_t *list, void *p)
     list->elems[list->len] = NULL; // ensure a terminating NULL
 }
 
-void list_free(list_t *list)
+void list_clear(list_t *list, list_elem_free_fn elem_free)
 {
-    if (list->len) {
-        for (void **iter = list->elems; iter && *iter; ++iter)
-            free(*iter);
-        list->len = 0;
-
-        free(list->elems);
-        list->elems = NULL;
-        list->size  = 0;
+    if (elem_free) {
+        for (size_t i = 0; i < list->len; ++i) { // list might contain NULLs
+            elem_free(list->elems[i]);
+        }
     }
+    list->len = 0;
+    if (list->elems) {
+        list->elems[0] = NULL; // ensure a terminating NULL
+    }
+}
+
+void list_free_elems(list_t *list, list_elem_free_fn elem_free)
+{
+    list_clear(list, elem_free);
+    free(list->elems);
+    list->elems = NULL;
+    list->size  = 0;
 }
