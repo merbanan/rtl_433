@@ -13,8 +13,8 @@
  * I = id
  * F = flags, (seen: 0: 69.4% 1: 0.8% 6: 0.4% 8: 1.1% b: 1.9% c: 25.8% e: 0.8%)
  * R = repeat counter (seen: 0,1,2,3)
- * P = Pressure (maybe bar in 0.0125 steps, or offset /differential)
- * T = Temperature (looks like deg C offset by 50)
+ * P = Pressure (kPa in 1.364 steps, about fifth PSI?)
+ * T = Temperature (deg C offset by 50)
  * B = Battery?
  * C = Checksum, XOR bytes 1 to 9 = 0
  */
@@ -40,8 +40,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int repeat;
     int pressure;
     int temperature;
-    int battery;
-    char code_str[7];
+    int maybe_battery;
     int crc;
 
     bitbuffer_invert(bitbuffer);
@@ -65,8 +64,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     repeat = b[5]&0x0f;
     pressure = b[6];
     temperature = b[7];
-    battery = b[8];
-    sprintf(code_str, "%02x%02x%02x", pressure, temperature, battery);
+    maybe_battery = b[8];
 
     data = data_make(
         "model",        "",     DATA_STRING, "Citroen",
@@ -75,10 +73,10 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         "id",           "",     DATA_STRING, id_str,
         "flags",        "",     DATA_INT, flags,
         "repeat",       "",     DATA_INT, repeat,
-//        "pressure_bar", "Pressure",    DATA_FORMAT, "%.03f bar", DATA_DOUBLE, (double)pressure*0.0125,
-//        "temperature_C", "Temperature", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature-50.0,
+        "pressure_kPa", "Pressure",    DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.364,
+        "temperature_C", "Temperature", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
 //        "battery_mV",   "Battery", DATA_INT, battery_mV,
-        "code",         "",     DATA_STRING, code_str,
+        "maybe_battery", "",     DATA_INT, maybe_battery,
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
@@ -107,9 +105,10 @@ static char *output_fields[] = {
     "id",
     "flags",
     "repeat",
-//    "pressure_bar",
-//    "temperature_C",
+    "pressure_kPa",
+    "temperature_C",
 //    "battery_mV",
+    "maybe_battery",
     "code",
     "mic",
     NULL
