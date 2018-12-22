@@ -530,11 +530,10 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
     r_cfg_t *cfg = ctx;
     struct dm_state *demod = cfg->demod;
-    int i;
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    for (i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
         data_output_poll(cfg->output_handler.elems[i]);
     }
 
