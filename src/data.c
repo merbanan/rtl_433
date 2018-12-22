@@ -53,6 +53,7 @@
 #include "term_ctl.h"
 #include "abuf.h"
 
+#include "util.h"
 #include "data.h"
 
 #ifdef _WIN32
@@ -977,18 +978,9 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     char message[1024];
     abuf_init(&syslog->msg, message, 1024);
 
-    time_t now;
-    struct tm tm_info;
-    time(&now);
-#ifdef _MSC_VER
-    gmtime_s(&tm_info, &now);
-#else
-    gmtime_r(&now, &tm_info);
-#endif    
-    char timestamp[21];
-    strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
-
-    abuf_printf(&syslog->msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
+    char timestamp [LOCAL_TIME_BUFLEN];
+    abuf_printf(&syslog->msg, "<%d>1 %s %s rtl_433 - - - ", 
+                syslog->pri, local_time_str(0, timestamp), syslog->hostname);
 
     print_syslog_object(output, data, format);
 
