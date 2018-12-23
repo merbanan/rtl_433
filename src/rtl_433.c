@@ -184,7 +184,7 @@ static void help_device(void)
 #endif
             "[-d <RTL-SDR USB device index>] (default: 0)\n"
             "[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
-            "\tTo set gain for RTL-SDR use -g X to set an overall gain in tenths of dB.\n"
+            "\tTo set gain for RTL-SDR use -g <gain> to set an overall gain in dB.\n"
 #ifdef SOAPYSDR
             "\tSoapySDR device driver is available.\n"
 #else
@@ -202,7 +202,7 @@ static void help_gain(void)
 {
     fprintf(stderr,
             "-g <gain>] (default: auto)\n"
-            "\tFor RTL-SDR: gain in tenths of dB (\"0\" is auto).\n"
+            "\tFor RTL-SDR: gain in dB (\"0\" is auto).\n"
             "\tFor SoapySDR: gain in dB for automatic distribution (\"\" is auto), or string of gain elements.\n"
             "\tE.g. \"LNA=20,TIA=8,PGA=2\" for LimeSDR.\n");
     exit(0);
