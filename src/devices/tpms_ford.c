@@ -129,6 +129,5 @@ r_device tpms_ford = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_ford_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

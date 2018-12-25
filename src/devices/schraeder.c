@@ -15,6 +15,10 @@ Schrader TPMS decoder.
 
 FCC-Id: MRXGG4
 
+Nominal 512 us sync pulse, 124 us half-bit width.
+May be detected slower, 516 us sync, 128-136 us half-bit width.
+No sync pulse on Schrader EG53MA4.
+
 Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 
     0 12 34 56 78 9A BC DE F0
