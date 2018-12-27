@@ -32,9 +32,8 @@ char *local_time_str(time_t time_secs, char *buf)
         etime = time_secs;
     }
 
-#ifdef _MSC_VER
+#ifdef _WIN32 /* MinGW might have localtime_r but apparently not MinGW64 */
     localtime_s(&tm_info, &etime); // win32 doesn't have localtime_r()
-
 #else
     localtime_r(&etime, &tm_info); // thread-safe
 #endif
