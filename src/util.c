@@ -257,7 +257,7 @@ void get_time_now(struct timeval *tv)
 char *local_time_str(time_t time_secs, char *buf)
 {
     time_t etime;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     if (time_secs == 0) {
         time(&etime);
@@ -266,9 +266,14 @@ char *local_time_str(time_t time_secs, char *buf)
         etime = time_secs;
     }
 
-    tm_info = localtime(&etime); // note: win32 doesn't have localtime_r()
+#ifdef _MSC_VER
+    localtime_s(&tm_info, &etime); // win32 doesn't have localtime_r()
 
-    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+#else
+    localtime_r(&etime, &tm_info); // thread-safe
+#endif
+
+    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", &tm_info);
     return buf;
 }
 
