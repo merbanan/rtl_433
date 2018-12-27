@@ -37,7 +37,7 @@
 #include "pulse_demod.h"
 #include "decoder.h"
 #include "data.h"
-#include "util.h"
+#include "r_util.h"
 #include "optparse.h"
 #include "fileformat.h"
 #include "samp_grab.h"

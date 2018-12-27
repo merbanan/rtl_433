@@ -38,8 +38,6 @@
  * - Now that we have a demodulator that isn't stripping the first bit
  *   the detect and decode could be collapsed into a single reasonably
  *   readable function.
- *
- * - Make the time stamp output a general utility function.
  */
 
 #include "decoder.h"
@@ -130,7 +128,6 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
     int msg_value_int;
     float msg_value = 0, temp_c = 0;
-    time_t time_now;
     data_t *data;
 
     for (m = 0; m < BITBUF_ROWS; m++) {
@@ -146,8 +143,6 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 + msg_nybbles[7] / 10.0;
             msg_value_int = msg_nybbles[8] * 10 + msg_nybbles[9];
             msg_checksum = msg_nybbles[10];
-
-            time(&time_now);
 
             // Check Repeated data values as another way of verifying
             // message integrity.

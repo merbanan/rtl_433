@@ -9,6 +9,7 @@
  * (at your option) any later version.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include "data.h"
 #include "util.h"

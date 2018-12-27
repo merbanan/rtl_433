@@ -10,6 +10,7 @@
 
 #include "decoder.h"
 #include "optparse.h"
+#include <stdlib.h>
 
 /// extract a number up to 32/64 bits from given offset with given bit length
 unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)

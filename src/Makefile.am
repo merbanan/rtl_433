@@ -18,6 +18,7 @@ rtl_433_SOURCES      = abuf.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
+                       r_util.c \
                        rtl_433.c \
                        samp_grab.c \
                        sdr.c \

@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "sdr.h"
-#include "util.h"
+#include "r_util.h"
 #include "optparse.h"
 #ifdef RTLSDR
 #include "rtl-sdr.h"
