@@ -685,7 +685,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->term = term_init(file);
     kv->color = term_has_color(kv->term);
 
-    kv->ring_bell = kv->color; // && requested...
+    kv->ring_bell = 0; // TODO: enable if requested...
 
     return &kv->output;
 }
