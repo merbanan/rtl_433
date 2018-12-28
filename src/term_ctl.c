@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 #ifndef _WIN32
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -93,10 +94,10 @@ static void _term_set_color(console_t *console, BOOL fore, term_color_t color)
         console->bg = (console->info.wAttributes & ~7);
     }
     else if (fore) {
-        console->fg = _term_get_win_color(TRUE,color);
+        console->fg = _term_get_win_color(TRUE, color);
     }
     else if (color <= TERM_COLOR_WHITE) {
-        console->bg = 16 * _term_get_win_color(FALSE,color);
+        console->bg = 16 * _term_get_win_color(FALSE, color);
     }
     else
         return;
@@ -202,6 +203,8 @@ void *term_init(FILE *fp)
 
 void term_free(void *ctx)
 {
+    if (!ctx)
+        return;
 #ifdef _WIN32
     _term_free(ctx);
 #else
@@ -265,9 +268,9 @@ int term_set_color_map(int ascii_idx, term_color_t color)
 {
     ascii_idx -= '0';
     if (ascii_idx < 0 || ascii_idx > DIM(color_map))
-        return (-1);
-    color_map [ascii_idx] = color;
-    return (ascii_idx);
+        return -1;
+    color_map[ascii_idx] = color;
+    return ascii_idx;
 }
 
 int term_get_color_map(int ascii_idx)
@@ -277,15 +280,18 @@ int term_get_color_map(int ascii_idx)
     ascii_idx -= '0';
     for (i = 0; ascii_idx >= 0 && i < DIM(color_map); i++)
         if (i == ascii_idx)
-           return (int) color_map[i];
-    return (-1);
+           return (int)color_map[i];
+    return -1;
 }
 
-int term_puts(void *ctx, const char *buf)
+int term_puts(void *ctx, char const *buf)
 {
-    const char *p = buf;
-    int   i, len, buf_len, color;
+    char const *p = buf;
+    int i, len, buf_len, color;
     FILE *fp;
+
+    if (!ctx)
+        fprintf(stderr, "%s", buf);
 
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
@@ -310,22 +316,21 @@ int term_puts(void *ctx, const char *buf)
                 term_set_fg(ctx, (term_color_t)color);
         }
     }
-    return (len);
+    return len;
 }
 
-int term_printf(void *ctx, const char *format, ...)
+int term_printf(void *ctx, char const *format, ...)
 {
-    int     len;
+    int len;
     va_list args;
-    char buf [3000];
+    char buf[4000];
 
     va_start(args, format);
 
-   /* Terminate first in case a buggy '_MSC_VER < 1900' is used.
-    */
-    buf [sizeof(buf)-1] = '\0';
+    // Terminate first in case a buggy '_MSC_VER < 1900' is used.
+    buf[sizeof(buf)-1] = '\0';
     vsnprintf(buf, sizeof(buf)-1, format, args);
     len = term_puts(ctx, buf);
     va_end (args);
-    return (len);
+    return len;
 }
