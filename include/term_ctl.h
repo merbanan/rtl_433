@@ -48,4 +48,60 @@ void term_set_fg(void *ctx, term_color_t color);
 
 void term_set_bg(void *ctx, term_color_t color);
 
+/*
+ * Defined in newer <sal.h> for MSVC.
+ */
+#ifndef _Printf_format_string_
+#define _Printf_format_string_
+#endif
+
+/*
+ * Print to terminal with color-codes inline turned into above colors.
+ * Takes a var-arg format.
+ *
+ * E.g.:
+ *   void *term = term_init(stdout);
+ *   term_printf (term, "~4Hello ~2world~0.\n");
+ *
+ *   will print to stdout with 'Hello' mapped to colour 4
+ *   and 'world' mapped to colour 2. See 'term_set_color_map()' below.
+ *
+ * And a 'term_printf (NULL, "~4Hello ~2world~0.\n");'
+ * will print "Hello world" to stder' with no colors.
+ */
+int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
+  #if defined(__GNUC__) || defined(__clang__)
+    __attribute__ ((format(printf,2,3)))
+  #endif
+  ;
+
+/*
+ * Like 'term_printf()', but no var-arg format.
+ * Simply takes a 0-terminated buffer.
+ */
+int term_puts(void *ctx, const char *buf);
+
+/*
+ * By default, the color-codes maps to these foreground colour:
+ *   "~0": always restores terminal-colors; TERM_COLOR_RESET.
+ *   "~1": print using TERM_COLOR_GREEN.
+ *   "~2": print using TERM_COLOR_WHITE.
+ *   "~3": print using TERM_COLOR_BLUE.
+ *   "~4": print using TERM_COLOR_CYAN.
+ *   "~5": print using TERM_COLOR_MAGENTA.
+ *   "~6": print using TERM_COLOR_YELLOW.
+ *   "~7": print using TERM_COLOR_BLACK.
+ *   "~8": print using TERM_COLOR_RED.
+ *
+ *  This function can change that.
+ */
+int term_set_color_map(int idx, term_color_t color);
+
+/*
+ * Returns the current color-value ('enum term_color') for color-index
+ * 'idx'. This index goes from ASCII '0' to 'X'.
+ * 'X' = '0' + the dimension of the internal 'color_map[]'.
+ */
+int term_get_color_map(int idx);
+
 #endif /* INCLUDE_TERM_CTL_H_ */
