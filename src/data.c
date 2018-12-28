@@ -980,7 +980,7 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     time_t now;
     struct tm tm_info;
     time(&now);
-#ifdef _MSC_VER
+#ifdef _WIN32
     gmtime_s(&tm_info, &now);
 #else
     gmtime_r(&now, &tm_info);
