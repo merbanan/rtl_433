@@ -169,7 +169,8 @@ int term_get_columns(void *ctx)
     if (!console->hnd || console->hnd == INVALID_HANDLE_VALUE)
        return (80);
 
-    GetConsoleScreenBufferInfo(console->hnd, &c_info);
+    if (!GetConsoleScreenBufferInfo(console->hnd, &c_info))
+       return (80);
     return (c_info.srWindow.Right - c_info.srWindow.Left + 1);
 #else
     FILE *fp = (FILE *)ctx;
