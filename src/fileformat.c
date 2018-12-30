@@ -258,8 +258,8 @@ int parse_file_info(char const *filename, file_info_t *info)
     return info->format;
 }
 
-#ifdef TEST
-// e.g. gcc -Wall -std=c99 -DTEST -I include -o fileformat-tests src/fileformat.c && ./fileformat-tests
+// Unit testing
+#ifdef _TEST
 void assert_file_type(int check, char const *spec)
 {
     file_info_t info = {0};
@@ -335,4 +335,4 @@ int main(int argc, char **argv)
 
     fprintf(stderr, "\nDone!\n");
 }
-#endif
+#endif /* _TEST */

@@ -133,7 +133,6 @@ add_custom_target(uninstall
 ########################################################################
 option(BUILD_DOCUMENTATION "Create and install the HTML based API
 documentation (requires Doxygen)" OFF)
-option(BUILD_TEST "Build the test elements." ON)
 
 find_package(Doxygen)
 if(BUILD_DOCUMENTATION)
@@ -157,13 +156,18 @@ if(BUILD_DOCUMENTATION)
 endif()
 
 ########################################################################
+# Build tests
+########################################################################
+include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
+
+########################################################################
 # Add subdirectories
 ########################################################################
 add_subdirectory(include)
 add_subdirectory(src)
-if(BUILD_TEST)
+if(BUILD_TESTING)
     add_subdirectory(tests)
-endif(BUILD_TEST)
+endif(BUILD_TESTING)
 add_subdirectory(conf)
 
 # use space-separation format for the pc file

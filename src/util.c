@@ -247,16 +247,15 @@ int add_bytes(uint8_t const message[], unsigned num_bytes)
     return result;
 }
 
-// Test code
-// gcc -I include/ -std=gnu99 -D _TEST src/util.c
+// Unit testing
 #ifdef _TEST
 int main(int argc, char **argv) {
     fprintf(stderr, "util:: test\n");
 
     uint8_t msg[] = {0x08, 0x0a, 0xe8, 0x80};
 
-    fprintf(stderr, "util::crc8(): odd parity:  %02X\n", crc8(msg, 3, 0x80));
-    fprintf(stderr, "util::crc8(): even parity: %02X\n", crc8(msg, 4, 0x80));
+    fprintf(stderr, "util::crc8(): odd parity:  %02X\n", crc8(msg, 3, 0x80, 0x00));
+    fprintf(stderr, "util::crc8(): even parity: %02X\n", crc8(msg, 4, 0x80, 0x00));
 
     return 0;
 }

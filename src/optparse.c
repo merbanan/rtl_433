@@ -201,8 +201,7 @@ char *getkwargs(char **s, char **key, char **val)
     return k;
 }
 
-// Test code
-// gcc -I include/ -std=c99 -D _TEST src/optparse.c && ./a.out
+// Unit testing
 #ifdef _TEST
 #define ASSERT_EQUALS(a,b) if ((a) == (b)) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); }
 int main(int argc, char **argv)
