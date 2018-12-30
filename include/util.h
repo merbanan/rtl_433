@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 
-// Helper macros
+// Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
 #ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #endif

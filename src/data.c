@@ -766,6 +766,8 @@ static void data_output_csv_start(struct data_output *output, const char **field
     csv->separator = ",";
 
     allowed = calloc(num_fields, sizeof(const char *));
+    if (!allowed)
+        goto alloc_error;
     memcpy(allowed, fields, sizeof(const char *) * num_fields);
 
     qsort(allowed, num_fields, sizeof(char *), compare_strings);

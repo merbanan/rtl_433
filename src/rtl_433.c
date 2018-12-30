@@ -50,13 +50,17 @@
 #include <io.h>
 #include <fcntl.h>
 #ifdef _MSC_VER
-#include "getopt/getopt.h"
 #define F_OK 0
 #endif
 #endif
 #ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
+#ifndef _MSC_VER
 #include <getopt.h>
+#else
+#include "getopt/getopt.h"
 #endif
 
 #ifdef GIT_VERSION

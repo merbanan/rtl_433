@@ -3,9 +3,13 @@
 ########################################################################
 cmake_minimum_required(VERSION 2.6)
 # Fix behavior of CMAKE_C_STANDARD when targeting macOS.
-if (POLICY CMP0025)
+if(POLICY CMP0025)
     cmake_policy(SET CMP0025 NEW)
-endif ()
+endif()
+# Only interpret if() arguments as variables or keywords when unquoted.
+if(POLICY CMP0054)
+    cmake_policy(SET CMP0054 NEW)
+endif()
 
 project(rtl433 C)
 
@@ -40,7 +44,7 @@ endif()
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 99)
-if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
+if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang") AND NOT WIN32)
     ADD_DEFINITIONS(-Wall)
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
@@ -59,9 +63,16 @@ if (("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
 endif()
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
     ADD_DEFINITIONS(-Wlarge-by-value-copy=8)
+endif()
+
+# Shut MSVC up about strdup and strtok
+if(MSVC)
+    ADD_DEFINITIONS(-D_CRT_NONSTDC_NO_DEPRECATE)
+    ADD_DEFINITIONS(-D_CRT_SECURE_NO_WARNINGS)
+    ADD_DEFINITIONS(-DNOMINMAX)
 endif()
 
 ########################################################################
@@ -104,7 +115,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
     ADD_DEFINITIONS(-fno-builtin-free)
 endif()
 
-if(MINGW)
+if(MINGW OR MSVC)
 list(APPEND NET_LIBRARIES ws2_32 mswsock)
 endif()
 

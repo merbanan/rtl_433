@@ -125,11 +125,16 @@ add_executable(rtl_433
 	devices/x10_sec.c
 )
 
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
 endif()
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+endif()
+
+if(MSVC)
+	# needs CMake 3.1 but Windows builds should have that
+	target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
 add_library(data data.c abuf.c term_ctl.c mongoose.c)
