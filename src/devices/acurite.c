@@ -770,7 +770,6 @@ static int acurite_986_callback(r_device *decoder, bitbuffer_t *bitbuf)
     uint8_t *bb, sensor_num, status, crc, crcc;
     uint8_t br[8];
     int8_t tempf; // Raw Temp is 8 bit signed Fahrenheit
-    float tempc;
     uint16_t sensor_id, valid_cnt = 0;
     char sensor_type;
     char *channel_str;

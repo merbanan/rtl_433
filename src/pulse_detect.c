@@ -574,7 +574,7 @@ void histogram_print(histogram_t const *hist, uint32_t samp_rate) {
 }
 
 
-#define TOLERANCE (0.2)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
+#define TOLERANCE (0.2f)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
 void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
