@@ -9,6 +9,20 @@ rtl_433 currently supports these input types:
 Building rtl_433 with RTL-SDR or SoapySDR support is optional but using RTL-SDR is highly recommended.
 The libraries and header files for RTL-SDR and/or SoapySDR should be installed beforehand.
 
+## Nightly builds
+
+Some distributions offer nightly builds.
+
+### openSUSE
+
+openSUSE users of at least Leap 42.3 or Tumbleweed can add the repository with daily builds:
+
+    $ sudo zypper addrepo -f obs://home:mnhauke:rtl_433:nightly/rtl_433
+    rtl_433-nightly
+    $ sudo zypper install rtl_433
+
+The usual update mechanism will now keep the rtl_433 version current.
+
 ## Linux / Mac OS X
 
 Depending on your system, you may need to install the following libraries.
