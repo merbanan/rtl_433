@@ -28,6 +28,7 @@
 #define ID_WGR968   0x3d00
 #define ID_UV800    0xd874
 #define ID_THN129   0xcc43  // THN129 Temp only
+#define ID_RTHN129  0x0cd3  // RTHN129 Temp, clock sensors
 #define ID_BTHGN129 0x5d53  // Baro, Temp, Hygro sensor
 #define ID_UVR128   0xec70
 
@@ -84,7 +85,7 @@ unsigned int get_os_channel(unsigned char *message, unsigned int sensor_id) {
   // sensor ID included to support sensors with channel in different position
   int channel = 0;
   channel = ((message[2] >> 4)&0x0f);
-  if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318 && sensor_id != ID_THGR810)
+  if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318 && sensor_id != ID_THGR810 && (sensor_id & 0x0fff) != ID_RTHN129)
     channel = 3; // sensor 3 channel number is 0x04
   return channel;
 }
@@ -385,19 +386,20 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         // RF Clock message ??
       }
       return 1;
-    } else if (sensor_id  == ID_THN129) {
+    } else if (sensor_id  == ID_THN129 || (sensor_id & 0x0FFF) == ID_RTHN129) {
       if ((validate_os_v2_message(decoder, msg, 137, num_valid_v2_bits, 12) == 0)) {
-        float temp_c = get_os_temperature(msg, sensor_id);
         data = data_make(
             "brand",         "",            DATA_STRING, "OS",
-            "model",         "",            DATA_STRING, "THN129",
+            "model",         "",            DATA_STRING, (sensor_id == ID_THN129) ? "THN129" : "RTHN129",
             "id",            "House Code",  DATA_INT,    get_os_rollingcode(msg, sensor_id),
             "channel",       "Channel",     DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
             "battery",       "Battery",     DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+            "temperature_C",  "Celsius",    DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg, sensor_id),
             NULL);
         decoder_output_data(decoder, data);
-      }
+      } else if (num_valid_v2_bits == 209 && (validate_os_v2_message(decoder, msg, 209, num_valid_v2_bits, 18) == 0)) {
+		// RF Clock message
+	  }
 
       return 1;
     } else if (sensor_id  == ID_BTHGN129) {
