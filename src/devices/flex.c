@@ -635,13 +635,6 @@ r_device *flex_create_device(char *spec)
         usage();
     }
 
-    if (dev->modulation == OOK_PULSE_PWM) {
-        if (!dev->gap_limit) {
-            fprintf(stderr, "Bad flex spec, missing gap limit!\n");
-            usage();
-        }
-    }
-
     if (dev->modulation == OOK_PULSE_DMC
             || dev->modulation == OOK_PULSE_PIWM_RAW
             || dev->modulation == OOK_PULSE_PIWM_DC) {
