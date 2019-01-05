@@ -12,6 +12,29 @@
 #include "optparse.h"
 #include <stdlib.h>
 
+static inline int bit(const uint8_t *bytes, unsigned bit)
+{
+    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+}
+
+/// extract all mask bits skipping unmasked bits of a number up to 32/64 bits
+unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
+{
+    // clz (fls) is not worth the trouble
+    int top_bit = 0;
+    while (mask >> top_bit)
+        top_bit++;
+    unsigned long val = 0;
+    for (int b = top_bit - 1; b >= 0; --b) {
+        if (mask & (1 << b)) {
+            val <<= 1;
+            val |= bit(data, bit_offset);
+        }
+        bit_offset++;
+    }
+    return val;
+}
+
 /// extract a number up to 32/64 bits from given offset with given bit length
 unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
 {
@@ -174,9 +197,11 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // add a data line for each getter
         for (int g = 0; g < GETTER_SLOTS && params->getter[g].bit_count > 0; ++g) {
             struct flex_get *getter = &params->getter[g];
-            unsigned long val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
+            unsigned long val;
             if (getter->mask)
-                val &= getter->mask;
+                val = compact_number(bitbuffer->bb[i], getter->bit_offset, getter->mask);
+            else
+                val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
             int m;
             for (m = 0; getter->map[m].val; m++) {
                 if (getter->map[m].key == val) {
@@ -633,13 +658,6 @@ r_device *flex_create_device(char *spec)
     if (!dev->reset_limit) {
         fprintf(stderr, "Bad flex spec, missing reset limit!\n");
         usage();
-    }
-
-    if (dev->modulation == OOK_PULSE_PWM) {
-        if (!dev->gap_limit) {
-            fprintf(stderr, "Bad flex spec, missing gap limit!\n");
-            usage();
-        }
     }
 
     if (dev->modulation == OOK_PULSE_DMC
