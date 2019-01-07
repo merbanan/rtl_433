@@ -1,4 +1,6 @@
-/* XH300 / XT300 Soil Moisture Sensor
+/* Opus/Imagintronix XT300 Soil Moisture Sensor
+ *
+ * Aslo call XH300 some time, this seems to be the associated display name
  *
  * https://www.plantcaretools.com/product/wireless-moisture-monitor/
  *
@@ -18,7 +20,7 @@
 
 #include "decoder.h"
 
-static int xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = 0;
     int row;
@@ -34,7 +36,7 @@ static int xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
         b = bitbuffer->bb[row];
-        if (b[0] != 0xFF && b[1] | 0x1 == 0x55) {
+        if (b[0] != 0xFF && ((b[1] | 0x1) & 0xFD) == 0x55) {
             continue;
         }
         chk = add_bytes(b + 1, 4); // sum bytes 1-4
@@ -49,7 +51,7 @@ static int xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         moisture =  b[2];
 
         data = data_make(
-            "model",            "",             DATA_STRING, "XT300 Temperature & Moisture",
+            "model",            "",             DATA_STRING, "Opus/Imagintronix XT300 Soil Moisture",
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
@@ -72,14 +74,14 @@ static char *output_fields[] = {
 };
 
 
-r_device xt300 = {
-    .name           = "XT300 Temperature and Soil Moisture",
+r_device opus_xt300 = {
+    .name           = "Opus/Imagintronix XT300 Soil Moisture",
     .modulation     = OOK_PULSE_PWM,
     .short_width    = 544,
     .long_width     = 932,
     .gap_limit      = 10000,
     .reset_limit    = 31000,
-    .decode_fn      = &xt300_callback,
+    .decode_fn      = &opus_xt300_callback,
     .disabled       = 0,
     .fields         = output_fields
 };

@@ -123,7 +123,7 @@ add_executable(rtl_433
 	devices/wt450.c
 	devices/x10_rf.c
 	devices/x10_sec.c
-	devices/xt300.c
+	devices/opus_xt300.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")

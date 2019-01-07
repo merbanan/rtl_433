@@ -122,7 +122,7 @@
     DECL(bt_rain) \
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \
-    DECL(xt300)
+    DECL(opus_xt300)
 
 struct bitbuffer;
 struct data;
