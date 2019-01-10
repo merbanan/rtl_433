@@ -7,16 +7,14 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- */
- 
-/*
+ *
  * Digitech XC-0324 device
  *
  * The encoding is pulse position modulation 
  *(ie gap width contains the modulation information)
- * pulse is about 100*4 us
- * short gap is (approx) 130*4 us
- * long gap is (approx) 250*4 us
+ * pulse is about 400 us
+ * short gap is (approx) 520 us
+ * long gap is (approx) 1000 us
  
  * Deciphered using two transmitters.
  * 
@@ -42,8 +40,9 @@
  * 
  */
 
-// This decoder is associated with a (forthcoming) tutorial entry in the
+// This decoder is associated with a tutorial entry in the
 // rtl_433 wiki describing the way the transmissions were deciphered.
+// See https://github.com/merbanan/rtl_433/wiki/digitech_xc0324.README.md
 //
 // The tutorial is "by a newbie, for a newbie", ie intended to assist newcomers
 // who wish to learn how to decipher a new device, and develop a rtl_433 device
@@ -52,14 +51,14 @@
 // To illustrate stages in the deciphering process, this decoder includes some
 // debug style trace messages that would normally be removed. Specifically,
 // running this decoder with debug level :
-//    `-DD` simulates what might be seen early in the deciphering process, when
+//    `-vvv` simulates what might be seen early in the deciphering process, when
 //         only the modulation scheme and parameters have been discovered,
-//    `-D` simulates what might be seen once the synchronisation/preamble and
+//    `-vv` simulates what might be seen once the synchronisation/preamble and
 //         message length has been uncovered, and it is time to start work on
 //         deciphering individual fields in the message,
 //     with no debug flags set provides the final (production stage) results,
 //     and
-//    `-DDD` is a special "finished development" output.  It provides a file of
+//    `-vvvv` is a special "finished development" output.  It provides a file of
 //         reference values, to be included with the test data for future
 //         regression test purposes.
 
@@ -102,10 +101,10 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         if (decoder->verbose == 1) {
             // Output the "bad" message (only for message level deciphering!)
             decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-              "checksum = 0x%02X not 0x00 <- XC0324:D row %d bit %d",
+              "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
               chksum, row, bitpos);
         }
-        return 0;
+        return 0;  // No message was able to be decoded
     }
     
     // Extract the id as hex string
@@ -136,14 +135,14 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // Output (simulated) message level deciphering information..
     if (decoder->verbose == 1) {
         decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-          "Temp was %4.1f <- XC0324:D row %03d bit %03d",
+          "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
           temperature, row, bitpos);
     }
     // Output "finished deciphering" reference values for future regression tests.
     if ((decoder->verbose == 3) & (latest_event == 0)) {
         //info from this first successful message is enough
         decoder_output_messagef(decoder,
-          "XC0324:DDD Reference -> Temperature %4.1f C; sensor id %s",
+          "XC0324:vvvv Reference -> Temperature %4.1f C; sensor id %s",
           temperature, id);
     }
     return 1; // Message successfully decoded
@@ -168,14 +167,14 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int events = 0;
     data_t *data = NULL;
     
-    // Only for initial package level deciphering / debug.
+    // Only for simulating initial package level deciphering / debug.
     if (decoder->verbose == 2) {
-        // Verbosely print the bitbuffer to stderr, 
-        bitbuffer_debugf(bitbuffer, "XC0324:DD Hex and binary version ");
-        // And output each row to csv, json or whatever was specified.
+        // Verbosely output the bitbuffer 
+        decoder_output_bitbufferf(decoder, bitbuffer, "XC0324:vvv hex(/binary) version of bitbuffer");
+        // And then output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
             decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-              "XC0324:DD row %03d", r);
+              "XC0324:vvv row %03d", r);
         }
     }
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
@@ -187,7 +186,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose == 1) {
                 // Output the bad row, only for message level debug / deciphering.
                 decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                  "Bad message need %d bits got %d <- XC0324:D row %d bit %d",
+                  "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
                   XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
             continue; // to the next row  
@@ -206,16 +205,14 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 data_append(data, "message_num",  "Message repeat count",
                   DATA_INT, events, NULL);
                 decoder_output_data(decoder, data);
+                return events; // in production, first successful decode is enough
             }
-            // Uncomment the following `return` to break after first successful
-            // message, instead of processing up to 3 identical repeats.
-            //return events;
             bitpos += XC0324_MESSAGE_BITLEN;
         }
     }
     // (Only) for future regression tests.
     if ((decoder->verbose == 3) & (events == 0)) {
-        decoder_output_messagef(decoder, "XC0324:DDD Reference -> Bad transmission");
+        decoder_output_messagef(decoder, "XC0324:vvvv Reference -> Bad transmission");
     }
     return events;
 }
