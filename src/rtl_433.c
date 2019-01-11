@@ -111,7 +111,14 @@ struct dm_state {
 
 static void print_version(void)
 {
-    fprintf(stderr, "rtl_433 " VERSION "\n");
+    fprintf(stderr, "rtl_433 " VERSION " inputs file rtl_tcp"
+#ifdef RTLSDR
+            " RTL-SDR"
+#endif
+#ifdef SOAPYSDR
+            " SoapySDR"
+#endif
+            "\n");
 }
 
 static void usage(r_device *devices, unsigned num_devices, int exit_code)
