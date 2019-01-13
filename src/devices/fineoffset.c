@@ -90,9 +90,6 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             temp &= 0x7FF;	// remove sign bit
             temp = -temp;	// reverse magnitude
         }
-    } else { // WH5
-        // The temperature is unsigned offset by 40 C and scaled by 10
-        temp -= 400;
     }
     temperature = temp * 0.1;
 
