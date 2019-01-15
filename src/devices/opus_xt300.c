@@ -1,6 +1,6 @@
 /* Opus/Imagintronix XT300 Soil Moisture Sensor
  *
- * Aslo call XH300 some time, this seems to be the associated display name
+ * Aslo called XH300 sometimes, this seems to be the associated display name
  *
  * https://www.plantcaretools.com/product/wireless-moisture-monitor/
  *
@@ -26,9 +26,7 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int row;
     int chk;
     uint8_t *b;
-    int channel, temp;
-    float temp_c;
-    int moisture;
+    int channel, temp, moisture;
     data_t *data;
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
@@ -47,13 +45,12 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         channel  = (b[1] & 0x03);
         temp     = b[3] - 40;
-        temp_c    = temp * 1.;
         moisture =  b[2];
 
         data = data_make(
-            "model",            "",             DATA_STRING, "Opus/Imagintronix XT300 Soil Moisture",
+            "model",            "",             DATA_STRING, "Opus-XT300",
             "channel",          "Channel",      DATA_INT,    channel,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%d C", DATA_INT, temp,
             "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -65,9 +62,7 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "sid",
     "channel",
-    "battery",
     "temperature_C",
     "moisture",
     NULL
