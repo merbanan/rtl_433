@@ -21,7 +21,7 @@ last six digits are your sender ID. Eg "400 617 633" gives you the sender id
 617633. This number goes into IKEA_SPARSNAS_SENSOR_ID in this file.
 
 
-The data is sent using GFSK modulation. It requires PD_MIN_PULSE_SAMPLES in 
+The data is sent using CPFSK modulation. It requires PD_MIN_PULSE_SAMPLES in 
 pulse_detect.h to be lowered to 5 to be able to demodulate at 250kS/s. The
 preamble is optimally 4 bytes of 0XAA. Then the sync word 0xD201. Here only 
 the last 2 bytes of the 0xAA preamble is checked, as the first ones seems
@@ -76,23 +76,6 @@ detail. Many thanks to kodarn!
 static const uint8_t preamble_pattern[4] = {0xAA, 0xAA, 0xD2, 0x01};
 
 
-// Graciously copied from https://github.com/strigeus/sparsnas_decoder
-static uint16_t ikea_sparsnas_crc16(const uint8_t *data, size_t n) {
-  uint16_t crcReg = 0xffff;
-  size_t i, j;
-  for (j = 0; j < n; j++) {
-    uint8_t crcData = data[j];
-    for (i = 0; i < 8; i++) {
-      if (((crcReg & 0x8000) >> 8) ^ (crcData & 0x80))
-        crcReg = (crcReg << 1) ^ 0x8005;
-      else
-        crcReg = (crcReg << 1);
-      crcData <<= 1;
-    }
-  }
-  return crcReg;
-}
-
 static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
@@ -122,7 +105,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     // CRC check
-    uint16_t crc_calculated = ikea_sparsnas_crc16(buffer, IKEA_SPARSNAS_MESSAGE_BYTELEN - 2);
+    uint16_t crc_calculated = crc16(buffer, IKEA_SPARSNAS_MESSAGE_BYTELEN - 2, 0x8005 ,0xffff);
     uint16_t crc_received = buffer[18] << 8 | buffer[19];
 
     if (crc_received != crc_calculated) {
@@ -222,7 +205,6 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_output_data(decoder, data);
     
     return 1;
-
 
 }
 
