@@ -1,69 +1,76 @@
-/* Ambient Weather TX-8300 (also sold as TFA 30.3211.02)
- * Copyright (C) 2018 ionum-projekte and Roger
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- *
- * 1970us pulse with variable gap (third pulse 3920 us)
- * Above 79% humidity, gap after third pulse is 5848 us
- *
- * Bit 1 : 1970us pulse with 3888 us gap
- * Bit 0 : 1970us pulse with 1936 us gap
- *
- * 74 bit (2 bit preamble and 72 bit data => 9 bytes => 18 nibbles)
- * The preamble seems to be a repeat counter (00, and 01 seen),
- * the first 4 bytes are data,
- * the second 4 bytes the same data inverted,
- * the last byte is a checksum.
- *
- * Preamble format (2 bits):
- *  [1 bit (0)] [1 bit rolling count]
- *
- * Payload format (32 bits):
- *   HHHHhhhh ??CCNIII IIIITTTT ttttuuuu
- *     H = First BCD digit humidity (the MSB might be distorted by the demod)
- *     h = Second BCD digit humidity, invalid humidity seems to be 0x0e
- *     ? = Likely battery flag, 2 bits
- *     C = Channel, 2 bits
- *     N = Negative temperature sign bit
- *     I = ID, 7-bit
- *     T = First BCD digit temperature
- *     t = Second BCD digit temperature
- *     u = Third BCD digit temperature
- *
- * The Checksum seems to cover the data bytes and is roughly something like:
- *
- *  = (buffer[0] & 0x5) + (b[0] & 0xf) << 4  + (b[0] & 0x50) >> 4 + (b[0] & 0xf0)
- *  + (b[1] & 0x5) + (b[1] & 0xf) << 4  + (b[1] & 0x50) >> 4 + (b[1] & 0xf0)
- *  + (b[2] & 0x5) + (b[2] & 0xf) << 4  + (b[2] & 0x50) >> 4 + (b[2] & 0xf0)
- *  + (b[3] & 0x5) + (b[3] & 0xf) << 4  + (b[3] & 0x50) >> 4 + (b[3] & 0xf0)
- */
+/*
+IKEA Sparsnäs Energy Meter Monitor decoder
 
-#include "decoder.h"
+The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit 
+displays and stores the values sent by the sender unit. It is not needed for this
+decoder. The sender unit is placed by the energy meter. The sender unit has an
+IR photo sensor which is placed over the energy meter impulse diode. The sender
+also has an external antenna, which should be placed where it can provide non-
+interfered transmissions.
+
+The energy meter sends a fixed number of pulses per kWh. This is different per
+unit, but usual values are 500, 1000 and 2000. This is usually indicated like
+
+1000 imp/kWh
+
+on the front of the meter. This value goes into IKEA_SPARSNAS_PULSES_PER_KWH 
+in this file. The sender also has a unique ID which is used in the encryption
+key, hence it is needed here to decrypt the data. The sender ID is on a sticker
+in the battery compartment. There are three groups of three digits there. The
+last six digits are your sender ID. Eg "400 617 633" gives you the sender id 
+617633. This number goes into IKEA_SPARSNAS_SENSOR_ID in this file.
+
+
+The data is sent using GFSK modulation. It requires PD_MIN_PULSE_SAMPLES in 
+pulse_detect.h to be lowered to 5 to be able to demodulate at 250kS/s. The
+preamble is optimally 4 bytes of 0XAA. Then the sync word 0xD201. Here only 
+the last 2 bytes of the 0xAA preamble is checked, as the first ones seems
+to be corrupted quite often. There are plenty of integrety checks made on 
+the demodulated package which makes this compromise OK.
+
+Packet structure according to: https://github.com/strigeus/sparsnas_decoder 
+(with some changes by myself)
+
+0:  uint8_t length;        // Always 0x11
+1:  uint8_t sender_id_lo;  // Lowest byte of sender ID
+2:  uint8_t unknown;       // Not sure
+3:  uint8_t major_version; // Always 0x07 - the major version number of the sender.
+4:  uint8_t minor_version; // Always 0x0E - the minor version number of the sender.
+5:  uint32_t sender_id;    // ID of sender
+9:  uint16_t sequence;     // Sequence number of current packet
+11: uint16_t effect;       // Current effect usage
+13: uint32_t pulses;       // Total number of pulses
+17: uint8_t battery;       // Battery level, 0-100%
+18: uint16_t CRC;          // 16 bit CRC of bytes 0-17
+
+The packet's integrety can be checked with the 16b CRC at the end of the packet. 
+There are also several other ways to check the integrety of the package. 
+ - (preamble)
+ - CRC
+ - The decrypted sensor ID
+ - the constant bytes at 0, 3 and 4
+
+The decryption, CRC is calculation, value extraction and interpretation is 
+taken from https://github.com/strigeus/sparsnas_decoder and adapted to 
+this application. Many thanks to strigeus!
+
+Most other things are from https://github.com/kodarn/Sparsnas which is an
+amazing repository of the IKEA Sparsnäs. Everything is studied with greay
+detail. Many thanks to kodarn!
+
+*/
+
+
 
 #define IKEA_SPARSNAS_SENSOR_ID 617633
 #define IKEA_SPARSNAS_PULSES_PER_KWH 1000
+
+// No settings required below this point
+
+
+#include "decoder.h"
 #define IKEA_SPARSNAS_MESSAGE_BITLEN 160    // 20 bytes incl 8 bit length, 8 bit address, 128 bits data, and 16 bits of CRC. Excluding preamble and sync word
-
-/*
-Packet structure according to: https://github.com/strigeus/sparsnas_decoder
-0: uint8_t length;        // Always 0x11
-1: uint8_t sender_id_lo;  // Lowest byte of sender ID
-2: uint8_t unknown;       // Not sure
-3: uint8_t major_version; // Always 0x07 - the major version number of the sender.
-4: uint8_t minor_version; // Always 0x0E - the minor version number of the sender.
-5: uint32_t sender_id;    // ID of sender
-9: uint16_t time;         // Time in units of 15 seconds.
-11:uint16_t effect;       // Current effect usage
-13:uint32_t pulses;       // Total number of pulses
-17:uint8_t battery;       // Battery level, 0-100.
-uint16_t CRC
-*/
-
-#define IKEA_SPARSNAS_MESSAGE_BYTELEN    (IKEA_SPARSNAS_MESSAGE_BITLEN + 7) / 8
+#define IKEA_SPARSNAS_MESSAGE_BYTELEN    ((IKEA_SPARSNAS_MESSAGE_BITLEN + 7) / 8)
 
 #define IKEA_SPARSNAS_PREAMBLE_BITLEN 32
 static const uint8_t preamble_pattern[4] = {0xAA, 0xAA, 0xD2, 0x01};
@@ -95,6 +102,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t buffer[IKEA_SPARSNAS_MESSAGE_BYTELEN];
     
+    // Look for preamble
     uint16_t bitpos = bitbuffer_search(bitbuffer, 0, 0, (const uint8_t *)&preamble_pattern, IKEA_SPARSNAS_PREAMBLE_BITLEN);
 
     if (!bitpos || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
@@ -102,16 +110,18 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "IKEA Sparsnäs: malformed package, preamble not found. (Expected 0xAAAAD201)\n");
         return 0;
     }
+
+    if (decoder->verbose > 1)
+        fprintf(stderr, "IKEA Sparsnäs: Found a message at bitpos %3d\n", bitpos);
     
+    // extract message, discarding preamble
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos + IKEA_SPARSNAS_PREAMBLE_BITLEN, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN);
     
     if (decoder->verbose > 1)
         decoder_output_bitrowf(decoder, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
 
-    if (decoder->verbose > 1)
-        fprintf(stderr, "IKEA Sparsnäs: Found a message at bitpos %3d\n", bitpos);
 
-
+    // CRC check
     uint16_t crc_calculated = ikea_sparsnas_crc16(buffer, IKEA_SPARSNAS_MESSAGE_BYTELEN - 2);
     uint16_t crc_received = buffer[18] << 8 | buffer[19];
 
@@ -123,6 +133,9 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose > 1)
         fprintf(stderr, "IKEA Sparsnäs: CRC OK (%X == %X)\n", crc_calculated, crc_received);
+
+    
+    //Decryption
 
     uint8_t decrypted[18];
 
@@ -146,6 +159,8 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose > 1)
         decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
+
+    // Additional integrity checks
 
     int rcv_sensor_id = decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
@@ -172,6 +187,8 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decoder->verbose > 1)
         fprintf(stderr, "IKEA Sparsnäs: Received sensor id: %d\n", rcv_sensor_id);
     
+    //Value extraction and interpretation
+
     uint16_t sequence_number = (decrypted[9] << 8 | decrypted[10]);
     uint16_t effect = (decrypted[11] << 8 | decrypted[12]);
     uint32_t pulses = (decrypted[13] << 24 | decrypted[14] << 16 | decrypted[15] << 8 | decrypted[16]);
@@ -187,11 +204,11 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     
     double cumulative_kWh = ((double)pulses) / ((double)IKEA_SPARSNAS_PULSES_PER_KWH);
-
     
+
     data_t *data;
     data = data_make(
-        "model",         "Model",               DATA_STRING, "IKEA Sparsnäs",
+        "model",         "Model",               DATA_STRING, "IKEA Sparsnäs Energy Meter Monitor",
         "id",            "Sensor ID",           DATA_INT, rcv_sensor_id,
         "sequence",      "Sequence Number",     DATA_INT, sequence_number,
         "battery",       "Battery",             DATA_FORMAT, "%d%%", DATA_INT, battery,
@@ -222,7 +239,7 @@ static char *output_fields[] = {
 };
 
 r_device ikea_sparsnas = {
-    .name          = "IKEA Sparsnäs Energy Meter",
+    .name          = "IKEA Sparsnäs Energy Meter Monitor",
     .modulation    = FSK_PULSE_PCM,
     .short_width   = 27,
     .long_width    = 27,
