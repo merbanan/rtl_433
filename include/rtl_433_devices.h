@@ -121,7 +121,8 @@
     DECL(esa) \
     DECL(bt_rain) \
     DECL(bresser_5in1) \
-    DECL(digitech_xc0324)
+    DECL(digitech_xc0324) \
+    DECL(ikea_sparsnas)
 
 struct bitbuffer;
 struct data;
