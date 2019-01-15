@@ -319,6 +319,9 @@
     <ClCompile Include="..\src\devices\ibis_beacon.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ikea_sparsnas.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\infactory.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

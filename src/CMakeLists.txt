@@ -73,6 +73,7 @@ add_executable(rtl_433
 	devices/honeywell_wdb.c
 	devices/ht680.c
 	devices/ibis_beacon.c
+	devices/ikea_sparsnas.c
 	devices/infactory.c
 	devices/inovalley-kw9015b.c
 	devices/interlogix.c

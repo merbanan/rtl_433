@@ -186,6 +186,7 @@
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
+    <ClCompile Include="..\src\devices\ikea_sparsnas.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
     <ClCompile Include="..\src\devices\inovalley-kw9015b.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />

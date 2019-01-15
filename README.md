@@ -196,6 +196,7 @@ Supported device protocols:
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
+    [130]* Ikea Sparsnäs Energy Meeter
 
 * Disabled by default, use -R n or -G
 
