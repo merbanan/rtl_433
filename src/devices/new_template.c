@@ -256,6 +256,6 @@ r_device template = {
     .gap_limit     = 300, // some distance above long
     .reset_limit   = 1000, // a bit longer than packet gap
     .decode_fn     = &template_callback,
-    .disabled      = 2, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+    .disabled      = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields        = output_fields,
 };
