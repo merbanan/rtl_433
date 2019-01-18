@@ -132,7 +132,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
             decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
-            fprintf(stderr, "IKEA Sparsnäs: Too short packet received. Expected %d, received %d", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
+            fprintf(stderr, "IKEA Sparsnäs: Too short or too long packet received. Expected %d, received %d\n", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
         return 0;
     }
@@ -261,9 +261,9 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     
     data_t *data;
     data = data_make(
-        "model",         "Model",               DATA_STRING, "IKEA Sparsnäs Energy Meter Monitor",
+        "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
         "id",            "Sensor ID",           DATA_INT, rcv_sensor_id,
-        "pulses_per_kwh", "Pulses per kWh",     DATA_INT, ikea_sparsnas_pulses_per_kwh,
+        "pulses_per_kWh", "Pulses per kWh",     DATA_INT, ikea_sparsnas_pulses_per_kwh,
         "sequence",      "Sequence Number",     DATA_INT, sequence_number,
         "battery",       "Battery",             DATA_FORMAT, "%d%%", DATA_INT, battery,
         "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_DOUBLE,  cumulative_kWh,
