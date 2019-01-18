@@ -16,6 +16,9 @@
 #include "bitbuffer.h"
 #include "rtl_433_devices.h"
 
+/// Create a new r_device, copy from template if not NULL.
+r_device *create_device(r_device *template);
+
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);
 

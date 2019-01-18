@@ -177,7 +177,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
         fprintf(stderr, "Supported device protocols:\n");
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
-            if (devices[i].disabled <= 1) // if not hidden
+            if (devices[i].disabled <= 2) // if not hidden
                 fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
         }
         fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
@@ -297,9 +297,19 @@ static void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->verbose_bits = cfg->verbose_bits;
 }
 
-static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
-    r_device *p = calloc(1, sizeof (r_device));
-    *p = *r_dev; // copy
+static void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
+{
+    r_device *p;
+    if (r_dev->create_fn) {
+        p = r_dev->create_fn(arg);
+    }
+    else {
+        if (arg && *arg) {
+            fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
+        }
+        p = malloc(sizeof (*p));
+        *p = *r_dev; // copy
+    }
 
     update_protocol(cfg, p);
 
@@ -310,6 +320,34 @@ static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
 
     if (cfg->verbosity) {
         fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+    }
+}
+
+static void free_protocol(r_device *r_dev)
+{
+    // free(r_dev->name);
+    free(r_dev->decode_ctx);
+    free(r_dev);
+}
+
+static void unregister_protocol(r_cfg_t *cfg, r_device *r_dev)
+{
+    for (size_t i = 0; i < cfg->demod->r_devs.len; ++i) { // list might contain NULLs
+        r_device *p = cfg->demod->r_devs.elems[i];
+        if (!strcmp(p->name, r_dev->name)) {
+            list_remove(&cfg->demod->r_devs, i, (list_elem_free_fn)free_protocol);
+            i--; // so we don't skip the next elem now shifted down
+        }
+    }
+}
+
+static void register_all_protocols(r_cfg_t *cfg)
+{
+    for (int i = 0; i < cfg->num_r_devices; i++) {
+        // register all device protocols that are not disabled
+        if (!cfg->devices[i].disabled) {
+            register_protocol(cfg, &cfg->devices[i], NULL);
+        }
     }
 }
 
@@ -1238,23 +1276,25 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
             usage(cfg->devices, cfg->num_r_devices, 1);
         }
-
-        if (n == 0 || (n > 0 && !cfg->no_default_devices)) {
-            for (i = 0; i < cfg->num_r_devices; i++) {
-                if (!cfg->devices[i].disabled)
-                    cfg->devices[i].disabled = 1;
-            }
-            cfg->no_default_devices = 1;
+        if ((n > 0 && cfg->devices[n].disabled > 2) || (n < 0 && cfg->devices[-n].disabled > 2)) {
+            fprintf(stderr, "Remote device number specified is invalid\n\n");
+            usage(cfg->devices, cfg->num_r_devices, 1);
         }
+
+        if (n < 0 && !cfg->no_default_devices) {
+            register_all_protocols(cfg); // register all defaults
+        }
+        cfg->no_default_devices = 1;
 
         if (n >= 1) {
-            cfg->devices[n - 1].disabled = 0;
+            register_protocol(cfg, &cfg->devices[n - 1], arg_param(arg));
         }
         else if (n <= -1) {
-            cfg->devices[-n - 1].disabled = 1;
+            unregister_protocol(cfg, &cfg->devices[-n - 1]);
         }
         else {
             fprintf(stderr, "Disabling all device decoders.\n");
+            list_clear(&cfg->demod->r_devs, (list_elem_free_fn)free_protocol);
         }
         break;
     case 'X':
@@ -1262,10 +1302,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             flex_create_device(NULL);
 
         flex_device = flex_create_device(arg);
-        register_protocol(cfg, flex_device);
-        if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
-            cfg->demod->enable_FM_demod = 1;
-        }
+        register_protocol(cfg, flex_device, "");
         break;
     case 'q':
         fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");
@@ -1530,13 +1567,17 @@ int main(int argc, char **argv) {
         add_kv_output(&cfg, NULL);
     }
 
-    for (i = 0; i < cfg.num_r_devices; i++) {
-        // register all device protocols that are not disabled
-        if (!cfg.devices[i].disabled) {
-            register_protocol(&cfg, &cfg.devices[i]);
-            if (cfg.devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
-              demod->enable_FM_demod = 1;
-            }
+    // register default decoders if nothing is configured
+    if (!cfg.no_default_devices) {
+        register_all_protocols(&cfg); // register all defaults
+    }
+
+    // check if we need FM demod
+    for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
+          demod->enable_FM_demod = 1;
+          break;
         }
     }
 
