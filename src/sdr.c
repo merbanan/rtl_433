@@ -72,6 +72,14 @@ struct sdr_dev {
 
 /* rtl_tcp helpers */
 
+#pragma pack(push, 1)
+struct rtl_tcp_info {
+    char magic[4];             // "RTL0"
+    uint32_t tuner_number;     // big endian
+    uint32_t tuner_gain_count; // big endian
+};
+#pragma pack(pop)
+
 static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
 {
     char *host = "localhost";
@@ -122,7 +130,25 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     //if (ret < 0)
     //    fprintf(stderr, "rtl_tcp TCP_NODELAY failed\n");
 
-    fprintf(stderr, "rtl_tcp connected to %s port %s\n", host, port);
+    struct rtl_tcp_info info;
+    ret = recv(sock, &info, sizeof (info), 0);
+    if (ret != 12) {
+        fprintf(stderr, "Bad rtl_tcp header (%d)\n", ret);
+        return -1;
+    }
+    if (strncmp(info.magic, "RTL0", 4)) {
+        info.tuner_number = 0; // terminate magic
+        fprintf(stderr, "Bad rtl_tcp header magic \"%s\"\n", info.magic);
+        return -1;
+    }
+
+    unsigned tuner_number = ntohl(info.tuner_number);
+    //int tuner_gain_count  = ntohl(info.tuner_gain_count);
+
+    char const *tuner_names[] = { "Unknown", "E4000", "FC0012", "FC0013", "FC2580", "R820T", "R828D" };
+    char const *tuner_name = tuner_number > sizeof (tuner_names) ? "Invalid" : tuner_names[tuner_number];
+
+    fprintf(stderr, "rtl_tcp connected to %s:%s (Tuner: %s)\n", host, port, tuner_name);
 
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
 
@@ -195,17 +221,12 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_
     return 0;
 }
 
-#ifdef _WIN32
-#define __attribute__(x)
 #pragma pack(push, 1)
-#endif
 struct command {
     unsigned char cmd;
     unsigned int param;
-} __attribute__((packed));
-#ifdef _WIN32
+};
 #pragma pack(pop)
-#endif
 
 // rtl_tcp API
 #define RTLTCP_SET_FREQ 0x01
