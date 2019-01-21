@@ -20,10 +20,11 @@ char **compat_get_default_conf_paths()
     static char conf[256] = "";
     if (!paths[0]) {
         paths[0] = "rtl_433.conf";
+        snprintf(buf, sizeof(buf), "%s%s", getenv("XDG_CONFIG_HOME"), "/rtl_433/rtl_433.conf");
+        paths[2] = buf;
+        // If xdg_conf_home not set, check usual conf location
         snprintf(conf, sizeof(conf), "%s%s", getenv("HOME"), "/.config/rtl_433/rtl_433.conf");
         paths[1] = conf;
-        snprintf(buf, sizeof(buf), "%s%s", getenv("HOME"), "/.rtl_433/rtl_433.conf");
-        paths[2] = buf;
         paths[3] = "/usr/local/etc/rtl_433/rtl_433.conf";
         paths[4] = "/etc/rtl_433/rtl_433.conf";
         paths[5] = NULL;
