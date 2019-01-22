@@ -131,7 +131,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     //    fprintf(stderr, "rtl_tcp TCP_NODELAY failed\n");
 
     struct rtl_tcp_info info;
-    ret = recv(sock, &info, sizeof (info), 0);
+    ret = recv(sock, (char *)&info, sizeof (info), 0);
     if (ret != 12) {
         fprintf(stderr, "Bad rtl_tcp header (%d)\n", ret);
         return -1;
