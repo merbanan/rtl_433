@@ -75,6 +75,11 @@ if(MSVC)
     ADD_DEFINITIONS(-DNOMINMAX)
 endif()
 
+# Fix printf %zu
+if(MINGW)
+    add_definitions(-D__USE_MINGW_ANSI_STDIO)
+endif()
+
 ########################################################################
 # Find build dependencies
 ########################################################################
