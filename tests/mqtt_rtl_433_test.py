@@ -4,7 +4,7 @@
 Example program for receiving and parsing sensor data from rtl_433 sent
 as MQTT network messages. Recommended way of sending rtl_433 data on network is:
 
-$ rtl_433 -F json -U | mosquitto_pub -t home/rtl_433 -l
+$ rtl_433 -F json -M utc | mosquitto_pub -t home/rtl_433 -l
 
 An MQTT broker e.g. 'mosquitto' must be running on local computer
 

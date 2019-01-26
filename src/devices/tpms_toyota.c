@@ -25,7 +25,8 @@
 #include "decoder.h"
 
 // full preamble is 0101 0101 0011 11 = 55 3c
-static const unsigned char preamble_pattern[2] = {0x54, 0xf0}; // 12 bits
+// could be shorter   11 0101 0011 11
+static const unsigned char preamble_pattern[2] = {0xa9, 0xe0}; // 12 bits (but pass last bit to decode)
 
 static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -83,9 +84,9 @@ static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 12)) + 158 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 12)) + 156 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_toyota_decode(decoder, bitbuffer, 0, bitpos + 12);
+        events += tpms_toyota_decode(decoder, bitbuffer, 0, bitpos + 11);
         bitpos += 2;
     }
 

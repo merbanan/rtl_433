@@ -362,8 +362,7 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
 }
 
 
-// Test code
-// gcc -I include/ -std=gnu11 -D _TEST src/bitbuffer.c
+// Unit testing
 #ifdef _TEST
 int main(int argc, char **argv) {
 	fprintf(stderr, "bitbuffer:: test\n");

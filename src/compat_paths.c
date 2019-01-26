@@ -33,7 +33,7 @@ char **compat_get_default_conf_paths()
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <Shlobj.h>
+#include <shlobj.h>
 
 #include "compat_paths.h"
 

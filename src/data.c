@@ -356,6 +356,13 @@ void data_output_print(data_output_t *output, data_t *data)
     }
 }
 
+void data_output_start(struct data_output *output, const char **fields, int num_fields)
+{
+    if (!output || !output->output_start)
+        return;
+    output->output_start(output, fields, num_fields);
+}
+
 void data_output_poll(struct data_output *output)
 {
     if (!output || !output->output_poll)
@@ -678,7 +685,7 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->term = term_init(file);
     kv->color = term_has_color(kv->term);
 
-    kv->ring_bell = kv->color; // && requested...
+    kv->ring_bell = 0; // TODO: enable if requested...
 
     return &kv->output;
 }
@@ -744,7 +751,7 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-void data_output_csv_init(struct data_output *output, const char **fields, int num_fields)
+static void data_output_csv_start(struct data_output *output, const char **fields, int num_fields)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -759,6 +766,8 @@ void data_output_csv_init(struct data_output *output, const char **fields, int n
     csv->separator = ",";
 
     allowed = calloc(num_fields, sizeof(const char *));
+    if (!allowed)
+        goto alloc_error;
     memcpy(allowed, fields, sizeof(const char *) * num_fields);
 
     qsort(allowed, num_fields, sizeof(char *), compare_strings);
@@ -837,6 +846,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_string = print_csv_string;
     csv->output.print_double = print_json_double;
     csv->output.print_int    = print_json_int;
+    csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
 
@@ -972,7 +982,7 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     time_t now;
     struct tm tm_info;
     time(&now);
-#ifdef _MSC_VER
+#ifdef _WIN32
     gmtime_s(&tm_info, &now);
 #else
     gmtime_r(&now, &tm_info);

@@ -436,9 +436,9 @@ r_device m_bus_mode_s = {
 r_device m_bus_mode_r = {
     .name           = "Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)",
     .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = (1000.0/4.8/2),   // ~208 us per bit -> clock half period ~104 us
+    .short_width    = (1000.0f / 4.8f / 2),   // ~208 us per bit -> clock half period ~104 us
     .long_width     = 0,    // Unused
-    .reset_limit    = (1000.0/4.8*1.5), // 3 clock half periods
+    .reset_limit    = (1000.0f / 4.8f * 1.5f), // 3 clock half periods
     .decode_fn      = &m_bus_mode_r_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
 };
@@ -461,8 +461,8 @@ r_device m_bus_mode_r = {
 r_device m_bus_mode_f = {
     .name           = "Wireless M-Bus, Mode F, 2.4kbps",
     .modulation     = FSK_PULSE_PCM,
-    .short_width    = 1000.0/2.4,   // ~417 us
-    .long_width     = 1000.0/2.4,   // NRZ encoding (bit width = pulse width)
+    .short_width    = 1000.0f / 2.4f,   // ~417 us
+    .long_width     = 1000.0f / 2.4f,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 5000,         // ??
     .decode_fn      = &m_bus_mode_f_callback,
     .disabled       = 1,    // Disable per default, as it runs on non-standard frequency

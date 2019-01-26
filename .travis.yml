@@ -1,22 +1,201 @@
-sudo: required
-dist: trusty
-# language: c
-language: python
-python:
-    - "2.7"
-      #    - "3.3"
-      #    - "3.4"
-install:
-    - pip install deepdiff
-addons:
-  apt:
-    sources:
-    - trusty
-    packages:
-      - libtool
-      - libusb-1.0.0-dev
-      - librtlsdr-dev
-      - rtl-sdr
-      - cmake
-      - make
-script: bash -e ./do_build.sh
+language: c
+os: linux
+matrix:
+  include:
+# Test Visual Studio 2017 CMake (MSBuild)
+    - os: windows
+      env:
+        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
+      script:
+        - export PATH=$MSBUILD_PATH:$PATH
+        - mkdir build
+        - cd build
+        - cmake -G "Visual Studio 15 2017 Win64" ..
+        - MSBuild.exe rtl433.sln
+# Test Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR
+#    - os: windows
+#      env:
+#        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
+#      script:
+#        - export PATH=$MSBUILD_PATH:$PATH
+#        - cd vs15
+#        - MSBuild.exe rtl_433.sln
+
+# Test with Precise default (GCC 4.6.3, CMake 2.8.7) and no libs
+    - compiler: gcc
+      env: NOTE=No-RTL-SDR
+      dist: precise
+      addons:
+        apt:
+          packages:
+            - cmake
+# Test with Trusty default (GCC 4.8.2, CMake 2.8.12)
+    - compiler: gcc
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with Xenial default (GCC 5.4.0, CMake 3.5.1)
+    - compiler: gcc
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# Test with Precise Clang (clang 3.4, CMake 2.8.7) and no libs
+    - compiler: clang
+      env: NOTE=No-RTL-SDR
+      dist: precise
+      addons:
+        apt:
+          packages:
+            - cmake
+# Test with Trusty Clang (clang 5.0.0, CMake 2.8.12)
+    - compiler: clang
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with Xenial Clang (clang 7.0.0, CMake 3.5.1)
+    - compiler: clang
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# works on Precise and Trusty (GCC 6.5.0)
+    - compiler: gcc-6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# works on Precise and Trusty (GCC 7.4.0)
+    - compiler: gcc-7
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# works on Precise and Trusty (GCC 8.1.0)
+    - compiler: gcc-8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-8
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# Test with Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR
+    - compiler: gcc
+      env: NOTE=RTLSDR-and-SoapySDR
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:myriadrf/drivers'
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - soapysdr
+            - libsoapysdr-dev
+            - cmake
+# Test with Xenial default (gcc 5.4, cmake 3.12) only SoapySDR
+    - compiler: gcc
+      env: NOTE=Only-SoapySDR
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:myriadrf/drivers'
+          packages:
+            - soapysdr
+            - libsoapysdr-dev
+            - cmake
+# Test with CLang 3.8.0, CMake 2.8.12
+    - compiler: clang-3.8
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.8
+            - ubuntu-toolchain-r-test
+            - trusty
+          packages:
+            - clang-3.8
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with mingw 32 bit
+    - compiler: i686-w64-mingw32-gcc
+      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-i686
+            - gcc-mingw-w64-i686
+            - mingw-w64-i686-dev
+            - gcc-mingw-w64
+            - gcc-multilib
+# Test with mingw 64 bit
+    - compiler: x86_64-w64-mingw32-gcc
+      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-x86-64
+            - gcc-mingw-w64-x86-64
+            - mingw-w64-x86-64-dev
+            - gcc-mingw-w64
+
+# Full test suite
+    - language: python
+      compiler: gcc
+      env: RUN_RTL_433_TESTS=1
+      dist: trusty
+      python:
+          - "2.7"
+      install:
+          - pip install deepdiff
+      addons:
+        apt:
+          packages:
+            - cmake
+script:
+  - ./do_build.sh

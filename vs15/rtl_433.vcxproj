@@ -96,10 +96,12 @@
     <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fileformat.h" />
+    <ClInclude Include="..\include\list.h" />
     <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
+    <ClInclude Include="..\include\r_util.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
     <ClInclude Include="..\include\samp_grab.h" />
@@ -119,10 +121,12 @@
     <ClCompile Include="..\src\data.c" />
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
+    <ClCompile Include="..\src\list.c" />
     <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
+    <ClCompile Include="..\src\r_util.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />
     <ClCompile Include="..\src\sdr.c" />
@@ -144,6 +148,7 @@
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\current_cost.c" />
     <ClCompile Include="..\src\devices\danfoss.c" />
+    <ClCompile Include="..\src\devices\digitech_xc0324.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
     <ClCompile Include="..\src\devices\efergy_e2_classic.c" />
