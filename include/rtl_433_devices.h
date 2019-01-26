@@ -120,7 +120,8 @@
     DECL(honeywell_wdb_fsk) \
     DECL(esa) \
     DECL(bt_rain) \
-    DECL(bresser_5in1)
+    DECL(bresser_5in1) \
+    DECL(digitech_xc0324)
 
 struct bitbuffer;
 struct data;
@@ -138,6 +139,7 @@ typedef struct r_device {
     float sync_width;
     float tolerance;
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
+    struct r_device *(*create_fn)(char *args);
     unsigned disabled;
     char **fields; // List of fields this decoder produces; required for CSV output. NULL-terminated.
 

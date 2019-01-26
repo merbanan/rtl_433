@@ -15,7 +15,23 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifdef _MSC_VER
+#define F_OK 0
+#define R_OK (1 << 2)
+#endif
+#endif
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <time.h>
 
 #include "baseband.h"

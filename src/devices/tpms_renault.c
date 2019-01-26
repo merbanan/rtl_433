@@ -8,11 +8,12 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * Packet nibbles:  FF PP PP II II II TT TT CC
- * F = flags, (seen: c1: 22% c8: 4% c9: 10% d0: 2% d1: 29% d8: 4% d9: 29%)
- * P = Pressure, 16-bit little-endian
+ * Packet nibbles:  F F/P PP TT II II II ?? ?? CC
+ * F = flags, (seen: c0: 22% c8: 14% d0: 31% d8: 33%) maybe 110??T
+ * P = Pressure, 10 bit 0.75 kPa
  * I = id, 24-bit little-endian
- * T = Unknown, likely Temperature, 16-bit little-endian
+ * T = Temperature in C, offset -30
+ * ? = Unknown, mostly 0xffff
  * C = Checksum, CRC-8 truncated poly 0x07 init 0x00
  */
 
@@ -31,8 +32,9 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     char flags_str[3];
     unsigned id;
     char id_str[7];
-    int maybe_pressure, maybe_temp;
-    char code_str[10];
+    int pressure_raw, temp_c, unknown;
+    double pressure_kpa;
+    char code_str[5];
 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 72 data bits
@@ -46,24 +48,27 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         return 0;
     }
 
-    flags = b[0];
+    flags = b[0] >> 2;
     sprintf(flags_str, "%02x", flags);
 
     id = b[5]<<16 | b[4]<<8 | b[3]; // little-endian
     sprintf(id_str, "%06x", id);
 
-    maybe_pressure = b[2]<<8 | b[1]; // little-endian
-    maybe_temp = b[7]<<8 | b[6]; // little-endian
-    sprintf(code_str, "%04x %04x", maybe_pressure, maybe_temp);
+    pressure_raw = (b[0] & 0x03) << 8 | b[1];
+    pressure_kpa = pressure_raw * 0.75;
+    temp_c       = b[2] - 30;
+    unknown      = b[7] << 8 | b[6]; // little-endian, fixed 0xffff?
+    sprintf(code_str, "%04x", unknown);
 
     data = data_make(
-        "model",        "",     DATA_STRING, "Renault",
-        "type",         "",     DATA_STRING, "TPMS",
-        "id",           "",     DATA_STRING, id_str,
-        "flags",        "",     DATA_STRING, flags_str,
-        "code",         "",     DATA_STRING, code_str,
-        "mic",          "",     DATA_STRING, "CRC",
-        NULL);
+            "model",            "", DATA_STRING, "Renault",
+            "type",             "", DATA_STRING, "TPMS",
+            "id",               "", DATA_STRING, id_str,
+            "flags",            "", DATA_STRING, flags_str,
+            "pressure_kPa",     "", DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kpa,
+            "temperature_C",    "", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temp_c,
+            "mic",              "", DATA_STRING, "CRC",
+            NULL);
 
     decoder_output_data(decoder, data);
     return 1;
@@ -92,9 +97,11 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
+    "type"
     "id",
     "flags",
-    "code",
+    "pressure_kpa",
+    "temperature_C",
     "mic",
     NULL
 };

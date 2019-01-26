@@ -9,10 +9,22 @@
  * (at your option) any later version.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include "data.h"
 #include "util.h"
 #include "decoder_util.h"
+
+// create decoder functions
+
+r_device *create_device(r_device *template)
+{
+    r_device *r_dev = malloc(sizeof (*r_dev));
+    if (template)
+        *r_dev = *template; // copy
+
+    return r_dev;
+}
 
 // variadic print functions
 

@@ -12,10 +12,12 @@ add_executable(rtl_433
 	data.c
 	decoder_util.c
 	fileformat.c
+	list.c
 	mongoose.c
 	optparse.c
 	pulse_demod.c
 	pulse_detect.c
+	r_util.c
 	rtl_433.c
 	samp_grab.c
 	sdr.c
@@ -37,6 +39,7 @@ add_executable(rtl_433
 	devices/chuango.c
 	devices/current_cost.c
 	devices/danfoss.c
+	devices/digitech_xc0324.c
 	devices/dish_remote_6_3.c
 	devices/dsc.c
 	devices/efergy_e2_classic.c
@@ -122,11 +125,16 @@ add_executable(rtl_433
 	devices/x10_sec.c
 )
 
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
 endif()
-if ("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
 	SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+endif()
+
+if(MSVC)
+	# needs CMake 3.1 but Windows builds should have that
+	target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
 add_library(data data.c abuf.c term_ctl.c mongoose.c)

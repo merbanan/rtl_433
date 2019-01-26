@@ -8,10 +8,24 @@
  * (at your option) any later version.
  */
 #include "decoder.h"
+#include <stdlib.h>
+
+static r_device *fineoffset_WH2_create(char *arg)
+{
+    r_device *r_dev = create_device(&fineoffset_WH2);
+
+    if (arg && !strcmp(arg, "no-wh5")) {
+        int *quirk = malloc(sizeof (*quirk));
+        *quirk = 1;
+        r_dev->decode_ctx = quirk;
+    }
+
+    return r_dev;
+}
 
 /*
  * Fine Offset Electronics WH2 Temperature/Humidity sensor protocol
- * aka Agimex Rosenborg 66796 (sold in Denmark)
+ * aka Agimex Rosenborg 66796 (sold in Denmark), collides with WH5
  * aka ClimeMET CM9088 (Sold in UK)
  * aka TFA Dostmann/Wertheim 30.3157 (Temperature only!) (sold in Germany)
  * aka ...
@@ -57,6 +71,8 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
         model = "Fine Offset WH5 sensor";
+        if (decoder->decode_ctx) // don't care for the actual value
+            model = "Rosenborg-66796";
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
@@ -84,7 +100,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Nibble 5,6,7 contains 12 bits of temperature
     temp = ((b[1] & 0x0F) << 8) | b[2];
-    if (bitbuffer->bits_per_row[0] != 47) { // WH2, Telldus, WH2A
+    if (bitbuffer->bits_per_row[0] != 47 || decoder->decode_ctx) { // WH2, Telldus, WH2A
         // The temperature is signed magnitude and scaled by 10
         if (temp & 0x800) {
             temp &= 0x7FF;	// remove sign bit
@@ -224,11 +240,11 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
     // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
     if (model == MODEL_WH24) { // WH24
-        wind_speed_factor = 1.12;
-        rain_cup_count = 0.3;
+        wind_speed_factor = 1.12f;
+        rain_cup_count = 0.3f;
     } else { // WH65B
-        wind_speed_factor = 0.51;
-        rain_cup_count = 0.254;
+        wind_speed_factor = 0.51f;
+        rain_cup_count = 0.254f;
     }
     // Wind speed is scaled by 8, wind speed = raw / 8 * 1.12 m/s (0.51 for WH65B)
     float wind_speed_ms = wind_speed_raw * 0.125 * wind_speed_factor;
@@ -487,6 +503,7 @@ r_device fineoffset_WH2 = {
     .reset_limit    = 1200,	// We just want 1 package
     .tolerance      = 160, // us
     .decode_fn      = &fineoffset_WH2_callback,
+    .create_fn      = &fineoffset_WH2_create,
     .disabled       = 0,
     .fields         = output_fields
 };

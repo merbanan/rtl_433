@@ -13,10 +13,12 @@ rtl_433_SOURCES      = abuf.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
+                       list.c \
                        mongoose.c \
                        optparse.c \
                        pulse_demod.c \
                        pulse_detect.c \
+                       r_util.c \
                        rtl_433.c \
                        samp_grab.c \
                        sdr.c \
@@ -38,6 +40,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/chuango.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
+                       devices/digitech_xc0324.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
                        devices/efergy_e2_classic.c \

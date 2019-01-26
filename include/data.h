@@ -149,6 +149,7 @@ typedef struct data_output {
     void (*print_string)(struct data_output *output, const char *data, char *format);
     void (*print_double)(struct data_output *output, double data, char *format);
     void (*print_int)(struct data_output *output, int data, char *format);
+    void (*output_start)(struct data_output *output, const char **fields, int num_fields);
     void (*output_poll)(struct data_output *output);
     void (*output_free)(struct data_output *output);
     FILE *file;
@@ -157,22 +158,25 @@ typedef struct data_output {
 /** Construct data output for CSV printer
 
     @param file the output stream
-    @param fields the list of fields to accept and expect. Array is copied, but the actual
-                  strings not. The list may contain duplicates and they are eliminated.
-    @param num_fields number of fields
-
     @return The auxiliary data to pass along with data_csv_printer to data_print.
-            You must release this object with data_csv_free once you're done with it.
+            You must release this object with data_output_free once you're done with it.
 */
-
 struct data_output *data_output_csv_create(FILE *file);
-void data_output_csv_init(struct data_output *output, const char **fields, int num_fields);
 
 struct data_output *data_output_json_create(FILE *file);
 
 struct data_output *data_output_kv_create(FILE *file);
 
 struct data_output *data_output_syslog_create(const char *host, const char *port);
+
+/** Setup known field keys and start output, used by CSV only.
+
+    @param output the data_output handle from data_output_x_create
+    @param fields the list of fields to accept and expect. Array is copied, but the actual
+                  strings not. The list may contain duplicates and they are eliminated.
+    @param num_fields number of fields
+*/
+void data_output_start(struct data_output *output, const char **fields, int num_fields);
 
 /** Prints a structured data object */
 void data_output_print(struct data_output *output, data_t *data);
