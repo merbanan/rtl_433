@@ -74,6 +74,42 @@ void bitbuffer_invert(bitbuffer_t *bits)
     }
 }
 
+void bitbuffer_nrzs_decode(bitbuffer_t *bits)
+{
+    for (unsigned row = 0; row < bits->num_rows; ++row) {
+        if (bits->bits_per_row[row] > 0) {
+            const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
+            const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
+
+            int prev = 0;
+            for (unsigned col = 0; col <= last_col; ++col) {
+                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
+                prev               = bits->bb[row][col];
+                bits->bb[row][col] = bits->bb[row][col] ^ ~mask;
+            }
+            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+        }
+    }
+}
+
+void bitbuffer_nrzm_decode(bitbuffer_t *bits)
+{
+    for (unsigned row = 0; row < bits->num_rows; ++row) {
+        if (bits->bits_per_row[row] > 0) {
+            const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
+            const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
+
+            int prev = 0;
+            for (unsigned col = 0; col <= last_col; ++col) {
+                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
+                prev               = bits->bb[row][col];
+                bits->bb[row][col] = bits->bb[row][col] ^ mask;
+            }
+            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+        }
+    }
+}
+
 void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
         unsigned pos, uint8_t *out, unsigned len)
 {
@@ -374,6 +410,7 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
 
 // Unit testing
 #ifdef _TEST
+#include <assert.h>
 int main(int argc, char **argv)
 {
     fprintf(stderr, "bitbuffer:: test\n");
@@ -407,6 +444,16 @@ int main(int argc, char **argv)
     fprintf(stderr, "TEST: bitbuffer:: invert\n");
     bitbuffer_invert(&bits);
     bitbuffer_print(&bits);
+
+    fprintf(stderr, "TEST: bitbuffer:: nrzs_decode\n");
+    bits.num_rows = 1;
+    bits.bb[0][0] = 0x74;
+    bits.bb[0][1] = 0x60;
+    bits.bits_per_row[0] = 12;
+    bitbuffer_nrzs_decode(&bits);
+    bitbuffer_print(&bits);
+    assert(bits.bb[0][0] == 0xB1);
+    assert(bits.bb[0][1] == 0xA0);
 
     fprintf(stderr, "TEST: bitbuffer:: Clear\n");
     bitbuffer_clear(&bits);

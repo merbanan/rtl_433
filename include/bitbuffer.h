@@ -49,6 +49,14 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 /// Invert all bits in the bitbuffer (do not invert the empty bits)
 void bitbuffer_invert(bitbuffer_t *bits);
 
+// Non-Return-to-Zero Space (NRZI) decode the bitbuffer.
+// "One" is represented by no change in level, "Zero" is represented by change in level.
+void bitbuffer_nrzs_decode(bitbuffer_t *bits);
+
+// Non-Return-to-Zero Mark (NRZI) decode the bitbuffer.
+// "One" is represented by change in level, "Zero" is represented by no change in level.
+void bitbuffer_nrzm_decode(bitbuffer_t *bits);
+
 /// Print the content of the bitbuffer
 void bitbuffer_print(const bitbuffer_t *bits);
 
