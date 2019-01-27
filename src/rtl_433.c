@@ -135,6 +135,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
             "\t[-c <path>] Read config options from a file\n"
             "\t= Tuner options =\n"
             "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]\n"
+            "\t[-t <antenna>] name of the antenna to be used by SoapySDR\n"
             "\t[-g <gain>] (default: auto)\n"
             "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
@@ -982,7 +983,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:taAI:S:m:M:r:w:W:l:d:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -992,6 +993,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"config_file", 'c'},
         {"report_meta", 'M'},
         {"device", 'd'},
+        {"antenna", 't'},
         {"gain", 'g'},
         {"frequency", 'f'},
         {"hop_interval", 'H'},
@@ -1101,6 +1103,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 
         cfg->dev_query = arg;
         break;
+    case 't':
+        cfg->antenna_str = arg;
+        break;
     case 'f':
         if (cfg->frequencies < MAX_FREQS)
             cfg->frequency[cfg->frequencies++] = atouint32_metric(arg, "-f: ");
@@ -1170,10 +1175,6 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             help_write();
 
         add_dumper(cfg, arg, 1);
-        break;
-    case 't':
-        fprintf(stderr, "test_mode (-t) is deprecated. Use -S none|all|unknown|known\n");
-        exit(1);
         break;
     case 'S':
         if (strcasecmp(arg, "all") == 0)
@@ -1701,6 +1702,8 @@ int main(int argc, char **argv) {
 
     if (cfg.verbosity || demod->level_limit)
         fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+
+    r = sdr_set_antenna(cfg.dev, cfg.antenna_str, 1); // always verbose for soapy
 
     /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
     r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, 1); // always verbose
