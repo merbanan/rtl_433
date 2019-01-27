@@ -371,11 +371,11 @@ static void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
     if (cfg->demod->sample_size == 1) { // amplitude (CU8)
         pulse_data->rssi_db = 10.0f * log10f(pulse_data->ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate + 1) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);
     } else { // magnitude (CS16)
         pulse_data->rssi_db = 20.0f * log10f(pulse_data->ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate + 1) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->snr_db  = 20.0f * log10f(asnr);
     }
 }
