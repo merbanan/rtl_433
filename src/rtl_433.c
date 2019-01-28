@@ -341,11 +341,11 @@ static void unregister_protocol(r_cfg_t *cfg, r_device *r_dev)
     }
 }
 
-static void register_all_protocols(r_cfg_t *cfg)
+static void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 {
     for (int i = 0; i < cfg->num_r_devices; i++) {
         // register all device protocols that are not disabled
-        if (!cfg->devices[i].disabled) {
+        if (cfg->devices[i].disabled <= disabled) {
             register_protocol(cfg, &cfg->devices[i], NULL);
         }
     }
@@ -1157,11 +1157,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'G':
         if (atobv(arg, 1)) {
             cfg->no_default_devices = 1;
-            for (i = 0; i < cfg->num_r_devices; ++i) {
-                if (cfg->devices[i].disabled == 1) {
-                    cfg->devices[i].disabled = 0;
-                }
-            }
+            register_all_protocols(cfg, 1);
         }
         break;
     case 'p':
@@ -1276,13 +1272,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
             usage(cfg->devices, cfg->num_r_devices, 1);
         }
-        if ((n > 0 && cfg->devices[n].disabled > 2) || (n < 0 && cfg->devices[-n].disabled > 2)) {
+        if ((n > 0 && cfg->devices[n - 1].disabled > 2) || (n < 0 && cfg->devices[-n - 1].disabled > 2)) {
             fprintf(stderr, "Remote device number specified is invalid\n\n");
             usage(cfg->devices, cfg->num_r_devices, 1);
         }
 
         if (n < 0 && !cfg->no_default_devices) {
-            register_all_protocols(cfg); // register all defaults
+            register_all_protocols(cfg, 0); // register all defaults
         }
         cfg->no_default_devices = 1;
 
@@ -1569,7 +1565,7 @@ int main(int argc, char **argv) {
 
     // register default decoders if nothing is configured
     if (!cfg.no_default_devices) {
-        register_all_protocols(&cfg); // register all defaults
+        register_all_protocols(&cfg, 0); // register all defaults
     }
 
     // check if we need FM demod
