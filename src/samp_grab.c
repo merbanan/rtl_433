@@ -127,10 +127,10 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     else
         start_pos = g->sg_size - signal_bsize + end_pos;
 
-    fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, g->sg_index);
-    fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, g->sg_size);
+    //fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, g->sg_index);
+    //fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, g->sg_size);
 
-    fprintf(stderr, "*** Saving signal to file %s\n", f_name);
+    fprintf(stderr, "*** Saving signal to file %s (%d samples, %d bytes)\n", f_name, grab_len, signal_bsize);
     fp = fopen(f_name, "wb");
     if (!fp) {
         fprintf(stderr, "Failed to open %s\n", f_name);
@@ -142,11 +142,11 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
         wlen  = g->sg_size - start_pos;
         wrest = signal_bsize - wlen;
     }
-    fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
+    //fprintf(stderr, "*** Writing data from %d, len %d\n", start_pos, wlen);
     fwrite(&g->sg_buf[start_pos], 1, wlen, fp);
 
     if (wrest) {
-        fprintf(stderr, "*** Writing data from %d, len %d\n", 0, wrest);
+        //fprintf(stderr, "*** Writing data from %d, len %d\n", 0, wrest);
         fwrite(&g->sg_buf[0], 1, wrest, fp);
     }
 
