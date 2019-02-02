@@ -15,7 +15,7 @@
 
 char **compat_get_default_conf_paths()
 {
-    static char *paths[6] = { NULL };
+    static char *paths[5] = { NULL };
     static char buf[256] = "";
     char *env_config_home = getenv("XDG_CONFIG_HOME");
     if (!paths[0]) {
