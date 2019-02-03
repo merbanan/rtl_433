@@ -40,6 +40,7 @@ enum file_type {
     F_IQ       = F_I | F_Q << 4,
     F_LOGIC    = 5 << 16,
     F_VCD      = 6 << 16,
+    F_OOK      = 7 << 16,
     // format types
     F_U8       = F_1CH | F_UNSIGNED | F_INT | F_W8,
     F_S8       = F_1CH | F_SIGNED   | F_INT | F_W8,
@@ -67,6 +68,7 @@ enum file_type {
     F32_Q      = F_F32 | F_Q,
     U8_LOGIC   = F_LOGIC | F_U8,
     VCD_LOGIC  = F_VCD,
+    PULSE_OOK  = F_OOK,
 };
 
 typedef struct {
