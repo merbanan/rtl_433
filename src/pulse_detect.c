@@ -96,6 +96,69 @@ void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id, uint3
 		fprintf(file, "#%.f 0/\n", pos * scale);
 }
 
+void pulse_data_load(FILE *file, pulse_data_t *data)
+{
+    char s[256];
+    int i = 0;
+    int size = sizeof(data->pulse) / sizeof(int);
+
+    pulse_data_clear(data);
+    // read line-by-line
+    while (i < size && fgets(s, sizeof(s), file)) {
+        if (!strncmp(s, ";freq1", 6)) {
+            data->freq1_hz = strtol(s+6, NULL, 10);
+        }
+        if (!strncmp(s, ";freq2", 6)) {
+            data->freq2_hz = strtol(s + 6, NULL, 10);
+        }
+        if (*s == ';') {
+            if (i) {
+                break; // end or next header found
+            }
+            else {
+                continue; // still reading a header
+            }
+        }
+        // parse two ints.
+        char *p = s;
+        char *endptr;
+        long mark  = strtol(p, &endptr, 10);
+        p          = endptr + 1;
+        long space = strtol(p, &endptr, 10);
+        //fprintf(stderr, "read: mark %ld space %ld\n", mark, space);
+        data->pulse[i] = (int)mark;
+        data->gap[i++] = (int)space;
+    }
+    //fprintf(stderr, "read %d pulses\n", i);
+    data->num_pulses = i;
+}
+
+void pulse_data_print_pulse_header(FILE *file)
+{
+    char time_str[LOCAL_TIME_BUFLEN];
+
+    fprintf(file, ";pulse data\n");
+    fprintf(file, ";version 1\n");
+    fprintf(file, ";timescale 1us\n");
+    fprintf(file, ";created %s\n", local_time_str(0, time_str));
+}
+
+void pulse_data_dump(FILE *file, pulse_data_t *data)
+{
+    if (data->fsk_f2_est) {
+        fprintf(file, ";fsk %d pulses\n", data->num_pulses);
+        fprintf(file, ";freq1 %.0f\n", data->freq1_hz);
+        fprintf(file, ";freq2 %.0f\n", data->freq2_hz);
+    }
+    else {
+        fprintf(file, ";ook %d pulses\n", data->num_pulses);
+        fprintf(file, ";freq1 %.0f\n", data->freq1_hz);
+    }
+    for (unsigned i = 0; i < data->num_pulses; ++i) {
+        fprintf(file, "%d %d\n", data->pulse[i], data->gap[i]);
+    }
+    fprintf(file, ";end\n");
+}
 
 // OOK adaptive level estimator constants
 #define OOK_HIGH_LOW_RATIO	8			// Default ratio between high and low (noise) level
