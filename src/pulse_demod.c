@@ -114,7 +114,10 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_add_row(&bits);
         }
         // End of Message?
-        else {
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] >= device->s_reset_limit))     // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+
             if (device->decode_fn) {
                 events += device->decode_fn(device, &bits);
             }
