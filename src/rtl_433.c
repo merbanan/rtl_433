@@ -749,14 +749,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg->samp_rate);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
                     if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->pulse_data);
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->pulse_data, cfg->samp_rate);
+                    pulse_analyzer(&demod->pulse_data);
                 }
 
             } else if (package_type == 2) {
@@ -767,14 +767,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg->samp_rate);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"');
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
                     if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->fsk_pulse_data);
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->fsk_pulse_data, cfg->samp_rate);
+                    pulse_analyzer(&demod->fsk_pulse_data);
                 }
             } // if (package_type == ...
             d_events += p_events;

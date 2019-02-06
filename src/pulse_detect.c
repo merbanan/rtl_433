@@ -75,13 +75,13 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 	fprintf(file, "#0 0/ 0' 0\"\n");
 }
 
-void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id, uint32_t sample_rate)
+void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
 {
 	float scale;
-	if (sample_rate <= 500000)
-		scale = 1000000 / sample_rate; // unit: 1 us
+	if (data->sample_rate <= 500000)
+		scale = 1000000 / data->sample_rate; // unit: 1 us
 	else
-		scale = 10000000 / sample_rate; // unit: 100 ns
+		scale = 10000000 / data->sample_rate; // unit: 100 ns
 	uint64_t pos = data->offset;
 	for (unsigned n = 0; n < data->num_pulses; ++n) {
 		if (n == 0)
@@ -103,8 +103,10 @@ void pulse_data_load(FILE *file, pulse_data_t *data)
     int size = sizeof(data->pulse) / sizeof(int);
 
     pulse_data_clear(data);
+	data->sample_rate = 1000000; // assumes 1us timescale
     // read line-by-line
     while (i < size && fgets(s, sizeof(s), file)) {
+		// TODO: we should parse sample rate and timescale
         if (!strncmp(s, ";freq1", 6)) {
             data->freq1_hz = strtol(s+6, NULL, 10);
         }
@@ -140,6 +142,7 @@ void pulse_data_print_pulse_header(FILE *file)
     fprintf(file, ";pulse data\n");
     fprintf(file, ";version 1\n");
     fprintf(file, ";timescale 1us\n");
+    //fprintf(file, ";samplerate %u\n", data->sample_rate);
     fprintf(file, ";created %s\n", local_time_str(0, time_str));
 }
 
@@ -154,8 +157,9 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
         fprintf(file, ";ook %d pulses\n", data->num_pulses);
         fprintf(file, ";freq1 %.0f\n", data->freq1_hz);
     }
+    double to_us = 1e6 / data->sample_rate;
     for (unsigned i = 0; i < data->num_pulses; ++i) {
-        fprintf(file, "%d %d\n", data->pulse[i], data->gap[i]);
+        fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us);
     }
     fprintf(file, ";end\n");
 }
@@ -374,6 +378,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 					// Initialize all data
 					pulse_data_clear(pulses);
 					pulse_data_clear(fsk_pulses);
+					pulses->sample_rate = samp_rate;
+					fsk_pulses->sample_rate = samp_rate;
 					pulses->offset = sample_offset + s->data_counter;
 					fsk_pulses->offset = sample_offset + s->data_counter;
 					pulses->start_ago = len - s->data_counter;
@@ -640,10 +646,10 @@ void histogram_print(histogram_t const *hist, uint32_t samp_rate) {
 #define TOLERANCE (0.2f)		// 20% tolerance should still discern between the pulse widths: 0.33, 0.66, 1.0
 
 /// Analyze the statistics of a pulse data structure and print result
-void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
+void pulse_analyzer(pulse_data_t *data)
 {
-	double to_ms = 1e3 / samp_rate;
-	double to_us = 1e6 / samp_rate;
+	double to_ms = 1e3 / data->sample_rate;
+	double to_us = 1e6 / data->sample_rate;
 	// Generate pulse period data
 	int pulse_total_period = 0;
 	pulse_data_t pulse_periods = {0};
@@ -672,19 +678,19 @@ void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate)
 	fprintf(stderr, "Total count: %4u,  width: %4.2f ms\t\t(%5i S)\n",
 		data->num_pulses, pulse_total_period*to_ms, pulse_total_period);
 	fprintf(stderr, "Pulse width distribution:\n");
-	histogram_print(&hist_pulses, samp_rate);
+	histogram_print(&hist_pulses, data->sample_rate);
 	fprintf(stderr, "Gap width distribution:\n");
-	histogram_print(&hist_gaps, samp_rate);
+	histogram_print(&hist_gaps, data->sample_rate);
 	fprintf(stderr, "Pulse period distribution:\n");
-	histogram_print(&hist_periods, samp_rate);
+	histogram_print(&hist_periods, data->sample_rate);
 	fprintf(stderr, "Level estimates [high, low]: %6i, %6i\n",
 		data->ook_high_estimate, data->ook_low_estimate);
 	fprintf(stderr, "RSSI: %.1f dB SNR: %.1f dB Noise: %.1f dB\n",
 		data->rssi_db, data->snr_db, data->noise_db);
 	fprintf(stderr, "Frequency offsets [F1, F2]:  %6i, %6i\t(%+.1f kHz, %+.1f kHz)\n",
 		data->fsk_f1_est, data->fsk_f2_est,
-		(float)data->fsk_f1_est/INT16_MAX*samp_rate/2.0/1000.0,
-		(float)data->fsk_f2_est/INT16_MAX*samp_rate/2.0/1000.0);
+		(float)data->fsk_f1_est/INT16_MAX*data->sample_rate/2.0/1000.0,
+		(float)data->fsk_f2_est/INT16_MAX*data->sample_rate/2.0/1000.0);
 
 	fprintf(stderr, "Guessing modulation: ");
 	r_device device = { .name = "Analyzer Device", 0};
