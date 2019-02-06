@@ -1,5 +1,4 @@
-/*
- * *** Fine Offset WH1050 Weather Station ***
+/* Fine Offset WH1050 Weather Station
  *
  * This module is a cut-down version of the WH1080 decoder.
  * The WH1050 sensor unit is like the WH1080 unit except it has no
@@ -41,78 +40,8 @@
 // byte and then discard it.
 #define CRC_INIT 0x00
 
-static unsigned short get_device_id(const uint8_t* br) {
-    return (br[0] << 4 & 0xf0 ) | (br[1] >> 4);
-}
-
-static char* get_battery(const uint8_t* br) {
-    if (!(br[1] & 0x04)) {
-        return "OK";
-    } else {
-        return "LOW";
-    }
-}
-
-// ------------ WEATHER SENSORS DECODING ----------------------------------------------------
-
-static float get_temperature(const uint8_t* br) {
-    const int temp_raw = (br[1] << 8) + br[2];
-    return ((temp_raw & 0x03ff) - 0x190) / 10.0;
-}
-
-static int get_humidity(const uint8_t* br) {
-    return br[3];
-}
-
-static float get_wind_speed_raw(const uint8_t* br) {
-    return br[4]; // Raw
-}
-
-static float get_wind_avg_ms(const uint8_t* br) {
-    return (br[4] * 34.0f) / 100; // Meters/sec.
-}
-
-static float get_wind_avg_mph(const uint8_t* br) {
-    return ((br[4] * 34.0f) / 100) * 2.23693629f; // Mph
-}
-
-static float get_wind_avg_kmh(const uint8_t* br) {
-    return ((br[4] * 34.0f) / 100) * 3.6f; // Km/h
-}
-
-static float get_wind_avg_knot(const uint8_t* br) {
-    return ((br[4] * 34.0f) / 100) * 1.94384f; // Knots
-}
-
-static float get_wind_gust_raw(const uint8_t* br) {
-    return br[5]; // Raw
-}
-
-static float get_wind_gust_ms(const uint8_t* br) {
-    return (br[5] * 34.0f) / 100; // Meters/sec.
-}
-
-static float get_wind_gust_mph(const uint8_t* br) {
-    return ((br[5] * 34.0f) / 100) * 2.23693629f; // Mph
-
-}
-
-static float get_wind_gust_kmh(const uint8_t* br) {
-    return ((br[5] * 34.0f) / 100) * 3.6f; // Km/h
-}
-
-static float get_wind_gust_knot(const uint8_t* br) {
-    return ((br[5] * 34.0f) / 100) * 1.94384f; // Knots
-}
-
-static float get_rainfall(const uint8_t* br) {
-    return ((((unsigned short)br[6] & 0x0f) << 8) | br[7]) * 0.3f;
-}
-
-//-------------------------------------------------------------------------------------
-//-------------------------------------------------------------------------------------
-
-static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t br[9];
 
@@ -140,41 +69,22 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    if (br[8] != crc8(br, 8, CRC_POLY, CRC_INIT)) {
-        // crc mismatch
-        return 0;
+    if (crc8(br, 9, CRC_POLY, CRC_INIT)) {
+        return 0; // crc mismatch
     }
 
-//---------------------------------------------------------------------------------------
-//-------- GETTING WEATHER SENSORS DATA -------------------------------------------------
+    // GETTING WEATHER SENSORS DATA
+    int temp_raw      = (br[1] << 8) + br[2];
+    float temperature = ((temp_raw & 0x03ff) - 0x190) / 10.0;
+    int humidity      = br[3];
+    float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
+    float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
+    int rain_raw      = ((br[6] & 0x0f) << 8) | br[7];
+    float rain        = rain_raw * 0.3f;
+    int device_id     = (br[0] << 4 & 0xf0) | (br[1] >> 4);
+    int battery_low   = br[1] & 0x04; // Unsure about Battery byte...
 
-    const float temperature = get_temperature(br);
-    const int humidity = get_humidity(br);
-
-    // Select which metric system for *wind avg speed* and *wind gust* :
-
-    // Wind average speed :
-
-    //const float speed = get_wind_avg_ms((br)   // <--- Data will be shown in Meters/sec.
-    //const float speed = get_wind_avg_mph((br)  // <--- Data will be shown in Mph
-    const float speed = get_wind_avg_kmh(br);  // <--- Data will be shown in Km/h
-    //const float speed = get_wind_avg_knot((br) // <--- Data will be shown in Knots
-
-
-    // Wind gust speed :
-
-    //const float gust = get_wind_gust_ms(br);   // <--- Data will be shown in Meters/sec.
-    //const float gust = get_wind_gust_mph(br);  // <--- Data will be shown in Mph
-    const float gust = get_wind_gust_kmh(br);  // <--- Data will be shown in km/h
-    //const float gust = get_wind_gust_knot(br); // <--- Data will be shown in Knots
-
-    const float rain = get_rainfall(br);
-    const int device_id = get_device_id(br);
-    const char* battery = get_battery(br);
-
-//---------------------------------------------------------------------------------------
-//--------- PRESENTING DATA --------------------------------------------------------------
-
+    // PRESENTING DATA
     data = data_make(
             "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
             "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
@@ -183,8 +93,8 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "speed",         "Wind avg speed",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, speed,
             "gust",          "Wind gust",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, gust,
             "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
-            "battery",       "Battery",    DATA_STRING, battery, // Unsure about Battery byte...
-            "mic",             "Integrity",    DATA_STRING,    "CRC",
+            "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
+            "mic",           "Integrity",    DATA_STRING,    "CRC",
             NULL);
     decoder_output_data(decoder, data);
     return 1;
