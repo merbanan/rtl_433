@@ -717,11 +717,15 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
     return -1;
 #endif
 
-#ifdef RTLSDR
     /* Open RTLSDR by default or if index or serial given, if available */
-    if (!dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9'))
+    if (!dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9')) {
+#ifdef RTLSDR
         return sdr_open_rtl(out_dev, sample_size, dev_query, verbose);
+#else
+        fprintf(stderr, "No input driver for RTL-SDR compiled in.\n");
+        return -1;
 #endif
+    }
 
 #ifdef SOAPYSDR
     /* Open SoapySDR otherwise, if available */
