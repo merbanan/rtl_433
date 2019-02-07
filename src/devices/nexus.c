@@ -74,7 +74,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
 
         // Thermo
-        if (bb[r][3] == 0xF0 && (bb[r][4] >> 4) == 0x0) {
+        if (humidity == 0x00) {
         data = data_make(
                 "model",         "",            DATA_STRING, "Nexus Temperature",
                 "id",            "House Code",  DATA_INT, id,
