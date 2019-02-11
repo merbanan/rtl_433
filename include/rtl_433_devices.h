@@ -140,6 +140,7 @@ typedef struct r_device {
     float sync_width;
     float tolerance;
     int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
+    struct r_device *(*create_fn)(char *args);
     unsigned disabled;
     char **fields; // List of fields this decoder produces; required for CSV output. NULL-terminated.
 

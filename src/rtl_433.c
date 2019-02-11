@@ -177,7 +177,7 @@ static void usage(r_device *devices, unsigned num_devices, int exit_code)
         fprintf(stderr, "Supported device protocols:\n");
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
-            if (devices[i].disabled <= 1) // if not hidden
+            if (devices[i].disabled <= 2) // if not hidden
                 fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
         }
         fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
@@ -272,7 +272,7 @@ static void help_write(void)
             "\tFile content and format are detected as parameters, possible options are:\n"
             "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
             "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
-            "\t'i.f32', 'q.f32', 'logic.u8', and 'vcd'.\n\n"
+            "\t'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.\n\n"
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
             "\tOverrides can be prefixed, separated by colon (':')\n\n"
             "\tE.g. default detection by extension: path/filename.am.s16\n"
@@ -297,9 +297,19 @@ static void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->verbose_bits = cfg->verbose_bits;
 }
 
-static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
-    r_device *p = calloc(1, sizeof (r_device));
-    *p = *r_dev; // copy
+static void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
+{
+    r_device *p;
+    if (r_dev->create_fn) {
+        p = r_dev->create_fn(arg);
+    }
+    else {
+        if (arg && *arg) {
+            fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
+        }
+        p = malloc(sizeof (*p));
+        *p = *r_dev; // copy
+    }
 
     update_protocol(cfg, p);
 
@@ -310,6 +320,34 @@ static void register_protocol(r_cfg_t *cfg, r_device *r_dev) {
 
     if (cfg->verbosity) {
         fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+    }
+}
+
+static void free_protocol(r_device *r_dev)
+{
+    // free(r_dev->name);
+    free(r_dev->decode_ctx);
+    free(r_dev);
+}
+
+static void unregister_protocol(r_cfg_t *cfg, r_device *r_dev)
+{
+    for (size_t i = 0; i < cfg->demod->r_devs.len; ++i) { // list might contain NULLs
+        r_device *p = cfg->demod->r_devs.elems[i];
+        if (!strcmp(p->name, r_dev->name)) {
+            list_remove(&cfg->demod->r_devs, i, (list_elem_free_fn)free_protocol);
+            i--; // so we don't skip the next elem now shifted down
+        }
+    }
+}
+
+static void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
+{
+    for (int i = 0; i < cfg->num_r_devices; i++) {
+        // register all device protocols that are not disabled
+        if (cfg->devices[i].disabled <= disabled) {
+            register_protocol(cfg, &cfg->devices[i], NULL);
+        }
     }
 }
 
@@ -333,11 +371,11 @@ static void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
     if (cfg->demod->sample_size == 1) { // amplitude (CU8)
         pulse_data->rssi_db = 10.0f * log10f(pulse_data->ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate + 1) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);
     } else { // magnitude (CS16)
         pulse_data->rssi_db = 20.0f * log10f(pulse_data->ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate + 1) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->snr_db  = 20.0f * log10f(asnr);
     }
 }
@@ -488,7 +526,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     }
 
     if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
-        calc_rssi_snr(cfg, &cfg->demod->fsk_pulse_data);
         data_append(data,
                 "mod",   "Modulation",  DATA_STRING, "FSK",
                 "freq1", "Freq1",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0,
@@ -499,7 +536,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
     else if (cfg->report_meta) {
-        calc_rssi_snr(cfg, &cfg->demod->pulse_data);
         data_append(data,
                 "mod",   "Modulation",  DATA_STRING, "ASK",
                 "freq",  "Freq",        DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->pulse_data.freq1_hz / 1000000.0,
@@ -538,7 +574,88 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     data_free(data);
 }
 
-static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
+static int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
+{
+    int p_events = 0;
+
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        switch (r_dev->modulation) {
+        case OOK_PULSE_PCM_RZ:
+            p_events += pulse_demod_pcm(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_PPM:
+            p_events += pulse_demod_ppm(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_PWM:
+            p_events += pulse_demod_pwm(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_MANCHESTER_ZEROBIT:
+            p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_PIWM_RAW:
+            p_events += pulse_demod_piwm_raw(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_PIWM_DC:
+            p_events += pulse_demod_piwm_dc(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_DMC:
+            p_events += pulse_demod_dmc(pulse_data, r_dev);
+            break;
+        case OOK_PULSE_PWM_OSV1:
+            p_events += pulse_demod_osv1(pulse_data, r_dev);
+            break;
+        // FSK decoders
+        case FSK_PULSE_PCM:
+        case FSK_PULSE_PWM:
+            break;
+        case FSK_PULSE_MANCHESTER_ZEROBIT:
+            p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
+            break;
+        default:
+            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+        }
+    }
+
+    return p_events;
+}
+
+static int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
+{
+    int p_events = 0;
+
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        switch (r_dev->modulation) {
+        // OOK decoders
+        case OOK_PULSE_PCM_RZ:
+        case OOK_PULSE_PPM:
+        case OOK_PULSE_PWM:
+        case OOK_PULSE_MANCHESTER_ZEROBIT:
+        case OOK_PULSE_PIWM_RAW:
+        case OOK_PULSE_PIWM_DC:
+        case OOK_PULSE_DMC:
+        case OOK_PULSE_PWM_OSV1:
+            break;
+        case FSK_PULSE_PCM:
+            p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
+            break;
+        case FSK_PULSE_PWM:
+            p_events += pulse_demod_pwm(fsk_pulse_data, r_dev);
+            break;
+        case FSK_PULSE_MANCHESTER_ZEROBIT:
+            p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
+            break;
+        default:
+            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+        }
+    }
+
+    return p_events;
+}
+
+static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
+{
     r_cfg_t *cfg = ctx;
     struct dm_state *demod = cfg->demod;
     char time_str[LOCAL_TIME_BUFLEN];
@@ -625,92 +742,39 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
             if (package_type == 1) {
+                calc_rssi_snr(cfg, &demod->pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
-                for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-                    r_device *r_dev = *iter;
-                    switch (r_dev->modulation) {
-                        case OOK_PULSE_PCM_RZ:
-                            p_events += pulse_demod_pcm(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_PPM:
-                            p_events += pulse_demod_ppm(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_PWM:
-                            p_events += pulse_demod_pwm(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_PIWM_RAW:
-                            p_events += pulse_demod_piwm_raw(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_PIWM_DC:
-                            p_events += pulse_demod_piwm_dc(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_DMC:
-                            p_events += pulse_demod_dmc(&demod->pulse_data, r_dev);
-                            break;
-                        case OOK_PULSE_PWM_OSV1:
-                            p_events += pulse_demod_osv1(&demod->pulse_data, r_dev);
-                            break;
-                        // FSK decoders
-                        case FSK_PULSE_PCM:
-                        case FSK_PULSE_PWM:
-                            break;
-                        case FSK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->pulse_data, r_dev);
-                            break;
-                        default:
-                            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
-                    }
-                } // for demodulators
+
+                p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
+
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'', cfg->samp_rate);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->pulse_data, 0x02);
+                    if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->pulse_data);
                 }
+
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    calc_rssi_snr(cfg, &demod->pulse_data);
-                    pulse_analyzer(&demod->pulse_data, cfg->samp_rate);
+                    pulse_analyzer(&demod->pulse_data);
                 }
+
             } else if (package_type == 2) {
+                calc_rssi_snr(cfg, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
-                for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-                    r_device *r_dev = *iter;
-                    switch (r_dev->modulation) {
-                        // OOK decoders
-                        case OOK_PULSE_PCM_RZ:
-                        case OOK_PULSE_PPM:
-                        case OOK_PULSE_PWM:
-                        case OOK_PULSE_MANCHESTER_ZEROBIT:
-                        case OOK_PULSE_PIWM_RAW:
-                        case OOK_PULSE_PIWM_DC:
-                        case OOK_PULSE_DMC:
-                        case OOK_PULSE_PWM_OSV1:
-                            break;
-                        case FSK_PULSE_PCM:
-                            p_events += pulse_demod_pcm(&demod->fsk_pulse_data, r_dev);
-                            break;
-                        case FSK_PULSE_PWM:
-                            p_events += pulse_demod_pwm(&demod->fsk_pulse_data, r_dev);
-                            break;
-                        case FSK_PULSE_MANCHESTER_ZEROBIT:
-                            p_events += pulse_demod_manchester_zerobit(&demod->fsk_pulse_data, r_dev);
-                            break;
-                        default:
-                            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
-                    }
-                } // for demodulators
+
+                p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
+
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
-                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"', cfg->samp_rate);
+                    if (dumper->format == VCD_LOGIC) pulse_data_print_vcd(dumper->file, &demod->fsk_pulse_data, '"');
                     if (dumper->format == U8_LOGIC) pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
+                    if (dumper->format == PULSE_OOK) pulse_data_dump(dumper->file, &demod->fsk_pulse_data);
                 }
+
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    calc_rssi_snr(cfg, &demod->fsk_pulse_data);
-                    pulse_analyzer(&demod->fsk_pulse_data, cfg->samp_rate);
+                    pulse_analyzer(&demod->fsk_pulse_data);
                 }
             } // if (package_type == ...
             d_events += p_events;
@@ -758,7 +822,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx) {
 
     for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
-        if (!dumper->file || dumper->format == VCD_LOGIC)
+        if (!dumper->file
+                || dumper->format == VCD_LOGIC
+                || dumper->format == PULSE_OOK)
             continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
         unsigned long out_len = n_samples * 2 * demod->sample_size;
@@ -961,6 +1027,9 @@ static void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     if (dumper->format == VCD_LOGIC) {
         pulse_data_print_vcd_header(dumper->file, cfg->samp_rate);
     }
+    if (dumper->format == PULSE_OOK) {
+        pulse_data_print_pulse_header(dumper->file);
+    }
 }
 
 static void add_infile(r_cfg_t *cfg, char *in_file)
@@ -1119,11 +1188,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'G':
         if (atobv(arg, 1)) {
             cfg->no_default_devices = 1;
-            for (i = 0; i < cfg->num_r_devices; ++i) {
-                if (cfg->devices[i].disabled == 1) {
-                    cfg->devices[i].disabled = 0;
-                }
-            }
+            register_all_protocols(cfg, 1);
         }
         break;
     case 'p':
@@ -1238,23 +1303,25 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
             usage(cfg->devices, cfg->num_r_devices, 1);
         }
-
-        if (n == 0 || (n > 0 && !cfg->no_default_devices)) {
-            for (i = 0; i < cfg->num_r_devices; i++) {
-                if (!cfg->devices[i].disabled)
-                    cfg->devices[i].disabled = 1;
-            }
-            cfg->no_default_devices = 1;
+        if ((n > 0 && cfg->devices[n - 1].disabled > 2) || (n < 0 && cfg->devices[-n - 1].disabled > 2)) {
+            fprintf(stderr, "Remote device number specified is invalid\n\n");
+            usage(cfg->devices, cfg->num_r_devices, 1);
         }
+
+        if (n < 0 && !cfg->no_default_devices) {
+            register_all_protocols(cfg, 0); // register all defaults
+        }
+        cfg->no_default_devices = 1;
 
         if (n >= 1) {
-            cfg->devices[n - 1].disabled = 0;
+            register_protocol(cfg, &cfg->devices[n - 1], arg_param(arg));
         }
         else if (n <= -1) {
-            cfg->devices[-n - 1].disabled = 1;
+            unregister_protocol(cfg, &cfg->devices[-n - 1]);
         }
         else {
             fprintf(stderr, "Disabling all device decoders.\n");
+            list_clear(&cfg->demod->r_devs, (list_elem_free_fn)free_protocol);
         }
         break;
     case 'X':
@@ -1262,10 +1329,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             flex_create_device(NULL);
 
         flex_device = flex_create_device(arg);
-        register_protocol(cfg, flex_device);
-        if (flex_device->modulation >= FSK_DEMOD_MIN_VAL) {
-            cfg->demod->enable_FM_demod = 1;
-        }
+        register_protocol(cfg, flex_device, "");
         break;
     case 'q':
         fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");
@@ -1530,13 +1594,17 @@ int main(int argc, char **argv) {
         add_kv_output(&cfg, NULL);
     }
 
-    for (i = 0; i < cfg.num_r_devices; i++) {
-        // register all device protocols that are not disabled
-        if (!cfg.devices[i].disabled) {
-            register_protocol(&cfg, &cfg.devices[i]);
-            if (cfg.devices[i].modulation >= FSK_DEMOD_MIN_VAL) {
-              demod->enable_FM_demod = 1;
-            }
+    // register default decoders if nothing is configured
+    if (!cfg.no_default_devices) {
+        register_all_protocols(&cfg, 0); // register all defaults
+    }
+
+    // check if we need FM demod
+    for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (r_dev->modulation >= FSK_DEMOD_MIN_VAL) {
+          demod->enable_FM_demod = 1;
+          break;
         }
     }
 
@@ -1631,6 +1699,28 @@ int main(int argc, char **argv) {
             }
             demod->sample_file_pos = 0.0;
 
+            // special case for pulse data file-inputs
+            if (demod->load_info.format == PULSE_OOK) {
+                while (!cfg.do_exit) {
+                    pulse_data_load(in_file, &demod->pulse_data);
+                    if (!demod->pulse_data.num_pulses)
+                        break;
+
+                    if (demod->pulse_data.fsk_f2_est) {
+                        run_fsk_demods(&demod->r_devs, &demod->pulse_data);
+                    }
+                    else {
+                        run_ook_demods(&demod->r_devs, &demod->pulse_data);
+                    }
+                }
+
+                if (in_file != stdin)
+                    fclose(in_file = stdin);
+
+                continue;
+            }
+
+            // default case for file-inputs
             int n_blocks = 0;
             unsigned long n_read;
             do {

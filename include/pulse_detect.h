@@ -26,11 +26,12 @@
 /// Data for a compact representation of generic pulse train
 typedef struct {
 	uint64_t offset;			// Offset to first pulse in number of samples from start of stream
+	uint32_t sample_rate;		// Sample rate the pulses are recorded with.
 	unsigned start_ago;			// Start of first pulse in number of samples ago
 	unsigned end_ago;			// End of last pulse in number of samples ago
 	unsigned int num_pulses;
-	int pulse[PD_MAX_PULSES];	// Contains width of a pulse	(high)
-	int gap[PD_MAX_PULSES];		// Width of gaps between pulses (low)
+	int pulse[PD_MAX_PULSES];	// Width of pulses (high) in number of samples
+	int gap[PD_MAX_PULSES];		// Width of gaps between pulses (low) in number of samples
 	int ook_low_estimate;		// Estimate for the OOK low level (base noise level) at beginning of package
 	int ook_high_estimate;		// Estimate for the OOK high level at end of package
 	int fsk_f1_est;				// Estimate for the F1 frequency for FSK
@@ -57,7 +58,16 @@ void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, pulse_
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate);
 
 /// Print the content of a pulse_data_t structure in VCD format
-void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id, uint32_t sample_rate);
+void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id);
+
+/// Read the next pulse_data_t structure from OOK text
+void pulse_data_load(FILE *file, pulse_data_t *data);
+
+/// Print a header for the OOK text format
+void pulse_data_print_pulse_header(FILE *file);
+
+/// Print the content of a pulse_data_t structure as OOK text
+void pulse_data_dump(FILE *file, pulse_data_t *data);
 
 pulse_detect_t *pulse_detect_create(void);
 
@@ -78,7 +88,7 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 /// Analyze and print result
-void pulse_analyzer(pulse_data_t *data, uint32_t samp_rate);
+void pulse_analyzer(pulse_data_t *data);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */
