@@ -1,7 +1,7 @@
 /* LaCrosse TX 433 Mhz Temperature and Humidity Sensors
  * Tested: TX-7U and TX-6U (Temperature only)
- *
  * Not Tested but should work: TX-3, TX-4
+ * also TFA Dostmann 30.3120.90 sensor (for e.g. 35.1018.06 (WS-9015) station)
  *
  * Copyright (C) 2015 Robert C. Terzi
  *

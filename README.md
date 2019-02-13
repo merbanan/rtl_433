@@ -95,7 +95,7 @@ Supported device protocols:
     [26]  Danfoss CFR Thermostat
     [29]  Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
-    [31]  TFA-Twin-Plus-30.3049 and Ea2 BL999
+    [31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
     [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
     [33]  WT450
     [34]  LaCrosse WS-2310 Weather Station

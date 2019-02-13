@@ -1,5 +1,6 @@
 /*
  * TFA-Twin-Plus-30.3049
+ * also Conrad KW9010 (perhaps just rebranded), Ea2 BL999
  *
  * Copyright (C) 2015 Paul Ortyl
  *
@@ -111,7 +112,7 @@ static char *output_fields[] = {
 };
 
 r_device tfa_twin_plus_303049 = {
-    .name          = "TFA-Twin-Plus-30.3049 and Ea2 BL999",
+    .name          = "TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999",
     .modulation    = OOK_PULSE_PPM,
     .short_width   = 2000,
     .long_width    = 4000,
