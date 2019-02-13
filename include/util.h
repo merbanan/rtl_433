@@ -1,12 +1,13 @@
-/**
- * Various utility functions for use by device drivers
- *
- * Copyright (C) 2015 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions for use by device drivers.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_UTIL_H_
 #define INCLUDE_UTIL_H_
@@ -33,7 +34,7 @@ uint8_t reverse8(uint8_t x);
 /// @param num_bytes number of bytes to reflect
 void reflect_bytes(uint8_t message[], unsigned num_bytes);
 
-/// CRC-4
+/// CRC-4.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -42,7 +43,7 @@ void reflect_bytes(uint8_t message[], unsigned num_bytes);
 /// @return CRC value
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// CRC-7
+/// CRC-7.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -51,10 +52,10 @@ uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// @return CRC value
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// Generic Cyclic Redundancy Check CRC-8
+/// Generic Cyclic Redundancy Check CRC-8.
 ///
-/// Example polynomial: 0x31 = x8 + x5 + x4 + 1	(x8 is implicit)
-/// Example polynomial: 0x80 = x8 + x7			(a normal bit-by-bit parity XOR)
+/// Example polynomial: 0x31 = x8 + x5 + x4 + 1 (x8 is implicit)
+/// Example polynomial: 0x80 = x8 + x7 (a normal bit-by-bit parity XOR)
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -73,7 +74,7 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// @return CRC value
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// CRC-16 LSB
+/// CRC-16 LSB.
 /// Input and output are reflected, i.e. least significant bit is shifted in first.
 /// Note that poly and init already need to be reflected.
 ///
@@ -84,7 +85,7 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 /// @return CRC value
 uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
-/// CRC-16
+/// CRC-16.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message

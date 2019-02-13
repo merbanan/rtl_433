@@ -1,3 +1,7 @@
+/** @file
+    Meta include for all decoders.
+*/
+
 #ifndef INCLUDE_DECODER_H_
 #define INCLUDE_DECODER_H_
 

@@ -1,13 +1,13 @@
-/**
- * Various utility functions handling file formats
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions handling file formats.
+ 
+    Copyright (C) 2018 Christian Zuckschwerdt
+ 
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_FILEFORMAT_H_
 #define INCLUDE_FILEFORMAT_H_
@@ -17,8 +17,8 @@
 
 char const *file_basename(char const *path);
 
-// a single handy number to define the file type.
-// bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
+/// a single handy number to define the file type.
+/// bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
 enum file_type {
     // format bits
     F_UNSIGNED = 0 << 0,

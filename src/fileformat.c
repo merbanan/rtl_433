@@ -1,13 +1,13 @@
-/**
- * Various utility functions handling file formats
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions handling file formats.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <string.h>
 #include <stdlib.h>
@@ -211,7 +211,7 @@ char const *last_plain_colon(char const *p)
     return found;
 }
 
-/*
+/**
 This will detect file info and overrides.
 
 Parse "[0-9]+(\.[0-9]+)?[A-Za-z]"

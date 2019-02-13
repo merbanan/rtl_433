@@ -1,3 +1,7 @@
+/** @file
+    Definition of r_cfg application structure.
+*/
+
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
@@ -62,7 +66,7 @@ typedef struct r_cfg {
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
     int grab_mode;
-    int verbosity; // 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding
+    int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
