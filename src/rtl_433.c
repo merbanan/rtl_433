@@ -63,6 +63,10 @@
 #include "getopt/getopt.h"
 #endif
 
+#ifdef GPS
+#include <gps.h>
+#endif
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 static void print_version(void)
@@ -273,6 +277,29 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     get_time_now(&demod->now);
+
+#ifdef GPS
+    if (cfg->gps_connected) {
+        int r = gps_read(&cfg->gps_data, NULL, 0);
+        if (r  == -1) {
+            printf("error occured reading gps data. code: %d, reason: %s\n", r, gps_errstr(r));
+            gps_close(&cfg->gps_data);
+            cfg->gps_connected = 0;
+            cfg->gps_backoff   = 10;
+        }
+    }
+    if (!cfg->gps_connected && !cfg->gps_backoff--) {
+        int r = r = gps_open("localhost", "2947", &cfg->gps_data);
+        if (r == -1) {
+            printf("code: %d, reason: %s\n", r, gps_errstr(r));
+            cfg->gps_backoff = 10;
+        }
+        else {
+            cfg->gps_connected = 1;
+            gps_stream(&cfg->gps_data, WATCH_ENABLE | WATCH_JSON, NULL);
+        }
+    }
+#endif
 
     n_samples = len / 2 / demod->sample_size;
 
@@ -1318,6 +1345,17 @@ int main(int argc, char **argv) {
         exit(1);
     }
 
+#ifdef GPS
+    if ((r = gps_open("localhost", "2947", &cfg.gps_data)) == -1) {
+        printf("code: %d, reason: %s\n", r, gps_errstr(r));
+        //exit(1);
+    }
+    else {
+        cfg.gps_connected = 1;
+        gps_stream(&cfg.gps_data, WATCH_ENABLE | WATCH_JSON, NULL);
+    }
+#endif
+
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
     sigemptyset(&sigact.sa_mask);
@@ -1401,6 +1439,11 @@ int main(int argc, char **argv) {
         event_occurred_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
         flush_report_data(&cfg);
     }
+
+#ifdef GPS
+    gps_stream(&cfg.gps_data, WATCH_DISABLE, NULL);
+    gps_close(&cfg.gps_data);
+#endif
 
     if (!cfg.do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);

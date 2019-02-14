@@ -129,6 +129,15 @@ else()
     message(STATUS "SoapySDR device input disabled.")
 endif()
 
+find_package(LibGPS)
+if(LIBGPS_FOUND)
+    include_directories(${LIBGPS_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBGPS_LIBRARIES})
+    ADD_DEFINITIONS(-DGPS)
+else()
+    message(STATUS "gpsd development files not found, gps meta data won't be available.")
+endif()
+
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
 # pprof -text ./src/rtl_433 prof.out

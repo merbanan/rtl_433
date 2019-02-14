@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include "list.h"
 #include <time.h>
+#ifdef GPS
+#include <gps.h>
+#endif
 
 #define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
@@ -95,6 +98,11 @@ typedef struct r_cfg {
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval
     unsigned frames_events; ///< stats counter for interval
+#ifdef GPS
+    int gps_connected;
+    int gps_backoff;
+    struct gps_data_t gps_data;
+#endif
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

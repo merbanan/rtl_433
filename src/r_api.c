@@ -45,6 +45,10 @@
 #include "getopt/getopt.h"
 #endif
 
+#ifdef GPS
+#include <gps.h>
+#endif
+
 char const *version_string(void)
 {
     return "rtl_433"
@@ -647,6 +651,26 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 "time", "", DATA_STRING, time_str,
                 NULL);
     }
+
+#ifdef GPS
+    if ((cfg->gps_data.status == STATUS_FIX) &&
+            (cfg->gps_data.fix.mode == MODE_2D || cfg->gps_data.fix.mode == MODE_3D) &&
+            !isnan(cfg->gps_data.fix.latitude) &&
+            !isnan(cfg->gps_data.fix.longitude)) {
+        data_append(data,
+                "latitude",     "Latitude",     DATA_DOUBLE, cfg->gps_data.fix.latitude,
+                "longitude",    "Longitude",    DATA_DOUBLE, cfg->gps_data.fix.longitude,
+                "speed",        "Speed",        DATA_DOUBLE, cfg->gps_data.fix.speed,
+                "timestamp",    "Timestamp",    DATA_DOUBLE, cfg->gps_data.fix.time,
+                NULL);
+        if (cfg->gps_data.fix.mode == MODE_3D) {
+            data_append(data,
+                    "altitude",     "Altitude",     DATA_DOUBLE, cfg->gps_data.fix.altitude,
+                    "climb",        "Climb",        DATA_DOUBLE, cfg->gps_data.fix.climb,
+                    NULL);
+        }
+    }
+#endif
 
     // prepend "tag" if available
     if (cfg->output_tag) {

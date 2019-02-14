@@ -168,6 +168,11 @@ endif()
 # Explicitly say that we want C99
 set_property(TARGET rtl_433 PROPERTY C_STANDARD 99)
 
+# libgps needs C11 though
+if(LIBGPS_FOUND)
+	set_property(TARGET rtl_433 PROPERTY C_STANDARD 11)
+endif()
+
 ########################################################################
 # Install built library files & utilities
 ########################################################################
