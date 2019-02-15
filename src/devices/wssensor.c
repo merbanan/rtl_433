@@ -23,9 +23,9 @@
 
 #include "decoder.h"
 
-#define WS_PACKETLEN	24
-#define WS_MINREPEATS	4
-#define WS_REPEATS	23
+#define WS_PACKETLEN 24
+#define WS_MINREPEATS 4
+#define WS_REPEATS 23
 
 static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
@@ -58,14 +58,14 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (decoder->verbose) {
         fprintf(stdout, "Hyundai WS SENZOR received raw data:\n");
         bitbuffer_print(bitbuffer);
-        fprintf(stdout, "Sensor ID	= %01d = 0x%02x\n",  sensor_id, sensor_id);
-        fprintf(stdout, "Bitstream HEX	= ");
+        fprintf(stdout, "Sensor ID = %01d = 0x%02x\n",  sensor_id, sensor_id);
+        fprintf(stdout, "Bitstream HEX = ");
         bitrow_print(b, 24);
-        fprintf(stdout, "Battery OK	= %0d\n", battery_status);
-        fprintf(stdout, "Startup		= %0d\n", startup);
-        fprintf(stdout, "Channel		= %0d\n", channel);
-        fprintf(stdout, "temp		= %d = 0x%02x\n", temperature, temperature);
-        fprintf(stdout, "TemperatureC	= %.1f\n", temperature_c);
+        fprintf(stdout, "Battery OK = %0d\n", battery_status);
+        fprintf(stdout, "Startup  = %0d\n", startup);
+        fprintf(stdout, "Channel  = %0d\n", channel);
+        fprintf(stdout, "temp  = %d = 0x%02x\n", temperature, temperature);
+        fprintf(stdout, "TemperatureC = %.1f\n", temperature_c);
     }
 
     data = data_make(

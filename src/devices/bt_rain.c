@@ -24,7 +24,7 @@
 #include "decoder.h"
 
 // Actually 37 bits for all but last transmission which is 36 bits
-#define	NUM_BITS	36
+#define NUM_BITS 36
 
 static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;

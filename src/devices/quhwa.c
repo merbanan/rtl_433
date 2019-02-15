@@ -26,8 +26,8 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     b[2] = ~b[2];
 
     if (bitbuffer->bits_per_row[r] != 18
-			|| (b[1] & 0x03) != 0x03
-			|| (b[2] & 0xC0) != 0xC0)
+            || (b[1] & 0x03) != 0x03
+            || (b[2] & 0xC0) != 0xC0)
         return 0;
 
     uint32_t id = (b[0] << 8) | b[1];

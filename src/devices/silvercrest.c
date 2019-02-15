@@ -25,7 +25,7 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     b = bitbuffer->bb[1];
     if ((b[0] == 0x7c) && (b[1] == 0x26)) {
         cmd = b[2] & 0xF;
-	// Validate button
+        // Validate button
         if ((b[3]&0xF) != cmd_lu_tab[cmd])
             return 0;
 

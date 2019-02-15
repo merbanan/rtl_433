@@ -902,14 +902,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     time_t rawtime;
     time(&rawtime);
-	if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > demod->hop_time) {
-	  cfg->rawtime_old = rawtime;
-	  cfg->do_exit_async = 1;
+    if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > demod->hop_time) {
+        cfg->rawtime_old = rawtime;
+        cfg->do_exit_async = 1;
 #ifndef _WIN32
-	  alarm(0); // cancel the watchdog timer
+        alarm(0); // cancel the watchdog timer
 #endif
-	  sdr_stop(cfg->dev);
-	}
+        sdr_stop(cfg->dev);
+    }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
         cfg->do_exit_async = cfg->do_exit = 1;
 #ifndef _WIN32
