@@ -74,10 +74,10 @@ static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
 /// @param[out] data: returns the decoded information as a data_t*
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
-  unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
+        unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
     uint8_t b[XC0324_MESSAGE_BYTELEN];
-    char id [4] = {0};
+    char id[4] = {0};
     double temperature;
     uint8_t flags;
     uint8_t chksum; // == 0x00 for a good message
@@ -96,10 +96,10 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         if (decoder->verbose == 1) {
             // Output the "bad" message (only for message level deciphering!)
             decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-              "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
-              chksum, row, bitpos);
+                    "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
+                    chksum, row, bitpos);
         }
-        return 0;  // No message was able to be decoded
+        return 0; // No message was able to be decoded
     }
 
     // Extract the id as hex string
@@ -107,8 +107,8 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
-    uint16_t temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
-    temperature = (temp / 10.0) - 40.0 ;
+    uint16_t temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]);
+    temperature   = (temp / 10.0) - 40.0;
 
     //Unknown byte, constant as 0x80 in all my data
     // ??maybe battery status??
@@ -119,26 +119,26 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
         *data = data_make(
-            "model",          "Device Type",     DATA_STRING, "Digitech XC0324",
-            "id",             "ID",              DATA_STRING, id,
-            "temperature_C",  "Temperature C",   DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            "flags",          "Constant ?",      DATA_INT,    flags,
-            "mic",            "Integrity",       DATA_STRING, "CHECKSUM",
-             NULL);
+                "model",            "Device Type",      DATA_STRING, "Digitech XC0324",
+                "id",               "ID",               DATA_STRING, id,
+                "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+                "flags",            "Constant ?",       DATA_INT,    flags,
+                "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+                NULL);
     }
 
     // Output (simulated) message level deciphering information..
     if (decoder->verbose == 1) {
         decoder_output_bitrowf(decoder, b, XC0324_MESSAGE_BITLEN,
-          "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
-          temperature, row, bitpos);
+                "Temp was %4.1f <- XC0324:vv row %03d bit %03d",
+                temperature, row, bitpos);
     }
     // Output "finished deciphering" reference values for future regression tests.
     if ((decoder->verbose == 3) & (latest_event == 0)) {
         //info from this first successful message is enough
         decoder_output_messagef(decoder,
-          "XC0324:vvvv Reference -> Temperature %4.1f C; sensor id %s",
-          temperature, id);
+                "XC0324:vvvv Reference -> Temperature %4.1f C; sensor id %s",
+                temperature, id);
     }
     return 1; // Message successfully decoded
 }
@@ -169,7 +169,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // And then output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
             decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-              "XC0324:vvv row %03d", r);
+                    "XC0324:vvv row %03d", r);
         }
     }
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
@@ -181,8 +181,8 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose == 1) {
                 // Output the bad row, only for message level debug / deciphering.
                 decoder_output_bitrowf(decoder, bitbuffer->bb[r], bitbuffer->bits_per_row[r],
-                  "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
-                  XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
+                        "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
+                        XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
             continue; // to the next row
         }
@@ -190,15 +190,16 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // enough bits that it could be a complete message.
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
-          (const uint8_t *)&preamble_pattern, 8))
-          + XC0324_MESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
+                        (const uint8_t *)&preamble_pattern, 8)) +
+                        XC0324_MESSAGE_BITLEN <=
+                bitbuffer->bits_per_row[r]) {
             events += result = decode_xc0324_message(decoder, bitbuffer,
-              r, bitpos, events, &data);
+                    r, bitpos, events, &data);
             // Keep production output (decoder->verbose == 0) separate from
             // (simulated) development stage output (decoder->verbose > 0)
             if (result & !decoder->verbose) { // Production output
-                data_append(data, "message_num",  "Message repeat count",
-                  DATA_INT, events, NULL);
+                data_append(data,
+                        "message_num", "Message repeat count", DATA_INT, events, NULL);
                 decoder_output_data(decoder, data);
                 return events; // in production, first successful decode is enough
             }
