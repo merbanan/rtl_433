@@ -1,7 +1,7 @@
 /* Ambient Weather F007TH Thermo-Hygrometer
  * contributed by David Ediger
  * discovered by Ron C. Lewis
- * 
+ *
  * The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
  */
 

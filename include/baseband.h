@@ -18,8 +18,8 @@
 /** This will give a noisy envelope of OOK/ASK signals.
 
     Subtract the bias (-128) and get an envelope estimation (absolute squared)
-    @param *iq_buf: input samples (I/Q samples in interleaved uint8)
-    @param *y_buf: output 
+    @param iq_buf: input samples (I/Q samples in interleaved uint8)
+    @param[out] y_buf: output
     @param len: number of samples to process
 */
 void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);

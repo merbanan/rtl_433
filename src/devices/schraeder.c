@@ -84,7 +84,7 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
   * TPMS Model: Schrader Electronics EG53MA4
   * Contributed by: Leonardo Hamada (hkazu)
   * Probable packet payload:
-  * 
+  *
   * SSSSSSSSSS ???????? IIIIII TT PP CC
   *
   * S = sync
@@ -95,7 +95,6 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
   * C = checksum, sum of byte data modulo 256
   *
   */
-  
 static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	uint8_t b[10];
@@ -110,12 +109,12 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 	/* Check for incorrect number of bits received */
 	if (bitbuffer->bits_per_row[0] != 120)
 		return 0;
-	
+
 	/* Discard the first 40 bits */
 	bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
 
 	/* Calculate the checksum */
-	checksum = (b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]) & 0xff; 
+	checksum = (b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]) & 0xff;
     if (checksum != b[9]) {
         return 0;
     }
@@ -124,13 +123,13 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 	/* Get sensor id */
 	serial_id = (b[4] << 16) | (b[5] << 8) | b[6];
 	sprintf(id_str, "%06X", serial_id);
-	
+
 	flags = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
 	sprintf(flags_str, "%08x", flags);
 
 	/* Get pressure value */
 	pressure = b[7] * 25;
-	
+
 	/* Get temperature value */
 	temperature = b[8];
 

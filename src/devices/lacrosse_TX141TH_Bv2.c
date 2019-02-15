@@ -57,7 +57,7 @@
  * The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
  *
  * Changes:
- * - LACROSSE_TX141_BITLEN is 37 instead of 40. 
+ * - LACROSSE_TX141_BITLEN is 37 instead of 40.
  * - The humidity variable has been removed for TX141.
  * - Battery check bit is inverse of TX141TH.
  * - temp_f removed, temp_c (celsius) is what's provided by the device.

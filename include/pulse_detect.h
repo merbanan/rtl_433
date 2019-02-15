@@ -77,12 +77,12 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
 ///
 /// Function is stateful and can be called with chunks of input data.
-/// @param envelope_data: Samples with amplitude envelope of carrier 
+/// @param envelope_data: Samples with amplitude envelope of carrier
 /// @param fm_data: Samples with frequency offset from center frequency
 /// @param len: Number of samples in input buffers
 /// @param samp_rate: Sample rate in samples per second
-/// @param *pulses: Will return a pulse_data_t structure
-/// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
+/// @param[in,out] pulses: Will return a pulse_data_t structure
+/// @param[in,out] fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @return 0 if all input sample data is processed
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)

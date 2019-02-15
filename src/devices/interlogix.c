@@ -12,9 +12,9 @@
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
- * 
+ *
  * Frequency: 319508000
- * 
+ *
  * Decoding done per us patent #5761206
  * https://www.google.com/patents/US5761206
  *

@@ -15,7 +15,7 @@
 [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [02] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
-[03] {32} db 41 57 c2 : 11011011 01000001 01010111 11000010 
+[03] {32} db 41 57 c2 : 11011011 01000001 01010111 11000010
 
 The code below checks that at least three rows are the same and
 that the validation code is correct for the known device ids.
@@ -27,7 +27,7 @@ static int valid(unsigned data, unsigned check) {
     // 0 and 0xb34^0xdb4 == 0x680. It needs to be updated for others, the
     // values starting at table[12] are most likely wrong for other devices.
     static int table[] = {
-        0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x51, 0xa2, 
+        0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x51, 0xa2,
         0x15, 0x2a, 0x54, 0xa8, 0x00, 0x00, 0xed, 0x00,
         0x00, 0x00, 0x00, 0x37, 0x00, 0x00, 0x00, 0x00};
     for(int i=0;i<24;i++) {
