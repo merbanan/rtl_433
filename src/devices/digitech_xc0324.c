@@ -10,24 +10,24 @@
  *
  * Digitech XC-0324 device
  *
- * The encoding is pulse position modulation 
+ * The encoding is pulse position modulation
  *(ie gap width contains the modulation information)
  * pulse is about 400 us
  * short gap is (approx) 520 us
  * long gap is (approx) 1000 us
- 
+
  * Deciphered using two transmitters.
- * 
- * A transmission package is 148 bits 
+ *
+ * A transmission package is 148 bits
  * (plus or minus one or two due to demodulation or transmission errors)
- * 
+ *
  * Each transmission contains 3 repeats of the 48 bit message,
  * with 2 zero bits separating each repetition.
- * 
+ *
  * A 48 bit message consists of :
  * byte 0 = preamble (for synchronisation), 0x5F
  * byte 1 = device id
- * byte 2 and the first nibble of byte 3 encode the temperature 
+ * byte 2 and the first nibble of byte 3 encode the temperature
  *     as a 12 bit integer,
  *     transmitted in least significant bit first order
  *     in tenths of degree Celsius
@@ -37,7 +37,7 @@
  * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
  *     each bit is effectively a parity bit for correspondingly positioned bit
  *     in the real message
- * 
+ *
  */
 
 // This decoder is associated with a tutorial entry in the
@@ -77,7 +77,7 @@
 
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
-/// @param *data : returns the decoded information as a data_t * 
+/// @param *data : returns the decoded information as a data_t *
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
   unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
@@ -86,7 +86,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     double temperature;
     uint8_t flags;
     uint8_t chksum; // == 0x00 for a good message
-    
+
     // Extract the message
     bitbuffer_extract_bytes(bitbuffer, row, bitpos, b, XC0324_MESSAGE_BITLEN);
 
@@ -106,23 +106,23 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         }
         return 0;  // No message was able to be decoded
     }
-    
+
     // Extract the id as hex string
     snprintf(id, 3, "%02X", b[1]);
-    
+
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
     uint16_t temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]) ;
     temperature = (temp / 10.0) - 40.0 ;
-    
+
     //Unknown byte, constant as 0x80 in all my data
     // ??maybe battery status??
     flags = b[4];
-    
+
     // Create the data structure, ready for the decoder_output_data function.
     // Separate production output (decoder->verbose == 0)
     // from (simulated) deciphering stage output (decoder->verbose > 0)
-    if (!decoder->verbose) { // production output 
+    if (!decoder->verbose) { // production output
         *data = data_make(
             "model",          "Device Type",     DATA_STRING, "Digitech XC0324",
             "id",             "ID",              DATA_STRING, id,
@@ -166,10 +166,10 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int result;
     int events = 0;
     data_t *data = NULL;
-    
+
     // Only for simulating initial package level deciphering / debug.
     if (decoder->verbose == 2) {
-        // Verbosely output the bitbuffer 
+        // Verbosely output the bitbuffer
         decoder_output_bitbufferf(decoder, bitbuffer, "XC0324:vvv hex(/binary) version of bitbuffer");
         // And then output each row to csv, json or whatever was specified.
         for (r = 0; r < bitbuffer->num_rows; ++r) {
@@ -178,7 +178,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
     //A clean XC0324 transmission contains 3 repeats of a message in a single row.
-    //But in case of transmission or demodulation glitches, 
+    //But in case of transmission or demodulation glitches,
     //loop over all rows and check for salvageable messages.
     for (r = 0; r < bitbuffer->num_rows; ++r) {
         if (bitbuffer->bits_per_row[r] < XC0324_MESSAGE_BITLEN) {
@@ -189,9 +189,9 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                   "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
                   XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
-            continue; // to the next row  
+            continue; // to the next row
         }
-        // We have enough bits so search for a message preamble followed by 
+        // We have enough bits so search for a message preamble followed by
         // enough bits that it could be a complete message.
         bitpos = 0;
         while ((bitpos = bitbuffer_search(bitbuffer, r, bitpos,
@@ -199,7 +199,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
           + XC0324_MESSAGE_BITLEN <= bitbuffer->bits_per_row[r]) {
             events += result = decode_xc0324_message(decoder, bitbuffer,
               r, bitpos, events, &data);
-            // Keep production output (decoder->verbose == 0) separate from 
+            // Keep production output (decoder->verbose == 0) separate from
             // (simulated) development stage output (decoder->verbose > 0)
             if (result & !decoder->verbose) { // Production output
                 data_append(data, "message_num",  "Message repeat count",
