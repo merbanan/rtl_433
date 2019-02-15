@@ -1,73 +1,68 @@
-/* Decoder for Digitech XC-0324 temperature sensor.
- *
- * Copyright (C) 2018 Geoff Lee
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- *
- * Digitech XC-0324 device
- *
- * The encoding is pulse position modulation
- *(ie gap width contains the modulation information)
- * pulse is about 400 us
- * short gap is (approx) 520 us
- * long gap is (approx) 1000 us
+/** @file
+    Decoder for Digitech XC-0324 temperature sensor.
 
- * Deciphered using two transmitters.
- *
- * A transmission package is 148 bits
- * (plus or minus one or two due to demodulation or transmission errors)
- *
- * Each transmission contains 3 repeats of the 48 bit message,
- * with 2 zero bits separating each repetition.
- *
- * A 48 bit message consists of :
- * byte 0 = preamble (for synchronisation), 0x5F
- * byte 1 = device id
- * byte 2 and the first nibble of byte 3 encode the temperature
- *     as a 12 bit integer,
- *     transmitted in least significant bit first order
- *     in tenths of degree Celsius
- *     offset from -40.0 degrees C (minimum temp spec of the device)
- * byte 4 is constant (in all my data) 0x80
- *     ~maybe~ a battery status ???
- * byte 5 is a check byte (the XOR of bytes 0-4 inclusive)
- *     each bit is effectively a parity bit for correspondingly positioned bit
- *     in the real message
- *
- */
+    Copyright (C) 2018 Geoff Lee
 
-// This decoder is associated with a tutorial entry in the
-// rtl_433 wiki describing the way the transmissions were deciphered.
-// See https://github.com/merbanan/rtl_433/wiki/digitech_xc0324.README.md
-//
-// The tutorial is "by a newbie, for a newbie", ie intended to assist newcomers
-// who wish to learn how to decipher a new device, and develop a rtl_433 device
-// decoder from scratch for the first time.
-//
-// To illustrate stages in the deciphering process, this decoder includes some
-// debug style trace messages that would normally be removed. Specifically,
-// running this decoder with debug level :
-//    `-vvv` simulates what might be seen early in the deciphering process, when
-//         only the modulation scheme and parameters have been discovered,
-//    `-vv` simulates what might be seen once the synchronisation/preamble and
-//         message length has been uncovered, and it is time to start work on
-//         deciphering individual fields in the message,
-//     with no debug flags set provides the final (production stage) results,
-//     and
-//    `-vvvv` is a special "finished development" output.  It provides a file of
-//         reference values, to be included with the test data for future
-//         regression test purposes.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/** @fn static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Digitech XC-0324 device.
 
+The encoding is pulse position modulation
+(i.e. gap width contains the modulation information)
+- pulse is about 400 us
+- short gap is (approx) 520 us
+- long gap is (approx) 1000 us
+
+Deciphered using two transmitters.
+
+A transmission package is 148 bits
+(plus or minus one or two due to demodulation or transmission errors).
+
+Each transmission contains 3 repeats of the 48 bit message,
+with 2 zero bits separating each repetition.
+
+A 48 bit message consists of:
+- byte 0: preamble (for synchronisation), 0x5F
+- byte 1: device id
+- byte 2 and the first nibble of byte 3: encodes the temperature
+    as a 12 bit integer,
+    transmitted in least significant bit first order
+    in tenths of degree Celsius
+    offset from -40.0 degrees C (minimum temp spec of the device)
+- byte 4: constant (in all my data) 0x80
+    _maybe_ a battery status ???
+- byte 5: a check byte (the XOR of bytes 0-4 inclusive)
+    each bit is effectively a parity bit for correspondingly positioned bit
+    in the real message
+
+This decoder is associated with a tutorial entry in the
+rtl_433 wiki describing the way the transmissions were deciphered.
+See https://github.com/merbanan/rtl_433/wiki/digitech_xc0324.README.md
+
+The tutorial is "by a newbie, for a newbie", ie intended to assist newcomers
+who wish to learn how to decipher a new device, and develop a rtl_433 device
+decoder from scratch for the first time.
+
+To illustrate stages in the deciphering process, this decoder includes some
+debug style trace messages that would normally be removed. Specifically,
+running this decoder with debug level :
+- `-vvv` simulates what might be seen early in the deciphering process, when
+    only the modulation scheme and parameters have been discovered,
+- `-vv` simulates what might be seen once the synchronisation/preamble and
+    message length has been uncovered, and it is time to start work on
+    deciphering individual fields in the message,
+    with no debug flags set provides the final (production stage) results,
+    and
+- `-vvvv` is a special "finished development" output.  It provides a file of
+        reference values, to be included with the test data for future
+        regression test purposes.
+*/
 
 #include "decoder.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define XC0324_DEVICE_BITLEN      148
 #define XC0324_MESSAGE_BITLEN     48
@@ -77,7 +72,7 @@
 
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
-/// @param *data : returns the decoded information as a data_t *
+/// @param[out] data: returns the decoded information as a data_t*
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
   unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
