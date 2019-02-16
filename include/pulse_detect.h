@@ -25,7 +25,7 @@
 #define PD_MAX_PULSE_MS 100     // Pulse width in ms to exceed to declare End Of Package (e.g. for non OOK packages)
 
 /// Data for a compact representation of generic pulse train.
-typedef struct {
+typedef struct pulse_data {
     uint64_t offset;            ///< Offset to first pulse in number of samples from start of stream.
     uint32_t sample_rate;       ///< Sample rate the pulses are recorded with.
     unsigned start_ago;         ///< Start of first pulse in number of samples ago.

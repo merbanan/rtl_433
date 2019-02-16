@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 
-typedef struct {
+typedef struct samp_grab {
     uint32_t *frequency;
     uint32_t *samp_rate;
     int *sample_size;

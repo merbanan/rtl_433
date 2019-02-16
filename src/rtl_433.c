@@ -71,6 +71,18 @@
 #define VERSION "version unknown"
 #endif
 
+char const *version_string(void)
+{
+    return "rtl_433 " VERSION " inputs file rtl_tcp"
+#ifdef RTLSDR
+           " RTL-SDR"
+#endif
+#ifdef SOAPYSDR
+           " SoapySDR"
+#endif
+            ;
+}
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
@@ -87,8 +99,8 @@ struct dm_state {
     float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
     int sample_size; // CU8: 1, CS16: 2
     pulse_detect_t *pulse_detect;
-    FilterState lowpass_filter_state;
-    DemodFM_State demod_FM_state;
+    filter_state_t lowpass_filter_state;
+    demodfm_state_t demod_FM_state;
     int enable_FM_demod;
     samp_grab_t *samp_grab;
     am_analyze_t *am_analyze;
@@ -111,14 +123,7 @@ struct dm_state {
 
 static void print_version(void)
 {
-    fprintf(stderr, "rtl_433 " VERSION " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-            "\n");
+    fprintf(stderr, "%s\n", version_string());
 }
 
 static void usage(r_device *devices, unsigned num_devices, int exit_code)
