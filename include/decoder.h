@@ -6,7 +6,7 @@
 #define INCLUDE_DECODER_H_
 
 #include <string.h>
-#include "rtl_433_devices.h"
+#include "r_device.h"
 #include "bitbuffer.h"
 #include "data.h"
 #include "util.h"

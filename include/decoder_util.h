@@ -14,7 +14,7 @@
 
 #include <stdarg.h>
 #include "bitbuffer.h"
-#include "rtl_433_devices.h"
+#include "r_device.h"
 
 /// Create a new r_device, copy from template if not NULL.
 r_device *create_device(r_device *template);

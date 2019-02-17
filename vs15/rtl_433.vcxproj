@@ -101,6 +101,7 @@
     <ClInclude Include="..\include\optparse.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
+    <ClInclude Include="..\include\r_device.h" />
     <ClInclude Include="..\include\r_util.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />

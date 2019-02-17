@@ -30,6 +30,7 @@
 #include <signal.h>
 
 #include "rtl_433.h"
+#include "r_device.h"
 #include "rtl_433_devices.h"
 #include "sdr.h"
 #include "baseband.h"

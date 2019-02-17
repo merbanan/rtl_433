@@ -65,6 +65,9 @@
     <ClInclude Include="..\include\pulse_detect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\r_device.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\r_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -7,8 +7,11 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+
 #include "decoder.h"
 #include <stdlib.h>
+
+r_device fineoffset_WH2;
 
 static r_device *fineoffset_WH2_create(char *arg)
 {
