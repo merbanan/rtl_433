@@ -1,48 +1,49 @@
-/*
- * TFA-Twin-Plus-30.3049
- * also Conrad KW9010 (perhaps just rebranded), Ea2 BL999
- *
- * Copyright (C) 2015 Paul Ortyl
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 3 as
- * published by the Free Software Foundation.
- */
+/* @file
+    TFA-Twin-Plus-30.3049
+    also Conrad KW9010 (perhaps just rebranded), Ea2 BL999.
 
-/*
- * Protocol as reverse engineered by https://github.com/iotzo
- *
- * 36 Bits (9 nibbles)
- *
- * Type: IIIICCII B???TTTT TTTTTSSS HHHHHHH1 XXXX
- * BIT/8 76543210 76543210 76543210 76543210 7654
- * BIT/A 01234567 89012345 57890123 45678901 2345
- *       0          1          2          3
- * I: sensor ID (changes on battery change)
- * C: Channel number
- * B: low battery
- * T: temperature
- * S: sign
- * X: checksum
- * ?: unknown meaning
- * all values are LSB-first, so need to be reversed before presentation
- *
- *
- * [04] {36} e4 4b 70 73 00 : 111001000100 101101110 000 0111001 10000 ---> temp/hum:23.7/50
- * temp num-->13-21bit(9bits) in reverse order in this case "011101101"=237
- * positive temps ( with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
- * negative temps (with 111 in bits 22-24) : temp=(512-num)/10
- * negative temps example:
- * [03] {36} e4 4c 1f 73 f0 : 111001000100 110000011 111 0111001 11111 temp: -12.4
- *
- * Humidity:
- * hum num-->25-32bit(7bits) in reverse order : in this case "1001110"=78
- * humidity=num-28 --> 78-28=50
- *
- * I have channel number bits(5,6 in reverse order) and low battery bit(9)
- * It seems that the 1,2,3,4,7,8 bits changes randomly on every reset/battery change.
- *
- */
+    Copyright (C) 2015 Paul Ortyl
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as
+    published by the Free Software Foundation.
+*/
+/**
+Decode TFA-Twin-Plus-30.3049, Conrad KW9010 (perhaps just rebranded), Ea2 BL999.
+
+Protocol as reverse engineered by https://github.com/iotzo
+
+36 Bits (9 nibbles)
+
+| Type: | IIIICCII | B???TTTT | TTTTTSSS | HHHHHHH1 | XXXX |
+| ----- | -------- | -------- | -------- | -------- | ---- |
+| BIT/8 | 76543210 | 76543210 | 76543210 | 76543210 | 7654 |
+| BIT/A | 01234567 | 89012345 | 57890123 | 45678901 | 2345 |
+|       | 0        | 1        | 2        | 3        |      |
+
+- I: sensor ID (changes on battery change)
+- C: Channel number
+- B: low battery
+- T: temperature
+- S: sign
+- X: checksum
+- ?: unknown meaning
+- all values are LSB-first, so need to be reversed before presentation
+
+    [04] {36} e4 4b 70 73 00 : 111001000100 101101110 000 0111001 10000 ---> temp/hum:23.7/50
+    temp num-->13-21bit(9bits) in reverse order in this case "011101101"=237
+    positive temps ( with 000 in bits 22-24) : temp=num/10 (in this case 23.7 C)
+    negative temps (with 111 in bits 22-24) : temp=(512-num)/10
+    negative temps example:
+    [03] {36} e4 4c 1f 73 f0 : 111001000100 110000011 111 0111001 11111 temp: -12.4
+
+    Humidity:
+    hum num-->25-32bit(7bits) in reverse order : in this case "1001110"=78
+    humidity=num-28 --> 78-28=50
+
+I have channel number bits(5,6 in reverse order) and low battery bit(9).
+It seems that the 1,2,3,4,7,8 bits changes randomly on every reset/battery change.
+*/
 
 #include "decoder.h"
 

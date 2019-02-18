@@ -3,8 +3,15 @@
  *
  * The sensor sends a packet every 60 seconds. Each frame of 46 bits
  * is sent 3 times without padding/pauses.
- * Format: ???????? ???????? ??????? TTTTTTTT TTT????? ??????
- *         Temperature (T), Unknown (?)
+ * Format: FFFFFFFF ???????? ???????? tttttttt TTT????? ??????
+ *         Fixed type code: 0xf4, Temperature (t=lsb, T=msb), Unknown (?)
+ *
+ *     {137} 2f cf 24 78 21 c8 bf 3c 91 e0 87 22 fc f2 47 82 1c 80
+ *     {137} 2f ce 24 72 a1 70 bf 38 91 ca 85 c2 fc e2 47 2a 17 00
+ *
+ * Aligning at [..] (insert 2 bits) we get:
+ *           2f cf 24 78 21 c8 [..] 2f cf 24 78 21 c8 [..] 2f cf 24 78 21 c8
+ *           2f ce 24 72 a1 70 [..] 2f ce 24 72 a1 70 [..] 2f ce 24 72 a1 70
  *
  * Copyright (C) 2017 George Hopkins <george-hopkins@null.net>
  *
