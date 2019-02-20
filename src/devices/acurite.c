@@ -964,7 +964,6 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
 {
     int crc, battery_low, id, model, valid = 0;
     data_t *data;
-    char *model1 = "00275rm", *model2 = "00276rm";
     float tempc, ptempc;
     uint8_t probe, humidity, phumidity, water;
     uint8_t signal[3][11];  //  Hold three copies of the signal
@@ -1011,67 +1010,50 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
         // CRC is OK
         } else {
             //  Decode the combined signal
-            id = (signal[0][0]<<16) | (signal[0][1]<<8) | signal[0][3];
-            battery_low = (signal[0][2] & 0x40)==0;
+            id          = (signal[0][0] << 16) | (signal[0][1] << 8) | signal[0][3];
+            battery_low = (signal[0][2] & 0x40) == 0;
             model       = (signal[0][2] & 1);
-            tempc       = 0.1 * ( (signal[0][4]<<4) | (signal[0][5]>>4) ) - 100;
+            tempc       = ((signal[0][4] << 4) | (signal[0][5] >> 4)) * 0.1 - 100;
             probe       = signal[0][5] & 3;
             humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
             //  No probe
-            if (probe==0) {
-                data = data_make(
-                        "model",           "",             DATA_STRING,    model ? model1 : model2,
-                        "probe",           "",             DATA_INT,       probe,
-                        "id",              "",             DATA_INT,       id,
-                        "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                        "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                        "humidity",        "Humidity",     DATA_INT,       humidity,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
+            data = data_make(
+                    "model",           "",             DATA_STRING,    model ? "00275rm" : "00276rm",
+                    "probe",           "",             DATA_INT,       probe,
+                    "id",              "",             DATA_INT,       id,
+                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "humidity",        "Humidity",     DATA_INT,       humidity,
+                    NULL);
             //  Water probe (detects water leak)
-            } else if (probe==1) {
+            if (probe == 1) {
                 water = (signal[0][7] & 0x0f) == 15;
-                data = data_make(
-                        "model",           "",             DATA_STRING,    model ? model1 : model2,
-                        "probe",           "",             DATA_INT,       probe,
-                        "id",              "",             DATA_INT,       id,
-                        "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                        "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                        "humidity",        "Humidity",     DATA_INT,       humidity,
+                data = data_append(data,
                         "water",           "",             DATA_INT,       water,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
+            }
             //  Soil probe (detects temperature)
-            } else if (probe==2) {
-                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100;
-                data = data_make(
-                        "model",           "",             DATA_STRING,    model ? model1 : model2,
-                        "probe",           "",             DATA_INT,       probe,
-                        "id",              "",             DATA_INT,       id,
-                        "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                        "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                        "humidity",        "Humidity",     DATA_INT,       humidity,
+            else if (probe == 2) {
+                ptempc = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
+                data = data_append(data,
                         "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
+            }
             //  Spot probe (detects temperature and humidity)
-            } else if (probe==3) {
-                ptempc    = 0.1 * ( ((0x0f&signal[0][7])<<8) | signal[0][8] ) - 100;
+            else if (probe == 3) {
+                ptempc    = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
                 phumidity = signal[0][9] & 0x7f;
-                data = data_make(
-                        "model",           "",             DATA_STRING,    model ? model1 : model2,
-                        "probe",           "",             DATA_INT,       probe,
-                        "id",              "",             DATA_INT,       id,
-                        "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                        "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                        "humidity",        "Humidity",     DATA_INT,       humidity,
+                data = data_append(data,
                         "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                         "phumidity",       "Humidity",     DATA_INT,       phumidity,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
-            } else { // suppress compiler warning
-                return 0;
             }
+            data = data_append(data,
+                    "mic",             "Integrity",    DATA_STRING,    "CRC",
+                    NULL);
             decoder_output_data(decoder, data);
             valid=1;
         }
