@@ -116,19 +116,19 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int msg_type;      // 0=Weather 1=Datetime 2=UV/Light
     int sens_msg = 10; // 10=Weather/Time sensor  7=UV/Light sensor
     uint8_t bbuf[11];  // max 8 / 11 bytes needed
-    int model;         // 7 or 8 preamble bits
+    int preamble;         // 7 or 8 preamble bits
 
     if (bitbuffer->num_rows != 1) {
         return 0;
     }
 
     if (bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
-        model = EPB;
+        preamble = EPB;
         sens_msg = 10;
         br = bitbuffer->bb[0];
     }
     else if (bitbuffer->bits_per_row[0] == 87) { // FineOffset WH1080/3080 Weather data msg (different version (newest?))
-        model = SPB;
+        preamble = SPB;
         sens_msg = 10;
         /* 7 bits of preamble, bit shift the whole buffer and fix the bytestream */
         bitbuffer_extract_bytes(bitbuffer, 0, 7, bbuf + 1, 10 * 8);
@@ -136,13 +136,13 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         br      = bbuf;
     }
     else if (bitbuffer->bits_per_row[0] == 64) {  // FineOffset WH3080 UV/Light data msg
-        model = EPB;
+        preamble = EPB;
         sens_msg = 7;
         br = bitbuffer->bb[0];
 
     }
     else if (bitbuffer->bits_per_row[0] == 63) { // FineOffset WH3080 UV/Light data msg (different version (newest?))
-        model = SPB;
+        preamble = SPB;
         sens_msg = 7;
         /* 7 bits of preamble, bit shift the whole buffer and fix the bytestream */
         bitbuffer_extract_bytes(bitbuffer, 0, 7, bbuf + 1, 7 * 8);
@@ -208,7 +208,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float light = (br[4] << 16) | (br[5] << 8) | br[6];
     float lux   = light * 0.1;
     float wm;
-    if (model == SPB)
+    if (preamble == SPB)
         wm = (light * 0.00079);
     else //EPB
         wm = (light / 6830);

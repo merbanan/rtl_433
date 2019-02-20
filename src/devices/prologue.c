@@ -7,9 +7,9 @@
  * 1 bit, the sync gap is ~9000 us.
  *
  * the data is grouped in 9 nibbles
- * [model] [id0] [id1] [flags] [temp0] [temp1] [temp2] [humi0] [humi1]
+ * [type] [id0] [id1] [flags] [temp0] [temp1] [temp2] [humi0] [humi1]
  *
- * model is 1001 (9) or 0110 (5)
+ * type is 1001 (9) or 0110 (5)
  * id is a random id that is generated when the sensor starts, could include battery status
  * the same batteries often generate the same id
  * flags(3) is 0 the battery status, 1 ok, 0 low, first reading always say low
@@ -30,7 +30,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     int ret;
 
-    uint8_t model;
+    uint8_t type;
     uint8_t id;
     uint8_t battery;
     uint8_t button;
@@ -55,7 +55,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         /* Get time now */
 
         /* Prologue sensor */
-        model = bb[r][0] >> 4;
+        type = bb[r][0] >> 4;
         id = ((bb[r][0]&0x0F)<<4) | ((bb[r][1]&0xF0)>>4);
         battery = bb[r][1]&0x08;
         button = (bb[r][1]&0x04) >> 2;
@@ -66,7 +66,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         data = data_make(
                 "model",         "",            DATA_STRING, "Prologue sensor",
-                "id",            "",            DATA_INT, model, // this should be named "type"
+                "id",            "",            DATA_INT, type, // this should be named "type"
                 "rid",           "",            DATA_INT, id, // this should be named "id"
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
