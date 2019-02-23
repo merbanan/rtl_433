@@ -131,57 +131,61 @@ static void print_version(void)
     fprintf(stderr, "%s\n", version_string());
 }
 
-static void usage(r_device *devices, unsigned num_devices, int exit_code)
+static void usage(int exit_code)
+{
+    fprintf(stderr,
+            "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
+            "\nUsage:\t\t= General options =\n"
+            "  [-V] Output the version string and exit\n"
+            "  [-v] Increase verbosity (can be used multiple times).\n"
+            "       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
+            "  [-c <path>] Read config options from a file\n"
+            "\t\t= Tuner options =\n"
+            "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]\n"
+            "  [-g <gain> | help] (default: auto)\n"
+            "  [-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
+            "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
+            "  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
+            "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
+            "\t\t= Demodulator options =\n"
+            "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
+            "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
+            "  [-G] Enable all device protocols, included those disabled by default\n"
+            "  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
+            "  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
+            "  [-z <value>] Override short value in data decoder\n"
+            "  [-x <value>] Override long value in data decoder\n"
+            "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
+            "\t\t= Analyze/Debug options =\n"
+            "  [-a] Analyze mode. Print a textual description of the signal.\n"
+            "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
+            "       Disable all decoders with -R 0 if you want analyzer output only.\n"
+            "  [-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
+            "\t\t= File I/O options =\n"
+            "  [-S none | all | unknown | known] Signal auto save. Creates one file per signal.\n"
+            "       Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.\n"
+            "  [-r <filename> | help] Read data from input file instead of a receiver\n"
+            "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
+            "\t\t= Data output options =\n"
+            "  [-F kv | json | csv | syslog | null | help] Produce decoded output in given format.\n"
+            "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "  [-M time | reltime | notime | hires | utc | protocol | level | bits | help] Add various meta data to each output.\n"
+            "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
+            "  [-C native | si | customary] Convert units in decoded output.\n"
+            "  [-T <seconds>] Specify number of seconds to run\n"
+            "  [-E] Stop after outputting successful event(s)\n"
+            "  [-h] Output this usage help and exit\n"
+            "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
+            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
+    exit(exit_code);
+}
+
+static void help_protocols(r_device *devices, unsigned num_devices, int exit_code)
 {
     unsigned i;
     char disabledc;
-
-    fprintf(stderr,
-            "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
-            "\nUsage:\t= General options =\n"
-            "\t[-V] Output the version string and exit\n"
-            "\t[-v] Increase verbosity (can be used multiple times).\n"
-            "\t\t -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
-            "\t[-c <path>] Read config options from a file\n"
-            "\t= Tuner options =\n"
-            "\t[-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp]\n"
-            "\t[-g <gain>] (default: auto)\n"
-            "\t[-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
-            "\t[-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
-            "\t[-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
-            "\t[-s <sample rate>] Set sample rate (default: %i Hz)\n"
-            "\t= Demodulator options =\n"
-            "\t[-R <device>] Enable only the specified device decoding protocol (can be used multiple times)\n"
-            "\t\t Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
-            "\t[-G] Enable all device protocols, included those disabled by default\n"
-            "\t[-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
-            "\t[-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
-            "\t[-z <value>] Override short value in data decoder\n"
-            "\t[-x <value>] Override long value in data decoder\n"
-            "\t[-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
-            "\t= Analyze/Debug options =\n"
-            "\t[-a] Analyze mode. Print a textual description of the signal.\n"
-            "\t[-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
-            "\t\t Disable all decoders with -R 0 if you want analyzer output only.\n"
-            "\t[-y <code>] Verify decoding of demodulated test data (e.g. \"{25}fb2dd58\") with enabled devices\n"
-            "\t= File I/O options =\n"
-            "\t[-S none|all|unknown|known] Signal auto save. Creates one file per signal.\n"
-            "\t\t Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.\n"
-            "\t[-r <filename>] Read data from input file instead of a receiver\n"
-            "\t[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
-            "\t[-W <filename>] Save data stream to output file, overwrite existing file\n"
-            "\t= Data output options =\n"
-            "\t[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
-            "\t\t Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
-            "\t\t Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "\t[-M time|reltime|notime|hires|utc|protocol|level|bits] Add various meta data to every output line.\n"
-            "\t[-K FILE|PATH|<tag>] Add an expanded token or fixed tag to every output line.\n"
-            "\t[-C native|si|customary] Convert units in decoded output.\n"
-            "\t[-T <seconds>] Specify number of seconds to run\n"
-            "\t[-E] Stop after outputting successful event(s)\n"
-            "\t[-h] Output this usage help and exit\n"
-            "\t\t Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help\n\n",
-            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
 
     if (devices) {
         fprintf(stderr, "Supported device protocols:\n");
@@ -1168,7 +1172,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 
     switch (opt) {
     case 'h':
-        usage(NULL, 0, 0);
+        usage(0);
         break;
     case 'V':
         exit(0); // we already printed the version
@@ -1272,7 +1276,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'm':
         fprintf(stderr, "sample mode option is deprecated.\n");
-        usage(NULL, 0, 1);
+        usage(1);
         break;
     case 'M':
         if (!arg)
@@ -1316,16 +1320,16 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'R':
         if (!arg)
-            usage(cfg->devices, cfg->num_r_devices, 0);
+            help_protocols(cfg->devices, cfg->num_r_devices, 0);
 
         n = atoi(arg);
         if (n > cfg->num_r_devices || -n > cfg->num_r_devices) {
             fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
-            usage(cfg->devices, cfg->num_r_devices, 1);
+            help_protocols(cfg->devices, cfg->num_r_devices, 1);
         }
         if ((n > 0 && cfg->devices[n - 1].disabled > 2) || (n < 0 && cfg->devices[-n - 1].disabled > 2)) {
             fprintf(stderr, "Remote device number specified is invalid\n\n");
-            usage(cfg->devices, cfg->num_r_devices, 1);
+            help_protocols(cfg->devices, cfg->num_r_devices, 1);
         }
 
         if (n < 0 && !cfg->no_default_devices) {
@@ -1375,7 +1379,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else {
             fprintf(stderr, "Invalid output format %s\n", arg);
-            usage(NULL, 0, 1);
+            usage(1);
         }
         break;
     case 'K':
@@ -1393,7 +1397,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else {
             fprintf(stderr, "Invalid conversion mode %s\n", arg);
-            usage(NULL, 0, 1);
+            usage(1);
         }
         break;
     case 'U':
@@ -1413,7 +1417,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->stop_after_successful_events_flag = atobv(arg, 1);
         break;
     default:
-        usage(NULL, 0, 1);
+        usage(1);
         break;
     }
 }
