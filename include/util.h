@@ -13,6 +13,7 @@
 #define INCLUDE_UTIL_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 
 // Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
 #ifndef max
