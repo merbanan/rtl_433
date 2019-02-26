@@ -9,10 +9,9 @@
     (at your option) any later version.
 */
 
-#include "util.h"
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "util.h"
 
 uint8_t reverse8(uint8_t x)
 {
