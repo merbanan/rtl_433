@@ -100,7 +100,7 @@ static char *output_fields[] = {
     "type"
     "id",
     "flags",
-    "pressure_kpa",
+    "pressure_kPa",
     "temperature_C",
     "mic",
     NULL

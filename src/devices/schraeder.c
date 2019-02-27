@@ -23,7 +23,7 @@ Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 - P: preamble (0xf)
 - F: flags
 - I: id (28 bit)
-- P: pressure from 0 bar to 6.375 bar, resolution of 25mbar per bit
+- P: pressure from 0 bar to 6.375 bar, resolution of 25 mbar/hectopascal per bit
 - T: temperature from -50 C to 205 C (1 bit = 1 temperature count 1 C)
 - C: CRC8 from nibble 1 to E
 */
@@ -37,7 +37,7 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char id_str[9];
     int flags;
     char flags_str[3];
-    int pressure;    // mbar
+    int pressure;    // mbar/hectopascal
     int temperature; // deg C
 
     /* Reject wrong amount of bits */
@@ -65,7 +65,7 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_bar",     "Pressure",     DATA_FORMAT, "%.03f bar", DATA_DOUBLE, (double)pressure/1000.0,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure*0.1,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -126,7 +126,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_bar",     "Pressure",     DATA_FORMAT, "%.03f bar", DATA_DOUBLE, ((double)pressure)/1000.0,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure*0.1,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -140,7 +140,7 @@ static char *output_fields[] = {
     "type",
     "id",
     "flags",
-    "pressure_bar",
+    "pressure_kPa",
     "temperature_C",
     "mic",
     NULL
@@ -151,7 +151,7 @@ static char *output_fields_EG53MA4[] = {
     "type",
     "id",
     "flags",
-    "pressure_bar",
+    "pressure_kPa",
     "temperature_F",
     "mic",
     NULL
