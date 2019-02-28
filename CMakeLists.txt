@@ -33,7 +33,8 @@ if(GIT_COMMIT) # is a git repo
     # use lightweight (non-annotated) tags
     git_describe(GIT_VERSION "--tags")
     git_timestamp(GIT_TIMESTAMP)
-    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP} (${GIT_REFSPEC} commit ${GIT_COMMIT})")
+    message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
+    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
     ADD_DEFINITIONS(-DGIT_VERSION=${GIT_VERSION})
     ADD_DEFINITIONS(-DGIT_BRANCH=${GIT_BRANCH})
     ADD_DEFINITIONS(-DGIT_TIMESTAMP=${GIT_TIMESTAMP})
@@ -160,7 +161,7 @@ if(BUILD_DOCUMENTATION)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    message("Doxygen build started")
+    message(STATUS "Doxygen build started")
 
     # note the option ALL which allows to build the docs together with the application
     add_custom_target(doc_doxygen ALL

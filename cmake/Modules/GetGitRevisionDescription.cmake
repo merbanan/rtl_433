@@ -158,14 +158,15 @@ function(git_timestamp _var)
     return()
   endif()
 
-  execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format="%ci" ${hash} ${ARGN}
+  execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%cI ${hash} ${ARGN}
     WORKING_DIRECTORY ${GIT_DIR}
     RESULT_VARIABLE res
     OUTPUT_VARIABLE out
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(res EQUAL 0)
-    string(REGEX REPLACE "[-\" :]" "" out ${out})
+    set(${_var}_ISO ${out} PARENT_SCOPE)
+    string(REGEX REPLACE "[-T:]" "" out ${out})
     string(SUBSTRING ${out} 0 12 out)
   else()
     set(out "${out}-${res}-NOTFOUND")
