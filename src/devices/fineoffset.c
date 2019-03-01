@@ -356,7 +356,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
     // Verify checksum
-    int sum = add_bytes(b, 6) - b[6] & 0xff;
+    int sum = (add_bytes(b, 6) & 0xff) - b[6];
     if (sum) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH25: Checksum error: ");
@@ -431,7 +431,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify checksum
     int crc = crc8(b, 7, 0x31, 0);
-    int sum = add_bytes(b, 7) - b[7] & 0xff;
+    int sum = (add_bytes(b, 7) & 0xff) - b[7];
 
     if (crc || sum) {
         if (decoder->verbose)
