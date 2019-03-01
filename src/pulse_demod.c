@@ -39,7 +39,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         }
         // Add run of zeros
         periods -= highs;                  // Remove 1s from whole period
-        periods = min(periods, max_zeros); // Don't overflow at end of message
+        periods = MIN(periods, max_zeros); // Don't overflow at end of message
         for (int i = 0; i < periods; ++i) {
             bitbuffer_add_bit(&bits, 0);
         }

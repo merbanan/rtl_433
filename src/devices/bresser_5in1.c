@@ -77,7 +77,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0; // message too short
     }
     // truncate any excessive bits
-    len = min(len, sizeof (msg) * 8);
+    len = MIN(len, sizeof (msg) * 8);
 
     bitbuffer_extract_bytes(bitbuffer, 0, start_pos, msg, len);
 

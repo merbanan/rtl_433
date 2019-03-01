@@ -15,11 +15,11 @@
 #include <stdint.h>
 
 // Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
-#ifndef max
-#define max(a,b) ((a) > (b) ? (a) : (b))
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 /// Reverse (reflect) the bits in an 8 bit byte.

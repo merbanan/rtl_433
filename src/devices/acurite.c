@@ -477,7 +477,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
      * having to enable debug for long running rtl_433 processes.
      */
     rawp = (char *)raw_str;
-    for (int i=0; i < min(browlen, 15); i++) {
+    for (int i=0; i < MIN(browlen, 15); i++) {
         sprintf(rawp,"%02x",bb[i]);
         rawp += 2;
     };

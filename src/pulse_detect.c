@@ -360,7 +360,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
 {
     int const samples_per_ms = samp_rate / 1000;
     pulse_detect_t *s = pulse_detect;
-    s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);    // Be sure to set initial minimum level
+    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);    // Be sure to set initial minimum level
 
     if (s->data_counter == 0) {
         // age the pulse_data if this is a fresh buffer
@@ -403,8 +403,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->ook_low_estimate += ((ook_low_delta > 0) ? 1 : -1);    // Hack to compensate for lack of fixed-point scaling
                     // Calculate default OOK high level estimate
                     s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;    // Default is a ratio of low level
-                    s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
-                    s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+                    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+                    s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;        // Allow initial estimate to settle
                 }
                 break;
@@ -419,7 +419,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     else {
                         // Continue with OOK decoding
                         pulses->pulse[pulses->num_pulses] = s->pulse_length;    // Store pulse width
-                        s->max_pulse = max(s->pulse_length, s->max_pulse);    // Find largest pulse
+                        s->max_pulse = MAX(s->pulse_length, s->max_pulse);    // Find largest pulse
                         s->pulse_length = 0;
                         s->ook_state = PD_OOK_STATE_GAP_START;
                     }
@@ -428,8 +428,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 else {
                     // Calculate OOK high level estimate
                     s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
-                    s->ook_high_estimate = max(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
-                    s->ook_high_estimate = min(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
+                    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+                    s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     // Estimate pulse carrier frequency
                     pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;
                 }
@@ -542,12 +542,12 @@ void histogram_sum(histogram_t *hist, int const *data, unsigned len, float toler
         for (bin = 0; bin < hist->bins_count; ++bin) {
             int bn = data[n];
             int bm = hist->bins[bin].mean;
-            if (abs(bn - bm) < (tolerance * max(bn, bm))) {
+            if (abs(bn - bm) < (tolerance * MAX(bn, bm))) {
                 hist->bins[bin].count++;
                 hist->bins[bin].sum += data[n];
                 hist->bins[bin].mean = hist->bins[bin].sum / hist->bins[bin].count;
-                hist->bins[bin].min    = min(data[n], hist->bins[bin].min);
-                hist->bins[bin].max    = max(data[n], hist->bins[bin].max);
+                hist->bins[bin].min    = MIN(data[n], hist->bins[bin].min);
+                hist->bins[bin].max    = MAX(data[n], hist->bins[bin].max);
                 break;    // Match found! Data added to existing bin
             }
         }
@@ -629,13 +629,13 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance)
             int bn = hist->bins[n].mean;
             int bm = hist->bins[m].mean;
             // if within tolerance
-            if (abs(bn - bm) < (tolerance * max(bn, bm))) {
+            if (abs(bn - bm) < (tolerance * MAX(bn, bm))) {
                 // Fuse data for bin[n] and bin[m]
                 hist->bins[n].count += hist->bins[m].count;
                 hist->bins[n].sum    += hist->bins[m].sum;
                 hist->bins[n].mean    = hist->bins[n].sum / hist->bins[n].count;
-                hist->bins[n].min    = min(hist->bins[n].min, hist->bins[m].min);
-                hist->bins[n].max    = max(hist->bins[n].max, hist->bins[m].max);
+                hist->bins[n].min    = MIN(hist->bins[n].min, hist->bins[m].min);
+                hist->bins[n].max    = MAX(hist->bins[n].max, hist->bins[m].max);
                 // Delete bin[m]
                 histogram_delete_bin(hist, m);
                 m--;    // Compare new bin in same place!
@@ -748,7 +748,7 @@ void pulse_analyzer(pulse_data_t *data)
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
         fprintf(stderr, "Manchester coding\n");
         device.modulation    = OOK_PULSE_MANCHESTER_ZEROBIT;
-        device.s_short_width = min(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period
+        device.s_short_width = MIN(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period
         device.s_long_width  = 0;                                                       // Not used
         device.s_reset_limit = hist_gaps.bins[hist_gaps.bins_count - 1].max + 1;        // Set limit above biggest gap
     }
