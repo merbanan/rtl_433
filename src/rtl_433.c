@@ -1324,11 +1324,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 
         n = atoi(arg);
         if (n > cfg->num_r_devices || -n > cfg->num_r_devices) {
-            fprintf(stderr, "Remote device number specified larger than number of devices\n\n");
+            fprintf(stderr, "Protocol number specified (%d) is larger than number of protocols\n\n", n);
             help_protocols(cfg->devices, cfg->num_r_devices, 1);
         }
         if ((n > 0 && cfg->devices[n - 1].disabled > 2) || (n < 0 && cfg->devices[-n - 1].disabled > 2)) {
-            fprintf(stderr, "Remote device number specified is invalid\n\n");
+            fprintf(stderr, "Protocol number specified (%d) is invalid\n\n", n);
             help_protocols(cfg->devices, cfg->num_r_devices, 1);
         }
 
