@@ -197,6 +197,7 @@
     <ClCompile Include="..\src\devices\nexus.c" />
     <ClCompile Include="..\src\devices\oil_standard.c" />
     <ClCompile Include="..\src\devices\oil_watchman.c" />
+    <ClCompile Include="..\src\devices\opus_xt300.c" />
     <ClCompile Include="..\src\devices\oregon_scientific.c" />
     <ClCompile Include="..\src\devices\oregon_scientific_sl109h.c" />
     <ClCompile Include="..\src\devices\oregon_scientific_v1.c" />

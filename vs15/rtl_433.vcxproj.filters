@@ -352,6 +352,9 @@
     <ClCompile Include="..\src\devices\oil_watchman.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\opus_xt300.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\oregon_scientific.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

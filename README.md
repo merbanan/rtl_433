@@ -185,6 +185,7 @@ Supported device protocols:
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
     [120]* Digitech XC-0324 temperature sensor
+    [121]  Opus/Imagintronix XT300 Soil Moisture
 
 * Disabled by default, use -R n or -G
 
