@@ -1,11 +1,22 @@
 #!/bin/sh
 set -e
+
+# performs a standard out-of-tree build and transform environment vars to cmake options
+# set RTLSDR=ON/OFF/AUTO (default: ON)
+# set SOAPYSDR=ON/OFF/AUTO (default: AUTO)
+# set CMAKE_TOOLCHAIN_FILE=file (default: unset)
+# set RUN_RTL_433_TESTS=1 (default: unset)
+
+RTLSDR="${RTLSDR:-ON}"
+SOAPYSDR="${SOAPYSDR:-AUTO}"
+set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR
+
 mkdir -p build
 cd build
 if [ -n "$CMAKE_TOOLCHAIN_FILE" ] ; then
-cmake -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
+cmake $@ -DCMAKE_TOOLCHAIN_FILE=../$CMAKE_TOOLCHAIN_FILE ..
 else
-cmake ..
+cmake $@ ..
 fi
 make
 # make install
