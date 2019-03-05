@@ -84,6 +84,10 @@ endif()
 ########################################################################
 # Find build dependencies
 ########################################################################
+set(ENABLE_RTLSDR AUTO CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
+set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_RTLSDR) # AUTO / ON
+
 find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
@@ -92,9 +96,19 @@ if(LIBRTLSDR_FOUND AND LIBUSB_FOUND)
     include_directories(${LIBRTLSDR_INCLUDE_DIRS} ${LIBUSB_INCLUDE_DIRS})
     list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES} ${LIBUSB_LIBRARIES})
     ADD_DEFINITIONS(-DRTLSDR)
-else()
+elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
+else()
+    message(FATAL_ERROR "RTL-SDR development files not found.")
 endif()
+
+else()
+    message(STATUS "RTL-SDR device input disabled.")
+endif()
+
+set(ENABLE_SOAPYSDR AUTO CACHE STRING "Enable SoapySDR driver support")
+set_property(CACHE ENABLE_SOAPYSDR PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_SOAPYSDR) # AUTO / ON
 
 find_package(SoapySDR "0.6" NO_MODULE)
 if(SoapySDR_FOUND)
@@ -102,8 +116,14 @@ if(SoapySDR_FOUND)
     include_directories(${SoapySDR_INCLUDE_DIRS})
     list(APPEND SDR_LIBRARIES ${SoapySDR_LIBRARIES})
     ADD_DEFINITIONS(-DSOAPYSDR)
-else()
+elseif(ENABLE_SOAPYSDR STREQUAL "AUTO")
     message(STATUS "SoapySDR development files not found, SoapySDR device input won't be possible.")
+else()
+    message(FATAL_ERROR "SoapySDR development files not found.")
+endif()
+
+else()
+    message(STATUS "SoapySDR device input disabled.")
 endif()
 
 # cmake -DCMAKE_BUILD_TYPE=Profile ..

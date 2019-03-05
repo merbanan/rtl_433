@@ -26,7 +26,7 @@ matrix:
 
 # Test with Precise default (GCC 4.6.3, CMake 2.8.7) and no libs
     - compiler: gcc
-      env: NOTE=No-RTL-SDR
+      env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
@@ -55,7 +55,7 @@ matrix:
 
 # Test with Precise Clang (clang 3.4, CMake 2.8.7) and no libs
     - compiler: clang
-      env: NOTE=No-RTL-SDR
+      env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
@@ -121,7 +121,7 @@ matrix:
 
 # Test with Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR
     - compiler: gcc
-      env: NOTE=RTLSDR-and-SoapySDR
+      env: SOAPYSDR=ON
       dist: xenial
       addons:
         apt:
@@ -136,7 +136,7 @@ matrix:
             - cmake
 # Test with Xenial default (gcc 5.4, cmake 3.12) only SoapySDR
     - compiler: gcc
-      env: NOTE=Only-SoapySDR
+      env: RTLSDR=OFF SOAPYSDR=ON
       dist: xenial
       addons:
         apt:
@@ -163,7 +163,7 @@ matrix:
             - cmake
 # Test with mingw 32 bit
     - compiler: i686-w64-mingw32-gcc
-      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
       dist: trusty
       addons:
         apt:
@@ -176,7 +176,7 @@ matrix:
             - gcc-multilib
 # Test with mingw 64 bit
     - compiler: x86_64-w64-mingw32-gcc
-      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
       dist: trusty
       addons:
         apt:
@@ -202,7 +202,7 @@ matrix:
 # Full test suite
     - language: python
       compiler: gcc
-      env: RUN_RTL_433_TESTS=1
+      env: RTLSDR=OFF RUN_RTL_433_TESTS=1
       dist: trusty
       python:
           - "2.7"
