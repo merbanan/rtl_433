@@ -96,6 +96,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempC,
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     decoder_output_data(decoder, data);
 
@@ -109,6 +110,7 @@ static char *output_fields[] = {
     "battery",
     "temperature_C",
     "humidity",
+    "mic",
     NULL
 };
 
