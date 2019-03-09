@@ -151,7 +151,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
             data = data_make(
-                    "model",          "",           DATA_STRING, "AlectoV1 Wind Sensor",
+                    "model",          "",           DATA_STRING, "AlectoV1-Wind\tAlectoV1 Wind Sensor",
                     "id",             "House Code", DATA_INT,    sensor_id,
                     "channel",        "Channel",    DATA_INT,    channel,
                     "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
@@ -170,7 +170,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         double rain_mm = ((reverse8(b[3]) << 8) | reverse8(b[2])) * 0.25F;
 
         data = data_make(
-                "model",         "",           DATA_STRING, "AlectoV1 Rain Sensor",
+                "model",         "",           DATA_STRING, "AlectoV1-Rain\tAlectoV1 Rain Sensor",
                 "id",            "House Code", DATA_INT,    sensor_id,
                 "channel",       "Channel",    DATA_INT,    channel,
                 "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
@@ -195,7 +195,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
 
         data = data_make(
-                "model",         "",            DATA_STRING, "AlectoV1 Temperature Sensor",
+                "model",         "",            DATA_STRING, "AlectoV1-Temperature\tAlectoV1 Temperature Sensor",
                 "id",            "House Code",  DATA_INT,    sensor_id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
