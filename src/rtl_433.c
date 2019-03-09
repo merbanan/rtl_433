@@ -255,7 +255,10 @@ static void help_meta(void)
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
-            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");
+            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n"
+            "\nNote:"
+            "\tUse \"newmodel\" to transition to new model keys. This will become the default someday.\n"
+            "\tA table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.\n\n");
     exit(0);
 }
 
@@ -421,6 +424,28 @@ static char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {
     r_cfg_t *cfg = r_dev->output_ctx;
+
+    // switch new/old model keys
+    for (data_t *d = data; d; d = d->next) {
+        if ((d->type == DATA_STRING) && !strcmp(d->key, "model")) {
+            for (char *p = d->value; p && *p; ++p) {
+                if (*p == '\t' && cfg->new_model_keys) {
+                    // terminate new model key
+                    *p = '\0';
+                    break;
+                }
+                else if (*p == '\t' && !cfg->new_model_keys) {
+                    // move old model key
+                    char *v = d->value;
+                    while (*++p)
+                        *v++ = *p;
+                    *v = '\0';
+                    break;
+                }
+            }
+            break;
+        }
+    }
 
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
@@ -1304,6 +1329,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->verbose_bits = 1;
         else if (!strcasecmp(arg, "description"))
             cfg->report_description = 1;
+        else if (!strcasecmp(arg, "newmodel"))
+            cfg->new_model_keys = 1;
+        else if (!strcasecmp(arg, "oldmodel"))
+            cfg->new_model_keys = 0;
         else
             cfg->report_meta = atobv(arg, 1);
         break;
@@ -1594,6 +1623,13 @@ int main(int argc, char **argv) {
     }
 
     parse_conf_args(&cfg, argc, argv);
+
+    // warn if still using old model keys
+    if (!cfg.new_model_keys) {
+        fprintf(stderr,
+                "\n\tConsider using \"-M newmodel\" to transition to new model keys. This will become the default someday.\n"
+                "\tA table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.\n\n");
+    }
 
     // add all remaining positional arguments as input files
     while (argc > optind) {

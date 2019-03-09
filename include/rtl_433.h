@@ -81,6 +81,7 @@ typedef struct r_cfg {
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
+    int new_model_keys;
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */
