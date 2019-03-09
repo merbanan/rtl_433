@@ -122,7 +122,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     data = data_make(
-            "model",        "", DATA_STRING, "LightwaveRF",
+            "model",        "", DATA_STRING, "Lightwave-RF\tLightwaveRF",
             "id",           "", DATA_FORMAT, "%06x", DATA_INT, id,
             "subunit",      "", DATA_INT, subunit,
             "command",      "", DATA_INT, command,

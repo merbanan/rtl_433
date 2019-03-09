@@ -53,7 +53,7 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     *p = '\0';
 
     data = data_make(
-            "model",        "",             DATA_STRING, "Generic Remote",
+            "model",        "",             DATA_STRING, "Generic-Remote\tGeneric Remote",
             "id",           "House Code",   DATA_INT, id_16b,
             "cmd",          "Command",      DATA_INT, cmd_8b,
             "tristate",     "Tri-State",    DATA_STRING, tristate,

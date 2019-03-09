@@ -133,7 +133,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 		// Output data
 		data = data_make(
-			"model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
+			"model",		"",		DATA_STRING,	"Danfoss-CFR\tDanfoss CFR Thermostat",
 			"id",		"ID",		DATA_INT,	id,
 			"temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 			"setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,

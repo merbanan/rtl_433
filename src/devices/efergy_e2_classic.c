@@ -79,7 +79,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Output data
     data = data_make(
-                     "model",    "",               DATA_STRING, "Efergy e2 CT",
+                     "model",    "",               DATA_STRING, "Efergy-e2CT\tEfergy e2 CT",
                      "id",       "Transmitter ID", DATA_INT, address,
                      "current",  "Current",        DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
                      "interval", "Interval",       DATA_FORMAT, "%ds", DATA_INT, interval,

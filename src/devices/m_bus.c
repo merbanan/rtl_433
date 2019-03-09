@@ -227,7 +227,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
 
     // Output data
     data = data_make(
-        "model",    "",             DATA_STRING,    "Wireless M-Bus",
+        "model",    "",             DATA_STRING,    "Wireless-MBus\tWireless M-Bus",
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,
         "version",  "Version",      DATA_INT,       block1->A_Version,

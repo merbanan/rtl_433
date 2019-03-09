@@ -179,7 +179,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
         data = data_make(
-                "model", "", DATA_STRING, "DSC Contact",
+                "model", "", DATA_STRING, "DSC-Security\tDSC Contact",
                 "id", "", DATA_INT, esn,
                 "closed", "", DATA_INT, s_closed, // @todo make bool
                 "event", "", DATA_INT, s_event, // @todo make bool

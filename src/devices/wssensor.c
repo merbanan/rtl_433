@@ -69,7 +69,7 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     data = data_make(
-            "model",         "",            DATA_STRING, "WS Temperature Sensor",
+            "model",         "",            DATA_STRING, "Hyundai-WS\tWS Temperature Sensor",
             "id",            "House Code",  DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
@@ -90,7 +90,7 @@ static char *output_fields[] = {
 };
 
 r_device wssensor = {
-    .name           = "WS Temperature Sensor",
+    .name           = "Hyundai WS SENZOR Remote Temperature Sensor",
     .modulation     = OOK_PULSE_PPM,
     .short_width    = 1000,
     .long_width     = 2000,

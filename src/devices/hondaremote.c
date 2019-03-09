@@ -43,7 +43,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         device_id = b[44]<<8 | b[45];
 
         data = data_make(
-                "model",        "",     DATA_STRING, "Honda Remote",
+                "model",        "",     DATA_STRING, "Honda-CarRemote\tHonda Remote",
                 "device id",    "",    DATA_INT, device_id,
                 "code",         "",    DATA_STRING, code,
                 NULL);

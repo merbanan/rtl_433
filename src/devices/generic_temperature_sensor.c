@@ -44,7 +44,7 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
 	temp_f  = (float)((signed short)(((b[1] & 0x3f) * 256 + b[2]) << 2)) / 160.0;
 
 	data = data_make(
-			"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
+			"model",		"", 			DATA_STRING, 	"Generic-Temperature\tGeneric temperature sensor 1",
 			"id",         	"Id",			DATA_INT,	device,
 			"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	temp_f,
 			"battery",      	"Battery?",		DATA_INT,					battery,

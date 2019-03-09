@@ -90,7 +90,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
     float tempC = (negative_sign ? -( (1<<9) - temp ) : temp ) * 0.1F;
 
     data = data_make(
-            "model",         "",            DATA_STRING, "TFA-Twin-Plus-30.3049",
+            "model",         "",            DATA_STRING, "TFA-TwinPlus\tTFA-Twin-Plus-30.3049",
             "id",            "Id",          DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",

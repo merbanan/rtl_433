@@ -195,7 +195,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     data = data_make(
-            "model",       "Model",         DATA_STRING, "Interlogix",
+            "model",       "Model",         DATA_STRING, "Interlogix-Security\tInterlogix",
             "id",          "ID",            DATA_STRING, device_serial,
             "device_type", "Device Type",   DATA_STRING, device_type,
             "raw_message", "Raw Message",   DATA_STRING, raw_message,

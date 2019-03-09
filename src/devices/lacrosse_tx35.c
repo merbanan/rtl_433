@@ -117,7 +117,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
         if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) {
             data = data_make(
                     "brand", "", DATA_STRING, "LaCrosse",
-                    "model", "", DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
+                    "model", "", DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT\tTX29-IT" : "LaCrosse-TX35DTHIT\tTX35DTH-IT"),
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
                     "newbattery", "NewBattery", DATA_INT, newbatt,
@@ -127,7 +127,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
         } else {
             data = data_make(
                     "brand", "", DATA_STRING, "LaCrosse",
-                    "model", "", DATA_STRING, (device29or35 == 29 ? "TX29-IT" : "TX35DTH-IT"),
+                    "model", "", DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT\tTX29-IT" : "LaCrosse-TX35DTHIT\tTX35DTH-IT"),
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
                     "newbattery", "NewBattery", DATA_INT, newbatt,

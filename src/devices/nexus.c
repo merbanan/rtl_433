@@ -76,7 +76,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // Thermo
         if (humidity == 0x00) {
         data = data_make(
-                "model",         "",            DATA_STRING, "Nexus Temperature",
+                "model",         "",            DATA_STRING, "Nexus-T\tNexus Temperature",
                 "id",            "House Code",  DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
@@ -87,7 +87,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // Thermo/Hygro
         else {
         data = data_make(
-                "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
+                "model",         "",            DATA_STRING, "Nexus-TH\tNexus Temperature/Humidity",
                 "id",            "House Code",  DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
