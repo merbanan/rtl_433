@@ -84,7 +84,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Esperanza EWS", // "Esperanza-EWS"
+            "model",            "",             DATA_STRING, "Esperanza-EWS\tEsperanza EWS",
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,

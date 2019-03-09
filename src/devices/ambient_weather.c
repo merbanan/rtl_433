@@ -46,7 +46,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     humidity = b[4];
 
     data = data_make(
-            "model",          "",             DATA_STRING, "Ambient Weather F007TH Thermo-Hygrometer",
+            "model",          "",             DATA_STRING, "Ambientweather-F007TH\tAmbient Weather F007TH Thermo-Hygrometer",
             "device",         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
             "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "Ok",

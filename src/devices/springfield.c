@@ -59,7 +59,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uk1      =  b[4] >> 4;    /* unknown. */
 
         data = data_make(
-                "model",            "",             DATA_STRING, "Springfield Temperature & Moisture",
+                "model",            "",             DATA_STRING, "Springfield-Soil\tSpringfield Temperature & Moisture",
                 "sid",              "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",

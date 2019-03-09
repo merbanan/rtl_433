@@ -86,7 +86,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int battery_low = (b[4] & 0x40) >> 6;
 
     data = data_make(
-            "model",            "",             DATA_STRING, "S3318P Temperature & Humidity Sensor", // "Conrad-S3318P"
+            "model",            "",             DATA_STRING, "Conrad-S3318P\tS3318P Temperature & Humidity Sensor",
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",

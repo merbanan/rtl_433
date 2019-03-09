@@ -227,7 +227,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // PRESENTING DATA
     if (msg_type == 0) {
         data = data_make(
-                "model",            "",                 DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080\tFine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
@@ -242,7 +242,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (msg_type == 1) {
         data = data_make(
-                "model",            "",                 DATA_STRING,    "Fine Offset Electronics WH1080/WH3080 Weather Station",
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080\tFine Offset Electronics WH1080/WH3080 Weather Station",
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
@@ -257,7 +257,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else {
         data = data_make(
-                "model",            "",                 DATA_STRING,    "Fine Offset Electronics WH3080 Weather Station",
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080\tFine Offset Electronics WH3080 Weather Station",
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
                 "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",

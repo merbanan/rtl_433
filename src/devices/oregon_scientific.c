@@ -267,7 +267,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
             if (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 15) == 0) {
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, (sensor_id == ID_THGR122N) ? "THGR122N": "THGR968",
+                        "model",                 "",                        DATA_STRING, (sensor_id == ID_THGR122N) ? "Oregon-THGR122N\tTHGR122N": "Oregon-THGR968\tTHGR968",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -285,7 +285,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) / 10.0F;
                 data = data_make(
                         "brand",            "",                     DATA_STRING, "OS",
-                        "model",            "",                     DATA_STRING, "WGR968",
+                        "model",            "",                     DATA_STRING, "Oregon-WGR968\tWGR968",
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -315,7 +315,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 // fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
                 data = data_make(
                         "brand",            "",                             DATA_STRING, "OS",
-                        "model",            "",                             DATA_STRING, "BHTR968",
+                        "model",            "",                             DATA_STRING, "Oregon-BHTR968\tBHTR968",
                         "id",                 "House Code",         DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",                DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",                DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -334,7 +334,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
 
                 data = data_make(
                         "brand",            "",                     DATA_STRING, "OS",
-                        "model",            "",                     DATA_STRING, "RGR968",
+                        "model",            "",                     DATA_STRING, "Oregon-RGR968\tRGR968",
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -351,7 +351,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float temp_c = get_os_temperature(msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "THR228N",
+                        "model",                 "",                        DATA_STRING, "Oregon-THR228N\tTHR228N",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -367,7 +367,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float temp_c = get_os_temperature(msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "THN132N",
+                        "model",                 "",                        DATA_STRING, "Oregon-THN132N\tTHN132N",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -382,7 +382,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float temp_c = get_os_temperature(msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "RTGN129",
+                        "model",                 "",                        DATA_STRING, "Oregon-RTGN129\tRTGN129",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -398,7 +398,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float temp_c = get_os_temperature(msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "RTGN318",
+                        "model",                 "",                        DATA_STRING, "Oregon-RTGN318\tRTGN318",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -418,7 +418,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float temp_c = get_os_temperature(msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "THN129",
+                        "model",                 "",                        DATA_STRING, "Oregon-THN129\tTHN129",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -435,7 +435,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 float pressure = get_os_pressure(decoder, msg, sensor_id);
                 data = data_make(
                         "brand",                 "",                        DATA_STRING, "OS",
-                        "model",                 "",                        DATA_STRING, "BTHGN129",
+                        "model",                 "",                        DATA_STRING, "Oregon-BTHGN129\tBTHGN129",
                         "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                         "battery",             "Battery",         DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
@@ -452,7 +452,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                 if ((validate_os_v2_message(decoder, msg, 297, num_valid_v2_bits, 12) == 0)) {
                 int uvidx = get_os_uv(msg, sensor_id);
                 data = data_make(
-                    "model",                    "",                     DATA_STRING, "Oregon Scientific UVR128",
+                    "model",                    "",                     DATA_STRING, "Oregon-UVR128\tOregon Scientific UVR128",
                     "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                     "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
                     "battery",                "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -546,7 +546,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 int humidity = get_os_humidity(msg, sensor_id);
                 data = data_make(
                     "brand",                    "",                     DATA_STRING, "OS",
-                    "model",                    "",                     DATA_STRING, "THGR810",
+                    "model",                    "",                     DATA_STRING, "Oregon-THGR810\tTHGR810",
                     "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                     "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                     "battery",                "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -562,7 +562,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                     float temp_c = get_os_temperature(msg, sensor_id);
                     data = data_make(
                         "brand",                    "",                     DATA_STRING, "OS",
-                        "model",                    "",                     DATA_STRING, "THN802",
+                        "model",                    "",                     DATA_STRING, "Oregon-THN802\tTHN802",
                         "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",                "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -577,7 +577,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 int uvidx = get_os_uv(msg, sensor_id);
                 data = data_make(
                     "brand",                    "",                     DATA_STRING, "OS",
-                    "model",                    "",                     DATA_STRING, "UV800",
+                    "model",                    "",                     DATA_STRING, "Oregon-UV800\tUV800",
                     "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                     "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                     "battery",                "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -592,7 +592,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 float total_rain=get_os_total_rain(msg, sensor_id);
                 data = data_make(
                     "brand",            "",                     DATA_STRING, "OS",
-                    "model",            "",                     DATA_STRING, "PCR800",
+                    "model",            "",                     DATA_STRING, "Oregon-PCR800\tPCR800",
                     "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                     "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                     "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -609,7 +609,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 float total_rain=get_os_total_rain(msg, sensor_id);
                 data = data_make(
                         "brand",            "",                     DATA_STRING, "OS",
-                        "model",            "",                     DATA_STRING, "PCR800a",
+                        "model",            "",                     DATA_STRING, "Oregon-PCR800a\tPCR800a",
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -627,7 +627,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 float quadrant = (0x0f&(msg[4]>>4))*22.5F;
                 data = data_make(
                         "brand",            "",                     DATA_STRING,    "OS",
-                        "model",            "",                     DATA_STRING,    "WGR800",
+                        "model",            "",                     DATA_STRING,    "Oregon-WGR800\tWGR800",
                         "id",                 "House Code", DATA_INT,         get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,         get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING,    get_os_battery(msg, sensor_id)?"LOW":"OK",
@@ -646,7 +646,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 unsigned short int ipower = (rawAmp /(0.27*230)*1000);
                 data = data_make(
                         "brand",    "",                     DATA_STRING, "OS",
-                        "model",    "",                     DATA_STRING,    "CM160",
+                        "model",    "",                     DATA_STRING,    "Oregon-CM160\tCM160",
                         "id",         "House Code", DATA_INT, msg[1]&0x0F,
                         "power_W", "Power",         DATA_FORMAT,    "%d W", DATA_INT, ipower,
                         NULL);
@@ -666,7 +666,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 if (itotal && valid == 0) {
                     data = data_make(
                             "brand",            "",                     DATA_STRING, "OS",
-                            "model",            "",                     DATA_STRING,    "CM180",
+                            "model",            "",                     DATA_STRING,    "Oregon-CM180\tCM180",
                             "id",                 "House Code", DATA_INT, msg[1]&0x0F,
                             "power_W",        "Power",            DATA_FORMAT,    "%d W",DATA_INT, ipower,
                             "energy_kWh", "Energy",         DATA_FORMAT,    "%2.1f kWh",DATA_DOUBLE, total_energy,
@@ -676,7 +676,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                 else if (!itotal) {
                     data = data_make(
                             "brand",    "",                     DATA_STRING, "OS",
-                            "model",    "",                     DATA_STRING,    "CM180",
+                            "model",    "",                     DATA_STRING,    "Oregon-CM180\tCM180",
                             "id",         "House Code", DATA_INT, msg[1]&0x0F,
                             "power_W", "Power",         DATA_FORMAT,    "%d W",DATA_INT, ipower,
                             NULL);
