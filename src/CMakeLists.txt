@@ -234,6 +234,15 @@ endif()
 add_executable(rtl_433 rtl_433.c)
 target_link_libraries(rtl_433 r_433)
 
+# target_compile_definitions was only added with CMake 2.8.11
+if(THREADS_HAVE_PTHREAD_ARG)
+    set_target_properties(r_433 PROPERTIES COMPILE_OPTIONS "-pthread")
+    set_target_properties(r_433 PROPERTIES INTERFACE_COMPILE_OPTIONS "-pthread")
+endif()
+if(CMAKE_THREAD_LIBS_INIT)
+    target_link_libraries(rtl_433 "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
 if(MSVC)
     # needs CMake 3.1 but Windows builds should have that
     target_sources(rtl_433 PRIVATE getopt/getopt.c)

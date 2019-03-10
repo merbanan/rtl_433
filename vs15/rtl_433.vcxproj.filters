@@ -35,6 +35,9 @@
     <ClInclude Include="..\include\compat_paths.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\compat_pthread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\compat_time.h">
       <Filter>Header Files</Filter>
     </ClInclude>

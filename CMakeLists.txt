@@ -129,6 +129,27 @@ if(FORCE_COLORED_BUILD)
 endif()
 
 ########################################################################
+# Find Threads support build dependencies
+########################################################################
+set(ENABLE_THREADS AUTO CACHE STRING "Enable Threads support")
+set_property(CACHE ENABLE_THREADS PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_THREADS) # AUTO / ON
+
+find_package(Threads)
+if(Threads_FOUND)
+    message(STATUS "Threads support will be compiled.")
+    ADD_DEFINITIONS(-DTHREADS)
+elseif(ENABLE_THREADS STREQUAL "AUTO")
+    message(STATUS "Threads support not found, some features will be disabled.")
+else()
+    message(FATAL_ERROR "Threads support not found.")
+endif()
+
+else()
+    message(STATUS "Threads support disabled.")
+endif()
+
+########################################################################
 # Find OpenSSL build dependencies
 ########################################################################
 set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")

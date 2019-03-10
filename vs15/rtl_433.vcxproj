@@ -99,6 +99,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\bitbuffer.h" />
     <ClInclude Include="..\include\compat_alarm.h" />
     <ClInclude Include="..\include\compat_paths.h" />
+    <ClInclude Include="..\include\compat_pthread.h" />
     <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
