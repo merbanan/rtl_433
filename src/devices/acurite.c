@@ -807,53 +807,58 @@ uint8_t acurite_606_checksum(int length, uint8_t *buff)
     return checksum;
 }
 
-static int acurite_606_callback(r_device *decoder, bitbuffer_t *bitbuf)
+static int acurite_606_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitrow_t *bb = bitbuf->bb;
-    float temperature;    // temperature in C
-    int16_t temp;    // temperature as read from the data packet
-    int battery;        // the battery status: 1 is good, 0 is low
-    int8_t sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
+    uint8_t *b;
+    int row;
+    int16_t temp_raw; // temperature as read from the data packet
+    float temp_c;     // temperature in C
+    int battery;      // the battery status: 1 is good, 0 is low
+    int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
 
-
-    if (decoder->verbose > 1) {
-        fprintf(stderr,"acurite_606\n");
-        bitbuffer_print(bitbuf);
-    }
-
-    // throw out all blank messages
-    if (bb[1][0] == 0 && bb[1][1] == 0 && bb[1][2] == 0 && bb[1][3] == 0)
+    row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
+    if (row < 0)
         return 0;
 
-    // do some basic checking to make sure we have a valid data record
-    if ((bb[0][0] == 0) && (bb[1][4] == 0)) {                    //This test may need some more scrutiny...
-        // calculate the checksum and only continue if we have a matching checksum
-        uint8_t chk = acurite_606_checksum(3, &bb[1][0]);
+    if (bitbuffer->bits_per_row[row] > 33)
+        return 0;
 
-        if (chk == bb[1][3]) {
-            // Processing the temperature:
-            // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
-            // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
-            temp = (int16_t)((uint16_t)(bb[1][1] << 12) | (bb[1][2] << 4));
-            temp = temp >> 4;
+    b = bitbuffer->bb[row];
 
-            temperature = temp * 0.1;
-            sensor_id = bb[1][0];
-            battery = (bb[1][1] & 0x80) >> 7;
+    if (b[4] != 0)
+        return 0;
 
-            data = data_make(
-                    "model",         "",            DATA_STRING, "Acurite-606TX\tAcurite 606TX Sensor",
-                    "id",            "",            DATA_INT, sensor_id,
-                    "battery",          "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                    NULL);
-            decoder_output_data(decoder, data);
-            return 1;
-        }
-    }
+    // reject all blank messages
+    if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
+        return 0;
 
-    return 0;
+    if (decoder->verbose > 1)
+        bitbuffer_printf(bitbuffer, "acurite_606: ");
+
+    // calculate the checksum and only continue if we have a matching checksum
+    uint8_t chk = acurite_606_checksum(3, b);
+    if (chk != b[3])
+        return 0;
+
+    // Processing the temperature:
+    // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+    // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
+    sensor_id = b[0];
+    battery   = (b[1] & 0x80) >> 7;
+    temp_raw  = (int16_t)((b[1] << 12) | (b[2] << 4));
+    temp_raw  = temp_raw >> 4;
+    temp_c    = temp_raw * 0.1;
+
+    data = data_make(
+            "model",            "",             DATA_STRING, "Acurite-606TX\tAcurite 606TX Sensor",
+            "id",               "",             DATA_INT, sensor_id,
+            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
@@ -1072,6 +1077,7 @@ static char *acurite_606_output_fields[] = {
     "id",
     "battery",
     "temperature_C",
+    "mic",
     NULL
 };
 
