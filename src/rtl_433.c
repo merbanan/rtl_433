@@ -1809,7 +1809,7 @@ int main(int argc, char **argv) {
                             s_tmp = -INT16_MAX;
                         else if (s_tmp > INT16_MAX)
                             s_tmp = INT16_MAX;
-                        test_mode_buf[n] = (int16_t)s_tmp;
+                        ((int16_t*)test_mode_buf)[n] = (int16_t)s_tmp;
                     }
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
