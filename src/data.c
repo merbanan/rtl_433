@@ -564,7 +564,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
             term_ring_bell(kv->term);
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
-            sep[kv->term_width - 1] = '\0';
+            sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
         fprintf(output->file, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);

@@ -55,7 +55,7 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
        uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
        // packet[2] is "Apparently unused"
        uint16_t sensor_type = packet[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
-       uint32_t c_impulse = packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
+       uint32_t c_impulse = (unsigned)packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
        data = data_make(
                "model",        "",              DATA_STRING, "CurrentCost-Counter\tCurrentCost Counter", //TODO: it may have different CC Model ? any ref ?
                "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,

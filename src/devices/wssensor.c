@@ -47,13 +47,13 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float temperature_c;
 
     /* TTTTTTTT TTTTBSCC IIIIIIII  */
-    temperature = ((int8_t)b[0] << 4) | ((b[1] & 0xf0) >> 4); // note the sign extend
+    temperature = (int16_t)((b[0] << 8) | (b[1] & 0xf0)); // uses sign extend
     battery_status = (b[1] & 0x08) >> 3;
     startup = (b[1] & 0x04) >> 2;
     channel = (b[1] & 0x03) + 1;
     sensor_id = b[2];
 
-    temperature_c = temperature / 10.0f;
+    temperature_c = (temperature >> 4) * 0.1f;
 
     if (decoder->verbose) {
         fprintf(stdout, "Hyundai WS SENZOR received raw data:\n");

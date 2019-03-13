@@ -36,7 +36,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] != 36 && bitbuffer->bits_per_row[row] != 37)
             continue;
         b = bitbuffer->bb[row];
-        tmpData = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+        tmpData = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
         if (tmpData == 0xffffffff)
             continue; // prevent false positive checksum
         if (tmpData == savData)
