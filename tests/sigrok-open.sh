@@ -39,7 +39,7 @@ cat >metadata <<EOF
 capturefile=logic-1
 total probes=3
 samplerate=$rate kHz
-total analog=4
+total analog=8
 probe1=FRAME
 probe2=ASK
 probe3=FSK
@@ -47,11 +47,20 @@ analog4=I
 analog5=Q
 analog6=AM
 analog7=FM
+analog8=ALO
+analog9=AHI
+analog10=FLO
+analog11=FHI
 unitsize=1
 EOF
 
-zip "$out" version metadata analog-1-4-1 analog-1-5-1 analog-1-6-1 analog-1-7-1 logic-1-1
-rm version metadata analog-1-4-1 analog-1-5-1 analog-1-6-1 analog-1-7-1 logic-1-1
+mv ook_lo.f32 analog-1-8-1
+mv ook_hi.f32 analog-1-9-1
+mv fsk_lo.f32 analog-1-10-1
+mv fsk_hi.f32 analog-1-11-1
+
+zip "$out" version metadata analog-1-4-1 analog-1-5-1 analog-1-6-1 analog-1-7-1 analog-1-8-1 analog-1-9-1 analog-1-10-1 analog-1-11-1 logic-1-1
+rm version metadata analog-1-4-1 analog-1-5-1 analog-1-6-1 analog-1-7-1 analog-1-8-1 analog-1-9-1 analog-1-10-1 analog-1-11-1 logic-1-1
 
 case "$OSTYPE" in
   darwin*)

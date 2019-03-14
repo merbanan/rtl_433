@@ -18,6 +18,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef DETECT_DEBUG
+extern float *ook_lo_f32_buf;
+extern float *ook_hi_f32_buf;
+extern float *fsk_lo_f32_buf;
+extern float *fsk_hi_f32_buf;
+#endif
+
 void pulse_data_clear(pulse_data_t *data)
 {
     *data = (pulse_data_t const){0};
@@ -507,6 +514,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 fprintf(stderr, "demod_OOK(): Unknown state!!\n");
                 s->ook_state = PD_OOK_STATE_IDLE;
         } // switch
+        ook_lo_f32_buf[s->data_counter] = s->ook_low_estimate / 32768.0;
+        ook_hi_f32_buf[s->data_counter] = s->ook_high_estimate / 32768.0;
+        fsk_lo_f32_buf[s->data_counter] = s->FSK_state.fm_f1_est / 32768.0;
+        fsk_hi_f32_buf[s->data_counter] = s->FSK_state.fm_f2_est / 32768.0;
         s->data_counter++;
     } // while
 

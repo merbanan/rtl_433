@@ -47,6 +47,10 @@
 #include "compat_paths.h"
 #include "compat_time.h"
 
+#ifdef DETECT_DEBUG
+#include <assert.h>
+#endif
+
 #ifdef _WIN32
 #include <io.h>
 #include <fcntl.h>
@@ -91,6 +95,17 @@ char const *version_string(void)
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
+
+#ifdef DETECT_DEBUG
+float *ook_lo_f32_buf;
+float *ook_hi_f32_buf;
+float *fsk_lo_f32_buf;
+float *fsk_hi_f32_buf;
+static FILE *ook_lo_f32_file;
+static FILE *ook_hi_f32_file;
+static FILE *fsk_lo_f32_file;
+static FILE *fsk_hi_f32_file;
+#endif
 
 struct dm_state {
     int32_t level_limit;
@@ -778,6 +793,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 break;
             }
         }
+#ifdef DETECT_DEBUG
+        // actually safe to use binary 0 for a IEEE 754 float zero only
+        memset(ook_lo_f32_buf, 0, sizeof(float) * n_samples);
+        memset(ook_hi_f32_buf, 0, sizeof(float) * n_samples);
+        memset(fsk_lo_f32_buf, 0, sizeof(float) * n_samples);
+        memset(fsk_hi_f32_buf, 0, sizeof(float) * n_samples);
+#endif
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
@@ -856,6 +878,16 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 break;
             }
         }
+
+#ifdef DETECT_DEBUG
+        if (ook_lo_f32_file) {
+            size_t f_written;
+            f_written = fwrite(ook_lo_f32_buf, sizeof(float), n_samples, ook_lo_f32_file); assert(f_written == n_samples);
+            f_written = fwrite(ook_hi_f32_buf, sizeof(float), n_samples, ook_hi_f32_file); assert(f_written == n_samples);
+            f_written = fwrite(fsk_lo_f32_buf, sizeof(float), n_samples, fsk_lo_f32_file); assert(f_written == n_samples);
+            f_written = fwrite(fsk_hi_f32_buf, sizeof(float), n_samples, fsk_hi_f32_file); assert(f_written == n_samples);
+        }
+#endif
 
         if (cfg->stop_after_successful_events_flag && (d_events > 0)) {
             cfg->do_exit = cfg->do_exit_async = 1;
@@ -1820,6 +1852,17 @@ int main(int argc, char **argv) {
                 continue;
             }
 
+#ifdef DETECT_DEBUG
+            ook_lo_f32_buf = malloc(sizeof(float) * DEFAULT_BUF_LENGTH);
+            ook_hi_f32_buf = malloc(sizeof(float) * DEFAULT_BUF_LENGTH);
+            fsk_lo_f32_buf = malloc(sizeof(float) * DEFAULT_BUF_LENGTH);
+            fsk_hi_f32_buf = malloc(sizeof(float) * DEFAULT_BUF_LENGTH);
+
+            ook_lo_f32_file = fopen("ook_lo.f32", "wb"); assert(ook_lo_f32_file);
+            ook_hi_f32_file = fopen("ook_hi.f32", "wb"); assert(ook_hi_f32_file);
+            fsk_lo_f32_file = fopen("fsk_lo.f32", "wb"); assert(fsk_lo_f32_file);
+            fsk_hi_f32_file = fopen("fsk_hi.f32", "wb"); assert(fsk_hi_f32_file);
+#endif
             // default case for file-inputs
             int n_blocks = 0;
             unsigned long n_read;
@@ -1844,6 +1887,13 @@ int main(int argc, char **argv) {
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, &cfg);
             } while (n_read != 0 && !cfg.do_exit);
+
+#ifdef DETECT_DEBUG
+            fclose(ook_lo_f32_file); ook_lo_f32_file = NULL;
+            fclose(ook_hi_f32_file); ook_hi_f32_file = NULL;
+            fclose(fsk_lo_f32_file); fsk_lo_f32_file = NULL;
+            fclose(fsk_hi_f32_file); fsk_hi_f32_file = NULL;
+#endif
 
             // Call a last time with cleared samples to ensure EOP detection
             if (demod->sample_size == 1) { // CU8
