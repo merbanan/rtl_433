@@ -883,36 +883,60 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 out_buf = (uint8_t *)demod->buf.temp;
                 out_len = n_samples * 2 * sizeof(uint8_t);
             }
-
-        } else if (dumper->format == CS16_IQ) {
+        }
+        else if (dumper->format == CS16_IQ) {
             if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
-                    ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] - 128) << 8; // scale Q0.7 to Q0.15
+                    ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] << 8) - 32768; // scale Q0.7 to Q0.15
                 out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
                 out_len = n_samples * 2 * sizeof(int16_t);
             }
-
-        } else if (dumper->format == S16_AM) {
+        }
+        else if (dumper->format == CS8_IQ) {
+            if (demod->sample_size == 1) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((int8_t *)demod->buf.temp)[n] = (iq_buf[n] - 128);
+            }
+            else if (demod->sample_size == 2) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((int8_t *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] >> 8;
+            }
+            out_buf = (uint8_t *)demod->buf.temp;
+            out_len = n_samples * 2 * sizeof(int8_t);
+        }
+        else if (dumper->format == CF32_IQ) {
+            if (demod->sample_size == 1) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((float *)demod->buf.temp)[n] = (iq_buf[n] - 128) / 128.0;
+            }
+            else if (demod->sample_size == 2) {
+                for (unsigned long n = 0; n < n_samples * 2; ++n)
+                    ((float *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] / 32768.0;
+            }
+            out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
+            out_len = n_samples * 2 * sizeof(float);
+        }
+        else if (dumper->format == S16_AM) {
             out_buf = (uint8_t *)demod->am_buf;
             out_len = n_samples * sizeof(int16_t);
-
-        } else if (dumper->format == S16_FM) {
+        }
+        else if (dumper->format == S16_FM) {
             out_buf = (uint8_t *)demod->buf.fm;
             out_len = n_samples * sizeof(int16_t);
-
-        } else if (dumper->format == F32_AM) {
+        }
+        else if (dumper->format == F32_AM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
-
-        } else if (dumper->format == F32_FM) {
+        }
+        else if (dumper->format == F32_FM) {
             for (unsigned long n = 0; n < n_samples; ++n)
                 demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
-
-        } else if (dumper->format == F32_I) {
+        }
+        else if (dumper->format == F32_I) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -921,8 +945,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
-
-        } else if (dumper->format == F32_Q) {
+        }
+        else if (dumper->format == F32_Q) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
@@ -931,8 +955,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                     demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2 + 1] * (1.0 / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
-
-        } else if (dumper->format == U8_LOGIC) { // state data
+        }
+        else if (dumper->format == U8_LOGIC) { // state data
             out_buf = demod->u8_buf;
             out_len = n_samples;
         }
@@ -1809,8 +1833,9 @@ int main(int argc, char **argv) {
                             s_tmp = -INT16_MAX;
                         else if (s_tmp > INT16_MAX)
                             s_tmp = INT16_MAX;
-                        test_mode_buf[n] = (int16_t)s_tmp;
+                        ((int16_t *)test_mode_buf)[n] = s_tmp;
                     }
+                    n_read *= 2; // convert to byte count
                 } else {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
@@ -1821,10 +1846,15 @@ int main(int argc, char **argv) {
             } while (n_read != 0 && !cfg.do_exit);
 
             // Call a last time with cleared samples to ensure EOP detection
-            if (demod->sample_size == 1) // CU8
+            if (demod->sample_size == 1) { // CU8
                 memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
-            else // CF32, CS16
-                memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
+                // or is 127.5 a better 0 in cu8 data?
+                //for (unsigned long n = 0; n < DEFAULT_BUF_LENGTH/2; n++)
+                //    ((uint16_t *)test_mode_buf)[n] = 0x807f;
+            }
+            else { // CF32, CS16
+                    memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
+            }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg.samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, &cfg);
 
