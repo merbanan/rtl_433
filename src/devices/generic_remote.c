@@ -65,8 +65,8 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model"
-    "id"
+    "model",
+    "id",
     "cmd",
     "tristate",
     NULL

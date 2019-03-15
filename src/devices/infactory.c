@@ -77,7 +77,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model"
+    "model",
     "id",
     "temperature_F",
     "humidity",
