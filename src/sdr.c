@@ -78,6 +78,8 @@ struct sdr_dev {
     rtlsdr_dev_t *rtlsdr_dev;
 #endif
 
+    char *dev_info;
+
     int running;
     void *buffer;
     size_t buffer_size;
@@ -345,6 +347,11 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
                         i, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t); // CU8
             *sample_size = sizeof(uint8_t); // CU8
+
+            size_t info_len = 41 + strlen(vendor) + strlen(product) + strlen(serial);
+            dev->dev_info = malloc(info_len);
+            snprintf(dev->dev_info, info_len, "{\"vendor\":\"%s\", \"product\":\"%s\", \"serial\":\"%s\"}",
+                    vendor, product, serial);
             break;
         }
     }
@@ -728,6 +735,17 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
     dev->sample_size = *sample_size;
     free(native_format);
 
+    SoapySDRKwargs args = SoapySDRDevice_getHardwareInfo(dev->soapy_dev);
+    size_t info_len     = 2;
+    for (size_t i = 0; i < args.size; ++i) {
+        info_len += strlen(args.keys[i]) + strlen(args.vals[i]) + 6;
+    }
+    char *p = dev->dev_info = malloc(info_len);
+    for (size_t i = 0; i < args.size; ++i) {
+        p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]);
+    }
+    sprintf(p, "}");
+
     SoapySDRKwargs stream_args = {0};
     int r;
 #if SOAPY_SDR_API_VERSION >= 0x00080000
@@ -866,9 +884,15 @@ int sdr_close(sdr_dev_t *dev)
         ret = rtlsdr_close(dev->rtlsdr_dev);
 #endif
 
+    free(dev->dev_info);
     free(dev->buffer);
     free(dev);
     return ret;
+}
+
+char const *sdr_get_dev_info(sdr_dev_t *dev)
+{
+    return dev->dev_info;
 }
 
 int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)

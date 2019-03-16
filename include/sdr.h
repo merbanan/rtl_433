@@ -34,6 +34,13 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
 */
 int sdr_close(sdr_dev_t *dev);
 
+/** Get device info.
+
+    @param dev the device handle
+    @return JSON device info string
+*/
+char const *sdr_get_dev_info(sdr_dev_t *dev);
+
 /** Set device frequency, optionally report status.
 
     @param dev the device handle
