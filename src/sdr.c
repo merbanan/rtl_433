@@ -912,6 +912,34 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
     return r;
 }
 
+int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose)
+{
+  int r = -1;
+  if(NULL == antenna_str)
+    return 0;
+
+#ifdef SOAPYSDR
+  if(dev->soapy_dev) {
+      r = SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, antenna_str);
+
+      if(verbose) {
+          if (r < 0)
+              fprintf(stderr, "WARNING: Failed to set antenna.\n");
+
+      // report the antenna that is actually used
+      fprintf(stderr, "Antenna set to '%s'.\n",
+          SoapySDRDevice_getAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0));
+      }
+      return r;
+  }
+#endif
+
+  // currently only SoapySDR supports devices with multiple antennas
+  fprintf(stderr, "WARNING: Antenna selection only available for SoapySDR devices\n");
+
+  return r;
+}
+
 int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 {
     int r = -1;
