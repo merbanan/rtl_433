@@ -60,6 +60,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
     "model",
     "id",
+    "group",
     "channel",
     "state",
     "unit",

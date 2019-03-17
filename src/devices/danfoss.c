@@ -149,9 +149,8 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
 static char *output_fields[] = {
-	"brand"
-	"model"
-	"id"
+	"model",
+	"id",
 	"temperature_C",
 	"setpoint_C",
 	"switch",

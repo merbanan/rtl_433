@@ -58,6 +58,7 @@ enum file_type {
     F_CF32     = F_2CH | F_SIGNED   | F_FLOAT | F_W32,
     // compound types
     CU8_IQ     = F_CU8 | F_IQ,
+    CS8_IQ     = F_CS8 | F_IQ,
     S16_AM     = F_S16 | F_AM,
     S16_FM     = F_S16 | F_FM,
     CS16_IQ    = F_CS16 | F_IQ,

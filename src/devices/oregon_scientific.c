@@ -198,7 +198,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
         // Possible    v2.1 Protocol message
         int num_valid_v2_bits = 0;
 
-        unsigned int sync_test_val = (bb[0][3]<<24) | (bb[0][4]<<16) | (bb[0][5]<<8) | (bb[0][6]);
+        unsigned int sync_test_val = ((unsigned)bb[0][3]<<24) | (bb[0][4]<<16) | (bb[0][5]<<8) | (bb[0][6]);
         int dest_bit = 0;
         int pattern_index;
         // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction
@@ -496,7 +496,7 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
             (((bb[0][0]&0xf) == 0x00) && (bb[0][1] == 0x00) && ((bb[0][2]&0xc0) == 0x00))) {
         int i,j;
         unsigned char msg[BITBUF_COLS] = {0};
-        unsigned int sync_test_val = (bb[0][2]<<24) | (bb[0][3]<<16) | (bb[0][4]<<8);
+        unsigned int sync_test_val = ((unsigned)bb[0][2]<<24) | (bb[0][3]<<16) | (bb[0][4]<<8);
         int dest_bit = 0;
         int pattern_index;
         // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction

@@ -161,8 +161,8 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     device_id = b[1];
     battery_low = (b[2] & 0x08) != 0; // if not zero, battery is low
     channel = (b[2] & 0x07) + 1;
-    temperature = ((int8_t)((b[3] & 0x0f) << 4) << 4) | b[4]; // note the sign extend
-    temperature_c = temperature / 10.0f;
+    temperature   = (int16_t)(((b[3] & 0x0f) << 12) | (b[4] << 4)); // uses sign extend
+    temperature_c = (temperature >> 4) * 0.1f;
 
     data = data_make(
             "model",         "",            DATA_STRING, "Emos-TTX201\tEmos TTX201",

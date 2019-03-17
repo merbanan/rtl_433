@@ -164,7 +164,6 @@ static char *output_fields[] = {
     "id",
     "battery",
     "newbattery",
-    "status",
     "temperature_C",
     "humidity",
     "mic",

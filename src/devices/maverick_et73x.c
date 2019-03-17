@@ -91,12 +91,11 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "brand"
-    "model"
-    "id"
+    "model",
+    "id",
     "status",
-    "temperature_C1",
-    "temperature_C2",
+    "temperature1_C",
+    "temperature2_C",
     "mic",
     NULL
 };

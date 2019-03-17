@@ -27,7 +27,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
-    int id;
+    unsigned id;
     char id_str[9];
     int code;
     char code_str[7];
@@ -43,7 +43,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
         return 0;
     }
 
-    id = b[0]<<24 | b[1]<<16 | b[2]<<8 | b[3];
+    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
     sprintf(id_str, "%08x", id);
 
     code = b[4]<<16 | b[5]<<8 | b[6];

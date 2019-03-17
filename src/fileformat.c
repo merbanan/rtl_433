@@ -51,6 +51,7 @@ void check_read_file_info(file_info_t *info)
 void check_write_file_info(file_info_t *info)
 {
     if (info->format != CU8_IQ
+            && info->format != CS8_IQ
             && info->format != S16_AM
             && info->format != S16_FM
             && info->format != CS16_IQ
@@ -106,6 +107,7 @@ static uint32_t file_type_guess_auto_format(uint32_t type)
     else if (type == F_LOGIC) return U8_LOGIC;
 
     else if (type == F_CU8) return CU8_IQ;
+    else if (type == F_CS8) return CS8_IQ;
     else if (type == F_S16) return S16_AM;
     else if (type == F_U8) return U8_LOGIC;
     else if (type == F_Q) return F32_Q;
@@ -192,6 +194,9 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 4 && !strncasecmp("cs32", t, 4)) file_type_set_format(&info->format, F_CS32);
             else if (len == 4 && !strncasecmp("cf32", t, 4)) file_type_set_format(&info->format, F_CF32);
             else if (len == 5 && !strncasecmp("logic", t, 5)) file_type_set_content(&info->format, F_LOGIC);
+            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8);
+            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8);
+            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32);
             //else fprintf(stderr, "Skipping type (len %ld) %s\n", len, t);
         } else {
             p++; // skip non-alphanum char otherwise
