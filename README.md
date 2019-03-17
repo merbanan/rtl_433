@@ -32,6 +32,8 @@ Usage:		= General options =
 		= Tuner options =
   [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]
   [-g <gain> | help] (default: auto)
+  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices
+       e.g. -t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
   [-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
@@ -113,7 +115,7 @@ Supported device protocols:
     [44]  CurrentCost Current Sensor
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
-    [47]  S3318P Temperature & Humidity Sensor
+    [47]  Conrad S3318P Temperature & Humidity Sensor
     [48]  Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
@@ -123,7 +125,7 @@ Supported device protocols:
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
     [55]  Acurite 606TX Temperature Sensor
     [56]  TFA pool temperature sensor
-    [57]  Kedsum Temperature & Humidity Sensor
+    [57]  Kedsum Temperature & Humidity Sensor, Pearl NC-7415
     [58]  Blyss DC5-UK-WH
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
@@ -141,7 +143,7 @@ Supported device protocols:
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
-    [77]  Vaillant calorMatic 340f Central Heating Control
+    [77]  Vaillant calorMatic VRT340f Central Heating Control
     [78]  Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
@@ -172,7 +174,7 @@ Supported device protocols:
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
-    [108]  WS Temperature Sensor
+    [108]  Hyundai WS SENZOR Remote Temperature Sensor
     [109]  WT0124 Pool Thermometer
     [110]  PMV-107J (Toyota) TPMS
     [111]  Emos TTX201 Temperature Sensor
