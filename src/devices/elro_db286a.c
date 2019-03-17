@@ -41,7 +41,7 @@ static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",       "ID",      DATA_STRING, id_str,
             NULL);
 
-	decoder_output_data(decoder, data);
+    decoder_output_data(decoder, data);
 
     return 1;
 

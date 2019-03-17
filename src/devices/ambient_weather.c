@@ -1,7 +1,7 @@
 /* Ambient Weather F007TH Thermo-Hygrometer
  * contributed by David Ediger
  * discovered by Ron C. Lewis
- * 
+ *
  * The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
  */
 
@@ -46,7 +46,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
     humidity = b[4];
 
     data = data_make(
-            "model",          "",             DATA_STRING, "Ambient Weather F007TH Thermo-Hygrometer",
+            "model",          "",             DATA_STRING, "Ambientweather-F007TH\tAmbient Weather F007TH Thermo-Hygrometer",
             "device",         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
             "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "Ok",

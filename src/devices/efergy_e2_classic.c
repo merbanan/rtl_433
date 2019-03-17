@@ -79,7 +79,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Output data
     data = data_make(
-                     "model",    "",               DATA_STRING, "Efergy e2 CT",
+                     "model",    "",               DATA_STRING, "Efergy-e2CT\tEfergy e2 CT",
                      "id",       "Transmitter ID", DATA_INT, address,
                      "current",  "Current",        DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
                      "interval", "Interval",       DATA_FORMAT, "%ds", DATA_INT, interval,
@@ -106,11 +106,11 @@ static char *output_fields[] = {
 r_device efergy_e2_classic = {
     .name           = "Efergy e2 classic",
     .modulation     = FSK_PULSE_PWM,
-	.short_width    = 64,
-	.long_width     = 136,
-	.sync_width     = 500,
-	.gap_limit      = 200,
-	.reset_limit    = 400,
+    .short_width    = 64,
+    .long_width     = 136,
+    .sync_width     = 500,
+    .gap_limit      = 200,
+    .reset_limit    = 400,
     .decode_fn      = &efergy_e2_classic_callback,
     .disabled       = 0,
     .fields         = output_fields

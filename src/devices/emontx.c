@@ -108,7 +108,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 		vrms = (double)words[4] / 100.0;
 
 		data = data_make(
-				 "model", "", DATA_STRING, "emonTx",
+				 "model", "", DATA_STRING, "emonTx-Energy\temonTx",
 				 "node", "", DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
 				 "ct1", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
 				 "ct2", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],

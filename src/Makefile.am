@@ -88,6 +88,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/nexus.c \
                        devices/oil_standard.c \
                        devices/oil_watchman.c \
+                       devices/opus_xt300.c \
                        devices/oregon_scientific.c \
                        devices/oregon_scientific_sl109h.c \
                        devices/oregon_scientific_v1.c \

@@ -79,7 +79,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			depth = ((b[5] & 3) << 8) | b[6];
 
 		data = data_make(
-			"model", "", DATA_STRING, "Oil Watchman",
+			"model", "", DATA_STRING, "Oil-SonicSmart\tOil Watchman",
 			"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
 			"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
 			"maybetemp", "", DATA_INT, maybetemp,

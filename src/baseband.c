@@ -1,16 +1,14 @@
-/**
- * Baseband
- *
- * Various functions for baseband sample processing
- *
- * Copyright (C) 2012 by Benjamin Larsson <benjamin@southpole.se>
- * Copyright (C) 2015 Tommy Vestermark
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various functions for baseband sample processing.
+
+    Copyright (C) 2012 by Benjamin Larsson <benjamin@southpole.se>
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "baseband.h"
 #include <stdio.h>
@@ -18,10 +16,9 @@
 #include <string.h>
 #include <math.h>
 
-
 static uint16_t scaled_squares[256];
 
-/* precalculate lookup table for envelope detection */
+/** precalculate lookup table for envelope detection. */
 static void calc_squares()
 {
     int i;
@@ -29,11 +26,11 @@ static void calc_squares()
         scaled_squares[i] = (127 - i) * (127 - i);
 }
 
-/** This will give a noisy envelope of OOK/ASK signals
- *  Subtract the bias (-128) and get an envelope estimation
- *  The output will be written in the input buffer
- *  @returns   pointer to the input buffer
- */
+/** This will give a noisy envelope of OOK/ASK signals.
+    Subtract the bias (-128) and get an envelope estimation
+    The output will be written in the input buffer
+    @returns   pointer to the input buffer
+*/
 void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -43,9 +40,9 @@ void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 }
 
 /** This will give a noisy envelope of OOK/ASK signals.
- *  Subtracts the bias (-128) and calculates the norm (scaled by 16384).
- *  Using a LUT is slower for O1 and above.
- */
+    Subtracts the bias (-128) and calculates the norm (scaled by 16384).
+    Using a LUT is slower for O1 and above.
+*/
 void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -56,8 +53,9 @@ void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-// note that magnitude emphasizes quiet signals / deemphasizes loud signals
-// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max)
+/** 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
+    Note that magnitude emphasizes quiet signals / deemphasizes loud signals.
+*/
 void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -71,7 +69,7 @@ void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-// True Magnitude for CU8 (sqrt can SIMD but float is slow)
+/// True Magnitude for CU8 (sqrt can SIMD but float is slow).
 void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -82,7 +80,7 @@ void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max)
+/// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max).
 void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -96,7 +94,7 @@ void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-// True Magnitude for CS16 (sqrt can SIMD but float is slow)
+/// True Magnitude for CS16 (sqrt can SIMD but float is slow).
 void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -113,16 +111,16 @@ void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 #define S_CONST (1 << F_SCALE)
 #define FIX(x) ((int)(x * S_CONST))
 
-/** Something that might look like a IIR lowpass filter
- *
- *  [b,a] = butter(1, Wc) # low pass filter with cutoff pi*Wc radians
- *  Q1.15*Q15.0 = Q16.15
- *  Q16.15>>1 = Q15.14
- *  Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
- *  but the b coeffs are small so it wont happen
- *  Q15.14>>14 = Q15.0 \o/
- */
-void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, FilterState *state)
+/** Something that might look like a IIR lowpass filter.
+
+    [b,a] = butter(1, Wc) # low pass filter with cutoff pi*Wc radians
+    Q1.15*Q15.0 = Q16.15
+    Q16.15>>1 = Q15.14
+    Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
+    but the b coeffs are small so it wont happen
+    Q15.14>>14 = Q15.0 \o/
+*/
+void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)
 {
     ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
     //static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
@@ -147,14 +145,15 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
 }
 
 
-/// Integer implementation of atan2() with int16_t normalized output
-///
-/// Returns arc tangent of y/x across all quadrants in radians
-/// Error max 0.07 radians
-/// Reference: http://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization
-/// @param y: Numerator (imaginary value of complex vector)
-/// @param x: Denominator (real value of complex vector)
-/// @return angle in radians (Pi equals INT16_MAX)
+/** Integer implementation of atan2() with int16_t normalized output.
+
+    Returns arc tangent of y/x across all quadrants in radians.
+    Error max 0.07 radians.
+    Reference: http://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization
+    @param y: Numerator (imaginary value of complex vector)
+    @param x: Denominator (real value of complex vector)
+    @return angle in radians (Pi equals INT16_MAX)
+*/
 int16_t atan2_int16(int16_t y, int16_t x)
 {
     static int32_t const I_PI_4 = INT16_MAX/4;      // M_PI/4
@@ -176,7 +175,7 @@ int16_t atan2_int16(int16_t y, int16_t x)
     return angle;
 }
 
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
@@ -224,7 +223,7 @@ void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_s
 #define S_CONST32 (1 << F_SCALE32)
 #define FIX32(x) ((int)(x * S_CONST32))
 
-// for evaluation
+/// for evaluation.
 int32_t atan2_int32(int32_t y, int32_t x)
 {
     static int64_t const I_PI_4 = INT32_MAX / 4;          // M_PI/4
@@ -246,8 +245,8 @@ int32_t atan2_int32(int32_t y, int32_t x)
     return angle;
 }
 
-// for evaluation
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+/// for evaluation.
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
@@ -289,7 +288,6 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
     state->br = ar; state->bi = ai;
     state->xlp = xlp_old; state->ylp = ylp_old;
 }
-
 
 void baseband_init(void)
 {

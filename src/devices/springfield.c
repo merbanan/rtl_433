@@ -36,7 +36,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] != 36 && bitbuffer->bits_per_row[row] != 37)
             continue;
         b = bitbuffer->bb[row];
-        tmpData = (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+        tmpData = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
         if (tmpData == 0xffffffff)
             continue; // prevent false positive checksum
         if (tmpData == savData)
@@ -59,7 +59,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uk1      =  b[4] >> 4;    /* unknown. */
 
         data = data_make(
-                "model",            "",             DATA_STRING, "Springfield Temperature & Moisture",
+                "model",            "",             DATA_STRING, "Springfield-Soil\tSpringfield Temperature & Moisture",
                 "sid",              "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",

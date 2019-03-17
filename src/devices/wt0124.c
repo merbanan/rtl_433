@@ -74,7 +74,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     data = data_make(
-            "model", "", DATA_STRING, "WT0124 Pool Thermometer",
+            "model", "", DATA_STRING, "WT0124-Pool\tWT0124 Pool Thermometer",
             "rid",    "Random ID", DATA_INT,    sensor_rid,
             "channel",       "Channel",     DATA_INT,    channel,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,

@@ -412,7 +412,7 @@ void print_array_value(data_output_t *output, data_array_t *array, char *format,
 #else
     char buffer[element_size];
 #endif
-    
+
     if (!dmt[array->type].array_is_boxed) {
         memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
         print_value(output, array->type, buffer, format);
@@ -564,7 +564,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
             term_ring_bell(kv->term);
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
-            sep[kv->term_width - 1] = '\0';
+            sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
         fprintf(output->file, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
@@ -915,7 +915,7 @@ static void datagram_client_close(datagram_client_t *client)
 
 #ifdef _WIN32
     WSACleanup();
-#endif 
+#endif
 }
 
 static void datagram_client_send(datagram_client_t *client, const char *message, size_t message_len)
@@ -986,7 +986,7 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     gmtime_s(&tm_info, &now);
 #else
     gmtime_r(&now, &tm_info);
-#endif    
+#endif
     char timestamp[21];
     strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 

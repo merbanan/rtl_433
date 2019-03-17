@@ -97,10 +97,10 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "type"
+    "type",
     "id",
     "flags",
-    "pressure_kpa",
+    "pressure_kPa",
     "temperature_C",
     "mic",
     NULL

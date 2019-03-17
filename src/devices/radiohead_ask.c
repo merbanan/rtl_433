@@ -141,7 +141,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     data = data_make(
-            "model",        "",             DATA_STRING, "RadioHead ASK",
+            "model",        "",             DATA_STRING, "RadioHead-ASK\tRadioHead ASK",
             "len",          "Data len",     DATA_INT, data_len,
             "to",           "To",           DATA_INT, header_to,
             "from",         "From",         DATA_INT, header_from,
@@ -176,7 +176,7 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
     data = data_make(
-             "model",            "",                 DATA_STRING,  "Sensible Living Plant Moisture",
+             "model",            "",                 DATA_STRING,  "SensibleLiving-Moisture\tSensible Living Plant Moisture",
              "house_id",         "House ID",         DATA_INT,     house_id,
              "module_id",        "Module ID",        DATA_INT,     module_id,
              "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
