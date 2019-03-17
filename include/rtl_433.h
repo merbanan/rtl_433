@@ -46,7 +46,7 @@ typedef enum {
 typedef struct r_cfg {
     char *dev_query;
     char *gain_str;
-    char *antenna_str;
+    char *settings_str;
     int ppm_error;
     uint32_t out_block_size;
     char const *test_data;

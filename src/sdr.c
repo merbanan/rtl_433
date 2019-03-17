@@ -914,24 +914,25 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
 
 int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose)
 {
-  int r = -1;
-  if(NULL == antenna_str)
-    return 0;
+    int r = -1;
+
+    if (!antenna_str)
+        return 0;
 
 #ifdef SOAPYSDR
-  if(dev->soapy_dev) {
-      r = SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, antenna_str);
+    if (dev->soapy_dev) {
+        r = SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, antenna_str);
 
-      if(verbose) {
-          if (r < 0)
-              fprintf(stderr, "WARNING: Failed to set antenna.\n");
+        if (verbose) {
+            if (r < 0)
+                fprintf(stderr, "WARNING: Failed to set antenna.\n");
 
-      // report the antenna that is actually used
-      fprintf(stderr, "Antenna set to '%s'.\n",
-          SoapySDRDevice_getAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0));
-      }
-      return r;
-  }
+            // report the antenna that is actually used
+            fprintf(stderr, "Antenna set to '%s'.\n",
+                    SoapySDRDevice_getAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0));
+        }
+        return r;
+    }
 #endif
 
   // currently only SoapySDR supports devices with multiple antennas
@@ -979,6 +980,54 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 #endif
 
     return 0;
+}
+
+int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
+{
+    int r = -1;
+
+    if (!sdr_settings || !*sdr_settings)
+        return 0;
+
+#ifdef SOAPYSDR
+    if (!dev->soapy_dev) {
+        fprintf(stderr, "WARNING: sdr settings only available for SoapySDR devices.\n");
+        return -1;
+    }
+
+    SoapySDRKwargs settings = SoapySDRKwargs_fromString(sdr_settings);
+    for (size_t i = 0; i < settings.size; ++i) {
+        const char *key   = settings.keys[i];
+        const char *value = settings.vals[i];
+        if (verbose)
+            fprintf(stderr, "Setting %s to %s\n", key, value);
+        if (!strcmp(key, "antenna")) {
+            if (SoapySDRDevice_setAntenna(dev->soapy_dev, SOAPY_SDR_RX, 0, value) != 0) {
+                r = -1;
+                fprintf(stderr, "WARNING: Antenna setting failed: %s\n", SoapySDRDevice_lastError());
+            }
+        }
+        else if (!strcmp(key, "bandwidth")) {
+            uint32_t f_value = atouint32_metric(value, "-t bandwidth= ");
+            if (SoapySDRDevice_setBandwidth(dev->soapy_dev, SOAPY_SDR_RX, 0, (double)f_value) != 0) {
+                r = -1;
+                fprintf(stderr, "WARNING: Bandwidth setting failed: %s\n", SoapySDRDevice_lastError());
+            }
+        }
+        else {
+            if (SoapySDRDevice_writeSetting(dev->soapy_dev, key, value) != 0) {
+                r = -1;
+                fprintf(stderr, "WARNING: sdr setting failed: %s\n", SoapySDRDevice_lastError());
+            }
+        }
+    }
+    SoapySDRKwargs_clear(&settings);
+    return r;
+#endif
+
+    fprintf(stderr, "WARNING: sdr settings only available for SoapySDR devices.\n");
+
+    return r;
 }
 
 int sdr_activate(sdr_dev_t *dev)

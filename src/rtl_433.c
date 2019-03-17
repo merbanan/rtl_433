@@ -143,7 +143,8 @@ static void usage(int exit_code)
             "\t\t= Tuner options =\n"
             "  [-d <RTL-SDR USB device index> | :<RTL-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help]\n"
             "  [-g <gain> | help] (default: auto)\n"
-            "  [-t <antenna>] name of the antenna to be used by SoapySDR\n"
+            "  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices\n"
+            "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
             "  [-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
@@ -1133,7 +1134,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"config_file", 'c'},
         {"report_meta", 'M'},
         {"device", 'd'},
-        {"antenna", 't'},
+        {"settings", 't'},
         {"gain", 'g'},
         {"frequency", 'f'},
         {"hop_interval", 'H'},
@@ -1244,7 +1245,12 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->dev_query = arg;
         break;
     case 't':
-        cfg->antenna_str = arg;
+        // this option changed, check and warn if old meaning is used
+        if (!arg || *arg == '-') {
+            fprintf(stderr, "test_mode (-t) is deprecated. Use -S none|all|unknown|known\n");
+            exit(1);
+        }
+        cfg->settings_str = arg;
         break;
     case 'f':
         if (cfg->frequencies < MAX_FREQS)
@@ -1899,7 +1905,7 @@ int main(int argc, char **argv) {
     if (cfg.verbosity || demod->level_limit)
         fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
 
-    r = sdr_set_antenna(cfg.dev, cfg.antenna_str, 1); // always verbose for soapy
+    r = sdr_apply_settings(cfg.dev, cfg.settings_str, 1); // always verbose for soapy
 
     /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
     r = sdr_set_tuner_gain(cfg.dev, cfg.gain_str, 1); // always verbose
