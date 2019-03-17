@@ -144,7 +144,7 @@ static void file_type(char const *filename, file_info_t *info)
                 ++p;
             double num = atof(n); // atouint32_metric() ?
             size_t len = p - s;
-            double scale = -1.0; // unknown scale
+            double scale = 1.0;
             switch (*s) {
             case 'k':
             case 'K':
@@ -163,8 +163,8 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 1 && !strncasecmp("k", s, 1)) info->sample_rate = num * 1e3;
             else if (len == 2 && !strncasecmp("Hz", s, 2)) info->center_frequency = num;
             else if (len == 3 && !strncasecmp("sps", s, 3)) info->sample_rate = num;
-            else if (len == 3 && !strncasecmp("Hz", s+1, 2) && scale > 0) info->center_frequency = num * scale;
-            else if (len == 4 && !strncasecmp("sps", s+1, 3) && scale > 0) info->sample_rate = num * scale;
+            else if (len == 3 && !strncasecmp("Hz", s+1, 2) && scale > 1.0) info->center_frequency = num * scale;
+            else if (len == 4 && !strncasecmp("sps", s+1, 3) && scale > 1.0) info->sample_rate = num * scale;
             //fprintf(stderr, "Got number %g, f is %u, s is %u\n", num, info->center_frequency, info->sample_rate);
         } else if ((*p >= 'A' && *p <= 'Z')
                 || (*p >= 'a' && *p <= 'z')) {
