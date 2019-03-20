@@ -207,7 +207,7 @@ matrix:
       python:
           - "2.7"
       install:
-          - pip install deepdiff
+          - pip install deepdiff==3.3.0
       addons:
         apt:
           packages:
