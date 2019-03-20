@@ -15,14 +15,6 @@
 #include <limits.h>
 #include <string.h>
 
-#ifdef _MSC_VER
-    #include <string.h>
-    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
-    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
-#else
-    #include <strings.h>
-#endif
-
 int atobv(char *arg, int def)
 {
     if (!arg)
@@ -41,9 +33,12 @@ char *arg_param(char *arg)
         return p;
 }
 
-void hostport_param(char *param, char **host, char **port)
+char *hostport_param(char *param, char **host, char **port)
 {
     if (param && *param) {
+        if (param[0] == '/' && param[1] == '/') {
+            param += 2;
+        }
         if (*param != ':') {
             *host = param;
             if (*param == '[') {
@@ -58,12 +53,18 @@ void hostport_param(char *param, char **host, char **port)
                 }
             }
         }
-        param = strchr(param, ':');
-        if (param) {
-            *param++ = '\0';
-            *port    = param;
+        char *colon = strchr(param, ':');
+        char *comma = strchr(param, ',');
+        if (colon && (!comma || colon < comma)) {
+            *colon++ = '\0';
+            *port    = colon;
+        }
+        if (comma) {
+            *comma++ = '\0';
+            return comma;
         }
     }
+    return NULL;
 }
 
 uint32_t atouint32_metric(const char *str, const char *error_hint)
@@ -199,6 +200,40 @@ char *getkwargs(char **s, char **key, char **val)
     if (key) *key = k;
     if (val) *val = v;
     return k;
+}
+
+char *trim_ws(char *str)
+{
+    if (!str)
+        return str;
+    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
+        ++str;
+    char *e = str; // end pointer (last non ws)
+    char *p = str; // scanning pointer
+    while (*p) {
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
+            ++p;
+        if (*p)
+            e = p++;
+    }
+    *++e = '\0';
+    return str;
+}
+
+char *remove_ws(char *str)
+{
+    if (!str)
+        return str;
+    char *d = str; // dst pointer
+    char *s = str; // src pointer
+    while (*s) {
+        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n')
+            ++s;
+        if (*s)
+            *d++ = *s++;
+    }
+    *d++ = '\0';
+    return str;
 }
 
 // Unit testing

@@ -39,18 +39,6 @@
     #endif
 #endif
 
-/*
- * The only place '<strings.h>' is currenly needed is in 'src/devices/flex.c'.
- * But it's cleaner to keep such trivia here.
- */
-#ifdef _MSC_VER
-    #include <string.h>
-    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
-    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
-#else
-    #include <strings.h>
-#endif
-
 typedef enum {
     DATA_DATA,   /**< pointer to data is stored */
     DATA_INT,    /**< pointer to integer is stored */

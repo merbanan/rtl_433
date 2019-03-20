@@ -14,6 +14,15 @@
 
 #include <stdint.h>
 
+// makes strcasecmp() and strncasecmp() available when including optparse.h
+#ifdef _MSC_VER
+    #include <string.h>
+    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
+    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
+#else
+    #include <strings.h>
+#endif
+
 /// Convert string to bool with fallback default.
 /// Parses "true", "yes", "on", "enable" (not case-sensitive) to 1, atoi() otherwise.
 int atobv(char *arg, int def);
@@ -21,9 +30,12 @@ int atobv(char *arg, int def);
 /// Get the next colon separated arg, NULL otherwise.
 char *arg_param(char *arg);
 
-/// Parse parm string to host and port.
-/// E.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514"
-void hostport_param(char *param, char **host, char **port);
+/// Parse param string to host and port.
+/// E.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514",
+/// also "//localhost", "//localhost:514", "//:514".
+/// Host or port are terminated at a comma, if found.
+/// @return the remaining options
+char *hostport_param(char *param, char **host, char **port);
 
 /// Convert a string to an unsigned integer, uses strtod() and accepts
 /// metric suffixes of 'k', 'M', and 'G' (also 'K', 'm', and 'g').
@@ -62,5 +74,17 @@ char *asepc(char **stringp, char delim);
 /// @param[out] val value if found, NULL otherwise
 /// @return the original value of *stringp (the keyword found)
 char *getkwargs(char **s, char **key, char **val);
+
+/// Trim left and right whitespace in string.
+///
+/// @param[in,out] str
+/// @return the trimmed value of str
+char *trim_ws(char *str);
+
+/// Remove all whitespace from string.
+///
+/// @param[in,out] str
+/// @return the stripped value of str
+char *remove_ws(char *str);
 
 #endif /* INCLUDE_OPTPARSE_H_ */

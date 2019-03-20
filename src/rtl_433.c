@@ -220,7 +220,7 @@ static void help_device(void)
             "[-d \"\" Open default SoapySDR device\n"
             "[-d driver=rtlsdr Open e.g. specific SoapySDR device\n"
             "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
-            "[-d rtl_tcp[:host[:port]] (default: localhost:1234)\n"
+            "[-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
             "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
     exit(0);
 }
