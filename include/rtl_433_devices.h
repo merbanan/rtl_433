@@ -1,5 +1,5 @@
 /** @file
-    Definition all available decoders.
+    Declaration of all available decoders.
 */
 
 #ifndef INCLUDE_RTL_433_DEVICES_H_
@@ -128,7 +128,8 @@
     DECL(bt_rain) \
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \
-    DECL(opus_xt300)
+    DECL(opus_xt300) \
+    /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
 DEVICES
