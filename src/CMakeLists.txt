@@ -54,6 +54,7 @@ add_executable(rtl_433
 	devices/fineoffset_wh1080.c
 	devices/flex.c
 	devices/fordremote.c
+	devices/fs20.c
 	devices/ft004b.c
 	devices/ge_coloreffects.c
 	devices/generic_motion.c

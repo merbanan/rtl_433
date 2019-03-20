@@ -164,6 +164,7 @@
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c" />
     <ClCompile Include="..\src\devices\flex.c" />
     <ClCompile Include="..\src\devices\fordremote.c" />
+    <ClCompile Include="..\src\devices\fs20.c" />
     <ClCompile Include="..\src\devices\ft004b.c" />
     <ClCompile Include="..\src\devices\ge_coloreffects.c" />
     <ClCompile Include="..\src\devices\generic_motion.c" />

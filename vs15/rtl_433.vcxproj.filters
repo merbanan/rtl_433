@@ -253,6 +253,9 @@
     <ClCompile Include="..\src\devices\fordremote.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\fs20.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ft004b.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

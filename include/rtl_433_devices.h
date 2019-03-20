@@ -129,6 +129,7 @@
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \
     DECL(opus_xt300) \
+    DECL(fs20) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
