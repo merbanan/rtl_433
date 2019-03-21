@@ -27,8 +27,11 @@ int atobv(char *arg, int def)
 char *arg_param(char *arg)
 {
     char *p = strchr(arg, ':');
-    if (p)
+    char *c = strchr(arg, ',');
+    if (p && (!c || p < c))
         return ++p;
+    else if (c)
+        return c;
     else
         return p;
 }
@@ -39,7 +42,7 @@ char *hostport_param(char *param, char **host, char **port)
         if (param[0] == '/' && param[1] == '/') {
             param += 2;
         }
-        if (*param != ':') {
+        if (*param != ':' && *param != ',') {
             *host = param;
             if (*param == '[') {
                 (*host)++;
@@ -204,7 +207,7 @@ char *getkwargs(char **s, char **key, char **val)
 
 char *trim_ws(char *str)
 {
-    if (!str)
+    if (!str || !*str)
         return str;
     while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
         ++str;

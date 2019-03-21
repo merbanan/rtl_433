@@ -27,7 +27,9 @@
 /// Parses "true", "yes", "on", "enable" (not case-sensitive) to 1, atoi() otherwise.
 int atobv(char *arg, int def);
 
-/// Get the next colon separated arg, NULL otherwise.
+/// Get the next colon or comma separated arg, NULL otherwise.
+/// Returns string including comma if a comma is found first,
+/// otherwise string after colon if found, NULL otherwise.
 char *arg_param(char *arg);
 
 /// Parse param string to host and port.
