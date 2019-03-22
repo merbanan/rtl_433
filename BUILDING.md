@@ -29,7 +29,7 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0.0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
+    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
 
 Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
 
