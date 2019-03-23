@@ -153,7 +153,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         data = data_make(
                 "model",   "", DATA_STRING, _X("Vaillant-VRT340f","Vaillant VRT340f Central Heating Thermostat"),
-                "device",  "Device ID", DATA_FORMAT, "0x%04X", DATA_INT, deviceID,
+                _X("id","device"),  "Device ID", DATA_FORMAT, "0x%04X", DATA_INT, deviceID,
                 "heating", "Heating Mode", DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
                 "heating_temp", "Heating Water Temp.", DATA_FORMAT, "%d", DATA_INT, (int16_t)target_temperature,
                 "water",   "Pre-heated Water", DATA_STRING, water_preheated ? "ON" : "off",
@@ -176,7 +176,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         data = data_make(
                 "model",   "", DATA_STRING, _X("Vaillant-VRT340f","Vaillant VRT340f Central Heating Thermostat (RF Detection)"),
-                "device",  "Device ID", DATA_INT, deviceID,
+                _X("id","device"),  "Device ID", DATA_INT, deviceID,
                 NULL);
         decoder_output_data(decoder, data);
 
@@ -188,7 +188,8 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "device",
+    "device", // TODO: delete this
+    "id",
     "heating",
     "heating_temp",
     "water",

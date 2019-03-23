@@ -60,7 +60,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         data = data_make(
                 "model",            "",             DATA_STRING, _X("Springfield-Soil","Springfield Temperature & Moisture"),
-                "sid",              "SID",          DATA_INT,    sid,
+                _X("id","sid"),              "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
                 "transmit",         "Transmit",     DATA_STRING, transmit ? "MANUAL" : "AUTO",
@@ -77,7 +77,8 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "sid",
+    "sid", // TODO: delete this
+    "id",
     "channel",
     "battery",
     "transmit",

@@ -78,7 +78,7 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     data = data_make(
             "model",            "",                 DATA_STRING, _X("Maverick-ET73","Maverick ET73"),
-            "rid",              "Random Id",        DATA_INT, device,
+            _X("id","rid"),              "Random Id",        DATA_INT, device,
             "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             NULL);
@@ -88,7 +88,8 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
 
 static char *output_fields[] = {
     "model",
-    "rid",
+    "rid", // TODO: delete this
+    "id",
     "temperature_1_C",
     "temperature_2_C",
     NULL

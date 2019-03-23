@@ -241,17 +241,16 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 NULL);
     }
     else if (msg_type == 1) {
+        char clock_str[20];
+        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+                year, month, day, hours, minutes, seconds);
+
         data = data_make(
                 "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
                 "msg_type",         "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
-                "hours",            "Hours",            DATA_FORMAT,    "%02d",     DATA_INT,   hours,
-                "minutes",          "Minutes",          DATA_FORMAT,    "%02d",     DATA_INT,   minutes,
-                "seconds",          "Seconds",          DATA_FORMAT,    "%02d",     DATA_INT,   seconds,
-                "year",             "Year",             DATA_FORMAT,    "%02d",     DATA_INT,   year,
-                "month",            "Month",            DATA_FORMAT,    "%02d",     DATA_INT,   month,
-                "day",              "Day",              DATA_FORMAT,    "%02d",     DATA_INT,   day,
+                "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
     }
@@ -282,12 +281,7 @@ static char *output_fields[] = {
     "rain",
     "msg_type",
     "signal",
-    "hours",
-    "minutes",
-    "seconds",
-    "year",
-    "month",
-    "day",
+    "radio_clock",
     "battery",
     "sensor_code",
     "uv_status",

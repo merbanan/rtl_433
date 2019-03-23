@@ -47,7 +47,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
 
     data = data_make(
             "model",          "",             DATA_STRING, _X("Ambientweather-F007TH","Ambient Weather F007TH Thermo-Hygrometer"),
-            "device",         "House Code",   DATA_INT,    deviceID,
+            _X("id","device"),         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
             "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "Ok",
             "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
@@ -91,7 +91,8 @@ ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "device",
+    "device", // TODO: delete this
+    "id",
     "channel",
     "battery",
     "temperature_F",

@@ -55,7 +55,7 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     data = data_make(
             "model",        "",             DATA_STRING, _X("SimpliSafe-Sensor","SimpliSafe Sensor"),
-            "device",       "Device ID",    DATA_STRING, id,
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
             "seq",          "Sequence",     DATA_INT, seq,
             "state",        "State",        DATA_INT, state,
             "extradata",    "Extra Data",   DATA_STRING, extradata,
@@ -90,7 +90,7 @@ ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     data = data_make(
             "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
-            "device",       "Device ID",    DATA_STRING, id,
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
             "seq",          "Sequence",     DATA_INT, b[9],
             "extradata",    "Extra Data",   DATA_STRING, extradata,
             NULL
@@ -126,7 +126,7 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     data = data_make(
             "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
-            "device",       "Device ID",    DATA_STRING, id,
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
             "seq",          "Sequence",     DATA_INT, b[9],
             "extradata",    "Extra Data",   DATA_STRING, extradata,
             NULL
@@ -164,7 +164,8 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *sensor_output_fields[] = {
     "model",
-    "device",
+    "device", // TODO: delete this
+    "id",
     "seq",
     "state",
     "extradata",
