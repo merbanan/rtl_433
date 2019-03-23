@@ -505,7 +505,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "channel",          NULL,         DATA_STRING,     &channel_str,
                     "temperature_C",         "Temperature",    DATA_FORMAT,    "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",    DATA_INT,    humidity,
-                    "battery_low",            "battery low",    DATA_INT,    battery_low,
+                    _X("battery_ok","battery_low"),            "",    DATA_INT,    _X(!battery_low,battery_low),
 
                     NULL);
 
@@ -1008,7 +1008,8 @@ static char *acurite_txr_output_fields[] = {
     "channel",
     "temperature_C",
     "humidity",
-    "battery_low",
+    "battery_low", // TODO: remove this
+    "battery_ok",
     "sequence_num",
     "battery",
     "message_type",

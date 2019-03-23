@@ -82,8 +82,8 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
             "id",               "Session_ID",           DATA_INT, id,
             "status",           "Status",               DATA_STRING, status,
-            "temperature1_C",   "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
-            "temperature2_C",   "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
+            _X("temperature_1_C","temperature1_C"),  "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
+            _X("temperature_2_C","temperature2_C"),  "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
             NULL);
     decoder_output_data(decoder, data);
 
@@ -94,8 +94,10 @@ static char *output_fields[] = {
     "model",
     "id",
     "status",
-    "temperature1_C",
-    "temperature2_C",
+    "temperature1_C", // TODO: remove this
+    "temperature2_C", // TODO: remove this
+    "temperature_1_C",
+    "temperature_2_C",
     "mic",
     NULL
 };
