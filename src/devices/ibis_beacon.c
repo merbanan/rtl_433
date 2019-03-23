@@ -61,7 +61,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	/* Get time now */
 	data = data_make(
-		"model",	"",				DATA_STRING,	"IBIS-Beacon\tIBIS beacon",
+		"model",	"",				DATA_STRING,	_X("IBIS-Beacon","IBIS beacon"),
 		"id",		"Vehicle No.",	DATA_INT,		id,
 		"counter",	"Counter",		DATA_INT,		counter,
 		"code",		"Code data",	DATA_STRING,	code_str,

@@ -75,7 +75,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int flags = (b[1] & 0xc0) | (b[4] >> 4);
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Kedsum-TH\tKedsum Temperature & Humidity Sensor",
+            "model",            "",             DATA_STRING, _X("Kedsum-TH","Kedsum Temperature & Humidity Sensor"),
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_str,

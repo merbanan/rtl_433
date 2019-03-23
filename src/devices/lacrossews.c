@@ -117,7 +117,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             case 0:
                 temp_c = (msg_value_bcd - 300.0) / 10.0;
                 data = data_make(
-                        "model",            "",             DATA_STRING, "LaCrosse-WS\tLaCrosse WS",
+                        "model",            "",             DATA_STRING, _X("LaCrosse-WS","LaCrosse WS"),
                         "ws_id",            "",             DATA_INT, ws_id,
                         "id",               "",             DATA_INT, sensor_id,
                         "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -133,7 +133,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                             ws_id, sensor_id);
                 else {
                     data = data_make(
-                            "model",         "",            DATA_STRING, "LaCrosse-WS\tLaCrosse WS",
+                            "model",         "",            DATA_STRING, _X("LaCrosse-WS","LaCrosse WS"),
                             "ws_id",         "",            DATA_INT, ws_id,
                             "id",            "",            DATA_INT, sensor_id,
                             "humidity",      "Humidity",    DATA_INT, msg_value_bcd2,
@@ -146,7 +146,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             case 2:
                 rain_mm = 0.5180 * msg_value_bin;
                 data = data_make(
-                        "model",            "",             DATA_STRING, "LaCrosse-WS\tLaCrosse WS",
+                        "model",            "",             DATA_STRING, _X("LaCrosse-WS","LaCrosse WS"),
                         "ws_id",            "",             DATA_INT, ws_id,
                         "id",               "",             DATA_INT, sensor_id,
                         "rainfall_mm",      "Rainfall",     DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm, NULL);
@@ -170,7 +170,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     wind_label = msg_type == 3 ? "Wind speed" : "Gust speed";
 
                     data = data_make(
-                            "model",            "",             DATA_STRING, "LaCrosse-WS\tLaCrosse WS",
+                            "model",            "",             DATA_STRING, _X("LaCrosse-WS","LaCrosse WS"),
                             "ws_id",            "",             DATA_INT, ws_id,
                             "id",               "",             DATA_INT, sensor_id,
                             wind_key,           wind_label,     DATA_FORMAT, "%3.1f m/s", DATA_DOUBLE, wind_spd,

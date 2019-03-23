@@ -66,24 +66,24 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
-        model = "Fineoffset-WH2\tFine Offset Electronics, WH2 Temperature/Humidity sensor";
+        model = _X("Fineoffset-WH2","Fine Offset Electronics, WH2 Temperature/Humidity sensor");
 
     } else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model = "Fineoffset-WH2A\tFine Offset WH2A sensor";
+        model = _X("Fineoffset-WH2A","Fine Offset WH2A sensor");
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-        model = "Fineoffset-WH5\tFine Offset WH5 sensor";
+        model = _X("Fineoffset-WH5","Fine Offset WH5 sensor");
         if (decoder->decode_ctx) // don't care for the actual value
             model = "Rosenborg-66796";
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
-        model = "Fineoffset-TelldusProove\tTelldus/Proove thermometer";
+        model = _X("Fineoffset-TelldusProove","Telldus/Proove thermometer");
 
     } else
         return 0;
@@ -286,7 +286,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Output data
     data = data_make(
-            "model",            "",                 DATA_STRING, model == MODEL_WH24 ? "Fineoffset-WH24\tFine Offset WH24" : "Fineoffset-WH65B\tFine Offset WH65B",
+            "model",            "",                 DATA_STRING, model == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
             "id",               "ID",               DATA_INT, id,
             NULL);
     if (temp_raw       != 0x7ff)
@@ -382,7 +382,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Output data
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH25\tFine Offset Electronics, WH25",
+            "model",            "",             DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -447,7 +447,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0530\tFine Offset Electronics, WH0530 Temperature/Rain sensor",
+            "model",            "",             DATA_STRING, _X("Fineoffset-WH0530","Fine Offset Electronics, WH0530 Temperature/Rain sensor"),
             "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,

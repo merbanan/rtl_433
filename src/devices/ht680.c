@@ -57,7 +57,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int button4 = (b[2]>>0) & 0x03;
 
         data = data_make(
-                "model",    "",                 DATA_STRING, "HT680-Remote\tHT680 Remote control",
+                "model",    "",                 DATA_STRING, _X("HT680-Remote","HT680 Remote control"),
                 "tristate", "Tristate code",    DATA_STRING, tristate,
                 "address",  "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
                 "button1",  "Button 1",         DATA_STRING, button1 == 3 ? "PRESSED" : "",

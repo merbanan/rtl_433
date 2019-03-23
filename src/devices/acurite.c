@@ -118,7 +118,7 @@ static int acurite_rain_gauge_callback(r_device *decoder, bitbuffer_t *bitbuffer
         data_t *data;
 
         data = data_make(
-            "model",    "",        DATA_STRING,    "Acurite-Rain\tAcurite Rain Gauge",
+            "model",    "",        DATA_STRING,    _X("Acurite-Rain","Acurite Rain Gauge"),
             "id",        "",        DATA_INT,    id,
             "rain",     "Total Rain",    DATA_FORMAT,    "%.1f mm", DATA_DOUBLE, total_rain,
             NULL);
@@ -176,7 +176,7 @@ static int acurite_th_callback(r_device *decoder, bitbuffer_t *bitbuf)
     humidity = bb[3];
 
     data = data_make(
-             "model",        "",        DATA_STRING,    "Acurite-609TXC\tAcurite 609TXC Sensor",
+             "model",        "",        DATA_STRING,    _X("Acurite-609TXC","Acurite 609TXC Sensor"),
              "id",        "",        DATA_INT,    id,
              "battery",        "",        DATA_STRING,    battery_low ? "LOW" : "OK",
              "status",        "",        DATA_INT,    status,
@@ -378,7 +378,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
     }
 
     data = data_make(
-       "model",            "",            DATA_STRING,    "Acurite-Lightning\tAcurite Lightning 6045M",
+       "model",            "",            DATA_STRING,    _X("Acurite-Lightning","Acurite Lightning 6045M"),
        "id",            NULL,              DATA_INT,    sensor_id,
        "channel",          NULL,             DATA_STRING,     channel_str,
        "temperature_F",     "temperature",        DATA_FORMAT,    "%.1f F",     DATA_DOUBLE,     tempf,
@@ -499,7 +499,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
             battery_low = (bb[2] & 0x40) == 0;
 
             data = data_make(
-                    "model",                "",        DATA_STRING,    "Acurite-Tower\tAcurite tower sensor",
+                    "model",                "",        DATA_STRING,    _X("Acurite-Tower","Acurite tower sensor"),
                     "id",            "",        DATA_INT,    sensor_id,
                     "sensor_id",            NULL,          DATA_FORMAT,    "0x%04x",   DATA_INT,       sensor_id, // @todo hex output not working, delete at 1.0 release
                     "channel",          NULL,         DATA_STRING,     &channel_str,
@@ -554,7 +554,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
 
                 data = data_make(
-                    "model",        "",   DATA_STRING,    "Acurite-5n1\tAcurite 5n1 sensor",
+                    "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
                     "sensor_id",    NULL, DATA_INT,       sensor_id, // @todo normaiize to "id" at 1.0 release.
                     "channel",      NULL,   DATA_STRING,    &channel_str,
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -577,7 +577,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 humidity = (bb[6] & 0x7f); // 1-99 %rH
 
                 data = data_make(
-                    "model",        "",   DATA_STRING,    "Acurite-5n1\tAcurite 5n1 sensor",
+                    "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
                     "sensor_id",    NULL, DATA_INT,  sensor_id, // @todo normalize to "id" at 1.0 release.
                     "channel",      NULL,   DATA_STRING,    &channel_str,
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -601,7 +601,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 wind_speed_mph = bb[6] & 0x7f; // seems to be plain MPH
 
                 data = data_make(
-                    "model",        "",   DATA_STRING,    "Acurite-3n1\tAcurite 3n1 sensor",
+                    "model",        "",   DATA_STRING,    _X("Acurite-3n1","Acurite 3n1 sensor"),
                     "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                     "channel",      NULL,   DATA_STRING,    &channel_str,
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -749,7 +749,7 @@ static int acurite_986_callback(r_device *decoder, bitbuffer_t *bitbuf)
             printf("Acurite 986 sensor 0x%04x - %d%c: %d F\n", sensor_id, sensor_num, sensor_type, tempf);
 
         data = data_make(
-                "model",        "",        DATA_STRING,    "Acurite-986\tAcurite 986 Sensor",
+                "model",        "",        DATA_STRING,    _X("Acurite-986","Acurite 986 Sensor"),
                 "id",            NULL,        DATA_INT,    sensor_id,
                 "channel",        NULL,        DATA_STRING,    channel_str,
                 "temperature_F",    "temperature",    DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
@@ -851,7 +851,7 @@ static int acurite_606_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c    = temp_raw * 0.1;
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Acurite-606TX\tAcurite 606TX Sensor",
+            "model",            "",             DATA_STRING, _X("Acurite-606TX","Acurite 606TX Sensor"),
             "id",               "",             DATA_INT, sensor_id,
             "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -911,7 +911,7 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
             humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
             //  No probe
             data = data_make(
-                    "model",           "",             DATA_STRING,    model ? "Acurite-00275rm\t00275rm" : "Acurite-00276rm\t00276rm",
+                    "model",           "",             DATA_STRING,    model ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
                     "probe",           "",             DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",

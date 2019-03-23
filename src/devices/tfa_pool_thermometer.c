@@ -42,7 +42,7 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
 	channel  = (signed short)((bb[1][3]&0xC0)>>6);
 
 	data = data_make(
-			"model",			"", 				DATA_STRING, 	"TFA-Pool\tTFA pool temperature sensor",
+			"model",			"", 				DATA_STRING, 	_X("TFA-Pool","TFA pool temperature sensor"),
 			"id",				"Id",				DATA_INT,	device,
 			"channel",			"Channel",			DATA_INT,	channel,
 			"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.01f C",	DATA_DOUBLE,	temp_f,

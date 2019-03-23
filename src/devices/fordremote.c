@@ -47,7 +47,7 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 		/* Get time now */
 		data = data_make(
-				"model",	"model",	DATA_STRING, "Ford-CarRemote\tFord Car Remote",
+				"model",	"model",	DATA_STRING, _X("Ford-CarRemote","Ford Car Remote"),
 				"id",		"device-id",	DATA_INT, device_id,
 				"code", 	"data",		DATA_INT, code,
 				NULL);

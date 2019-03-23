@@ -103,7 +103,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             energy = ((pulsecount/imp_kwh[i]) * (3600/30));
         }
         data = data_make(
-                "model",    "Model",        DATA_STRING, "Efergy-Optical\tEfergy Optical",
+                "model",    "Model",        DATA_STRING, _X("Efergy-Optical","Efergy Optical"),
                 "pulses",   "Pulse-rate",   DATA_FORMAT, "%i", DATA_INT, imp_kwh[i],
                 "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
                 NULL);

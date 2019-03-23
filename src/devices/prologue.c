@@ -72,7 +72,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
 
         data = data_make(
-                "model",         "",            DATA_STRING, "Prologue-TH\tPrologue sensor",
+                "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
                 "id",            "",            DATA_INT, type, // this should be named "type"
                 "rid",           "",            DATA_INT, id, // this should be named "id"
                 "channel",       "Channel",     DATA_INT, channel,

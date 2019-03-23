@@ -66,7 +66,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_f = (float)temp / 10 - 90;
 
     data = data_make(
-            "model",            "",             DATA_STRING, "inFactory-TH\tinFactory sensor",
+            "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
             "id",               "ID",           DATA_FORMAT, "%u", DATA_INT, id,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,

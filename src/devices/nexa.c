@@ -44,7 +44,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* Get time now */
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "Nexa-Security\tNexa",
+                     "model",         "",            DATA_STRING, _X("Nexa-Security","Nexa"),
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "group",         "Group",       DATA_INT, group_code,
                      "channel",       "Channel",     DATA_INT, channel_code,

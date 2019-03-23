@@ -102,7 +102,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp          = (temp_whole - 50) + (temp_fraction / 100.0);
 
     data = data_make(
-            "model",            "",             DATA_STRING, "WT450-TH\tWT450 sensor",
+            "model",            "",             DATA_STRING, _X("WT450-TH","WT450 sensor"),
             "id",               "House Code",   DATA_INT, house_code,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",

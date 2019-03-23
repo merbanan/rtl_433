@@ -105,7 +105,7 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         }
 
         data = data_make(
-                         "model",         "",            DATA_STRING, "KlikAanKlikUit-Switch\tKlikAanKlikUit Wireless Switch",
+                         "model",         "",            DATA_STRING, _X("KlikAanKlikUit-Switch","KlikAanKlikUit Wireless Switch"),
                          "id",            "",            DATA_INT, kakuid,
                          "unit",          "Unit",        DATA_INT, unit,
                          "group_call",    "Group Call",  DATA_STRING, group_call,

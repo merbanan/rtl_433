@@ -31,7 +31,7 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 
         data = data_make(
-            "model", "", DATA_STRING, "Silvercrest-Remote\tSilvercrest Remote Control",
+            "model", "", DATA_STRING, _X("Silvercrest-Remote","Silvercrest Remote Control"),
             "button", "", DATA_INT, cmd,
             NULL);
 

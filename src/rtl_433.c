@@ -314,6 +314,8 @@ static void update_protocol(r_cfg_t *cfg, r_device *r_dev)
 
     r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     r_dev->verbose_bits = cfg->verbose_bits;
+
+    r_dev->new_model_keys = cfg->new_model_keys; // TODO: temporary allow to change to new style model keys
 }
 
 static void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
@@ -426,28 +428,6 @@ static char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {
     r_cfg_t *cfg = r_dev->output_ctx;
-
-    // switch new/old model keys
-    for (data_t *d = data; d; d = d->next) {
-        if ((d->type == DATA_STRING) && !strcmp(d->key, "model")) {
-            for (char *p = d->value; p && *p; ++p) {
-                if (*p == '\t' && cfg->new_model_keys) {
-                    // terminate new model key
-                    *p = '\0';
-                    break;
-                }
-                else if (*p == '\t' && !cfg->new_model_keys) {
-                    // move old model key
-                    char *v = d->value;
-                    while (*++p)
-                        *v++ = *p;
-                    *v = '\0';
-                    break;
-                }
-            }
-            break;
-        }
-    }
 
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {

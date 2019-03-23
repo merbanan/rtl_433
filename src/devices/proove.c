@@ -60,7 +60,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* Get time now */
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "Proove-Security\tProove",
+                     "model",         "",            DATA_STRING, _X("Proove-Security","Proove"),
                      "id",            "House Code",  DATA_INT, sensor_id,
                      "channel",       "Channel",     DATA_INT, channel_code,
                      "state",         "State",       DATA_STRING, on_bit ? "OFF" : "ON",

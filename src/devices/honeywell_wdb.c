@@ -87,7 +87,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     relay = (bytes[5]&0x8) >> 3;
     battery = (bytes[5]&0x2) >> 1;
     data = data_make(
-            "model",         "",            DATA_STRING, "Honeywell-Security\tHoneywell Wireless Doorbell",
+            "model",         "",            DATA_STRING, _X("Honeywell-Security","Honeywell Wireless Doorbell"),
             "id",            "Id",          DATA_FORMAT, "%x",   DATA_INT,    device,
             "class",         "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
             "alert",         "Alert",       DATA_FORMAT, "%s",   DATA_STRING, alert,

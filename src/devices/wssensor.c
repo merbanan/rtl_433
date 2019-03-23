@@ -69,7 +69,7 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     data = data_make(
-            "model",         "",            DATA_STRING, "Hyundai-WS\tWS Temperature Sensor",
+            "model",         "",            DATA_STRING, _X("Hyundai-WS","WS Temperature Sensor"),
             "id",            "House Code",  DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",

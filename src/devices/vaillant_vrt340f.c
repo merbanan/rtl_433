@@ -152,7 +152,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t isBatteryLow = get_battery_status(bb[0]);
 
         data = data_make(
-                "model",   "", DATA_STRING, "Vaillant-VRT340f\tVaillant VRT340f Central Heating Thermostat",
+                "model",   "", DATA_STRING, _X("Vaillant-VRT340f","Vaillant VRT340f Central Heating Thermostat"),
                 "device",  "Device ID", DATA_FORMAT, "0x%04X", DATA_INT, deviceID,
                 "heating", "Heating Mode", DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
                 "heating_temp", "Heating Water Temp.", DATA_FORMAT, "%d", DATA_INT, (int16_t)target_temperature,
@@ -175,7 +175,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         uint16_t deviceID = get_device_id(bb[0], 11);
 
         data = data_make(
-                "model",   "", DATA_STRING, "Vaillant-VRT340f\tVaillant VRT340f Central Heating Thermostat (RF Detection)",
+                "model",   "", DATA_STRING, _X("Vaillant-VRT340f","Vaillant VRT340f Central Heating Thermostat (RF Detection)"),
                 "device",  "Device ID", DATA_INT, deviceID,
                 NULL);
         decoder_output_data(decoder, data);

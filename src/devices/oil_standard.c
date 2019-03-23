@@ -86,7 +86,7 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         depth = ((b[2] & 0x02) << 7) | b[3];
 
     data = data_make(
-            "model", "", DATA_STRING, "Oil-SonicStd\tOil Ultrasonic STANDARD",
+            "model", "", DATA_STRING, _X("Oil-SonicStd","Oil Ultrasonic STANDARD"),
             "id", "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
             "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
             "alarm", "", DATA_INT, alarm,

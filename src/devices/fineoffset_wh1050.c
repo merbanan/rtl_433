@@ -76,7 +76,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // PRESENTING DATA
     data = data_make(
-            "model",            "",                 DATA_STRING, "Fineoffset-WH1050\tFine Offset WH1050 weather station",
+            "model",            "",                 DATA_STRING, _X("Fineoffset-WH1050","Fine Offset WH1050 weather station"),
             "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
