@@ -429,6 +429,22 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 {
     r_cfg_t *cfg = r_dev->output_ctx;
 
+    // replace textual battery key with numerical battery key
+    if (cfg->new_model_keys) {
+        for (data_t *d = data; d; d = d->next) {
+            if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
+                free(d->key);
+                d->key = strdup("battery_ok");
+                int ok = d->value && !strcmp(d->value, "OK");
+                free(d->value);
+                d->type = DATA_INT;
+                d->value = malloc(sizeof(int));
+                *(int *)d->value = ok;
+                break;
+            }
+        }
+    }
+
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _F to _C
