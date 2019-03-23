@@ -114,7 +114,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 				 "ct2", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],
 				 "ct3", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[2],
 				 "ct4", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[3],
-				 "Vrms/batt", "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
+				 _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
 				 "pulse", "", DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
 				 // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
 				 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[5] / 10.0,
@@ -137,7 +137,8 @@ static char *output_fields[] = {
 	"ct2",
 	"ct3",
 	"ct4",
-	"Vrms/batt",
+	"Vrms/batt", // TODO: delete this
+	"batt_Vrms",
 	"temp1_C",
 	"temp2_C",
 	"temp3_C",
