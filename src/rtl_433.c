@@ -468,13 +468,23 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 free(d->format);
                 d->format = new_format_label;
             }
-            // Convert double type fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_inch")) {
+            // Convert double type fields ending in _in to _mm
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_in")) {
                 *(double*)d->value = inch2mm(*(double*)d->value);
-                char *new_label = str_replace(d->key, "_inch", "_mm");
+                char *new_label = str_replace(d->key, "_in", "_mm");
                 free(d->key);
                 d->key = new_label;
-                char *new_format_label = str_replace(d->format, "inch", "mm");
+                char *new_format_label = str_replace(d->format, "in", "mm");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _in_h to _mm_h
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_in_h")) {
+                *(double*)d->value = inch2mm(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_in_h", "_mm_h");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "in/h", "mm/h");
                 free(d->format);
                 d->format = new_format_label;
             }
@@ -526,10 +536,20 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             // Convert double type fields ending in _mm to _inch
             else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm")) {
                 *(double*)d->value = mm2inch(*(double*)d->value);
-                char *new_label = str_replace(d->key, "_mm", "_inch");
+                char *new_label = str_replace(d->key, "_mm", "_in");
                 free(d->key);
                 d->key = new_label;
-                char *new_format_label = str_replace(d->format, "mm", "inch");
+                char *new_format_label = str_replace(d->format, "mm", "in");
+                free(d->format);
+                d->format = new_format_label;
+            }
+            // Convert double type fields ending in _mm_h to _in_h
+            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm_h")) {
+                *(double*)d->value = mm2inch(*(double*)d->value);
+                char *new_label = str_replace(d->key, "_mm_h", "_in_h");
+                free(d->key);
+                d->key = new_label;
+                char *new_format_label = str_replace(d->format, "mm/h", "in/h");
                 free(d->format);
                 d->format = new_format_label;
             }
