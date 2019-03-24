@@ -235,7 +235,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "direction_deg",    "Wind degrees",     DATA_INT,       direction_deg,
                 "speed",            "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
                 "gust",             "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
-                "rain",             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
+                _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
                 "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
@@ -278,7 +278,8 @@ static char *output_fields[] = {
     "direction_deg",
     "speed",
     "gust",
-    "rain",
+    "rain", // TODO: remove this
+    "rain_mm",
     "msg_type",
     "signal",
     "radio_clock",

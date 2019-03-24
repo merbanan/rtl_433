@@ -174,7 +174,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code", DATA_INT,    sensor_id,
                 "channel",       "Channel",    DATA_INT,    channel,
                 "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-                "rain_total",    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+                _X("rain_mm","rain_total"),    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
                 "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
                 NULL);
         decoder_output_data(decoder, data);
@@ -217,7 +217,8 @@ static char *output_fields[] = {
     "battery",
     "temperature_C",
     "humidity",
-    "rain_total",
+    "rain_total", // TODO: remove this
+    "rain_mm",
     "wind_speed",
     "wind_gust",
     "wind_direction",

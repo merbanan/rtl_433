@@ -299,7 +299,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         data_append(data,   "wind_speed_ms",    "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms, NULL);
     if (gust_speed_raw != 0xff)
         data_append(data,   "gust_speed_ms",    "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms, NULL);
-    data_append(data,       "rainfall_mm",      "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm, NULL);
+    data_append(data,       _X("rain_mm","rainfall_mm"),      "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm, NULL);
     if (uv_raw         != 0xffff)
         data_append(data,   "uv",               "UV",               DATA_INT, uv_raw,
                             "uvi",              "UVI",              DATA_INT, uv_index, NULL);
@@ -450,7 +450,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0530","Fine Offset Electronics, WH0530 Temperature/Rain sensor"),
             "id",               "ID",           DATA_INT, id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            _X("rain_mm","rain"),             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -478,7 +478,8 @@ static char *output_fields_WH25[] = {
     "wind_dir_deg",
     "wind_speed_ms",
     "gust_speed_ms",
-    "rainfall_mm",
+    "rainfall_mm", //TODO: remove this
+    "rain_mm",
     "uv",
     "uvi",
     "light_lux",
@@ -491,7 +492,8 @@ static char *output_fields_WH0530[] = {
     "model",
     "id",
     "temperature_C",
-    "rain",
+    "rain", //TODO: remove this
+    "rain_mm",
     "battery",
     "mic",
     NULL

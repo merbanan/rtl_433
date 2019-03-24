@@ -339,8 +339,8 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-                        "rain_rate",    "Rain Rate",    DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
-                        "total_rain", "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
+                        _X("rain_rate_mm_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%.02f mm/hr", DATA_DOUBLE, rain_rate,
+                        _X("rain_mm","total_rain"), "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
                         NULL);
                 decoder_output_data(decoder, data);
             }
@@ -601,8 +601,8 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                     "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                     "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                     "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
-                    "rain_rate",    "Rain Rate",    DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
-                    "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                    _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
+                    _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
                     NULL);
                 decoder_output_data(decoder, data);
             }
@@ -618,8 +618,8 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id)?"LOW":"OK",
-                        "rain_rate",    "Rain Rate",    DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
-                        "rain_total", "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                        _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/hr", DATA_DOUBLE, rain_rate,
+                        _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
                         NULL);
                 decoder_output_data(decoder, data);
             }
@@ -729,8 +729,12 @@ static char *output_fields[] = {
     "battery",
     "temperature_C",
     "humidity",
-    "rain_rate",
-    "rain_total",
+    "rain_rate", // TODO: remove this
+    "rain_rate_mm_h",
+    "rain_rate_in_h",
+    "rain_total", // TODO: remove this
+    "rain_mm",
+    "rain_in",
     "gust",
     "average",
     "direction",

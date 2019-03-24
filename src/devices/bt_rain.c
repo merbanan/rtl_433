@@ -67,7 +67,7 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
             "transmit",         "Transmit",         DATA_STRING, transmit ? "MANUAL" : "AUTO",
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            "rainrate",         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
             NULL);
     decoder_output_data(decoder, data);
     return 1;
@@ -80,7 +80,8 @@ static char *output_fields[] = {
     "battery",
     "transmit",
     "temperature_C",
-    "rainrate",
+    "rainrate", // TODO: remove this
+    "rain_rate_mm_h",
     NULL
 };
 
