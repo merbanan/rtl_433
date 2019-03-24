@@ -33,11 +33,11 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
     cmd = b[2] & 0x0F;
     switch (cmd) {
-        case 0xa: cmd_str = "motion";  field_name = "motion";  field_value = 1; break;
-        case 0xe: cmd_str = "open";    field_name = "closed";  field_value = 0; break;
-        case 0x7: cmd_str = "close";   field_name = "closed";  field_value = 1; break;
-        case 0xb: cmd_str = "tamper";  field_name = "tamper";  field_value = 1; break;
-        case 0xf: cmd_str = "battery"; field_name = _X("battery_ok","battery_low"); field_value = _X(0, 1); break;
+        case 0xa: cmd_str = "motion";  field_name = "motion";     field_value = 1; break;
+        case 0xe: cmd_str = "open";    field_name = "opened";     field_value = 1; break;
+        case 0x7: cmd_str = "close";   field_name = "opened";     field_value = 0; break;
+        case 0xb: cmd_str = "tamper";  field_name = "tamper";     field_value = 1; break;
+        case 0xf: cmd_str = "battery"; field_name = "battery_ok"; field_value = 0; break;
         default:  cmd_str = NULL; break;
     }
 
@@ -61,9 +61,8 @@ static char *output_fields[] = {
     "id",
     "cmd",
     "motion",
-    "closed",
+    "opened",
     "tamper",
-    "battery_low", // TODO: remove this
     "battery_ok",
     "state",
     NULL
