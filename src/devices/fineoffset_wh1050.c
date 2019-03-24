@@ -82,7 +82,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
             "speed",            "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
             "gust",             "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
-            "rain",             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
+            _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
             "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
@@ -97,7 +97,8 @@ static char *output_fields[] = {
     "humidity",
     "speed",
     "gust",
-    "rain",
+    "rain", // TODO: delete this
+    "rain_mm",
     "battery",
     NULL
 };

@@ -146,7 +146,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 data = data_make(
                         "model",            "",             DATA_STRING, _X("LaCrosse-WS","LaCrosse WS"),
                         "id",               "",             DATA_INT, sensor_id,
-                        "rainfall_mm",      "Rainfall",     DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm, NULL);
+                        _X("rain_mm","rainfall_mm"),      "Rainfall",     DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm, NULL);
                 decoder_output_data(decoder, data);
                 events++;
                 break;
@@ -194,7 +194,8 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
-    "rainfall_mm",
+    "rainfall_mm", // TODO: delete this
+    "rain_mm",
     "wind_speed_ms",
     "gust_speed_ms",
     "wind_direction",

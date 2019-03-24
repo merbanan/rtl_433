@@ -120,7 +120,7 @@ static int acurite_rain_gauge_callback(r_device *decoder, bitbuffer_t *bitbuffer
         data = data_make(
             "model",    "",        DATA_STRING,    _X("Acurite-Rain","Acurite Rain Gauge"),
             "id",        "",        DATA_INT,    id,
-            "rain",     "Total Rain",    DATA_FORMAT,    "%.1f mm", DATA_DOUBLE, total_rain,
+            _X("rain_mm","rain"),     "Total Rain",    DATA_FORMAT,    "%.1f mm", DATA_DOUBLE, total_rain,
             NULL);
 
         decoder_output_data(decoder, data);
@@ -562,7 +562,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "message_type", NULL,   DATA_INT,       message_type,
                     "wind_speed_kph",   "wind_speed",   DATA_FORMAT,    "%.1f kph", DATA_DOUBLE,     wind_speed_kph,
                     "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
-                    "rain_inch", "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                    _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
                     NULL);
 
                 decoder_output_data(decoder, data);
@@ -958,7 +958,8 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
 static char *acurite_rain_gauge_output_fields[] = {
     "model",
     "id",
-    "rain",
+    "rain", // TODO: remove this
+    "rain_mm",
     NULL
 };
 
@@ -1016,7 +1017,8 @@ static char *acurite_txr_output_fields[] = {
     "wind_speed_mph",
     "wind_dir_deg",
     "wind_dir",
-    "rain_inch",
+    "rain_inch", // TODO: remove this
+    "rain_in",
     "temperature_F",
     NULL
 };
