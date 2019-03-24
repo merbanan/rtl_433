@@ -71,13 +71,13 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Check length is correct
     // Due to encoding there will be two "0"s per byte, thus message grows to 91 bits
     if (bitbuffer->bits_per_row[1] != 91)
-		return 0;
+        return 0;
 
     // Check initial delimiter bit is "1"
     unsigned bit_idx = 0;
     uint8_t delimiter_bit = bitrow_get_bit(bb[1], bit_idx++);
     if (delimiter_bit == 0)
-		return 0; // Decode error
+        return 0; // Decode error
 
     // Strip delimiter bits
     // row_in = 1, row_out = 2
@@ -85,7 +85,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for(unsigned n=0; n<10; ++n) { // We have 10 bytes
         delimiter_bit = bitrow_get_bit(bb[1], bit_idx++);
         if (delimiter_bit == 0)
-			return 0; // Decode error
+            return 0; // Decode error
 
         for(unsigned m=0; m<8; ++m) {
             bitbuffer_add_bit(bitbuffer, bitrow_get_bit(bb[1], bit_idx++));
@@ -122,11 +122,11 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     data = data_make(
-            "model",        "", DATA_STRING, "LightwaveRF",
+            "model",        "", DATA_STRING, _X("Lightwave-RF","LightwaveRF"),
             "id",           "", DATA_FORMAT, "%06x", DATA_INT, id,
             "subunit",      "", DATA_INT, subunit,
-            "command",    	"", DATA_INT, command,
-            "parameter",	"", DATA_INT, parameter,
+            "command",      "", DATA_INT, command,
+            "parameter",    "", DATA_INT, parameter,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -148,7 +148,7 @@ r_device lightwave_rf = {
     .modulation     = OOK_PULSE_PPM,
     .short_width    = 250, // Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
     .long_width     = 1250, //
-    .reset_limit	= 1500, // Gap between messages is unknown so let us get them individually
+    .reset_limit    = 1500, // Gap between messages is unknown so let us get them individually
     .decode_fn      = &lightwave_rf_callback,
     .disabled       = 1,
     .fields         = output_fields,

@@ -12,7 +12,6 @@
  */
 #include "decoder.h"
 
-
 // Start of frame preamble is 111000xx
 static const unsigned char preamble_pattern = 0xe0;
 
@@ -32,10 +31,9 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitbuffer_t databits = {0};
 	int events = 0;
 
-
 	// Find a preamble with enough bits after it that it could be a complete packet
 	while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, &preamble_pattern, 6)) + 136 <=
-	       bitbuffer->bits_per_row[0]) {
+			bitbuffer->bits_per_row[0]) {
 
 		// Skip the matched preamble bits to point to the data
 		bitpos += 6;
@@ -78,15 +76,18 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 			// the sensor flat down on a table, it still reads about 13.
 			depth = ((b[5] & 3) << 8) | b[6];
 
+		/* clang-format off */
 		data = data_make(
-			"model", "", DATA_STRING, "Oil Watchman",
-			"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
-			"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
-			"maybetemp", "", DATA_INT, maybetemp,
-			"temperature_C", "", DATA_DOUBLE, temperature,
-			"binding_countdown", "", DATA_INT, binding_countdown,
-			"depth", "", DATA_INT, depth,
-			NULL);
+				"model", "", DATA_STRING, _X("Oil-SonicSmart","Oil Watchman"),
+				"id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
+				"flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
+				"maybetemp", "", DATA_INT, maybetemp,
+				"temperature_C", "", DATA_DOUBLE, temperature,
+				"binding_countdown", "", DATA_INT, binding_countdown,
+				_X("depth_cm","depth"), "", DATA_INT, depth,
+				NULL);
+		/* clang-format on */
+
 		decoder_output_data(decoder, data);
 		events++;
 	}
@@ -94,23 +95,24 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-	"model",
-	"id",
-	"flags",
-	"maybetemp",
-	"temperature_C",
-	"binding_countdown",
-	"depth",
-	NULL
+		"model",
+		"id",
+		"flags",
+		"maybetemp",
+		"temperature_C",
+		"binding_countdown",
+		"depth", // TODO: remove this
+		"depth_cm",
+		NULL,
 };
 
 r_device oil_watchman = {
-	.name			= "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
-	.modulation		= FSK_PULSE_PCM,
-	.short_width	= 1000,
-	.long_width     = 1000, // NRZ
-	.reset_limit    = 4000,
-	.decode_fn    	= &oil_watchman_callback,
-	.disabled		= 0,
-	.fields			= output_fields,
+		.name			= "Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor",
+		.modulation		= FSK_PULSE_PCM,
+		.short_width	= 1000,
+		.long_width		= 1000, // NRZ
+		.reset_limit	= 4000,
+		.decode_fn		= &oil_watchman_callback,
+		.disabled		= 0,
+		.fields			= output_fields,
 };

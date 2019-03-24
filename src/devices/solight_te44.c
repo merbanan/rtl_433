@@ -73,7 +73,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temperature = (float) (((256 * multiplier) + temperature_raw) / 10.0);
 
     data = data_make(
-            "model", "", DATA_STRING, "Solight TE44",
+            "model", "", DATA_STRING, _X("Solight-TE44","Solight TE44"),
             "id", "Id", DATA_INT, id,
             "channel", "Channel", DATA_INT, channel + 1,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature,

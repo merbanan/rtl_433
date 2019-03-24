@@ -141,7 +141,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
     data = data_make(
-            "model",        "",             DATA_STRING, "RadioHead ASK",
+            "model",        "",             DATA_STRING, _X("RadioHead-ASK","RadioHead ASK"),
             "len",          "Data len",     DATA_INT, data_len,
             "to",           "To",           DATA_INT, header_to,
             "from",         "From",         DATA_INT, header_from,
@@ -176,16 +176,16 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
     data = data_make(
-             "model",            "",                 DATA_STRING,  "Sensible Living Plant Moisture",
-             "house_id",         "House ID",         DATA_INT,     house_id,
-             "module_id",        "Module ID",        DATA_INT,     module_id,
-             "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
-             "sensor_count",     "Sensor Count",     DATA_INT,     sensor_count,
-             "alarms",           "Alarms",           DATA_INT,     alarms,
-             "sensor_value",     "Sensor Value",     DATA_INT,     sensor_value,
-             "battery_voltage",  "Battery Voltage",  DATA_INT,     battery_voltage,
-             "mic",              "Integrity",        DATA_STRING,  "CRC",
-             NULL);
+            "model",            "",                 DATA_STRING,  _X("SensibleLiving-Moisture","Sensible Living Plant Moisture"),
+            "house_id",         "House ID",         DATA_INT,     house_id,
+            "module_id",        "Module ID",        DATA_INT,     module_id,
+            "sensor_type",      "Sensor Type",      DATA_INT,     sensor_type,
+            "sensor_count",     "Sensor Count",     DATA_INT,     sensor_count,
+            "alarms",           "Alarms",           DATA_INT,     alarms,
+            "sensor_value",     "Sensor Value",     DATA_INT,     sensor_value,
+            _X("battery_mV","battery_voltage"),       "Battery Voltage",  DATA_INT,     _X(battery_voltage * 10, battery_voltage),
+            "mic",              "Integrity",        DATA_STRING,  "CRC",
+            NULL);
     decoder_output_data(decoder, data);
 
     return 1;
@@ -211,7 +211,8 @@ static char *sensible_living_output_fields[] = {
     "sensor_count",
     "alarms",
     "sensor_value",
-    "battery_voltage",
+    "battery_voltage", // TODO: remove this
+    "battery_mV",
     "mic",
     NULL
 };

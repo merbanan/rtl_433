@@ -1,31 +1,49 @@
-/* Template decoder for DEVICE, tested with BRAND, BRAND.
- *
- * Copyright (C) 2016 Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * (describe the modulation, timing, and transmission, e.g.)
- * The device uses PPM encoding,
- * 0 is encoded as 40 us pulse and 132 us gap,
- * 1 is encoded as 40 us pulse and 224 us gap.
- * The device sends a transmission every 63 seconds.
- * A transmission starts with a preamble of 0xAA,
- * there a 5 repeated packets, each with a 1200 us gap.
- *
- * (describe the data and payload, e.g.)
- * Packet nibbles:  FF PP PP II II II TT TT CC
- * F = flags, (0x40 is battery_low)
- * P = Pressure, 16-bit little-endian
- * I = id, 24-bit little-endian
- * T = Unknown, likely Temperature, 16-bit little-endian
- * C = Checksum, CRC-8 truncated poly 0x07 init 0x00
- *
+/** @file
+    Template decoder for DEVICE, tested with BRAND, BRAND.
+
+    Copyright (C) 2016 Benjamin Larsson
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
  */
 
-/* Use this as a starting point for a new decoder. */
+/*
+    Use this as a starting point for a new decoder.
+
+    Keep the Doxygen (slash-star-star) comment above to document the file and copyright.
+
+    Keep the Doxygen (slash-star-star) comment below to describe the decoder.
+    See http://www.doxygen.nl/manual/markdown.html for the formating options.
+
+    Remove all other multiline (slash-star) comments.
+    Use single-line (slash-slash) comments to annontate important lines if needed.
+*/
+
+/**
+(this is a markdown formatted section to describe the decoder)
+(describe the modulation, timing, and transmission, e.g.)
+The device uses PPM encoding,
+- 0 is encoded as 40 us pulse and 132 us gap,
+- 1 is encoded as 40 us pulse and 224 us gap.
+The device sends a transmission every 63 seconds.
+A transmission starts with a preamble of 0xAA,
+there a 5 repeated packets, each with a 1200 us gap.
+
+(describe the data and payload, e.g.)
+Data layout:
+    (preferably use one character per bit)
+    FFFFFFFF PPPPPPPP PPPPPPPP IIIIIIII IIIIIIII IIIIIIII TTTTTTTT TTTTTTTT CCCCCCCC
+    (otherwise use one character per nibble if this fits well)
+    FF PP PP II II II TT TT CC
+
+- F: 8 bit flags, (0x40 is battery_low)
+- P: 16-bit little-endian Pressure
+- I: 24-bit little-endian id
+- T: 16-bit little-endian Unknown, likely Temperature
+- C: 8 bit Checksum, CRC-8 truncated poly 0x07 init 0x00
+*/
 
 #include "decoder.h"
 
@@ -244,9 +262,9 @@ static char *output_fields[] = {
  * The function used to turn the received signal into bits.
  * See:
  * - pulse_demod.h for descriptions
- * - rtL_433.h for the list of defined names
+ * - r_device.h for the list of defined names
  *
- * This device is disabled by default. Enable it with -R 61 on the commandline
+ * This device is disabled and hidden, it can not be enabled.
  */
 r_device template = {
     .name          = "Template decoder",
@@ -256,6 +274,6 @@ r_device template = {
     .gap_limit     = 300, // some distance above long
     .reset_limit   = 1000, // a bit longer than packet gap
     .decode_fn     = &template_callback,
-    .disabled      = 2, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+    .disabled      = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields        = output_fields,
 };

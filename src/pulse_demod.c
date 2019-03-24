@@ -1,14 +1,15 @@
-/**
- * Pulse demodulation functions
- *
- * Binary demodulators (PWM/PPM/Manchester/...) using a pulse data structure as input
- *
- * Copyright (C) 2015 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Pulse demodulation functions.
+
+    Binary demodulators (PWM/PPM/Manchester/...) using a pulse data structure as input.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "pulse_demod.h"
 #include "bitbuffer.h"
@@ -38,7 +39,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         }
         // Add run of zeros
         periods -= highs;                  // Remove 1s from whole period
-        periods = min(periods, max_zeros); // Don't overflow at end of message
+        periods = MIN(periods, max_zeros); // Don't overflow at end of message
         for (int i = 0; i < periods; ++i) {
             bitbuffer_add_bit(&bits, 0);
         }
@@ -114,7 +115,10 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_add_row(&bits);
         }
         // End of Message?
-        else {
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] >= device->s_reset_limit))     // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+
             if (device->decode_fn) {
                 events += device->decode_fn(device, &bits);
             }
@@ -221,7 +225,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_clear(&bits);
         }
         else if (device->s_gap_limit > 0 && pulses->gap[n] > device->s_gap_limit
-				&& bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
+                && bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             // New packet in multipacket
             bitbuffer_add_row(&bits);
         }
@@ -241,10 +245,10 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Falling edge is on end of pulse
         if (device->s_tolerance > 0
-				&& (pulses->pulse[n] < device->s_short_width - device->s_tolerance
-				|| pulses->pulse[n] > device->s_short_width * 2 + device->s_tolerance
-				|| pulses->gap[n] < device->s_short_width - device->s_tolerance
-				|| pulses->gap[n] > device->s_short_width * 2 + device->s_tolerance)) {
+                && (pulses->pulse[n] < device->s_short_width - device->s_tolerance
+                || pulses->pulse[n] > device->s_short_width * 2 + device->s_tolerance
+                || pulses->gap[n] < device->s_short_width - device->s_tolerance
+                || pulses->gap[n] > device->s_short_width * 2 + device->s_tolerance)) {
             // The pulse or gap is too long or too short, thus invalid
             bitbuffer_add_row(&bits);
             bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
@@ -291,7 +295,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
 {
-    int symbol[PD_MAX_PULSES * 2] = {0};
+    int symbol[PD_MAX_PULSES * 2 + 1] = {0};
     unsigned int n;
 
     bitbuffer_t bits = {0};
@@ -325,7 +329,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
             bitbuffer_add_bit(&bits, 0);
         }
         else if (symbol[n] >= device->s_reset_limit - device->s_tolerance
-				&& bits.num_rows > 0) { // Only if data has been accumulated
+                && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
             if (device->decode_fn) {
                 events += device->decode_fn(device, &bits);
@@ -366,8 +370,8 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
                 bitbuffer_add_bit(&bits, 1 - n % 2);
         }
         else if (symbol[n] < device->s_reset_limit
-				&& bits.num_rows > 0
-				&& bits.bits_per_row[bits.num_rows - 1] > 0) {
+                && bits.num_rows > 0
+                && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
             fprintf(stderr, "Detected error during pulse_demod_piwm_raw(): %s\n",
@@ -416,8 +420,8 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
             bitbuffer_add_bit(&bits, 0);
         }
         else if (symbol[n] < device->s_reset_limit
-				&& bits.num_rows > 0
-				&& bits.bits_per_row[bits.num_rows - 1] > 0) {
+                && bits.num_rows > 0
+                && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
 /*
             fprintf(stderr, "Detected error during pulse_demod_piwm_dc(): %s\n",
@@ -509,8 +513,8 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
                 bitbuffer_add_bit(&bits, 1);
         }
         if ((n == pulses->num_pulses - 1
-					|| pulses->gap[n] > device->s_reset_limit)
-				&& (bits.num_rows > 0)) { // Only if data has been accumulated
+                    || pulses->gap[n] > device->s_reset_limit)
+                && (bits.num_rows > 0)) { // Only if data has been accumulated
             //END message ?
             if (device->decode_fn) {
                 events += device->decode_fn(device, &bits);

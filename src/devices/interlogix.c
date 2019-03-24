@@ -12,9 +12,9 @@
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
- * 
+ *
  * Frequency: 319508000
- * 
+ *
  * Decoding done per us patent #5761206
  * https://www.google.com/patents/US5761206
  *
@@ -195,9 +195,9 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     data = data_make(
-            "model",       "Model",         DATA_STRING, "Interlogix",
+            "model",       "Model",         DATA_STRING, _X("Interlogix-Security","Interlogix"),
+            _X("subtype","device_type"),     "Device Type",   DATA_STRING, device_type,
             "id",          "ID",            DATA_STRING, device_serial,
-            "device_type", "Device Type",   DATA_STRING, device_type,
             "raw_message", "Raw Message",   DATA_STRING, raw_message,
             "battery",     "Battery",       DATA_STRING, low_battery,
             "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
@@ -214,8 +214,9 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
+    "subtype",
     "id",
-    "device_type",
+    "device_type", // TODO: delete this
     "raw_message",
     "battery",
     "switch1",

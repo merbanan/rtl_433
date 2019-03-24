@@ -58,7 +58,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     state = b[0]; // not covered by CRC
     sprintf(state_str, "%02x", state);
-    id = b[1]<<24 | b[2]<<16 | b[3]<<8 | b[4];
+    id = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
     sprintf(id_str, "%08x", id);
     flags = b[5]>>4;
     repeat = b[5]&0x0f;

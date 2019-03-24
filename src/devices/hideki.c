@@ -116,8 +116,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (sensortype == HIDEKI_TS04) {
         humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
         data = data_make(
-                "model",            "",                 DATA_STRING, "HIDEKI TS04 sensor",
-                "rc",               "Rolling Code",     DATA_INT, rc,
+                "model",            "",                 DATA_STRING, _X("Hideki-TS04","HIDEKI TS04 sensor"),
+                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
@@ -136,8 +136,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         wind_approach = ad[(packet[11] >> 2) & 0x03];
 
         data = data_make(
-                "model",            "",                 DATA_STRING, "HIDEKI Wind sensor",
-                "rc",               "Rolling Code",     DATA_INT, rc,
+                "model",            "",                 DATA_STRING, _X("Hideki-Wind","HIDEKI Wind sensor"),
+                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
@@ -152,8 +152,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     if (sensortype == HIDEKI_TEMP) {
         data = data_make(
-                "model",            "",                 DATA_STRING, "HIDEKI Temperature sensor",
-                "rc",               "Rolling Code",     DATA_INT, rc,
+                "model",            "",                 DATA_STRING, _X("Hideki-Temperature","HIDEKI Temperature sensor"),
+                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
@@ -167,8 +167,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         battery_ok = (packet[2] >> 6) & 1;
 
         data = data_make(
-                "model",            "",                 DATA_STRING, "HIDEKI Rain sensor",
-                "rc",               "Rolling Code",     DATA_INT, rc,
+                "model",            "",                 DATA_STRING, _X("Hideki-Rain","HIDEKI Rain sensor"),
+                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
@@ -182,7 +182,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "rc",
+    "rc", // TODO: delete this
+    "id",
     "channel",
     "battery",
     "temperature_C",

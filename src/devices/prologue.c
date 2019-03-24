@@ -1,36 +1,43 @@
-/* Prologue sensor protocol
- * also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102.
- *
- * the sensor sends 36 bits 7 times, before the first packet there is a sync pulse
- * the packets are ppm modulated (distance coding) with a pulse of ~500 us
- * followed by a short gap of ~2000 us for a 0 bit or a long ~4000 us gap for a
- * 1 bit, the sync gap is ~9000 us.
- *
- * the data is grouped in 9 nibbles
- * [model] [id0] [id1] [flags] [temp0] [temp1] [temp2] [humi0] [humi1]
- *
- * model is 1001 (9) or 0110 (5)
- * id is a random id that is generated when the sensor starts, could include battery status
- * the same batteries often generate the same id
- * flags(3) is 0 the battery status, 1 ok, 0 low, first reading always say low
- * flags(2) is 1 when the sensor sends a reading when pressing the button on the sensor
- * flags(1,0)+1 forms the channel number that can be set by the sensor (1-3)
- * temp is 12 bit signed scaled by 10
- * humi0 is always 1100 (0x0C) if no humidity sensor is available
- * humi1 is always 1100 (0x0C) if no humidity sensor is available
- *
- * The sensor can be bought at Clas Ohlson
- */
+/** @file
+    Prologue sensor protocol.
+*/
+/** @fn int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Prologue sensor protocol,
+also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102,
+and Pearl NC-7159-675.
+
+The sensor sends 36 bits 7 times, before the first packet there is a sync pulse.
+The packets are ppm modulated (distance coding) with a pulse of ~500 us
+followed by a short gap of ~2000 us for a 0 bit or a long ~4000 us gap for a
+1 bit, the sync gap is ~9000 us.
+
+The data is grouped in 9 nibbles
+
+    [type] [id0] [id1] [flags] [temp0] [temp1] [temp2] [humi0] [humi1]
+
+- type: 4 bit fixed 1001 (9) or 0110 (5)
+- id: 8 bit a random id that is generated when the sensor starts, could include battery status
+  the same batteries often generate the same id
+- flags(3): is 0 the battery status, 1 ok, 0 low, first reading always say low
+- flags(2): is 1 when the sensor sends a reading when pressing the button on the sensor
+- flags(1,0): the channel number that can be set by the sensor (1, 2, 3, X)
+- temp: 12 bit signed scaled by 10
+- humi: 8 bit always 11001100 (0xCC) if no humidity sensor is available
+
+The sensor can be bought at Clas Ohlson.
+*/
 
 #include "decoder.h"
+
 extern int alecto_checksum(r_device *decoder, bitrow_t *bb);
 
-static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
     int ret;
 
-    uint8_t model;
+    uint8_t type;
     uint8_t id;
     uint8_t battery;
     uint8_t button;
@@ -55,7 +62,7 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         /* Get time now */
 
         /* Prologue sensor */
-        model = bb[r][0] >> 4;
+        type = bb[r][0] >> 4;
         id = ((bb[r][0]&0x0F)<<4) | ((bb[r][1]&0xF0)>>4);
         battery = bb[r][1]&0x08;
         button = (bb[r][1]&0x04) >> 2;
@@ -65,9 +72,9 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
 
         data = data_make(
-                "model",         "",            DATA_STRING, "Prologue sensor",
-                "id",            "",            DATA_INT, model, // this should be named "type"
-                "rid",           "",            DATA_INT, id, // this should be named "id"
+                "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
+                _X("subtype","id"),       "",            DATA_INT, type,
+                _X("id","rid"),            "",            DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "button",        "Button",      DATA_INT, button,
@@ -83,8 +90,9 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
+    "subtype",
     "id",
-    "rid",
+    "rid", // TODO: delete this
     "channel",
     "battery",
     "button",

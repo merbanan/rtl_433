@@ -56,7 +56,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
         return 0;
     }
 
-	/* dropping 2 bit preamle */
+    /* dropping 2 bit preamble */
     bitbuffer_extract_bytes(bitbuffer, 0, 2, b, 72);
 
     // flip inverted bytes

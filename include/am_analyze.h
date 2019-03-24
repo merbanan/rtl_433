@@ -1,13 +1,13 @@
-/**
- * AM signal analyzer
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    AM signal analyzer.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_AM_ANALYZE_H_
 #define INCLUDE_AM_ANALYZE_H_
@@ -16,7 +16,7 @@
 
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
 
-typedef struct {
+typedef struct am_analyze {
     int32_t *level_limit;
     int override_short;
     int override_long;

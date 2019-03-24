@@ -46,20 +46,20 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     ss_get_id(id, b);
 
     if (state == 1) {
-		strcpy(extradata,"Contact Open");
+        strcpy(extradata,"Contact Open");
     } else if (state == 2) {
-    	strcpy(extradata,"Contact Closed");
+        strcpy(extradata,"Contact Closed");
     } else if (state == 3) {
-    	strcpy(extradata,"Alarm Off");
+        strcpy(extradata,"Alarm Off");
     }
 
     data = data_make(
-        	"model",    "",    DATA_STRING, "SimpliSafe Sensor",
-        	"device",    "Device ID",    DATA_STRING, id,
-        	"seq",        "Sequence",    DATA_INT, seq,
-        	"state",    "State",    DATA_INT, state,
-        	"extradata",    "Extra Data",    DATA_STRING, extradata,
-        	NULL
+            "model",        "",             DATA_STRING, _X("SimpliSafe-Sensor","SimpliSafe Sensor"),
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT, seq,
+            "state",        "State",        DATA_INT, state,
+            "extradata",    "Extra Data",   DATA_STRING, extradata,
+            NULL
     );
     decoder_output_data(decoder, data);
 
@@ -89,11 +89,11 @@ ss_pinentry_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     sprintf(extradata, "Disarm Pin: %x%x%x%x", digits[0], digits[1], digits[2], digits[3]);
 
     data = data_make(
-        	"model",    "",    DATA_STRING, "SimpliSafe Keypad",
-        	"device",    "Device ID",    DATA_STRING, id,
-        	"seq",        "Sequence",    DATA_INT, b[9],
-        	"extradata",    "Extra Data",    DATA_STRING, extradata,
-        	NULL
+            "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT, b[9],
+            "extradata",    "Extra Data",   DATA_STRING, extradata,
+            NULL
     );
     decoder_output_data(decoder, data);
 
@@ -125,11 +125,11 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     ss_get_id(id, b);
 
     data = data_make(
-        	"model",    "",    DATA_STRING, "SimpliSafe Keypad",
-        	"device",    "",    DATA_STRING, id,
-        	"seq",    "Sequence",DATA_INT, b[9],
-        	"extradata",    "",    DATA_STRING, extradata,
-        	NULL
+            "model",        "",             DATA_STRING, _X("SimpliSafe-Keypad","SimpliSafe Keypad"),
+            _X("id","device"),       "Device ID",    DATA_STRING, id,
+            "seq",          "Sequence",     DATA_INT, b[9],
+            "extradata",    "Extra Data",   DATA_STRING, extradata,
+            NULL
     );
     decoder_output_data(decoder, data);
 
@@ -164,7 +164,8 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *sensor_output_fields[] = {
     "model",
-    "device",
+    "device", // TODO: delete this
+    "id",
     "seq",
     "state",
     "extradata",

@@ -70,7 +70,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     data = data_make(
-            "model",         "",            DATA_STRING, "Bresser 3CH sensor",
+            "model",         "",            DATA_STRING, _X("Bresser-3CH","Bresser 3CH sensor"),
             "id",            "Id",          DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",

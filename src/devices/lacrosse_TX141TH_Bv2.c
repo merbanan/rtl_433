@@ -57,7 +57,7 @@
  * The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
  *
  * Changes:
- * - LACROSSE_TX141_BITLEN is 37 instead of 40. 
+ * - LACROSSE_TX141_BITLEN is 37 instead of 40.
  * - The humidity variable has been removed for TX141.
  * - Battery check bit is inverse of TX141TH.
  * - temp_f removed, temp_c (celsius) is what's provided by the device.
@@ -141,7 +141,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     if (device == LACROSSE_TX141) {
         data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse TX141-Bv2 sensor",
+                "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
@@ -149,7 +149,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
                 NULL);
     } else {
         data = data_make(
-                "model",         "",              DATA_STRING, "LaCrosse TX141TH-Bv2 sensor",
+                "model",         "",              DATA_STRING, _X("LaCrosse-TX141THBv2","LaCrosse TX141TH-Bv2 sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,

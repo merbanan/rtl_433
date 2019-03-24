@@ -85,8 +85,8 @@ int main(int argc, char *argv[])
     long n_read;
     unsigned long n_samples;
     int max_block_size = 4096000;
-    FilterState state;
-    DemodFM_State fm_state;
+    filter_state_t state;
+    demodfm_state_t fm_state;
 
     if (argc <= 1) {
         return 1;

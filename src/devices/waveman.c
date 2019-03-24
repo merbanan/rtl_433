@@ -54,7 +54,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     id_str[1] = '\0';
 
     data = data_make(
-        "model",    "",     DATA_STRING,    "Waveman Switch Transmitter",
+        "model",    "",     DATA_STRING,    _X("Waveman-Switch","Waveman Switch Transmitter"),
         "id",       "",     DATA_STRING,    id_str,
         "channel",  "",     DATA_INT,       (nb[1] >> 2) + 1,
         "button",   "",     DATA_INT,       (nb[1] & 3) + 1,
