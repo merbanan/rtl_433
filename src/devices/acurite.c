@@ -560,7 +560,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
                     "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                     "message_type", NULL,   DATA_INT,       message_type,
-                    "wind_speed_kph",   "wind_speed",   DATA_FORMAT,    "%.1f kph", DATA_DOUBLE,     wind_speed_kph,
+                    _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                     "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
                     _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
                     NULL);
@@ -583,7 +583,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
                     "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                     "message_type", NULL,   DATA_INT,       message_type,
-                    "wind_speed_kph",   "wind_speed",   DATA_FORMAT,    "%.1f kph", DATA_DOUBLE,     wind_speed_kph,
+                    _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                     "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                     "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                     NULL);
@@ -607,7 +607,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                     "sequence_num",  NULL,   DATA_INT,      sequence_num,
                     "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
                     "message_type", NULL,   DATA_INT,       message_type,
-                    "wind_speed_mph",   "wind_speed",   DATA_FORMAT,    "%.1f mph", DATA_DOUBLE,     wind_speed_mph,
+                    _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                     "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                     "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
                     NULL);
@@ -1014,9 +1014,11 @@ static char *acurite_txr_output_fields[] = {
     "sequence_num",
     "battery",
     "message_type",
-    "wind_speed_mph",
+    "wind_speed_mph", // TODO: remove this
+    "wind_speed_kph", // TODO: remove this
+    "wind_avg_mi_h",
+    "wind_avg_km_h",
     "wind_dir_deg",
-    "wind_dir",
     "rain_inch", // TODO: remove this
     "rain_in",
     "temperature_F",
