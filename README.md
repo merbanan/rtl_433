@@ -192,6 +192,8 @@ Supported device protocols:
     [119]  Bresser Weather Center 5-in-1
     [120]* Digitech XC-0324 temperature sensor
     [121]  Opus/Imagintronix XT300 Soil Moisture
+    [122]* FS20
+    [123]* Jansite TPMS Model TY02S
 
 * Disabled by default, use -R n or -G
 
