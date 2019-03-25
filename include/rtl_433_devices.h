@@ -130,6 +130,7 @@
     DECL(digitech_xc0324) \
     DECL(opus_xt300) \
     DECL(fs20) \
+    DECL(tpms_jansite) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
