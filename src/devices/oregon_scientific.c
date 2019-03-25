@@ -290,9 +290,9 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                         "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING, get_os_battery(msg, sensor_id) ? "LOW" : "OK",
-                        "gust",             "Gust",             DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
-                        "average",        "Average",        DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
-                        "direction",    "Direction",    DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
+                        _X("wind_max_m_s","gust"), "Gust",             DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
+                        _X("wind_avg_m_s","average"), "Average",        DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
+                        _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
                         NULL);
                 decoder_output_data(decoder, data);
             }
@@ -636,9 +636,9 @@ static int oregon_scientific_v3_parser(r_device *decoder, bitbuffer_t *bitbuffer
                         "id",                 "House Code", DATA_INT,         get_os_rollingcode(msg, sensor_id),
                         "channel",        "Channel",        DATA_INT,         get_os_channel(msg, sensor_id),
                         "battery",        "Battery",        DATA_STRING,    get_os_battery(msg, sensor_id)?"LOW":"OK",
-                        "gust",             "Gust",             DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
-                        "average",        "Average",        DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
-                        "direction",    "Direction",    DATA_FORMAT,    "%3.1f degrees",DATA_DOUBLE, quadrant,
+                        _X("wind_max_m_s","gust"),             "Gust",             DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
+                        _X("wind_avg_m_s","average"),        "Average",        DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
+                        _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT,    "%3.1f degrees",DATA_DOUBLE, quadrant,
                         NULL);
                 decoder_output_data(decoder, data);
             }
@@ -735,9 +735,12 @@ static char *output_fields[] = {
     "rain_total", // TODO: remove this
     "rain_mm",
     "rain_in",
-    "gust",
-    "average",
-    "direction",
+    "gust", // TODO: remove this
+    "average", // TODO: remove this
+    "direction", // TODO: remove this
+    "wind_max_m_s",
+    "wind_avg_m_s",
+    "wind_dir_deg",
     "pressure_hPa",
     "uv",
     "power_W",

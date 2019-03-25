@@ -116,8 +116,8 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_INT,    sensor_id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_INT, humidity,
-            "wind_gust",        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
-            "wind_speed",       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
+            _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
+            _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
             "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f °",DATA_DOUBLE, wind_direction_deg,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
@@ -133,8 +133,10 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
-    "wind_gust",
-    "wind_speed",
+    "wind_gust", // TODO: delete this
+    "wind_speed", // TODO: delete this
+    "wind_max_m_s",
+    "wind_avg_m_s",
     "wind_dir_deg",
     "rain_mm",
     "mic",

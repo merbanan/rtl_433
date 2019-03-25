@@ -296,9 +296,9 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (wind_dir       != 0x1ff)
         data_append(data,   "wind_dir_deg",     "Wind direction",   DATA_INT, wind_dir, NULL);
     if (wind_speed_raw != 0x1ff)
-        data_append(data,   "wind_speed_ms",    "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms, NULL);
+        data_append(data,   _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms, NULL);
     if (gust_speed_raw != 0xff)
-        data_append(data,   "gust_speed_ms",    "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms, NULL);
+        data_append(data,   _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms, NULL);
     data_append(data,       _X("rain_mm","rainfall_mm"),      "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm, NULL);
     if (uv_raw         != 0xffff)
         data_append(data,   "uv",               "UV",               DATA_INT, uv_raw,
@@ -476,8 +476,10 @@ static char *output_fields_WH25[] = {
     "pressure_hPa",
     // WH24
     "wind_dir_deg",
-    "wind_speed_ms",
-    "gust_speed_ms",
+    "wind_speed_ms", // TODO: delete this
+    "gust_speed_ms", // TODO: delete this
+    "wind_avg_m_s",
+    "wind_max_m_s",
     "rainfall_mm", //TODO: remove this
     "rain_mm",
     "uv",
