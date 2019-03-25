@@ -176,7 +176,8 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
-#define FSK_EST_RATIO        32         // Constant for slowness of FSK estimators
+#define FSK_EST_SLOW        64         // Constant for slowness of FSK estimators
+#define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
 
 /// Internal state data for pulse_FSK_detect()
 typedef struct {
@@ -240,7 +241,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             }
             // Still below threshold
             else {
-                s->fm_f1_est += fm_n/FSK_EST_RATIO - s->fm_f1_est/FSK_EST_RATIO;    // Slow estimator
+                s->fm_f1_est += fm_n/FSK_EST_FAST - s->fm_f1_est/FSK_EST_FAST;    // Fast estimator
             }
             break;
         case PD_FSK_STATE_F1:        // Pulse high at F1 frequency
@@ -265,7 +266,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             }
             // Still below threshold
             else {
-                s->fm_f1_est += fm_n/FSK_EST_RATIO - s->fm_f1_est/FSK_EST_RATIO;    // Slow estimator
+                if (fm_n > s->fm_f1_est)
+                    s->fm_f1_est += fm_n/FSK_EST_FAST - s->fm_f1_est/FSK_EST_FAST;    // Fast estimator
+                else
+                    s->fm_f1_est += fm_n/FSK_EST_SLOW - s->fm_f1_est/FSK_EST_SLOW;    // Slow estimator
             }
             break;
         case PD_FSK_STATE_F2:        // Pulse gap at F2 frequency
@@ -294,7 +298,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             }
             // Still below threshold
             else {
-                s->fm_f2_est += fm_n/FSK_EST_RATIO - s->fm_f2_est/FSK_EST_RATIO;    // Slow estimator
+                if (fm_n < s->fm_f2_est)
+                    s->fm_f2_est += fm_n/FSK_EST_FAST - s->fm_f2_est/FSK_EST_FAST;    // Fast estimator
+                else
+                    s->fm_f2_est += fm_n/FSK_EST_SLOW - s->fm_f2_est/FSK_EST_SLOW;    // Slow estimator
             }
             break;
         case PD_FSK_STATE_ERROR:        // Stay here until cleared
