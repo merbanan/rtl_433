@@ -378,7 +378,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
     }
 
     data = data_make(
-       "model",            "",            DATA_STRING,    _X("Acurite-Lightning","Acurite Lightning 6045M"),
+       "model",            "",            DATA_STRING,    _X("Acurite-6045M","Acurite Lightning 6045M"),
        "id",            NULL,              DATA_INT,    sensor_id,
        "channel",          NULL,             DATA_STRING,     channel_str,
        "temperature_F",     "temperature",        DATA_FORMAT,    "%.1f F",     DATA_DOUBLE,     tempf,
