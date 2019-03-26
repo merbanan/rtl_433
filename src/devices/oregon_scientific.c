@@ -75,9 +75,19 @@ float get_os_pressure(r_device *decoder, unsigned char *message, unsigned int se
     if (decoder->verbose) {
         fprintf(stdout, " raw pressure data : %02x %02x\n", (int)message[8], (int)message[7]);
     }
-    // Pressure is given in inHg, but we really can't use that.
-    // Let's convert to hPa. 1 inHg equals 33.8639 HPa
-    float pressure = ((message[8]<<4)+message[7]) / 100.0 * 33.8639;
+    float pressure;
+    if (ID_BTHGN129 == sensor_id)
+    {
+        // Pressure is given in hPa. You may need to adjust the offset 
+        // according to your altitude level (600 is a good starting point)
+        pressure =  ((message[7]& 0x0f) | (message[8] & 0xf0))*2 + (message[8] & 0x01) + 600;
+    }
+    else
+    {
+        // Pressure is given in inHg, but we really can't use that.
+        // Let's convert to hPa. 1 inHg equals 33.8639 HPa
+        pressure = ((message[8]<<4)+message[7]) / 100.0 * 33.8639;
+    }
     return pressure;
 }
 
