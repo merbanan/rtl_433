@@ -173,7 +173,7 @@ static void usage(int exit_code)
             "  [-F kv | json | csv | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "  [-M time | reltime | notime | hires | utc | protocol | level | bits | help] Add various meta data to each output.\n"
+            "  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run\n"
@@ -257,6 +257,8 @@ static void help_meta(void)
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
+            "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
+            "\t  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all\n"
             "\tUse \"bits\" to add bit representation to code outputs (for debug).\n"
             "\nNote:"
             "\tUse \"newmodel\" to transition to new model keys. This will become the default someday.\n"
@@ -422,6 +424,107 @@ static char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
         else
             return local_time_str(ago.tv_sec, buf);
     }
+}
+
+// level 0: do not report (don't call this), 1: report successful devices, 2: report active devices, 3: report all
+static data_t *create_report_data(r_cfg_t *cfg, int level)
+{
+    list_t *r_devs = &cfg->demod->r_devs;
+    data_t *data;
+    data_t *dev_data[r_devs->len];
+    int i = 0;
+
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+        if (level <= 2 && r_dev->decode_events == 0)
+            continue;
+        if (level <= 1 && r_dev->decode_ok == 0)
+            continue;
+        if (level <= 0)
+            continue;
+        data = data_make(
+                "device",       "", DATA_INT, r_dev->protocol_num,
+                "name",         "", DATA_STRING, r_dev->name,
+                "events",       "", DATA_INT, r_dev->decode_events,
+                "ok",           "", DATA_INT, r_dev->decode_ok,
+                "messages",     "", DATA_INT, r_dev->decode_messages,
+                NULL);
+
+        if (r_dev->decode_fails[-DECODE_FAIL_OTHER])
+            data_append(data,
+                    "fail_other",   "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_OTHER],
+                    NULL);
+        if (r_dev->decode_fails[-DECODE_ABORT_LENGTH])
+            data_append(data,
+                    "abort_length", "", DATA_INT, r_dev->decode_fails[-DECODE_ABORT_LENGTH],
+                    NULL);
+        if (r_dev->decode_fails[-DECODE_ABORT_EARLY])
+            data_append(data,
+                    "abort_early",  "", DATA_INT, r_dev->decode_fails[-DECODE_ABORT_EARLY],
+                    NULL);
+        if (r_dev->decode_fails[-DECODE_FAIL_MIC])
+            data_append(data,
+                    "fail_mic",     "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_MIC],
+                    NULL);
+        if (r_dev->decode_fails[-DECODE_FAIL_SANITY])
+            data_append(data,
+                    "fail_sanity",  "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_SANITY],
+                    NULL);
+
+        dev_data[i++] = data;
+    }
+
+    data = data_make(
+            "count",            "", DATA_INT, cfg->frames_count,
+            "fsk",              "", DATA_INT, cfg->frames_fsk,
+            "events",           "", DATA_INT, cfg->frames_events,
+            NULL);
+
+    return data_make(
+            "enabled",          "", DATA_INT, r_devs->len,
+            "frames",           "", DATA_DATA, data,
+            "stats",            "", DATA_ARRAY, data_array(i, DATA_DATA, dev_data),
+            NULL);
+}
+
+static void flush_report_data(r_cfg_t *cfg)
+{
+    list_t *r_devs = &cfg->demod->r_devs;
+
+    cfg->frames_count = 0;
+    cfg->frames_fsk = 0;
+    cfg->frames_events = 0;
+
+    for (void **iter = r_devs->elems; iter && *iter; ++iter) {
+        r_device *r_dev = *iter;
+
+        r_dev->decode_events = 0;
+        r_dev->decode_ok = 0;
+        r_dev->decode_messages = 0;
+        r_dev->decode_fails[0] = 0;
+        r_dev->decode_fails[1] = 0;
+        r_dev->decode_fails[2] = 0;
+        r_dev->decode_fails[3] = 0;
+        r_dev->decode_fails[4] = 0;
+    }
+}
+
+/** Pass the data structure to all output handlers. Frees data afterwards. */
+void event_occured_handler(r_cfg_t *cfg, data_t *data)
+{
+    // prepend "time" if requested
+    if (cfg->report_time != REPORT_TIME_OFF) {
+        char time_str[LOCAL_TIME_BUFLEN];
+        time_pos_str(cfg, 0, time_str);
+        data = data_prepend(data,
+                "time", "", DATA_STRING, time_str,
+                NULL);
+    }
+
+    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+        data_output_print(cfg->output_handler.elems[i], data);
+    }
+    data_free(data);
 }
 
 /** Pass the data structure to all output handlers. Frees data afterwards. */
@@ -791,6 +894,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
 
                 p_events += run_ook_demods(&demod->r_devs, &demod->pulse_data);
+                cfg->frames_count++;
+                cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
@@ -809,6 +914,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
 
                 p_events += run_fsk_demods(&demod->r_devs, &demod->fsk_pulse_data);
+                cfg->frames_fsk++;
+                cfg->frames_events += p_events > 0;
 
                 for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
                     file_info_t const *dumper = *iter;
@@ -986,6 +1093,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 #endif
         sdr_stop(cfg->dev);
         fprintf(stderr, "Time expired, exiting!\n");
+    }
+    if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
+        event_occured_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
+        flush_report_data(cfg);
+        if (rawtime >= cfg->stats_time)
+            cfg->stats_time += cfg->stats_interval;
+        if (cfg->stats_now)
+            cfg->stats_now--;
     }
 }
 
@@ -1360,6 +1475,14 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->new_model_keys = 1;
         else if (!strcasecmp(arg, "oldmodel"))
             cfg->new_model_keys = 0;
+        else if (!strncasecmp(arg, "stats", 5)) {
+            // there also should be options to set wether to flush on report
+            char *p = arg_param(arg);
+            cfg->report_stats = atoiv(p, 1);
+            cfg->stats_interval = atoiv(arg_param(p), 600);
+            time(&cfg->stats_time);
+            cfg->stats_time += cfg->stats_interval;
+        }
         else
             cfg->report_meta = atobv(arg, 1);
         break;
@@ -1580,6 +1703,11 @@ static char const **well_known_output_fields(r_cfg_t *cfg)
 
 static r_cfg_t cfg;
 
+// TODO: SIGINFO is not in POSIX...
+#ifndef SIGINFO
+#define SIGINFO 29
+#endif
+
 #ifdef _WIN32
 BOOL WINAPI
 sighandler(int signum)
@@ -1597,6 +1725,10 @@ static void sighandler(int signum)
 {
     if (signum == SIGPIPE) {
         signal(SIGPIPE, SIG_IGN);
+    }
+    else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
+        cfg.stats_now++;
+        return;
     }
     else if (signum == SIGALRM) {
         fprintf(stderr, "Async read stalled, exiting!\n");
@@ -1892,6 +2024,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);
     sigaction(SIGPIPE, &sigact, NULL);
+    sigaction(SIGINFO, &sigact, NULL);
 #else
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
 #endif
@@ -1956,6 +2089,11 @@ int main(int argc, char **argv) {
 #endif
         cfg.do_exit_async = 0;
         cfg.frequency_index = (cfg.frequency_index + 1) % cfg.frequencies;
+    }
+
+    if (cfg.report_stats > 0) {
+        event_occured_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
+        flush_report_data(&cfg);
     }
 
     if (!cfg.do_exit)

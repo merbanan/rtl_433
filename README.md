@@ -66,7 +66,7 @@ Usage:		= General options =
   [-F kv | json | csv | syslog | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time | reltime | notime | hires | utc | protocol | level | bits | help] Add various meta data to each output.
+  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run
@@ -284,6 +284,8 @@ Option -M:
 		(this may also be accomplished by invocation with TZ environment variable set).
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
+	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
 
 Option -r:

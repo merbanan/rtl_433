@@ -76,6 +76,10 @@ typedef struct r_cfg {
     int report_time_hires;
     int report_time_utc;
     int report_description;
+    int report_stats;
+    int stats_interval;
+    int stats_now;
+    time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
     uint16_t num_r_devices;
@@ -83,6 +87,10 @@ typedef struct r_cfg {
     list_t output_handler;
     struct dm_state *demod;
     int new_model_keys;
+    /* stats*/
+    unsigned frames_count; ///< stats counter for interval
+    unsigned frames_fsk; ///< stats counter for interval
+    unsigned frames_events; ///< stats counter for interval
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

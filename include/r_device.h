@@ -21,6 +21,17 @@ enum modulation_types {
     FSK_PULSE_MANCHESTER_ZEROBIT = 18, ///< FSK, Manchester encoding.
 };
 
+/** Decoders should return n>=0 for n packets successfully decoded,
+    an ABORT code if the bitbuffer is no applicable,
+    or a FAIL code if the message is malformed. */
+enum decode_return_codes {
+    DECODE_FAIL_OTHER   = 0, ///< legacy, do not use
+    DECODE_ABORT_LENGTH = -1,
+    DECODE_ABORT_EARLY  = -2,
+    DECODE_FAIL_MIC     = -3,
+    DECODE_FAIL_SANITY  = -4,
+};
+
 struct bitbuffer;
 struct data;
 
@@ -47,6 +58,12 @@ typedef struct r_device {
     int verbose;
     int verbose_bits;
     void (*output_fn)(struct r_device *decoder, struct data *data);
+
+    /* Decoder results / statistics */
+    unsigned decode_events;
+    unsigned decode_ok;
+    unsigned decode_messages;
+    unsigned decode_fails[5];
 
     /* private for flex decoder and output callback */
     void *decode_ctx;
