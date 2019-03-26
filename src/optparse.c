@@ -24,8 +24,21 @@ int atobv(char *arg, int def)
     return atoi(arg);
 }
 
+int atoiv(char *arg, int def)
+{
+    if (!arg)
+        return def;
+    char *endptr;
+    int val = strtol(arg, &endptr, 10);
+    if (arg == endptr)
+        return def;
+    return val;
+}
+
 char *arg_param(char *arg)
 {
+    if (!arg)
+        return NULL;
     char *p = strchr(arg, ':');
     char *c = strchr(arg, ',');
     if (p && (!c || p < c))

@@ -935,7 +935,19 @@ static void format_jsons_string(data_output_t *output, const char *str, char *fo
 static void format_jsons_double(data_output_t *output, double data, char *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
-    abuf_printf(&jsons->msg, "%f", data);
+    // use scientific notation for very big/small values
+    if (data > 1e7 || data < 1e-4) {
+        abuf_printf(&jsons->msg, "%g", data);
+    }
+    else {
+        abuf_printf(&jsons->msg, "%.5f", data);
+        // remove trailing zeros, always keep one digit after the decimal point
+        while (jsons->msg.left > 0 && *(jsons->msg.tail - 1) == '0' && *(jsons->msg.tail - 2) != '.') {
+            jsons->msg.tail--;
+            jsons->msg.left++;
+            *jsons->msg.tail = '\0';
+        }
+    }
 }
 
 static void format_jsons_int(data_output_t *output, int data, char *format)
@@ -944,7 +956,7 @@ static void format_jsons_int(data_output_t *output, int data, char *format)
     abuf_printf(&jsons->msg, "%d", data);
 }
 
-void data_print_jsons(data_t *data, char *dst, size_t len)
+size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
             .output.print_data   = format_jsons_object,
@@ -957,6 +969,8 @@ void data_print_jsons(data_t *data, char *dst, size_t len)
     abuf_init(&jsons.msg, dst, len);
 
     format_jsons_object(&jsons.output, data, NULL);
+
+    return len - jsons.msg.left;
 }
 
 /* Datagram (UDP) client */
@@ -1045,6 +1059,8 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
+    // we expect a normal message around 500 bytes
+    // full stats report would be 12k and we want a max of MTU anyway
     char message[1024];
     abuf_t msg = {0};
     abuf_init(&msg, message, sizeof(message));
@@ -1062,9 +1078,12 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 
     abuf_printf(&msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
 
-    data_print_jsons(data, msg.tail, msg.left);
+    msg.tail += data_print_jsons(data, msg.tail, msg.left);
+    if (msg.tail >= msg.head + sizeof(message))
+        return; // abort on overflow, we don't actually want to send more than fits the MTU
 
-    datagram_client_send(&syslog->client, message, strlen(message));
+    size_t abuf_len = msg.tail - msg.head;
+    datagram_client_send(&syslog->client, message, abuf_len);
 }
 
 static void data_output_syslog_free(data_output_t *output)

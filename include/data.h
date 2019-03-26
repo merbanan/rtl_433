@@ -180,6 +180,6 @@ void print_value(data_output_t *output, data_type_t type, void *value, char *for
 
 void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
 
-void data_print_jsons(data_t *data, char *dst, size_t len);
+size_t data_print_jsons(data_t *data, char *dst, size_t len);
 
 #endif // INCLUDE_DATA_H_
