@@ -434,8 +434,8 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
 
             return 1;
         }
-        else if (sensor_id    == ID_BTHGN129) {
-            //if ((validate_os_v2_message(decoder, msg, 137, num_valid_v2_bits, 12) == 0)) {
+        else if (sensor_id == ID_BTHGN129) {
+            if ((validate_os_v2_message(decoder, msg, 185, num_valid_v2_bits, 19) == 0)) {
                 float temp_c = get_os_temperature(msg, sensor_id);
                 float pressure = get_os_pressure(decoder, msg, sensor_id);
                 data = data_make(
@@ -449,7 +449,7 @@ static int oregon_scientific_v2_1_parser(r_device *decoder, bitbuffer_t *bitbuff
                         "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
                         NULL);
                 decoder_output_data(decoder, data);
-            //}
+            }
 
             return 1;
         }
