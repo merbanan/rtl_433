@@ -33,7 +33,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
     if (r < 0 || bitbuffer->bits_per_row[r] > 42) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     b = bitbuffer->bb[r];
@@ -47,7 +47,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH checksum error\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     id = b[0];
@@ -66,7 +66,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH data error\n");
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     data = data_make(
