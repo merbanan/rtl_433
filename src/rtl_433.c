@@ -431,8 +431,8 @@ static data_t *create_report_data(r_cfg_t *cfg, int level)
 {
     list_t *r_devs = &cfg->demod->r_devs;
     data_t *data;
-    data_t *dev_data[r_devs->len];
-    int i = 0;
+    list_t dev_data_list = {0};
+    list_ensure_size(&dev_data_list, r_devs->len);
 
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
@@ -471,7 +471,7 @@ static data_t *create_report_data(r_cfg_t *cfg, int level)
                     "fail_sanity",  "", DATA_INT, r_dev->decode_fails[-DECODE_FAIL_SANITY],
                     NULL);
 
-        dev_data[i++] = data;
+        list_push(&dev_data_list, data);
     }
 
     data = data_make(
@@ -480,11 +480,14 @@ static data_t *create_report_data(r_cfg_t *cfg, int level)
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
 
-    return data_make(
+    data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
             "frames",           "", DATA_DATA, data,
-            "stats",            "", DATA_ARRAY, data_array(i, DATA_DATA, dev_data),
+            "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
+
+    list_free_elems(&dev_data_list, NULL);
+    return data;
 }
 
 static void flush_report_data(r_cfg_t *cfg)
