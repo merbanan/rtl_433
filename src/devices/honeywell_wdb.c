@@ -1,38 +1,43 @@
-/* Honeywell wireless door bell, PIR Motion sensor
- *
- * Copyright (C) 2018 Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+    Honeywell ActivLink, wireless door bell, PIR Motion sensor.
 
-/** Frame documentation courtesy of https://github.com/klohner/honeywell-wireless-doorbell
- *
- * # Frame bits used in Honeywell RCWL300A, RCWL330A, Series 3, 5, 9 and all Decor Series
- * Wireless Chimes
- * # 0000 0000 1111 1111 2222 2222 3333 3333 4444 4444 5555 5555
- * # 7654 3210 7654 3210 7654 3210 7654 3210 7654 3210 7654 3210
- * # XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XX.. XXX. .... KEY DATA (any change and receiver doesn't seem to
- * #                                                                       recognize signal)
- * # XXXX XXXX XXXX XXXX XXXX .... .... .... .... .... .... .... KEY ID (different for each transmitter)
- * # .... .... .... .... .... 0000 00.. 0000 0000 00.. 000. .... KEY UNKNOWN 0 (always 0 in devices I've tested)
- * # .... .... .... .... .... .... ..XX .... .... .... .... .... DEVICE TYPE (10 = doorbell, 01 = PIR Motion sensor)
- * # .... .... .... .... .... .... .... .... .... ..XX ...X XXX. FLAG DATA (may be modified for possible effects on
- * #                                                                        receiver)
- * # .... .... .... .... .... .... .... .... .... ..XX .... .... ALERT (00 = normal, 01 or 10 = right-left halo light
- * #                                                                    pattern, 11 = full volume alarm)
- * # .... .... .... .... .... .... .... .... .... .... ...X .... SECRET KNOCK (0 = default, 1 if doorbell is pressed 3x
- * #                                                                           rapidly)
- * # .... .... .... .... .... .... .... .... .... .... .... X... RELAY (1 if signal is a retransmission of a received
- * #                                                                    transmission, only some models)
- * # .... .... .... .... .... .... .... .... .... .... .... .X.. FLAG UNKNOWN (0 = default, but 1 is accepted and I don't
- * #                                                                           oberserve any effects)
- * # .... .... .... .... .... .... .... .... .... .... .... ..X. LOWBAT (1 if battery is low, receiver gives low battery
- * #                                                                     alert)
- * # .... .... .... .... .... .... .... .... .... .... .... ...X PARITY (LSB of count of set bits in previous 47 bits)
+    Copyright (C) 2018 Benjamin Larsson
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+/**
+Honeywell ActivLink, wireless door bell, PIR Motion sensor.
+
+Frame documentation courtesy of https://github.com/klohner/honeywell-wireless-doorbell
+
+Frame bits used in Honeywell RCWL300A, RCWL330A, Series 3, 5, 9 and all Decor Series:
+
+Wireless Chimes
+
+    0000 0000 1111 1111 2222 2222 3333 3333 4444 4444 5555 5555
+    7654 3210 7654 3210 7654 3210 7654 3210 7654 3210 7654 3210
+    XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XXXX XX.. XXX. .... KEY DATA (any change and receiver doesn't seem to
+                                                                          recognize signal)
+    XXXX XXXX XXXX XXXX XXXX .... .... .... .... .... .... .... KEY ID (different for each transmitter)
+    .... .... .... .... .... 0000 00.. 0000 0000 00.. 000. .... KEY UNKNOWN 0 (always 0 in devices I've tested)
+    .... .... .... .... .... .... ..XX .... .... .... .... .... DEVICE TYPE (10 = doorbell, 01 = PIR Motion sensor)
+    .... .... .... .... .... .... .... .... .... ..XX ...X XXX. FLAG DATA (may be modified for possible effects on
+                                                                           receiver)
+    .... .... .... .... .... .... .... .... .... ..XX .... .... ALERT (00 = normal, 01 or 10 = right-left halo light
+                                                                       pattern, 11 = full volume alarm)
+    .... .... .... .... .... .... .... .... .... .... ...X .... SECRET KNOCK (0 = default, 1 if doorbell is pressed 3x
+                                                                              rapidly)
+    .... .... .... .... .... .... .... .... .... .... .... X... RELAY (1 if signal is a retransmission of a received
+                                                                       transmission, only some models)
+    .... .... .... .... .... .... .... .... .... .... .... .X.. FLAG UNKNOWN (0 = default, but 1 is accepted and I don't
+                                                                              oberserve any effects)
+    .... .... .... .... .... .... .... .... .... .... .... ..X. LOWBAT (1 if battery is low, receiver gives low battery
+                                                                        alert)
+    .... .... .... .... .... .... .... .... .... .... .... ...X PARITY (LSB of count of set bits in previous 47 bits)
 */
 
 #include "decoder.h"
@@ -86,8 +91,10 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     secret_knock = (bytes[5]&0x10) >> 4;
     relay = (bytes[5]&0x8) >> 3;
     battery = (bytes[5]&0x2) >> 1;
+
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Honeywell-Security","Honeywell Wireless Doorbell"),
+            "model",         "",            DATA_STRING, _X("Honeywell-ActivLink","Honeywell Wireless Doorbell"),
             "id",            "Id",          DATA_FORMAT, "%x",   DATA_INT,    device,
             "class",         "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
             "alert",         "Alert",       DATA_FORMAT, "%s",   DATA_STRING, alert,
@@ -96,46 +103,46 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             "battery",       "Battery",     DATA_STRING, battery ? "LOW" : "OK",
             "mic",           "Integrity",   DATA_STRING, "PARITY",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-
 static char *output_fields[] = {
-    "model",
-    "id",
-    "class",
-    "alert",
-    "secret_knock",
-    "relay",
-    "battery",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "class",
+        "alert",
+        "secret_knock",
+        "relay",
+        "battery",
+        "mic",
+        NULL,
 };
 
 r_device honeywell_wdb = {
-    .name          = "Honeywell Wireless Doorbell",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 175,
-    .long_width    = 340,
-    .gap_limit     = 0,
-    .reset_limit   = 5000,
-    .sync_width    = 500,
-    .decode_fn     = &honeywell_wdb_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Honeywell ActivLink, Wireless Doorbell",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 175,
+        .long_width  = 340,
+        .gap_limit   = 0,
+        .reset_limit = 5000,
+        .sync_width  = 500,
+        .decode_fn   = &honeywell_wdb_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
 
 r_device honeywell_wdb_fsk = {
-    .name          = "Honeywell Wireless Doorbell (FSK)",
-    .modulation    = FSK_PULSE_PWM,
-    .short_width   = 160,
-    .long_width    = 320,
-    .gap_limit     = 0,
-    .reset_limit   = 560,
-    .sync_width    = 500,
-    .decode_fn     = &honeywell_wdb_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Honeywell ActivLink, Wireless Doorbell (FSK)",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 160,
+        .long_width  = 320,
+        .gap_limit   = 0,
+        .reset_limit = 560,
+        .sync_width  = 500,
+        .decode_fn   = &honeywell_wdb_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
