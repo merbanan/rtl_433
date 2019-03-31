@@ -1473,6 +1473,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         add_dumper(cfg, arg, 1);
         break;
     case 'S':
+        if (!arg)
+            usage(1);
         if (strcasecmp(arg, "all") == 0)
             cfg->grab_mode = 1;
         else if (strcasecmp(arg, "unknown") == 0)
