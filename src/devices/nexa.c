@@ -22,7 +22,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Reject codes of wrong length */
     if (bitbuffer->bits_per_row[1] != 64 && bitbuffer->bits_per_row[1] != 72)
-      return 0;
+      return DECODE_ABORT_LENGTH;
 
 
     bitbuffer_t databits = {0};
@@ -30,7 +30,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Reject codes when Manchester decoding fails */
     if (pos != 64 && pos != 72)
-      return 0;
+      return DECODE_ABORT_LENGTH;
 
     bitrow_t *bb = databits.bb;
     uint8_t *b = bb[0];
@@ -46,15 +46,15 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data = data_make(
                      "model",         "",            DATA_STRING, _X("Nexa-Security","Nexa"),
                      "id",            "House Code",  DATA_INT, sensor_id,
-                     "group",         "Group",       DATA_INT, group_code,
                      "channel",       "Channel",     DATA_INT, channel_code,
                      "state",         "State",       DATA_STRING, on_bit ? "OFF" : "ON",
                      "unit",          "Unit",        DATA_INT, unit_bit,
+                     "group",         "Group",       DATA_INT, group_code,
                       NULL);
 
     decoder_output_data(decoder, data);
 
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {

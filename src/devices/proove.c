@@ -39,14 +39,14 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Reject codes of wrong length */
     if (bitbuffer->bits_per_row[1] != 64)
-      return 0;
+      return DECODE_ABORT_LENGTH;
 
     bitbuffer_t databits = {0};
     unsigned pos = bitbuffer_manchester_decode(bitbuffer, 1, 0, &databits, 64);
 
     /* Reject codes when Manchester decoding fails */
     if (pos != 64)
-      return 0;
+      return DECODE_ABORT_LENGTH;
 
     bitrow_t *bb = databits.bb;
     uint8_t *b = bb[0];
@@ -70,7 +70,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     decoder_output_data(decoder, data);
 
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
