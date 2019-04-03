@@ -157,7 +157,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "heating", "Heating Mode", DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
                 "heating_temp", "Heating Water Temp.", DATA_FORMAT, "%d", DATA_INT, (int16_t)target_temperature,
                 "water",   "Pre-heated Water", DATA_STRING, water_preheated ? "ON" : "off",
-                "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "Ok",
+                "battery", "Battery", DATA_STRING, isBatteryLow ? "Low" : "OK",
                 NULL);
         decoder_output_data(decoder, data);
 
