@@ -99,6 +99,7 @@
     <ClInclude Include="..\include\list.h" />
     <ClInclude Include="..\include\mongoose.h" />
     <ClInclude Include="..\include\optparse.h" />
+    <ClInclude Include="..\include\output_mqtt.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
     <ClInclude Include="..\include\r_device.h" />
@@ -125,6 +126,7 @@
     <ClCompile Include="..\src\list.c" />
     <ClCompile Include="..\src\mongoose.c" />
     <ClCompile Include="..\src\optparse.c" />
+    <ClCompile Include="..\src\output_mqtt.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
     <ClCompile Include="..\src\r_util.c" />
