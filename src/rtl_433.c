@@ -38,6 +38,7 @@
 #include "pulse_demod.h"
 #include "decoder.h"
 #include "data.h"
+#include "output_mqtt.h"
 #include "r_util.h"
 #include "optparse.h"
 #include "fileformat.h"
@@ -170,7 +171,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | syslog | null | help] Produce decoded output in given format.\n"
+            "  [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.\n"
@@ -238,9 +239,17 @@ static void help_gain(void)
 static void help_output(void)
 {
     fprintf(stderr,
-            "[-F kv|json|csv|syslog|null] Produce decoded output in given format.\n"
+            "[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
+            "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
+            "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1],\n"
+            "\t\t usechannel=replaceid|afterid|beforeid|no, <format>[=topic]\n"
+            "\tSupported MQTT formats: (default is all)\n"
+            "\t  events: posts JSON event data\n"
+            "\t  states: posts JSON state data\n"
+            "\t  devices: posts device and sensor info in nested topics\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }
@@ -1215,6 +1224,16 @@ static void add_kv_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
 }
 
+static void add_mqtt_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "localhost";
+    char *port = "1883";
+    char *opts = hostport_param(param, &host, &port);
+    fprintf(stderr, "Publishing MQTT UDP datagrams to %s port %s\n", host, port);
+
+    list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
+}
+
 static void add_syslog_output(r_cfg_t *cfg, char *param)
 {
     char *host = "localhost";
@@ -1595,6 +1614,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else if (strncmp(arg, "kv", 2) == 0) {
             add_kv_output(cfg, arg_param(arg));
+        }
+        else if (strncmp(arg, "mqtt", 4) == 0) {
+            add_mqtt_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));

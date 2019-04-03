@@ -16,6 +16,7 @@ rtl_433_SOURCES      = abuf.c \
                        list.c \
                        mongoose.c \
                        optparse.c \
+                       output_mqtt.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        r_util.c \
