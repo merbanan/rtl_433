@@ -107,6 +107,10 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
         zero_u = device->s_short_width + device->s_tolerance;
         one_l  = device->s_long_width - device->s_tolerance;
         one_u  = device->s_long_width + device->s_tolerance;
+        if (device->s_sync_width > 0) {
+            sync_l = device->s_sync_width - device->s_tolerance;
+            sync_u = device->s_sync_width + device->s_tolerance;
+        }
     }
     else {
         // no sync, short=0, long=1
@@ -117,14 +121,19 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
     }
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
-        // Short gap
         if (pulses->gap[n] > zero_l && pulses->gap[n] < zero_u) {
+            // Short gap
             bitbuffer_add_bit(&bits, 0);
         }
-        // Long gap
         else if (pulses->gap[n] > one_l && pulses->gap[n] < one_u) {
+            // Long gap
             bitbuffer_add_bit(&bits, 1);
         }
+        else if (pulses->gap[n] > sync_l && pulses->gap[n] < sync_u) {
+            // Sync gap
+            bitbuffer_add_sync(&bits);
+        }
+
         // Check for new packet in multipacket
         else if (pulses->gap[n] < device->s_reset_limit) {
             bitbuffer_add_row(&bits);
