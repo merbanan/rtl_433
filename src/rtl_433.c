@@ -1900,6 +1900,8 @@ int main(int argc, char **argv) {
     // register default decoders if nothing is configured
     if (!cfg.no_default_devices) {
         register_all_protocols(&cfg, 0); // register all defaults
+    } else {
+        update_protocols(&cfg);
     }
 
     // check if we need FM demod
