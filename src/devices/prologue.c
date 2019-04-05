@@ -33,7 +33,7 @@ extern int alecto_checksum(r_device *decoder, bitrow_t *bb);
 
 static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b;
     data_t *data;
     int ret;
 
@@ -42,73 +42,80 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t battery;
     uint8_t button;
     uint8_t channel;
-    int16_t temp;
+    int16_t temp_raw;
     uint8_t humidity;
 
     if (bitbuffer->bits_per_row[0] <= 8 && bitbuffer->bits_per_row[0] != 0)
         return 0; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
-    int r = bitbuffer_find_repeated_row(bitbuffer, 4, 36); // only 3 repeats will give false positives for Alecto/Auriol-v2
 
-    /* Check for Alecto checksum */
-    ret = alecto_checksum(decoder, bb);
+    int r = bitbuffer_find_repeated_row(bitbuffer, 4, 36); // only 3 repeats will give false positives for Alecto/Auriol-v2
+    if (r < 0)
+        return 0;
+
+    if (bitbuffer->bits_per_row[r] > 37) // we expect 36 bits but there might be a trailing 0 bit
+        return 0;
+
+    b = bitbuffer->bb[r];
+
+    if ((b[0] & 0xF0) != 0x90 && (b[0] & 0xF0) != 0x50)
+        return 0;
+
+    /* Check for Alecto collision */
+    ret = alecto_checksum(decoder, bitbuffer->bb);
     if (ret)
         return 0;
 
-    if (r >= 0 &&
-        bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
-        ((bb[r][0]&0xF0) == 0x90 ||
-         (bb[r][0]&0xF0) == 0x50)) {
+    /* Prologue sensor */
+    type     = b[0] >> 4;
+    id       = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
+    battery  = b[1] & 0x08;
+    button   = (b[1] & 0x04) >> 2;
+    channel  = (b[1] & 0x03) + 1;
+    temp_raw = (int16_t)((b[2] << 8) | (b[3] & 0xF0));
+    temp_raw = temp_raw >> 4;
+    humidity = ((b[3] & 0x0F) << 4) | (b[4] >> 4);
 
-        /* Get time now */
+    /* clang-format off */
+    data = data_make(
+            "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
+            _X("subtype","id"),       "",            DATA_INT, type,
+            _X("id","rid"),            "",            DATA_INT, id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+            "button",        "Button",      DATA_INT, button,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
+            NULL);
 
-        /* Prologue sensor */
-        type = bb[r][0] >> 4;
-        id = ((bb[r][0]&0x0F)<<4) | ((bb[r][1]&0xF0)>>4);
-        battery = bb[r][1]&0x08;
-        button = (bb[r][1]&0x04) >> 2;
-        channel = (bb[r][1]&0x03) + 1;
-        temp = (int16_t)((uint16_t)(bb[r][2] << 8) | (bb[r][3]&0xF0));
-        temp = temp >> 4;
-        humidity = ((bb[r][3]&0x0F) << 4) | (bb[r][4] >> 4);
-
-        data = data_make(
-                "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
-                _X("subtype","id"),       "",            DATA_INT, type,
-                _X("id","rid"),            "",            DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "button",        "Button",      DATA_INT, button,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+    if (humidity != 0xcc) // 0xcc is "invalid"
+        data = data_append(data,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
-        decoder_output_data(decoder, data);
+    /* clang-format on */
 
-        return 1;
-    }
-    return 0;
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "subtype",
-    "id",
-    "rid", // TODO: delete this
-    "channel",
-    "battery",
-    "button",
-    "temperature_C",
-    "humidity",
-    NULL
-};
+        "model",
+        "subtype",
+        "id",
+        "rid", // TODO: delete this
+        "channel",
+        "battery",
+        "button",
+        "temperature_C",
+        "humidity",
+        NULL};
 
 r_device prologue = {
-    .name           = "Prologue Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 7000,
-    .reset_limit    = 10000,
-    .decode_fn      = &prologue_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Prologue Temperature Sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 7000,
+        .reset_limit = 10000,
+        .decode_fn   = &prologue_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
