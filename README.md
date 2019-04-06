@@ -123,7 +123,7 @@ Supported device protocols:
     [48]  Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
-    [51]  Proove
+    [51]  Proove / Nexa / KlikAanKlikUit Wireless Switch
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
@@ -185,8 +185,8 @@ Supported device protocols:
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
     [114]  Maverick et73
-    [115]  Honeywell Wireless Doorbell
-    [116]  Honeywell Wireless Doorbell (FSK)
+    [115]  Honeywell ActivLink, Wireless Doorbell
+    [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
@@ -194,6 +194,7 @@ Supported device protocols:
     [121]  Opus/Imagintronix XT300 Soil Moisture
     [122]* FS20
     [123]* Jansite TPMS Model TY02S
+    [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
 
 * Disabled by default, use -R n or -G
 

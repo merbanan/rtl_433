@@ -34,6 +34,26 @@ uint8_t reverse8(uint8_t x);
 /// @param num_bytes number of bytes to reflect
 void reflect_bytes(uint8_t message[], unsigned num_bytes);
 
+/// Reflect (reverse LSB to MSB) each nibble in an 8 bit byte, preserves nibble order.
+///
+/// @param x: input byte
+/// @return reflected nibbles
+uint8_t reflect4(uint8_t x);
+
+/// Reflect (reverse LSB to MSB) each nibble in a number of bytes.
+///
+/// @param message bytes of nibble message data
+/// @param num_bytes number of bytes to reflect
+void reflect_nibbles(uint8_t message[], unsigned num_bytes);
+
+/// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of sucessfully unstuffed nibbles.
+///
+/// @param message: bytes of message data
+/// @param offset_bits: start offset of message in bits
+/// @param num_bits: message length in bits
+/// @param dst: target buffer for extracted nibbles, at least num_bits/5 size
+unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+
 /// CRC-4.
 ///
 /// @param message[]: array of bytes to check
