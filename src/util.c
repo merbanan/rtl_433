@@ -29,6 +29,38 @@ void reflect_bytes(uint8_t message[], unsigned num_bytes)
     }
 }
 
+uint8_t reflect4(uint8_t x)
+{
+    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
+    return x;
+}
+
+void reflect_nibbles(uint8_t message[], unsigned num_bytes)
+{
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        message[i] = reflect4(message[i]);
+    }
+}
+
+unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+{
+    unsigned ret = 0;
+
+    while (num_bits >= 5) {
+        uint16_t bits = (message[offset_bits / 8] << 8) | message[(offset_bits / 8) + 1];
+        bits >>= 11 - (offset_bits % 8); // align 5 bits to LSB
+        if ((bits & 1) != 1)
+            break; // stuff-bit error
+        *dst++ = (bits >> 1) & 0xf;
+        ret += 1;
+        offset_bits += 5;
+        num_bits -= 5;
+    }
+
+    return ret;
+}
+
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
 {
     unsigned remainder = init << 4; // LSBs are unused

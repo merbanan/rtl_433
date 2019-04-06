@@ -77,6 +77,7 @@ add_executable(rtl_433
 	devices/lacrosse.c
 	devices/lacrosse_TX141TH_Bv2.c
 	devices/lacrosse_tx35.c
+	devices/lacrosse_ws7000.c
 	devices/lacrossews.c
 	devices/lightwave_rf.c
 	devices/m_bus.c

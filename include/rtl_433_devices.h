@@ -131,6 +131,7 @@
     DECL(opus_xt300) \
     DECL(fs20) \
     DECL(tpms_jansite) \
+    DECL(lacrosse_ws7000) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
