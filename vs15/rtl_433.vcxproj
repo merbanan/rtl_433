@@ -102,6 +102,8 @@
     <ClInclude Include="..\include\output_mqtt.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
+    <ClInclude Include="..\include\r_api.h" />
+    <ClInclude Include="..\include\r_private.h" />
     <ClInclude Include="..\include\r_device.h" />
     <ClInclude Include="..\include\r_util.h" />
     <ClInclude Include="..\include\rtl_433.h" />
@@ -129,6 +131,7 @@
     <ClCompile Include="..\src\output_mqtt.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
+    <ClCompile Include="..\src\r_api.c" />
     <ClCompile Include="..\src\r_util.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />

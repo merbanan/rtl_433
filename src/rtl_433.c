@@ -30,8 +30,10 @@
 #include <signal.h>
 
 #include "rtl_433.h"
+#include "r_private.h"
 #include "r_device.h"
 #include "rtl_433_devices.h"
+#include "r_api.h"
 #include "sdr.h"
 #include "baseband.h"
 #include "pulse_detect.h"
@@ -65,67 +67,9 @@
 #include "getopt/getopt.h"
 #endif
 
-char const *version_string(void)
-{
-    return "rtl_433"
-#ifdef GIT_VERSION
-#define STR_VALUE(arg) #arg
-#define STR_EXPAND(s) STR_VALUE(s)
-            " version " STR_EXPAND(GIT_VERSION)
-            " branch " STR_EXPAND(GIT_BRANCH)
-            " at " STR_EXPAND(GIT_TIMESTAMP)
-#undef STR_VALUE
-#undef STR_EXPAND
-#else
-            " version unknown"
-#endif
-            " inputs file rtl_tcp"
-#ifdef RTLSDR
-            " RTL-SDR"
-#endif
-#ifdef SOAPYSDR
-            " SoapySDR"
-#endif
-            ;
-}
-
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 void data_acquired_handler(r_device *r_dev, data_t *data);
-
-struct dm_state {
-    int32_t level_limit;
-    int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
-    union {
-        // These buffers aren't used at the same time, so let's use a union to save some memory
-        int16_t fm[MAXIMAL_BUF_LENGTH];  // FM demodulated signal (for FSK decoding)
-        uint16_t temp[MAXIMAL_BUF_LENGTH];  // Temporary buffer (to be optimized out..)
-    } buf;
-    uint8_t u8_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
-    float f32_buf[MAXIMAL_BUF_LENGTH]; // format conversion buffer
-    int sample_size; // CU8: 1, CS16: 2
-    pulse_detect_t *pulse_detect;
-    filter_state_t lowpass_filter_state;
-    demodfm_state_t demod_FM_state;
-    int enable_FM_demod;
-    samp_grab_t *samp_grab;
-    am_analyze_t *am_analyze;
-    int analyze_pulses;
-    file_info_t load_info;
-    list_t dumper;
-    int hop_time;
-
-    /* Protocol states */
-    list_t r_devs;
-
-    pulse_data_t    pulse_data;
-    pulse_data_t    fsk_pulse_data;
-    unsigned frame_event_count;
-    unsigned frame_start_ago;
-    unsigned frame_end_ago;
-    struct timeval now;
-    float sample_file_pos;
-};
 
 static void print_version(void)
 {
@@ -1667,71 +1611,6 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         usage(1);
         break;
     }
-}
-
-void r_init_cfg(r_cfg_t *cfg)
-{
-    cfg->out_block_size  = DEFAULT_BUF_LENGTH;
-    cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
-    cfg->conversion_mode = CONVERT_NATIVE;
-
-    list_ensure_size(&cfg->in_files, 100);
-    list_ensure_size(&cfg->output_handler, 16);
-
-    cfg->demod = calloc(1, sizeof(*cfg->demod));
-    if (!cfg->demod) {
-        fprintf(stderr, "Could not create demod!\n");
-        exit(1);
-    }
-
-    cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    cfg->demod->hop_time    = DEFAULT_HOP_TIME;
-
-    list_ensure_size(&cfg->demod->r_devs, 100);
-    list_ensure_size(&cfg->demod->dumper, 32);
-}
-
-r_cfg_t *r_create_cfg(void)
-{
-    r_cfg_t *cfg = calloc(1, sizeof(*cfg));
-    if (!cfg) {
-        fprintf(stderr, "Could not create cfg!\n");
-        exit(1);
-    }
-
-    r_init_cfg(cfg);
-
-    return cfg;
-}
-
-void r_free_cfg(r_cfg_t *cfg)
-{
-    if (cfg->dev)
-        sdr_deactivate(cfg->dev);
-    if (cfg->dev)
-        sdr_close(cfg->dev);
-
-    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
-        file_info_t const *dumper = *iter;
-        if (dumper->file && (dumper->file != stdout))
-            fclose(dumper->file);
-    }
-    list_free_elems(&cfg->demod->dumper, free);
-
-    list_free_elems(&cfg->demod->r_devs, free);
-
-    if (cfg->demod->am_analyze)
-        am_analyze_free(cfg->demod->am_analyze);
-
-    pulse_detect_free(cfg->demod->pulse_detect);
-
-    free(cfg->demod);
-
-    list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
-
-    list_free_elems(&cfg->in_files, NULL);
-
-    //free(cfg);
 }
 
 // well-known fields "time", "msg" and "codes" are used to output general decoder messages
