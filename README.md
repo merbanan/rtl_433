@@ -106,7 +106,7 @@ Supported device protocols:
     [31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
     [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
     [33]  WT450, WT260H, WT405H
-    [34]  LaCrosse WS-2310 Weather Station
+    [34]  LaCrosse WS-2310 / WS-3600 Weather Station
     [35]  Esperanza EWS
     [36]  Efergy e2 classic
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
