@@ -86,18 +86,18 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         model = _X("Fineoffset-TelldusProove","Telldus/Proove thermometer");
 
     } else
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // Validate package
     if (b[4] != crc8(&b[0], 4, 0x31, 0)) // x8 + x5 + x4 + 1 (x8 is implicit)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // Nibble 2 contains type, must be 0x04 -- or is this a (battery) flag maybe? please report.
     type = b[0] >> 4;
     if (type != 4) {
         if (decoder->verbose)
             fprintf(stderr, "%s: Unknown type: %d\n", model, type);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     // Nibble 3,4 contains id
@@ -122,16 +122,19 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Thermo
     if (b[3] == 0xFF) {
+        /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, model,
                 "id",               "ID",           DATA_INT, id,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
     }
     // Thermo/Hygro
     else {
+        /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, model,
                 "id",               "ID",           DATA_INT, id,
@@ -139,6 +142,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
     }
     return 1;
@@ -186,14 +190,14 @@ The WH65B sends the same data with a slightly longer preamble and postamble
 static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
+    uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
     int model;
 
     // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 215) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Find a data package and extract data buffer
@@ -203,7 +207,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "Fineoffset_WH24: short package. Header index: %u\n", bit_offset);
             bitbuffer_print(bitbuffer);
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
     if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8)
         model = MODEL_WH24; // nominal 3 bits postamble
@@ -220,7 +224,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (b[0] != 0x24) // Check for family code 0x24
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
     uint8_t crc = crc8(b, 15, 0x31, 0x00);
@@ -232,7 +236,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) {
             fprintf(stderr, "Fineoffset_WH24: Checksum error: %02x %02x\n", crc, checksum);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Decode data
@@ -284,7 +288,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int uv_index   = 0;
     while (uv_index < 13 && uvi_upper[uv_index] < uv_raw) ++uv_index;
 
-    // Output data
+    /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, model == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
             "id",               "ID",               DATA_INT, id,
@@ -307,13 +311,14 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         data_append(data,   "light_lux",        "Light",            DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux, NULL);
     data_append(data,       "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
                             "mic",              "Integrity",        DATA_STRING, "CRC", NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 /**
-Fine Offset Electronics WH25 Temperature/Humidity/Pressure sensor protocol.
+Fine Offset Electronics WH25 / WH32B Temperature/Humidity/Pressure sensor protocol.
 
 The sensor sends a package each ~64 s with a width of ~28 ms. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -328,30 +333,42 @@ Data layout:
 
 - I: 8 bit Sensor ID (based on 2 different sensors). Does not change at battery change.
 - B: 1 bit low battery indicator
-- T: 11 bit Temperature (+40*10), top bit is low battery flag
+- F: 1 bit invalid reading indicator
+- T: 10 bit Temperature (+40*10), top two bits are flags
 - H: 8 bit Humidity
 - P: 16 bit Pressure (*10)
 - C: 8 bit Checksum of previous 6 bytes (binary sum truncated to 8 bit)
 - B: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
+
+WH32B is the same as WH25 but two packets in one transmission of {971} and XOR sum missing.
+TYPE:4h ID:8d FLAGS:2b TEMP_C:10d HUM:8d HPA:16d CHK:8h
+
 */
 static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    static uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
+    uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
     uint8_t b[8];
+    int type = 25;
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 440 || bitbuffer->bits_per_row[0] > 510) {  // Nominal size is 488 bit periods
+    if (bitbuffer->bits_per_row[0] < 440) {  // Nominal size is 488 bit periods
         return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
     }
 
+    if (bitbuffer->bits_per_row[0] > 510) { // WH32B has nominal size of 971 bit periods
+        type = 32;
+    }
+
     // Find a data package and extract data payload
-    bit_offset = bitbuffer_search(bitbuffer, 0, 320, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8; // Normal index is 367, skip some bytes to find faster
+    // Normal index of WH25 is 367, and 123, 570 for WH32B
+    // skip some bytes to find faster
+    bit_offset = bitbuffer_search(bitbuffer, 0, 100, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
             bitbuffer_printf(bitbuffer, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
@@ -360,36 +377,38 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (sum) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH25: Checksum error: ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Verify xor-sum
     int bitsum = xor_bytes(b, 6);
     bitsum = ((bitsum & 0x0f) << 4) | (bitsum >> 4); // Swap nibbles
-    if (bitsum != b[7]) {
+    if (type == 25 && bitsum != b[7]) { // only check for WH25
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH25: Bitsum error: ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Decode data
     uint8_t id        = ((b[0]&0x0f) << 4) | (b[1] >> 4);
     int low_battery   = (b[1] & 0x08) >> 3;
-    int temp_raw      = (b[1] & 0x07) << 8 | b[2]; // 0x7ff if invalid
+    int invalid_flag  = (b[1] & 0x04) >> 2;
+    int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
     float temperature = (temp_raw - 400) * 0.1;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
     float pressure    = (b[4] << 8 | b[5]) * 0.1;
 
-    // Output data
+    /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
-            "id",               "ID",           DATA_INT, id,
+            "model",            "",             DATA_STRING, type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "id",               "ID",           DATA_INT,    id,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -422,10 +441,12 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[8];
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] != 71 // Match exact length to avoid false positives
-            || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
+    if (bitbuffer->bits_per_row[0] != 71) // Match exact length to avoid false positives
+        return DECODE_ABORT_LENGTH;
+
+    if ((bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
             || (bb[0][1] >> 5) != 0x3)   // Check message type (8 bits)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof(b) * 8); // Skip first 7 bits
 
@@ -436,7 +457,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc || sum) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH0530: Checksum error: ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
@@ -446,6 +467,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
+    /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0530","Fine Offset Electronics, WH0530 Temperature/Rain sensor"),
             "id",               "ID",           DATA_INT, id,
@@ -454,6 +476,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -465,7 +488,7 @@ static char *output_fields[] = {
     "temperature_C",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 static char *output_fields_WH25[] = {
@@ -487,7 +510,7 @@ static char *output_fields_WH25[] = {
     "light_lux",
     "battery",
     "mic",
-    NULL
+    NULL,
 };
 
 static char *output_fields_WH0530[] = {
@@ -498,7 +521,7 @@ static char *output_fields_WH0530[] = {
     "rain_mm",
     "battery",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device fineoffset_WH2 = {
@@ -511,18 +534,18 @@ r_device fineoffset_WH2 = {
     .decode_fn      = &fineoffset_WH2_callback,
     .create_fn      = &fineoffset_WH2_create,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };
 
 r_device fineoffset_WH25 = {
-    .name           = "Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
+    .name           = "Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = 58, // Bit width = 58µs (measured across 580 samples / 40 bits / 250 kHz )
     .long_width     = 58, // NRZ encoding (bit width = pulse width)
     .reset_limit    = 20000, // Package starts with a huge gap of ~18900 us
     .decode_fn      = &fineoffset_WH25_callback,
     .disabled       = 0,
-    .fields         = output_fields_WH25
+    .fields         = output_fields_WH25,
 };
 
 r_device fineoffset_WH0530 = {
@@ -535,5 +558,5 @@ r_device fineoffset_WH0530 = {
     .tolerance      = 160, // us
     .decode_fn      = &fineoffset_WH0530_callback,
     .disabled       = 0,
-    .fields         = output_fields_WH0530
+    .fields         = output_fields_WH0530,
 };
