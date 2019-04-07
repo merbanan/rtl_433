@@ -14,6 +14,7 @@
 #include "samp_grab.h"
 #include "am_analyze.h"
 #include "rtl_433.h"
+#include "compat_time.h"
 
 struct dm_state {
     int32_t level_limit;

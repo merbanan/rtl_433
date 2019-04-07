@@ -26,6 +26,7 @@
 #include "list.h"
 #include "optparse.h"
 #include "output_mqtt.h"
+#include "compat_time.h"
 
 #ifdef _WIN32
 #include <io.h>

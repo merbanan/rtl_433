@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
-#include <math.h>
 #include <errno.h>
 #include <signal.h>
 
@@ -38,7 +37,6 @@
 #include "baseband.h"
 #include "pulse_detect.h"
 #include "pulse_demod.h"
-#include "decoder.h"
 #include "data.h"
 #include "r_util.h"
 #include "optparse.h"
@@ -47,7 +45,6 @@
 #include "am_analyze.h"
 #include "confparse.h"
 #include "compat_paths.h"
-#include "compat_time.h"
 
 #ifdef _WIN32
 #include <io.h>

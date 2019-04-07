@@ -71,10 +71,10 @@
     <ClInclude Include="..\include\r_api.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\r_private.h">
+    <ClInclude Include="..\include\r_device.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\r_device.h">
+    <ClInclude Include="..\include\r_private.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\r_util.h">
