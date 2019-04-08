@@ -146,6 +146,7 @@
     DECL(esic_emt7110) \
     DECL(gt_tmbbq05) \
     DECL(gt_wt_03) \
+    DECL(norgo) \
 
     /* Add new decoders here. */
 

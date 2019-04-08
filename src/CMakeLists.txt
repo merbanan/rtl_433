@@ -99,6 +99,7 @@ add_executable(rtl_433
     devices/newkaku.c
     devices/nexa.c
     devices/nexus.c
+    devices/norgo.c
     devices/oil_standard.c
     devices/oil_watchman.c
     devices/opus_xt300.c

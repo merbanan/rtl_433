@@ -100,6 +100,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/newkaku.c \
                        devices/nexa.c \
                        devices/nexus.c \
+                       devices/norgo.c \
                        devices/oil_standard.c \
                        devices/oil_watchman.c \
                        devices/opus_xt300.c \
