@@ -136,7 +136,7 @@ Supported device protocols:
     [61]* LightwaveRF
     [62]  Elro DB286A Doorbell
     [63]  Efergy Optical
-    [64]  Honda Car Key
+    [64]* Honda Car Key
     [67]  Radiohead ASK
     [68]  Kerui PIR / Contact Sensor
     [69]  Fine Offset WH1050 Weather Station

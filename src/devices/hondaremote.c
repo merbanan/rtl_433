@@ -69,6 +69,6 @@ r_device hondaremote = {
     .long_width     = 500,
     .reset_limit    = 2000,
     .decode_fn      = &hondaremote_callback,
-    .disabled       = 0,
+    .disabled       = 1, // no MIC, weak sanity checks
     .fields         = output_fields
 };
