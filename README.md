@@ -213,6 +213,7 @@ Read the Test Data section at the bottom.
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
     [138]  Globaltronics GT-WT-03 Sensor
+    [139]  Norgo NGE101
 
 * Disabled by default, use -R n or -G
 
