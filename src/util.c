@@ -280,6 +280,15 @@ int add_bytes(uint8_t const message[], unsigned num_bytes)
     return result;
 }
 
+int add_nibbles(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result += (message[i] >> 4) + (message[i] & 0x0f);
+    }
+    return result;
+}
+
 // Unit testing
 #ifdef _TEST
 int main(int argc, char **argv) {
