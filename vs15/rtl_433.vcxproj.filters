@@ -397,6 +397,9 @@
     <ClCompile Include="..\src\devices\nexus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\norgo.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\oil_standard.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
