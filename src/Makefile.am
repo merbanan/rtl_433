@@ -121,6 +121,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
+                       devices/ts_ft002.c \
                        devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
                        devices/waveman.c \
