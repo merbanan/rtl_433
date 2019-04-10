@@ -415,6 +415,236 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
+Alecto WS-1200 V1.0 decoder by Christian Zuckschwerdt, documentation by Andreas Untergasser, help by curlyel.
+
+A Thermometer with clock and wireless rain unit with temperature sensor.
+
+Manual available at
+https://www.alecto.nl/media/blfa_files/WS-1200_manual_NL-FR-DE-GB_V2.2_8712412532964.pdf
+
+Data layout:
+
+    1111111 FFFFIIII IIIIB?TT TTTTTTTT RRRRRRRR RRRRRRRR 11111111 CCCCCCCC
+
+- 1: 7 bit preamble of 1's
+- F: 4 bit fixed message type (0x3)
+- I: 8 bit random sensor ID, changes at battery change
+- B: 1 bit low battery indicator
+- T: 10 bit temperature in Celsius offset 40 scaled by 10
+- R: 16 bit (little endian) rain count in 0.3 mm steps, absolute with wrap around at 65536
+- C: 8 bit CRC-8 poly 0x31 init 0x0 for 7 bytes
+
+Format string:
+
+    PRE:7b TYPE:4b ID:8b BATT:1b ?:1b T:10d R:<16d ?:8h CRC:8h
+*/
+static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[7];
+
+    // Validate package
+    if (bitbuffer->bits_per_row[0] != 63 // Match exact length to avoid false positives
+            || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
+            || (bb[0][1] >> 5) != 0x3)   // Check message type (4 bits)
+        return 0;
+
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
+
+    // Verify checksum
+    int crc = crc8(b, 7, 0x31, 0);
+    if (crc) {
+        if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
+        return 0;
+    }
+
+    int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
+    int battery_low   = (b[1] >> 3) & 0x1;
+    int temp_raw      = (b[1] & 0x7) << 8 | b[2];
+    float temperature = (temp_raw - 400) * 0.1;
+    int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
+    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Alecto-WS1200v1",
+            "id",               "ID",           DATA_INT, id,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+Alecto WS-1200 V2.0 DCF77 decoder by Christian Zuckschwerdt, documentation by Andreas Untergasser, help by curlyel.
+
+A Thermometer with clock and wireless rain unit with temperature sensor.
+
+Manual available at
+https://www.alecto.nl/media/blfa_files/WS-1200_manual_NL-FR-DE-GB_V2.2_8712412532964.pdf
+
+Data layout:
+
+    1111111 FFFFFFFF IIIIIIII B??????? ..YY..YY ..MM..MM ..DD..DD ..HH..HH ..MM..MM ..SS..SS CCCCCCCC AAAAAAAA
+
+- 1: 7 bit preamble of 1's
+- F: 8 bit fixed message type (0x52)
+- I: 8 bit random sensor ID, changes at battery change
+- B: 1 bit low battery indicator
+- ?: 7 bit unknown
+
+- T: 10 bit temperature in Celsius offset 40 scaled by 10
+- R: 16 bit (little endian) rain count in 0.3 mm steps, absolute with wrap around at 65536
+- C: 8 bit CRC-8 poly 0x31 init 0x0 for 10 bytes
+- A: 8 bit checksum (addition)
+
+Format string:
+
+    PRE:7b TYPE:8b ID:8b BATT:1b ?:1b ?:8b YY:4d YY:4d MM:4d MM:4d DD:4d DD:4d HH:4d HH:4d MM:4d MM:4d SS:4d SS:4d ?:16b
+
+*/
+static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[11];
+
+    // Validate package
+    if (bitbuffer->bits_per_row[0] != 95 // Match exact length to avoid false positives
+            || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
+            || (bb[0][1] >> 1) != 0x52)   // Check message type (8 bits)
+        return 0;
+
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
+
+    // Verify CRC
+    int crc = crc8(b, 10, 0x31, 0);
+    if (crc) {
+        //if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
+        return 0;
+    }
+    // Verify checksum
+    int sum = add_bytes(b, 10) - b[10];
+    if (sum & 0xff) {
+        if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
+        return 0;
+    }
+
+    int id          = (b[1]);
+    int battery_low = (b[2] >> 7) & 0x1;
+    // date/time fields are actually bcd, just print as hex.
+    // TODO: the seconds fields sometimes has values like: 0xb8, 0x3c?
+    int date_y      = b[4] + 0x2000; // (b[4] >> 4) * 10 + (b[4] & 0x0f) + 2000;
+    int date_m      = b[5]; // (b[5] >> 4) * 10 + (b[5] & 0x0f);
+    int date_d      = b[6]; // (b[6] >> 4) * 10 + (b[6] & 0x0f);
+    int time_h      = b[7]; // (b[7] >> 4) * 10 + (b[7] & 0x0f);
+    int time_m      = b[8]; // (b[8] >> 4) * 10 + (b[8] & 0x0f);
+    int time_s      = b[9]; // (b[9] >> 4) * 10 + (b[9] & 0x0f);
+    char clock_str[32];
+    sprintf(clock_str, "%04x-%02x-%02xT%02x:%02x:%02x",
+            date_y, date_m, date_d, time_h, time_m, time_s);
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Alecto-WS1200v2 DCF",
+            "id",               "ID",           DATA_INT, id,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+Alecto WS-1200 V2.0 decoder by Christian Zuckschwerdt, documentation by Andreas Untergasser, help by curlyel.
+
+A Thermometer with clock and wireless rain unit with temperature sensor.
+
+Manual available at
+https://www.alecto.nl/media/blfa_files/WS-1200_manual_NL-FR-DE-GB_V2.2_8712412532964.pdf
+
+Data layout:
+
+    1111111 FFFFIIII IIIIB?TT TTTTTTTT RRRRRRRR RRRRRRRR 11111111 CCCCCCCC AAAAAAAA DDDDDDDD DDDDDDDD DDDDDDDD
+
+- 1: 7 bit preamble of 1's
+- F: 4 bit fixed message type (0x3)
+- I: 8 bit random sensor ID, changes at battery change
+- B: 1 bit low battery indicator
+- T: 10 bit temperature in Celsius offset 40 scaled by 10
+- R: 16 bit (little endian) rain count in 0.3 mm steps, absolute with wrap around at 65536
+- C: 8 bit CRC-8 poly 0x31 init 0x0 for 7 bytes
+- A: 8 bit checksum (addition)
+- D: 24 bit DCF77 time, all 0 while training for the station connection
+
+Format string:
+
+    PRE:7b TYPE:4b ID:8b BATT:1b ?:1b T:10d R:<16d ?:8h CRC:8h MAC:8h DATE:24b
+*/
+static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[11];
+
+    // Validate package
+    if (bitbuffer->bits_per_row[0] != 95 // Match exact length to avoid false positives
+            || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
+            || (bb[0][1] >> 5) != 0x3)   // Check message type (8 bits)
+        return alecto_ws1200v2_dcf_callback(decoder, bitbuffer);
+
+    bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
+
+    // Verify CRC
+    int crc = crc8(b, 7, 0x31, 0);
+    if (crc) {
+        if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
+        return 0;
+    }
+    // Verify checksum
+    int sum = add_bytes(b, 7) - b[7];
+    if (sum & 0xff) {
+        if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
+        return 0;
+    }
+
+    int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
+    int battery_low   = (b[1] >> 3) & 0x1;
+    int temp_raw      = (b[1] & 0x7) << 8 | b[2];
+    float temperature = (temp_raw - 400) * 0.1;
+    int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
+    float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Alecto-WS1200v2",
+            "id",               "ID",           DATA_INT, id,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
 Fine Offset Electronics WH0530 Temperature/Rain sensor protocol,
 also Agimex Rosenborg 35926 (sold in Denmark).
 
@@ -439,6 +669,12 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[8];
+
+    // try Alecto WS-1200 (v1, v2, DCF)
+    if (bitbuffer->bits_per_row[0] == 63)
+        return alecto_ws1200v1_callback(decoder, bitbuffer);
+    if (bitbuffer->bits_per_row[0] == 95)
+        return alecto_ws1200v2_callback(decoder, bitbuffer);
 
     // Validate package
     if (bitbuffer->bits_per_row[0] != 71) // Match exact length to avoid false positives
@@ -520,6 +756,7 @@ static char *output_fields_WH0530[] = {
     "rain", //TODO: remove this
     "rain_mm",
     "battery",
+    "radio_clock",
     "mic",
     NULL,
 };
