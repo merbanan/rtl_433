@@ -39,6 +39,7 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitbuffer_t databits = {0};
     // note: not manchester encoded but actually ternary
     unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
+    bitbuffer_invert(&databits);
 
     /* Reject codes when Manchester decoding fails */
     if (pos != 64 && pos != 72)
@@ -49,15 +50,15 @@ static int nexa_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint32_t id        = (b[0] << 18) | (b[1] << 10) | (b[2] << 2) | (b[3] >> 6); // ID 26 bits
     uint32_t group_cmd = (b[3] >> 5) & 1;
     uint32_t on_bit    = (b[3] >> 4) & 1;
-    uint32_t channel   = ((b[3] >> 2) & 0x03);
-    uint32_t unit      = (b[3] & 0x03);
+    uint32_t channel   = ((b[3] >> 2) & 0x03) ^ 0x03; // inverted
+    uint32_t unit      = (b[3] & 0x03) ^ 0x03;        // inverted
 
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Nexa-Security","Nexa"),
             "id",            "House Code",  DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
-            "state",         "State",       DATA_STRING, on_bit ? "OFF" : "ON",
+            "state",         "State",       DATA_STRING, on_bit ? "ON" : "OFF",
             "unit",          "Unit",        DATA_INT,    unit,
             "group",         "Group",       DATA_INT,    group_cmd,
             NULL);
