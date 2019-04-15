@@ -86,7 +86,7 @@ endif()
 ########################################################################
 # Find build dependencies
 ########################################################################
-set(ENABLE_RTLSDR AUTO CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
+set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
