@@ -35,19 +35,21 @@ void get_time_now(struct timeval *tv);
 
 /** Printable timestamp in local time.
 
+    @param buf[out]: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
+    @param format: time format string, uses "%Y-%m-%d %H:%M:%S" if NULL
     @param time_secs: 0 for now, or seconds since the epoch
-    @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
     @return buf pointer (for short hand use as operator)
 */
-char* local_time_str(time_t time_secs, char *buf);
+char *format_time_str(char *buf, char const *format, time_t time_secs);
 
 /** Printable timestamp in local time with microseconds.
 
+    @param buf[out]: output buffer, long enough for "YYYY-MM-DD HH:MM:SS.uuuuuu"
+    @param format: time format string without usec, uses "%Y-%m-%d %H:%M:%S" if NULL
     @param tv: NULL for now, or seconds and microseconds since the epoch
-    @param buf: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
     @return buf pointer (for short hand use as operator)
 */
-char *usecs_time_str(struct timeval *tv, char *buf);
+char *usecs_time_str(char *buf, char const *format, struct timeval *tv);
 
 /** Printable sample position.
 

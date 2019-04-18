@@ -66,7 +66,7 @@ Usage:		= General options =
   [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.
+  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run
@@ -285,13 +285,16 @@ Option -F:
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 Option -M:
-[-M time|reltime|notime|hires|level] Add various metadata to every output line.
+[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
-	Use "reltime" to add sample position meta data (preset for read-file and stdin).
-	Use "notime" to remove time meta data.
-	Use "hires" to add microsecods to date time meta data.
-	Use "utc" / "noutc" to output timestamps in UTC.
+	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
+	Use "time:unix" to show the seconds since unix epoch as time meta data.
+	Use "time:iso" to show the time with ISO-8601 format (YYYY-MM-DD"T"hh:mm:ss).
+	Use "time:off" to remove time meta data.
+	Use "time:usec" to add microseconds to date time meta data.
+	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
+		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
