@@ -100,25 +100,25 @@ static unsigned int get_os_rollingcode(unsigned char *message)
     return rc;
 }
 
-static unsigned short int power(const unsigned char* d)
+static unsigned short int power(uint8_t const *msg)
 {
     unsigned short int val = 0;
-    val = (d[4] << 8) | (d[3] & 0xF0);
+    val = (msg[4] << 8) | (msg[3] & 0xF0);
     val *= 1.00188;
     return val;
 }
 
-static unsigned long long total(const unsigned char* d)
+static unsigned long long total(uint8_t const *msg)
 {
     unsigned long long val = 0;
-    if ((d[1] & 0x0F) == 0) {
+    if ((msg[1] & 0x0F) == 0) {
         // Sensor returns total only if nibble#4 == 0
-        val = (unsigned long long)d[10] << 40;
-        val += (unsigned long long)d[9] << 32;
-        val += (unsigned long)d[8] << 24;
-        val += (unsigned long)d[7] << 16;
-        val += d[6] << 8;
-        val += d[5];
+        val = (unsigned long long)msg[10] << 40;
+        val += (unsigned long long)msg[9] << 32;
+        val += (unsigned long)msg[8] << 24;
+        val += (unsigned long)msg[7] << 16;
+        val += msg[6] << 8;
+        val += msg[5];
     }
     return val;
 }
@@ -185,7 +185,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 0;
     }
 
-    unsigned char msg[BITBUF_COLS] = {0};
+    bitbuffer_t databits = {0};
+    uint8_t *msg = databits.bb[0];
 
     // Possible    v2.1 Protocol message
     int num_valid_v2_bits = 0;
@@ -198,7 +199,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         unsigned int pattern2 = (unsigned int)(0xaa990000 >> pattern_index);
 
         if (decoder->verbose) {
-            fprintf(stdout, "OS v2.1 sync byte search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
+            fprintf(stderr, "OS v2.1 sync byte search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
         }
 
         if (((sync_test_val & mask) != pattern)
@@ -207,44 +208,16 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
         // Found sync byte - start working on decoding the stream data.
         // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload
-        int start_byte = 5 + (pattern_index >> 3);
-        int start_bit  = pattern_index & 0x07;
         if (decoder->verbose) {
-            fprintf(stdout, "OS v2.1 Sync test val %08x found, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
+            fprintf(stderr, "OS v2.1 Sync test val %08x found, starting decode at bit %d\n", sync_test_val, pattern_index);
         }
-        int bits_processed         = 0;
-        unsigned char last_bit_val = 0;
-        int dest_bit               = 0;
-        for (int i = start_byte, j = start_bit; i < BITBUF_COLS; i++) {
-            for (; j < 8; ++j) {
-                if (bits_processed & 0x01) {
-                    unsigned char bit_val = ((b[i] & (0x80 >> j)) >> (7 - j));
 
-                    // check if last bit received was the complement of the current bit
-                    if ((num_valid_v2_bits == 0) && (last_bit_val == bit_val))
-                        num_valid_v2_bits = bits_processed; // record position of first bit in stream that doesn't verify correctly
-                    last_bit_val = bit_val;
+        //bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw OSv2 bits: ");
+        bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 160);
+        reflect_nibbles(databits.bb[0], (databits.bits_per_row[0]+7)/8);
+        //bitbuffer_printf(&databits, "MC OSv2 bits (from %d+40): ", pattern_index);
+        num_valid_v2_bits = databits.bits_per_row[0] * 2 + 1;
 
-                    // copy every other bit from source stream to dest packet
-                    msg[dest_bit >> 3] |= (((b[i] & (0x80 >> j)) >> (7 - j)) << (7 - (dest_bit & 0x07)));
-
-                    //fprintf(stdout,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, b[i], msg[dest_bit>>3]);
-                    if ((dest_bit & 0x07) == 0x07) {
-                        // after assembling each dest byte, reflect bits in each nibble to convert from lsb to msb bit ordering
-                        int k = (dest_bit >> 3);
-                        unsigned char indata = msg[k];
-                        // reflect the 4 bits in the upper and lower nibbles
-                        msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) | ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
-                    }
-                    dest_bit++;
-                }
-                else {
-                    last_bit_val = ((b[i] & (0x80 >> j)) >> (7 - j)); // used for v2.1 bit error detection
-                }
-                bits_processed++;
-            }
-            j = 0;
-        }
         break;
     }
 
@@ -298,8 +271,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         else if (forecast == 0xc) forecast_str = "Sunny";
         float temp_c = get_os_temperature(msg);
         float pressure = ((msg[7] & 0x0f) | (msg[8] & 0xf0)) + 856;
-        // fprintf(stdout,"Weather Sensor BHTR968    Indoor        Temp: %3.1fC    %3.1fF     Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg));
-        // fprintf(stdout, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
+        // fprintf(stderr,"Weather Sensor BHTR968    Indoor        Temp: %3.1fC    %3.1fF     Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg));
+        // fprintf(stderr, " (%s) Pressure: %dmbar (%s)\n", comfort_str, ((msg[7] & 0x0f) | (msg[8] & 0xf0))+856, forecast_str);
         data = data_make(
                 "brand",            "",                             DATA_STRING, "OS",
                 "model",            "",                             DATA_STRING, _X("Oregon-BHTR968","BHTR968"),
@@ -451,13 +424,13 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     }
     else if (num_valid_v2_bits > 16) {
         if (decoder->verbose) {
-            fprintf(stdout, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
+            fprintf(stderr, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
             bitrow_printf(msg, 20 * 8, "Message: ");
         }
     }
     else {
         if (decoder->verbose) {
-            fprintf(stdout, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n");
+            fprintf(stderr, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n");
             bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw Data: ");
         }
     }
@@ -481,6 +454,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
 
     unsigned char msg[BITBUF_COLS] = {0};
+    int msg_len = 0;
     unsigned int sync_test_val     = ((unsigned)b[2] << 24) | (b[3] << 16) | (b[4] << 8);
     // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction
     for (int pattern_index = 0; pattern_index < 16; pattern_index++) {
@@ -499,28 +473,15 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         // Found sync byte - start working on decoding the stream data.
         // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload
         int start_byte = 3 + (pattern_index >> 3);
-        int start_bit  = (pattern_index + 4) & 0x07;
-        int dest_bit   = 0;
-        //fprintf(stdout, "Oregon Scientific v3 Sync test val %08x ok, starting decode at byte index %d bit %d\n", sync_test_val, start_byte, start_bit);
-        for (int i = start_byte, j = start_bit; i < BITBUF_COLS; i++) {
-            for (; j < 8; ++j) {
-                unsigned char bit_val = ((b[i] & (0x80 >> j)) >> (7 - j));
+        int start_bit  = (pattern_index + 4) & 0x07; // this really looks broken
 
-                // copy every    bit from source stream to dest packet
-                msg[dest_bit >> 3] |= (((b[i] & (0x80 >> j)) >> (7 - j)) << (7 - (dest_bit & 0x07)));
+        int msg_pos = start_byte * 8 + start_bit; // this should be pattern_index + 28; or 20, maybe.
+        msg_len = bitbuffer->bits_per_row[0] - msg_pos;
+        //fprintf(stderr, "Oregon Scientific v3 Sync test val %08x ok, starting decode at bit %d\n", sync_test_val, msg_pos);
 
-                //fprintf(stdout,"i=%d j=%d dest_bit=%02x bb=%02x msg=%02x\n",i, j, dest_bit, b[i], msg[dest_bit>>3]);
-                if ((dest_bit & 0x07) == 0x07) {
-                    // after assembling each dest byte, reflect bits in each nibble to convert from lsb to msb bit ordering
-                    int k = (dest_bit >> 3);
-                    unsigned char indata = msg[k];
-                    // reflect the 4 bits in the upper and lower nibbles
-                    msg[k] = ((indata & 0x11) << 3) | ((indata & 0x22) << 1) | ((indata & 0x44) >> 1) | ((indata & 0x88) >> 3);
-                }
-                dest_bit++;
-            }
-            j = 0;
-        }
+        bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
+        reflect_nibbles(msg, (msg_len + 7) / 8);
+
         break;
     }
 
@@ -674,13 +635,13 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if ((msg[0] != 0) && (msg[1]!= 0)) { // sync nibble was found    and some data is present...
         if (decoder->verbose) {
             fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
-            bitrow_printf(msg, bitbuffer->bits_per_row[0], "Message: ");
+            bitrow_printf(msg, msg_len, "Message: ");
             bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw: ");
         }
     }
     else if (b[3] != 0 ) {
         if (decoder->verbose) {
-            fprintf(stdout, "Possible Oregon Scientific v3 message, but sync nibble wasn't found\n");
+            fprintf(stderr, "Possible Oregon Scientific v3 message, but sync nibble wasn't found\n");
             bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw Data: ");
         }
     }
