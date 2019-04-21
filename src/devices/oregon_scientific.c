@@ -154,17 +154,16 @@ static int validate_os_checksum(r_device *decoder, unsigned char *msg, int check
     }
 }
 
-static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bits_expected, int valid_v2_bits_received,
+static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bits_expected, int msg_bits,
         int nibbles_in_checksum)
 {
-    // Oregon scientific v2.1 protocol sends each bit using the complement of the bit, then the bit    for better error checking.    Compare number of valid bits processed vs number expected
-    if (bits_expected == valid_v2_bits_received) {
-        return (validate_os_checksum(decoder, msg, nibbles_in_checksum));
+    // Compare number of valid bits processed vs number expected
+    if (bits_expected == msg_bits) {
+        return validate_os_checksum(decoder, msg, nibbles_in_checksum);
     }
     else {
         if (decoder->verbose) {
-            fprintf(stderr, "Bit validation error on Oregon Scientific message.    Expected %d bits, received error after bit %d \n",                bits_expected, valid_v2_bits_received);
-            bitrow_printf(msg, bits_expected, "Message: ");
+            bitrow_printf(msg, msg_bits, "Bit validation error on Oregon Scientific message. Expected %d bits, Message: ", bits_expected);
         }
         return 1;
     }
@@ -189,8 +188,6 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     uint8_t *msg = databits.bb[0];
 
     // Possible    v2.1 Protocol message
-    int num_valid_v2_bits = 0;
-
     unsigned int sync_test_val = ((unsigned)b[3] << 24) | (b[4] << 16) | (b[5] << 8) | (b[6]);
     // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction
     for (int pattern_index = 0; pattern_index < 8; pattern_index++) {
@@ -216,14 +213,14 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 160);
         reflect_nibbles(databits.bb[0], (databits.bits_per_row[0]+7)/8);
         //bitbuffer_printf(&databits, "MC OSv2 bits (from %d+40): ", pattern_index);
-        num_valid_v2_bits = databits.bits_per_row[0] * 2 + 1;
 
         break;
     }
+    int msg_bits = databits.bits_per_row[0];
 
     int sensor_id = (msg[0] << 8) | msg[1];
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
-        if (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 15) != 0)
+        if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
             return 0;
         data = data_make(
                 "brand",                 "",                        DATA_STRING, "OS",
@@ -238,7 +235,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if (sensor_id == ID_WGR968) {
-        if (validate_os_v2_message(decoder, msg, 189, num_valid_v2_bits, 17) != 0)
+        if (validate_os_v2_message(decoder, msg, 94, msg_bits, 17) != 0)
             return 0;
         float quadrant      = (msg[4] & 0x0f) * 10 + ((msg[4] >> 4) & 0x0f) * 1 + ((msg[5] >> 4) & 0x0f) * 100;
         float avgWindspeed  = ((msg[7] >> 4) & 0x0f) / 10.0F + (msg[7] & 0x0f) * 1.0F + ((msg[8] >> 4) & 0x0f) / 10.0F;
@@ -257,7 +254,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if (sensor_id == ID_BHTR968) {
-        if (validate_os_v2_message(decoder, msg, 185, num_valid_v2_bits, 19) != 0)
+        if (validate_os_v2_message(decoder, msg, 92, msg_bits, 19) != 0)
             return 0;
         unsigned int comfort = msg[7] >> 4;
         char *comfort_str = "Normal";
@@ -287,7 +284,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if (sensor_id == ID_RGR968) {
-        if (validate_os_v2_message(decoder, msg, 161, num_valid_v2_bits, 16) != 0)
+        if (validate_os_v2_message(decoder, msg, 80, msg_bits, 16) != 0)
             return 0;
         float rain_rate  = ((msg[4] & 0x0f) * 100 + (msg[4] >> 4) * 10 + ((msg[5] >> 4) & 0x0f)) / 10.0F;
         float total_rain = ((msg[7] & 0xf) * 10000 + (msg[7] >> 4) * 1000 + (msg[6] & 0xf) * 100 + (msg[6] >> 4) * 10 + (msg[5] & 0xf)) / 10.0F;
@@ -303,8 +300,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_THR228N && num_valid_v2_bits == 153) {
-        if (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 12) != 0)
+    else if (sensor_id == ID_THR228N && msg_bits == 76) {
+        if (validate_os_v2_message(decoder, msg, 76, msg_bits, 12) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         data = data_make(
@@ -318,8 +315,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_THN132N && num_valid_v2_bits == 129) {
-        if (validate_os_v2_message(decoder, msg, 129, num_valid_v2_bits, 12) != 0)
+    else if (sensor_id == ID_THN132N && msg_bits == 64) {
+        if (validate_os_v2_message(decoder, msg, 64, msg_bits, 12) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         data = data_make(
@@ -333,8 +330,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if ((sensor_id & 0x0fff) == ID_RTGN129 && num_valid_v2_bits == 161) {
-        if (validate_os_v2_message(decoder, msg, 161, num_valid_v2_bits, 15) != 0)
+    else if ((sensor_id & 0x0fff) == ID_RTGN129 && msg_bits == 80) {
+        if (validate_os_v2_message(decoder, msg, 80, msg_bits, 15) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         data = data_make(
@@ -350,7 +347,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         return 1;
     }
     else if ((sensor_id & 0x0fff) == ID_RTGN318) {
-        if (num_valid_v2_bits == 153 && (validate_os_v2_message(decoder, msg, 153, num_valid_v2_bits, 15) == 0)) {
+        if (msg_bits == 76 && (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) == 0)) {
             float temp_c = get_os_temperature(msg);
             data = data_make(
                     "brand",                 "",                        DATA_STRING, "OS",
@@ -364,13 +361,13 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
             decoder_output_data(decoder, data);
             return 1;
         }
-        else if (num_valid_v2_bits == 201 && (validate_os_v2_message(decoder, msg, 201, num_valid_v2_bits, 21) == 0)) {
+        else if (msg_bits == 100 && (validate_os_v2_message(decoder, msg, 100, msg_bits, 21) == 0)) {
             // RF Clock message ??
             return 0;
         }
     }
     else if (sensor_id == ID_THN129 || (sensor_id & 0x0FFF) == ID_RTHN129) {
-        if ((validate_os_v2_message(decoder, msg, 137, num_valid_v2_bits, 12) == 0)) {
+        if ((validate_os_v2_message(decoder, msg, 68, msg_bits, 12) == 0)) {
             float temp_c = get_os_temperature(msg);
             data = data_make(
                     "brand",                 "",                        DATA_STRING, "OS",
@@ -383,13 +380,13 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
             decoder_output_data(decoder, data);
             return 1;
         }
-        else if (num_valid_v2_bits == 209 && (validate_os_v2_message(decoder, msg, 209, num_valid_v2_bits, 18) == 0)) {
+        else if (msg_bits == 104 && (validate_os_v2_message(decoder, msg, 104, msg_bits, 18) == 0)) {
             // RF Clock message
             return 0;
         }
     }
     else if (sensor_id == ID_BTHGN129) {
-        if (validate_os_v2_message(decoder, msg, 185, num_valid_v2_bits, 19) != 0)
+        if (validate_os_v2_message(decoder, msg, 92, msg_bits, 19) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
         // Pressure is given in hPa. You may need to adjust the offset
@@ -408,8 +405,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_UVR128 && num_valid_v2_bits == 297) {
-        if (validate_os_v2_message(decoder, msg, 297, num_valid_v2_bits, 12) != 0)
+    else if (sensor_id == ID_UVR128 && msg_bits == 148) {
+        if (validate_os_v2_message(decoder, msg, 148, msg_bits, 12) != 0)
             return 0;
         int uvidx = get_os_uv(msg);
         data = data_make(
@@ -422,16 +419,14 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (num_valid_v2_bits > 16) {
+    else if (msg_bits > 16) {
         if (decoder->verbose) {
-            fprintf(stderr, "%d bit message received from unrecognized Oregon Scientific v2.1 sensor with device ID %x.\n", num_valid_v2_bits, sensor_id);
-            bitrow_printf(msg, 20 * 8, "Message: ");
+            bitrow_printf(msg, msg_bits, "Unrecognized Oregon Scientific v2.1 message (device ID %4x): ", sensor_id);
         }
     }
     else {
         if (decoder->verbose) {
-            fprintf(stderr, "\nPossible Oregon Scientific v2.1 message, but sync nibble wasn't found\n");
-            bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw Data: ");
+            bitrow_printf(b, bitbuffer->bits_per_row[0], "Possible Oregon Scientific v2.1 message, but sync nibble wasn't found. Raw: ");
         }
     }
 
