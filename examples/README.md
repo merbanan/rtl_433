@@ -12,7 +12,7 @@ rtl_433 -F json ... | rtl_433_statsd_pipe.py
 ````
 
 The `relay` examples consumes the (UDP) Syslog output from rtl_433 (or a legacy plain JSON datagram).
-Basically run `rtl_433` with `-F syslog:127.0.0.1:1433` and the relay script as an unreleated process, i.e.
+Basically run `rtl_433` with `-F syslog:127.0.0.1:1433` and the relay script as an unrelated process, i.e.
 
 ```
 rtl_433_mqtt_relay.py &
