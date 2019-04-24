@@ -40,8 +40,8 @@
 #define PHILIPS_STARTNIBBLE  0x0
 
 // We have those values from the reading of the probe:
-#define PHILIPS_MATH_COEF_XB      16080.0
-#define PHILIPS_MATH_COEF_YB      42.4
+#define PHILIPS_MATH_COEF_XB      14576.0
+#define PHILIPS_MATH_COEF_YB      36.8
 #define PHILIPS_MATH_COEF_XA      1440.0
 #define PHILIPS_MATH_COEF_YA      -14.3
 #define PHILIPS_MATH_OFFSET      -20.0
