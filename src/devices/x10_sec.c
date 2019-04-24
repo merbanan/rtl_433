@@ -23,12 +23,9 @@
  *
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-static int x10_sec_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
@@ -84,33 +81,30 @@ static int x10_sec_callback(bitbuffer_t *bitbuffer) {
                 break;
         }
 
-        /* get x10_id_str, x10_code_str, and time_str ready for output */
+        /* get x10_id_str, x10_code_str ready for output */
         sprintf(x10_id_str, "%02x%02x", b[0], b[4]);
         sprintf(x10_code_str, "%02x", b[2]);
-        local_time_str(0, time_str);
 
         /* debug output */
-        if (debug_output) {
-            fprintf(stderr, "%20s  X10SEC: id=%02x%02x code=%02x event_str=%s\n", time_str, b[0], b[4], b[2], event_str);
+        if (decoder->verbose) {
+            fprintf(stderr, "X10SEC: id=%02x%02x code=%02x event_str=%s\n", b[0], b[4], b[2], event_str);
             bitbuffer_print(bitbuffer);
         }
 
         /* build and handle data set for normal output */
         data = data_make(
-                "time",     "",             DATA_STRING, time_str,
-                "model",    "",             DATA_STRING, "X10 Security",
+                "model",    "",             DATA_STRING, _X("X10-Security","X10 Security"),
                 "id",       "Device ID",    DATA_STRING, x10_id_str,
                 "code",     "Code",         DATA_STRING, x10_code_str,
                 "event",    "Event",        DATA_STRING, event_str,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "code",
@@ -121,12 +115,12 @@ static char *output_fields[] = {
 /* r_device definition */
 r_device x10_sec = {
     .name           = "X10 Security",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1100,
-    .long_limit     = 2200,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 500,  // Short gap 500µs
+    .long_width     = 1680, // Long gap 1680µs
+    .gap_limit      = 2200, // Gap after sync is 4.5ms (1125)
     .reset_limit    = 6000,
-    .json_callback  = &x10_sec_callback,
+    .decode_fn      = &x10_sec_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

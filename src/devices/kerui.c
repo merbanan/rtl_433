@@ -10,13 +10,9 @@
  * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int kerui_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
     int id;
@@ -46,21 +42,18 @@ static int kerui_callback(bitbuffer_t *bitbuffer) {
     if (!cmd_str)
         return 0;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "",               DATA_STRING, time_str,
-            "model",    "",               DATA_STRING, "Kerui Security",
+            "model",    "",               DATA_STRING, _X("Kerui-Security","Kerui Security"),
             "id",       "ID (20bit)",     DATA_FORMAT, "0x%x", DATA_INT, id,
             "cmd",      "Command (4bit)", DATA_FORMAT, "0x%x", DATA_INT, cmd,
             "state",    "State",          DATA_STRING, cmd_str,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "cmd",
@@ -70,14 +63,14 @@ static char *output_fields[] = {
 
 r_device kerui = {
     .name          = "Kerui PIR / Contact Sensor",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
-    .short_limit   = 320,
-    .long_limit    = 960,
+    .modulation    = OOK_PULSE_PWM,
+    .short_width   = 320,
+    .long_width    = 960,
     .reset_limit   = 1100, // 9900,
     //.gap_limit     = 1100,
     .sync_width    = 480,
     .tolerance     = 80, // us
-    .json_callback = &kerui_callback,
+    .decode_fn     = &kerui_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
+    .fields         = output_fields,
 };

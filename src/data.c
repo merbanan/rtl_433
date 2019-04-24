@@ -50,6 +50,9 @@
 
 #include <time.h>
 
+#include "term_ctl.h"
+#include "abuf.h"
+
 #include "data.h"
 
 #ifdef _WIN32
@@ -93,18 +96,6 @@ typedef struct {
     /* a function for releasing a value. everything needs to be released. */
     value_release_fn value_release;
 } data_meta_type_t;
-
-struct data_output;
-
-typedef struct data_output {
-    void (*print_data)(struct data_output *output, data_t *data, char *format);
-    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
-    void (*print_string)(struct data_output *output, const char *data, char *format);
-    void (*print_double)(struct data_output *output, double data, char *format);
-    void (*print_int)(struct data_output *output, int data, char *format);
-    void (*output_free)(struct data_output *output);
-    FILE *file;
-} data_output_t;
 
 static data_meta_type_t dmt[DATA_COUNT] = {
     //  DATA_DATA
@@ -166,6 +157,8 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
     }
     return true; // error is returned early
 }
+
+/* data */
 
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
@@ -295,6 +288,24 @@ data_t *data_append(data_t *first, const char *key, const char *pretty_key, ...)
     return result;
 }
 
+data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...)
+{
+    va_list ap;
+    va_start(ap, pretty_key);
+    data_t *result = vdata_make(NULL, key, pretty_key, ap);
+    va_end(ap);
+
+    if (!result)
+        return first;
+
+    data_t *prev = result;
+    while (prev && prev->next)
+        prev = prev->next;
+    prev->next = first;
+
+    return result;
+}
+
 void data_array_free(data_array_t *array)
 {
     array_element_release_fn release = dmt[array->type].array_element_release;
@@ -307,8 +318,19 @@ void data_array_free(data_array_t *array)
     free(array);
 }
 
+data_t *data_retain(data_t *data)
+{
+    if (data)
+        ++data->retain;
+    return data;
+}
+
 void data_free(data_t *data)
 {
+    if (data && data->retain) {
+        --data->retain;
+        return;
+    }
     while (data) {
         data_t *prev_data = data;
         if (dmt[data->type].value_release)
@@ -321,13 +343,31 @@ void data_free(data_t *data)
     }
 }
 
+/* data output */
+
 void data_output_print(data_output_t *output, data_t *data)
 {
+    if (!output)
+        return;
     output->print_data(output, data, NULL);
     if (output->file) {
         fputc('\n', output->file);
         fflush(output->file);
     }
+}
+
+void data_output_start(struct data_output *output, const char **fields, int num_fields)
+{
+    if (!output || !output->output_start)
+        return;
+    output->output_start(output, fields, num_fields);
+}
+
+void data_output_poll(struct data_output *output)
+{
+    if (!output || !output->output_poll)
+        return;
+    output->output_poll(output);
 }
 
 void data_output_free(data_output_t *output)
@@ -337,7 +377,9 @@ void data_output_free(data_output_t *output)
     output->output_free(output);
 }
 
-static void print_value(data_output_t *output, data_type_t type, void *value, char *format)
+/* output helpers */
+
+void print_value(data_output_t *output, data_type_t type, void *value, char *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -362,7 +404,7 @@ static void print_value(data_output_t *output, data_type_t type, void *value, ch
     }
 }
 
-static void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
+void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
 #ifdef RTL_433_NO_VLAs
@@ -370,7 +412,7 @@ static void print_array_value(data_output_t *output, data_array_t *array, char *
 #else
     char buffer[element_size];
 #endif
-    
+
     if (!dmt[array->type].array_is_boxed) {
         memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
         print_value(output, array->type, buffer, format);
@@ -457,75 +499,195 @@ struct data_output *data_output_json_create(FILE *file)
     return output;
 }
 
-/* Key-Value printer */
+/* Pretty Key-Value printer */
+
+static int kv_color_for_key(char const *key)
+{
+    if (!key || !*key)
+        return TERM_COLOR_RESET;
+    if (!strcmp(key, "tag") || !strcmp(key, "time"))
+        return TERM_COLOR_BLUE;
+    if (!strcmp(key, "model") || !strcmp(key, "type") || !strcmp(key, "id"))
+        return TERM_COLOR_RED;
+    if (!strcmp(key, "mic"))
+        return TERM_COLOR_CYAN;
+    if (!strcmp(key, "mod") || !strcmp(key, "freq") || !strcmp(key, "freq1") || !strcmp(key, "freq2"))
+        return TERM_COLOR_MAGENTA;
+    if (!strcmp(key, "rssi") || !strcmp(key, "snr") || !strcmp(key, "noise"))
+        return TERM_COLOR_YELLOW;
+    return TERM_COLOR_GREEN;
+}
+
+static int kv_break_before_key(char const *key)
+{
+    if (!key || !*key)
+        return 0;
+    if (!strcmp(key, "model") || !strcmp(key, "mod") || !strcmp(key, "rssi") || !strcmp(key, "codes"))
+        return 1;
+    return 0;
+}
+
+static int kv_break_after_key(char const *key)
+{
+    if (!key || !*key)
+        return 0;
+    if (!strcmp(key, "id") || !strcmp(key, "mic"))
+        return 1;
+    return 0;
+}
+
+typedef struct {
+    struct data_output output;
+    void *term;
+    int color;
+    int ring_bell;
+    int term_width;
+    int data_recursion;
+    int column;
+} data_output_kv_t;
+
+#define KV_SEP "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ "
 
 static void print_kv_data(data_output_t *output, data_t *data, char *format)
 {
-    bool separator = false;
-    bool was_labeled = false;
-    bool written_title = false;
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    int color = kv->color;
+    int ring_bell = kv->ring_bell;
+
+    // top-level: update width and print separator
+    if (!kv->data_recursion) {
+        kv->term_width = term_get_columns(kv->term); // update current term width
+        if (color)
+            term_set_fg(kv->term, TERM_COLOR_BLACK);
+        if (ring_bell)
+            term_ring_bell(kv->term);
+        char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
+        if (kv->term_width < (int)sizeof(sep))
+            sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
+        fprintf(output->file, "%s\n", sep);
+        if (color)
+            term_set_fg(kv->term, TERM_COLOR_RESET);
+    }
+    // nested data object: break before
+    else {
+        if (color)
+            term_set_fg(kv->term, TERM_COLOR_RESET);
+        fprintf(output->file, "\n");
+        kv->column = 0;
+    }
+
+    ++kv->data_recursion;
     while (data) {
-        bool labeled = data->pretty_key[0];
-        /* put a : between the first non-labeled and labeled */
-        if (separator) {
-            if (labeled && !was_labeled && !written_title) {
-                fprintf(output->file, "\n");
-                written_title = true;
-                separator = false;
-            } else {
-                if (was_labeled)
-                    fprintf(output->file, "\n");
-                else
-                    fprintf(output->file, " ");
-            }
+        // break before some known keys
+        if (kv->column > 0 && kv_break_before_key(data->key)) {
+            fprintf(output->file, "\n");
+            kv->column = 0;
         }
-        if (!strcmp(data->key, "time"))
-            /* fprintf(output->file, "") */;
-        else if (!strcmp(data->key, "model"))
-            fprintf(output->file, ":\t");
-        else
-            fprintf(output->file, "\t%s:\t", data->pretty_key);
-        if (labeled)
-            fputc(' ', output->file);
+        // break if not enough width left
+        else if (kv->column >= kv->term_width - 26) {
+            fprintf(output->file, "\n");
+            kv->column = 0;
+        }
+        // pad to next alignment if there is enough width left
+        else if (kv->column > 0 && kv->column < kv->term_width - 26) {
+            kv->column += fprintf(output->file, "%*s", 25 - kv->column % 26, " ");
+        }
+
+        // print key
+        char *key = *data->pretty_key ? data->pretty_key : data->key;
+        kv->column += fprintf(output->file, "%-10s: ", key);
+        // print value
+        if (color)
+            term_set_fg(kv->term, kv_color_for_key(data->key));
         print_value(output, data->type, data->value, data->format);
-        separator = true;
-        was_labeled = labeled;
+        if (color)
+            term_set_fg(kv->term, TERM_COLOR_RESET);
+
+        // force break after some known keys
+        if (kv->column > 0 && kv_break_after_key(data->key)) {
+            kv->column = kv->term_width; // force break;
+        }
+
         data = data->next;
     }
+    --kv->data_recursion;
+
+    // top-level: always end with newline
+    if (!kv->data_recursion && kv->column > 0) {
+        //fprintf(output->file, "\n"); // data_output_print() already adds a newline
+        kv->column = 0;
+    }
+}
+
+static void print_kv_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    //fprintf(output->file, "[ ");
+    for (int c = 0; c < array->num_values; ++c) {
+        if (c)
+            fprintf(output->file, ", ");
+        print_array_value(output, array, format, c);
+    }
+    //fprintf(output->file, " ]");
 }
 
 static void print_kv_double(data_output_t *output, double data, char *format)
 {
-    fprintf(output->file, format ? format : "%.3f", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_output_t *output, int data, char *format)
 {
-    fprintf(output->file, format ? format : "%d", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%d", data);
 }
 
 static void print_kv_string(data_output_t *output, const char *data, char *format)
 {
-    fprintf(output->file, format ? format : "%s", data);
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%s", data);
 }
 
+static void data_output_kv_free(data_output_t *output)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    if (!output)
+        return;
+
+    if (kv->color)
+        term_free(kv->term);
+
+    free(output);
+}
 struct data_output *data_output_kv_create(FILE *file)
 {
-    data_output_t *output = calloc(1, sizeof(data_output_t));
-    if (!output) {
+    data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
+    if (!kv) {
         fprintf(stderr, "calloc() failed");
         return NULL;
     }
 
-    output->print_data   = print_kv_data;
-    output->print_array  = print_json_array;
-    output->print_string = print_kv_string;
-    output->print_double = print_kv_double;
-    output->print_int    = print_kv_int;
-    output->output_free  = data_output_json_free;
-    output->file         = file;
+    kv->output.print_data   = print_kv_data;
+    kv->output.print_array  = print_kv_array;
+    kv->output.print_string = print_kv_string;
+    kv->output.print_double = print_kv_double;
+    kv->output.print_int    = print_kv_int;
+    kv->output.output_free  = data_output_kv_free;
+    kv->output.file         = file;
 
-    return output;
+    kv->term = term_init(file);
+    kv->color = term_has_color(kv->term);
+
+    kv->ring_bell = 0; // TODO: enable if requested...
+
+    return &kv->output;
 }
 
 /* CSV printer; doesn't really support recursive data objects yet */
@@ -589,8 +751,10 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, int num_fields)
+static void data_output_csv_start(struct data_output *output, const char **fields, int num_fields)
 {
+    data_output_csv_t *csv = (data_output_csv_t *)output;
+
     int csv_fields = 0;
     int i, j;
     const char **allowed = NULL;
@@ -602,6 +766,8 @@ static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, i
     csv->separator = ",";
 
     allowed = calloc(num_fields, sizeof(const char *));
+    if (!allowed)
+        goto alloc_error;
     memcpy(allowed, fields, sizeof(const char *) * num_fields);
 
     qsort(allowed, num_fields, sizeof(char *), compare_strings);
@@ -622,7 +788,7 @@ static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, i
     }
     num_unique_fields = i;
 
-    csv->fields = calloc(num_unique_fields + 1, sizeof(const char **));
+    csv->fields = calloc(num_unique_fields + 1, sizeof(const char *));
     if (!csv->fields)
         goto alloc_error;
 
@@ -646,10 +812,10 @@ static void *data_output_csv_init(data_output_csv_t *csv, const char **fields, i
 
     // Output the CSV header
     for (i = 0; csv->fields[i]; ++i) {
-        printf("%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+        fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
     }
-    printf("\n");
-    return csv;
+    fprintf(csv->output.file, "\n");
+    return;
 
 alloc_error:
     free(use_count);
@@ -657,7 +823,16 @@ alloc_error:
     if (csv)
         free(csv->fields);
     free(csv);
-    return NULL;
+}
+
+static void print_csv_double(data_output_t *output, double data, char *format)
+{
+    fprintf(output->file, "%.3f", data);
+}
+
+static void print_csv_int(data_output_t *output, int data, char *format)
+{
+    fprintf(output->file, "%d", data);
 }
 
 static void data_output_csv_free(data_output_t *output)
@@ -668,7 +843,7 @@ static void data_output_csv_free(data_output_t *output)
     free(csv);
 }
 
-struct data_output *data_output_csv_create(FILE *file, const char **fields, int num_fields)
+struct data_output *data_output_csv_create(FILE *file)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
@@ -679,13 +854,123 @@ struct data_output *data_output_csv_create(FILE *file, const char **fields, int 
     csv->output.print_data   = print_csv_data;
     csv->output.print_array  = print_csv_array;
     csv->output.print_string = print_csv_string;
-    csv->output.print_double = print_json_double;
-    csv->output.print_int    = print_json_int;
+    csv->output.print_double = print_csv_double;
+    csv->output.print_int    = print_csv_int;
+    csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
-    data_output_csv_init(csv, fields, num_fields);
 
     return &csv->output;
+}
+
+/* JSON string printer */
+
+typedef struct {
+    struct data_output output;
+    abuf_t msg;
+} data_print_jsons_t;
+
+static void format_jsons_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    abuf_cat(&jsons->msg, "[");
+    for (int c = 0; c < array->num_values; ++c) {
+        if (c)
+            abuf_cat(&jsons->msg, ",");
+        print_array_value(output, array, format, c);
+    }
+    abuf_cat(&jsons->msg, "]");
+}
+
+static void format_jsons_object(data_output_t *output, data_t *data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    bool separator = false;
+    abuf_cat(&jsons->msg, "{");
+    while (data) {
+        if (separator)
+            abuf_cat(&jsons->msg, ",");
+        output->print_string(output, data->key, NULL);
+        abuf_cat(&jsons->msg, ":");
+        print_value(output, data->type, data->value, data->format);
+        separator = true;
+        data      = data->next;
+    }
+    abuf_cat(&jsons->msg, "}");
+}
+
+static void format_jsons_string(data_output_t *output, const char *str, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    char *buf   = jsons->msg.tail;
+    size_t size = jsons->msg.left;
+
+    if (size < strlen(str) + 3) {
+        return;
+    }
+
+    *buf++ = '"';
+    size--;
+    for (; *str && size >= 3; ++str) {
+        if (*str == '"' || *str == '\\') {
+            *buf++ = '\\';
+            size--;
+        }
+        *buf++ = *str;
+        size--;
+    }
+    if (size >= 2) {
+        *buf++ = '"';
+        size--;
+    }
+    *buf = '\0';
+
+    jsons->msg.tail = buf;
+    jsons->msg.left = size;
+}
+
+static void format_jsons_double(data_output_t *output, double data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    // use scientific notation for very big/small values
+    if (data > 1e7 || data < 1e-4) {
+        abuf_printf(&jsons->msg, "%g", data);
+    }
+    else {
+        abuf_printf(&jsons->msg, "%.5f", data);
+        // remove trailing zeros, always keep one digit after the decimal point
+        while (jsons->msg.left > 0 && *(jsons->msg.tail - 1) == '0' && *(jsons->msg.tail - 2) != '.') {
+            jsons->msg.tail--;
+            jsons->msg.left++;
+            *jsons->msg.tail = '\0';
+        }
+    }
+}
+
+static void format_jsons_int(data_output_t *output, int data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%d", data);
+}
+
+size_t data_print_jsons(data_t *data, char *dst, size_t len)
+{
+    data_print_jsons_t jsons = {
+            .output.print_data   = format_jsons_object,
+            .output.print_array  = format_jsons_array,
+            .output.print_string = format_jsons_string,
+            .output.print_double = format_jsons_double,
+            .output.print_int    = format_jsons_int,
+    };
+
+    abuf_init(&jsons.msg, dst, len);
+
+    format_jsons_object(&jsons.output, data, NULL);
+
+    return len - jsons.msg.left;
 }
 
 /* Datagram (UDP) client */
@@ -750,7 +1035,7 @@ static void datagram_client_close(datagram_client_t *client)
 
 #ifdef _WIN32
     WSACleanup();
-#endif 
+#endif
 }
 
 static void datagram_client_send(datagram_client_t *client, const char *message, size_t message_len)
@@ -761,65 +1046,6 @@ static void datagram_client_send(datagram_client_t *client, const char *message,
     }
 }
 
-/* array buffer (string builder) */
-
-typedef struct {
-    char *head;
-    char *tail;
-    size_t left;
-} abuf_t;
-
-static void abuf_init(abuf_t *buf, char *dst, size_t len)
-{
-    buf->head = dst;
-    buf->tail = dst;
-    buf->left = len;
-}
-
-static void abuf_setnull(abuf_t *buf)
-{
-    buf->head = NULL;
-    buf->tail = NULL;
-    buf->left = 0;
-}
-
-static char *abuf_push(abuf_t *buf)
-{
-    return buf->tail;
-}
-
-static void abuf_pop(abuf_t *buf, char *end)
-{
-    buf->left += buf->tail - end;
-    buf->tail = end;
-}
-
-static void abuf_cat(abuf_t *buf, const char *str)
-{
-    size_t len = strlen(str);
-    if (buf->left >= len + 1) {
-        strcpy(buf->tail, str);
-        buf->tail += len;
-        buf->left -= len;
-    }
-}
-
-static int abuf_printf(abuf_t *buf, const char *restrict format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-
-    int n = vsnprintf(buf->tail, buf->left, format, ap);
-    size_t len = 0;
-    if (n > 0) {
-        len = (size_t)n < buf->left ? (size_t)n : buf->left;
-        buf->tail += len;
-        buf->left -= len;
-    }
-    va_end(ap);
-    return n;
-}
-
 /* Syslog UDP printer, RFC 5424 (IETF-syslog protocol) */
 
 typedef struct {
@@ -827,113 +1053,37 @@ typedef struct {
     datagram_client_t client;
     int pri;
     char hostname[_POSIX_HOST_NAME_MAX + 1];
-    abuf_t msg;
 } data_output_syslog_t;
-
-static void print_syslog_array(data_output_t *output, data_array_t *array, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    abuf_cat(&syslog->msg, "[");
-    for (int c = 0; c < array->num_values; ++c) {
-        if (c)
-            abuf_cat(&syslog->msg, ",");
-        print_array_value(output, array, format, c);
-    }
-    abuf_cat(&syslog->msg, "]");
-}
-
-static void print_syslog_object(data_output_t *output, data_t *data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    bool separator = false;
-    abuf_cat(&syslog->msg, "{");
-    while (data) {
-        if (separator)
-            abuf_cat(&syslog->msg, ",");
-        output->print_string(output, data->key, NULL);
-        abuf_cat(&syslog->msg, ":");
-        print_value(output, data->type, data->value, data->format);
-        separator = true;
-        data = data->next;
-    }
-    abuf_cat(&syslog->msg, "}");
-}
 
 static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
-    if (syslog->msg.tail) {
-        print_syslog_object(output, data, format);
-        return;
-    }
-
+    // we expect a normal message around 500 bytes
+    // full stats report would be 12k and we want a max of MTU anyway
     char message[1024];
-    abuf_init(&syslog->msg, message, 1024);
+    abuf_t msg = {0};
+    abuf_init(&msg, message, sizeof(message));
 
     time_t now;
     struct tm tm_info;
     time(&now);
-#ifdef _MSC_VER
+#ifdef _WIN32
     gmtime_s(&tm_info, &now);
 #else
     gmtime_r(&now, &tm_info);
-#endif    
+#endif
     char timestamp[21];
     strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 
-    abuf_printf(&syslog->msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
+    abuf_printf(&msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
 
-    print_syslog_object(output, data, format);
+    msg.tail += data_print_jsons(data, msg.tail, msg.left);
+    if (msg.tail >= msg.head + sizeof(message))
+        return; // abort on overflow, we don't actually want to send more than fits the MTU
 
-    datagram_client_send(&syslog->client, message, strlen(message));
-
-    abuf_setnull(&syslog->msg);
-}
-
-static void print_syslog_string(data_output_t *output, const char *str, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    char *buf = syslog->msg.tail;
-    size_t size = syslog->msg.left;
-
-    if (size < strlen(str) + 3) {
-        return;
-    }
-
-    *buf++ = '"';
-    size--;
-    for (; *str && size >= 3; ++str) {
-        if (*str == '"' || *str == '\\') {
-            *buf++ = '\\';
-            size--;
-        }
-        *buf++ = *str;
-        size--;
-    }
-    if (size >= 2) {
-        *buf++ = '"';
-        size--;
-    }
-    *buf = '\0';
-
-    syslog->msg.tail = buf;
-    syslog->msg.left = size;
-}
-
-static void print_syslog_double(data_output_t *output, double data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    abuf_printf(&syslog->msg, "%f", data);
-}
-
-static void print_syslog_int(data_output_t *output, int data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    abuf_printf(&syslog->msg, "%d", data);
+    size_t abuf_len = msg.tail - msg.head;
+    datagram_client_send(&syslog->client, message, abuf_len);
 }
 
 static void data_output_syslog_free(data_output_t *output)
@@ -966,10 +1116,6 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 #endif
 
     syslog->output.print_data   = print_syslog_data;
-    syslog->output.print_array  = print_syslog_array;
-    syslog->output.print_string = print_syslog_string;
-    syslog->output.print_double = print_syslog_double;
-    syslog->output.print_int    = print_syslog_int;
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;

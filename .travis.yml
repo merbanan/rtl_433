@@ -1,22 +1,216 @@
-sudo: required
-dist: trusty
-# language: c
-language: python
-python:
-    - "2.7"
-      #    - "3.3"
-      #    - "3.4"
-install:
-    - pip install deepdiff
-addons:
-  apt:
-    sources:
-    - trusty
-    packages:
-      - libtool
-      - libusb-1.0.0-dev
-      - librtlsdr-dev
-      - rtl-sdr
-      - cmake
-      - make
-script: bash -e ./do_build.sh
+language: c
+os: linux
+# we need more depth for git describe
+git:
+  depth: false
+matrix:
+  include:
+# Test Visual Studio 2017 CMake (MSBuild)
+    - os: windows
+      env:
+        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
+      script:
+        - export PATH=$MSBUILD_PATH:$PATH
+        - mkdir build
+        - cd build
+        - cmake -DENABLE_RTLSDR=OFF -G "Visual Studio 15 2017 Win64" ..
+        - MSBuild.exe rtl433.sln
+# Test Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR
+#    - os: windows
+#      env:
+#        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
+#      script:
+#        - export PATH=$MSBUILD_PATH:$PATH
+#        - cd vs15
+#        - MSBuild.exe rtl_433.sln
+
+# Test with Precise default (GCC 4.6.3, CMake 2.8.7) and no libs
+    - compiler: gcc
+      env: RTLSDR=OFF
+      dist: precise
+      addons:
+        apt:
+          packages:
+            - cmake
+# Test with Trusty default (GCC 4.8.2, CMake 2.8.12)
+    - compiler: gcc
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with Xenial default (GCC 5.4.0, CMake 3.5.1)
+    - compiler: gcc
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# Test with Precise Clang (clang 3.4, CMake 2.8.7) and no libs
+    - compiler: clang
+      env: RTLSDR=OFF
+      dist: precise
+      addons:
+        apt:
+          packages:
+            - cmake
+# Test with Trusty Clang (clang 5.0.0, CMake 2.8.12)
+    - compiler: clang
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with Xenial Clang (clang 7.0.0, CMake 3.5.1)
+    - compiler: clang
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# works on Precise and Trusty (GCC 6.5.0)
+    - compiler: gcc-6
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-6
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# works on Precise and Trusty (GCC 7.4.0)
+    - compiler: gcc-7
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# works on Precise and Trusty (GCC 8.1.0)
+    - compiler: gcc-8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-8
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+
+# Test with Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR
+    - compiler: gcc
+      env: SOAPYSDR=ON
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:myriadrf/drivers'
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - soapysdr
+            - libsoapysdr-dev
+            - cmake
+# Test with Xenial default (gcc 5.4, cmake 3.12) only SoapySDR
+    - compiler: gcc
+      env: RTLSDR=OFF SOAPYSDR=ON
+      dist: xenial
+      addons:
+        apt:
+          sources:
+            - sourceline: 'ppa:myriadrf/drivers'
+          packages:
+            - soapysdr
+            - libsoapysdr-dev
+            - cmake
+# Test with CLang 3.8.0, CMake 2.8.12
+    - compiler: clang-3.8
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - llvm-toolchain-precise-3.8
+            - ubuntu-toolchain-r-test
+            - trusty
+          packages:
+            - clang-3.8
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+# Test with mingw 32 bit
+    - compiler: i686-w64-mingw32-gcc
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-i686
+            - gcc-mingw-w64-i686
+            - mingw-w64-i686-dev
+            - gcc-mingw-w64
+            - gcc-multilib
+# Test with mingw 64 bit
+    - compiler: x86_64-w64-mingw32-gcc
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
+      dist: trusty
+      addons:
+        apt:
+          packages:
+            - gcc-mingw-w64-base
+            - binutils-mingw-w64-x86-64
+            - gcc-mingw-w64-x86-64
+            - mingw-w64-x86-64-dev
+            - gcc-mingw-w64
+            - p7zip
+      before_deploy: ./do_sysroot.sh
+      deploy:
+        provider: bintray
+        file: "build/bintray.json"
+        user: "chzu"
+        key:
+          secure: Ynhd9UIByGUQPYA3Ow1Jap1bMxB0Pyw+pQV9iQJoG2yCW//ubJ+UnHfYb3KfIWrEK7VVP52m7Mwk9+PrYBmrkNbc3IYc2rYGdbHgC82SRiPbOIxPUwz2X81j1AQZZhN2nc95yudsajpoSqQ7AkIyMyt5FN3NSNN44tKYD5YjuNUaYa2b6SEWNFyG7MHxCqqyykNIraxPS5I5ZOmN4t+ugpgcKd8gLCd4TJQ0355WfHhr1oTrJvgvxGirXOsUm3lC0lequ+BEVHjOjeKl8vybwiculLTIn2rgc9ysoca8sa60+W5ArTo56rPbODQTqZ7sEWSKhE48dJx36JGlM7zLrMLTzcP6tyhpJ2qwG0KQWJkAdCtkSTlOc5+nTojsS6eG8aN3/D/PuxRvjZO3zSwt9OsL2BPWo0DnZ2ZluMN0wzGTJeN/+B4f7rmX0rX9yLrxRMWftr69rmf4dS/ymtK8Yy9QLqgV3SKoIkhMy4e8ksBDnJ227+EwrLktRKaTt04Vg51Ip2mIlCJT9gR93NlsUgMtwCfexAgbIFrPykycwt+Ra6gADMrfZz2sHmphS6+WwsIgCljm9eHSYzU66lLwb1AAI4tuSNlPDAKUBzwNRfE2OArnGvLhn9pSUQ9zpyXgDpmBuj4hI9kfZArLBQBRCGP7gZM2lHh6nmWXDm6y4Ak=
+        skip_cleanup: true # to upload artifacts created during the build
+        #on:
+        #  branch: master
+        #  condition: "-n $BINTRAY_DEPLOY"
+
+# Full test suite
+    - language: python
+      compiler: gcc
+      env: RTLSDR=OFF RUN_RTL_433_TESTS=1
+      dist: trusty
+      python:
+          - "2.7"
+      install:
+          - pip install deepdiff==3.3.0
+      addons:
+        apt:
+          packages:
+            - cmake
+script:
+  - ./do_build.sh

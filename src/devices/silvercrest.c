@@ -9,14 +9,11 @@
  *
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 uint8_t cmd_lu_tab[16] = {2,3,0,1,4,5,7,6,0xC,0xD,0xF,0xE,8,9,0xB,0xA};
 
-static int silvercrest_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b; // bits of a row
     uint8_t cmd;
     data_t *data;
@@ -28,19 +25,17 @@ static int silvercrest_callback(bitbuffer_t *bitbuffer) {
     b = bitbuffer->bb[1];
     if ((b[0] == 0x7c) && (b[1] == 0x26)) {
         cmd = b[2] & 0xF;
-	// Validate button
+        // Validate button
         if ((b[3]&0xF) != cmd_lu_tab[cmd])
             return 0;
 
-        local_time_str(0, time_str);
 
         data = data_make(
-            "time",  "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, "Silvercrest Remote Control",
+            "model", "", DATA_STRING, _X("Silvercrest-Remote","Silvercrest Remote Control"),
             "button", "", DATA_INT, cmd,
             NULL);
 
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -48,7 +43,6 @@ static int silvercrest_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "button",
     NULL
@@ -56,13 +50,12 @@ static char *output_fields[] = {
 
 r_device silvercrest = {
     .name           = "Silvercrest Remote Control",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 264,
-    .long_limit     = 744,
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 264,
+    .long_width     = 744,
     .reset_limit    = 12000,
     .gap_limit      = 5000,
-    .json_callback  = &silvercrest_callback,
+    .decode_fn      = &silvercrest_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields        = output_fields,
 };

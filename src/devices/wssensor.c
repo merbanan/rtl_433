@@ -21,18 +21,15 @@
  *   I = sensor ID
  */
 
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-#define WS_PACKETLEN	24
-#define WS_MINREPEATS	4
-#define WS_REPEATS	23
+#define WS_PACKETLEN 24
+#define WS_MINREPEATS 4
+#define WS_REPEATS 23
 
-static int wssensor_callback(bitbuffer_t *bitbuffer) {
+static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     data_t *data;
-    char time_str[LOCAL_TIME_BUFLEN];
 
     // the signal should have 23 repeats
     // require at least 4 received repeats
@@ -50,41 +47,40 @@ static int wssensor_callback(bitbuffer_t *bitbuffer) {
     float temperature_c;
 
     /* TTTTTTTT TTTTBSCC IIIIIIII  */
-    temperature = ((int8_t)b[0] << 4) | ((b[1] & 0xf0) >> 4); // note the sign extend
+    temperature = (int16_t)((b[0] << 8) | (b[1] & 0xf0)); // uses sign extend
     battery_status = (b[1] & 0x08) >> 3;
     startup = (b[1] & 0x04) >> 2;
     channel = (b[1] & 0x03) + 1;
     sensor_id = b[2];
 
-    temperature_c = temperature / 10.0f;
+    temperature_c = (temperature >> 4) * 0.1f;
 
-    if (debug_output) {
+    if (decoder->verbose) {
         fprintf(stdout, "Hyundai WS SENZOR received raw data:\n");
         bitbuffer_print(bitbuffer);
-        fprintf(stdout, "Sensor ID	= %01d = 0x%02x\n",  sensor_id, sensor_id);
-        fprintf(stdout, "Bitstream HEX	= %02x %02x %02x\n", b[0], b[1], b[2]);
-        fprintf(stdout, "Battery OK	= %0d\n", battery_status);
-        fprintf(stdout, "Startup		= %0d\n", startup);
-        fprintf(stdout, "Channel		= %0d\n", channel);
-        fprintf(stdout, "temp		= %d = 0x%02x\n", temperature, temperature);
-        fprintf(stdout, "TemperatureC	= %.1f\n", temperature_c);
+        fprintf(stdout, "Sensor ID = %01d = 0x%02x\n",  sensor_id, sensor_id);
+        fprintf(stdout, "Bitstream HEX = ");
+        bitrow_print(b, 24);
+        fprintf(stdout, "Battery OK = %0d\n", battery_status);
+        fprintf(stdout, "Startup  = %0d\n", startup);
+        fprintf(stdout, "Channel  = %0d\n", channel);
+        fprintf(stdout, "temp  = %d = 0x%02x\n", temperature, temperature);
+        fprintf(stdout, "TemperatureC = %.1f\n", temperature_c);
     }
 
-    local_time_str(0, time_str);
-    data = data_make("time",          "",            DATA_STRING, time_str,
-                     "model",         "",            DATA_STRING, "WS Temperature Sensor",
-                     "id",            "House Code",  DATA_INT, sensor_id,
-                     "channel",       "Channel",     DATA_INT, channel,
-                     "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
-                     "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
-                     NULL);
+    data = data_make(
+            "model",         "",            DATA_STRING, _X("Hyundai-WS","WS Temperature Sensor"),
+            "id",            "House Code",  DATA_INT, sensor_id,
+            "channel",       "Channel",     DATA_INT, channel,
+            "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
+            NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -94,13 +90,13 @@ static char *output_fields[] = {
 };
 
 r_device wssensor = {
-    .name           = "WS Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1400,
-    .long_limit     = 2400,
+    .name           = "Hyundai WS SENZOR Remote Temperature Sensor",
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1000,
+    .long_width     = 2000,
+    .gap_limit      = 2400,
     .reset_limit    = 4400,
-    .json_callback  = &wssensor_callback,
+    .decode_fn      = &wssensor_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

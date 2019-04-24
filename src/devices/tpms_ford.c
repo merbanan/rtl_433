@@ -16,20 +16,18 @@
  * C = Checksum, SUM bytes 0 to 6 = byte 7
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
 static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
-static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+{
     data_t *data;
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
-    int id;
+    unsigned id;
     char id_str[9];
     int code;
     char code_str[7];
@@ -45,15 +43,13 @@ static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpo
         return 0;
     }
 
-    id = b[0]<<24 | b[1]<<16 | b[2]<<8 | b[3];
+    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
     sprintf(id_str, "%08x", id);
 
     code = b[4]<<16 | b[5]<<8 | b[6];
     sprintf(code_str, "%06x", code);
 
-    local_time_str(0, time_str);
     data = data_make(
-        "time",         "",     DATA_STRING, time_str,
         "model",        "",     DATA_STRING, "Ford",
         "type",         "",     DATA_STRING, "TPMS",
         "id",           "",     DATA_STRING, id_str,
@@ -61,11 +57,11 @@ static int tpms_ford_decode(bitbuffer_t *bitbuffer, unsigned row, unsigned bitpo
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
-static int tpms_ford_callback(bitbuffer_t *bitbuffer) {
+static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int row;
     unsigned bitpos;
     int events = 0;
@@ -78,7 +74,7 @@ static int tpms_ford_callback(bitbuffer_t *bitbuffer) {
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 16)) + 144 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_ford_decode(bitbuffer, row, bitpos + 16);
+            events += tpms_ford_decode(decoder, bitbuffer, row, bitpos + 16);
             bitpos += 15;
         }
     }
@@ -87,7 +83,6 @@ static int tpms_ford_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "type",
     "id",
@@ -99,11 +94,10 @@ static char *output_fields[] = {
 r_device tpms_ford = {
     .name           = "Ford TPMS",
     .modulation     = FSK_PULSE_PCM,
-    .short_limit    = 52, // 12-13 samples @250k
-    .long_limit     = 52, // FSK
+    .short_width    = 52, // 12-13 samples @250k
+    .long_width     = 52, // FSK
     .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .json_callback  = &tpms_ford_callback,
+    .decode_fn      = &tpms_ford_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

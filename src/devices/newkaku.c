@@ -1,149 +1,98 @@
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+/** @file
+    Kaku decoder.
+*/
+/**
+Kaku decoder.
+Might be similar to an x1527.
+S.a. Nexa, Proove.
 
-static int newkaku_callback(bitbuffer_t *bitbuffer) {
-    /* Two bits map to 2 states, 0 1 -> 0 and 1 1 -> 1 */
-    /* Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value */
-    /*start pulse: 1T high, 10.44T low */
-    /*- 26 bit:  Address */
-    /*- 1  bit:  group bit*/
-    /*- 1  bit:  Status bit on/off/[dim]*/
-    /*- 4  bit:  unit*/
-    /*- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]*/
-    /*- stop pulse: 1T high, 40T low */
+Two bits map to 2 states, 0 1 -> 0 and 1 0 -> 1
+Status bit can be 1 1 -> 1 which indicates DIM value. 4 extra bits are present with value
+start pulse: 1T high, 10.44T low
+- 26 bit:  Address
+- 1  bit:  group bit
+- 1  bit:  Status bit on/off/[dim]
+- 4  bit:  unit
+- [4 bit:  dim level. Present if [dim] is used, but might be present anyway...]
+- stop pulse: 1T high, 40T low
+*/
+
+#include "decoder.h"
+
+static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     bitrow_t *bb = bitbuffer->bb;
-    uint8_t tmp = 0;
-    uint8_t unit = 0;
-    uint8_t packet = 0;
-    uint8_t bitcount = 0;
-    uint32_t kakuid = 0;
-    uint8_t dv = 0;
-    char *group_call, *command, *dim;
-    char time_str[LOCAL_TIME_BUFLEN];
-    local_time_str(0, time_str);
 
-    if (bb[0][0] == 0xac || bb[0][0] == 0xb2) {//always starts with ac or b2
-        // first bit is from startbit sequence, not part of payload!
-        // check protocol if value is 10 or 01, else stop processing as it is no valid KAKU packet!
-        //get id=24bits, remember 1st 1 bit = startbit, no payload!
-        for (packet = 0; packet < 6; packet++) {//get first part kakuid
-            tmp = bb[0][packet] << 1;
-            if ((bb[0][packet + 1]&(1 << 7)) != 0) {// if set add bit to current
-                tmp++;
-            }
+    if (bb[0][0] != 0x65 && bb[0][0] != 0x59) // always starts with 0110 0101 or 0101 1001
+        return DECODE_ABORT_EARLY;
 
-            for (bitcount = 0; bitcount < 8; bitcount += 2) {//process bitstream, check protocol!
+    /* Reject missing sync */
+    if (bitbuffer->syncs_before_row[0] != 1)
+        return DECODE_ABORT_EARLY;
 
-                if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                    //add 1
-                    kakuid = kakuid << 1;
-                    kakuid++;
-                } else
-                    if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                    kakuid = kakuid << 1;
-                    //add 0
-                } else {
-                    return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-                }
-            }
-        }
-        tmp = bb[0][6] << 1; //Get last part ID
-        for (bitcount = 0; bitcount < 4; bitcount += 2) {
-            if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                //add 1
-                kakuid = kakuid << 1;
-                kakuid++;
-            } else
-                if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                //= add bit on kakuid
-                kakuid = kakuid << 1;
-                //add 0
-            } else {
-                return 0; //00 and 11 indicates packet error. no valid packet! do exit
-            }
-        }
-        //Get unit ID
-        tmp = bb[0][7] << 1;
-        if ((bb[0][8]&(1 << 7)) != 0) {// if set add bit to current
-            tmp++;
-        }
-        for (bitcount = 0; bitcount < 8; bitcount += 2) {//process bitstream, check protocol!
-            if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                //add 1
-                unit = unit << 1;
-                unit++;
-            } else
-                if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                unit = unit << 1;
-                //add 0
-            } else {
-                return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-            }
-        }
-        group_call = (((bb[0][6] & (0x04)) == 0x04)&((bb[0][6] & (0x02)) == 0)) ? "Yes" : "No";
-        command = (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0)) ? "On" : "Off";
-        if (((bb[0][6] & (0x01)) == 0x01)&((bb[0][7] & (0x80)) == 0x80)) {//11 indicates DIM command, 4 extra bits indicate DIM value
-            dim = "Yes";
-            tmp = bb[0][8] << 1; // get packet, loose first bit
+    /* Reject codes of wrong length */
+    if (bitbuffer->bits_per_row[0] != 64 && bitbuffer->bits_per_row[0] != 72)
+        return DECODE_ABORT_LENGTH;
 
-            if ((bb[0][9]&(1 << 7)) != 0) {// if bit is set Add to current packet
-                tmp++;
-                for (bitcount = 0; bitcount < 8; bitcount += 2) {//process last bit outside
-                    if (((tmp << bitcount & (0x80)) == 0x80)&((tmp << bitcount & (0x40)) == 0)) {
-                        //add 1
-                        dv = dv << 1;
-                        dv++;
-                    } else
-                        if (((tmp << bitcount & (0x80)) == 0)&((tmp << bitcount & (0x40)) == 0x40)) {
-                        dv = dv << 1;
-                        //add 0
-                    } else {
-                        return 0; //00 and 11 indicates packet error. Do exit, no valid packet
-                    }
-                }
-            }
-        } else {
-            dim = "No";
-        }
-
-        data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "KlikAanKlikUit Wireless Switch",
-                         "id",            "",            DATA_INT, kakuid,
-                         "unit",          "Unit",        DATA_INT, unit,
-                         "group_call",    "Group Call",  DATA_STRING, group_call,
-                         "command",       "Command",     DATA_STRING, command,
-                         "dim",           "Dim",         DATA_STRING, dim,
-                         "dim_value",     "Dim Value",   DATA_INT, dv,
-                         NULL);
-        data_acquired_handler(data);
-
-        return 1;
+    // 11 for command indicates DIM, 4 extra bits indicate DIM value
+    uint8_t dim_cmd = (bb[0][6] & 0x03) == 0x03;
+    if (dim_cmd) {
+        bb[0][6] &= 0xfe; // change DIM to ON to use Manchester
     }
-    return 0;
+
+    bitbuffer_t databits = {0};
+    // note: not manchester encoded but actually ternary
+    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
+    bitbuffer_invert(&databits);
+
+    /* Reject codes when Manchester decoding fails */
+    if (pos != 64 && pos != 72)
+        return DECODE_ABORT_LENGTH;
+
+    uint8_t *b = databits.bb[0];
+
+    uint32_t id        = (b[0] << 18) | (b[1] << 10) | (b[2] << 2) | (b[3] >> 6); // ID 26 bits
+    uint32_t group_cmd = (b[3] >> 5) & 1;
+    uint32_t on_bit    = (b[3] >> 4) & 1;
+    uint32_t unit      = (b[3] & 0x0f);
+    uint32_t dv        = (b[4] >> 4);
+
+    /* clang-format off */
+    data = data_make(
+            "model",        "",             DATA_STRING, _X("KlikAanKlikUit-Switch","KlikAanKlikUit Wireless Switch"),
+            "id",           "",             DATA_INT,    id,
+            "unit",         "Unit",         DATA_INT,    unit,
+            "group_call",   "Group Call",   DATA_STRING, group_cmd ? "Yes" : "No",
+            "command",      "Command",      DATA_STRING, on_bit ? "On" : "Off",
+            "dim",          "Dim",          DATA_STRING, dim_cmd ? "Yes" : "No",
+            "dim_value",    "Dim Value",    DATA_INT,    dv,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char *output_fields[] = {
-    "time",
-    "model",
-    "id",
-    "unit",
-    "group_call",
-    "command",
-    "dim",
-    "dim_value",
-    NULL
+        "model",
+        "id",
+        "unit",
+        "group_call",
+        "command",
+        "dim",
+        "dim_value",
+        NULL,
 };
 
 r_device newkaku = {
-    .name           = "KlikAanKlikUit Wireless Switch",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 800,
-    .long_limit     = 3200,
-    .reset_limit    = 10000,
-    .json_callback  = &newkaku_callback,
-    .disabled       = 0,
-    .demod_arg      = 0,
-    .fields         = output_fields
+        .name        = "KlikAanKlikUit Wireless Switch",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 300,  // 1:1
+        .long_width  = 1400, // 1:5
+        .sync_width  = 2700, // 1:10
+        .tolerance   = 200,
+        .reset_limit = 3200,
+        .decode_fn   = &newkaku_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

@@ -22,13 +22,9 @@
  *
  * Copyright (C) 2015 Christian W. Zuckschwerdt <zany@triq.net>
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
 
@@ -37,7 +33,7 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
     if (r < 0 || bitbuffer->bits_per_row[r] > 42) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     b = bitbuffer->bb[r];
@@ -48,10 +44,10 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
     b[4] = ~b[4];
 
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH checksum error\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     id = b[0];
@@ -67,16 +63,14 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
     humidity = b[3];
 
     if ((channel == 0) || (humidity > 100) || (temp_f < -20.0) || (temp_f > 160.0)) {
-        if (debug_output) {
+        if (decoder->verbose) {
             fprintf(stderr, "Bresser 3CH data error\n");
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",          "",            DATA_STRING, time_str,
-            "model",         "",            DATA_STRING, "Bresser 3CH sensor",
+            "model",         "",            DATA_STRING, _X("Bresser-3CH","Bresser 3CH sensor"),
             "id",            "Id",          DATA_INT,    id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW": "OK",
@@ -84,13 +78,12 @@ static int bresser_3ch_callback(bitbuffer_t *bitbuffer) {
             "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -103,14 +96,13 @@ static char *output_fields[] = {
 
 r_device bresser_3ch = {
     .name           = "Bresser Thermo-/Hygro-Sensor 3CH",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 250,   // short pulse is ~250 us
-    .long_limit     = 500,   // long pulse is ~500 us
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 250,   // short pulse is ~250 us
+    .long_width     = 500,   // long pulse is ~500 us
     .sync_width     = 750,   // sync pulse is ~750 us
     .gap_limit      = 625,   // long gap (with short pulse) is ~500 us, sync gap is ~750 us
     .reset_limit    = 1250,  // maximum gap is 1000 us (long gap + longer sync gap on last repeat)
-    .json_callback  = &bresser_3ch_callback,
+    .decode_fn      = &bresser_3ch_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

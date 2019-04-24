@@ -38,7 +38,8 @@ int main()
 
 	void *json_output = data_output_json_create(stdout);
 	void *kv_output = data_output_kv_create(stdout);
-	void *csv_output = data_output_csv_create(stdout, fields, sizeof fields / sizeof *fields);
+	void *csv_output = data_output_csv_create(stdout);
+	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 
 	data_output_print(json_output, data); fprintf(stdout, "\n");
 	data_output_print(kv_output, data);

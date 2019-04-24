@@ -1,13 +1,13 @@
-/**
- * Various utility functions handling file formats
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions handling file formats.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_FILEFORMAT_H_
 #define INCLUDE_FILEFORMAT_H_
@@ -15,8 +15,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// a single handy number to define the file type.
-// bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
+char const *file_basename(char const *path);
+
+/// a single handy number to define the file type.
+/// bitmask: RRRR LLLL WWWWWWWW 00CC 00FS
 enum file_type {
     // format bits
     F_UNSIGNED = 0 << 0,
@@ -38,6 +40,7 @@ enum file_type {
     F_IQ       = F_I | F_Q << 4,
     F_LOGIC    = 5 << 16,
     F_VCD      = 6 << 16,
+    F_OOK      = 7 << 16,
     // format types
     F_U8       = F_1CH | F_UNSIGNED | F_INT | F_W8,
     F_S8       = F_1CH | F_SIGNED   | F_INT | F_W8,
@@ -55,6 +58,7 @@ enum file_type {
     F_CF32     = F_2CH | F_SIGNED   | F_FLOAT | F_W32,
     // compound types
     CU8_IQ     = F_CU8 | F_IQ,
+    CS8_IQ     = F_CS8 | F_IQ,
     S16_AM     = F_S16 | F_AM,
     S16_FM     = F_S16 | F_FM,
     CS16_IQ    = F_CS16 | F_IQ,
@@ -65,6 +69,7 @@ enum file_type {
     F32_Q      = F_F32 | F_Q,
     U8_LOGIC   = F_LOGIC | F_U8,
     VCD_LOGIC  = F_VCD,
+    PULSE_OOK  = F_OOK,
 };
 
 typedef struct {

@@ -7,13 +7,9 @@
  *
  * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
     int id;
@@ -42,20 +38,17 @@ static int akhan_rke_callback(bitbuffer_t *bitbuffer) {
     if (!cmd_str)
         return 0;
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "",             DATA_STRING, time_str,
-            "model",    "",             DATA_STRING, "Akhan 100F14 remote keyless entry",
+            "model",    "",             DATA_STRING, _X("Akhan-100F14","Akhan 100F14 remote keyless entry"),
             "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
             "data",     "Data (4bit)",  DATA_STRING, cmd_str,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "data",
@@ -64,13 +57,13 @@ static char *output_fields[] = {
 
 r_device akhan_100F14 = {
     .name          = "Akhan 100F14 remote keyless entry",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
-    .short_limit   = 316,
-    .long_limit    = 1020,
+    .modulation    = OOK_PULSE_PWM,
+    .short_width   = 316,
+    .long_width    = 1020,
     .reset_limit   = 1800,
     .sync_width    = 0,
     .tolerance     = 80, // us
-    .json_callback = &akhan_rke_callback,
+    .decode_fn     = &akhan_rke_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
+    .fields        = output_fields,
 };

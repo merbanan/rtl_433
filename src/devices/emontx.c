@@ -8,8 +8,7 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 // We don't really *use* this because there's no endianness support
 // for just using le16_to_cpu(pkt.ct1) etc. A task for another day...
@@ -37,7 +36,7 @@ static unsigned char preamble[3] = { 0xaa, 0xaa, 0xaa };
 static unsigned char pkt_hdr_inverted[3] = { 0xd2, 0x2d, 0xc0 };
 static unsigned char pkt_hdr[3] = { 0x2d, 0xd2, 0x00 };
 
-static int emontx_callback(bitbuffer_t *bitbuffer) {
+static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	bitrow_t *bb = bitbuffer->bb;
 	unsigned bitpos = 0;
 	unsigned bits = bitbuffer->bits_per_row[0];
@@ -51,7 +50,6 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 		unsigned pkt_pos;
 		uint16_t crc;
 		data_t *data;
-		char time_str[LOCAL_TIME_BUFLEN];
 		union {
 			struct emontx p;
 			uint8_t b[sizeof(struct emontx)];
@@ -99,7 +97,7 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 		}
 		if (pkt.p.len != 0x1a || pkt.p.postamble != 0xaa)
 			continue;
-		crc = crc16((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
+		crc = crc16lsb((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
 
 		// Ick. If we could just do le16_to_cpu(pkt.p.ct1) we wouldn't need this.
 		for (i=0; i<14; i++)
@@ -109,15 +107,14 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 
 		vrms = (double)words[4] / 100.0;
 
-		local_time_str(0, time_str);
-		data = data_make("time", "", DATA_STRING, time_str,
-				 "model", "", DATA_STRING, "emonTx",
+		data = data_make(
+				 "model", "", DATA_STRING, _X("emonTx-Energy","emonTx"),
 				 "node", "", DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
 				 "ct1", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
 				 "ct2", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],
 				 "ct3", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[2],
 				 "ct4", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[3],
-				 "Vrms/batt", "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
+				 _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
 				 "pulse", "", DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
 				 // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
 				 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[5] / 10.0,
@@ -127,26 +124,38 @@ static int emontx_callback(bitbuffer_t *bitbuffer) {
 				 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[9] / 10.0,
 				 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
 				 NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 		events++;
 	}
 	return events;
 }
 
 static char *output_fields[] = {
-	"time", "model", "node", "ct1", "ct2", "ct3", "ct4", "Vrms/batt",
-	"temp1_C", "temp2_C", "temp3_C", "temp4_C", "temp5_C", "temp6_C",
-	"pulse", NULL
+	"model",
+	"node",
+	"ct1",
+	"ct2",
+	"ct3",
+	"ct4",
+	"Vrms/batt", // TODO: delete this
+	"batt_Vrms",
+	"temp1_C",
+	"temp2_C",
+	"temp3_C",
+	"temp4_C",
+	"temp5_C",
+	"temp6_C",
+	"pulse",
+	NULL
 };
 
 r_device emontx = {
 	.name           = "emonTx OpenEnergyMonitor",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 2000000.0 / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
-	.long_limit     = 2000000.0 / (49230 + 49261),
+	.short_width    = 2000000.0f / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
+	.long_width     = 2000000.0f / (49230 + 49261),
 	.reset_limit    = 1200,	// 600 zeros...
-	.json_callback  = &emontx_callback,
+	.decode_fn      = &emontx_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields		= output_fields,
 };

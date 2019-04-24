@@ -1,7 +1,7 @@
 /* LaCrosse TX 433 Mhz Temperature and Humidity Sensors
  * Tested: TX-7U and TX-6U (Temperature only)
- *
  * Not Tested but should work: TX-3, TX-4
+ * also TFA Dostmann 30.3120.90 sensor (for e.g. 35.1018.06 (WS-9015) station)
  *
  * Copyright (C) 2015 Robert C. Terzi
  *
@@ -38,13 +38,9 @@
  * - Now that we have a demodulator that isn't stripping the first bit
  *   the detect and decode could be collapsed into a single reasonably
  *   readable function.
- *
- * - Make the time stamp output a general utility function.
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
 #define LACROSSE_TX_BITLEN        44
 #define LACROSSE_NYBBLE_CNT        11
@@ -60,7 +56,7 @@
 // Long bits = 0
 // short bits = 1
 //
-static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
+static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen) {
     int i;
     uint8_t rbyte_no, rbit_no, mnybble_no, mbit_no;
     uint8_t bit, checksum, parity_bit, parity = 0;
@@ -109,7 +105,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
         if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
             return 1;
         } else {
-            if (debug_output > 1) {
+            if (decoder->verbose > 1) {
                 fprintf(stdout,
                         "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
                         checksum, msg_nybbles[10], parity);
@@ -123,7 +119,7 @@ static int lacrossetx_detect(uint8_t *pRow, uint8_t *msg_nybbles, int16_t rowlen
 
 // LaCrosse TX-6u, TX-7u,  Temperature and Humidity Sensors
 // Temperature and Humidity are sent in different messages bursts.
-static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
+static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
 
     int m, valid = 0;
@@ -132,14 +128,12 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
     uint8_t sensor_id, msg_type, msg_len, msg_parity, msg_checksum;
     int msg_value_int;
     float msg_value = 0, temp_c = 0;
-    time_t time_now;
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
 
     for (m = 0; m < BITBUF_ROWS; m++) {
         valid = 0;
         // break out the message nybbles into separate bytes
-        if (lacrossetx_detect(bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
+        if (lacrossetx_detect(decoder, bb[m], msg_nybbles, bitbuffer->bits_per_row[m])) {
 
             msg_len = msg_nybbles[1];
             msg_type = msg_nybbles[2];
@@ -150,14 +144,11 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
             msg_value_int = msg_nybbles[8] * 10 + msg_nybbles[9];
             msg_checksum = msg_nybbles[10];
 
-            time(&time_now);
-            local_time_str(0, time_str);
-
             // Check Repeated data values as another way of verifying
             // message integrity.
             if (msg_nybbles[5] != msg_nybbles[8] ||
                 msg_nybbles[6] != msg_nybbles[9]) {
-                if (debug_output) {
+                if (decoder->verbose) {
                     fprintf(stderr,
                             "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
                             sensor_id, msg_type, msg_value, msg_value_int);
@@ -168,31 +159,31 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
             switch (msg_type) {
             case 0x00:
                 temp_c = msg_value - 50.0;
-                data = data_make("time",          "",            DATA_STRING, time_str,
-                                 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+                data = data_make(
+                                 "model",         "",            DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                                  "id",            "",            DATA_INT, sensor_id,
                                  "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                                  NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
                 events++;
                 break;
 
             case 0x0E:
-                data = data_make("time",          "",            DATA_STRING, time_str,
-                                 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+                data = data_make(
+                                 "model",         "",            DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                                  "id",            "",            DATA_INT, sensor_id,
                                  "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
                                  NULL);
-                data_acquired_handler(data);
+                decoder_output_data(decoder, data);
                 events++;
                 break;
 
             default:
                 // @todo this should be reported/counted as exception, not considered debug
-                if (debug_output) {
+                if (decoder->verbose) {
                     fprintf(stderr,
-                            "%s LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
-                            time_str, sensor_id, msg_type, msg_value, msg_value_int);
+                            "LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",
+                            sensor_id, msg_type, msg_value, msg_value_int);
                 }
             }
         }
@@ -202,7 +193,6 @@ static int lacrossetx_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "temperature_C",
@@ -212,15 +202,14 @@ static char *output_fields[] = {
 
 r_device lacrossetx = {
     .name           = "LaCrosse TX Temperature / Humidity Sensor",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 550,  // 550 us pulse + 1000 us gap is 1
-    .long_limit     = 1400, // 1400 us pulse + 1000 us gap is 0
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 550,  // 550 us pulse + 1000 us gap is 1
+    .long_width     = 1400, // 1400 us pulse + 1000 us gap is 0
     .gap_limit      = 3000, // max gap is 1000 us
     .reset_limit    = 8000, // actually: packet gap is 29000 us
     .sync_width     = 0,    // not used
     .tolerance      = 0,    // raw mode
-    .json_callback  = &lacrossetx_callback,
+    .decode_fn      = &lacrossetx_callback,
     .disabled       = 0,
-    .demod_arg      = 0,  // No Startbit removal
     .fields = output_fields,
 };

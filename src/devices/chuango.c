@@ -1,4 +1,5 @@
 /* Chuango Security Technology Corporation
+ * likely based on HS1527 or compatible
  *
  * Tested devices:
  * G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
@@ -18,13 +19,9 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "data.h"
-#include "util.h"
+#include "decoder.h"
 
-static int chuango_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
     int id;
@@ -67,21 +64,18 @@ static int chuango_callback(bitbuffer_t *bitbuffer) {
         default:  cmd_str = ""; break;
     }
 
-    local_time_str(0, time_str);
     data = data_make(
-            "time",     "",             DATA_STRING, time_str,
-            "model",    "",             DATA_STRING, "Chuango Security Technology",
+            "model",    "",             DATA_STRING, _X("Chuango-Security","Chuango Security Technology"),
             "id",       "ID",           DATA_INT,    id,
             "cmd",      "CMD",          DATA_STRING, cmd_str,
             "cmd_id",   "CMD_ID",       DATA_INT,    cmd,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "cmd",
@@ -91,13 +85,13 @@ static char *output_fields[] = {
 
 r_device chuango = {
     .name           = "Chuango Security Technology",
-    .modulation     = OOK_PULSE_PWM_PRECISE,
-    .short_limit    = 568,  // Pulse: Short 568µs, Long 1704µs
-    .long_limit     = 1704, // Gaps:  Short 568µs, Long 1696µs
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 568,  // Pulse: Short 568µs, Long 1704µs
+    .long_width     = 1704, // Gaps:  Short 568µs, Long 1696µs
     .reset_limit    = 1800, // Intermessage Gap 17200µs (individually for now)
     .sync_width     = 0,    // No sync bit used
     .tolerance      = 160,  // us
-    .json_callback  = &chuango_callback,
+    .decode_fn      = &chuango_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
+    .fields         = output_fields,
 };

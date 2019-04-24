@@ -19,9 +19,7 @@
  * X = unknown, possibly channel
  */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 #define MYDEVICE_BITLEN      16
 #define MYDEVICE_MINREPEATS  3
@@ -93,16 +91,15 @@ char *button_map[] = {
 /* 63 */ "Info"
 };
 
-static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
+static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     int r; // a row index
     uint8_t *b; // bits of a row
     uint8_t button;
     char *button_string;
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr,"dish_remote_6_3_callback callback:\n");
         bitbuffer_print(bitbuffer);
     }
@@ -121,22 +118,18 @@ static int dish_remote_6_3_callback(bitbuffer_t *bitbuffer)
 
     button = b[0] >> 2;
     button_string = button_map[button];
-	
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",  "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, "Dish remote 6.3",
+            "model", "", DATA_STRING, _X("Dish-RC63","Dish remote 6.3"),
             "button", "", DATA_STRING, button_string,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "button",
     NULL
@@ -144,12 +137,12 @@ static char *output_fields[] = {
 
 r_device dish_remote_6_3 = {
     .name          = "Dish remote 6.3",
-    .modulation    = OOK_PULSE_PPM_RAW,
-    .short_limit   = (1692 + 2812) / 2,
-    .long_limit    = 1692 + 2812,
-    .reset_limit   = (1692 + 2812) * 2,
-    .json_callback = &dish_remote_6_3_callback,
+    .modulation    = OOK_PULSE_PPM,
+    .short_width   = 1692,
+    .long_width    = 2812,
+    .gap_limit     = 4500,
+    .reset_limit   = 9000,
+    .decode_fn     = &dish_remote_6_3_callback,
     .disabled      = 1,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

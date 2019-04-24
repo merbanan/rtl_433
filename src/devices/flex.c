@@ -8,11 +8,32 @@
  * (at your option) any later version.
  */
 
-#include "data.h"
-#include "rtl_433.h"
-#include "util.h"
-#include "pulse_demod.h"
+#include "decoder.h"
 #include "optparse.h"
+#include <stdlib.h>
+
+static inline int bit(const uint8_t *bytes, unsigned bit)
+{
+    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+}
+
+/// extract all mask bits skipping unmasked bits of a number up to 32/64 bits
+unsigned long compact_number(uint8_t *data, unsigned bit_offset, unsigned long mask)
+{
+    // clz (fls) is not worth the trouble
+    int top_bit = 0;
+    while (mask >> top_bit)
+        top_bit++;
+    unsigned long val = 0;
+    for (int b = top_bit - 1; b >= 0; --b) {
+        if (mask & (1 << b)) {
+            val <<= 1;
+            val |= bit(data, bit_offset);
+        }
+        bit_offset++;
+    }
+    return val;
+}
 
 /// extract a number up to 32/64 bits from given offset with given bit length
 unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
@@ -61,6 +82,7 @@ struct flex_params {
     unsigned min_repeats;
     unsigned max_repeats;
     unsigned invert;
+    unsigned reflect;
     unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
@@ -69,16 +91,17 @@ struct flex_params {
     struct flex_get getter[GETTER_SLOTS];
 };
 
-static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
+static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int i;
+    int i, j;
     int match_count = 0;
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
-    char time_str[LOCAL_TIME_BUFLEN];
     bitrow_t tmp;
+
+    struct flex_params *params = decoder->decode_ctx;
 
     // discard short / unwanted bitbuffers
     if ((bitbuffer->num_rows < params->min_rows)
@@ -102,6 +125,15 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 
     if (params->invert) {
         bitbuffer_invert(bitbuffer);
+    }
+
+    if (params->reflect) {
+        // TODO: refactor to utils
+        for (i = 0; i < bitbuffer->num_rows; ++i) {
+            for (j = 0; j < (bitbuffer->bits_per_row[i] + 7) / 8; ++j) {
+                bitbuffer->bb[i][j] = reverse8(bitbuffer->bb[i][j]);
+            }
+        }
     }
 
     // discard unless match
@@ -134,19 +166,17 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
             return 0;
     }
 
-    if (debug_output >= 1) {
+    if (decoder->verbose) {
         fprintf(stderr, "%s: ", params->name);
         bitbuffer_print(bitbuffer);
     }
 
-    local_time_str(0, time_str);
     if (params->count_only) {
         data = data_make(
-                "time", "", DATA_STRING, time_str,
                 "model", "", DATA_STRING, params->name,
                 "count", "", DATA_INT, match_count,
                 NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 0;
     }
@@ -167,9 +197,11 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
         // add a data line for each getter
         for (int g = 0; g < GETTER_SLOTS && params->getter[g].bit_count > 0; ++g) {
             struct flex_get *getter = &params->getter[g];
-            unsigned long val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
+            unsigned long val;
             if (getter->mask)
-                val &= getter->mask;
+                val = compact_number(bitbuffer->bb[i], getter->bit_offset, getter->mask);
+            else
+                val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
             int m;
             for (m = 0; getter->map[m].val; m++) {
                 if (getter->map[m].key == val) {
@@ -190,14 +222,13 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     data = data_make(
-            "time", "", DATA_STRING, time_str,
             "model", "", DATA_STRING, params->name,
             "count", "", DATA_INT, match_count,
             "num_rows", "", DATA_INT, bitbuffer->num_rows,
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
     for (i = 0; i < bitbuffer->num_rows; i++) {
         free(row_codes[i]);
     }
@@ -206,7 +237,6 @@ static int flex_callback(bitbuffer_t *bitbuffer, struct flex_params *params)
 }
 
 static char *output_fields[] = {
-        "time",
         "model",
         "count",
         "num_rows",
@@ -226,61 +256,86 @@ static void help()
 {
     fprintf(stderr,
             "Use -X <spec> to add a flexible general purpose decoder.\n\n"
-            "<spec> is \"name:modulation:short:long:reset[,key=value...]\"\n"
+            "<spec> is \"key=value[,key=value...]\"\n"
+            "Common keys are:\n"
+            "\tname=<name> (or: n=<name>)\n"
+            "\tmodulation=<modulation> (or: m=<modulation>)\n"
+            "\tshort=<short> (or: s=<short>)\n"
+            "\tlong=<long> (or: l=<long>)\n"
+            "\tsync=<sync> (or: y=<sync>)\n"
+            "\treset=<reset> (or: r=<reset>)\n"
+            "\tgap=<gap> (or: g=<gap>)\n"
+            "\ttolerance=<tolerance> (or: t=<tolerance>)\n"
             "where:\n"
             "<name> can be any descriptive name tag you need in the output\n"
             "<modulation> is one of:\n"
             "\tOOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
             "\tOOK_PCM :         Pulse Code Modulation (RZ or NRZ)\n"
-            "\tOOK_PPM_RAW :     Pulse Position Modulation\n"
+            "\tOOK_PPM :         Pulse Position Modulation\n"
             "\tOOK_PWM :         Pulse Width Modulation\n"
             "\tOOK_DMC :         Differential Manchester Code\n"
             "\tOOK_PIWM_RAW :    Raw Pulse Interval and Width Modulation\n"
             "\tOOK_PIWM_DC :     Differential Pulse Interval and Width Modulation\n"
             "\tOOK_MC_OSV1 :     Manchester Code for OSv1 devices\n"
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
-            "\tFSK_PWM_RAW :     FSK Pulse Width Modulation\n"
+            "\tFSK_PWM :         FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
-            "<short>, <long>, and <reset> are the timings for the decoder in µs\n"
+            "<short>, <long>, <sync>, and <reset> are the timings for the decoder in µs\n"
             "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
-            "PPM_RAW short: Threshold between short and long gap [us]\n"
-            "         long: Maximum gap size before new row of bits [us]\n"
-            "PWM_RAW short: Threshold between short and long pulse [us]\n"
-            "         long: Maximum gap size before new row of bits [us]\n"
+            "PPM     short: Nominal width of '0' gap [us]\n"
+            "         long: Nominal width of '1' gap [us]\n"
             "PWM     short: Nominal width of '1' pulse [us]\n"
             "         long: Nominal width of '0' pulse [us]\n"
+            "         sync: Nominal width of sync pulse [us] (optional)\n"
             "          gap: Maximum gap size before new row of bits [us]\n"
-            "reset: Maximum gap size before End Of Message [us].\n"
-            "for PWM use short:long:reset:gap[:tolerance[:syncwidth]]\n"
-            "for DMC use short:long:reset:tolerance\n"
+            "    tolerance: Maximum pulse deviation [us] (optional)\n"
+            "        reset: Maximum gap size before End Of Message [us].\n"
             "Available options are:\n"
-            "\tdemod=<n> : the demod argument needed for some modulations\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
             "\trows=<n> : only match if there are <n> rows\n"
             "\trepeats=<n> : only match if some row is repeated <n> times\n"
             "\t\tuse opt>=n to match at least <n> and opt<=n to match at most <n>\n"
             "\tinvert : invert all bits\n"
+            "\treflect : reflect each byte (MSB first to MSB last)\n"
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
             "\tcountonly : suppress detailed row output\n\n"
-            "E.g. -X \"doorbell:OOK_PWM_RAW:400:800:7000,match={24}0xa9878c,repeats>=3\"\n\n");
+            "E.g. -X \"n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
 }
 
-#define FLEX_SLOTS 8
-static struct flex_params *params_slot[FLEX_SLOTS];
-static int cb_slot0(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[0]); }
-static int cb_slot1(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[1]); }
-static int cb_slot2(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[2]); }
-static int cb_slot3(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[3]); }
-static int cb_slot4(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[4]); }
-static int cb_slot5(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[5]); }
-static int cb_slot6(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[6]); }
-static int cb_slot7(bitbuffer_t *bitbuffer) { return flex_callback(bitbuffer, params_slot[7]); }
-static unsigned next_slot = 0;
-int (*callback_slot[])(bitbuffer_t *bitbuffer) = {cb_slot0, cb_slot1, cb_slot2, cb_slot3, cb_slot4, cb_slot5, cb_slot6, cb_slot7};
+static unsigned parse_modulation(char const *str)
+{
+    if (!strcasecmp(str, "OOK_MC_ZEROBIT"))
+        return OOK_PULSE_MANCHESTER_ZEROBIT;
+    else if (!strcasecmp(str, "OOK_PCM"))
+        return OOK_PULSE_PCM_RZ;
+    else if (!strcasecmp(str, "OOK_PPM"))
+        return OOK_PULSE_PPM;
+    else if (!strcasecmp(str, "OOK_PWM"))
+        return OOK_PULSE_PWM;
+    else if (!strcasecmp(str, "OOK_DMC"))
+        return OOK_PULSE_DMC;
+    else if (!strcasecmp(str, "OOK_PIWM_RAW"))
+        return OOK_PULSE_PIWM_RAW;
+    else if (!strcasecmp(str, "OOK_PIWM_DC"))
+        return OOK_PULSE_PIWM_DC;
+    else if (!strcasecmp(str, "OOK_MC_OSV1"))
+        return OOK_PULSE_PWM_OSV1;
+    else if (!strcasecmp(str, "FSK_PCM"))
+        return FSK_PULSE_PCM;
+    else if (!strcasecmp(str, "FSK_PWM"))
+        return FSK_PULSE_PWM;
+    else if (!strcasecmp(str, "FSK_MC_ZEROBIT"))
+        return FSK_PULSE_MANCHESTER_ZEROBIT;
+    else {
+        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
+        usage();
+    }
+    return 0;
+}
 
 static unsigned parse_bits(const char *code, bitrow_t bitrow)
 {
@@ -357,25 +412,22 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         fprintf(stderr, "Bad flex spec, \"get\" missing name!\n");
         usage();
     }
-    if (debug_output)
+    /*
+    if (decoder->verbose)
         fprintf(stderr, "parse_getter() bit_offset: %d bit_count: %d mask: %lx name: %s\n",
                 getter->bit_offset, getter->bit_count, getter->mask, getter->name);
+    */
 }
 
 r_device *flex_create_device(char *spec)
 {
-    if (next_slot >= FLEX_SLOTS) {
-        fprintf(stderr, "Maximum number of flex decoders reached!\n");
-        exit(1);
-    }
-
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
         help();
     }
 
-    struct flex_params *params = (struct flex_params *)calloc(1, sizeof(struct flex_params));
-    params_slot[next_slot] = params;
-    r_device *dev = (r_device *)calloc(1, sizeof(r_device));
+    struct flex_params *params = calloc(1, sizeof(*params));
+    r_device *dev = calloc(1, sizeof(*dev));
+    dev->decode_ctx = params;
     char *c, *o;
     int get_count = 0;
 
@@ -386,60 +438,44 @@ r_device *flex_create_device(char *spec)
         *args++ = '\0';
     }
 
-    c = strtok(spec, ":");
+    c = trim_ws(strtok(spec, ":"));
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
     }
-    params->name = strdup(c);
-    snprintf(dev->name, sizeof(dev->name), "General purpose decoder '%s'", c);
+    if (!strncasecmp(c, "n=", 2))
+        c += 2;
+    if (!strncasecmp(c, "name=", 5))
+        c += 5;
+    params->name  = strdup(c);
+    int name_size = strlen(c) + 27;
+    dev->name = malloc(name_size);
+    snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
+    if (c != NULL) {
+        // old style spec, DEPRECATED
+        fprintf(stderr, "\nYou are using the deprecated positional flex spec, please read \"-X help\" and change your spec!\n\n");
+
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing modulation!\n");
         usage();
     }
-    // TODO: add demod_arg where needed
-    if (!strcasecmp(c, "OOK_MC_ZEROBIT"))
-        dev->modulation = OOK_PULSE_MANCHESTER_ZEROBIT;
-    else if (!strcasecmp(c, "OOK_PCM"))
-        dev->modulation = OOK_PULSE_PCM_RZ;
-    else if (!strcasecmp(c, "OOK_PPM_RAW"))
-        dev->modulation = OOK_PULSE_PPM_RAW;
-    else if (!strcasecmp(c, "OOK_PWM"))
-        dev->modulation = OOK_PULSE_PWM_PRECISE;
-    else if (!strcasecmp(c, "OOK_DMC"))
-        dev->modulation = OOK_PULSE_DMC;
-    else if (!strcasecmp(c, "OOK_PIWM_RAW"))
-        dev->modulation = OOK_PULSE_PIWM_RAW;
-    else if (!strcasecmp(c, "OOK_PIWM_DC"))
-        dev->modulation = OOK_PULSE_PIWM_DC;
-    else if (!strcasecmp(c, "OOK_MC_OSV1"))
-        dev->modulation = OOK_PULSE_PWM_OSV1;
-    else if (!strcasecmp(c, "FSK_PCM"))
-        dev->modulation = FSK_PULSE_PCM;
-    else if (!strcasecmp(c, "FSK_PWM_RAW"))
-        dev->modulation = FSK_PULSE_PWM_RAW;
-    else if (!strcasecmp(c, "FSK_MC_ZEROBIT"))
-        dev->modulation = FSK_PULSE_MANCHESTER_ZEROBIT;
-    else {
-        fprintf(stderr, "Bad flex spec, unknown modulation!\n");
-        usage();
-    }
+    dev->modulation = parse_modulation(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing short limit!\n");
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
         usage();
     }
-    dev->short_limit = atoi(c);
+    dev->short_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing long limit!\n");
+        fprintf(stderr, "Bad flex spec, missing long width!\n");
         usage();
     }
-    dev->long_limit = atoi(c);
+    dev->long_width = atoi(c);
 
     c = strtok(NULL, ":");
     if (c == NULL) {
@@ -448,7 +484,7 @@ r_device *flex_create_device(char *spec)
     }
     dev->reset_limit = atoi(c);
 
-    if (dev->modulation == OOK_PULSE_PWM_PRECISE) {
+    if (dev->modulation == OOK_PULSE_PWM) {
         c = strtok(NULL, ":");
         if (c == NULL) {
             fprintf(stderr, "Bad flex spec, missing gap limit!\n");
@@ -480,13 +516,31 @@ r_device *flex_create_device(char *spec)
         dev->tolerance = atoi(c);
     }
 
-    dev->json_callback = callback_slot[next_slot];
+    } // DEPRECATED
+
+    dev->decode_fn = flex_callback;
     dev->fields = output_fields;
 
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
-        if (!strcasecmp(key, "demod"))
-            dev->demod_arg = val ? atoi(val) : 0;
+        key = remove_ws(key);
+        val = trim_ws(val);
+        if (!key || !*key)
+            continue;
+        else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
+            dev->modulation = parse_modulation(val);
+        else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
+            dev->short_width = atoi(val);
+        else if (!strcasecmp(key, "l") || !strcasecmp(key, "long"))
+            dev->long_width = atoi(val);
+        else if (!strcasecmp(key, "y") || !strcasecmp(key, "sync"))
+            dev->sync_width = atoi(val);
+        else if (!strcasecmp(key, "g") || !strcasecmp(key, "gap"))
+            dev->gap_limit = atoi(val);
+        else if (!strcasecmp(key, "r") || !strcasecmp(key, "reset"))
+            dev->reset_limit = atoi(val);
+        else if (!strcasecmp(key, "t") || !strcasecmp(key, "tolerance"))
+            dev->tolerance = atoi(val);
 
         else if (!strcasecmp(key, "bits>"))
             params->min_bits = val ? atoi(val) : 0;
@@ -511,6 +565,8 @@ r_device *flex_create_device(char *spec)
 
         else if (!strcasecmp(key, "invert"))
             params->invert = val ? atoi(val) : 1;
+        else if (!strcasecmp(key, "reflect"))
+            params->reflect = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "match"))
             params->match_len = parse_bits(val, params->match_bits);
@@ -541,15 +597,54 @@ r_device *flex_create_device(char *spec)
     if (params->min_bits > 0 && params->min_repeats < 1)
         params->min_repeats = 1;
 
-    if (debug_output >= 1) {
-        fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
-        fprintf(stderr, "\tmodulation=%u, short_limit=%.0f, long_limit=%.0f, reset_limit=%.0f, demod_arg=%u\n",
-                dev->modulation, dev->short_limit, dev->long_limit, dev->reset_limit, (unsigned)dev->demod_arg);
-        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, match_len=%u, preamble_len=%u\n",
-                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->match_len, params->preamble_len);
+    // sanity checks
+
+    if (!params->name || !*params->name) {
+        fprintf(stderr, "Bad flex spec, missing name!\n");
+        usage();
     }
 
+    if (!dev->modulation) {
+        fprintf(stderr, "Bad flex spec, missing modulation!\n");
+        usage();
+    }
+
+    if (!dev->short_width) {
+        fprintf(stderr, "Bad flex spec, missing short width!\n");
+        usage();
+    }
+
+    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
+        if (!dev->long_width) {
+            fprintf(stderr, "Bad flex spec, missing long width!\n");
+            usage();
+        }
+    }
+
+    if (!dev->reset_limit) {
+        fprintf(stderr, "Bad flex spec, missing reset limit!\n");
+        usage();
+    }
+
+    if (dev->modulation == OOK_PULSE_DMC
+            || dev->modulation == OOK_PULSE_PIWM_RAW
+            || dev->modulation == OOK_PULSE_PIWM_DC) {
+        if (!dev->tolerance) {
+            fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
+            usage();
+        }
+    }
+
+    /*
+    if (decoder->verbose) {
+        fprintf(stderr, "Adding flex decoder \"%s\"\n", params->name);
+        fprintf(stderr, "\tmodulation=%u, short_width=%.0f, long_width=%.0f, reset_limit=%.0f\n",
+                dev->modulation, dev->short_width, dev->long_width, dev->reset_limit);
+        fprintf(stderr, "\tmin_rows=%u, min_bits=%u, min_repeats=%u, invert=%u, reflect=%u, match_len=%u, preamble_len=%u\n",
+                params->min_rows, params->min_bits, params->min_repeats, params->invert, params->reflect, params->match_len, params->preamble_len);
+    }
+    */
+
     free(spec);
-    next_slot++;
     return dev;
 }

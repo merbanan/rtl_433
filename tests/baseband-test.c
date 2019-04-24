@@ -15,7 +15,23 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
+#ifdef _WIN32
+#include <io.h>
+#include <fcntl.h>
+#ifdef _MSC_VER
+#define F_OK 0
+#define R_OK (1 << 2)
+#endif
+#endif
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include <time.h>
 
 #include "baseband.h"
@@ -69,8 +85,8 @@ int main(int argc, char *argv[])
     long n_read;
     unsigned long n_samples;
     int max_block_size = 4096000;
-    FilterState state;
-    DemodFM_State fm_state;
+    filter_state_t state;
+    demodfm_state_t fm_state;
 
     if (argc <= 1) {
         return 1;

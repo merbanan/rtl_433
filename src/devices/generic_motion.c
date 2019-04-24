@@ -8,7 +8,7 @@
  * Each transmission has a warmup of 17 to 32 pulse widths then 8 packets with
  * alternating 1:3 / 2:2 or 1:4 / 2:3 gap:pulse ratio for 0/1 bit in the packet
  * with a repeat gap of 4 pulse widths, i.e.:
- * 7408 us to 13092 us warmup pulse, 1672 us gap,
+ * 6704 us to 13092 us warmup pulse, 1672 us gap,
  * 0: 472 us gap, 1332 us pulse
  * 1: 920 us gap, 888 us pulse
  * 1672 us repeat gap,
@@ -23,12 +23,10 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
 
-static int generic_motion_callback(bitbuffer_t *bitbuffer) {
-    char time_str[LOCAL_TIME_BUFLEN];
+#include "decoder.h"
+
+static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
     int code;
@@ -37,30 +35,26 @@ static int generic_motion_callback(bitbuffer_t *bitbuffer) {
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
         b = bitbuffer->bb[i];
         // strictly validate package as there is no checksum
-        if ((bitbuffer->bits_per_row[i] == 20)
-                && ((b[1] != 0) || (b[2] != 0))
-                && count_repeats(bitbuffer, i) >= 3) {
+        if ((bitbuffer->bits_per_row[i] != 20)
+                || ((b[1] == 0) && (b[2] == 0))
+                || count_repeats(bitbuffer, i) < 3)
+            continue;
 
-            code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
-            sprintf(code_str, "%05x", code);
+        code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
+        sprintf(code_str, "%05x", code);
 
-            /* Get time now */
-            local_time_str(0, time_str);
-            data = data_make(
-                "time",     "",  DATA_STRING, time_str,
-                "model",    "",  DATA_STRING, "Generic motion sensor",
+        data = data_make(
+                "model",    "",  DATA_STRING, _X("Generic-Motion","Generic motion sensor"),
                 "code",     "",  DATA_STRING, code_str,
                 NULL);
 
-            data_acquired_handler(data);
-            return 1;
-        }
+        decoder_output_data(decoder, data);
+        return 1;
     }
     return 0;
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "code",
     NULL
@@ -68,12 +62,13 @@ static char *output_fields[] = {
 
 r_device generic_motion = {
     .name           = "Generic wireless motion sensor",
-    .modulation     = OOK_PULSE_PWM_RAW,
-    .short_limit    = (888+1332)/2,
-    .long_limit     = (1784+2724)/2,
+    .modulation     = OOK_PULSE_PWM,
+    .short_width    = 888,
+    .long_width     = (1332+1784)/2,
+    .sync_width     = 1784+670,
+    .gap_limit      = 1200,
     .reset_limit    = 2724*1.5,
-    .json_callback  = &generic_motion_callback,
+    .decode_fn      = &generic_motion_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };

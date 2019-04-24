@@ -158,14 +158,20 @@ function(git_timestamp _var)
     return()
   endif()
 
-  execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format="%ci" ${hash} ${ARGN}
+  execute_process(COMMAND ${GIT_EXECUTABLE} log -1 --format=%ci ${hash} ${ARGN}
     WORKING_DIRECTORY ${GIT_DIR}
     RESULT_VARIABLE res
     OUTPUT_VARIABLE out
     ERROR_QUIET
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   if(res EQUAL 0)
-    string(REGEX REPLACE "[-\" :]" "" out ${out})
+    # older Git does not have %cI, create ISO8601 from %ci
+    string(SUBSTRING ${out} 0 10 date)
+    string(SUBSTRING ${out} 10 -1 time)
+    string(REPLACE " " "" time ${time})
+    set(out "${date}T${time}")
+    set(${_var}_ISO ${out} PARENT_SCOPE)
+    string(REGEX REPLACE "[-T:]" "" out ${out})
     string(SUBSTRING ${out} 0 12 out)
   else()
     set(out "${out}-${res}-NOTFOUND")

@@ -1,6 +1,3 @@
-#include "rtl_433.h"
-#include "data.h"
-#include "util.h"
 /* Currently this can decode the temperature and id from Rubicson sensors
  *
  * the sensor sends 36 bits 12 times pwm modulated
@@ -18,7 +15,9 @@
  * The sensor can be bought at Kjell&Co
  */
 
+#include "decoder.h"
 
+// NOTE: this is used in nexus.c and solight_te44.c
 int rubicson_crc_check(bitrow_t *bb) {
     uint8_t tmp[5];
     tmp[0] = bb[1][0];            // Byte 0 is nibble 0 and 1
@@ -30,12 +29,11 @@ int rubicson_crc_check(bitrow_t *bb) {
     return crc8(tmp, 5, 0x31, 0x6c) == 0;
 }
 
-static int rubicson_callback(bitbuffer_t *bitbuffer) {
+static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     unsigned bits = bitbuffer->bits_per_row[0];
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
     uint8_t channel;
     uint8_t sensor_id;
     uint8_t battery;
@@ -46,7 +44,6 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
         return 0;
 
     if (rubicson_crc_check(bb)) {
-        local_time_str(0, time_str);
 
         /* Nibble 3,4,5 contains 12 bits of temperature
          * The temperature is signed and scaled by 10 */
@@ -58,15 +55,15 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
         sensor_id = bb[0][0];
         temp_c = (float) temp / 10.0;
 
-        data = data_make("time",         "",            DATA_STRING, time_str,
-                        "model",         "",            DATA_STRING, "Rubicson Temperature Sensor",
+        data = data_make(
+                        "model",         "",            DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
                         "id",            "House Code",  DATA_INT,    sensor_id,
                         "channel",       "Channel",     DATA_INT,    channel,
                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                         "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                         "mic",           "Integrity",   DATA_STRING, "CRC",
                         NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
 
         return 1;
     }
@@ -74,7 +71,6 @@ static int rubicson_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
     "channel",
@@ -88,12 +84,12 @@ static char *output_fields[] = {
 // timings based on samp_rate=1024000
 r_device rubicson = {
     .name           = "Rubicson Temperature Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 488+970,      // Gaps:  Short 976µs, Long 1940µs, Sync 4000µs
-    .long_limit     = 970+2000,     // Pulse: 500µs (Initial pulse in each package is 388µs)
-    .reset_limit    = 4800,             // Two initial pulses and a gap of 9120µs is filtered out
-    .json_callback  = &rubicson_callback,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1000, // Gaps:  Short 976µs, Long 1940µs, Sync 4000µs
+    .long_width     = 2000, // Pulse: 500µs (Initial pulse in each package is 388µs)
+    .gap_limit      = 3000,
+    .reset_limit    = 4800, // Two initial pulses and a gap of 9120µs is filtered out
+    .decode_fn      = &rubicson_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields,
 };

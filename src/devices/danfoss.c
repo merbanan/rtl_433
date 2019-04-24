@@ -34,12 +34,10 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
-#include "rtl_433.h"
-#include "util.h"
+#include "decoder.h"
 
 #define NUM_BYTES 10	// Output contains 21 nibbles, but skip first nibble 0xE, as it is not part of CRC and to get byte alignment
 static const uint8_t HEADER[] = { 0x36, 0x5c };	// Encoded prefix. Full prefix is 3 nibbles => 18 bits (but checking 16 is ok)
-static const uint16_t CRC_POLY = 0x1021;
 
 // Mapping from 6 bits to 4 bits
 static uint8_t danfoss_decode_nibble(uint8_t byte) {
@@ -67,12 +65,11 @@ static uint8_t danfoss_decode_nibble(uint8_t byte) {
 }
 
 
-static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
+static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
 	uint8_t bytes[NUM_BYTES];	// Decoded bytes with two 4 bit nibbles in each
 	data_t *data;
-	char time_str[LOCAL_TIME_BUFLEN];
 
-	local_time_str(0, time_str);
 
 	// Validate package
 	unsigned bits = bitbuffer->bits_per_row[0];
@@ -80,7 +77,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		// Find a package
 		unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 112, HEADER, sizeof(HEADER)*8);	// Normal index is 128, skip first 14 bytes to find faster
 		if (bits-bit_offset < 126) {	// Package should be at least 126 bits
-			if (debug_output) {
+			if (decoder->verbose) {
 				fprintf(stderr, "Danfoss: short package. Header index: %u\n", bit_offset);
 				bitbuffer_print(bitbuffer);
 			}
@@ -93,7 +90,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 			uint8_t nibble_h = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset) >> 2);
 			uint8_t nibble_l = danfoss_decode_nibble(bitrow_get_byte(bitbuffer->bb[0], n*12+bit_offset+6) >> 2);
 			if (nibble_h > 0xF || nibble_l > 0xF) {
-				if (debug_output) {
+				if (decoder->verbose) {
 					fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
 					bitbuffer_print(bitbuffer);
 				}
@@ -103,7 +100,7 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		}
 
 		// Output raw decoded data for debug
-		if (debug_output) {
+		if (decoder->verbose) {
 			char str_raw[NUM_BYTES*2+4];	// Add some extra space for line end
 			for (unsigned n=0; n<NUM_BYTES; ++n) {
 				sprintf(str_raw+n*2, "%02X", bytes[n]);
@@ -112,11 +109,11 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 		}
 
 		// Validate Prefix and CRC
-		uint16_t crc_calc = crc16_ccitt(bytes, NUM_BYTES-2, CRC_POLY, 0);
+		uint16_t crc_calc = crc16(bytes, NUM_BYTES-2, 0x1021, 0x0000);
 		if (bytes[0] != 0x02		// Somewhat redundant to header search, but checks last bits
 		 || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
 		) {
-			if (debug_output) fprintf(stderr, "Danfoss: Prefix or CRC error.\n");
+			if (decoder->verbose) fprintf(stderr, "Danfoss: Prefix or CRC error.\n");
 			return 0;
 		}
 
@@ -136,15 +133,14 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 
 		// Output data
 		data = data_make(
-			"time",		"",		DATA_STRING,	time_str,
-			"model",		"",		DATA_STRING,	"Danfoss CFR Thermostat",
+			"model",		"",		DATA_STRING,	_X("Danfoss-CFR","Danfoss CFR Thermostat"),
 			"id",		"ID",		DATA_INT,	id,
 			"temperature_C", 	"Temperature",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_meas,
 			"setpoint_C",	"Setpoint",	DATA_FORMAT,	"%.2f C", DATA_DOUBLE, temp_setp,
 			"switch",		"Switch",	DATA_STRING,	str_sw,
 			"mic",           "Integrity",            DATA_STRING,    "CRC",
 			NULL);
-		data_acquired_handler(data);
+		decoder_output_data(decoder, data);
 
 		return 1;
 	}
@@ -153,10 +149,8 @@ static int danfoss_CFR_callback(bitbuffer_t *bitbuffer) {
 
 
 static char *output_fields[] = {
-	"time",
-	"brand"
-	"model"
-	"id"
+	"model",
+	"id",
 	"temperature_C",
 	"setpoint_C",
 	"switch",
@@ -167,11 +161,10 @@ static char *output_fields[] = {
 r_device danfoss_CFR = {
 	.name           = "Danfoss CFR Thermostat",
 	.modulation     = FSK_PULSE_PCM,
-	.short_limit    = 100,	// NRZ decoding
-	.long_limit     = 100,	// Bit width
+	.short_width    = 100,	// NRZ decoding
+	.long_width     = 100,	// Bit width
 	.reset_limit    = 500,	// Maximum run is 4 zeroes/ones
-	.json_callback  = &danfoss_CFR_callback,
+	.decode_fn      = &danfoss_cfr_callback,
 	.disabled       = 0,
-	.demod_arg      = 0,
 	.fields         = output_fields
 };

@@ -28,14 +28,11 @@ X = xor checksum
 
 */
 
-#include "rtl_433.h"
-#include "pulse_demod.h"
-#include "util.h"
+#include "decoder.h"
 
 
-static int wt1024_callback(bitbuffer_t *bitbuffer)
+static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char time_str[LOCAL_TIME_BUFLEN];
     data_t *data;
     uint8_t *b; // bits of a row
     uint16_t sensor_rid;
@@ -71,23 +68,21 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
     /* unk */
     value = b[5];
 
-    if (debug_output) {
+    if (decoder->verbose) {
         fprintf(stderr, "wt1024_callback:");
         bitbuffer_print(bitbuffer);
     }
-    local_time_str(0, time_str);
 
     data = data_make(
-            "time",  "", DATA_STRING, time_str,
-            "model", "", DATA_STRING, "WT0124 Pool Thermometer",
-            "rid",    "Random ID", DATA_INT,    sensor_rid,
+            "model", "", DATA_STRING, _X("WT0124-Pool","WT0124 Pool Thermometer"),
+            _X("id","rid"),    "Random ID", DATA_INT,    sensor_rid,
             "channel",       "Channel",     DATA_INT,    channel,
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
             "data",  "Data", DATA_INT,    value,
             NULL);
 
-    data_acquired_handler(data);
+    decoder_output_data(decoder, data);
 
     // Return 1 if message successfully decoded
     return 1;
@@ -101,9 +96,9 @@ static int wt1024_callback(bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-    "time",
     "model",
-    "rid",
+    "rid", // TODO: delete this
+    "id",
     "channel",
     "temperature_C",
     "mic",
@@ -114,14 +109,13 @@ static char *output_fields[] = {
 
 r_device wt1024 = {
     .name          = "WT0124 Pool Thermometer",
-    .modulation    = OOK_PULSE_PWM_PRECISE,
-    .short_limit   = 680,
-    .long_limit    = 1850,
+    .modulation    = OOK_PULSE_PWM,
+    .short_width   = 680,
+    .long_width    = 1850,
     .reset_limit   = 30000,
     .gap_limit     = 4000,
     .sync_width    = 10000,
-    .json_callback = &wt1024_callback,
+    .decode_fn     = &wt1024_callback,
     .disabled      = 0,
-    .demod_arg     = 0,
     .fields        = output_fields,
 };

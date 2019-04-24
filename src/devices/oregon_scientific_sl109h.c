@@ -1,137 +1,84 @@
-//some hints from http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
+/** @file
+    Oregon Scientific SL109H decoder.
+*/
+/**
+Oregon Scientific SL109H decoder.
 
-#include "rtl_433.h"
-#include "util.h"
+Data layout (bits):
 
-#define SL109H_MESSAGE_LENGTH 38
-#define CHECKSUM_BYTE_COUNT 4
-#define CHECKSUM_START_POSITION 6
-#define HUMIDITY_START_POSITION 6
-#define HUMIDITY_BIT_COUNT 8
-#define TEMPERATURE_START_POSITION 14
-#define TEMPERATURE_BIT_COUNT 12
-#define ID_START_POSITION 30
+    AAAA CC HHHH HHHH TTTT TTTT TTTT SSSS IIII IIII
 
-static uint8_t calculate_humidity(bitbuffer_t *bitbuffer, unsigned row_index)
-{
-    int units_digit, tens_digit;
+- A: 4 bit checksum (add)
+- C: 2 bit channel number
+- H: 8 bit BCD humidity
+- T: 12 bit signed temperature scaled by 10
+- S: 4 bit status, unknown
+- I: 8 bit a random id that is generated when the sensor starts
 
-    uint8_t out[1] = {0};
-    bitbuffer_extract_bytes(bitbuffer, row_index, HUMIDITY_START_POSITION, out, HUMIDITY_BIT_COUNT);
+S.a. http://www.osengr.org/WxShield/Downloads/OregonScientific-RF-Protocols-II.pdf
+*/
 
-    units_digit = out[0] & 0x0f;
+#include "decoder.h"
 
-    tens_digit = (out[0] & 0xf0) >> 4;
-
-    return 10 * tens_digit + units_digit;
-}
-
-static int calculate_centigrade_decidegrees(bitbuffer_t *bitbuffer, unsigned row_index)
-{
-    int decidegrees = 0;
-
-    uint8_t out[2] = {0};
-    bitbuffer_extract_bytes(bitbuffer, row_index, TEMPERATURE_START_POSITION, out, TEMPERATURE_BIT_COUNT);
-
-    if(out[0] & 0x80) decidegrees = (~decidegrees << TEMPERATURE_BIT_COUNT);
-
-    decidegrees |= (out[0] << 4) | ((out[1] & 0xf0) >> 4);
-
-    return decidegrees;
-}
-
-static uint8_t get_channel_bits(uint8_t first_byte)
-{
-    return (first_byte & 0x0c) >> 2;
-}
-static int calculate_channel(uint8_t channel_bits)
-{
-    return (channel_bits % 3) ? channel_bits : 3;
-}
-
-//rolling code: changes when thermometer reset button is pushed/battery is changed
-static uint8_t get_id(bitbuffer_t *bitbuffer, unsigned row_index)
-{
-    uint8_t out[1] = {0};
-    bitbuffer_extract_bytes(bitbuffer, row_index, ID_START_POSITION, out, SL109H_MESSAGE_LENGTH - ID_START_POSITION);
-
-    return out[0];
-}
-
-//there may be more specific information here; not currently certain what information is encoded here
-static int get_status(uint8_t fourth_byte)
-{
-    return (fourth_byte & 0x3C) >> 2;
-}
-
-static int calculate_checksum(bitbuffer_t *bitbuffer, unsigned row_index, int channel)
-{
-    uint8_t calculated_checksum, actual_checksum;
-    uint8_t sum = 0;
-    int  actual_expected_comparison;
-
-    uint8_t out[CHECKSUM_BYTE_COUNT] = {0};
-    bitbuffer_extract_bytes(bitbuffer, row_index, CHECKSUM_START_POSITION, out, SL109H_MESSAGE_LENGTH - CHECKSUM_START_POSITION);
-
-    for(int i = 0; i < CHECKSUM_BYTE_COUNT; i++) sum += (out[i] & 0x0f) + (out[i] >> 4);
-
-    calculated_checksum = ((sum + channel) % 16);
-    actual_checksum     = bitbuffer->bb[row_index][0] >> 4;
-    actual_expected_comparison = (calculated_checksum == actual_checksum);
-
-    if(debug_output & !actual_expected_comparison) {
-        fprintf(stderr, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", actual_checksum, calculated_checksum);
-        fprintf(stderr, "Message: ");
-        bitbuffer_print(bitbuffer);
-    }
-
-    return actual_expected_comparison;
-}
-
-
-static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
+static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *msg;
-    uint8_t channel_bits;
+    uint8_t b[5];
 
-    float temp_c;
-    uint8_t humidity;
+    uint8_t sum, chk;
     int channel;
-    uint8_t id;
+    uint8_t humidity;
+    int temp_raw;
+    float temp_c;
     int status;
-    char time_str[LOCAL_TIME_BUFLEN];
+    uint8_t id;
 
     for(int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
+        if (bitbuffer->bits_per_row[row_index] != 38) // expected length is 38 bit
+            continue;
+
         msg = bitbuffer->bb[row_index];
+        chk = msg[0] >> 4;
 
-        channel_bits = get_channel_bits(msg[0]);
+        // align the channel "half nibble"
+        bitbuffer_extract_bytes(bitbuffer, row_index, 2, b, 36);
+        b[0] &= 0x3f;
 
-        if( !((bitbuffer->bits_per_row[row_index] == SL109H_MESSAGE_LENGTH)
-              && calculate_checksum(bitbuffer, row_index, channel_bits)) ) continue;
+        sum = add_nibbles(b, 5) & 0xf;
+        if (sum != chk) {
+            if (decoder->verbose > 1)
+                bitbuffer_printf(bitbuffer, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", chk, sum);
+            continue;
+        }
 
-        local_time_str(0, time_str);
+        channel = b[0] >> 4;
+        channel = (channel % 3) ? channel : 3;
 
-        temp_c = calculate_centigrade_decidegrees(bitbuffer, row_index) / 10.0;
+        humidity = 10 * (b[0] & 0x0f) + (b[1] >> 4);
 
-        humidity = calculate_humidity(bitbuffer, row_index);
+        temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
+        temp_c = (temp_raw >> 4) * 0.1f;
 
-        id = get_id(bitbuffer, row_index);
+        // there may be more specific information here; not currently certain what information is encoded here
+        status = (b[3] >> 4);
 
-        channel = calculate_channel(channel_bits);
+        // changes when thermometer reset button is pushed/battery is changed
+        id = ((b[3] & 0x0f) << 4) | (b[4] >> 4);
 
-        status = get_status(msg[3]);
+        /* clang-format off */
+        data = data_make(
+                "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
+                "id",               "Id",                                   DATA_INT,    id,
+                "channel",          "Channel",                              DATA_INT,    channel,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
+                "status",           "Status",                               DATA_INT,    status,
+                "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",
+                NULL);
+        /* clang-format on */
 
-        data = data_make("time",          "",           DATA_STRING,                         time_str,
-                         "model",         "Model",                              DATA_STRING,    "Oregon Scientific SL109H",
-                         "id",            "Id",                                 DATA_INT,    id,
-                         "channel",       "Channel",                            DATA_INT,    channel,
-                         "temperature_C", "Celsius",	DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
-                         "humidity",      "Humidity",	DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-                         "status",        "Status",                             DATA_INT,    status,
-                         "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
-                         NULL);
-        data_acquired_handler(data);
+        decoder_output_data(decoder, data);
         return 1;
     }
 
@@ -139,25 +86,24 @@ static int oregon_scientific_callback_sl109h(bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "time",
-    "model",
-    "id",
-    "channel",
-    "status",
-    "temperature_C",
-    "humidity",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "status",
+        "temperature_C",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device oregon_scientific_sl109h = {
-    .name           = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 2800/*760*/,
-    .long_limit     = 4400/*1050*/,
-    .reset_limit    = 8000/*2240*/,
-    .json_callback  = &oregon_scientific_callback_sl109h,
-    .disabled       = 0,
-    .demod_arg      = 0,
-    .fields         = output_fields
+        .name        = "Oregon Scientific SL109H Remote Thermal Hygro Sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 5000,
+        .reset_limit = 10000, // packet gap is 8900
+        .decode_fn   = &oregon_scientific_sl109h_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

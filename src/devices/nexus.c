@@ -19,19 +19,17 @@
  * The sensor can be bought at Clas Ohlsen
  */
 
-#include "rtl_433.h"
-#include "util.h"
-#include "data.h"
+#include "decoder.h"
 
-extern int rubicson_crc_check(bitrow_t *bb);
+// NOTE: this should really not be here
+int rubicson_crc_check(bitrow_t *bb);
 
-static int nexus_callback(bitbuffer_t *bitbuffer) {
+static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    char time_str[LOCAL_TIME_BUFLEN];
 
-    if (debug_output > 1) {
+    if (decoder->verbose > 1) {
         fprintf(stderr,"Possible Nexus: ");
         bitbuffer_print(bitbuffer);
     }
@@ -59,7 +57,6 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
             return 0;
 
         /* Get time now */
-        local_time_str(0, time_str);
 
         /* Nibble 0,1 contains id */
         id = bb[r][0];
@@ -77,27 +74,27 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
         humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
 
         // Thermo
-        if (bb[r][3] == 0xF0) {
-        data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "Nexus Temperature",
-                         "id",            "House Code",  DATA_INT, id,
-                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                         "channel",       "Channel",     DATA_INT, channel,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
-                         NULL);
-        data_acquired_handler(data);
+        if (humidity == 0x00) {
+        data = data_make(
+                "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
+                "id",            "House Code",  DATA_INT, id,
+                "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                NULL);
+        decoder_output_data(decoder, data);
         }
         // Thermo/Hygro
         else {
-        data = data_make("time",          "",            DATA_STRING, time_str,
-                         "model",         "",            DATA_STRING, "Nexus Temperature/Humidity",
-                         "id",            "House Code",  DATA_INT, id,
-                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                         "channel",       "Channel",     DATA_INT, channel,
-                         "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
-                         "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                         NULL);
-        data_acquired_handler(data);
+        data = data_make(
+                "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
+                "id",            "House Code",  DATA_INT, id,
+                "channel",       "Channel",     DATA_INT, channel,
+                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
+                NULL);
+        decoder_output_data(decoder, data);
         }
         return 1;
     }
@@ -105,11 +102,10 @@ static int nexus_callback(bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "time",
     "model",
     "id",
-    "battery",
     "channel",
+    "battery",
     "temperature_C",
     "humidity",
     NULL
@@ -117,12 +113,12 @@ static char *output_fields[] = {
 
 r_device nexus = {
     .name           = "Nexus Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM_RAW,
-    .short_limit    = 1744,
-    .long_limit     = 3500,
+    .modulation     = OOK_PULSE_PPM,
+    .short_width    = 1000,
+    .long_width     = 2000,
+    .gap_limit      = 3000,
     .reset_limit    = 5000,
-    .json_callback  = &nexus_callback,
+    .decode_fn      = &nexus_callback,
     .disabled       = 0,
-    .demod_arg      = 0,
     .fields         = output_fields
 };
