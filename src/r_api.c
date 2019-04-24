@@ -259,10 +259,16 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
         }
         ago.tv_usec -= usecs_ago;
 
+        char const *format = NULL;
+        if (cfg->report_time == REPORT_TIME_UNIX)
+            format = "%s";
+        else if (cfg->report_time == REPORT_TIME_ISO)
+            format = "%Y-%m-%dT%H:%M:%S";
+
         if (cfg->report_time_hires)
-            return usecs_time_str(&ago, buf);
+            return usecs_time_str(buf, format, &ago);
         else
-            return local_time_str(ago.tv_sec, buf);
+            return format_time_str(buf, format, ago.tv_sec);
     }
 }
 

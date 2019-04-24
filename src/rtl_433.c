@@ -112,7 +112,7 @@ static void usage(int exit_code)
             "  [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.\n"
+            "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run\n"
@@ -195,13 +195,16 @@ static void help_output(void)
 static void help_meta(void)
 {
     fprintf(stderr,
-            "[-M time|reltime|notime|hires|level] Add various metadata to every output line.\n"
+            "[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
-            "\tUse \"reltime\" to add sample position meta data (preset for read-file and stdin).\n"
-            "\tUse \"notime\" to remove time meta data.\n"
-            "\tUse \"hires\" to add microsecods to date time meta data.\n"
-            "\tUse \"utc\" / \"noutc\" to output timestamps in UTC.\n"
+            "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
+            "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
+            "\tUse \"time:iso\" to show the time with ISO-8601 format (YYYY-MM-DD\"T\"hh:mm:ss).\n"
+            "\tUse \"time:off\" to remove time meta data.\n"
+            "\tUse \"time:usec\" to add microseconds to date time meta data.\n"
+            "\tUse \"time:utc\" to output time in UTC.\n"
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
+            "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
             "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
@@ -780,8 +783,46 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!arg)
             help_meta();
 
-        if (!strcasecmp(arg, "time"))
+        if (!strncasecmp(arg, "time", 4)) {
+            char *p = arg_param(arg);
+            // time  time:1  time:on  time:yes
+            // time:0  time:off  time:no
+            // time:rel
+            // time:unix
+            // time:iso
+            // time:...:usec  time:...:sec
+            // time:...:utc  time:...:local
             cfg->report_time = REPORT_TIME_DATE;
+            while (p && *p) {
+                if (!strncasecmp(p, "0", 1) || !strncasecmp(p, "no", 2) || !strncasecmp(p, "off", 3))
+                    cfg->report_time = REPORT_TIME_OFF;
+                else if (!strncasecmp(p, "1", 1) || !strncasecmp(p, "yes", 3) || !strncasecmp(p, "on", 2))
+                    cfg->report_time = REPORT_TIME_DATE;
+                else if (!strncasecmp(p, "rel", 3))
+                    cfg->report_time = REPORT_TIME_SAMPLES;
+                else if (!strncasecmp(p, "unix", 4))
+                    cfg->report_time = REPORT_TIME_UNIX;
+                else if (!strncasecmp(p, "iso", 3))
+                    cfg->report_time = REPORT_TIME_ISO;
+                else if (!strncasecmp(p, "usec", 4))
+                    cfg->report_time_hires = 1;
+                else if (!strncasecmp(p, "sec", 3))
+                    cfg->report_time_hires = 0;
+                else if (!strncasecmp(p, "utc", 3))
+                    cfg->report_time_utc = 1;
+                else if (!strncasecmp(p, "local", 5))
+                    cfg->report_time_utc = 0;
+                else {
+                    fprintf(stderr, "Unknown time format option: %s\n", p);
+                    help_meta();
+                }
+
+                p = arg_param(p);
+            }
+            // fprintf(stderr, "time format: %d, usec:%d utc:%d\n", cfg->report_time, cfg->report_time_hires, cfg->report_time_utc);
+        }
+
+        // TODO: old time options, remove someday
         else if (!strcasecmp(arg, "reltime"))
             cfg->report_time = REPORT_TIME_SAMPLES;
         else if (!strcasecmp(arg, "notime"))
@@ -792,6 +833,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_time_utc = 1;
         else if (!strcasecmp(arg, "noutc"))
             cfg->report_time_utc = 0;
+
         else if (!strcasecmp(arg, "protocol"))
             cfg->report_protocol = 1;
         else if (!strcasecmp(arg, "noprotocol"))
