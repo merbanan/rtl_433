@@ -1,5 +1,5 @@
-Compilation instructions
-===========
+# Compilation instructions for VS15
+
 To compile the program in Visual Studio 2015 (newer versions should work as well), you first need to extract the rtl-sdr library into a folder "rtl-sdr" parallel to the rtl_433_win folder.
 
 You can use the official, but outdated (January 2014)) windows build https://osmocom.org/attachments/2242/RelWithDebInfo.zip 
