@@ -188,6 +188,7 @@ static void help_output(void)
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
             "\t  devices: posts device and sensor info in nested topics\n"
+            "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433\"\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }

@@ -278,6 +278,7 @@ Option -F:
 	  events: posts JSON event data
 	  states: posts JSON state data
 	  devices: posts device and sensor info in nested topics
+	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433"
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 Option -M:
