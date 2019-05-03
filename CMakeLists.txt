@@ -54,8 +54,9 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
-    # for strdup, setenv
-    ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
+    # for strdup, setenv, use either
+    #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
 
