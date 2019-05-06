@@ -34,7 +34,7 @@ Data layout:
 | 12,7,6,11,10,9,8 | TTTTTTT
 | 14               | P - Parity to ensure count of set bits in data is odd.
 
-Temperature in Celcius = (bin2dec(bits 12,7,6,11,10,9,8) - 41) + ((bin2dec(bits 4,3,2,1,0) - 10) / 10 )
+Temperature in Celcius = (bin2dec(bits 12,7,6,11,10,9,8) + ((bin2dec(bits 4,3,2,1,0) - 10) / 10 ) - 41
 
 Published range of device is -29.9C to 69.9C
 */
