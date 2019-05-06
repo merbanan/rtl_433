@@ -26,13 +26,15 @@ Final 1464 us is gap silence, though.
 E.g. rtl_433 -R 0 -X 'n=WTR001,m=OOK_PWM,s=732,l=2196,y=1464,r=2928,bits>=14,invert'
 
 Data layout (14 bits):
+
     DDDDDXTTTTTTTP
 
-| Bit              | Description
-| 4,3,2,1,0        | DDDDD
-| 5                | X - Always 0 in testing. Maybe battery_OK or fixed to determine inversion
-| 12,7,6,11,10,9,8 | TTTTTTT
-| 14               | P - Parity to ensure count of set bits in data is odd.
+| Ordered Bits     | Description
+|------------------|-------------
+| 4,3,2,1,0        | DDDDD: Fractional part of Temperature. (DDDDD - 10) / 10
+| 5                | X: Always 0 in testing. Maybe battery_OK or fixed
+| 12,7,6,11,10,9,8 | TTTTTTT: Temperature in Celcius = (TTTTTTT + ((DDDDD - 10) / 10)) - 41
+| 13               | P: Parity to ensure count of set bits in data is odd.
 
 Temperature in Celcius = (bin2dec(bits 12,7,6,11,10,9,8) + ((bin2dec(bits 4,3,2,1,0) - 10) / 10 ) - 41
 
