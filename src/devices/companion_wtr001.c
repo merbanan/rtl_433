@@ -27,7 +27,7 @@ E.g. rtl_433 -R 0 -X 'n=WTR001,m=OOK_PWM,s=732,l=2196,y=1464,r=2928,bits>=14,inv
 
 Data layout (14 bits):
 
-    DDDDDXTTTTTTTP
+    DDDDDXTT TTTTTP
 
 | Ordered Bits     | Description
 |------------------|-------------
