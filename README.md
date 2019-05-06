@@ -192,6 +192,7 @@ Supported device protocols:
     [123]* Jansite TPMS Model TY02S
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
+    [126]  Companion WTR001 Temperature Sensor
 
 * Disabled by default, use -R n or -G
 
