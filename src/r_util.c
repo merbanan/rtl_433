@@ -21,7 +21,7 @@ void get_time_now(struct timeval *tv)
         perror("gettimeofday");
 }
 
-char *local_time_str(time_t time_secs, char *buf)
+char *format_time_str(char *buf, char const *format, time_t time_secs)
 {
     time_t etime;
     struct tm tm_info;
@@ -39,11 +39,14 @@ char *local_time_str(time_t time_secs, char *buf)
     localtime_r(&etime, &tm_info); // thread-safe
 #endif
 
-    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", &tm_info);
+    if (!format || !*format)
+        format = "%Y-%m-%d %H:%M:%S";
+
+    strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     return buf;
 }
 
-char *usecs_time_str(struct timeval *tv, char *buf)
+char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
 {
     struct timeval now;
     struct tm *tm_info;
@@ -56,7 +59,10 @@ char *usecs_time_str(struct timeval *tv, char *buf)
     time_t t_secs = tv->tv_sec;
     tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
 
-    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
+    if (!format || !*format)
+        format = "%Y-%m-%d %H:%M:%S";
+
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, tm_info);
     snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     return buf;
 }

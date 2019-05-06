@@ -18,6 +18,7 @@ add_executable(rtl_433
 	output_mqtt.c
 	pulse_demod.c
 	pulse_detect.c
+	r_api.c
 	r_util.c
 	rtl_433.c
 	samp_grab.c
@@ -77,6 +78,7 @@ add_executable(rtl_433
 	devices/lacrosse.c
 	devices/lacrosse_TX141TH_Bv2.c
 	devices/lacrosse_tx35.c
+	devices/lacrosse_ws7000.c
 	devices/lacrossews.c
 	devices/lightwave_rf.c
 	devices/m_bus.c
@@ -118,6 +120,7 @@ add_executable(rtl_433
 	devices/tpms_pmv107j.c
 	devices/tpms_renault.c
 	devices/tpms_toyota.c
+	devices/ts_ft002.c
 	devices/ttx201.c
 	devices/vaillant_vrt340f.c
 	devices/waveman.c

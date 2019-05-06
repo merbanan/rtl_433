@@ -9,6 +9,9 @@
     (at your option) any later version.
 */
 
+#ifndef INCLUDE_LIST_H_
+#define INCLUDE_LIST_H_
+
 #include <stddef.h>
 
 /// Dynamically growing list, elems is always NULL terminated, call list_ensure_size() to alloc elems.
@@ -37,3 +40,5 @@ void list_clear(list_t *list, list_elem_free_fn elem_free);
 
 /// Clear the list, free backing, does not free list itself.
 void list_free_elems(list_t *list, list_elem_free_fn elem_free);
+
+#endif /* INCLUDE_LIST_H_ */

@@ -13,7 +13,7 @@ matrix:
         - export PATH=$MSBUILD_PATH:$PATH
         - mkdir build
         - cd build
-        - cmake -G "Visual Studio 15 2017 Win64" ..
+        - cmake -DENABLE_RTLSDR=OFF -G "Visual Studio 15 2017 Win64" ..
         - MSBuild.exe rtl433.sln
 # Test Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR
 #    - os: windows

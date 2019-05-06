@@ -1,5 +1,4 @@
-rtl_433
-=======
+# rtl_433
 
 rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, and 915 MHz ISM bands.
 
@@ -8,22 +7,19 @@ The official source code is in the https://github.com/merbanan/rtl_433/ reposito
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
 Activly tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
-![rtl_433 screenshot](screenshot.png)
+![rtl_433 screenshot](./screenshot.png)
 
-Building/installation:
-----------------------
+## Building/installation
 
 See [BUILDING.md](BUILDING.md)
 
 Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
 
-How to add support for unsupported sensors
-------------------------------------------
+## How to add support for unsupported sensors
 
 Read the Test Data section at the bottom.
 
-Running:
---------
+## Running
 
     rtl_433 -h
 
@@ -66,7 +62,7 @@ Usage:		= General options =
   [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time | reltime | notime | hires | utc | protocol | level | stats | bits | help] Add various meta data to each output.
+  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run
@@ -106,7 +102,7 @@ Supported device protocols:
     [31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
     [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
     [33]  WT450, WT260H, WT405H
-    [34]  LaCrosse WS-2310 Weather Station
+    [34]  LaCrosse WS-2310 / WS-3600 Weather Station
     [35]  Esperanza EWS
     [36]  Efergy e2 classic
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
@@ -123,7 +119,7 @@ Supported device protocols:
     [48]  Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
-    [51]  Proove
+    [51]  Proove / Nexa / KlikAanKlikUit Wireless Switch
     [52]  Bresser Thermo-/Hygro-Sensor 3CH
     [53]  Springfield Temperature and Soil Moisture
     [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
@@ -136,7 +132,7 @@ Supported device protocols:
     [61]* LightwaveRF
     [62]  Elro DB286A Doorbell
     [63]  Efergy Optical
-    [64]  Honda Car Key
+    [64]* Honda Car Key
     [67]  Radiohead ASK
     [68]  Kerui PIR / Contact Sensor
     [69]  Fine Offset WH1050 Weather Station
@@ -148,7 +144,7 @@ Supported device protocols:
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
+    [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
     [80]  IBIS beacon
     [81]  Oil Ultrasonic STANDARD FSK
@@ -185,8 +181,8 @@ Supported device protocols:
     [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
     [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
     [114]  Maverick et73
-    [115]  Honeywell Wireless Doorbell
-    [116]  Honeywell Wireless Doorbell (FSK)
+    [115]  Honeywell ActivLink, Wireless Doorbell
+    [116]  Honeywell ActivLink, Wireless Doorbell (FSK)
     [117]* ESA1000 / ESA2000 Energy Monitor
     [118]* Biltema rain gauge
     [119]  Bresser Weather Center 5-in-1
@@ -194,6 +190,8 @@ Supported device protocols:
     [121]  Opus/Imagintronix XT300 Soil Moisture
     [122]* FS20
     [123]* Jansite TPMS Model TY02S
+    [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
+    [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
 
 * Disabled by default, use -R n or -G
 
@@ -280,16 +278,20 @@ Option -F:
 	  events: posts JSON event data
 	  states: posts JSON state data
 	  devices: posts device and sensor info in nested topics
+	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433"
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 Option -M:
-[-M time|reltime|notime|hires|level] Add various metadata to every output line.
+[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
-	Use "reltime" to add sample position meta data (preset for read-file and stdin).
-	Use "notime" to remove time meta data.
-	Use "hires" to add microsecods to date time meta data.
-	Use "utc" / "noutc" to output timestamps in UTC.
+	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
+	Use "time:unix" to show the seconds since unix epoch as time meta data.
+	Use "time:iso" to show the time with ISO-8601 format (YYYY-MM-DD"T"hh:mm:ss).
+	Use "time:off" to remove time meta data.
+	Use "time:usec" to add microseconds to date time meta data.
+	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
+		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
@@ -350,8 +352,7 @@ Some examples:
 | `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
 
 
-Supporting Additional Devices and Test Data
--------------------------------------------
+## Supporting Additional Devices and Test Data
 
 Some device protocol decoders are disabled by default. When testing to see if your device
 is decoded by rtl_433, use `-G` to enable all device protocols.
@@ -387,15 +388,13 @@ until you've added test signals and the description to the repository.
 
 The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
 
-Google Group
-------------
+## Google Group
 
 Join the Google group, rtl_433, for more information about rtl_433:
 https://groups.google.com/forum/#!forum/rtl_433
 
 
-Troubleshooting
----------------
+## Troubleshooting
 
 If you see this error:
 

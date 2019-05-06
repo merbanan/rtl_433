@@ -102,7 +102,6 @@ static int ambientweather_wh31e_callback(r_device *decoder, bitbuffer_t *bitbuff
     return events;
 }
 
-/* clang-format off */
 static char *output_fields[] = {
     "model",
     "id",
@@ -112,7 +111,7 @@ static char *output_fields[] = {
     "humidity",
     "data",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device ambientweather_wh31e = {

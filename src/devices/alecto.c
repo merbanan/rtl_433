@@ -5,7 +5,12 @@
 AlectoV1 Weather Sensor decoder.
 Documentation also at http://www.tfd.hu/tfdhu/files/wsprotocol/auriol_protocol_v20.pdf
 
+Also Unitec W186-F (bought from Migros).
+
 PPM with pulse width 500 us, long gap 4000 us, short gap 2000 us, sync gap 9000 us.
+
+Some sensors transmit 8 long pulses (1-bits) as first row.
+Some sensors transmit 3 lone pulses (sync bits) between packets.
 
 Message Format: (9 nibbles, 36 bits):
 Please note that bytes need to be reversed before processing!

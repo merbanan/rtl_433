@@ -102,7 +102,9 @@
     <ClInclude Include="..\include\output_mqtt.h" />
     <ClInclude Include="..\include\pulse_demod.h" />
     <ClInclude Include="..\include\pulse_detect.h" />
+    <ClInclude Include="..\include\r_api.h" />
     <ClInclude Include="..\include\r_device.h" />
+    <ClInclude Include="..\include\r_private.h" />
     <ClInclude Include="..\include\r_util.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
@@ -129,6 +131,7 @@
     <ClCompile Include="..\src\output_mqtt.c" />
     <ClCompile Include="..\src\pulse_demod.c" />
     <ClCompile Include="..\src\pulse_detect.c" />
+    <ClCompile Include="..\src\r_api.c" />
     <ClCompile Include="..\src\r_util.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />
@@ -188,6 +191,7 @@
     <ClCompile Include="..\src\devices\lacrosse.c" />
     <ClCompile Include="..\src\devices\lacrosse_TX141TH_Bv2.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />
+    <ClCompile Include="..\src\devices\lacrosse_ws7000.c" />
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
@@ -229,6 +233,7 @@
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />
+    <ClCompile Include="..\src\devices\ts_ft002.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
