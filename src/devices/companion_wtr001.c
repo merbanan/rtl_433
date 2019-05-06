@@ -25,10 +25,10 @@ Final 1464 us is gap silence, though.
 
 E.g. rtl_433 -R 0 -X 'n=WTR001,m=OOK_PWM,s=732,l=2196,y=1464,r=2928,bits>=14,invert'
 
-Data layout:
-    DD DD DX TT TT TT TP
+Data layout (14 bits):
+    DDDDDXTTTTTTTP
 
-| Nibble           | Description
+| Bit              | Description
 | 4,3,2,1,0        | DDDDD
 | 5                | X - Always 0 in testing. Maybe battery_OK or fixed to determine inversion
 | 12,7,6,11,10,9,8 | TTTTTTT
