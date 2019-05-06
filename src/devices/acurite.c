@@ -557,7 +557,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
-                        "sensor_id",    NULL, DATA_INT,       sensor_id, // @todo normaiize to "id" at 1.0 release.
+                        _X("id", "sensor_id"),    NULL, DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -582,7 +582,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
-                        "sensor_id",    NULL, DATA_INT,  sensor_id, // @todo normalize to "id" at 1.0 release.
+                        _X("id", "sensor_id"),    NULL, DATA_INT,  sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -609,7 +609,7 @@ static int acurite_txr_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-3n1","Acurite 3n1 sensor"),
-                        "sensor_id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                        _X("id", "sensor_id"),    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
@@ -949,7 +949,7 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 ptempc = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
                 /* clang-format off */
                 data = data_append(data,
-                        "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
                 /* clang-format on */
@@ -960,8 +960,8 @@ static int acurite_00275rm_callback(r_device *decoder, bitbuffer_t *bitbuf)
                 phumidity = signal[0][9] & 0x7f;
                 /* clang-format off */
                 data = data_append(data,
-                        "ptemperature_C",  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                        "phumidity",       "Humidity",     DATA_INT,       phumidity,
+                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                        _X("humidity_1", "phumidity"),       "Humidity",     DATA_INT,       phumidity,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
                 /* clang-format on */
@@ -1139,6 +1139,8 @@ static char *acurite_00275rm_output_fields[] = {
     "temperature_C",
     "humidity",
     "water",
+    "temperature_1_C",
+    "humidity_1",
     "ptemperature_C",
     "phumidity",
     "mic",

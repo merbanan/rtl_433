@@ -69,8 +69,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     data = data_make(
             "model",    "", DATA_STRING, "X10-RF",
-            "houseid",  "", DATA_STRING, housecode,
-            "deviceid", "", DATA_INT, bDeviceCode + 1,
+            _X("id", "deviceid"), "", DATA_INT, bDeviceCode + 1,
+            _X("channel", "houseid"),  "", DATA_STRING, housecode,
             "state",    "", DATA_STRING, state ? "ON" : "OFF",
             "data",     "", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
@@ -82,8 +82,10 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "houseid"
-    "deviceid",
+    "channel",
+    "id",
+    "houseid", // TODO: remove ??
+    "deviceid", // TODO: remove ??
     "state",
     "data",
     NULL
