@@ -46,18 +46,14 @@ Published range of device is -29.9C to 69.9C
 #define MYDEVICE_BITLEN      14
 #define MYDEVICE_MINREPEATS  3
 
-static int companion_wtr001_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
+static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     data_t *data;
     int r; // a row index
     uint8_t b[2];
     float temperature;
-
-    // short pulse with long gap is 0, long pulse with short gap is 1.
-    // This is inverse of default OOK_PULSE_PWM behavior
-    bitbuffer_invert(bitbuffer);
-
+  
     r = bitbuffer_find_repeated_row(bitbuffer, MYDEVICE_MINREPEATS, MYDEVICE_BITLEN);
     if (r < 0 || bitbuffer->bits_per_row[r] != 14) {
         return 0;
@@ -65,10 +61,14 @@ static int companion_wtr001_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_extract_bytes(bitbuffer, r, 0, b, 14);
 
-    // Make sure fixed bit in nibble 5 is not set
+    // Invert these 14 bits, PWM with short pulse is 0, long pulse is 1
+    b[0] = ~b[0];
+    b[1] = ~b[1] & 0xfc;
+
+    // Make sure bit 5 is not set
     if ((b[0] & 0x04) == 0x04) {
         if (decoder->verbose > 1) {
-            // fprintf(stderr, "companion_wtr001: Fixed Bit set (and it shouldn't be)\n");
+            fprintf(stderr, "companion_wtr001: Fixed Bit set (and it shouldn't be)\n");
         }
         return 0;
     }
@@ -81,7 +81,8 @@ static int companion_wtr001_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    // Get the tenth of a degree C as nibbles 0,1,2,3,4 reversed, minus 0x0a
+    // Get the tenth of a degree C as bits 0,1,2,3,4 reversed, minus 0x0a
+    // bin2dec(bits 4,3,2,1,0) - 10)
     uint8_t temp_tenth_raw = reverse8(b[0] & 0xf8);
    
     if (temp_tenth_raw < 0x0a) {
@@ -102,6 +103,8 @@ static int companion_wtr001_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
 
     temp_tenth_raw -= 0x0a;
     
+    // Shift these 7 bits around into the right order
+    // bin2dec(bits 12,7,6,11,10,9,8)
     uint8_t temp_whole_raw = reverse8(b[1]&0xf0) | reverse8(b[0]&0x03)>>2 | (b[1]&0x08)<<3;
 
     if (temp_whole_raw < 11) {
@@ -119,14 +122,16 @@ static int companion_wtr001_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         return 0;
     }
-   
+
+    // Add whole temperature part to (tenth temperature part / 10), then subtract 41 for final (float) temperature reading
     temperature = (temp_whole_raw + (temp_tenth_raw * 0.1f)) - 41.0f;
 
     data = data_make(
-            "model", "", DATA_STRING, _X("WTR001","Companion WTR001 Temperature Sensor"),
+            "model",         "",            DATA_STRING, "Companion-WTR001",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            "mic",   "", DATA_STRING, "PARITY",
+            "mic",           "",            DATA_STRING, "PARITY",
             NULL);
+
     decoder_output_data(decoder, data);
 
     return 1;
@@ -147,7 +152,7 @@ r_device companion_wtr001 = {
         .gap_limit   = 4000, // max gap is 2928 us
         .reset_limit = 8000, // 
         .sync_width  = 1464, // 1464 us pulse + 1464 us gap between each row
-        .decode_fn   = &companion_wtr001_decoder,
+        .decode_fn   = &companion_wtr001_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };
