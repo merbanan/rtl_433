@@ -112,7 +112,7 @@ static char *output_fields[] = {
 };
 
 r_device thermopro_tp12 = {
-    .name          = "Thermopro TP08/TP12 thermometer",
+    .name          = "Thermopro TP08/TP12/TP20 thermometer",
     .modulation    = OOK_PULSE_PPM,
     .short_width   = 500,
     .long_width    = 1500,
