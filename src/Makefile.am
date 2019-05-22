@@ -44,6 +44,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
                        devices/digitech_xc0324.c \
+                       devices/directv.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
                        devices/ecowitt.c \

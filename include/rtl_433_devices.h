@@ -135,6 +135,7 @@
     DECL(ts_ft002) \
     DECL(companion_wtr001) \
     DECL(ecowitt) \
+    DECL(directv) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
