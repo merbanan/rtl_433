@@ -108,6 +108,7 @@ static const uint8_t *dtv_button_label[] = {
     [0x43] = "GREEN",
     [0x44] = "BLUE",
     [0x51] = "TV: VCR ALERT",
+    [0x59] = "VOLUME ALERT",
     [0x5A] = "AV1/AV2/TV: IR ALERT 1",
     [0x5B] = "DTV: IR ALERT",
     [0x5C] = "AV1/AV2/TV: IR ALERT 2",
