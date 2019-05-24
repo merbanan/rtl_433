@@ -63,7 +63,7 @@ more SYMBOLS i.e. the SYMBOL does not occur at the end of the ROW), both it and
 the one or two contiguous SYMBOLS after it are ignored and LOGICAL DATA would
 resume decoding from that next transition.
 
-After decoding, there should be 20 bits (5 bytes) of LOGICAL DATA.
+After decoding, there should be 40 bits (5 bytes) of LOGICAL DATA.
 
 LOGICAL DATA layout in nibbles:
 
