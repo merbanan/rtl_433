@@ -42,27 +42,26 @@ ROWS are typically repeated for the duration of the EVENT (a button push on the
 remote) and a ROW is allowed to finish sending even if the EVENT ends before the
 ROW is completely sent.
 
-ROWS in any single TRANSMISSION usually consist of the same MESSAGE,
-however this is not always the case.  TRANSMISSIONS may be one ROW for some
-short EVENTS, although some specific EVENTS generate TRANSMISSIONS of three
-rows, regardless the duration of the EVENT.  Single TRANSMISSIONS have been
-observed to swtich from one MESSAGE to another.  This seems to happen for
-specific buttons, such as the [SELECT] button, which sends a single ROW
-containing a LONG SYNC and a MESSAGE that encodes a new [SELECT RELEASE]
-MESSAGE.  Some buttons send one MESSAGE during the initial duration
-of the EVENT, but then switch to a new MESSAGE if the EVENT continues.
-Some TRANSMISSIONS stop sending ROWS after a duration even if the EVENT
-continues.
+ROWS in any single TRANSMISSION usually contain the same MESSAGE, however this
+is not always the case.  TRANSMISSIONS may be one ROW for some short EVENTS,
+although some specific EVENTS generate TRANSMISSIONS of three rows, regardless
+the duration of the EVENT.  Single TRANSMISSIONS have been observed to swtich
+from one MESSAGE to another.  This seems to happen for specific buttons, such as
+the [SELECT] button, which sends a single ROW containing a LONG SYNC and a
+MESSAGE that encodes a new [SELECT RELEASE] MESSAGE.  Some buttons send one
+MESSAGE during the initial duration of the EVENT, but then switch to a new
+MESSAGE if the EVENT continues. Some TRANSMISSIONS stop sending ROWS after a
+duration even if the EVENT continues.
 
 LOGICAL DATA in the MESSAGE may be decoded from the ROW using some sort of
 Differential Pulse Width Modulation (DPWM) method.  Between each SYMBOL
 transition (both `1` to `0` and `0` to `1`) consider the number of SYMBOLS.  If
 there is only one SYMBOL, the LOGICAL DATA bit is a `0`.  If there are two
 SYMBOLS, the LOGICAL DATA bit is a `1`.  If there is 3 or more SYMBOLS, this is
-not DATA - it is a SYNC.  If a SYNC is found (and is followed by more SYMBOLS
-i.e. the SYMBOL does not occur at the end of the ROW), both it and the one or
-two contiguous SYMBOLS after it are ignored and LOGICAL DATA would resume
-decoding from that next transition.
+not DATA - it is a sync pulse.  If a sync pulse is found (and is followed by
+more SYMBOLS i.e. the SYMBOL does not occur at the end of the ROW), both it and
+the one or two contiguous SYMBOLS after it are ignored and LOGICAL DATA would
+resume decoding from that next transition.
 
 After decoding, there should be 20 bits (5 bytes) of LOGICAL DATA.
 
@@ -85,13 +84,13 @@ $ rtl_433 -R 0 -X '-X n=DirecTV,m=FSK_PCM,s=600,l=600,g=30000,r=80000'
 
 #include "decoder.h"
 
-#define ROW_BITLEN_MIN     54  // 48 if we received signal without leading and trailing space bits (gaps)
-#define ROW_BITLEN_MAX     99
-#define ROW_MINREPEATS     1
-#define ROW_SYNC_SHORT_LEN 5
-#define DTV_BITLEN_MAX     40  // Valid decoded data for this device will be 40 bits in length
+#define ROW_BITLEN_MIN     44  // The shortest possible fragment that can possibly decode successfully
+#define ROW_BITLEN_MAX     99  // But even with a LONG SYNC and large MESSAGE value, won't be larger than this
+#define ROW_MINREPEATS     1   // We're expecting that all bitbuffers coming here only have one row at a time
+#define ROW_SYNC_SHORT_LEN 5   // A SYNC longer than this will be considered a LONG SYNC
+#define DTV_BITLEN_MAX     40  // Valid decoded data for this device will be exactly 40 bits in length
 
-
+// Provide a lookup between button ID codes and their names based on observations
 static const uint8_t *dtv_button_label[] = { 
     [0x01] = "1",
     [0x02] = "2",
@@ -187,6 +186,7 @@ const uint8_t *get_dtv_button_label(uint8_t button_id)
 }
 
 /// Set a single bit in a bitrow at bit_idx position.  Assume success, no bounds checking, so be careful!
+/// Maybe this can graduate to bitbuffer.c someday?
 void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 {
     uint8_t bit_mask;
@@ -198,37 +198,55 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
     }
 }
 
-unsigned bitrow_directv_decode(bitrow_t const bitrow, unsigned bit_len, unsigned start,
+/// Just a helper function to make bit strings printable.  Make sure str_buf has enough space
+/// to hold the string representation or will overflow.
+/// Maybe this can graduate to bitbuffer.c someday?
+static void bitrow_to_str(bitrow_t const bitrow, unsigned bit_len, uint8_t *str_buf)
+{
+    uint8_t temp_str_buf[6];
+    sprintf(str_buf, "{%2u}", bit_len);
+    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
+        sprintf(temp_str_buf, "%02x", bitrow[col]);
+        strcat( str_buf, temp_str_buf );
+    }
+}
+
+/// This is a differential PWM decode and is essentially only looking at symbol
+/// transitions, not the symbols themselves.  An inverted bitstring would yeild the
+/// same result.  Note that:
+/// 
+/// - Initial contiguous alike symbol(s) is not considered data, regardless of length.
+///   Essentially, the
+/// 
+/// - Any group of alike contiguous symbols with a length of 3 or more is considered
+///   a sync.  If this happens anywhere except at the end of bitrow, any data already
+///   decoded is discarded, the length and position of the sync is noted, and data
+///   decoding resumes.
+/// 
+/// - The one or two alike contiguous symbols immediately after a sync are not treated
+///   as data, they are essentially there to signify the end of the sync.
+/// 
+/// Return value is length of data decoded into bitrow_buf after last sync. If bitrow 
+/// ends with a sync, that sync is ignored and returned data will be data before that
+/// sync.
+/// 
+/// Ensure that bitrow_buf is at least as big as bitrow or data overrun might occur.
+/// 
+/// Note that sync_pos and sync_len will be modified if a sync is found. If returned
+/// sync_pos is greater than start, it might mean there is data between start and
+/// sync_pos.  If desired, call again with bit_len = sync_pos to find this data.
+///
+/// Maybe this can graduate to bitbuffer.c someday?
+unsigned bitrow_dpwm_decode(bitrow_t const bitrow, unsigned bit_len, unsigned start,
         bitrow_t bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
 {
-    // This is a differential decode and is essentially only looking at
-    // symbol transitions, not the symbols themselves.  An inverted bitstring
-    // would yeild the same result.  Note that:
-    // - Initial contiguous symbol(s) is not considered data, regardless of length
-    // - Any group of contiguous symbols with a length of 3 or more is considered
-    //   a sync.  If this happens anywhere except at the end of bitrow, any data
-    //   already decoded is discarded, the length and position of the sync is noted,
-    //   and data decoding resumes.
-    // - The one or two contiguous symbols immediately after a sync are not treated 
-    //   as data, they are essentially there to signify the end of the sync
-    // Return value is length of data decoded into bitrow_buf after last sync.
-    // A negative value means no data after latest sync.  If bitrow ends with
-    // a sync, that sync is ignored and returned data will be data before that
-    // sync.
-    // Ensure that bitrow_buf is at least as big as bitrow or data overrun
-    // might occur.
-    // Note that sync_pos and sync_len will be modified if a sync is found.
-    // If returned sync_pos is greater than start, it might mean there is data
-    // between start and sync_pos.  If desired, call again with bit_len = sync_pos
-    // to find this data.
-
     unsigned bitrow_pos;
     int bitrow_buf_pos          = -1;
-    unsigned cur_symbol_len     = 0;
+    unsigned cur_symbol_len     = -1;
     *sync_pos                   = start;
     *sync_len                   = 0;
     unsigned sync_in_progress   = 1;
-    unsigned prev_bit            = 0x00;
+    unsigned prev_bit           = 0xff;  // So it's always different than the first bit
     unsigned this_bit;
 
     for (bitrow_pos = start; bitrow_pos < bit_len; bitrow_pos++) {
@@ -251,13 +269,14 @@ unsigned bitrow_directv_decode(bitrow_t const bitrow, unsigned bit_len, unsigned
                 }
                 bitrow_buf_pos++;
             }
-            cur_symbol_len=0;
+            cur_symbol_len = 0;
         }
         prev_bit = this_bit;
     }
 
+    // If a sync was started at the end of the row, ignore it and the previous decoded bit
     if (sync_in_progress) {
-        bitrow_buf_pos-=1;
+        bitrow_buf_pos -= 1;
     }
 
     // If bad decode, just send back an empty result string.
@@ -266,17 +285,6 @@ unsigned bitrow_directv_decode(bitrow_t const bitrow, unsigned bit_len, unsigned
     }
 
     return bitrow_buf_pos;
-}
-
-static void bitrow_to_str(bitrow_t const bitrow, unsigned bit_len, uint8_t *str_buf)
-{
-    uint8_t temp_str_buf[6];
-
-    sprintf(str_buf, "{%2d}", bit_len);
-    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
-        sprintf(temp_str_buf, "%02x", bitrow[col]);
-        strcat( str_buf, temp_str_buf );
-    }
 }
 
 static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -300,12 +308,13 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Grouping rows in a signal like this will need to be supported in some other way, and this 
     // support is not yet available in rtl_433.
     // For now, we'll decode the signal in the bitbuffer assuming it is only one row.
+
     r = 0;
     bit_len = bitbuffer->bits_per_row[r];
 
     if ((bit_len < ROW_BITLEN_MIN) || (bit_len > ROW_BITLEN_MAX)) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %i (expected between %i and %i).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
+        if (decoder->verbose >= 2) {
+            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %u (expected between %u and %u).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
         }
         return 0;
     }
@@ -313,33 +322,38 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, r, 0, bitrow, bit_len);
 
     // Decode the message symbols
-    dtv_bit_len = bitrow_directv_decode(bitrow, bit_len, 0, dtv_buf, &row_sync_pos, &row_sync_len);
+    dtv_bit_len = bitrow_dpwm_decode(bitrow, bit_len, 0, dtv_buf, &row_sync_pos, &row_sync_len);
+    if (decoder->verbose >= 2) {
+        bitrow_to_str(dtv_buf, dtv_bit_len, str_buf);
+        fprintf(stderr, "directv: SYNC at pos:%u for %u symbols. DPWM Decoded Message: %s\n", row_sync_pos, row_sync_len, str_buf);
+    }
     
-    // Make sure we have exactly 40 bits
-    if (dtv_bit_len != 40) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "directv: Incorrect number of decoded bits: %d (should be 40).\n", dtv_bit_len);
+    // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
+    if (dtv_bit_len != DTV_BITLEN_MAX) {
+        if (decoder->verbose >= 2) {
+            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %u).\n", dtv_bit_len, DTV_BITLEN_MAX);
         }
         return 0;
     }
 
-    // Break apart dtv data into fields and validate
-    
-    // First byte should be 0x10 (magic number?)
+    // First byte should be 0x10 (model number?)
     if (dtv_buf[0] != 0x10) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "directv: Incorrect Model ID number: 0x%02x (should be 0x10).\n", dtv_buf[0]);
+        if (decoder->verbose >= 2) {
+            fprintf(stderr, "directv: Incorrect Model ID number: 0x%02X (should be 0x10).\n", dtv_buf[0]);
         }
         return 0;
     }
 
     // Validate Checksum
-    if ((dtv_buf[0] >> 4 + dtv_buf[0] & 0x0F + dtv_buf[1] >> 4 + dtv_buf[1] & 0x0F + dtv_buf[2] >> 4 + 
-        dtv_buf[2] & 0x0F + dtv_buf[3] >> 4 + dtv_buf[3] & 0x0F + dtv_buf[4] >> 4) & 0x0F 
-        != dtv_buf[4] & 0x0F)
-    {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "directv: Checksum failed.\n");
+    unsigned checksum_1;
+    unsigned checksum_2;
+    checksum_1 = ( (dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) + 
+                   (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) + 
+                   (dtv_buf[4] >> 4) ) & 0x0F;
+    checksum_2 = dtv_buf[4] & 0x0F;
+    if (checksum_1 != checksum_2) {
+        if (decoder->verbose >= 2) {
+            fprintf(stderr, "directv: Checksum failed: 0x%01X should match 0x%01X\n", checksum_1, checksum_2);
         }
         return 0;
     }
@@ -348,17 +362,17 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned dtv_device_id;
     dtv_device_id = dtv_buf[1] << 12 | dtv_buf[2] << 4 | dtv_buf[3] >> 4;
     if (dtv_device_id > 999999) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "directv: Bad Device ID: %d (should be between 000000 and 999999).\n", dtv_device_id);
+        if (decoder->verbose >= 2) {
+            fprintf(stderr, "directv: Bad Device ID: %u (should be between 000000 and 999999).\n", dtv_device_id);
         }
         return 0;
     }
 
-    // Get Button ID
+    // Get Button ID, assuming all byte values are valid.
     uint8_t dtv_button_id;
     dtv_button_id = dtv_buf[3] << 4 | dtv_buf[4] >> 4;
-    // Assume all byte values are valid.
 
+    // Populate our return fields
     data = data_make(
             "model",         "",            DATA_STRING, "DirecTV-RC66RX",
             "device_id",     "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
