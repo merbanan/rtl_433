@@ -12,11 +12,11 @@
 /**
 DirecTV RC66RX Remote Control decoder.
 
-The device uses a FSK to transmit a PCM signal TRANSMISSION.  Its FSK signal
+The device uses FSK to transmit a PCM signal TRANSMISSION.  Its FSK signal
 seems to be centered around 433.92 MHz with its MARK and SPACE frequencies
 each +/- 50 kHz from that center point.
 
-A full signal TRANMISSION consists of ROWS, which are collections of SYMBOLS.
+A full signal TRANSMISSION consists of ROWS, which are collections of SYMBOLS.
 SYMBOLS, both the higher-frequency MARK (`1`) and lower-frequency SPACE
 (`0`), have a width of 600μs.  If there is more than one ROW in a single
 TRANSMISSION, there will be a GAP of 27,600μs of silence between each ROW.
@@ -45,7 +45,7 @@ ROW is completely sent.
 ROWS in any single TRANSMISSION usually contain the same MESSAGE, however this
 is not always the case.  TRANSMISSIONS may be one ROW for some short EVENTS,
 although some specific EVENTS generate TRANSMISSIONS of three rows, regardless
-the duration of the EVENT.  Single TRANSMISSIONS have been observed to swtich
+the duration of the EVENT.  Single TRANSMISSIONS have been observed to switch
 from one MESSAGE to another.  This seems to happen for specific buttons, such as
 the [SELECT] button, which sends a single ROW containing a LONG SYNC and a
 MESSAGE that encodes a new [SELECT RELEASE] MESSAGE.  Some buttons send one
@@ -57,7 +57,7 @@ LOGICAL DATA in the MESSAGE may be decoded from the ROW using some sort of
 Differential Pulse Width Modulation (DPWM) method.  Between each SYMBOL
 transition (both `1` to `0` and `0` to `1`) consider the number of SYMBOLS.  If
 there is only one SYMBOL, the LOGICAL DATA bit is a `0`.  If there are two
-SYMBOLS, the LOGICAL DATA bit is a `1`.  If there is 3 or more SYMBOLS, this is
+SYMBOLS, the LOGICAL DATA bit is a `1`.  If there are 3 or more SYMBOLS, this is
 not DATA - it is a sync pulse.  If a sync pulse is found (and is followed by
 more SYMBOLS i.e. the SYMBOL does not occur at the end of the ROW), both it and
 the one or two contiguous SYMBOLS after it are ignored and LOGICAL DATA would
