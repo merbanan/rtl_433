@@ -21,13 +21,16 @@ enum modulation_types {
     FSK_PULSE_MANCHESTER_ZEROBIT = 18, ///< FSK, Manchester encoding.
 };
 
-/** Decoders should return n>=0 for n packets successfully decoded,
+/** Decoders should return n>0 for n packets successfully decoded,
     an ABORT code if the bitbuffer is no applicable,
     or a FAIL code if the message is malformed. */
 enum decode_return_codes {
+    DECODE_SUCCESS      = 1,
     DECODE_FAIL_OTHER   = 0, ///< legacy, do not use
+    /** Bitbuffer row count or row length is wrong for this sensor. */
     DECODE_ABORT_LENGTH = -1,
     DECODE_ABORT_EARLY  = -2,
+    /** Message Integrity Check failed: e.g. checksum/CRC doesn't validate. */
     DECODE_FAIL_MIC     = -3,
     DECODE_FAIL_SANITY  = -4,
 };
