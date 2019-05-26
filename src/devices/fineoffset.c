@@ -417,7 +417,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 200) {
+    if (bitbuffer->bits_per_row[0] < 190) {
         return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
     } else if (bitbuffer->bits_per_row[0] < 440) {  // Nominal size is 488 bit periods
         return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
