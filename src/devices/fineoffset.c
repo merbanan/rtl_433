@@ -325,7 +325,7 @@ The sensor sends a package each ~10m. The bits are PCM modulated with Frequency 
 
 Data layout:
     aa 2d d4 42 cc 41 9a 41 ae c1 99 9
-             FF DD ?P PP ?A AA ?? CC
+             FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
 - D: 8 bit device id?
@@ -334,7 +334,8 @@ Data layout:
 - ?: 2 bits ?
 - A: 14 bit PM10 reading in ug/m3
 - ?: 8 bits ?
-- C: 8 bit Checksum of previous 7 bytes (binary sum truncated to 8 bit)
+- C: 8 bit CRC checksum of the previous 6 bytes
+- B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
 
 */
 static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -352,11 +353,16 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
-    // Verify checksum
-    int sum = (add_bytes(b, 7) & 0xff) - b[7];
-    if (sum) {
-        if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH0290: Checksum error: ");
+    // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
+    uint8_t crc = crc8(b, 6, 0x31, 0x00);
+    uint8_t checksum = 0;
+    for (unsigned n = 0; n < 7; ++n) {
+        checksum += b[n];
+    }
+    if (crc != b[6] || checksum != b[7]) {
+        if (decoder->verbose) {
+            fprintf(stderr, "Fineoffset_WH0280: Checksum error: %02x %02x\n", crc, checksum);
+        }
         return DECODE_FAIL_MIC;
     }
 
