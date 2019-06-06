@@ -367,7 +367,6 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Decode data
-    uint8_t family    = b[0];
     uint8_t id        = b[1];
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
@@ -377,8 +376,8 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
-            "25_particles",     "2.5 micron particles",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "100_particles",     "10 micron particles",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
+            "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -817,8 +816,8 @@ static char *output_fields_WH25[] = {
     "uvi",
     "light_lux",
     //WH0290
-    "25_particles",
-    "100_particles",
+    "pm2_5_ug_m3",
+    "pm10_ug_m3",
     "battery",
     "mic",
     NULL,
