@@ -803,7 +803,7 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     char *host = "localhost";
     char *port = "1883";
     char *opts = hostport_param(param, &host, &port);
-    fprintf(stderr, "Publishing MQTT UDP datagrams to %s port %s\n", host, port);
+    fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
 }
