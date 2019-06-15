@@ -1,20 +1,20 @@
-/**
- * High-level utility functions for decoders
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    High-level utility functions for decoders.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_DECODER_UTIL_H_
 #define INCLUDE_DECODER_UTIL_H_
 
 #include <stdarg.h>
 #include "bitbuffer.h"
-#include "rtl_433_devices.h"
+#include "r_device.h"
 
 /// Create a new r_device, copy from template if not NULL.
 r_device *create_device(r_device *template);

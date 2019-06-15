@@ -39,7 +39,7 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
 
     data = data_make(
-            "model",    "",             DATA_STRING, "Akhan 100F14 remote keyless entry",
+            "model",    "",             DATA_STRING, _X("Akhan-100F14","Akhan 100F14 remote keyless entry"),
             "id",       "ID (20bit)",   DATA_FORMAT, "0x%x", DATA_INT, id,
             "data",     "Data (4bit)",  DATA_STRING, cmd_str,
             NULL);

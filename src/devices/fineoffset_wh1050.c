@@ -1,44 +1,31 @@
-/* Fine Offset WH1050 Weather Station
- *
- * This module is a cut-down version of the WH1080 decoder.
- * The WH1050 sensor unit is like the WH1080 unit except it has no
- * wind direction sensor or time receiver.
- * Other than omitting the unused code, the differences are the message length
- * and the location of the battery-low bit.
- *
- * The original module was by
- *
- * 2016 Nicola Quiriti ('ovrheat')
- *
- * Modifications by
- *
- * 2016 Don More
- *
- *********************
- *
- * This weather station is based on an indoor touchscreen receiver, and on a 5+1 outdoor wireless sensors group
- * (rain, wind speed, temperature, humidity.
- * See the product page here: http://www.foshk.com/Weather_Professional/WH1070.html (The 1050 model has no radio clock)
- *
- * Please note that the pressure sensor (barometer) is enclosed in the indoor console unit, NOT in the outdoor
- * wireless sensors group.
- * That's why it's NOT possible to get pressure data by wireless communication. If you need pressure data you should try
- * an Arduino/Raspberry solution wired with a BMP180 or BMP085 sensor.
- *
- * Data are transmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
- *
- * The 'Total rainfall' field is a cumulative counter, increased by 0.3 millimeters of rain at once.
- *
+/** @file
+    Fine Offset WH1050 Weather Station.
+
+    2016 Nicola Quiriti ('ovrheat')
+    Modifications 2016 by Don More
  */
+/**
+This module is a cut-down version of the WH1080 decoder.
+The WH1050 sensor unit is like the WH1080 unit except it has no
+wind direction sensor or time receiver.
+Other than omitting the unused code, the differences are the message length
+and the location of the battery-low bit.
+
+This weather station is based on an indoor touchscreen receiver, and on a 5+1 outdoor wireless sensors group
+(rain, wind speed, temperature, humidity.
+See the product page here: http://www.foshk.com/Weather_Professional/WH1070.html (The 1050 model has no radio clock).
+
+Please note that the pressure sensor (barometer) is enclosed in the indoor console unit, NOT in the outdoor
+wireless sensors group.
+That's why it's NOT possible to get pressure data by wireless communication. If you need pressure data you should try
+an Arduino/Raspberry solution wired with a BMP180 or BMP085 sensor.
+
+Data is transmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
+
+The 'Total rainfall' field is a cumulative counter, increased by 0.3 millimeters of rain each step.
+*/
 
 #include "decoder.h"
-
-#define CRC_POLY 0x31
-
-// If you calculate the CRC over all 10 bytes including the preamble
-// byte (always 0xFF), then CRC_INIT is 0xFF. But we compare the preamble
-// byte and then discard it.
-#define CRC_INIT 0x00
 
 static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -69,13 +56,16 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    if (crc8(br, 9, CRC_POLY, CRC_INIT)) {
+    // If you calculate the CRC over all 10 bytes including the preamble
+    // byte (always 0xFF), then CRC_INIT is 0xFF. But we compare the preamble
+    // byte and then discard it.
+    if (crc8(br, 9, 0x31, 0x00)) {
         return 0; // crc mismatch
     }
 
     // GETTING WEATHER SENSORS DATA
-    int temp_raw      = (br[1] << 8) + br[2];
-    float temperature = ((temp_raw & 0x03ff) - 0x190) / 10.0;
+    int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
+    float temperature = (temp_raw - 400) * 0.1;
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
@@ -86,15 +76,15 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // PRESENTING DATA
     data = data_make(
-            "model",         "",         DATA_STRING, "Fine Offset WH1050 weather station",
-            "id",            "StationID",    DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-            "temperature_C", "Temperature",    DATA_FORMAT, "%.01f C",    DATA_DOUBLE, temperature,
-            "humidity",      "Humidity",    DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-            "speed",         "Wind avg speed",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, speed,
-            "gust",          "Wind gust",    DATA_FORMAT, "%.02f",    DATA_DOUBLE, gust,
-            "rain",          "Total rainfall",    DATA_FORMAT, "%.01f",    DATA_DOUBLE, rain,
-            "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-            "mic",           "Integrity",    DATA_STRING,    "CRC",
+            "model",            "",                 DATA_STRING, _X("Fineoffset-WH1050","Fine Offset WH1050 weather station"),
+            "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
+            _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
+            _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
+            _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
+            "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     decoder_output_data(decoder, data);
     return 1;
@@ -105,9 +95,12 @@ static char *output_fields[] = {
     "id",
     "temperature_C",
     "humidity",
-    "speed",
-    "gust",
-    "rain",
+    "speed", // TODO: remove this
+    "gust", // TODO: remove this
+    "wind_avg_km_h",
+    "wind_max_km_h",
+    "rain", // TODO: delete this
+    "rain_mm",
     "battery",
     NULL
 };

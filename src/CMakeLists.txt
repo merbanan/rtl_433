@@ -15,8 +15,10 @@ add_executable(rtl_433
 	list.c
 	mongoose.c
 	optparse.c
+	output_mqtt.c
 	pulse_demod.c
 	pulse_detect.c
+	r_api.c
 	r_util.c
 	rtl_433.c
 	samp_grab.c
@@ -37,6 +39,7 @@ add_executable(rtl_433
 	devices/calibeur.c
 	devices/cardin.c
 	devices/chuango.c
+	devices/companion_wtr001.c
 	devices/current_cost.c
 	devices/danfoss.c
 	devices/digitech_xc0324.c
@@ -54,6 +57,7 @@ add_executable(rtl_433
 	devices/fineoffset_wh1080.c
 	devices/flex.c
 	devices/fordremote.c
+	devices/fs20.c
 	devices/ft004b.c
 	devices/ge_coloreffects.c
 	devices/generic_motion.c
@@ -76,6 +80,7 @@ add_executable(rtl_433
 	devices/lacrosse.c
 	devices/lacrosse_TX141TH_Bv2.c
 	devices/lacrosse_tx35.c
+	devices/lacrosse_ws7000.c
 	devices/lacrossews.c
 	devices/lightwave_rf.c
 	devices/m_bus.c
@@ -88,6 +93,7 @@ add_executable(rtl_433
 	devices/nexus.c
 	devices/oil_standard.c
 	devices/oil_watchman.c
+	devices/opus_xt300.c
 	devices/oregon_scientific.c
 	devices/oregon_scientific_sl109h.c
 	devices/oregon_scientific_v1.c
@@ -112,9 +118,11 @@ add_executable(rtl_433
 	devices/thermopro_tp12.c
 	devices/tpms_citroen.c
 	devices/tpms_ford.c
+	devices/tpms_jansite.c
 	devices/tpms_pmv107j.c
 	devices/tpms_renault.c
 	devices/tpms_toyota.c
+	devices/ts_ft002.c
 	devices/ttx201.c
 	devices/vaillant_vrt340f.c
 	devices/waveman.c

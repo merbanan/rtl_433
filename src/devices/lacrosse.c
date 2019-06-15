@@ -1,7 +1,7 @@
 /* LaCrosse TX 433 Mhz Temperature and Humidity Sensors
  * Tested: TX-7U and TX-6U (Temperature only)
- *
  * Not Tested but should work: TX-3, TX-4
+ * also TFA Dostmann 30.3120.90 sensor (for e.g. 35.1018.06 (WS-9015) station)
  *
  * Copyright (C) 2015 Robert C. Terzi
  *
@@ -160,7 +160,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             case 0x00:
                 temp_c = msg_value - 50.0;
                 data = data_make(
-                                 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+                                 "model",         "",            DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                                  "id",            "",            DATA_INT, sensor_id,
                                  "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                                  NULL);
@@ -170,7 +170,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
             case 0x0E:
                 data = data_make(
-                                 "model",         "",            DATA_STRING, "LaCrosse TX Sensor",
+                                 "model",         "",            DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                                  "id",            "",            DATA_INT, sensor_id,
                                  "humidity",      "Humidity", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
                                  NULL);

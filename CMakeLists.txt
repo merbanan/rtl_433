@@ -33,7 +33,8 @@ if(GIT_COMMIT) # is a git repo
     # use lightweight (non-annotated) tags
     git_describe(GIT_VERSION "--tags")
     git_timestamp(GIT_TIMESTAMP)
-    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP} (${GIT_REFSPEC} commit ${GIT_COMMIT})")
+    message(STATUS "Found Git version: ${GIT_REFSPEC} commit ${GIT_COMMIT} from ${GIT_TIMESTAMP_ISO}")
+    message(STATUS "Using Git version tag: ${GIT_VERSION} on ${GIT_BRANCH} at ${GIT_TIMESTAMP}")
     ADD_DEFINITIONS(-DGIT_VERSION=${GIT_VERSION})
     ADD_DEFINITIONS(-DGIT_BRANCH=${GIT_BRANCH})
     ADD_DEFINITIONS(-DGIT_TIMESTAMP=${GIT_TIMESTAMP})
@@ -53,8 +54,9 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
-    # for strdup, setenv
-    ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
+    # for strdup, setenv, use either
+    #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
 
@@ -62,6 +64,8 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     # set(CMAKE_C_FLAGS_RELEASE -O2)
     # CMake Debug default for GCC/Clang is "-g -DNDEBUG"
     # set(CMAKE_C_FLAGS_DEBUG -g3 -O0)
+    # make use of ASAN
+    set(CMAKE_C_FLAGS_DEBUG "-ggdb -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
     # make sure we don't accidentally copy more than an int
@@ -83,6 +87,10 @@ endif()
 ########################################################################
 # Find build dependencies
 ########################################################################
+set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
+set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_RTLSDR) # AUTO / ON
+
 find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
@@ -91,9 +99,19 @@ if(LIBRTLSDR_FOUND AND LIBUSB_FOUND)
     include_directories(${LIBRTLSDR_INCLUDE_DIRS} ${LIBUSB_INCLUDE_DIRS})
     list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES} ${LIBUSB_LIBRARIES})
     ADD_DEFINITIONS(-DRTLSDR)
-else()
+elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
+else()
+    message(FATAL_ERROR "RTL-SDR development files not found.")
 endif()
+
+else()
+    message(STATUS "RTL-SDR device input disabled.")
+endif()
+
+set(ENABLE_SOAPYSDR AUTO CACHE STRING "Enable SoapySDR driver support")
+set_property(CACHE ENABLE_SOAPYSDR PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_SOAPYSDR) # AUTO / ON
 
 find_package(SoapySDR "0.6" NO_MODULE)
 if(SoapySDR_FOUND)
@@ -101,8 +119,14 @@ if(SoapySDR_FOUND)
     include_directories(${SoapySDR_INCLUDE_DIRS})
     list(APPEND SDR_LIBRARIES ${SoapySDR_LIBRARIES})
     ADD_DEFINITIONS(-DSOAPYSDR)
-else()
+elseif(ENABLE_SOAPYSDR STREQUAL "AUTO")
     message(STATUS "SoapySDR development files not found, SoapySDR device input won't be possible.")
+else()
+    message(FATAL_ERROR "SoapySDR development files not found.")
+endif()
+
+else()
+    message(STATUS "SoapySDR device input disabled.")
 endif()
 
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
@@ -160,7 +184,7 @@ if(BUILD_DOCUMENTATION)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
 
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-    message("Doxygen build started")
+    message(STATUS "Doxygen build started")
 
     # note the option ALL which allows to build the docs together with the application
     add_custom_target(doc_doxygen ALL
@@ -175,6 +199,11 @@ endif()
 # Build tests
 ########################################################################
 include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
+
+########################################################################
+# Configure CI deploy
+########################################################################
+configure_file(${CMAKE_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
 
 ########################################################################
 # Add subdirectories

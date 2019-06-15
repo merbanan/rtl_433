@@ -1,12 +1,13 @@
-/**
- * Various utility functions for use by device drivers
- *
- * Copyright (C) 2015 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions for use by device drivers.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #ifndef INCLUDE_UTIL_H_
 #define INCLUDE_UTIL_H_
@@ -14,11 +15,11 @@
 #include <stdint.h>
 
 // Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
-#ifndef max
-#define max(a,b) ((a) > (b) ? (a) : (b))
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 /// Reverse (reflect) the bits in an 8 bit byte.
@@ -33,7 +34,27 @@ uint8_t reverse8(uint8_t x);
 /// @param num_bytes number of bytes to reflect
 void reflect_bytes(uint8_t message[], unsigned num_bytes);
 
-/// CRC-4
+/// Reflect (reverse LSB to MSB) each nibble in an 8 bit byte, preserves nibble order.
+///
+/// @param x: input byte
+/// @return reflected nibbles
+uint8_t reflect4(uint8_t x);
+
+/// Reflect (reverse LSB to MSB) each nibble in a number of bytes.
+///
+/// @param message bytes of nibble message data
+/// @param num_bytes number of bytes to reflect
+void reflect_nibbles(uint8_t message[], unsigned num_bytes);
+
+/// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of sucessfully unstuffed nibbles.
+///
+/// @param message: bytes of message data
+/// @param offset_bits: start offset of message in bits
+/// @param num_bits: message length in bits
+/// @param dst: target buffer for extracted nibbles, at least num_bits/5 size
+unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+
+/// CRC-4.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -42,7 +63,7 @@ void reflect_bytes(uint8_t message[], unsigned num_bytes);
 /// @return CRC value
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// CRC-7
+/// CRC-7.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -51,10 +72,10 @@ uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// @return CRC value
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// Generic Cyclic Redundancy Check CRC-8
+/// Generic Cyclic Redundancy Check CRC-8.
 ///
-/// Example polynomial: 0x31 = x8 + x5 + x4 + 1	(x8 is implicit)
-/// Example polynomial: 0x80 = x8 + x7			(a normal bit-by-bit parity XOR)
+/// Example polynomial: 0x31 = x8 + x5 + x4 + 1 (x8 is implicit)
+/// Example polynomial: 0x80 = x8 + x7 (a normal bit-by-bit parity XOR)
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -73,7 +94,7 @@ uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// @return CRC value
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
-/// CRC-16 LSB
+/// CRC-16 LSB.
 /// Input and output are reflected, i.e. least significant bit is shifted in first.
 /// Note that poly and init already need to be reflected.
 ///
@@ -84,7 +105,7 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 /// @return CRC value
 uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
-/// CRC-16
+/// CRC-16.
 ///
 /// @param message[]: array of bytes to check
 /// @param nBytes: number of bytes in message
@@ -137,5 +158,12 @@ uint8_t xor_bytes(uint8_t const message[], unsigned num_bytes);
 /// @param num_bytes number of bytes to sum
 /// @return summation value
 int add_bytes(uint8_t const message[], unsigned num_bytes);
+
+/// Compute Addition of a number of nibbles (byte wise).
+///
+/// @param message bytes (of two nibbles) of message data
+/// @param num_bytes number of bytes to sum
+/// @return summation value
+int add_nibbles(uint8_t const message[], unsigned num_bytes);
 
 #endif /* INCLUDE_UTIL_H_ */

@@ -1,3 +1,7 @@
+/** @file
+    Definition of r_cfg application structure.
+*/
+
 #ifndef INCLUDE_RTL_433_H_
 #define INCLUDE_RTL_433_H_
 
@@ -36,12 +40,15 @@ typedef enum {
     REPORT_TIME_DEFAULT,
     REPORT_TIME_DATE,
     REPORT_TIME_SAMPLES,
+    REPORT_TIME_UNIX,
+    REPORT_TIME_ISO,
     REPORT_TIME_OFF,
 } time_mode_t;
 
 typedef struct r_cfg {
     char *dev_query;
     char *gain_str;
+    char *settings_str;
     int ppm_error;
     uint32_t out_block_size;
     char const *test_data;
@@ -62,7 +69,7 @@ typedef struct r_cfg {
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
     int grab_mode;
-    int verbosity; // 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding
+    int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
@@ -70,12 +77,22 @@ typedef struct r_cfg {
     time_mode_t report_time;
     int report_time_hires;
     int report_time_utc;
+    int report_description;
+    int report_stats;
+    int stats_interval;
+    int stats_now;
+    time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
+    int new_model_keys;
+    /* stats*/
+    unsigned frames_count; ///< stats counter for interval
+    unsigned frames_fsk; ///< stats counter for interval
+    unsigned frames_events; ///< stats counter for interval
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

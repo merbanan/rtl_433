@@ -22,7 +22,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	unsigned pos;
 	unsigned i;
 	int id;
-	int counter;
+	unsigned counter;
 	int crc;
 	int crc_calculated;
 	char code_str[63];
@@ -53,7 +53,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	}
 
 	id = ((msg[5]&0x0f) << 12) | (msg[6] << 4) | ((msg[7]&0xf0) >> 4);
-	counter = (msg[20] << 24) | (msg[21] << 16) | (msg[22] << 8) | msg[23];
+	counter = ((unsigned)msg[20] << 24) | (msg[21] << 16) | (msg[22] << 8) | msg[23];
 
 	for (i=0; i<(len+7)/8 ; ++i) {
 		sprintf(&code_str[i*2], "%02x", msg[i]);
@@ -61,7 +61,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 	/* Get time now */
 	data = data_make(
-		"model",	"",				DATA_STRING,	"IBIS beacon",
+		"model",	"",				DATA_STRING,	_X("IBIS-Beacon","IBIS beacon"),
 		"id",		"Vehicle No.",	DATA_INT,		id,
 		"counter",	"Counter",		DATA_INT,		counter,
 		"code",		"Code data",	DATA_STRING,	code_str,

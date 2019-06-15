@@ -48,8 +48,9 @@ char **compat_get_default_conf_paths()
     if (paths[0]) return paths;
     // Working directory, i.e. where the binary is located
     if (GetModuleFileName(NULL, bufs[0], sizeof(bufs[0]))) {
-        char *last_slash = max(strrchr(bufs[0], '\\'), strrchr(bufs[0], '/'));
-        if (last_slash) *last_slash = 0;
+        char *last_backslash = strrchr(bufs[0], '\\');
+        if (last_backslash)
+            *last_backslash = '\0';
         strcat_s(bufs[0], sizeof(bufs[0]), "\\rtl_433.conf");
         paths[0] = bufs[0];
     }

@@ -1,12 +1,12 @@
-/* 
- * Philips outdoor temperature sensor -- used with various Philips clock 
+/*
+ * Philips outdoor temperature sensor -- used with various Philips clock
  * radios (tested on AJ3650)
  *
  * Not tested, but these should also work: AJ7010, AJ260 ... maybe others?
  *
  * A complete message is 112 bits:
  *      4-bit initial preamble, always 0
- *      4-bit packet separator, always 0, followed by 32-bit data packet. 
+ *      4-bit packet separator, always 0, followed by 32-bit data packet.
  *      Packets are repeated 3 times for 108 bits total.
  *
  * 32-bit data packet format:
@@ -18,7 +18,7 @@
  * b - battery status: 0 = OK, 1 = LOW (1 bit)
  * ? - unknown: always 1 in every packet I've seen (1 bit)
  * s - CRC: non-standard CRC-4, poly 0x9, init 0x1
- *  
+ *
  * Pulse width:
  *      Short: 2000 us = 0
  *      Long: 6000 us = 1
@@ -26,8 +26,8 @@
  *      Short: 6000 us
  *      Long: 2000 us
  * Gap width between packets: 29000 us
- * 
- * Presumably the 4-bit preamble is meant to be a sync of some sort, 
+ *
+ * Presumably the 4-bit preamble is meant to be a sync of some sort,
  * but it has the exact same pulse/gap width as a short pulse, and
  * gets processed as data.
  *
@@ -66,7 +66,7 @@ static int philips_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct number of rows? */
     if (bitbuffer->num_rows != 1) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of rows (%d)\n", 
+            fprintf(stderr, "%s: wrong number of rows (%d)\n",
                     __func__, bitbuffer->num_rows);
         }
         return 0;
@@ -75,7 +75,7 @@ static int philips_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Correct bit length? */
     if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: wrong number of bits (%d)\n", 
+            fprintf(stderr, "%s: wrong number of bits (%d)\n",
                     __func__, bitbuffer->bits_per_row[0]);
         }
         return 0;
@@ -136,7 +136,7 @@ static int philips_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_status = packet[PHILIPS_PACKETLEN - 1] & 0x40;
 
     data = data_make(
-                     "model",         "",            DATA_STRING, "Philips outdoor temperature sensor",
+                     "model",         "",            DATA_STRING, _X("Philips-Temperature","Philips outdoor temperature sensor"),
                      "channel",       "Channel",     DATA_INT,    channel,
                      "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                      "battery",       "Battery",     DATA_STRING, battery_status ? "LOW" : "OK",

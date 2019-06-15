@@ -43,7 +43,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
 
     data = data_make(
-            "model",    "",               DATA_STRING, "Kerui Security",
+            "model",    "",               DATA_STRING, _X("Kerui-Security","Kerui Security"),
             "id",       "ID (20bit)",     DATA_FORMAT, "0x%x", DATA_INT, id,
             "cmd",      "Command (4bit)", DATA_FORMAT, "0x%x", DATA_INT, cmd,
             "state",    "State",          DATA_STRING, cmd_str,

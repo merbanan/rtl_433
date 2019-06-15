@@ -43,22 +43,26 @@ def replace_block(from_pattern, to_pattern, repl, filepath):
         file.write(filedata)
 
 
+def get_help_text(option):
+    try:
+        help_text = subprocess.check_output(
+            ["./build/src/rtl_433", "-c", "0", option], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        help_text = e.output
+
+    # trim help text
+    help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
+    help_text = re.sub(r'(?s).*option requires an argument -- .',
+                       'Option ' + option + ':', help_text)
+    return help_text
+
+
 # Make sure we run from the top dir
 topdir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(topdir)
 
 # Only ever run on a clean working tree
 require_clean_work_tree()
-
-# Get the help text
-try:
-    help_text = subprocess.check_output(
-        ["./build/src/rtl_433", "-c", "-0", "-R"], stderr=subprocess.STDOUT)
-except subprocess.CalledProcessError as e:
-    help_text = e.output
-
-# trim help text
-help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
 
 # glob all src and device files
 os.chdir("src")
@@ -85,7 +89,15 @@ r_devices_used = len(r_devices) + 5
 
 # README.md
 # Replace everything between ``` with help output.
-repl = '\n' + help_text + '\n'
+repl = '\n' + get_help_text('-h') + '\n'
+repl += get_help_text('-R') + '\n'
+repl += get_help_text('-d') + '\n'
+repl += get_help_text('-g') + '\n'
+repl += get_help_text('-X') + '\n'
+repl += get_help_text('-F') + '\n'
+repl += get_help_text('-M') + '\n'
+repl += get_help_text('-r') + '\n'
+repl += get_help_text('-w') + '\n'
 replace_block(r'```',
               r'```', repl, 'README.md')
 

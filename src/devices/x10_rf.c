@@ -27,7 +27,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             || (b[2] ^ b[3]) != 0xff) // Check integrity
         return 0;
 
-    unsigned code = b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    unsigned code = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
 
     // For the CR12A X10 Remote, with the exception of the SCAN buttons, some bits are constant.
     for (int8_t bIdx = 0; bIdx < 4; bIdx++) {
@@ -69,8 +69,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     data = data_make(
             "model",    "", DATA_STRING, "X10-RF",
-            "houseid",  "", DATA_STRING, housecode,
-            "deviceid", "", DATA_INT, bDeviceCode + 1,
+            _X("id", "deviceid"), "", DATA_INT, bDeviceCode + 1,
+            _X("channel", "houseid"),  "", DATA_STRING, housecode,
             "state",    "", DATA_STRING, state ? "ON" : "OFF",
             "data",     "", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
@@ -82,8 +82,10 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "houseid"
-    "deviceid",
+    "channel",
+    "id",
+    "houseid", // TODO: remove ??
+    "deviceid", // TODO: remove ??
     "state",
     "data",
     NULL

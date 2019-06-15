@@ -26,7 +26,7 @@
  * Payload looks like this:
  *
  * [00] { 4} 00             : 0000
- * [01] {40} 0f 30 5c e7 61 : 00001111 00110000 01011100 11100111 01100001 
+ * [01] {40} 0f 30 5c e7 61 : 00001111 00110000 01011100 11100111 01100001
  *
  * First row is actually the preample part. This is added to make the signal more unique.
  *
@@ -66,10 +66,10 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_f = (float)temp / 10 - 90;
 
     data = data_make(
-            "model",         "",	   DATA_STRING, "inFactory sensor",
-            "id",      "ID",   DATA_FORMAT, "%u", DATA_INT, id,
-            "temperature_F", "Temperature",DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
-            "humidity",      "Humidity",   DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
+            "id",               "ID",           DATA_FORMAT, "%u", DATA_INT, id,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
+            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             NULL);
     decoder_output_data(decoder, data);
 
@@ -77,7 +77,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model"
+    "model",
     "id",
     "temperature_F",
     "humidity",
