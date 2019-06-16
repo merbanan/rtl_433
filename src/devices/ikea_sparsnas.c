@@ -249,7 +249,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t effect = (decrypted[11] <<  8 | decrypted[12]);
     uint32_t pulses = (decrypted[13] << 24 | decrypted[14] << 16 | decrypted[15] << 8 | decrypted[16]);
     uint8_t battery =  decrypted[17];
-    double watt = effect * 24.;
+    float watt = effect * 24.;
     uint8_t mode = decrypted[4]^0x0f;
 
     if(mode == 1){     //Note that mode cycles between 0-3 when you first put in the batteries in
@@ -257,7 +257,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (mode == 0 ) { // special mode for low power usage
       watt = effect * 0.24 / ikea_sparsnas_pulses_per_kwh;
     }
-    double cumulative_kWh = ((double)pulses) / ((double)ikea_sparsnas_pulses_per_kwh);
+    float cumulative_kWh = ((float)pulses) / ((float)ikea_sparsnas_pulses_per_kwh);
     
     data_t *data;
     data = data_make(
@@ -266,7 +266,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         "pulses_per_kWh", "Pulses per kWh",     DATA_INT, ikea_sparsnas_pulses_per_kwh,
         "sequence",      "Sequence Number",     DATA_INT, sequence_number,
         "battery",       "Battery",             DATA_FORMAT, "%d%%", DATA_INT, battery,
-        "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_DOUBLE,  cumulative_kWh,
+        "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_FLOAT,  cumulative_kWh,
         "effect",        "Effect",              DATA_FORMAT, "%dW", DATA_INT,  effect,
         "pulses",        "Pulses",              DATA_INT,  pulses,
         "mode",          "Mode",                DATA_INT, mode,
