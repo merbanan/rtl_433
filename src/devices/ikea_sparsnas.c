@@ -266,7 +266,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         "pulses_per_kWh", "Pulses per kWh",     DATA_INT, ikea_sparsnas_pulses_per_kwh,
         "sequence",      "Sequence Number",     DATA_INT, sequence_number,
         "battery",       "Battery",             DATA_FORMAT, "%d%%", DATA_INT, battery,
-        "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_FLOAT,  cumulative_kWh,
+        "cumulative_kWh", "Cumulative kWh",     DATA_FORMAT, "%7.3fkWh", DATA_DOUBLE,  cumulative_kWh,
         "effect",        "Effect",              DATA_FORMAT, "%dW", DATA_INT,  effect,
         "pulses",        "Pulses",              DATA_INT,  pulses,
         "mode",          "Mode",                DATA_INT, mode,
