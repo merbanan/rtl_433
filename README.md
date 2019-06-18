@@ -193,6 +193,7 @@ Supported device protocols:
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
     [126]  Companion WTR001 Temperature Sensor
+    [127]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
 
 * Disabled by default, use -R n or -G
 
