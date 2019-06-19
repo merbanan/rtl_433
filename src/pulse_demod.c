@@ -289,7 +289,9 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
         }
 
         // End of Message?
-        if (pulses->gap[n] > device->s_reset_limit) {
+        if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
+                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
+                && (bits.num_rows > 0)) {                        // Only if data has been accumulated
             int newevents = 0;
             if (device->decode_fn) {
                 events += account_event(device, device->decode_fn(device, &bits));

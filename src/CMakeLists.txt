@@ -39,6 +39,7 @@ add_executable(rtl_433
 	devices/calibeur.c
 	devices/cardin.c
 	devices/chuango.c
+	devices/companion_wtr001.c
 	devices/current_cost.c
 	devices/danfoss.c
 	devices/digitech_xc0324.c
