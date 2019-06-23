@@ -91,7 +91,7 @@ static void usage(int exit_code)
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
-            "  [-G] Enable all device protocols, included those disabled by default\n"
+            "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
             "  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "  [-z <value>] Override short value in data decoder\n"
@@ -713,6 +713,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'G':
         if (atobv(arg, 1)) {
+            fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
             cfg->no_default_devices = 1;
             register_all_protocols(cfg, 1);
         }
