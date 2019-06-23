@@ -1,11 +1,25 @@
 /*
  * Microchip HCS200 KeeLoq Code Hopping Encoder based remotes
  *
+ * 66 bits transmitted, LSB first
+ *
+ * |  0-31 | Encrypted Portion
+ * | 32-59 | Serial Number
+ * | 60-63 | Button Status
+ * |  64   | Battery Low
+ * |  65   | Fixed 1
+ *
  * (c) 2019, 667bdrm
  *
  * Datasheet: DS40138C http://ww1.microchip.com/downloads/en/DeviceDoc/40138c.pdf
  *
  * rtl_433 -R 0 -X 'n=name,m=OOK_PWM,s=370,l=772,r=14000,g=4000,t=152,y=0,preamble={12}0xfff'
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
  */
 #include "decoder.h"
 
