@@ -46,8 +46,8 @@ typedef struct pulse_data {
 
 // Package types
 enum package_types {
-    OOK = 1,
-    FSK = 2,
+    PULSE_DATA_OOK = 1,
+    PULSE_DATA_FSK = 2,
 };
 
 typedef struct pulse_detect pulse_detect_t;

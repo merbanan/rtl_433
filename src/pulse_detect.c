@@ -467,7 +467,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulses->end_ago = len - s->data_counter;
                         fsk_pulses->end_ago = len - s->data_counter;
                         s->ook_state = PD_OOK_STATE_IDLE;    // Ensure everything is reset
-                        return FSK;
+                        return PULSE_DATA_FSK;
                     }
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
@@ -489,7 +489,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                         pulses->ook_low_estimate = s->ook_low_estimate;
                         pulses->ook_high_estimate = s->ook_high_estimate;
                         pulses->end_ago = len - s->data_counter;
-                        return OOK;    // End Of Package!!
+                        return PULSE_DATA_OOK;    // End Of Package!!
                     }
 
                     s->pulse_length = 0;
@@ -507,7 +507,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     pulses->ook_low_estimate = s->ook_low_estimate;
                     pulses->ook_high_estimate = s->ook_high_estimate;
                     pulses->end_ago = len - s->data_counter;
-                    return OOK;    // End Of Package!!
+                    return PULSE_DATA_OOK;    // End Of Package!!
                 }
                 break;
             default:
@@ -761,9 +761,9 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count >= 3) {
         fprintf(stderr, "Pulse Width Modulation with multiple packets\n");
-        if (package_type == OOK) {
+        if (package_type == PULSE_DATA_OOK) {
             device.modulation = OOK_PULSE_PWM;
-        } else if (package_type == FSK) {
+        } else if (package_type == PULSE_DATA_FSK) {
             device.modulation = FSK_PULSE_PWM;
         }
         device.s_short_width = hist_pulses.bins[0].mean;
