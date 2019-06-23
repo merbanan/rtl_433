@@ -25,7 +25,6 @@ enum modulation_types {
     an ABORT code if the bitbuffer is no applicable,
     or a FAIL code if the message is malformed. */
 enum decode_return_codes {
-    DECODE_SUCCESS      = 1,
     DECODE_FAIL_OTHER   = 0, ///< legacy, do not use
     /** Bitbuffer row count or row length is wrong for this sensor. */
     DECODE_ABORT_LENGTH = -1,

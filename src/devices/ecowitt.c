@@ -9,17 +9,19 @@
  * | 29-38 | 10-bit temperature in tenths of degrees C, starting from -40C. e.g. 0=-40C
  * | 39-46 | Trailer, always 1111 1111
  * | 47-54 | CRC-8 checksum poly 0x31 init 0x00 skipping first 7 bits
- * 
+ *
  * Copyright 2019 Google LLC.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  */
+
 #include "decoder.h"
 
-static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     // All Ecowitt packets have one row.
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_LENGTH;
@@ -48,12 +50,12 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // Randomly generated at boot time sensor ID.
-    int sensorID = b[1];
+    int sensor_id = b[1];
 
-    int channel = b[2] >> 4;  // First nybble.
+    int channel = b[2] >> 4; // First nybble.
     channel++; // Convert 0-indexed wire protocol to 1-indexed channels on the device UI
     if (channel < 1 || channel > 3) {
-        return DECODE_FAIL_SANITY;  // The switch only has 1-3.
+        return DECODE_FAIL_SANITY; // The switch only has 1-3.
     }
 
     // All Ecowitt packets have bits 27 and 28 set to 0
@@ -65,9 +67,9 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // Temperature is next 10 bits
-    float tempC    = -40.0;  // Bias
-    tempC += (float) b[3] / 10.0;
-    tempC += (float) ((b[2] & 0x3) << 8) / 10.0;
+    float temp_c = -40.0; // Bias
+    temp_c += (float)b[3] / 10.0;
+    temp_c += (float)((b[2] & 0x3) << 8) / 10.0;
 
     // All Ecowitt observed packets have bits 39-48 set.
     if (b[4] != 0xFF) {
@@ -75,25 +77,28 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // Compute checksum skipping first 7 bits
-    uint8_t wireCRC = b[5];
-    int computedCRC = crc8(
-        b,
-        /* nBytes= */ sizeof(b)-1, // Exclude the CRC byte itself
-        /* polynomial= */ 0x31,
-        /* init= */ 0);
-    if (wireCRC != computedCRC) {
+    uint8_t wire_crc = b[5];
+    int computed_crc = crc8(
+            b,
+            /* nBytes= */ sizeof(b) - 1, // Exclude the CRC byte itself
+            /* polynomial= */ 0x31,
+            /* init= */ 0);
+    if (wire_crc != computed_crc) {
         return DECODE_FAIL_MIC;
     }
 
+    /* clang-format off */
     data_t *data = data_make(
             "model", "", DATA_STRING, "Ecowitt-WH53",
-            "id", "Id", DATA_INT, sensorID,
+            "id", "Id", DATA_INT, sensor_id,
             "channel", "Channel", DATA_INT, channel,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, tempC,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "mic", "Integrity", DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
-    return DECODE_SUCCESS;
+    return 1;
 }
 
 static char *output_fields[] = {
@@ -102,7 +107,7 @@ static char *output_fields[] = {
         "channel",
         "temperature_C",
         "mic",
-        NULL
+        NULL,
 };
 
 r_device ecowitt = {
