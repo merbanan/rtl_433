@@ -761,11 +761,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count >= 3) {
         fprintf(stderr, "Pulse Width Modulation with multiple packets\n");
-        if (package_type == PULSE_DATA_OOK) {
-            device.modulation = OOK_PULSE_PWM;
-        } else if (package_type == PULSE_DATA_FSK) {
-            device.modulation = FSK_PULSE_PWM;
-        }
+        device.modulation = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
         device.s_short_width = hist_pulses.bins[0].mean;
         device.s_long_width  = hist_pulses.bins[1].mean;
         device.s_gap_limit   = hist_gaps.bins[1].max + 1; // Set limit above second gap
