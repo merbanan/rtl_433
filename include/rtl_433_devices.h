@@ -135,6 +135,7 @@
     DECL(ts_ft002) \
     DECL(companion_wtr001) \
     DECL(ecowitt) \
+    DECL(directv) \
     DECL(hcs200)
     /* Add new decoders here. */
 

@@ -156,6 +156,7 @@
     <ClCompile Include="..\src\devices\current_cost.c" />
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\digitech_xc0324.c" />
+    <ClCompile Include="..\src\devices\directv.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
     <ClCompile Include="..\src\devices\ecowitt.c" />

@@ -229,6 +229,9 @@
     <ClCompile Include="..\src\devices\digitech_xc0324.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\directv.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\dish_remote_6_3.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
