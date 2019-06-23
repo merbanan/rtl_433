@@ -41,7 +41,7 @@ Usage:		= General options =
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable all device protocols, included those disabled by default
+  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
   [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
   [-z <value>] Override short value in data decoder

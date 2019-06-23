@@ -134,7 +134,9 @@
     DECL(lacrosse_ws7000) \
     DECL(ts_ft002) \
     DECL(companion_wtr001) \
-    DECL(hcs200)
+    DECL(hcs200) \
+    DECL(ecowitt)
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

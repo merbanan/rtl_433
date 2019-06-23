@@ -142,8 +142,8 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
 {
     float samples_per_us = cfg->samp_rate / 1.0e6;
 
-    r_dev->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
-    r_dev->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
+    r_dev->f_short_width = r_dev->short_width > 0.0 ? 1.0 / (r_dev->short_width * samples_per_us) : 0;
+    r_dev->f_long_width  = r_dev->long_width > 0.0 ? 1.0 / (r_dev->long_width * samples_per_us) : 0;
     r_dev->s_short_width = r_dev->short_width * samples_per_us;
     r_dev->s_long_width  = r_dev->long_width * samples_per_us;
     r_dev->s_reset_limit = r_dev->reset_limit * samples_per_us;

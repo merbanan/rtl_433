@@ -45,6 +45,7 @@ add_executable(rtl_433
 	devices/digitech_xc0324.c
 	devices/dish_remote_6_3.c
 	devices/dsc.c
+	devices/ecowitt.c
 	devices/efergy_e2_classic.c
 	devices/efergy_optical.c
 	devices/elro_db286a.c
