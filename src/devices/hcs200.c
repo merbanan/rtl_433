@@ -26,7 +26,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         b[i] = ( b[i] << 4 ) | ((b[i+1] & 0xf0) >> 4);
     }
 	
-    serial = (((b[5] << 24) | (b[6] << 16) | (b[7] << 8) | (b[8] & 0x0F)) >> 4) & 0x0fffffff;
+    serial = (b[5] << 20) | (b[6] << 12) | (b[7] << 4) | (b[8] >> 4);
 	
     sprintf(encrypted, "%08X", (b[4] | (b[3] << 8) | (b[2] << 16) | ((unsigned)b[1] << 24)));
     sprintf(serial_str, "%08X", serial);
