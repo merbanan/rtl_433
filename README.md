@@ -198,6 +198,7 @@ Supported device protocols:
     [129]* Eurochron temperature and humidity sensor
     [130]* IKEA Sparsnäs Energy Meter Monitor
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [132]  TFA Dostmann 30.3196 T/H outdoor sensor
 
 * Disabled by default, use -R n or -G
 

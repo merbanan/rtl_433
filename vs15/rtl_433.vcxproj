@@ -229,6 +229,7 @@
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
+    <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
