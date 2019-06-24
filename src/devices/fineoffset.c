@@ -318,6 +318,75 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
+Fine Offset Electronics WH0290 Wireless Air Quality Monitor
+Also: Ambient Weather PM25
+
+The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
+
+Data layout:
+    aa 2d d4 42 cc 41 9a 41 ae c1 99 9
+             FF DD ?P PP ?A AA CC BB
+
+- F: 8 bit Family Code?
+- D: 8 bit device id?
+- ?: 2 bits ?
+- P: 14 bit PM2.5 reading in ug/m3
+- ?: 2 bits ?
+- A: 14 bit PM10 reading in ug/m3
+- ?: 8 bits ?
+- C: 8 bit CRC checksum of the previous 6 bytes
+- B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
+
+*/
+static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    uint8_t const preamble[] = {0xAA, 0x2D, 0xD4};
+    uint8_t b[8];
+    unsigned bit_offset;
+
+    bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
+    if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
+        if (decoder->verbose)
+            bitbuffer_printf(bitbuffer, "Fineoffset_WH0290: short package. Row length: %u. Header index: %u\n", bitbuffer->bits_per_row[0], bit_offset);
+        return DECODE_ABORT_LENGTH;
+    }
+    bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+
+    // Verify checksum, same as other FO Stations: Reverse 1Wire CRC (poly 0x131)
+    uint8_t crc = crc8(b, 6, 0x31, 0x00);
+    uint8_t checksum = 0;
+    for (unsigned n = 0; n < 7; ++n) {
+        checksum += b[n];
+    }
+    if (crc != b[6] || checksum != b[7]) {
+        if (decoder->verbose) {
+            fprintf(stderr, "Fineoffset_WH0280: Checksum error: %02x %02x\n", crc, checksum);
+        }
+        return DECODE_FAIL_MIC;
+    }
+
+    // Decode data
+    uint8_t id        = b[1];
+    int pm25          = (b[2] & 0x3f) << 8 | b[3];
+    int pm100         = (b[4] & 0x3f) << 8 | b[5];
+
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
+            "id",               "ID",           DATA_INT,    id,
+            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
+            "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
 Fine Offset Electronics WH25 / WH32B Temperature/Humidity/Pressure sensor protocol.
 
 The sensor sends a package each ~64 s with a width of ~28 ms. The bits are PCM modulated with Frequency Shift Keying.
@@ -353,7 +422,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 440) {  // Nominal size is 488 bit periods
+    if (bitbuffer->bits_per_row[0] < 190) {
+        return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
+    } else if (bitbuffer->bits_per_row[0] < 440) {  // Nominal size is 488 bit periods
         return fineoffset_WH24_callback(decoder, bitbuffer); // abort and try WH24, WH65B, HP1000
     }
 
@@ -744,6 +815,9 @@ static char *output_fields_WH25[] = {
     "uv",
     "uvi",
     "light_lux",
+    //WH0290
+    "pm2_5_ug_m3",
+    "pm10_ug_m3",
     "battery",
     "mic",
     NULL,
