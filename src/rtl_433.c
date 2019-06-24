@@ -321,7 +321,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int d_events = 0; // Sensor events successfully detected
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
-        int package_type = 1;  // Just to get us started
+        int package_type = PULSE_DATA_OOK;  // Just to get us started
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
@@ -339,7 +339,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 // always update the last frame end
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
-            if (package_type == 1) {
+            if (package_type == PULSE_DATA_OOK) {
                 calc_rssi_snr(cfg, &demod->pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
 
@@ -356,10 +356,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->pulse_data);
+                    pulse_analyzer(&demod->pulse_data, package_type);
                 }
 
-            } else if (package_type == 2) {
+            } else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(cfg, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
 
@@ -376,7 +376,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->fsk_pulse_data);
+                    pulse_analyzer(&demod->fsk_pulse_data, package_type);
                 }
             } // if (package_type == ...
             d_events += p_events;
