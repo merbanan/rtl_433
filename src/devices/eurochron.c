@@ -8,6 +8,8 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
+ *
+ *
  * Datagram format:
  *
  * IIIIIIII B00P0000 HHHHHHHH TTTTTTTT TTTT
@@ -20,7 +22,7 @@
  *    0: Unknown / always zero
  *
  * Device type identification is only possible by datagram length
- * and some zero bits. Therefore this device is disabled 
+ * and some zero bits. Therefore this device is disabled
  * by default (as it could easily trigger false alarms).
  */
 
@@ -31,11 +33,13 @@ static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     int row;
     uint8_t *b;
-    int temp_raw, humidity, device, battery_low, key;
+    int temp_raw, humidity, device, battery_low, button;
     float temp_c;
 
+    /* Validation checks */
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
-    if (row < 0) // Rows identical?
+
+    if (row < 0) // repeated rows?
         return 0;
 
     if (bitbuffer->bits_per_row[row] > 36) // 36 bits per row?
@@ -43,37 +47,28 @@ static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     b = bitbuffer->bb[row];
 
-    if(b[1] & 0x0F) // lower nibble of second byte is always 0!
-      return 0;
+    if (b[1] & 0x0F) // is lower nibble of second byte zero?
+        return 0;
 
+    /* Extract data */
     device = b[0];
 
-    temp_raw = (b[3] << 4) | (b[4] >> 4);
-    if(temp_raw & 0x0800) // Negative value?
-    { temp_raw ^= 0x0FFF;
-      temp_raw *= -1;
-    }
-    temp_c  = (float)temp_raw / 10; // 1/10
+    temp_raw = (int16_t)((b[3] << 8) | (b[4] & 0xf0)) >> 4;
+    temp_c  = (float)temp_raw * 0.1;
 
     humidity = b[2];
 
-    if(b[1] & 0x80) // Battery is low?
-      battery_low = -1;
-    else
-      battery_low = 0;
+    battery_low = b[1] >> 7;
 
-    if(b[1] & 0x10) // TX-Key pressed?
-      key = -1;
-    else
-      key = 0;
+    button = (b[1] & 0x10) >> 4;
 
     data = data_make(
-            "model", "", DATA_STRING, _X("Eurochron","Eurochron"),
+            "model", "", DATA_STRING, "Eurochron",
             "id", "", DATA_INT, device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity","Humidity", DATA_INT, humidity,
-            "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
-            "key", "Key", DATA_STRING, key ? "PRESSED" : "RELEASED",
+            "battery_ok", "Battery", DATA_INT, !battery_low,
+            "button", "Button", DATA_INT, button,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -81,24 +76,24 @@ static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
-static char *eurochron_csv_output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "humidity",
-    "battery",
-    "key",
-    NULL
+static char *output_fields[] = {
+        "model",
+        "id",
+        "temperature_C",
+        "humidity",
+        "battery_ok",
+        "button",
+        NULL,
 };
 
 r_device eurochron = {
-    .name          = "Eurochron (temperature and humidity sensor)",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 1016,
-    .long_width    = 2024,
-    .gap_limit     = 2100,
-    .reset_limit   = 8200,
-    .decode_fn     = &eurochron_callback,
-    .disabled      = 1,
-    .fields        = eurochron_csv_output_fields,
+        .name          = "Eurochron (temperature and humidity sensor)",
+        .modulation    = OOK_PULSE_PPM,
+        .short_width   = 1016,
+        .long_width    = 2024,
+        .gap_limit     = 2100,
+        .reset_limit   = 8200,
+        .decode_fn     = &eurochron_callback,
+        .disabled      = 1,
+        .fields        = output_fields,
 };
