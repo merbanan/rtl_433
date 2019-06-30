@@ -167,6 +167,7 @@
     <ClCompile Include="..\src\devices\emontx.c" />
     <ClCompile Include="..\src\devices\esa.c" />
     <ClCompile Include="..\src\devices\esperanza_ews.c" />
+    <ClCompile Include="..\src\devices\eurochron.c" />
     <ClCompile Include="..\src\devices\fineoffset.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1050.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c" />
