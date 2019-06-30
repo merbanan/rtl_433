@@ -182,13 +182,13 @@ static void help_output(void)
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
-            "\tMQTT options are: user=foo, pass=bar, retain[=0|1],\n"
-            "\t\t usechannel=replaceid|afterid|beforeid|no, <format>[=topic]\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
             "\t  devices: posts device and sensor info in nested topics\n"
-            "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433\"\n"
+            "\tThe topic string will expand keys like [/model]\n"
+            "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }
