@@ -1,4 +1,4 @@
-/* Eurochron weather station
+/* Eurochron temperature and humidity sensor
  * (c) 2019 by Oliver Weyhmüller
  *
  *
@@ -24,6 +24,11 @@
  * Device type identification is only possible by datagram length
  * and some zero bits. Therefore this device is disabled
  * by default (as it could easily trigger false alarms).
+ *
+ * Observed update intervals:
+ *    - transmission time slot every 12 seconds
+ *    - at least once within 120 seconds (with stable values)
+ *    - down to 12 seconds (with rapidly changing values)
  */
 
 #include "decoder.h"
@@ -63,7 +68,7 @@ static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     button = (b[1] & 0x10) >> 4;
 
     data = data_make(
-            "model", "", DATA_STRING, "Eurochron",
+            "model", "", DATA_STRING, "Eurochron-TH",
             "id", "", DATA_INT, device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity","Humidity", DATA_INT, humidity,
@@ -87,7 +92,7 @@ static char *output_fields[] = {
 };
 
 r_device eurochron = {
-        .name          = "Eurochron (temperature and humidity sensor)",
+        .name          = "Eurochron temperature and humidity sensor",
         .modulation    = OOK_PULSE_PPM,
         .short_width   = 1016,
         .long_width    = 2024,
