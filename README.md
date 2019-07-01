@@ -195,7 +195,8 @@ Supported device protocols:
     [126]  Companion WTR001 Temperature Sensor
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
-    [129]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [129]* Eurochron temperature and humidity sensor
+    [130]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
 
 * Disabled by default, use -R n or -G
 
@@ -276,13 +277,13 @@ Option -F:
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
-	MQTT options are: user=foo, pass=bar, retain[=0|1],
-		 usechannel=replaceid|afterid|beforeid|no, <format>[=topic]
+	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
 	  states: posts JSON state data
 	  devices: posts device and sensor info in nested topics
-	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433"
+	The topic string will expand keys like [/model]
+	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 Option -M:

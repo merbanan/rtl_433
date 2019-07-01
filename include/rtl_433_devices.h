@@ -136,7 +136,8 @@
     DECL(companion_wtr001) \
     DECL(ecowitt) \
     DECL(directv) \
-    DECL(hcs200)
+    DECL(eurochron) \
+    DECL(hcs200) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

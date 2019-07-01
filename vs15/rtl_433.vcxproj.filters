@@ -262,6 +262,9 @@
     <ClCompile Include="..\src\devices\esperanza_ews.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\eurochron.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\fineoffset.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

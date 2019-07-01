@@ -54,6 +54,7 @@ add_executable(rtl_433
 	devices/emontx.c
 	devices/esa.c
 	devices/esperanza_ews.c
+	devices/eurochron.c
 	devices/fineoffset.c
 	devices/fineoffset_wh1050.c
 	devices/fineoffset_wh1080.c
