@@ -328,6 +328,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
                 data_print_jsons(data, message, message_size);
                 expand_topic(mqtt->topic, mqtt->states, data, mqtt->hostname);
                 mqtt_client_publish(mqtt->mgr, mqtt->topic, message);
+                *mqtt->topic = '\0'; // clear topic
                 free(message);
             }
             return;
@@ -339,6 +340,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
             mqtt_client_publish(mqtt->mgr, mqtt->topic, message);
+            *mqtt->topic = '\0'; // clear topic
         }
 
         // "devices" topic
