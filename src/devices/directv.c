@@ -375,7 +375,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Populate our return fields
     data = data_make(
             "model",         "",            DATA_STRING, "DirecTV-RC66RX",
-            "device_id",     "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
+            "id",            "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
             "button_id",     "",            DATA_FORMAT, "0x%02X", DATA_INT, dtv_button_id,
             "button_name",   "",            DATA_FORMAT, "[%s]", DATA_STRING, get_dtv_button_label(dtv_button_id),
             "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
@@ -389,7 +389,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "device_id",
+    "id",
     "button_id",
     "button_name",
     "event",
