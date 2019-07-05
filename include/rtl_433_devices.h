@@ -140,6 +140,8 @@
     DECL(ikea_sparsnas) \
     DECL(hcs200) \
     DECL(tfa_303196) \
+    DECL(rubicson_48659) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
