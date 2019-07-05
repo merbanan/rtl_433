@@ -424,6 +424,9 @@
     <ClCompile Include="..\src\devices\rubicson.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\rubicson_48659.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\s3318p.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

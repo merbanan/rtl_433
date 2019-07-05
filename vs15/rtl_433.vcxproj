@@ -221,6 +221,7 @@
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
+    <ClCompile Include="..\src\devices\rubicson_48659.c" />
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
