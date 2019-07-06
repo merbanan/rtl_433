@@ -9,7 +9,7 @@
     (at your option) any later version.
  */
 
-/**
+/** @fn int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 DirecTV RC66RX Remote Control decoder.
 
 The device uses FSK to transmit a PCM signal TRANSMISSION.  Its FSK signal
@@ -192,7 +192,7 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
     uint8_t bit_mask;
     if (bit_val == 0) {
         bitrow[bit_idx >> 3] &= ~(1 << (7 - (bit_idx & 7)));
-    } 
+    }
     else {
         bitrow[bit_idx >> 3] |= (1 << (7 - (bit_idx & 7)));
     }
@@ -214,24 +214,24 @@ static void bitrow_to_str(bitrow_t const bitrow, unsigned bit_len, char *str_buf
 /// This is a differential PWM decode and is essentially only looking at symbol
 /// transitions, not the symbols themselves.  An inverted bitstring would yeild the
 /// same result.  Note that:
-/// 
+///
 /// - Initial contiguous alike symbol(s) is not considered data, regardless of length.
 ///   Essentially, the
-/// 
+///
 /// - Any group of alike contiguous symbols with a length of 3 or more is considered
 ///   a sync.  If this happens anywhere except at the end of bitrow, any data already
 ///   decoded is discarded, the length and position of the sync is noted, and data
 ///   decoding resumes.
-/// 
+///
 /// - The one or two alike contiguous symbols immediately after a sync are not treated
 ///   as data, they are essentially there to signify the end of the sync.
-/// 
-/// Return value is length of data decoded into bitrow_buf after last sync. If bitrow 
+///
+/// Return value is length of data decoded into bitrow_buf after last sync. If bitrow
 /// ends with a sync, that sync is ignored and returned data will be data before that
 /// sync.
-/// 
+///
 /// Ensure that bitrow_buf is at least as big as bitrow or data overrun might occur.
-/// 
+///
 /// Note that sync_pos and sync_len will be modified if a sync is found. If returned
 /// sync_pos is greater than start, it might mean there is data between start and
 /// sync_pos.  If desired, call again with bit_len = sync_pos to find this data.
@@ -298,14 +298,14 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned row_sync_pos;
     unsigned row_sync_len;
     char str_buf[256];
-  
+
     // Signal is reset by rtl_433 before recognizing rows, so in practice, there's only one row.
     // It would be useful to catch rows in signal so that there'd only be one decoded row per
     // signal and we could count repeats to report the length of the signal, but that's not
     // supported yet.  It seems the gap between rows exceeds the ook_hysteresis threshold in
     // pulse_detect.c:  int16_t const ook_hysteresis = ook_threshold / 8; // ±12%
     // and changing this value isn't the right direction, nor does this even work for this signal.
-    // Grouping rows in a signal like this will need to be supported in some other way, and this 
+    // Grouping rows in a signal like this will need to be supported in some other way, and this
     // support is not yet available in rtl_433.
     // For now, we'll decode the signal in the bitbuffer assuming it is only one row.
 
@@ -327,7 +327,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitrow_to_str(dtv_buf, dtv_bit_len, str_buf);
         fprintf(stderr, "directv: SYNC at pos:%u for %u symbols. DPWM Decoded Message: %s\n", row_sync_pos, row_sync_len, str_buf);
     }
-    
+
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
     if (dtv_bit_len != DTV_BITLEN_MAX) {
         if (decoder->verbose >= 2) {
@@ -347,8 +347,8 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Validate Checksum
     unsigned checksum_1;
     unsigned checksum_2;
-    checksum_1 = ( (dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) + 
-                   (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) + 
+    checksum_1 = ( (dtv_buf[0] >> 4) + (dtv_buf[0] & 0x0F) + (dtv_buf[1] >> 4) + (dtv_buf[1] & 0x0F) +
+                   (dtv_buf[2] >> 4) + (dtv_buf[2] & 0x0F) + (dtv_buf[3] >> 4) + (dtv_buf[3] & 0x0F) +
                    (dtv_buf[4] >> 4) ) & 0x0F;
     checksum_2 = dtv_buf[4] & 0x0F;
     if (checksum_1 != checksum_2) {
@@ -357,8 +357,8 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         return 0;
     }
-    
-    // Get Device ID 
+
+    // Get Device ID
     unsigned dtv_device_id;
     dtv_device_id = dtv_buf[1] << 12 | dtv_buf[2] << 4 | dtv_buf[3] >> 4;
     if (dtv_device_id > 999999) {
@@ -373,6 +373,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     dtv_button_id = dtv_buf[3] << 4 | dtv_buf[4] >> 4;
 
     // Populate our return fields
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "DirecTV-RC66RX",
             "id",            "",            DATA_FORMAT, "%06d", DATA_INT, dtv_device_id,
@@ -381,6 +382,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
             "mic",           "",            DATA_STRING, "CHECKSUM",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 
@@ -388,13 +390,13 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "button_id",
-    "button_name",
-    "event",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "button_id",
+        "button_name",
+        "event",
+        "mic",
+        NULL,
 };
 
 r_device directv = {
@@ -402,7 +404,7 @@ r_device directv = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 600,  // 150 samples @250k
         .long_width  = 600,  // 150 samples @250k
-        .gap_limit   = 30000, // gap is typically around 27,600μs, so long that rtl_433 resets 
+        .gap_limit   = 30000, // gap is typically around 27,600μs, so long that rtl_433 resets
                               // signal decoder before recognizing row repeats in signal
         .reset_limit = 50000, // maximum gap size before End Of Row [μs]
         .decode_fn   = &directv_decode,
