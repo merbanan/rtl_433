@@ -301,6 +301,9 @@
     <ClCompile Include="..\src\devices\gt_wt_02.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\hcs200.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\hideki.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

@@ -180,6 +180,7 @@
     <ClCompile Include="..\src\devices\generic_remote.c" />
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c" />
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
+    <ClCompile Include="..\src\devices\hcs200.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />

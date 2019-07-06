@@ -138,7 +138,7 @@
     DECL(directv) \
     DECL(eurochron) \
     DECL(ikea_sparsnas) \
-
+    DECL(hcs200) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

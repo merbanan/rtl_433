@@ -197,6 +197,7 @@ Supported device protocols:
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
     [130]* Ikea Sparsnäs Energy Meeter
+    [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
 
 * Disabled by default, use -R n or -G
 

@@ -67,6 +67,7 @@ add_executable(rtl_433
 	devices/generic_remote.c
 	devices/generic_temperature_sensor.c
 	devices/gt_wt_02.c
+	devices/hcs200.c
 	devices/hideki.c
 	devices/hondaremote.c
 	devices/honeywell.c
