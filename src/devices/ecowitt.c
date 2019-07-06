@@ -1,22 +1,28 @@
-/*
- * 55-bit one-row data packet format (inclusive ranges, 0-indexed):
- * |  0-6  | 7-bit header, ignored for checksum, always 1111111
- * |  7-14 | Always 01010011
- * | 15-22 | Sensor ID, randomly reinitialized on boot
- * | 23-24 | Always 00
- * | 25-26 | 2-bit sensor channel, selectable on back of sensor {00=1, 01=2, 10=3}
- * | 27-28 | Always 00
- * | 29-38 | 10-bit temperature in tenths of degrees C, starting from -40C. e.g. 0=-40C
- * | 39-46 | Trailer, always 1111 1111
- * | 47-54 | CRC-8 checksum poly 0x31 init 0x00 skipping first 7 bits
- *
- * Copyright 2019 Google LLC.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A.
+
+    Copyright 2019 Google LLC.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A.
+
+55-bit one-row data packet format (inclusive ranges, 0-indexed):
+
+|  0-6  | 7-bit header, ignored for checksum, always 1111111
+|  7-14 | Always 01010011
+| 15-22 | Sensor ID, randomly reinitialized on boot
+| 23-24 | Always 00
+| 25-26 | 2-bit sensor channel, selectable on back of sensor {00=1, 01=2, 10=3}
+| 27-28 | Always 00
+| 29-38 | 10-bit temperature in tenths of degrees C, starting from -40C. e.g. 0=-40C
+| 39-46 | Trailer, always 1111 1111
+| 47-54 | CRC-8 checksum poly 0x31 init 0x00 skipping first 7 bits
+*/
 
 #include "decoder.h"
 
@@ -111,7 +117,7 @@ static char *output_fields[] = {
 };
 
 r_device ecowitt = {
-        .name        = "Ecowitt Temperature Sensor",
+        .name        = "Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A",
         .modulation  = OOK_PULSE_PWM, // copied from output, OOK_PWM = OOK_PULSE_PWM
         .short_width = 504,           // copied from output
         .long_width  = 1480,          // copied from output
