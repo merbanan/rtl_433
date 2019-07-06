@@ -139,6 +139,7 @@
     DECL(eurochron) \
     DECL(ikea_sparsnas) \
     DECL(hcs200) \
+    DECL(tfa_303196) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

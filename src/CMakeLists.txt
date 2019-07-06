@@ -116,6 +116,7 @@ add_executable(rtl_433
 	devices/solight_te44.c
 	devices/springfield.c
 	devices/steelmate.c
+	devices/tfa_30_3196.c
 	devices/tfa_pool_thermometer.c
 	devices/tfa_twin_plus_30.3049.c
 	devices/thermopro_tp11.c
