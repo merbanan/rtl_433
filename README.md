@@ -196,7 +196,8 @@ Supported device protocols:
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
-    [130]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [130]* Ikea Sparsnäs Energy Meeter
+    [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
 
 * Disabled by default, use -R n or -G
 
