@@ -12,11 +12,11 @@
     DECL(rubicson) \
     DECL(prologue) \
     DECL(waveman) \
-    DECL(template) \
+    DECL(new_template) \
     DECL(elv_em1000) \
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
-    DECL(template) \
+    DECL(new_template) \
     DECL(acurite_rain_gauge) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
@@ -34,8 +34,8 @@
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(chuango) \
     DECL(generic_remote) \
     DECL(tfa_twin_plus_303049) \
@@ -72,8 +72,8 @@
     DECL(elro_db286a) \
     DECL(efergy_optical) \
     DECL(hondaremote) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(radiohead_ask) \
     DECL(kerui) \
     DECL(fineoffset_wh1050) \

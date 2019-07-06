@@ -17,11 +17,11 @@
 
 // create decoder functions
 
-r_device *create_device(r_device *template)
+r_device *create_device(r_device *dev_template)
 {
     r_device *r_dev = malloc(sizeof (*r_dev));
-    if (template)
-        *r_dev = *template; // copy
+    if (dev_template)
+        *r_dev = *dev_template; // copy
 
     return r_dev;
 }
