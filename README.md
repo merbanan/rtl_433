@@ -199,6 +199,7 @@ Supported device protocols:
     [130]* IKEA Sparsnäs Energy Meter Monitor
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
+    [133]  Rubicson 48659 Thermometer
 
 * Disabled by default, use -R n or -G
 
