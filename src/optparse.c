@@ -156,35 +156,69 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    char *endptr;
-    double val = strtod(str, &endptr);
+    char *endptr    = (char *)str;
+    double val      = 0.0;
+    unsigned colons = 0;
 
-    if (str == endptr) {
-        fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
-        exit(1);
-    }
+    while (*endptr) {
+        double num = strtod(str, &endptr);
 
-    // allow whitespace before suffix
-    while (*endptr == ' ' || *endptr == '\t')
-        ++endptr;
+        if (str == endptr) {
+            fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
+            exit(1);
+        }
 
-    switch (*endptr) {
+        // allow whitespace before suffix
+        while (*endptr == ' ' || *endptr == '\t')
+            ++endptr;
+
+        switch (*endptr) {
         case '\0':
+            if (colons == 0) {
+                // assume seconds
+                val += num;
+                break;
+            }
+        case ':':
+            ++colons;
+            if (colons == 1)
+                val += num * 60 * 60;
+            else if (colons == 2)
+                val += num * 60;
+            else if (colons == 3)
+                val += num;
+            else {
+                fprintf(stderr, "%stoo many colons (use HH:MM[:SS]))\n", error_hint);
+                exit(1);
+            }
+            if (*endptr)
+                ++endptr;
             break;
         case 's':
         case 'S':
+            val += num;
+            ++endptr;
             break;
         case 'm':
         case 'M':
-            val *= 60;
+            val += num * 60;
+            ++endptr;
             break;
         case 'h':
         case 'H':
-            val *= 60 * 60;
+            val += num * 60 * 60;
+            ++endptr;
+            break;
+        case 'd':
+        case 'D':
+            val += num * 60 * 60 * 24;
+            ++endptr;
             break;
         default:
             fprintf(stderr, "%sunknown time suffix (%s)\n", error_hint, endptr);
             exit(1);
+        }
+        str = endptr;
     }
 
     if (val > INT_MAX || val < INT_MIN) {
