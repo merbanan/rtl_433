@@ -1,26 +1,27 @@
-/* Rubicson 48659 meat thermometer.
- *
- * Copyright (C) 2019 Benjamin Larsson.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+    Rubicson 48659 meat thermometer.
+
+    Copyright (C) 2019 Benjamin Larsson.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "decoder.h"
 
-
 /**
+Rubicson 48659 meat thermometer.
+
 {32} II 12 TT MN
 
-I = power on id
-1 = 0UUU U follows temperature [0-7]
-2 = XSTT S = sign, TT = temp high bits (2) X=unknown
-T = Temp in Farenhight
-M = xorsum high nibble 
-M = xorsum low nibble (add ^4 to match output)
+- I = power on id
+- 1 = 0UUU U follows temperature [0-7]
+- 2 = XSTT S = sign, TT = temp high bits (2) X=unknown
+- T = Temp in Farenhight
+- M = xorsum high nibble
+- M = xorsum low nibble (add ^4 to match output)
 
 
 {32} 01 08 71 d4    45
@@ -148,9 +149,8 @@ battery change for each value
 {32} 1a e4 0c 64    -24
 */
 
-
-
-static int rubicson_48659_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int row;
     bitrow_t *bb = bitbuffer->bb;
     unsigned int id;
@@ -168,32 +168,35 @@ static int rubicson_48659_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 
     id = bb[row][0];
     // 1 sign bit and 10 bits for the value
-    temp_f = ((bb[row][1]&0x04)>>2)?-1:1 * (((bb[row][1]&0x3)<<8) + bb[row][2]);
+    temp_f = ((bb[row][1] & 0x04) >> 2) ? -1 : 1 * (((bb[row][1] & 0x3) << 8) + bb[row][2]);
 
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, "Rubicson 48659",
             "id",            "Id",          DATA_INT,    id,
             "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_F",
-    NULL
+        "model",
+        "id",
+        "temperature_F",
+        NULL,
 };
 
 r_device rubicson_48659 = {
-    .name          = "Rubicson 48659 Thermometer",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 940,
-    .long_width    = 1900,
-    .gap_limit     = 2000,
-    .reset_limit   = 4000,
-    .decode_fn     = &rubicson_48659_sensor_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Rubicson 48659 Thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 940,
+        .long_width  = 1900,
+        .gap_limit   = 2000,
+        .reset_limit = 4000,
+        .decode_fn   = &rubicson_48659_decode,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
