@@ -274,6 +274,11 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
                 || pulses->gap[n] < device->s_short_width - device->s_tolerance
                 || pulses->gap[n] > device->s_short_width * 2 + device->s_tolerance)) {
             // The pulse or gap is too long or too short, thus invalid
+            if (pulses->pulse[n] > device->s_short_width * 1.5
+                    && pulses->pulse[n] <= device->s_short_width * 2 + device->s_tolerance) {
+                // Long last pulse means with the gap this is a [1]10 transition, add a one
+                bitbuffer_add_bit(&bits, 1);
+            }
             bitbuffer_add_row(&bits);
             bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
             time_since_last = 0;

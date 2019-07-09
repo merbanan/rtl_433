@@ -50,19 +50,31 @@ Example data:
 
 static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = {0x55, 0x56}; // 12 bit preamble + 4 bit data
+    int row;
     data_t *data;
     uint8_t *b;
     bitbuffer_t databits = {0};
 
-    if (bitbuffer->bits_per_row[0] != 128)
-        return 0;
+    row = bitbuffer_find_repeated_row(bitbuffer, 2, 48 * 2 + 12); // expected are 4 rows, require 2
+    if (row < 0)
+        return DECODE_ABORT_EARLY;
 
-    unsigned bitpos = bitbuffer_manchester_decode(bitbuffer, 0, 32, &databits, 48);
+    unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble_pattern, 16);
+    start_pos += 12; // skip preamble
+
+    if (bitbuffer->bits_per_row[row] - start_pos < 48 * 2)
+        return DECODE_ABORT_LENGTH; // short buffer or preamble not found
+
+    bitbuffer_manchester_decode(bitbuffer, row, start_pos, &databits, 48);
+
+    if (databits.bits_per_row[0] < 48)
+        return DECODE_ABORT_LENGTH; // payload malformed MC
 
     b = databits.bb[0];
 
     if (b[0] != 0xa8)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     uint32_t chk_data = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
     uint16_t digest   = (b[4] << 8) | (b[5]);
@@ -107,8 +119,9 @@ r_device tfa_303196 = {
         .name        = "TFA Dostmann 30.3196 T/H outdoor sensor",
         .modulation  = FSK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 245,
-        .long_width  = 245,
-        .reset_limit = 600,
+        .long_width  = 0, // unused
+        .tolerance   = 60,
+        .reset_limit = 22000,
         .decode_fn   = &tfa_303196_callback,
         .disabled    = 0,
         .fields      = output_fields,
