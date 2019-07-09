@@ -198,19 +198,6 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
     }
 }
 
-/// Just a helper function to make bit strings printable.  Make sure str_buf has enough space
-/// to hold the string representation or will overflow.
-/// Maybe this can graduate to bitbuffer.c someday?
-static void bitrow_to_str(bitrow_t const bitrow, unsigned bit_len, char *str_buf)
-{
-    char temp_str_buf[6];
-    sprintf(str_buf, "{%2u}", bit_len);
-    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
-        sprintf(temp_str_buf, "%02x", bitrow[col]);
-        strcat( str_buf, temp_str_buf );
-    }
-}
-
 /// This is a differential PWM decode and is essentially only looking at symbol
 /// transitions, not the symbols themselves.  An inverted bitstring would yeild the
 /// same result.  Note that:
@@ -324,8 +311,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode the message symbols
     dtv_bit_len = bitrow_dpwm_decode(bitrow, bit_len, 0, dtv_buf, &row_sync_pos, &row_sync_len);
     if (decoder->verbose >= 2) {
-        bitrow_to_str(dtv_buf, dtv_bit_len, str_buf);
-        fprintf(stderr, "directv: SYNC at pos:%u for %u symbols. DPWM Decoded Message: %s\n", row_sync_pos, row_sync_len, str_buf);
+        bitrow_printf(dtv_buf, dtv_bit_len, "directv: SYNC at pos:%u for %u symbols. DPWM Decoded Message: ", row_sync_pos, row_sync_len);
     }
 
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
