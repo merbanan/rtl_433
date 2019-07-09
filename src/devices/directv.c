@@ -284,7 +284,6 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned dtv_bit_len;
     unsigned row_sync_pos;
     unsigned row_sync_len;
-    char str_buf[256];
 
     // Signal is reset by rtl_433 before recognizing rows, so in practice, there's only one row.
     // It would be useful to catch rows in signal so that there'd only be one decoded row per
