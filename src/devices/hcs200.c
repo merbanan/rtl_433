@@ -54,7 +54,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",        "", DATA_STRING,    "Microchip-HCS200",
             "id",           "", DATA_STRING,    serial_str,
-            "encrypted",    "", DATA_STRING,    encrypted,
+            "encrypted",    "", DATA_STRING,    encrypted_str,
             "button1",      "", DATA_STRING,    ((b[8] & 0x04) == 0x04) ? "ON" : "OFF",
             "button2",      "", DATA_STRING,    ((b[8] & 0x02) == 0x02) ? "ON" : "OFF",
             "button3",      "", DATA_STRING,    ((b[8] & 0x09) == 0x09) ? "ON" : "OFF",
