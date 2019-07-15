@@ -411,11 +411,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 break;
             }
         }
-
-        if (cfg->stop_after_successful_events_flag && (d_events > 0)) {
-            cfg->do_exit = cfg->do_exit_async = 1;
-            sdr_stop(cfg->dev);
-        }
     }
 
     if (demod->am_analyze) {
@@ -526,11 +521,21 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (cfg->bytes_to_read > 0)
         cfg->bytes_to_read -= len;
 
+    if (cfg->after_successful_events_flag && (d_events > 0)) {
+        if (cfg->after_successful_events_flag == 1) {
+            cfg->do_exit = 1;
+        }
+        cfg->do_exit_async = 1;
+#ifndef _WIN32
+        alarm(0); // cancel the watchdog timer
+#endif
+        sdr_stop(cfg->dev);
+    }
+
     time_t rawtime;
     time(&rawtime);
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
-    if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > cfg->hop_time[hop_index]) {
-        cfg->rawtime_old = rawtime;
+    if (cfg->frequencies > 1 && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
         cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
@@ -569,7 +574,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -975,7 +980,15 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->test_data = arg;
         break;
     case 'E':
-        cfg->stop_after_successful_events_flag = atobv(arg, 1);
+        if (arg && !strcmp(arg, "hop")) {
+            cfg->after_successful_events_flag = 2;
+        }
+        else if (arg && !strcmp(arg, "quit")) {
+            cfg->after_successful_events_flag = 1;
+        }
+        else {
+            cfg->after_successful_events_flag = atobv(arg, 1);
+        }
         break;
     default:
         usage(1);
@@ -1335,8 +1348,6 @@ int main(int argc, char **argv) {
     if (cfg.frequencies == 0) {
         cfg.frequency[0] = DEFAULT_FREQUENCY;
         cfg.frequencies = 1;
-    } else {
-        time(&cfg.rawtime_old);
     }
     if (cfg.frequencies > 1 && cfg.hop_times == 0) {
         cfg.hop_time[cfg.hop_times++] = DEFAULT_HOP_TIME;
@@ -1351,6 +1362,8 @@ int main(int argc, char **argv) {
 
     uint32_t samp_rate = cfg.samp_rate;
     while (!cfg.do_exit) {
+        time(&cfg.hop_start_time);
+
         /* Set the cfg.frequency */
         cfg.center_frequency = cfg.frequency[cfg.frequency_index];
         r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, 1); // always verbose
