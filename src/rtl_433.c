@@ -528,7 +528,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     time_t rawtime;
     time(&rawtime);
-    if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > demod->hop_time) {
+    int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
+    if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > cfg->hop_time[hop_index]) {
         cfg->rawtime_old = rawtime;
         cfg->do_exit_async = 1;
 #ifndef _WIN32
@@ -703,7 +704,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             fprintf(stderr, "Max number of frequencies reached %d\n", MAX_FREQS);
         break;
     case 'H':
-        cfg->demod->hop_time = atoi_time(arg, "-H: ");
+        if (cfg->hop_times < MAX_FREQS)
+            cfg->hop_time[cfg->hop_times++] = atoi_time(arg, "-H: ");
+        else
+            fprintf(stderr, "Max number of hop times reached %d\n", MAX_FREQS);
         break;
     case 'g':
         if (!arg)
@@ -1333,6 +1337,9 @@ int main(int argc, char **argv) {
         cfg.frequencies = 1;
     } else {
         time(&cfg.rawtime_old);
+    }
+    if (cfg.frequencies > 1 && cfg.hop_times == 0) {
+        cfg.hop_time[cfg.hop_times++] = DEFAULT_HOP_TIME;
     }
     if (cfg.verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");

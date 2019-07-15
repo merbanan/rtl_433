@@ -87,7 +87,6 @@ void r_init_cfg(r_cfg_t *cfg)
     }
 
     cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    cfg->demod->hop_time    = DEFAULT_HOP_TIME;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);

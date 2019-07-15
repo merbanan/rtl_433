@@ -60,6 +60,8 @@ typedef struct r_cfg {
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
     uint32_t center_frequency;
+    int hop_times;
+    int hop_time[MAX_FREQS];
     time_t rawtime_old;
     int duration;
     time_t stop_time;
