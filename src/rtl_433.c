@@ -1025,6 +1025,11 @@ static void sighandler(int signum)
         cfg.stats_now++;
         return;
     }
+    else if (signum == SIGUSR1) {
+        cfg.do_exit_async = 1;
+        sdr_stop(cfg.dev);
+        return;
+    }
     else if (signum == SIGALRM) {
         fprintf(stderr, "Async read stalled, exiting!\n");
     }
@@ -1321,6 +1326,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);
     sigaction(SIGPIPE, &sigact, NULL);
+    sigaction(SIGUSR1, &sigact, NULL);
     sigaction(SIGINFO, &sigact, NULL);
 #else
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
