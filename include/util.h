@@ -46,7 +46,7 @@ uint8_t reflect4(uint8_t x);
 /// @param num_bytes number of bytes to reflect
 void reflect_nibbles(uint8_t message[], unsigned num_bytes);
 
-/// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of sucessfully unstuffed nibbles.
+/// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of successfully unstuffed nibbles.
 ///
 /// @param message: bytes of message data
 /// @param offset_bits: start offset of message in bits

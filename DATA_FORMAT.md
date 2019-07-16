@@ -64,10 +64,10 @@ Due to the large variance in sensor types this list of common values is non-exha
 Examples:
 
 * **temperature_C** (**temperature_F**) (double) (Optional)
-  * Temperature from a temperature sensor in degrees Celcius (Fahrenheit).
+  * Temperature from a temperature sensor in degrees Celsius (Fahrenheit).
 
 * **setpoint_C** (**setpoint_F**) (double) (Optional)
-  * Thermal set point of a thermostat device in degrees Celcius (Fahrenheit).
+  * Thermal set point of a thermostat device in degrees Celsius (Fahrenheit).
 
 * **humidity** (double) (Optional)
   * Humidity from a hygrometer sensor in % relative humidity
@@ -76,13 +76,13 @@ Examples:
   * Wind direction from wind sensor in compass direction degrees.
 
 * **wind_avg_m_s** (**wind_avg_km_h**, **wind_avg_mi_h**) (double) (Optional)
-  * Average wind speed from wind sensor in m/s. Averaging time is sensor dependant.
+  * Average wind speed from wind sensor in m/s. Averaging time is sensor dependent.
 
 * **wind_max_m_s** (**wind_max_km_h**, **wind_max_mi_h**) (double) (Optional)
   * Gust wind speed from wind sensor in m/s.
 
 * **rain_mm** (**rain_in**) (double) (Optional)
-  * Rainfall from rain sensor in mm (inches) since last reset. Reset method is device dependant.
+  * Rainfall from rain sensor in mm (inches) since last reset. Reset method is device dependent.
 
 * **rain_rate_mm_h** (**rain_rate_in_h**) (double) (Optional)
   * Rainfall rate from rain sensor in mm per hour (inches per hour).

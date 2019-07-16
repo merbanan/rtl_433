@@ -18,7 +18,7 @@ ss_get_id(char *id, uint8_t *b)
 {
     char *p = id;
 
-    // Change to least-significant-bit last (protocol uses least-siginificant-bit first) for hex representation:
+    // Change to least-significant-bit last (protocol uses least-significant-bit first) for hex representation:
     for (uint16_t k = 3; k <= 7; k++) {
         b[k] = reverse8(b[k]);
         sprintf(p++, "%c", (char)b[k]);
@@ -113,7 +113,7 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     } else if (b[10] == 0xca) {
         strcpy(extradata, "Arm System - Home");
     } else if (b[10] == 0x3a) {
-        strcpy(extradata, "Arm System - Cancelled");
+        strcpy(extradata, "Arm System - Canceled");
     } else if (b[10] == 0x2a) {
         strcpy(extradata, "Keypad Panic Button");
     } else if (b[10] == 0x86) {

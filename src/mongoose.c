@@ -12356,15 +12356,15 @@ static char *coap_get_options(char *ptr, struct mbuf *io,
 
   /* 0xFF is payload marker */
   while (ptr < io->buf + io->len && (uint8_t) *ptr != 0xFF) {
-    uint16_t option_delta, option_lenght;
+    uint16_t option_delta, option_length;
     int optinfo_len;
 
     /* Option Delta:  4-bit unsigned integer */
     option_delta = ((uint8_t) *ptr & 0xF0) >> 4;
     /* Option Length:  4-bit unsigned integer */
-    option_lenght = *ptr & 0x0F;
+    option_length = *ptr & 0x0F;
 
-    if (option_delta == 15 || option_lenght == 15) {
+    if (option_delta == 15 || option_length == 15) {
       /*
        * 15:  Reserved for future use.  If the field is set to this value,
        * it MUST be processed as a message format error
@@ -12384,8 +12384,8 @@ static char *coap_get_options(char *ptr, struct mbuf *io,
 
     ptr += optinfo_len;
 
-    /* check or extended option lenght */
-    optinfo_len = coap_get_ext_opt(ptr, io, &option_lenght);
+    /* check or extended option length */
+    optinfo_len = coap_get_ext_opt(ptr, io, &option_length);
     if (optinfo_len == -1) {
       cm->flags |= MG_COAP_NOT_ENOUGH_DATA; /* LCOV_EXCL_LINE */
       break;                                /* LCOV_EXCL_LINE */
@@ -12400,16 +12400,16 @@ static char *coap_get_options(char *ptr, struct mbuf *io,
      */
     option_delta += prev_opt;
 
-    mg_coap_add_option(cm, option_delta, ptr, option_lenght);
+    mg_coap_add_option(cm, option_delta, ptr, option_length);
 
     prev_opt = option_delta;
 
-    if (ptr + option_lenght > io->buf + io->len) {
+    if (ptr + option_length > io->buf + io->len) {
       cm->flags |= MG_COAP_NOT_ENOUGH_DATA; /* LCOV_EXCL_LINE */
       break;                                /* LCOV_EXCL_LINE */
     }
 
-    ptr += option_lenght;
+    ptr += option_length;
   }
 
   if ((cm->flags & MG_COAP_ERROR) != 0) {
@@ -12590,7 +12590,7 @@ uint32_t mg_coap_compose(struct mg_coap_message *cm, struct mbuf *io) {
     return res;
   }
 
-  /* saving previous lenght to handle non-empty mbuf */
+  /* saving previous length to handle non-empty mbuf */
   prev_io_len = io->len;
   if (mbuf_append(io, NULL, packet_size) == 0) return MG_COAP_ERROR;
   ptr = io->buf + prev_io_len;
@@ -12623,14 +12623,14 @@ uint32_t mg_coap_compose(struct mg_coap_message *cm, struct mbuf *io) {
 
     size_t opt_delta_len =
         coap_split_opt(opt->number - prev_opt_number, &delta_base, &delta_ext);
-    size_t opt_lenght_len =
+    size_t opt_length_len =
         coap_split_opt((uint32_t) opt->value.len, &length_base, &length_ext);
 
     *ptr = (delta_base << 4) | length_base;
     ptr++;
 
     ptr = coap_add_opt_info(ptr, delta_ext, opt_delta_len);
-    ptr = coap_add_opt_info(ptr, length_ext, opt_lenght_len);
+    ptr = coap_add_opt_info(ptr, length_ext, opt_length_len);
 
     if (opt->value.len != 0) {
       memcpy(ptr, opt->value.p, opt->value.len);

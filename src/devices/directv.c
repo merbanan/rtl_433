@@ -199,7 +199,7 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 }
 
 /// This is a differential PWM decode and is essentially only looking at symbol
-/// transitions, not the symbols themselves.  An inverted bitstring would yeild the
+/// transitions, not the symbols themselves.  An inverted bitstring would yield the
 /// same result.  Note that:
 ///
 /// - Initial contiguous alike symbol(s) is not considered data, regardless of length.

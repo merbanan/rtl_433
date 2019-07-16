@@ -3715,7 +3715,7 @@ void mg_if_recv_udp_cb(struct mg_connection *nc, void *buf, int len,
 int mg_if_poll(struct mg_connection *nc, double now);
 
 /*
- * Return minimal timer value amoung connections in the manager.
+ * Return minimal timer value among connections in the manager.
  * Returns 0 if there aren't any timers.
  */
 double mg_mgr_min_timer(const struct mg_mgr *mgr);
@@ -5170,7 +5170,7 @@ size_t mg_parse_multipart(const char *buf, size_t buf_len, char *var_name,
  * Fetches a variable `name` from a `buf` into a buffer specified by `dst`,
  * `dst_len`. The destination is always zero-terminated. Returns the length of
  * a fetched variable. If not found, 0 is returned. `buf` must be valid
- * url-encoded buffer. If destination is too small or an error occured,
+ * url-encoded buffer. If destination is too small or an error occurred,
  * negative number is returned.
  */
 int mg_get_http_var(const struct mg_str *buf, const char *name, char *dst,
@@ -5253,7 +5253,7 @@ struct mg_serve_http_opts {
    * &lt;!--#exec "ls -l" --&gt;
    *
    * The call directive is a way to invoke a C handler from the HTML page.
-   * On each occurence of &lt;!--#call COMMAND OPTIONAL_PARAMS> directive,
+   * On each occurrence of &lt;!--#call COMMAND OPTIONAL_PARAMS> directive,
    * Mongoose calls a registered event handler with MG_EV_SSI_CALL event,
    * and event parameter will point to the COMMAND OPTIONAL_PARAMS string.
    * An event handler can output any text, for example by calling
