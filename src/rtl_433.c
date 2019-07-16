@@ -551,7 +551,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         fprintf(stderr, "Time expired, exiting!\n");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
-        event_occured_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
+        event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
         flush_report_data(cfg);
         if (rawtime >= cfg->stats_time)
             cfg->stats_time += cfg->stats_interval;
@@ -1398,7 +1398,7 @@ int main(int argc, char **argv) {
     }
 
     if (cfg.report_stats > 0) {
-        event_occured_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
+        event_occurred_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
         flush_report_data(&cfg);
     }
 

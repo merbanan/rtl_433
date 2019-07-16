@@ -16,7 +16,7 @@
 uint8_t rh_payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
 int rh_data_payload[RH_ASK_MAX_MESSAGE_LEN];
 
-// Note: all tje "4to6 code" came from RadioHead source code.
+// Note: all the "4to6 code" came from RadioHead source code.
 // see: http://www.airspayce.com/mikem/arduino/RadioHead/index.html
 
 // 4 bit to 6 bit symbol converter table

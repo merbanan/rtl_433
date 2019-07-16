@@ -44,7 +44,7 @@ typedef struct console {
 static WORD _term_get_win_color(BOOL fore, term_color_t color)
 {
     switch (color) {
-       case TERM_COLOR_RESET: /* Cannot occur; just to supress a warning */
+       case TERM_COLOR_RESET: /* Cannot occur; just to suppress a warning */
             break;
        case TERM_COLOR_BLACK:
        case TERM_COLOR_BRIGHT_BLACK:

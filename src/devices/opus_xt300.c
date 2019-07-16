@@ -1,6 +1,6 @@
 /* Opus/Imagintronix XT300 Soil Moisture Sensor
  *
- * Aslo called XH300 sometimes, this seems to be the associated display name
+ * Also called XH300 sometimes, this seems to be the associated display name
  *
  * https://www.plantcaretools.com/product/wireless-moisture-monitor/
  *
