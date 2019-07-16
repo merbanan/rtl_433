@@ -35,6 +35,14 @@
 #define ID_RTHN129  0x0cd3 // RTHN129 Temp, clock sensors
 #define ID_BTHGN129 0x5d53 // Baro, Temp, Hygro sensor
 #define ID_UVR128   0xec70
+#define ID_THGR328N   0xcc23  // Temp & Hygro sensor looks similar to THR228N but with 5 choice channel instead of 3
+#define ID_RTGR328N_1 0xdcc3  // RTGR328N_[1-5] RFclock (date &time) & Temp & Hygro sensor looks similar to THGR328N with RF clock (5 channels also) : Temp & hygro part
+#define ID_RTGR328N_2 0xccc3
+#define ID_RTGR328N_3 0xbcc3
+#define ID_RTGR328N_4 0xacc3
+#define ID_RTGR328N_5 0x9cc3
+#define ID_RTGR328N_6 0x8ce3  // RTGR328N_6&7 RFclock (date &time) & Temp & Hygro sensor looks similar to THGR328N with RF clock (5 channels also) : RF Time part
+#define ID_RTGR328N_7 0x8ae3
 
 static float get_os_temperature(unsigned char *message)
 {
@@ -81,7 +89,11 @@ static unsigned int get_os_channel(unsigned char *message, unsigned int sensor_i
     // sensor ID included to support sensors with channel in different position
     int channel = 0;
     channel = ((message[2] >> 4) & 0x0f);
-    if ((channel == 4) && (sensor_id & 0x0fff) != ID_RTGN318 && sensor_id != ID_THGR810 && (sensor_id & 0x0fff) != ID_RTHN129)
+    if ((channel == 4)
+            && (sensor_id & 0x0fff) != ID_RTGN318
+            && sensor_id != ID_THGR810
+            && (sensor_id & 0x0fff) != ID_RTHN129
+            && sensor_id != ID_THGR328N)
         channel = 3; // sensor 3 channel number is 0x04
     return channel;
 }
@@ -104,7 +116,7 @@ static unsigned short int power(uint8_t const *msg)
 {
     unsigned short int val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
-    val *= 1.00188;
+    val *= 1.00188; // unknown if correct
     return val;
 }
 
@@ -210,7 +222,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         }
 
         //bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw OSv2 bits: ");
-        bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 160);
+        bitbuffer_manchester_decode(bitbuffer, 0, pattern_index + 40, &databits, 173);
         reflect_nibbles(databits.bb[0], (databits.bits_per_row[0]+7)/8);
         //bitbuffer_printf(&databits, "MC OSv2 bits (from %d+40): ", pattern_index);
 
@@ -219,6 +231,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     int msg_bits = databits.bits_per_row[0];
 
     int sensor_id = (msg[0] << 8) | msg[1];
+    if (decoder->verbose) {
+      fprintf(stdout,"Found sensor_id (%08x)\n",sensor_id);
+    }
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
             return 0;
@@ -346,6 +361,48 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         decoder_output_data(decoder, data);
         return 1;
     }
+    else if (((sensor_id == ID_RTGR328N_1) || (sensor_id == ID_RTGR328N_2) || (sensor_id == ID_RTGR328N_3) || (sensor_id == ID_RTGR328N_4) || (sensor_id == ID_RTGR328N_5)) && msg_bits == 173) {
+        if (validate_os_v2_message(decoder, msg, 173, msg_bits, 15) != 0)
+             return 0;
+        data = data_make(
+                "brand",            "",             DATA_STRING, "OS",
+                "model",            "",             DATA_STRING, "Oregon-RTGR328N",
+                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
+                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+                "battery",          "Battery",      DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
+                NULL);
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    else if ((sensor_id == ID_RTGR328N_6) || (sensor_id == ID_RTGR328N_7)) {
+        if (validate_os_v2_message(decoder, msg, 100, msg_bits, 21) != 0)
+            return 0;
+
+        int year    = ((msg[9] & 0x0F) * 10) + ((msg[9] & 0xF0) >> 4) + 2000;
+        int month   = ((msg[8] & 0xF0) >> 4);
+        int weekday = ((msg[8] & 0x0F));
+        int day     = ((msg[7] & 0x0F) * 10) + ((msg[7] & 0xF0) >> 4);
+        int hours   = ((msg[6] & 0x0F) * 10) + ((msg[6] & 0xF0) >> 4);
+        int minutes = ((msg[5] & 0x0F) * 10) + ((msg[5] & 0xF0) >> 4);
+        int seconds = ((msg[4] & 0x0F) * 10) + ((msg[4] & 0xF0) >> 4);
+
+        char clock_str[23];
+        sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
+                year, month, day, hours, minutes, seconds);
+
+        data = data_make(
+                "brand",            "",             DATA_STRING, "OS",
+                "model",            "",             DATA_STRING, "Oregon-RTGR328N",
+                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
+                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+                "battery",          "Battery",      DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
+                "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
+                NULL);
+        decoder_output_data(decoder, data);
+        return 1;
+    }
     else if ((sensor_id & 0x0fff) == ID_RTGN318) {
         if (msg_bits == 76 && (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) == 0)) {
             float temp_c = get_os_temperature(msg);
@@ -415,6 +472,21 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "uv",                         "UV Index",     DATA_FORMAT, "%u", DATA_INT, uvidx,
                 "battery",                "Battery",        DATA_STRING, get_os_battery(msg)?"LOW":"OK",
                 //"channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
+                NULL);
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    else if (sensor_id == ID_THGR328N) {
+        if (validate_os_v2_message(decoder, msg, 173, msg_bits, 15) != 0)
+            return 0;
+        data = data_make(
+                "brand",            "",             DATA_STRING, "OS",
+                "model",            "",             DATA_STRING, "Oregon-THGR328N",
+                "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
+                "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
+                "battery",          "Battery",      DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -604,14 +676,14 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         }
         unsigned short int ipower = power(msg);
         unsigned long long itotal = total(msg);
-        float total_energy        = itotal / 3600 / 1000.0;
+        float total_energy        = itotal / 3600.0 / 1000.0;
         if (itotal && valid == 0) {
             data = data_make(
                     "brand",            "",                     DATA_STRING, "OS",
                     "model",            "",                     DATA_STRING,    _X("Oregon-CM180","CM180"),
                     "id",                 "House Code", DATA_INT, msg[1]&0x0F,
                     "power_W",        "Power",            DATA_FORMAT,    "%d W",DATA_INT, ipower,
-                    "energy_kWh", "Energy",         DATA_FORMAT,    "%2.1f kWh",DATA_DOUBLE, total_energy,
+                    "energy_kWh", "Energy",         DATA_FORMAT,    "%2.2f kWh",DATA_DOUBLE, total_energy,
                     NULL);
             decoder_output_data(decoder, data);
             return 1;
@@ -675,6 +747,7 @@ static char *output_fields[] = {
         "uv",
         "power_W",
         "energy_kWh",
+        "radio_clock",
         NULL,
 };
 
