@@ -352,7 +352,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
     }
 
     while (data) {
-        if (!strcmp(data->key, "time")
+        if (!strcmp(data->key, "brand")
                 || !strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {
