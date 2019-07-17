@@ -152,11 +152,14 @@
     <ClCompile Include="..\src\devices\calibeur.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
+    <ClCompile Include="..\src\devices\companion_wtr001.c" />
     <ClCompile Include="..\src\devices\current_cost.c" />
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\digitech_xc0324.c" />
+    <ClCompile Include="..\src\devices\directv.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
+    <ClCompile Include="..\src\devices\ecowitt.c" />
     <ClCompile Include="..\src\devices\efergy_e2_classic.c" />
     <ClCompile Include="..\src\devices\efergy_optical.c" />
     <ClCompile Include="..\src\devices\elro_db286a.c" />
@@ -164,6 +167,7 @@
     <ClCompile Include="..\src\devices\emontx.c" />
     <ClCompile Include="..\src\devices\esa.c" />
     <ClCompile Include="..\src\devices\esperanza_ews.c" />
+    <ClCompile Include="..\src\devices\eurochron.c" />
     <ClCompile Include="..\src\devices\fineoffset.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1050.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c" />
@@ -176,12 +180,14 @@
     <ClCompile Include="..\src\devices\generic_remote.c" />
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c" />
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
+    <ClCompile Include="..\src\devices\hcs200.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
+    <ClCompile Include="..\src\devices\ikea_sparsnas.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
     <ClCompile Include="..\src\devices\inovalley-kw9015b.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
@@ -215,6 +221,7 @@
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
+    <ClCompile Include="..\src\devices\rubicson_48659.c" />
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
@@ -223,6 +230,7 @@
     <ClCompile Include="..\src\devices\solight_te44.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
+    <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />

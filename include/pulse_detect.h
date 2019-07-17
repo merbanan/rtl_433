@@ -44,6 +44,12 @@ typedef struct pulse_data {
     float noise_db;
 } pulse_data_t;
 
+// Package types
+enum package_types {
+    PULSE_DATA_OOK = 1,
+    PULSE_DATA_FSK = 2,
+};
+
 typedef struct pulse_detect pulse_detect_t;
 
 /// Clear the content of a pulse_data_t structure.
@@ -89,7 +95,7 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 /// Analyze and print result.
-void pulse_analyzer(pulse_data_t *data);
+void pulse_analyzer(pulse_data_t *data, int package_type);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

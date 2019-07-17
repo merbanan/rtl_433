@@ -118,7 +118,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    // set message starting postion (just past preamble and sync bit) and exit if msg length not met
+    // set message starting position (just past preamble and sync bit) and exit if msg length not met
     bit_offset += (sizeof preamble) * 8;
 
     if (bitbuffer->bits_per_row[row] - bit_offset < INTERLOGIX_MSG_BIT_LEN - 1) {

@@ -28,7 +28,7 @@
  * [00] { 4} 00             : 0000
  * [01] {40} 0f 30 5c e7 61 : 00001111 00110000 01011100 11100111 01100001
  *
- * First row is actually the preample part. This is added to make the signal more unique.
+ * First row is actually the preamble part. This is added to make the signal more unique.
  *
  */
 

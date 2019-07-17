@@ -53,7 +53,8 @@ char *hostport_param(char *param, char **host, char **port);
 uint32_t atouint32_metric(const char *str, const char *error_hint);
 
 /// Convert a string to an integer, uses strtod() and accepts
-/// time suffixes of 's', 'm', and 'h' (also 'S', 'M', and 'H').
+/// time suffixes of 'd', 'h', 'm', and 's' (also 'D', 'H', 'M', and 'S'),
+/// or the form hours:minutes[:seconds].
 ///
 /// Parse errors will fprintf(stderr, ...) and exit(1).
 ///

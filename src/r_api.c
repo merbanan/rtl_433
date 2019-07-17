@@ -87,7 +87,6 @@ void r_init_cfg(r_cfg_t *cfg)
     }
 
     cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
-    cfg->demod->hop_time    = DEFAULT_HOP_TIME;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -142,8 +141,8 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
 {
     float samples_per_us = cfg->samp_rate / 1.0e6;
 
-    r_dev->f_short_width = 1.0 / (r_dev->short_width * samples_per_us);
-    r_dev->f_long_width  = 1.0 / (r_dev->long_width * samples_per_us);
+    r_dev->f_short_width = r_dev->short_width > 0.0 ? 1.0 / (r_dev->short_width * samples_per_us) : 0;
+    r_dev->f_long_width  = r_dev->long_width > 0.0 ? 1.0 / (r_dev->long_width * samples_per_us) : 0;
     r_dev->s_short_width = r_dev->short_width * samples_per_us;
     r_dev->s_long_width  = r_dev->long_width * samples_per_us;
     r_dev->s_reset_limit = r_dev->reset_limit * samples_per_us;
@@ -416,7 +415,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
 /* handlers */
 
 /** Pass the data structure to all output handlers. Frees data afterwards. */
-void event_occured_handler(r_cfg_t *cfg, data_t *data)
+void event_occurred_handler(r_cfg_t *cfg, data_t *data)
 {
     // prepend "time" if requested
     if (cfg->report_time != REPORT_TIME_OFF) {
@@ -803,7 +802,7 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     char *host = "localhost";
     char *port = "1883";
     char *opts = hostport_param(param, &host, &port);
-    fprintf(stderr, "Publishing MQTT UDP datagrams to %s port %s\n", host, port);
+    fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
 }

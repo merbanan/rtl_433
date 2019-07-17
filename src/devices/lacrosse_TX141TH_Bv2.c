@@ -97,7 +97,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
     int r;
     int device;
     uint8_t *bytes;
-    uint8_t id, status, battery_low, test, humidity = 0;
+    uint8_t id, status, battery_low, test, channel, humidity = 0;
     uint16_t temp_raw;
     float temp_c;
 
@@ -124,6 +124,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
         battery_low = (status & 0x80) >> 7;
     }
     test = (status & 0x40) >> 6;
+    channel = (status & 0x30) >> 4;
     temp_raw = ((status & 0x0F) << 8) + bytes[2];
     temp_c = ((float)temp_raw) / 10.0 - 50.0; // Temperature in C
 
@@ -143,6 +144,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
         data = data_make(
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
+                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -151,6 +153,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
         data = data_make(
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141THBv2","LaCrosse TX141TH-Bv2 sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
+                "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
@@ -165,6 +168,7 @@ static int lacrosse_tx141th_bv2_callback(r_device *decoder, bitbuffer_t *bitbuff
 static char *output_fields[] = {
     "model",
     "id",
+    "channel",
     "temperature_C",
     "humidity",
     "battery",

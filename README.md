@@ -5,7 +5,7 @@ rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz
 The official source code is in the https://github.com/merbanan/rtl_433/ repository.
 
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
-Activly tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
+Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
 ![rtl_433 screenshot](./screenshot.png)
 
@@ -41,7 +41,7 @@ Usage:		= General options =
 		= Demodulator options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
-  [-G] Enable all device protocols, included those disabled by default
+  [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
   [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
   [-z <value>] Override short value in data decoder
@@ -163,7 +163,7 @@ Supported device protocols:
     [94]  Philips outdoor temperature sensor
     [95]  Schrader TPMS EG53MA4
     [96]  Nexa
-    [97]  Thermopro TP08/TP12 thermometer
+    [97]  Thermopro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
     [99]  X10 Security
     [100]  Interlogix GE UTC Security Devices
@@ -192,6 +192,14 @@ Supported device protocols:
     [123]* Jansite TPMS Model TY02S
     [124]  LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
     [125]  TS-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
+    [126]  Companion WTR001 Temperature Sensor
+    [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
+    [128]  DirecTV RC66RX Remote Control
+    [129]* Eurochron temperature and humidity sensor
+    [130]* IKEA Sparsnäs Energy Meter Monitor
+    [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [132]  TFA Dostmann 30.3196 T/H outdoor sensor
+    [133]  Rubicson 48659 Thermometer
 
 * Disabled by default, use -R n or -G
 
@@ -272,13 +280,13 @@ Option -F:
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
 	Add MQTT options with e.g. -F "mqtt://host:1883,opt=arg"
-	MQTT options are: user=foo, pass=bar, retain[=0|1],
-		 usechannel=replaceid|afterid|beforeid|no, <format>[=topic]
+	MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
 	Supported MQTT formats: (default is all)
 	  events: posts JSON event data
 	  states: posts JSON state data
 	  devices: posts device and sensor info in nested topics
-	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433"
+	The topic string will expand keys like [/model]
+	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 Option -M:

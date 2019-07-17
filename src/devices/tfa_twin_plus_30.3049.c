@@ -1,4 +1,4 @@
-/* @file
+/** @file
     TFA-Twin-Plus-30.3049
     also Conrad KW9010 (perhaps just rebranded), Ea2 BL999.
 

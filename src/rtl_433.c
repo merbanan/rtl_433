@@ -91,7 +91,7 @@ static void usage(int exit_code)
             "\t\t= Demodulator options =\n"
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
-            "  [-G] Enable all device protocols, included those disabled by default\n"
+            "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
             "  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "  [-z <value>] Override short value in data decoder\n"
@@ -182,13 +182,13 @@ static void help_output(void)
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
-            "\tMQTT options are: user=foo, pass=bar, retain[=0|1],\n"
-            "\t\t usechannel=replaceid|afterid|beforeid|no, <format>[=topic]\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
             "\t  devices: posts device and sensor info in nested topics\n"
-            "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=/rtl_433\"\n"
+            "\tThe topic string will expand keys like [/model]\n"
+            "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }
@@ -321,7 +321,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int d_events = 0; // Sensor events successfully detected
     if (demod->r_devs.len || demod->analyze_pulses || demod->dumper.len || demod->samp_grab) {
         // Detect a package and loop through demodulators with pulse data
-        int package_type = 1;  // Just to get us started
+        int package_type = PULSE_DATA_OOK;  // Just to get us started
         for (void **iter = demod->dumper.elems; iter && *iter; ++iter) {
             file_info_t const *dumper = *iter;
             if (dumper->format == U8_LOGIC) {
@@ -339,7 +339,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 // always update the last frame end
                 demod->frame_end_ago = demod->pulse_data.end_ago;
             }
-            if (package_type == 1) {
+            if (package_type == PULSE_DATA_OOK) {
                 calc_rssi_snr(cfg, &demod->pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected OOK package\t%s\n", time_pos_str(cfg, demod->pulse_data.start_ago, time_str));
 
@@ -356,10 +356,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->pulse_data);
+                    pulse_analyzer(&demod->pulse_data, package_type);
                 }
 
-            } else if (package_type == 2) {
+            } else if (package_type == PULSE_DATA_FSK) {
                 calc_rssi_snr(cfg, &demod->fsk_pulse_data);
                 if (demod->analyze_pulses) fprintf(stderr, "Detected FSK package\t%s\n", time_pos_str(cfg, demod->fsk_pulse_data.start_ago, time_str));
 
@@ -376,7 +376,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
-                    pulse_analyzer(&demod->fsk_pulse_data);
+                    pulse_analyzer(&demod->fsk_pulse_data, package_type);
                 }
             } // if (package_type == ...
             d_events += p_events;
@@ -410,11 +410,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 pulse_data_dump_raw(demod->u8_buf, n_samples, cfg->input_pos, &demod->fsk_pulse_data, 0x04);
                 break;
             }
-        }
-
-        if (cfg->stop_after_successful_events_flag && (d_events > 0)) {
-            cfg->do_exit = cfg->do_exit_async = 1;
-            sdr_stop(cfg->dev);
         }
     }
 
@@ -526,10 +521,21 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (cfg->bytes_to_read > 0)
         cfg->bytes_to_read -= len;
 
+    if (cfg->after_successful_events_flag && (d_events > 0)) {
+        if (cfg->after_successful_events_flag == 1) {
+            cfg->do_exit = 1;
+        }
+        cfg->do_exit_async = 1;
+#ifndef _WIN32
+        alarm(0); // cancel the watchdog timer
+#endif
+        sdr_stop(cfg->dev);
+    }
+
     time_t rawtime;
     time(&rawtime);
-    if (cfg->frequencies > 1 && difftime(rawtime, cfg->rawtime_old) > demod->hop_time) {
-        cfg->rawtime_old = rawtime;
+    int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
+    if (cfg->frequencies > 1 && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
         cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
@@ -545,7 +551,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         fprintf(stderr, "Time expired, exiting!\n");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
-        event_occured_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
+        event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
         flush_report_data(cfg);
         if (rawtime >= cfg->stats_time)
             cfg->stats_time += cfg->stats_interval;
@@ -568,7 +574,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -703,7 +709,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             fprintf(stderr, "Max number of frequencies reached %d\n", MAX_FREQS);
         break;
     case 'H':
-        cfg->demod->hop_time = atoi_time(arg, "-H: ");
+        if (cfg->hop_times < MAX_FREQS)
+            cfg->hop_time[cfg->hop_times++] = atoi_time(arg, "-H: ");
+        else
+            fprintf(stderr, "Max number of hop times reached %d\n", MAX_FREQS);
         break;
     case 'g':
         if (!arg)
@@ -713,6 +722,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'G':
         if (atobv(arg, 1)) {
+            fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
             cfg->no_default_devices = 1;
             register_all_protocols(cfg, 1);
         }
@@ -970,7 +980,15 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->test_data = arg;
         break;
     case 'E':
-        cfg->stop_after_successful_events_flag = atobv(arg, 1);
+        if (arg && !strcmp(arg, "hop")) {
+            cfg->after_successful_events_flag = 2;
+        }
+        else if (arg && !strcmp(arg, "quit")) {
+            cfg->after_successful_events_flag = 1;
+        }
+        else {
+            cfg->after_successful_events_flag = atobv(arg, 1);
+        }
         break;
     default:
         usage(1);
@@ -1005,6 +1023,11 @@ static void sighandler(int signum)
     }
     else if (signum == SIGINFO/* TODO: maybe SIGUSR1 */) {
         cfg.stats_now++;
+        return;
+    }
+    else if (signum == SIGUSR1) {
+        cfg.do_exit_async = 1;
+        sdr_stop(cfg.dev);
         return;
     }
     else if (signum == SIGALRM) {
@@ -1303,6 +1326,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &sigact, NULL);
     sigaction(SIGQUIT, &sigact, NULL);
     sigaction(SIGPIPE, &sigact, NULL);
+    sigaction(SIGUSR1, &sigact, NULL);
     sigaction(SIGINFO, &sigact, NULL);
 #else
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
@@ -1330,8 +1354,9 @@ int main(int argc, char **argv) {
     if (cfg.frequencies == 0) {
         cfg.frequency[0] = DEFAULT_FREQUENCY;
         cfg.frequencies = 1;
-    } else {
-        time(&cfg.rawtime_old);
+    }
+    if (cfg.frequencies > 1 && cfg.hop_times == 0) {
+        cfg.hop_time[cfg.hop_times++] = DEFAULT_HOP_TIME;
     }
     if (cfg.verbosity) {
         fprintf(stderr, "Reading samples in async mode...\n");
@@ -1343,6 +1368,8 @@ int main(int argc, char **argv) {
 
     uint32_t samp_rate = cfg.samp_rate;
     while (!cfg.do_exit) {
+        time(&cfg.hop_start_time);
+
         /* Set the cfg.frequency */
         cfg.center_frequency = cfg.frequency[cfg.frequency_index];
         r = sdr_set_center_freq(cfg.dev, cfg.center_frequency, 1); // always verbose
@@ -1371,7 +1398,7 @@ int main(int argc, char **argv) {
     }
 
     if (cfg.report_stats > 0) {
-        event_occured_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
+        event_occurred_handler(&cfg, create_report_data(&cfg, cfg.report_stats));
         flush_report_data(&cfg);
     }
 
