@@ -154,6 +154,7 @@
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
     <ClCompile Include="..\src\devices\current_cost.c" />
+    <ClCompile Include="..\src\devices\current_cost_envir.c" />
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\digitech_xc0324.c" />
     <ClCompile Include="..\src\devices\directv.c" />

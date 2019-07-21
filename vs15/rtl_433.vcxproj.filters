@@ -223,6 +223,9 @@
     <ClCompile Include="..\src\devices\current_cost.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\current_cost_envir.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\danfoss.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

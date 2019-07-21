@@ -141,6 +141,7 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
+    DECL(current_cost_envir)
 
     /* Add new decoders here. */
 

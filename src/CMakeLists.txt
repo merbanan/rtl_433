@@ -41,6 +41,7 @@ add_executable(rtl_433
 	devices/chuango.c
 	devices/companion_wtr001.c
 	devices/current_cost.c
+	devices/current_cost_envir.c
 	devices/danfoss.c
 	devices/digitech_xc0324.c
 	devices/directv.c
