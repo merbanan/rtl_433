@@ -92,7 +92,7 @@ static void usage(int exit_code)
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
-            "  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
+            "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
             "  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
             "  [-z <value>] Override short value in data decoder\n"
             "  [-x <value>] Override long value in data decoder\n"
