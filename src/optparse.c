@@ -177,8 +177,9 @@ int atoi_time(const char *str, const char *error_hint)
             if (colons == 0) {
                 // assume seconds
                 val += num;
+                break;
             }
-            break;
+	    __attribute__ ((fallthrough));
         case ':':
             ++colons;
             if (colons == 1)
