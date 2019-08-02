@@ -179,7 +179,7 @@ int atoi_time(const char *str, const char *error_hint)
                 val += num;
                 break;
             }
-	    __attribute__ ((fallthrough));
+            // intentional fallthrough
         case ':':
             ++colons;
             if (colons == 1)
