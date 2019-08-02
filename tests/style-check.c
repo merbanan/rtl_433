@@ -26,6 +26,8 @@ static int style_check(char *path)
 {
     FILE *fp = fopen(path, "r");
     assert(fp);
+    if(!fp)
+      exit(EXIT_FAILURE);
 
     int read_errors = 0;
     int long_errors = 0;

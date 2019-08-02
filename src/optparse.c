@@ -160,7 +160,7 @@ int atoi_time(const char *str, const char *error_hint)
     double val      = 0.0;
     unsigned colons = 0;
 
-    while (*endptr) {
+    do {
         double num = strtod(str, &endptr);
 
         if (str == endptr) {
@@ -179,6 +179,7 @@ int atoi_time(const char *str, const char *error_hint)
                 val += num;
                 break;
             }
+            // intentional fallthrough
         case ':':
             ++colons;
             if (colons == 1)
@@ -218,8 +219,13 @@ int atoi_time(const char *str, const char *error_hint)
             fprintf(stderr, "%sunknown time suffix (%s)\n", error_hint, endptr);
             exit(1);
         }
+
+        // chew up any remaining whitespace
+        while (*endptr == ' ' || *endptr == '\t')
+            ++endptr;
         str = endptr;
-    }
+
+    } while (*endptr);
 
     if (val > INT_MAX || val < INT_MIN) {
         fprintf(stderr, "%stime argument too big (%f)\n", error_hint, val);
