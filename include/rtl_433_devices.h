@@ -141,6 +141,7 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
+    DECL(holman_ws5029) \
 
     /* Add new decoders here. */
 
