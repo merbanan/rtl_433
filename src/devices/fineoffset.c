@@ -443,6 +443,14 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
+    // Verify type code
+    int msg_type = b[0] & 0xf0;
+    if (msg_type != 0xe0) {
+        if (decoder->verbose)
+            fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
+        return DECODE_ABORT_EARLY;
+    }
+
     // Verify checksum
     int sum = (add_bytes(b, 6) & 0xff) - b[6];
     if (sum) {
