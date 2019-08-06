@@ -17,7 +17,7 @@
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
     DECL(new_template) \
-    DECL(acurite_rain_gauge) \
+    DECL(acurite_rain_896) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
     DECL(mebus433) \
