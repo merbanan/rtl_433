@@ -30,6 +30,7 @@
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
 #define ACURITE_MSGTYPE_WINDSPEED_TEMP_HUMIDITY_3N1     0x20
+#define ACURITE_MSGTYPE_RAINFALL                        0x30
 
 // Acurite 5n1 Wind direction values.
 // There are seem to be conflicting decodings.
@@ -629,6 +630,25 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 decoder_output_data(decoder, data);
                 valid++;
             }
+            else if (message_type == ACURITE_MSGTYPE_RAINFALL) {
+                // Rain Fall Gauge 899
+                // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
+                channel     = bb[0] >> 6;
+                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // TODO: a tip is 1mm?
+
+                /* clang-format off */
+                data = data_make(
+                        "model",            "",                         DATA_STRING, "Acurite-Rain899",
+                        "id",               "",                         DATA_INT,    sensor_id,
+                        "channel",          "",                         DATA_INT,    channel,
+                        "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
+                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%d mm", DATA_DOUBLE, raincounter,
+                        NULL);
+                /* clang-format on */
+
+                decoder_output_data(decoder, data);
+                valid++;
+            }
             else {
                 fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
                     __func__, sensor_id, channel, bb[3], message_type);
@@ -1048,6 +1068,7 @@ static char *acurite_txr_output_fields[] = {
     "wind_dir_deg",
     "rain_inch", // TODO: remove this
     "rain_in",
+    "rain_mm",
     "temperature_F",
     NULL,
 };
