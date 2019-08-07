@@ -799,44 +799,6 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 0;
 }
 
-// Checksum code from
-// https://eclecticmusingsofachaoticmind.wordpress.com/2015/01/21/home-automation-temperature-sensors/
-// with modifications listed in
-// http://www.osengr.org/WxShield/Downloads/Weather-Sensor-RF-Protocols.pdf
-//
-// This is the same algorithm as used in ambient_weather.c
-// @todo - move to util.c, (and rename)
-static uint8_t acurite_606_checksum(int length, uint8_t *buff)
-{
-    uint8_t mask = 0xd3;
-    uint8_t checksum = 0x00;
-    uint8_t data;
-    int byteCnt;
-
-    for (byteCnt = 0; byteCnt < length; byteCnt++) {
-        int bitCnt;
-        data = buff[byteCnt];
-
-        for (bitCnt = 7; bitCnt >= 0; bitCnt--) {
-            uint8_t bit;
-
-            // Rotate mask right
-            bit = mask & 1;
-            mask = (mask >> 1) | (mask << 7);
-            if (bit) {
-                mask ^= 0x18;
-            }
-
-            // XOR mask into checksum if data bit is 1
-            if (data & 0x80) {
-                checksum ^= mask;
-            }
-            data <<= 1;
-        }
-    }
-    return checksum;
-}
-
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -867,7 +829,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_printf(bitbuffer, "%s: ", __func__);
 
     // calculate the checksum and only continue if we have a matching checksum
-    uint8_t chk = acurite_606_checksum(3, b);
+    uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
     if (chk != b[3])
         return 0;
 
