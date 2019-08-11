@@ -7,6 +7,8 @@
     - 5-n-1 weather sensor, Model; VN1TXC, 06004RM
     - 5-n-1 pro weather sensor, Model: 06014RM
     - 896 Rain gauge, Model: 00896
+    - 899 Rain gauge
+    - 875 Rain gauge
     - 592TXR / 06002RM Tower sensor (temperature and humidity)
       (Note: Some newer sensors share the 592TXR coding for compatibility.
     - 609TXC "TH" temperature and humidity sensor (609A1TX)
@@ -109,7 +111,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
-    
+
     if ((b[0] == 0) || (b[1] == 0) || (b[2] == 0) || (b[3] != 0) || (b[4] != 0))
         return DECODE_ABORT_EARLY;
 
@@ -129,6 +131,95 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             _X("rain_mm","rain"),   "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain,
             NULL);
     /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+/**
+Acurite 875 (00875TX) Rain fall gauge.
+
+Data layout:
+
+    FF FI IF RR RR CC
+
+- F: flags or fixed
+- I: ID, maybe.
+- R: rain tip counter, a bucket tip is 0.2mm
+- C: Checksum, mybe XOR?
+
+Here is the signal with a few bucket tips back and forth:
+{48} 06 9a 18 00 49 2d : 00000110 10011010 00011000 00000000 01001001 00101101
+
+And then here is the signal with the next reading of a single bucket tip:
+{48} 06 9a 18 00 4a 2e : 00000110 10011010 00011000 00000000 01001010 00101110
+
+And finally the last signal save with two more bucket tips:
+{48} 06 9a 18 00 4c 28 : 00000110 10011010 00011000 00000000 01001100 00101000
+
+More:
+{48} 06 9a 18 00 6a 0e : 00000110 10011010 00011000 00000000 01101010 00001110
+{48} 06 9a 18 00 6b 0f : 00000110 10011010 00011000 00000000 01101011 00001111
+
+{48} 06 95 b8 00 00 db : 00000110 10010101 10111000 00000000 00000000 11011011
+{48} 06 95 b8 00 02 d9 : 00000110 10010101 10111000 00000000 00000010 11011001
+{48} 06 95 b8 00 03 d8 : 00000110 10010101 10111000 00000000 00000011 11011000
+
+{48} 06 9f c8 00 01 40 : 00000110 10011111 11001000 00000000 00000001 01000000
+{48} 06 9f c8 00 09 48 : 00000110 10011111 11001000 00000000 00001001 01001000
+{48} 06 9f c8 00 0e 4f : 00000110 10011111 11001000 00000000 00001110 01001111
+{48} 06 9f c8 00 0f 4e : 00000110 10011111 11001000 00000000 00001111 01001110
+
+*/
+static int acurite_rain_875_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t *b = bitbuffer->bb[0];
+    data_t *data;
+    int row;
+    int id;
+    int channel;
+    int battery_low;
+    int total_rain;
+    int flags;
+    char flags_str[5];
+    int chk;
+    char chk_str[3];
+
+    row = bitbuffer_find_repeated_row(bitbuffer, 4, 48); // 6 repeats nominal
+    if (row < 0) {
+        return DECODE_ABORT_EARLY; // no repeated row found
+    }
+
+    bitbuffer_invert(bitbuffer);
+
+    chk = xor_bytes(b, 6);
+    if (chk & 0x0f) // lower bits need to be XOR zero, upper bits unknown
+        return DECODE_FAIL_MIC;
+    // needs more checks, collisions with Microchip-HCS200
+
+    // debug
+    bitbuffer_printf(bitbuffer, "%s: ", __func__);
+
+    id          = ((b[1] & 0xf) << 4) | (b[2] >> 4);
+    flags       = (b[0] << 8) | (b[1] & 0xf0) | (b[2] & 0x0f);
+    battery_low = 0; // unknown
+    channel     = 0; // unknown
+    total_rain  = ((b[3] & 0x7f) << 7) | (b[4] & 0x7f); // a tip is 0.2mm
+    sprintf(flags_str, "%04x", flags);
+    sprintf(chk_str, "%02x", chk);
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Acurite-Rain875",
+            "id",               "",             DATA_INT,    id,
+            //"channel",          "",             DATA_INT,    channel,
+            //"battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain * 0.2,
+            "flags",            "",             DATA_STRING, flags_str,
+            "check",            "",             DATA_STRING, chk_str,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format off */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -983,6 +1074,19 @@ r_device acurite_rain_896 = {
 // Disabled by default due to false positives on oregon scientific v1 protocol see issue #353
     .disabled       = 1,
     .fields         = acurite_rain_gauge_output_fields,
+};
+
+r_device acurite_rain_875 = {
+        .name        = "Acurite 875 Rain Gauge",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,  // short pulse is 500 us + 750 us gap
+        .long_width  = 1000, // long pulse is 1000 us + 250 us gap
+        .sync_width  = 200,  // sync pulse is 200 us + 3700 us gap
+        .gap_limit   = 900,  // longest data gap is 750 us
+        .reset_limit = 4000, // packet gap is 3700 us
+        .decode_fn   = &acurite_rain_875_decode,
+        .disabled    = 0,
+        .fields      = acurite_rain_gauge_output_fields,
 };
 
 static char *acurite_th_output_fields[] = {
