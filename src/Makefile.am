@@ -73,6 +73,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/hondaremote.c \
                        devices/honeywell.c \
                        devices/honeywell_wdb.c \
+                       devices/holman_ws5029.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
                        devices/ikea_sparsnas.c \

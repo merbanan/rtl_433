@@ -17,7 +17,7 @@
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
     DECL(new_template) \
-    DECL(acurite_rain_gauge) \
+    DECL(acurite_rain_896) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
     DECL(mebus433) \
@@ -141,7 +141,9 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
+    DECL(holman_ws5029) \
     DECL(philips_AJ7010) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
