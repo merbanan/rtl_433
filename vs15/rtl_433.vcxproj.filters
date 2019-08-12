@@ -307,6 +307,9 @@
     <ClCompile Include="..\src\devices\hideki.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\holman_ws5029.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\hondaremote.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -314,9 +317,6 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\honeywell_wdb.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\devices\holman_ws5029.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ht680.c">

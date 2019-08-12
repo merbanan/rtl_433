@@ -69,10 +69,10 @@ add_executable(rtl_433
 	devices/gt_wt_02.c
 	devices/hcs200.c
 	devices/hideki.c
+	devices/holman_ws5029.c
 	devices/hondaremote.c
 	devices/honeywell.c
 	devices/honeywell_wdb.c
-	devices/holman_ws5029.c
 	devices/ht680.c
 	devices/ibis_beacon.c
 	devices/ikea_sparsnas.c

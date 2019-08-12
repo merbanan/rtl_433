@@ -130,7 +130,7 @@ Supported device protocols:
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
     [61]* LightwaveRF
-    [62]  Elro DB286A Doorbell
+    [62]* Elro DB286A Doorbell
     [63]  Efergy Optical
     [64]* Honda Car Key
     [67]  Radiohead ASK
@@ -161,7 +161,7 @@ Supported device protocols:
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor
-    [95]  Schrader TPMS EG53MA4
+    [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
     [97]  Thermopro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
