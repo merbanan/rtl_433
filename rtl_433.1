@@ -1,0 +1,29 @@
+.TH rtl_433 1 "July 25 2018"
+.SH NAME
+rtl_433 \- decode information from a wireless sensor using librtlsdr
+.SH SYNOPSIS
+.B rtl_433
+.RI [ options ]
+.SH DESCRIPTION
+This manual page documents briefly the
+.B rtl_433
+command.
+.PP
+\fBrtl-433\fP is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD),
+315 MHz, and 915 MHz ISM bands. It works with RTL-SDR and/or SoapySDR. Activly tested
+and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR
+(LimeSDR USB and LimeSDR mini engineering samples kindly provided by MyriadRf),
+PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
+.SH OPTIONS
+These programs follow the usual GNU command line syntax, with long
+options starting with two dashes (`-').
+A summary of options is included below.
+For a complete description, see the Info files.
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-V
+Show version of program.
+.SH INTERNET
+https://github.com/merbanan/rtl_433
