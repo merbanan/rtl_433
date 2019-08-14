@@ -15,6 +15,8 @@ See [BUILDING.md](BUILDING.md)
 
 Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
 
+On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
+
 ## How to add support for unsupported sensors
 
 Read the Test Data section at the bottom.
