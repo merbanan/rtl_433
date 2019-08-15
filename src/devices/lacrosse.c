@@ -179,7 +179,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 break;
 
             default:
-                // @todo this should be reported/counted as exception, not considered debug
+                // TODO: this should be reported/counted as exception, not considered debug
                 if (decoder->verbose) {
                     fprintf(stderr,
                             "LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",

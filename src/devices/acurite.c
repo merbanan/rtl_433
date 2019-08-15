@@ -393,7 +393,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
             "active",           "active_mode",      DATA_INT,    active,    // @todo convert to bool
             "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,     // @todo convert to bool
             "ussb1",            "unk_status1",      DATA_INT,    ussb1,    // @todo convert to bool
-            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",    // @todo convert to bool
+            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
             NULL);
@@ -484,14 +484,14 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         message_type = bb[2] & 0x3f;
 
         // tower sensor messages are 7 bytes.
-        // @todo - see if there is a type in the message that
+        // TODO: - see if there is a type in the message that
         // can be used instead of length to determine type
         if (browlen == ACURITE_TXR_BITLEN / 8) {
             channel = acurite_getChannel(bb[0]);
             // Tower sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
-            sensor_status = bb[2]; // @todo, uses parity? & 0x07f
+            sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
             humidity = (bb[3] & 0x7f); // 1-99 %rH
             // temperature encoding used by "tower" sensors 592txr
             // 14 bits available after removing both parity bits.
@@ -507,7 +507,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",                "",             DATA_STRING, _X("Acurite-Tower","Acurite tower sensor"),
                     "id",                   "",             DATA_INT,    sensor_id,
-                    "sensor_id",            NULL,           DATA_FORMAT, "0x%04x",   DATA_INT, sensor_id, // @todo hex output not working, delete at 1.0 release
+                    "sensor_id",            NULL,           DATA_FORMAT, "0x%04x",   DATA_INT, sensor_id, // TODO: hex output not working, delete at 1.0 release
                     "channel",              NULL,           DATA_STRING, &channel_str,
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_INT,    humidity,
@@ -656,7 +656,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         if (browlen == ACURITE_6045_BITLEN / 8) {
-            // @todo check parity and reject if invalid
+            // TODO: check parity and reject if invalid
             valid += acurite_6045_decode(decoder, bb, browlen);
         }
 
@@ -783,7 +783,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
-                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",    // @todo convert to bool
+                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
                 "status",           "status",       DATA_INT,    status,
                 NULL);
         /* clang-format on */

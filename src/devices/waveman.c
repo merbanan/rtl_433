@@ -21,7 +21,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char id_str[2];
     int i;
 
-    /* @todo iterate through all rows */
+    /* TODO: iterate through all rows */
 
     /* Reject codes of wrong length */
     if (25 != bitbuffer->bits_per_row[0])
@@ -30,7 +30,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /*
      * Catch the case triggering false positive for other transmitters.
      * example: Brennstuhl RCS 2044SN
-     * @todo is this message valid at all??? if not then put more validation below
+     * TODO: is this message valid at all??? if not then put more validation below
      *       instead of this special case
      */
     if (0xFF == b[0] &&
