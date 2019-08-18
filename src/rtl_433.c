@@ -1013,6 +1013,12 @@ sighandler(int signum)
         sdr_stop(cfg.dev);
         return TRUE;
     }
+    else if (CTRL_BREAK_EVENT == signum) {
+        fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
+        cfg.do_exit_async = 1;
+        sdr_stop(cfg.dev);
+        return TRUE;
+    }
     return FALSE;
 }
 #else
