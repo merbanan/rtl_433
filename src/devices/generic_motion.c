@@ -44,7 +44,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         sprintf(code_str, "%05x", code);
 
         data = data_make(
-                "model",    "",  DATA_STRING, "Generic motion sensor",
+                "model",    "",  DATA_STRING, _X("Generic-Motion","Generic motion sensor"),
                 "code",     "",  DATA_STRING, code_str,
                 NULL);
 

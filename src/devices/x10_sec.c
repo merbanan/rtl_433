@@ -93,7 +93,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         /* build and handle data set for normal output */
         data = data_make(
-                "model",    "",             DATA_STRING, "X10 Security",
+                "model",    "",             DATA_STRING, _X("X10-Security","X10 Security"),
                 "id",       "Device ID",    DATA_STRING, x10_id_str,
                 "code",     "Code",         DATA_STRING, x10_code_str,
                 "event",    "Event",        DATA_STRING, event_str,

@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "compat_paths.h"
@@ -17,9 +17,13 @@ char **compat_get_default_conf_paths()
 {
     static char *paths[5] = { NULL };
     static char buf[256] = "";
+    char *env_config_home = getenv("XDG_CONFIG_HOME");
     if (!paths[0]) {
         paths[0] = "rtl_433.conf";
-        snprintf(buf, sizeof(buf), "%s%s", getenv("HOME"), "/.rtl_433/rtl_433.conf");
+        if (env_config_home && *env_config_home)
+            snprintf(buf, sizeof(buf), "%s%s", env_config_home, "/rtl_433/rtl_433.conf");
+        else
+            snprintf(buf, sizeof(buf), "%s%s", getenv("HOME"), "/.config/rtl_433/rtl_433.conf");
         paths[1] = buf;
         paths[2] = "/usr/local/etc/rtl_433/rtl_433.conf";
         paths[3] = "/etc/rtl_433/rtl_433.conf";
@@ -44,8 +48,9 @@ char **compat_get_default_conf_paths()
     if (paths[0]) return paths;
     // Working directory, i.e. where the binary is located
     if (GetModuleFileName(NULL, bufs[0], sizeof(bufs[0]))) {
-        char *last_slash = max(strrchr(bufs[0], '\\'), strrchr(bufs[0], '/'));
-        if (last_slash) *last_slash = 0;
+        char *last_backslash = strrchr(bufs[0], '\\');
+        if (last_backslash)
+            *last_backslash = '\0';
         strcat_s(bufs[0], sizeof(bufs[0]), "\\rtl_433.conf");
         paths[0] = bufs[0];
     }

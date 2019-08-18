@@ -1,13 +1,13 @@
-/**
- * AM signal analyzer
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    AM signal analyzer.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -75,7 +75,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_counter++;
                 if (a->signal_pulse_counter >= PULSE_DATA_SIZE) {
                     a->signal_pulse_counter = 0;
-                    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+                    fprintf(stderr, "Too many pulses detected, probably bad input data or input parameters\n");
                     return;
                 }
             }

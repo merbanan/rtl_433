@@ -1,13 +1,13 @@
-/**
- * Terminal control utility functions.
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Terminal control utility functions.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -44,7 +44,7 @@ typedef struct console {
 static WORD _term_get_win_color(BOOL fore, term_color_t color)
 {
     switch (color) {
-       case TERM_COLOR_RESET: /* Cannot occur; just to supress a warning */
+       case TERM_COLOR_RESET: /* Cannot occur; just to suppress a warning */
             break;
        case TERM_COLOR_BLACK:
        case TERM_COLOR_BRIGHT_BLACK:

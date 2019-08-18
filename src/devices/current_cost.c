@@ -39,9 +39,9 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if((packet[4] & 0x80) == 128) { watt1 = (packet[4] & 0x7F) << 8 | packet[5] ; }
         if((packet[6] & 0x80) == 128) { watt2 = (packet[6] & 0x7F) << 8 | packet[7] ; }
         data = data_make(
-                "model",         "",              DATA_STRING, "CurrentCost TX", //TODO: it may have different CC Model ? any ref ?
+                "model",         "",              DATA_STRING, _X("CurrentCost-TX","CurrentCost TX"), //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
-                "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+                _X("id","dev_id"),       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                 "power0",       "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
                 "power1",       "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
                 "power2",       "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
@@ -55,10 +55,10 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
        uint16_t device_id = (packet[0] & 0x0f) << 8 | packet[1];
        // packet[2] is "Apparently unused"
        uint16_t sensor_type = packet[3]; //Sensor type. Valid values are: 2-Electric, 3-Gas, 4-Water
-       uint32_t c_impulse = packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
+       uint32_t c_impulse = (unsigned)packet[4] << 24 | packet[5] <<16 | packet[6] <<8 | packet[7] ;
        data = data_make(
-               "model",        "",              DATA_STRING, "CurrentCost Counter", //TODO: it may have different CC Model ? any ref ?
-               "dev_id",       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+               "model",        "",              DATA_STRING, _X("CurrentCost-Counter","CurrentCost Counter"), //TODO: it may have different CC Model ? any ref ?
+               _X("id","dev_id"),       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
                "sensor_type",  "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
                //"counter",      "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
                "power0",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
@@ -72,7 +72,8 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "dev_id",
+    "dev_id", // TODO: delete this
+    "id",
     "power0",
     "power1",
     "power2",

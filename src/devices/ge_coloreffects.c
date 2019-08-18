@@ -63,8 +63,8 @@ unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned
 
 char *ge_command_name(uint8_t command) {
     char *out = "0xxx";
-  
-    switch(command) {    
+
+    switch(command) {
         case 0x5a:  return "change";  break;
         case 0xaa:  return "on";      break;
         case 0x55:  return "off";     break;
@@ -93,29 +93,29 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
      *   8-bit Command
      *   One zero bit
      */
-    
+
     // Frame should be 17 decoded bits (not including preamble)
     if (packet_bits.bits_per_row[0] != 17)
         return 0;
-    
+
     // First two bits must be 0
     if (*packet_bits.bb[0] & 0xc0)
         return 0;
-    
+
     // Last bit must be 0
     if (bit(packet_bits.bb[0], 16) != 0)
         return 0;
-    
+
     // Extract device ID
     // We want bits [2..8]. Since the first two bits are zero, we'll just take the entire first byte
     device_id = *packet_bits.bb[0];
 
     // Extract command from the second byte
     bitbuffer_extract_bytes(&packet_bits, 0, 8, &command, 8);
-    
+
     // Format data
     data = data_make(
-        "model",         "",     DATA_STRING, "GE Color Effects Remote",
+        "model",         "",     DATA_STRING, _X("GE-ColorEffects","GE Color Effects Remote"),
         "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
         "command",       "",     DATA_STRING, ge_command_name(command),
         NULL);

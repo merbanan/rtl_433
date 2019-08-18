@@ -1,0 +1,11 @@
+UseTab: Never
+IndentWidth: 4
+ContinuationIndentWidth: 8
+BreakBeforeBraces: Stroustrup
+AlignAfterOpenBracket: DontAlign
+AlignEscapedNewlines: DontAlign
+AlignConsecutiveAssignments: true
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+ColumnLimit: 0
+SortIncludes: false
