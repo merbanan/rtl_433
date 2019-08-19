@@ -20,59 +20,59 @@
 #include "decoder.h"
 
 static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-	data_t *data;
-	uint8_t *bytes;
-	int found = 0;
-	int device_id, code;
+    data_t *data;
+    uint8_t *bytes;
+    int found = 0;
+    int device_id, code;
 
-	// expect {1} {9} {1} preamble
-	for (int i = 3; i < bitbuffer->num_rows; i++) {
-		if (bitbuffer->bits_per_row[i] < 78) {
-			continue; // not a data row
-		}
+    // expect {1} {9} {1} preamble
+    for (int i = 3; i < bitbuffer->num_rows; i++) {
+        if (bitbuffer->bits_per_row[i] < 78) {
+            continue; // not a data row
+        }
 
-		// Validate preamble
-		if (bitbuffer->bits_per_row[i - 3] != 1 || bitbuffer->bits_per_row[i - 1] != 1
-				|| bitbuffer->bits_per_row[i - 2] != 9 || bitbuffer->bb[i - 2][0] != 0) {
-			continue; // no valid preamble
-		}
+        // Validate preamble
+        if (bitbuffer->bits_per_row[i - 3] != 1 || bitbuffer->bits_per_row[i - 1] != 1
+                || bitbuffer->bits_per_row[i - 2] != 9 || bitbuffer->bb[i - 2][0] != 0) {
+            continue; // no valid preamble
+        }
 
-		if (decoder->verbose) {
-			bitbuffer_print(bitbuffer);
-		}
+        if (decoder->verbose) {
+            bitbuffer_print(bitbuffer);
+        }
 
-		bytes = bitbuffer->bb[i];
-		device_id = (bytes[0]<<16) | (bytes[1]<<8) | bytes[2];
-		code = bytes[7];
+        bytes = bitbuffer->bb[i];
+        device_id = (bytes[0]<<16) | (bytes[1]<<8) | bytes[2];
+        code = bytes[7];
 
-		/* Get time now */
-		data = data_make(
-				"model",	"model",	DATA_STRING, _X("Ford-CarRemote","Ford Car Remote"),
-				"id",		"device-id",	DATA_INT, device_id,
-				"code", 	"data",		DATA_INT, code,
-				NULL);
-		decoder_output_data(decoder, data);
+        /* Get time now */
+        data = data_make(
+                "model",    "model",    DATA_STRING, _X("Ford-CarRemote","Ford Car Remote"),
+                "id",       "device-id",    DATA_INT, device_id,
+                "code",     "data",     DATA_INT, code,
+                NULL);
+        decoder_output_data(decoder, data);
 
-		found++;
-	}
-	return found;
+        found++;
+    }
+    return found;
 }
 
 static char *output_fields[] = {
-	"model",
-	"id",
-	"code",
-	NULL
+    "model",
+    "id",
+    "code",
+    NULL
 };
 
 r_device fordremote = {
-	.name			= "Ford Car Key",
-	.modulation		= OOK_PULSE_DMC,
-	.short_width	= 250,  // half-bit width is 250 us
-	.long_width		= 500,	// bit width is 500 us
-	.reset_limit	= 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
-	.tolerance		= 50,
-	.decode_fn    	= &fordremote_callback,
-	.disabled		= 0,
-	.fields			= output_fields
+    .name           = "Ford Car Key",
+    .modulation     = OOK_PULSE_DMC,
+    .short_width    = 250,  // half-bit width is 250 us
+    .long_width     = 500,  // bit width is 500 us
+    .reset_limit    = 4000, // sync gap is 3500 us, preamble gap is 38400 us, packet gap is 52000 us
+    .tolerance      = 50,
+    .decode_fn      = &fordremote_callback,
+    .disabled       = 0,
+    .fields         = output_fields
 };
