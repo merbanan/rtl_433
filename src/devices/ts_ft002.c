@@ -40,7 +40,7 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[9];
-    int id, type, depth, flags, transmit, temp_raw, batt_low;
+    int id, type, depth, transmit, temp_raw, batt_low;
     float temp_c;
 
     if (bitbuffer->bits_per_row[0] == 72) {

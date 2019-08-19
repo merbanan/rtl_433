@@ -664,7 +664,6 @@ static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 {
-    unsigned i;
     int n;
     r_device *flex_device;
 
