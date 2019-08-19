@@ -1,12 +1,13 @@
-/**
- * Various utility functions for use by device drivers
- *
- * Copyright (C) 2015 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions for use by device drivers.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "util.h"
 #include <stdlib.h>
@@ -26,6 +27,38 @@ void reflect_bytes(uint8_t message[], unsigned num_bytes)
     for (unsigned i = 0; i < num_bytes; ++i) {
         message[i] = reverse8(message[i]);
     }
+}
+
+uint8_t reflect4(uint8_t x)
+{
+    x = (x & 0xCC) >> 2 | (x & 0x33) << 2;
+    x = (x & 0xAA) >> 1 | (x & 0x55) << 1;
+    return x;
+}
+
+void reflect_nibbles(uint8_t message[], unsigned num_bytes)
+{
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        message[i] = reflect4(message[i]);
+    }
+}
+
+unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+{
+    unsigned ret = 0;
+
+    while (num_bits >= 5) {
+        uint16_t bits = (message[offset_bits / 8] << 8) | message[(offset_bits / 8) + 1];
+        bits >>= 11 - (offset_bits % 8); // align 5 bits to LSB
+        if ((bits & 1) != 1)
+            break; // stuff-bit error
+        *dst++ = (bits >> 1) & 0xf;
+        ret += 1;
+        offset_bits += 5;
+        num_bits -= 5;
+    }
+
+    return ret;
 }
 
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
@@ -243,6 +276,15 @@ int add_bytes(uint8_t const message[], unsigned num_bytes)
     int result = 0;
     for (unsigned i = 0; i < num_bytes; ++i) {
         result += message[i];
+    }
+    return result;
+}
+
+int add_nibbles(uint8_t const message[], unsigned num_bytes)
+{
+    int result = 0;
+    for (unsigned i = 0; i < num_bytes; ++i) {
+        result += (message[i] >> 4) + (message[i] & 0x0f);
     }
     return result;
 }

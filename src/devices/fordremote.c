@@ -2,14 +2,14 @@
  *
  * Identifies event, but does not attempt to decrypt rolling code...
  *
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * Note: this used to have a broken PWM decoding, but is now proper DMC.
- * The output changed and the fields are very likely not as intended. 
+ * The output changed and the fields are very likely not as intended.
  *
  * [00] {1} 80 : 1
  * [01] {9} 00 80 : 00000000 1
@@ -47,7 +47,7 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 		/* Get time now */
 		data = data_make(
-				"model",	"model",	DATA_STRING, "Ford Car Remote",
+				"model",	"model",	DATA_STRING, _X("Ford-CarRemote","Ford Car Remote"),
 				"id",		"device-id",	DATA_INT, device_id,
 				"code", 	"data",		DATA_INT, code,
 				NULL);

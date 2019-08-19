@@ -1,0 +1,31 @@
+{
+    "package": {
+        "name": "rtl_433",
+        "repo": "dist",
+        "subject": "chzu",
+        "desc": "Official binary builds of rtl_433",
+        "website_url": "https://github.com/merbanan/rtl_433",
+        "issue_tracker_url": "https://github.com/merbanan/rtl_433/issues",
+        "vcs_url": "https://github.com/merbanan/rtl_433.git",
+        "github_use_tag_release_notes": true,
+        "github_release_notes_file": "RELEASE.txt",
+        "licenses": ["GPL"],
+        "labels": ["rtl-sdr", "sdr", "SoapySDR"],
+        "public_download_numbers": true,
+        "public_stats": true
+    },
+
+    "version": {
+        "name": "${GIT_VERSION}",
+        "desc": "rtl_433 at ${GIT_VERSION}",
+        "released": "${GIT_TIMESTAMP_ISO}",
+        "gpgSign": false
+    },
+
+    "files":
+        [
+        {"includePattern": "rtl_433-win-x32.zip", "uploadPattern": "/rtl_433-${GIT_VERSION}-win-x32.zip"},
+        {"includePattern": "rtl_433-win-x64.zip", "uploadPattern": "/rtl_433-${GIT_VERSION}-win-x64.zip"}
+        ],
+    "publish": true
+}

@@ -8,17 +8,26 @@
  * (at your option) any later version.
  *
  */
+/*
+10 24 bits frames
+
+	IIIIIIII BBTTTTTT TTTTTTTT
+
+- I: 8 bit ID
+- B: 2 bit? Battery ?
+- T: 12 bit Temp
+*/
 
 #include "decoder.h"
 
 static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 	data_t *data;
 	uint8_t *b = bitbuffer->bb[1];
-	int i,device,battery;
-	float fTemp;
+	int i, device, battery;
+	float temp_f;
 
-	for(i=1;i<10;i++){
-		if(bitbuffer->bits_per_row[i]!=24){
+	for (i = 1; i < 10; i++) {
+		if (bitbuffer->bits_per_row[i] != 24) {
 			/*10 24 bits frame*/
 			return 0;
 		}
@@ -30,19 +39,14 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
 		return 0;
 	}
 
-	//AAAAAAAA BBCCCCCC CCCCCCCC
-	//AAAAAAAA     : ID
-	//BBBB         : battery ?
-	//CCCCCCCCCCCC : Temp
-
-	device=(b[0]);
-	battery=(b[1]&0xF0)>>4;
-	fTemp=(float)((signed short)(((b[1]&0x3f)*256+b[2])<<2))/160.0;
+	device  = (b[0]);
+	battery = (b[1] & 0xF0) >> 4;
+	temp_f  = (float)((signed short)(((b[1] & 0x3f) * 256 + b[2]) << 2)) / 160.0;
 
 	data = data_make(
-			"model",		"", 			DATA_STRING, 	"Generic temperature sensor 1",
+			"model",		"", 			DATA_STRING, 	_X("Generic-Temperature","Generic temperature sensor 1"),
 			"id",         	"Id",			DATA_INT,	device,
-			"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	fTemp,
+			"temperature_C",	"Temperature",		DATA_FORMAT, 	"%.02f C",	DATA_DOUBLE,	temp_f,
 			"battery",      	"Battery?",		DATA_INT,					battery,
 			NULL);
 	decoder_output_data(decoder, data);

@@ -412,7 +412,7 @@ void print_array_value(data_output_t *output, data_array_t *array, char *format,
 #else
     char buffer[element_size];
 #endif
-    
+
     if (!dmt[array->type].array_is_boxed) {
         memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
         print_value(output, array->type, buffer, format);
@@ -564,7 +564,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
             term_ring_bell(kv->term);
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
-            sep[kv->term_width - 1] = '\0';
+            sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
         fprintf(output->file, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
@@ -825,6 +825,16 @@ alloc_error:
     free(csv);
 }
 
+static void print_csv_double(data_output_t *output, double data, char *format)
+{
+    fprintf(output->file, "%.3f", data);
+}
+
+static void print_csv_int(data_output_t *output, int data, char *format)
+{
+    fprintf(output->file, "%d", data);
+}
+
 static void data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -844,13 +854,123 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_data   = print_csv_data;
     csv->output.print_array  = print_csv_array;
     csv->output.print_string = print_csv_string;
-    csv->output.print_double = print_json_double;
-    csv->output.print_int    = print_json_int;
+    csv->output.print_double = print_csv_double;
+    csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
 
     return &csv->output;
+}
+
+/* JSON string printer */
+
+typedef struct {
+    struct data_output output;
+    abuf_t msg;
+} data_print_jsons_t;
+
+static void format_jsons_array(data_output_t *output, data_array_t *array, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    abuf_cat(&jsons->msg, "[");
+    for (int c = 0; c < array->num_values; ++c) {
+        if (c)
+            abuf_cat(&jsons->msg, ",");
+        print_array_value(output, array, format, c);
+    }
+    abuf_cat(&jsons->msg, "]");
+}
+
+static void format_jsons_object(data_output_t *output, data_t *data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    bool separator = false;
+    abuf_cat(&jsons->msg, "{");
+    while (data) {
+        if (separator)
+            abuf_cat(&jsons->msg, ",");
+        output->print_string(output, data->key, NULL);
+        abuf_cat(&jsons->msg, ":");
+        print_value(output, data->type, data->value, data->format);
+        separator = true;
+        data      = data->next;
+    }
+    abuf_cat(&jsons->msg, "}");
+}
+
+static void format_jsons_string(data_output_t *output, const char *str, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+
+    char *buf   = jsons->msg.tail;
+    size_t size = jsons->msg.left;
+
+    if (size < strlen(str) + 3) {
+        return;
+    }
+
+    *buf++ = '"';
+    size--;
+    for (; *str && size >= 3; ++str) {
+        if (*str == '"' || *str == '\\') {
+            *buf++ = '\\';
+            size--;
+        }
+        *buf++ = *str;
+        size--;
+    }
+    if (size >= 2) {
+        *buf++ = '"';
+        size--;
+    }
+    *buf = '\0';
+
+    jsons->msg.tail = buf;
+    jsons->msg.left = size;
+}
+
+static void format_jsons_double(data_output_t *output, double data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    // use scientific notation for very big/small values
+    if (data > 1e7 || data < 1e-4) {
+        abuf_printf(&jsons->msg, "%g", data);
+    }
+    else {
+        abuf_printf(&jsons->msg, "%.5f", data);
+        // remove trailing zeros, always keep one digit after the decimal point
+        while (jsons->msg.left > 0 && *(jsons->msg.tail - 1) == '0' && *(jsons->msg.tail - 2) != '.') {
+            jsons->msg.tail--;
+            jsons->msg.left++;
+            *jsons->msg.tail = '\0';
+        }
+    }
+}
+
+static void format_jsons_int(data_output_t *output, int data, char *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%d", data);
+}
+
+size_t data_print_jsons(data_t *data, char *dst, size_t len)
+{
+    data_print_jsons_t jsons = {
+            .output.print_data   = format_jsons_object,
+            .output.print_array  = format_jsons_array,
+            .output.print_string = format_jsons_string,
+            .output.print_double = format_jsons_double,
+            .output.print_int    = format_jsons_int,
+    };
+
+    abuf_init(&jsons.msg, dst, len);
+
+    format_jsons_object(&jsons.output, data, NULL);
+
+    return len - jsons.msg.left;
 }
 
 /* Datagram (UDP) client */
@@ -915,7 +1035,7 @@ static void datagram_client_close(datagram_client_t *client)
 
 #ifdef _WIN32
     WSACleanup();
-#endif 
+#endif
 }
 
 static void datagram_client_send(datagram_client_t *client, const char *message, size_t message_len)
@@ -933,51 +1053,17 @@ typedef struct {
     datagram_client_t client;
     int pri;
     char hostname[_POSIX_HOST_NAME_MAX + 1];
-    abuf_t msg;
 } data_output_syslog_t;
-
-static void print_syslog_array(data_output_t *output, data_array_t *array, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    abuf_cat(&syslog->msg, "[");
-    for (int c = 0; c < array->num_values; ++c) {
-        if (c)
-            abuf_cat(&syslog->msg, ",");
-        print_array_value(output, array, format, c);
-    }
-    abuf_cat(&syslog->msg, "]");
-}
-
-static void print_syslog_object(data_output_t *output, data_t *data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    bool separator = false;
-    abuf_cat(&syslog->msg, "{");
-    while (data) {
-        if (separator)
-            abuf_cat(&syslog->msg, ",");
-        output->print_string(output, data->key, NULL);
-        abuf_cat(&syslog->msg, ":");
-        print_value(output, data->type, data->value, data->format);
-        separator = true;
-        data = data->next;
-    }
-    abuf_cat(&syslog->msg, "}");
-}
 
 static void print_syslog_data(data_output_t *output, data_t *data, char *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
-    if (syslog->msg.tail) {
-        print_syslog_object(output, data, format);
-        return;
-    }
-
+    // we expect a normal message around 500 bytes
+    // full stats report would be 12k and we want a max of MTU anyway
     char message[1024];
-    abuf_init(&syslog->msg, message, 1024);
+    abuf_t msg = {0};
+    abuf_init(&msg, message, sizeof(message));
 
     time_t now;
     struct tm tm_info;
@@ -986,60 +1072,18 @@ static void print_syslog_data(data_output_t *output, data_t *data, char *format)
     gmtime_s(&tm_info, &now);
 #else
     gmtime_r(&now, &tm_info);
-#endif    
+#endif
     char timestamp[21];
     strftime(timestamp, 21, "%Y-%m-%dT%H:%M:%SZ", &tm_info);
 
-    abuf_printf(&syslog->msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
+    abuf_printf(&msg, "<%d>1 %s %s rtl_433 - - - ", syslog->pri, timestamp, syslog->hostname);
 
-    print_syslog_object(output, data, format);
+    msg.tail += data_print_jsons(data, msg.tail, msg.left);
+    if (msg.tail >= msg.head + sizeof(message))
+        return; // abort on overflow, we don't actually want to send more than fits the MTU
 
-    datagram_client_send(&syslog->client, message, strlen(message));
-
-    abuf_setnull(&syslog->msg);
-}
-
-static void print_syslog_string(data_output_t *output, const char *str, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-
-    char *buf = syslog->msg.tail;
-    size_t size = syslog->msg.left;
-
-    if (size < strlen(str) + 3) {
-        return;
-    }
-
-    *buf++ = '"';
-    size--;
-    for (; *str && size >= 3; ++str) {
-        if (*str == '"' || *str == '\\') {
-            *buf++ = '\\';
-            size--;
-        }
-        *buf++ = *str;
-        size--;
-    }
-    if (size >= 2) {
-        *buf++ = '"';
-        size--;
-    }
-    *buf = '\0';
-
-    syslog->msg.tail = buf;
-    syslog->msg.left = size;
-}
-
-static void print_syslog_double(data_output_t *output, double data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    abuf_printf(&syslog->msg, "%f", data);
-}
-
-static void print_syslog_int(data_output_t *output, int data, char *format)
-{
-    data_output_syslog_t *syslog = (data_output_syslog_t *)output;
-    abuf_printf(&syslog->msg, "%d", data);
+    size_t abuf_len = msg.tail - msg.head;
+    datagram_client_send(&syslog->client, message, abuf_len);
 }
 
 static void data_output_syslog_free(data_output_t *output)
@@ -1072,10 +1116,6 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 #endif
 
     syslog->output.print_data   = print_syslog_data;
-    syslog->output.print_array  = print_syslog_array;
-    syslog->output.print_string = print_syslog_string;
-    syslog->output.print_double = print_syslog_double;
-    syslog->output.print_int    = print_syslog_int;
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
