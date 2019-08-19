@@ -43,7 +43,7 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned impulse_constant, impulses_val, impulses_total;
     float energy_total_val, energy_impulse_val;
 
-    if (bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1) 
+    if (bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1)
         return 0;
 
     // remove first two bytes?
@@ -57,7 +57,7 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     deviceid           = (b[1]);
     impulses           = (b[3] << 8) | b[4];
     impulse_constant   = ((b[14] << 8) | b[15]) ^ b[1];
-    impulses_total     = (b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8];
+    impulses_total     = ((unsigned)b[5] << 24) | (b[6] << 16) | (b[7] << 8) | b[8];
     impulses_val       = (b[9] << 8) | b[10];
     energy_total_val   = 1.0 * impulses_total / impulse_constant;
     energy_impulse_val = 1.0 * impulses_val / impulse_constant;

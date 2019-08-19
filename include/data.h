@@ -1,22 +1,22 @@
-/*
- * A general structure for extracting hierarchical data from the devices;
- * typically key-value pairs, but allows for more rich data as well.
- *
- * Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/** @file
+    A general structure for extracting hierarchical data from the devices;
+    typically key-value pairs, but allows for more rich data as well.
+
+    Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #ifndef INCLUDE_DATA_H_
 #define INCLUDE_DATA_H_
@@ -35,30 +35,18 @@
 
     // MSVC has something like C99 restrict as __restrict
     #ifndef restrict
-	#define restrict  __restrict
+    #define restrict __restrict
     #endif
 #endif
 
-/*
- * The only place '<strings.h>' is currenly needed is in 'src/devices/flex.c'.
- * But it's cleaner to keep such trivia here.
- */
-#ifdef _MSC_VER
-    #include <string.h>
-    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
-    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
-#else
-    #include <strings.h>
-#endif
-
 typedef enum {
-    DATA_DATA,        /* pointer to data is stored */
-    DATA_INT,        /* pointer to integer is stored */
-    DATA_DOUBLE,        /* pointer to a double is stored */
-    DATA_STRING,        /* pointer to a string is stored */
-    DATA_ARRAY,        /* pointer to an array of values is stored */
-    DATA_COUNT,        /* invalid */
-    DATA_FORMAT        /* indicates the following value is formatted */
+    DATA_DATA,   /**< pointer to data is stored */
+    DATA_INT,    /**< pointer to integer is stored */
+    DATA_DOUBLE, /**< pointer to a double is stored */
+    DATA_STRING, /**< pointer to a string is stored */
+    DATA_ARRAY,  /**< pointer to an array of values is stored */
+    DATA_COUNT,  /**< invalid */
+    DATA_FORMAT  /**< indicates the following value is formatted */
 } data_type_t;
 
 typedef struct data_array {
@@ -69,12 +57,12 @@ typedef struct data_array {
 
 typedef struct data {
     char        *key;
-    char        *pretty_key; /* the name used for displaying data to user in with a nicer name */
+    char        *pretty_key; /**< the name used for displaying data to user in with a nicer name */
     data_type_t type;
-    char        *format; /* if not null, contains special formatting string */
+    char        *format; /**< if not null, contains special formatting string */
     void        *value;
-    unsigned    retain; /* incremented on data_retain, data_free only frees if this is zero */
-    struct data *next; /* chaining to the next element in the linked list; NULL indicates end-of-list */
+    unsigned    retain; /**< incremented on data_retain, data_free only frees if this is zero */
+    struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */
 } data_t;
 
 /** Constructs a structured data object.
@@ -132,7 +120,7 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
 */
 data_array_t *data_array(int num_values, data_type_t type, void *ptr);
 
-/** Releases a data array */
+/** Releases a data array. */
 void data_array_free(data_array_t *array);
 
 /** Retain a structure object, returns the structure object passed in. */
@@ -155,7 +143,7 @@ typedef struct data_output {
     FILE *file;
 } data_output_t;
 
-/** Construct data output for CSV printer
+/** Construct data output for CSV printer.
 
     @param file the output stream
     @return The auxiliary data to pass along with data_csv_printer to data_print.
@@ -178,10 +166,10 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 */
 void data_output_start(struct data_output *output, const char **fields, int num_fields);
 
-/** Prints a structured data object */
+/** Prints a structured data object. */
 void data_output_print(struct data_output *output, data_t *data);
 
-/** Allows to polls an event loop, if necessary */
+/** Allows to polls an event loop, if necessary. */
 void data_output_poll(struct data_output *output);
 
 void data_output_free(struct data_output *output);
@@ -191,5 +179,7 @@ void data_output_free(struct data_output *output);
 void print_value(data_output_t *output, data_type_t type, void *value, char *format);
 
 void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
+
+size_t data_print_jsons(data_t *data, char *dst, size_t len);
 
 #endif // INCLUDE_DATA_H_

@@ -1,18 +1,18 @@
-/**
- * Light-weight (i.e. dumb) config-file parser
- *
- * - a valid config line is a keyword followed by an argument to the end of line
- * - whitespace around the keyword is ignored
- * - comments start with a hash sign, no inline comments, empty lines are ok.
- * - whitespace is space and tab
- *
- * Copyright (C) 2018 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Light-weight (i.e. dumb) config-file parser.
+
+    - a valid config line is a keyword followed by an argument to the end of line
+    - whitespace around the keyword is ignored
+    - comments start with a hash sign, no inline comments, empty lines are ok.
+    - whitespace is space and tab
+
+    Copyright (C) 2018 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <stdlib.h>
 #include <stdio.h>

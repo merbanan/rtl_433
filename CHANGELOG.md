@@ -6,6 +6,7 @@
 - HTTP server, JSON-RPC
 - GPS meta data
 - Stats reporting
+- SoapySDR: added option to select antenna [-t]
 
 ## Release 18.12 (2018-12-16)
 

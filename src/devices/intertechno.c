@@ -43,7 +43,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     command = b[6] & 0x07;
 
     data = data_make(
-        "model",            "",     DATA_STRING,    "Intertechno",
+        "model",            "",     DATA_STRING,    _X("Intertechno-Remote","Intertechno"),
         "id",               "",     DATA_STRING,    id_str,
         "slave",            "",     DATA_INT,       slave,
         "master",           "",     DATA_INT,       master,

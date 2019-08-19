@@ -160,7 +160,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     for (unsigned n=0; n < num_data_blocks; ++n) {
         const uint8_t *in_ptr   = in->data+BLOCK1A_SIZE+n*18;       // Pointer to where data starts. Each block is 18 bytes
         uint8_t *out_ptr        = out->data+n*16;                   // Pointer into block where data starts.
-        uint8_t block_size      = min(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
+        uint8_t block_size      = MIN(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
 
         // Validate CRC
         if (!m_bus_crc_valid(decoder, in_ptr, block_size-2)) return 0;
@@ -195,10 +195,10 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     }
 
     // Validate CRC
-    if (!m_bus_crc_valid(decoder, in->data, min(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
+    if (!m_bus_crc_valid(decoder, in->data, MIN(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
 
     // Get data from Block 2
-    memcpy(out->data, in->data+BLOCK1B_SIZE, (min(block1->L-11, BLOCK2B_SIZE-2)));
+    memcpy(out->data, in->data+BLOCK1B_SIZE, (MIN(block1->L-11, BLOCK2B_SIZE-2)));
 
     // Extract extra block for long telegrams (not tested!)
     uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
@@ -227,7 +227,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
 
     // Output data
     data = data_make(
-        "model",    "",             DATA_STRING,    "Wireless M-Bus",
+        "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,
         "version",  "Version",      DATA_INT,       block1->A_Version,
@@ -253,7 +253,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
-    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
         return 0;
     }
 
@@ -324,7 +324,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
-    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
         return 0;
     }
 
@@ -358,7 +358,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
-    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload) 
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
         return 0;
     }
 

@@ -1,7 +1,10 @@
-// compat_time addresses following compatibility issue:
-// topic: high-resolution timestamps
-// issue: <sys/time.h> is not available on Windows systems
-// solution: provide a compatible version for Windows systems
+/** @file
+    compat_time addresses compatibility time functions.
+
+    topic: high-resolution timestamps
+    issue: <sys/time.h> is not available on Windows systems
+    solution: provide a compatible version for Windows systems
+*/
 
 #ifndef INCLUDE_COMPAT_TIME_H_
 #define INCLUDE_COMPAT_TIME_H_

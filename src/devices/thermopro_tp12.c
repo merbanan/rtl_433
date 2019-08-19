@@ -14,7 +14,7 @@
 /*
 A normal sequence for the TP12:
 
-[00] {0} : 
+[00] {0} :
 [01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
 [02] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
 [03] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
@@ -31,7 +31,7 @@ A normal sequence for the TP12:
 [14] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
 [15] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
 [16] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001 
+[17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001
 
 Layout appears to be:
 
@@ -55,10 +55,9 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
     // Update for TP08: same is true but only 2 rows.
     row = bitbuffer_find_repeated_row(
-        bitbuffer, 
-        (bitbuffer->num_rows > 5) ? 5 : 2,
-        40
-    );
+            bitbuffer,
+            (bitbuffer->num_rows > 5) ? 5 : 2,
+            40);
     if (row < 0) {
         return 0;
     }
@@ -82,7 +81,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian
         // elimination, so dump some data so we can try this.
 
-        // This format is easily usable by bruteforce-crc, after piping through | grep raw_data | cut -d':' -f2 
+        // This format is easily usable by bruteforce-crc, after piping through | grep raw_data | cut -d':' -f2
         // bruteforce-crc didn't find anything, though - this may not be a CRC algorithm specifically.
         fprintf(stderr,"thermopro_tp12_raw_data:");
         bitrow_print(bytes, 40);
@@ -95,7 +94,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     temp2_c = (temp2_raw - 200) * 0.1;
 
     data = data_make(
-            "model",            "",            DATA_STRING, "Thermopro TP12 Thermometer",
+            "model",            "",            DATA_STRING, _X("Thermopro-TP12","Thermopro TP12 Thermometer"),
             "id",               "Id",          DATA_INT,    device,
             "temperature_1_C",  "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
@@ -113,7 +112,7 @@ static char *output_fields[] = {
 };
 
 r_device thermopro_tp12 = {
-    .name          = "Thermopro TP08/TP12 thermometer",
+    .name          = "Thermopro TP08/TP12/TP20 thermometer",
     .modulation    = OOK_PULSE_PPM,
     .short_width   = 500,
     .long_width    = 1500,

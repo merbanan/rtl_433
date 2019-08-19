@@ -79,7 +79,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *elv_em1000_output_fields[] = {
     "model",
-    "id"
+    "id",
     "seq",
     "total",
     "current",
@@ -177,7 +177,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *elv_ws2000_output_fields[] = {
     "model",
-    "id"
+    "id",
     "subtype",
     "temperature",
     "humidity",

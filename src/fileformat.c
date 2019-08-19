@@ -1,13 +1,13 @@
-/**
- * Various utility functions handling file formats
- *
- * Copyright (C) 2018 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Various utility functions handling file formats.
+
+    Copyright (C) 2018 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <string.h>
 #include <stdlib.h>
@@ -41,7 +41,8 @@ void check_read_file_info(file_info_t *info)
     if (info->format != CU8_IQ
             && info->format != CS16_IQ
             && info->format != CF32_IQ
-            && info->format != S16_AM) {
+            && info->format != S16_AM
+            && info->format != PULSE_OOK) {
         fprintf(stderr, "File type not supported as input (%s).\n", info->spec);
         exit(1);
     }
@@ -50,6 +51,7 @@ void check_read_file_info(file_info_t *info)
 void check_write_file_info(file_info_t *info)
 {
     if (info->format != CU8_IQ
+            && info->format != CS8_IQ
             && info->format != S16_AM
             && info->format != S16_FM
             && info->format != CS16_IQ
@@ -78,7 +80,8 @@ char const *file_info_string(file_info_t *info)
     case F32_I:     return "F32 I (1ch float32)"; break;
     case F32_Q:     return "F32 Q (1ch float32)"; break;
     case VCD_LOGIC: return "VCD logic (text)"; break;
-    case U8_LOGIC:  return "U8 logic (text)"; break;
+    case U8_LOGIC:  return "U8 logic (1ch uint8)"; break;
+    case PULSE_OOK: return "OOK pulse data (text)"; break;
     default:        return "Unknown";  break;
     }
 }
@@ -104,10 +107,12 @@ static uint32_t file_type_guess_auto_format(uint32_t type)
     else if (type == F_LOGIC) return U8_LOGIC;
 
     else if (type == F_CU8) return CU8_IQ;
+    else if (type == F_CS8) return CS8_IQ;
     else if (type == F_S16) return S16_AM;
     else if (type == F_U8) return U8_LOGIC;
     else if (type == F_Q) return F32_Q;
     else if (type == F_VCD) return VCD_LOGIC;
+    else if (type == F_OOK) return PULSE_OOK;
     else if (type == F_CS16) return CS16_IQ;
     else if (type == F_CF32) return CF32_IQ;
     else return type;
@@ -139,7 +144,7 @@ static void file_type(char const *filename, file_info_t *info)
                 ++p;
             double num = atof(n); // atouint32_metric() ?
             size_t len = p - s;
-            double scale = -1.0; // unknown scale
+            double scale = 1.0;
             switch (*s) {
             case 'k':
             case 'K':
@@ -158,8 +163,8 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 1 && !strncasecmp("k", s, 1)) info->sample_rate = num * 1e3;
             else if (len == 2 && !strncasecmp("Hz", s, 2)) info->center_frequency = num;
             else if (len == 3 && !strncasecmp("sps", s, 3)) info->sample_rate = num;
-            else if (len == 3 && !strncasecmp("Hz", s+1, 2) && scale > 0) info->center_frequency = num * scale;
-            else if (len == 4 && !strncasecmp("sps", s+1, 3) && scale > 0) info->sample_rate = num * scale;
+            else if (len == 3 && !strncasecmp("Hz", s+1, 2) && scale > 1.0) info->center_frequency = num * scale;
+            else if (len == 4 && !strncasecmp("sps", s+1, 3) && scale > 1.0) info->sample_rate = num * scale;
             //fprintf(stderr, "Got number %g, f is %u, s is %u\n", num, info->center_frequency, info->sample_rate);
         } else if ((*p >= 'A' && *p <= 'Z')
                 || (*p >= 'a' && *p <= 'z')) {
@@ -184,10 +189,14 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 3 && !strncasecmp("s32", t, 3)) file_type_set_format(&info->format, F_S32);
             else if (len == 3 && !strncasecmp("f32", t, 3)) file_type_set_format(&info->format, F_F32);
             else if (len == 3 && !strncasecmp("vcd", t, 3)) file_type_set_content(&info->format, F_VCD);
+            else if (len == 3 && !strncasecmp("ook", t, 3)) file_type_set_content(&info->format, F_OOK);
             else if (len == 4 && !strncasecmp("cs16", t, 4)) file_type_set_format(&info->format, F_CS16);
             else if (len == 4 && !strncasecmp("cs32", t, 4)) file_type_set_format(&info->format, F_CS32);
             else if (len == 4 && !strncasecmp("cf32", t, 4)) file_type_set_format(&info->format, F_CF32);
             else if (len == 5 && !strncasecmp("logic", t, 5)) file_type_set_content(&info->format, F_LOGIC);
+            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8);
+            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8);
+            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32);
             //else fprintf(stderr, "Skipping type (len %ld) %s\n", len, t);
         } else {
             p++; // skip non-alphanum char otherwise
@@ -207,7 +216,7 @@ char const *last_plain_colon(char const *p)
     return found;
 }
 
-/*
+/**
 This will detect file info and overrides.
 
 Parse "[0-9]+(\.[0-9]+)?[A-Za-z]"
@@ -218,7 +227,7 @@ Parse "[A-Za-z][0-9A-Za-z]+" as format or content specifier:
 
 2ch formats: "cu8", "cs8", "cs16", "cs32", "cf32"
 1ch formats: "u8", "s8", "s16", "u16", "s32", "u32", "f32"
-text formats: "vcd"
+text formats: "vcd", "ook"
 content types: "iq", "i", "q", "am", "fm", "logic"
 
 Parses left to right, with the exception of a prefix up to the last colon ":"
