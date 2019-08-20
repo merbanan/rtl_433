@@ -15,6 +15,8 @@ See [BUILDING.md](BUILDING.md)
 
 Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
 
+On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
+
 ## How to add support for unsupported sensors
 
 Read the Test Data section at the bottom.
@@ -130,7 +132,7 @@ Supported device protocols:
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
     [61]* LightwaveRF
-    [62]  Elro DB286A Doorbell
+    [62]* Elro DB286A Doorbell
     [63]  Efergy Optical
     [64]* Honda Car Key
     [67]  Radiohead ASK
@@ -161,7 +163,7 @@ Supported device protocols:
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor
-    [95]  Schrader TPMS EG53MA4
+    [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
     [97]  Thermopro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects

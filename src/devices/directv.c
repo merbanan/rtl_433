@@ -189,7 +189,6 @@ const char *get_dtv_button_label(uint8_t button_id)
 /// Maybe this can graduate to bitbuffer.c someday?
 void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 {
-    uint8_t bit_mask;
     if (bit_val == 0) {
         bitrow[bit_idx >> 3] &= ~(1 << (7 - (bit_idx & 7)));
     }

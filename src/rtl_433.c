@@ -664,7 +664,6 @@ static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 {
-    unsigned i;
     int n;
     r_device *flex_device;
 
@@ -1010,6 +1009,12 @@ sighandler(int signum)
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
         cfg.do_exit = 1;
+        sdr_stop(cfg.dev);
+        return TRUE;
+    }
+    else if (CTRL_BREAK_EVENT == signum) {
+        fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
+        cfg.do_exit_async = 1;
         sdr_stop(cfg.dev);
         return TRUE;
     }

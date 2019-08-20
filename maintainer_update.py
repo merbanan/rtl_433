@@ -103,7 +103,7 @@ replace_block(r'```',
 
 # src/CMakeLists.txt
 repl = src_files + device_files
-repl = '\n\t' + ('\n\t'.join(repl)) + '\n'
+repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_executable\(rtl_433$',
               r'^\)', repl, 'src/CMakeLists.txt')
 

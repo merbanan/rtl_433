@@ -393,7 +393,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
             "active",           "active_mode",      DATA_INT,    active,    // @todo convert to bool
             "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,     // @todo convert to bool
             "ussb1",            "unk_status1",      DATA_INT,    ussb1,    // @todo convert to bool
-            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",    // @todo convert to bool
+            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
             NULL);
@@ -463,7 +463,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         int sum = add_bytes(bb, browlen - 1);
         if (sum == 0 || (sum & 0xff) != bb[browlen - 1]) {
             if (decoder->verbose)
-                bitrow_printf(bb, browlen, "%s: bad checksum: ", __func__);
+                bitrow_printf(bb, bitbuffer->bits_per_row[brow], "%s: bad checksum: ", __func__);
             continue;
         }
 
@@ -484,14 +484,14 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         message_type = bb[2] & 0x3f;
 
         // tower sensor messages are 7 bytes.
-        // @todo - see if there is a type in the message that
+        // TODO: - see if there is a type in the message that
         // can be used instead of length to determine type
         if (browlen == ACURITE_TXR_BITLEN / 8) {
             channel = acurite_getChannel(bb[0]);
             // Tower sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
-            sensor_status = bb[2]; // @todo, uses parity? & 0x07f
+            sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
             humidity = (bb[3] & 0x7f); // 1-99 %rH
             // temperature encoding used by "tower" sensors 592txr
             // 14 bits available after removing both parity bits.
@@ -507,7 +507,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",                "",             DATA_STRING, _X("Acurite-Tower","Acurite tower sensor"),
                     "id",                   "",             DATA_INT,    sensor_id,
-                    "sensor_id",            NULL,           DATA_FORMAT, "0x%04x",   DATA_INT, sensor_id, // @todo hex output not working, delete at 1.0 release
+                    "sensor_id",            NULL,           DATA_FORMAT, "0x%04x",   DATA_INT, sensor_id, // TODO: hex output not working, delete at 1.0 release
                     "channel",              NULL,           DATA_STRING, &channel_str,
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_INT,    humidity,
@@ -520,9 +520,9 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // The 5-n-1 weather sensor messages are 8 bytes.
-        if (browlen == ACURITE_5N1_BITLEN / 8) {
+        else if (browlen == ACURITE_5N1_BITLEN / 8) {
             if (decoder->verbose)
-                bitrow_printf(bb, 8, "%s: Acurite 5n1 raw msg: ", __func__);
+                bitrow_printf(bb, bitbuffer->bits_per_row[brow], "%s: Acurite 5n1 raw msg: ", __func__);
             channel = acurite_getChannel(bb[0]);
             sprintf(channel_str, "%c", channel);
 
@@ -655,8 +655,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
 
-        if (browlen == ACURITE_6045_BITLEN / 8) {
-            // @todo check parity and reject if invalid
+        else if (browlen == ACURITE_6045_BITLEN / 8) {
+            // TODO: check parity and reject if invalid
             valid += acurite_6045_decode(decoder, bb, browlen);
         }
 
@@ -738,7 +738,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             br[i] = reverse8(bb[i]);
 
         if (decoder->verbose)
-            bitrow_printf(br, browlen, "%s: reversed: ", __func__);
+            bitrow_printf(br, browlen * 8, "%s: reversed: ", __func__);
 
         tempf = br[0];
         sensor_id = (br[1] << 8) + br[2];
@@ -756,7 +756,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (crcc != crc) {
             if (decoder->verbose > 1)
-                bitrow_printf(br, browlen,  "%s: bad CRC: %02x -", __func__, crc8le(br, 4, 0x07, 0));
+                bitrow_printf(br, browlen * 8,  "%s: bad CRC: %02x -", __func__, crc8le(br, 4, 0x07, 0));
             // HACK: rct 2018-04-22
             // the message is often missing the last 1 bit either due to a
             // problem with the device or demodulator
@@ -783,7 +783,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
-                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",    // @todo convert to bool
+                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
                 "status",           "status",       DATA_INT,    status,
                 NULL);
         /* clang-format on */
@@ -877,7 +877,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (nsignal>=3) continue;
         memcpy(signal[nsignal], bitbuffer->bb[brow], 11);
         if (decoder->verbose)
-            bitrow_printf(signal[nsignal], 11, "%s: ", __func__);
+            bitrow_printf(signal[nsignal], 11 * 8, "%s: ", __func__);
         nsignal++;
     }
 
@@ -893,7 +893,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // CRC check fails?
         if ((crc=crc16lsb(&(signal[0][0]), 11/*len*/, 0x00b2/*poly*/, 0x00d0/*seed*/)) != 0) {
             if (decoder->verbose)
-                bitrow_printf(signal[0], 11, "%s: sensor bad CRC: %02x -", __func__, crc);
+                bitrow_printf(signal[0], 11 * 8, "%s: sensor bad CRC: %02x -", __func__, crc);
         // CRC is OK
         }
         else {

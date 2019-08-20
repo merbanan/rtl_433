@@ -70,8 +70,10 @@ static int style_check(char *path)
         printf("File \"%s\" has %d CRLF errors.\n", path, crlf_errors);
     if (tabs_errors)
         printf("File \"%s\" has %d MIXED tab/spaces errors.\n", path, tabs_errors);
+    if (leading_tabs)
+        printf("File \"%s\" has %d TAB indented lines.\n", path, leading_tabs);
 
-    return read_errors + long_errors + crlf_errors + tabs_errors;
+    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs;
 }
 
 int main(int argc, char *argv[])
