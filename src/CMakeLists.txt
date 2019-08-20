@@ -102,7 +102,7 @@ add_executable(rtl_433
     devices/oregon_scientific.c
     devices/oregon_scientific_sl109h.c
     devices/oregon_scientific_v1.c
-    devices/philips.c
+    devices/philips_aj3650.c
     devices/prologue.c
     devices/proove.c
     devices/quhwa.c

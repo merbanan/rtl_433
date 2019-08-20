@@ -406,7 +406,7 @@
     <ClCompile Include="..\src\devices\oregon_scientific_v1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\philips.c">
+    <ClCompile Include="..\src\devices\philips_aj3650.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\prologue.c">

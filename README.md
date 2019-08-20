@@ -162,7 +162,7 @@ Supported device protocols:
     [91]  inFactory
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
-    [94]  Philips outdoor temperature sensor
+    [94]  Philips outdoor temperature sensor (type AJ3650)
     [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
     [97]  Thermopro TP08/TP12/TP20 thermometer
