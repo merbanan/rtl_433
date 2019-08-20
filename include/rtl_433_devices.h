@@ -142,6 +142,7 @@
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
     DECL(holman_ws5029) \
+    DECL(philips_aj7010) \
 
     /* Add new decoders here. */
 
