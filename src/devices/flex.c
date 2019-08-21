@@ -42,7 +42,7 @@ unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_co
     unsigned shl = bit_offset - pos * 8;      // shift left we need to align
     unsigned len = (shl + bit_count + 7) / 8; // number of bytes we need
     unsigned shr = 8 * len - shl - bit_count; // actual shift right
-//    printf("pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
+//    fprintf(stderr, "pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
     unsigned long val = data[pos];
     val = (uint8_t)(val << shl) >> shl; // mask off top bits
     for (unsigned i = 1; i < len - 1; ++i) {

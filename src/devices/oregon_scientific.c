@@ -232,7 +232,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
     int sensor_id = (msg[0] << 8) | msg[1];
     if (decoder->verbose) {
-      fprintf(stdout,"Found sensor_id (%08x)\n",sensor_id);
+      fprintf(stderr,"Found sensor_id (%08x)\n",sensor_id);
     }
     if ((sensor_id == ID_THGR122N) || (sensor_id == ID_THGR968)) {
         if (validate_os_v2_message(decoder, msg, 76, msg_bits, 15) != 0)
@@ -530,7 +530,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         unsigned int pattern2 = (unsigned int)(0xff500000 >> pattern_index);
         unsigned int pattern3 = (unsigned int)(0x00500000 >> pattern_index);
         unsigned int pattern4 = (unsigned int)(0x04600000 >> pattern_index);
-        //fprintf(stdout, "OS v3 Sync nibble search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
+        //fprintf(stderr, "OS v3 Sync nibble search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
         if (((sync_test_val & mask) != pattern)
                 && ((sync_test_val & mask) != pattern2)
                 && ((sync_test_val & mask) != pattern3)

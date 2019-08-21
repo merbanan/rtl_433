@@ -29,9 +29,7 @@
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     //if (decoder->verbose) {
-    //  fprintf(stdout, "Steelmate TPMS decoder\n");
-    //  bitbuffer_print(bitbuffer);
-    //  fprintf(stdout, "\n");
+    //  bitbuffer_printf(bitbuffer, "Steelmate TPMS decoder: ");
     //}
 
     bitrow_t *bb = bitbuffer->bb;

@@ -118,8 +118,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "DSC Invalid start/sync bits ");
-                bitrow_print(b, 40);
+                bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
             }
             continue;
         }
@@ -130,10 +129,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
         bytes[4] = ((b[5]));
 
-        // XXX change to decoder->verbose
         if (decoder->verbose) {
-            fprintf(stdout, "DSC Contact Raw Data: ");
-            bitrow_print(bytes, 40);
+            bitrow_printf(bytes, 40, "DSC Contact Raw Data: ");
         }
 
         status = bytes[0];
@@ -214,7 +211,7 @@ static char *output_fields[] = {
     "status",
     "battery_ok",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device DSC = {

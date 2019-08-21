@@ -72,7 +72,7 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
         return 1;
 
     if (decoder->verbose > 1) {
-        fprintf(stdout,
+        fprintf(stderr,
                 "LaCrosse Packet Validation Failed error: Checksum Comp. %d != Recv. %d, Parity %d\n",
                 checksum, msg_nybbles[12], parity);
         bitrow_print(msg_nybbles, LACROSSE_WS_BITLEN);

@@ -33,19 +33,19 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 (bb[0][2] & 0x0f) == 6) ) {
 
 /*
-        fprintf(stdout, "------------------------------\n");
-        fprintf(stdout, "protocol       = Cardin S466\n");
-        fprintf(stdout, "message        = ");
+        fprintf(stderr, "------------------------------\n");
+        fprintf(stderr, "protocol       = Cardin S466\n");
+        fprintf(stderr, "message        = ");
         for (i=0 ; i<3 ; i++) {
             for (k = 7; k >= 0; k--) {
                 if (bb[0][i] & 1 << k)
-                    fprintf(stdout, "1");
+                    fprintf(stderr, "1");
                 else
-                    fprintf(stdout, "0");
+                    fprintf(stderr, "0");
             }
-            fprintf(stdout, " ");
+            fprintf(stderr, " ");
         }
-        fprintf(stdout, "\n\n");
+        fprintf(stderr, "\n\n");
 */
 
         // Dip 1
