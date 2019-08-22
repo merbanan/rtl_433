@@ -15,7 +15,6 @@ This is inspired from the other Philips driver made by Chris Coffey.
 
 A complete message is 40 bits:
 - 3 times sync of 1000us pulse + 1000us gap.
-- 8-bit initial preamble, always 0
 - 40 bits, 2000 us short or 6000 us long
 - packet gap is 38 ms
 - Packets are repeated 3 times.
@@ -30,18 +29,14 @@ A complete message is 40 bits:
 
 Data format is:
 
-    00000000  0ccccccc tttttttt ??TTTTTT ????????
+    00000000  0ccccccc tttttttt TTTTTTTT XXXXXXXX
 
-- c: channel: 0x5A=channel 1, 0x45=channel 2, 0x36=channel 3 (7 bits)
-- t: temperature in ADC value that is then converted to deg. C. (14 bits)
-- s: CRC: non-standard CRC-?, poly 0x?, init 0x?
+- c: 7 bit channel: 0x5A=channel 1, 0x45=channel 2, 0x36=channel 3
+- t: 16 bit temperature in ADC value that is then converted to deg. C.
+- X: XOR sum, every 2nd packet without last data byte (T).
 */
 
 #include "decoder.h"
-
-#define PHILIPS_BITLEN       40
-#define PHILIPS_DATALEN      5
-#define PHILIPS_STARTNIBBLE  0x0
 
 static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -53,7 +48,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw;
     float temp_c;
 
-    bitbuffer_invert(bitbuffer); // ~ on data.
+    bitbuffer_invert(bitbuffer);
 
     // Correct number of rows?
     if (bitbuffer->num_rows != 1) {
@@ -65,7 +60,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Correct bit length?
-    if (bitbuffer->bits_per_row[0] != PHILIPS_BITLEN) {
+    if (bitbuffer->bits_per_row[0] != 40) {
         if (decoder->verbose) {
             fprintf(stderr, "%s: wrong number of bits (%d)\n",
                     __func__, bitbuffer->bits_per_row[0]);
@@ -80,7 +75,15 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) {
             fprintf(stderr, "%s: wrong start nibble\n", __func__);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
+    }
+
+    // Correct checksum?
+    if (xor_bytes(b, 5) && xor_bytes(b, 3) ^ b[4]) {
+        if (decoder->verbose) {
+            fprintf(stderr, "%s: bad checksum\n", __func__);
+        }
+        return DECODE_FAIL_MIC;
     }
 
     // Channel
@@ -115,6 +118,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Philips-AJ7010",
             "channel",          "Channel",      DATA_INT,    channel,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -127,6 +131,7 @@ static char *output_fields[] = {
         "model",
         "channel",
         "temperature_C",
+        "mic",
         NULL,
 };
 
@@ -138,6 +143,6 @@ r_device philips_aj7010 = {
         .sync_width  = 1000,
         .reset_limit = 30000,
         .decode_fn   = &philips_aj7010_decode,
-        .disabled    = 1, // No checksum, field data unknown
+        .disabled    = 0,
         .fields      = output_fields,
 };

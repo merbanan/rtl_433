@@ -203,7 +203,7 @@ Supported device protocols:
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
     [134]  Holman Industries WS5029 weather station
-    [135]* Philips outdoor temperature sensor (type AJ7010)
+    [135]  Philips outdoor temperature sensor (type AJ7010)
 
 * Disabled by default, use -R n or -G
 
