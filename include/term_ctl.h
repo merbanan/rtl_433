@@ -75,11 +75,19 @@ int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
 #endif
     ;
 
+int term_help_printf(char const *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+    __attribute__ ((format(printf,1,2)))
+#endif
+    ;
+
 /**
  * Like 'term_printf()', but no var-arg format.
  * Simply takes a 0-terminated buffer.
  */
 int term_puts(void *ctx, const char *buf);
+
+int term_help_puts(void *ctx, const char *buf);
 
 /**
  * Change the default color map.

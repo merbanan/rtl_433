@@ -44,6 +44,7 @@
 #include "samp_grab.h"
 #include "am_analyze.h"
 #include "confparse.h"
+#include "term_ctl.h"
 #include "compat_paths.h"
 
 #ifdef _WIN32
@@ -72,7 +73,7 @@ static void print_version(void)
 
 static void usage(int exit_code)
 {
-    fprintf(stderr,
+    term_help_printf(
             "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
             "\nUsage:\n"
             "\t\t= General options =\n"
@@ -143,7 +144,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
 
 static void help_device(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Input device selection =\n"
 #ifdef RTLSDR
             "\tRTL-SDR device driver is available.\n"
@@ -168,7 +169,7 @@ static void help_device(void)
 
 static void help_gain(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Gain option =\n"
             "[-g <gain>] (default: auto)\n"
             "\tFor RTL-SDR: gain in dB (\"0\" is auto).\n"
@@ -179,7 +180,7 @@ static void help_gain(void)
 
 static void help_output(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Output format option =\n"
             "[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
@@ -199,7 +200,7 @@ static void help_output(void)
 
 static void help_meta(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Meta information option =\n"
             "[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
@@ -224,7 +225,7 @@ static void help_meta(void)
 
 static void help_read(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Read file option =\n"
             "[-r <filename>] Read data from input file instead of a receiver\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
@@ -243,7 +244,7 @@ static void help_read(void)
 
 static void help_write(void)
 {
-    fprintf(stderr,
+    term_help_printf(
             "\t\t= Write file option =\n"
             "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "[-W <filename>] Save data stream to output file, overwrite existing file\n"
