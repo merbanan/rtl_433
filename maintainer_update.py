@@ -51,9 +51,9 @@ def get_help_text(option):
         help_text = e.output
 
     # trim help text
-    help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
-    help_text = re.sub(r'(?s).*option requires an argument -- .',
-                       'Option ' + option + ':', help_text)
+    help_text = re.sub(r'(?s).*Usage:', '', help_text)
+    help_text = re.sub(r'(?s).*option requires an argument -- .', '', help_text)
+    # help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'### \1', help_text)
     return help_text
 
 

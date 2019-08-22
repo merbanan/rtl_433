@@ -255,6 +255,7 @@ static void usage()
 static void help()
 {
     fprintf(stderr,
+            "\t\t= Flex decoder spec =\n"
             "Use -X <spec> to add a flexible general purpose decoder.\n\n"
             "<spec> is \"key=value[,key=value...]\"\n"
             "Common keys are:\n"
