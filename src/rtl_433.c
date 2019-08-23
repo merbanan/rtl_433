@@ -131,7 +131,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
     char disabledc;
 
     if (devices) {
-        fprintf(stderr, "\t\t= Supported device protocols =\n");
+        term_help_printf("\t\t= Supported device protocols =\n");
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 2) // if not hidden
