@@ -211,19 +211,19 @@ Read the Test Data section at the bottom.
 
 		= Input device selection =
 	RTL-SDR device driver is available.
-[-d <RTL-SDR USB device index>] (default: 0)
-[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
+  [-d <RTL-SDR USB device index>] (default: 0)
+  [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
 	SoapySDR device driver is available.
-[-d ""] Open default SoapySDR device
-[-d driver=rtlsdr] Open e.g. specific SoapySDR device
+  [-d ""] Open default SoapySDR device
+  [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
-[-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
+  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
 	Specify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234
 
 
 		= Gain option =
-[-g <gain>] (default: auto)
+  [-g <gain>] (default: auto)
 	For RTL-SDR: gain in dB ("0" is auto).
 	For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
 	E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
@@ -284,7 +284,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.
+  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
@@ -300,7 +300,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Meta information option =
-[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
+  [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
 	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
 	Use "time:unix" to show the seconds since unix epoch as time meta data.
@@ -322,7 +322,7 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 
 
 		= Read file option =
-[-r <filename>] Read data from input file instead of a receiver
+  [-r <filename>] Read data from input file instead of a receiver
 	Parameters are detected from the full path, file name, and extension.
 
 	A center frequency is detected as (fractional) number suffixed with 'M',
@@ -342,8 +342,8 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 
 
 		= Write file option =
-[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
-[-W <filename>] Save data stream to output file, overwrite existing file
+  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+  [-W <filename>] Save data stream to output file, overwrite existing file
 	Parameters are detected from the full path, file name, and extension.
 
 	File content and format are detected as parameters, possible options are:

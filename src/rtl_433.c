@@ -151,18 +151,18 @@ static void help_device(void)
 #else
             "\tRTL-SDR device driver is not available.\n"
 #endif
-            "[-d <RTL-SDR USB device index>] (default: 0)\n"
-            "[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
+            "  [-d <RTL-SDR USB device index>] (default: 0)\n"
+            "  [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
             "\tTo set gain for RTL-SDR use -g <gain> to set an overall gain in dB.\n"
 #ifdef SOAPYSDR
             "\tSoapySDR device driver is available.\n"
 #else
             "\tSoapySDR device driver is not available.\n"
 #endif
-            "[-d \"\"] Open default SoapySDR device\n"
-            "[-d driver=rtlsdr] Open e.g. specific SoapySDR device\n"
+            "  [-d \"\"] Open default SoapySDR device\n"
+            "  [-d driver=rtlsdr] Open e.g. specific SoapySDR device\n"
             "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
-            "[-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
+            "  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
             "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
     exit(0);
 }
@@ -171,7 +171,7 @@ static void help_gain(void)
 {
     term_help_printf(
             "\t\t= Gain option =\n"
-            "[-g <gain>] (default: auto)\n"
+            "  [-g <gain>] (default: auto)\n"
             "\tFor RTL-SDR: gain in dB (\"0\" is auto).\n"
             "\tFor SoapySDR: gain in dB for automatic distribution (\"\" is auto), or string of gain elements.\n"
             "\tE.g. \"LNA=20,TIA=8,PGA=2\" for LimeSDR.\n");
@@ -182,7 +182,7 @@ static void help_output(void)
 {
     term_help_printf(
             "\t\t= Output format option =\n"
-            "[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
+            "  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
@@ -202,7 +202,7 @@ static void help_meta(void)
 {
     term_help_printf(
             "\t\t= Meta information option =\n"
-            "[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
+            "  [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
             "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
@@ -227,7 +227,7 @@ static void help_read(void)
 {
     term_help_printf(
             "\t\t= Read file option =\n"
-            "[-r <filename>] Read data from input file instead of a receiver\n"
+            "  [-r <filename>] Read data from input file instead of a receiver\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tA center frequency is detected as (fractional) number suffixed with 'M',\n"
             "\t'Hz', 'kHz', 'MHz', or 'GHz'.\n\n"
@@ -246,8 +246,8 @@ static void help_write(void)
 {
     term_help_printf(
             "\t\t= Write file option =\n"
-            "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
-            "[-W <filename>] Save data stream to output file, overwrite existing file\n"
+            "  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tFile content and format are detected as parameters, possible options are:\n"
             "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
