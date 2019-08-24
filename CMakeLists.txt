@@ -234,3 +234,7 @@ INSTALL(
     FILES
     DESTINATION lib/pkgconfig
 )
+
+install(DIRECTORY man
+    DESTINATION share
+    PATTERN ".md" EXCLUDE)
