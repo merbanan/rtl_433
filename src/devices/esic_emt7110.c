@@ -78,7 +78,7 @@ static int esic_emt7110_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "power_W",      "Power",        DATA_FORMAT, "%.1f W",   DATA_DOUBLE, power_w,
             "current_A",    "Current",      DATA_FORMAT, "%.3f A",   DATA_DOUBLE, current_a,
             "voltage_V",    "Voltage",      DATA_FORMAT, "%.1f V",   DATA_DOUBLE, voltage_v,
-            "energy_kWh",   "Energy",       DATA_FORMAT, "%.1f kWh", DATA_DOUBLE, energy_kwh,
+            "energy_kWh",   "Energy",       DATA_FORMAT, "%.2f kWh", DATA_DOUBLE, energy_kwh,
             "pairing",      "Pairing?",     DATA_INT,    pairing,
             "connected",    "Connected?",   DATA_INT,    connected,
             "mic",          "Integrity",    DATA_STRING, "CHECKSUM",
