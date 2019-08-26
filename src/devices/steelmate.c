@@ -28,95 +28,93 @@
 #include "decoder.h"
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-	//if (decoder->verbose) {
-	//	fprintf(stdout, "Steelmate TPMS decoder\n");
-	//	bitbuffer_print(bitbuffer);
-	//	fprintf(stdout, "\n");
-	//}
+    //if (decoder->verbose) {
+    //  bitbuffer_printf(bitbuffer, "Steelmate TPMS decoder: ");
+    //}
 
-	bitrow_t *bb = bitbuffer->bb;
+    bitrow_t *bb = bitbuffer->bb;
 
-	//Loop through each row of data
-	for (int i = 0; i < bitbuffer->num_rows; i++)
-	{
-		//Payload is inverted Manchester encoded, and reversed MSB/LSB order
-		uint8_t preAmble, ID1, ID2, p1, tempFahrenheit, tmpbattery_mV, payload_checksum, calculated_checksum;
-		uint16_t sensorID, battery_mV;
-		float pressurePSI;
-		char sensorIDhex[7];
-		data_t *data;
+    //Loop through each row of data
+    for (int i = 0; i < bitbuffer->num_rows; i++)
+    {
+        //Payload is inverted Manchester encoded, and reversed MSB/LSB order
+        uint8_t preAmble, ID1, ID2, p1, tempFahrenheit, tmpbattery_mV, payload_checksum, calculated_checksum;
+        uint16_t sensorID, battery_mV;
+        float pressurePSI;
+        char sensorIDhex[7];
+        data_t *data;
 
-		//Length must be 72 bits to be considered a valid packet
-		if (bitbuffer->bits_per_row[i] != 72)
-			continue;
+        //Length must be 72 bits to be considered a valid packet
+        if (bitbuffer->bits_per_row[i] != 72)
+            continue;
 
-		//Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
-		if (bb[i][0] != 0x00 || bb[i][1] != 0x00 || bb[i][2] != 0x7f)
-			continue;
+        //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
+        if (bb[i][0] != 0x00 || bb[i][1] != 0x00 || bb[i][2] != 0x7f)
+            continue;
 
-		//Preamble
-		preAmble = ~reverse8(bb[i][2]);
+        //Preamble
+        preAmble = ~reverse8(bb[i][2]);
 
-		//Sensor ID
-		ID1 = ~reverse8(bb[i][3]);
-		ID2 = ~reverse8(bb[i][4]);
+        //Sensor ID
+        ID1 = ~reverse8(bb[i][3]);
+        ID2 = ~reverse8(bb[i][4]);
 
-		//Pressure is stored as twice the PSI
-		p1 = ~reverse8(bb[i][5]);
+        //Pressure is stored as twice the PSI
+        p1 = ~reverse8(bb[i][5]);
 
-		//Temperature is stored in Fahrenheit. Note that the datasheet claims operational to -40'C, but can only express values from -17.8'C
-		tempFahrenheit = ~reverse8(bb[i][6]);
+        //Temperature is stored in Fahrenheit. Note that the datasheet claims operational to -40'C, but can only express values from -17.8'C
+        tempFahrenheit = ~reverse8(bb[i][6]);
 
-		//Battery voltage is stored as half the mV
-		tmpbattery_mV = ~reverse8(bb[i][7]);
+        //Battery voltage is stored as half the mV
+        tmpbattery_mV = ~reverse8(bb[i][7]);
 
-		//Checksum is a sum of all the other values
-		payload_checksum = ~reverse8(bb[i][8]);
-		calculated_checksum = preAmble + ID1 + ID2 + p1 + tempFahrenheit + tmpbattery_mV;
-		if (payload_checksum != calculated_checksum)
-			continue;
+        //Checksum is a sum of all the other values
+        payload_checksum = ~reverse8(bb[i][8]);
+        calculated_checksum = preAmble + ID1 + ID2 + p1 + tempFahrenheit + tmpbattery_mV;
+        if (payload_checksum != calculated_checksum)
+            continue;
 
-		sensorID = (ID1 << 8) + ID2;
-		sprintf(sensorIDhex, "0x%04x", sensorID);
-		pressurePSI = (float)p1 / 2;
-		battery_mV = tmpbattery_mV * 2;
+        sensorID = (ID1 << 8) + ID2;
+        sprintf(sensorIDhex, "0x%04x", sensorID);
+        pressurePSI = (float)p1 / 2;
+        battery_mV = tmpbattery_mV * 2;
 
-		data = data_make(
-			"type", "", DATA_STRING, "TPMS",
-			"model", "", DATA_STRING, "Steelmate",
-			"id", "", DATA_STRING, sensorIDhex,
-			"pressure_PSI", "", DATA_DOUBLE, pressurePSI,
-			"temperature_F", "", DATA_DOUBLE, (float)tempFahrenheit,
-			"battery_mV", "", DATA_INT, battery_mV,
-			"mic", "Integrity", DATA_STRING, "CHECKSUM",
-			NULL);
-		decoder_output_data(decoder, data);
+        data = data_make(
+            "type", "", DATA_STRING, "TPMS",
+            "model", "", DATA_STRING, "Steelmate",
+            "id", "", DATA_STRING, sensorIDhex,
+            "pressure_PSI", "", DATA_DOUBLE, pressurePSI,
+            "temperature_F", "", DATA_DOUBLE, (float)tempFahrenheit,
+            "battery_mV", "", DATA_INT, battery_mV,
+            "mic", "Integrity", DATA_STRING, "CHECKSUM",
+            NULL);
+        decoder_output_data(decoder, data);
 
-		return 1;
-	}
+        return 1;
+    }
 
-	//Was not a Steelmate TPMS after all
-	return 0;
+    //Was not a Steelmate TPMS after all
+    return 0;
 }
 
 static char *output_fields[] = {
-	"type",
-	"model",
-	"id",
-	"pressure_PSI",
-	"temperature_F",
-	"battery_mV",
-	"mic",
-	NULL
+    "type",
+    "model",
+    "id",
+    "pressure_PSI",
+    "temperature_F",
+    "battery_mV",
+    "mic",
+    NULL
 };
 
 r_device steelmate = {
-	.name			= "Steelmate TPMS",
-	.modulation		= FSK_PULSE_MANCHESTER_ZEROBIT,
-	.short_width	= 12*4,
-	.long_width     = 0,
-	.reset_limit    = 27*4,
-	.decode_fn    	= &steelmate_callback,
-	.disabled		= 0,
-	.fields			= output_fields,
+    .name           = "Steelmate TPMS",
+    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
+    .short_width    = 12*4,
+    .long_width     = 0,
+    .reset_limit    = 27*4,
+    .decode_fn      = &steelmate_callback,
+    .disabled       = 0,
+    .fields         = output_fields,
 };

@@ -67,19 +67,41 @@ void term_set_bg(void *ctx, term_color_t color);
  *   and 'world' mapped to colour 2. See 'term_set_color_map()' below.
  *
  * And a 'term_printf (NULL, "~4Hello ~2world~0.\n");'
- * will print "Hello world" to stder' with no colors.
+ * will print "Hello world" to stderr' with no colors.
  */
 int term_printf(void *ctx, _Printf_format_string_ const char *format, ...)
 #if defined(__GNUC__) || defined(__clang__)
-    __attribute__ ((format(printf,2,3)))
+        __attribute__((format(printf, 2, 3)))
 #endif
-    ;
+        ;
+
+/**
+ * Print to terminal with markup turned into colors.
+ * Like 'term_printf()', but with automatic coloring for markup.
+ *
+ * Markup:
+ *   = Heading =
+ *   [option argument]
+ *   "quoted"
+ *   'quoted'
+ */
+int term_help_printf(_Printf_format_string_ char const *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 1, 2)))
+#endif
+        ;
 
 /**
  * Like 'term_printf()', but no var-arg format.
  * Simply takes a 0-terminated buffer.
  */
 int term_puts(void *ctx, const char *buf);
+
+/**
+ * Like 'term_help_printf()', but no var-arg format.
+ * Simply takes a 0-terminated buffer.
+ */
+int term_help_puts(void *ctx, const char *buf);
 
 /**
  * Change the default color map.

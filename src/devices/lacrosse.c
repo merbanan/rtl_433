@@ -86,7 +86,7 @@ static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
                 parity += bit;
             }
 
-            //            fprintf(stdout, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d %s\n", rbyte_no, rbit_no,
+            //            fprintf(stderr, "recv: [%d/%d] %d -> msg [%d/%d] %02x, Parity: %d %s\n", rbyte_no, rbit_no,
             //                    bit, mnybble_no, mbit_no, msg_nybbles[mnybble_no], parity,
             //                    ( mbit_no == 0 ) ? "\n" : "" );
         }
@@ -100,13 +100,13 @@ static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
             checksum = (checksum + msg_nybbles[i]) & 0x0F;
         }
 
-        // fprintf(stdout,"Parity: %d, parity bit %d, Good %d\n", parity, parity_bit, parity % 2);
+        // fprintf(stderr,"Parity: %d, parity bit %d, Good %d\n", parity, parity_bit, parity % 2);
 
         if (checksum == msg_nybbles[10] && (parity % 2 == 0)) {
             return 1;
         } else {
             if (decoder->verbose > 1) {
-                fprintf(stdout,
+                fprintf(stderr,
                         "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
                         checksum, msg_nybbles[10], parity);
             }
@@ -179,7 +179,7 @@ static int lacrossetx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 break;
 
             default:
-                // @todo this should be reported/counted as exception, not considered debug
+                // TODO: this should be reported/counted as exception, not considered debug
                 if (decoder->verbose) {
                     fprintf(stderr,
                             "LaCrosse Sensor %02x: Unknown Reading type %d, % 3.1f (%d)\n",

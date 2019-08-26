@@ -37,7 +37,7 @@ add_test(rtl_433_help ../src/rtl_433 -h)
 # Define style checks
 ########################################################################
 add_executable(style-check style-check.c)
-file(GLOB STYLE_CHECK_FILES  ../include/*.h ../src/*.c ../src/devices/*.c)
+file(GLOB STYLE_CHECK_FILES  ../include/*.h ../src/*.c ../src/devices/*.c ../CMakeLists.txt ../*/CMakeLists.txt)
 list(REMOVE_ITEM STYLE_CHECK_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")

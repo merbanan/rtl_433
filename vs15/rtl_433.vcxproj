@@ -167,6 +167,7 @@
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
     <ClCompile Include="..\src\devices\esa.c" />
+    <ClCompile Include="..\src\devices\esic_emt7110.c" />
     <ClCompile Include="..\src\devices\esperanza_ews.c" />
     <ClCompile Include="..\src\devices\eurochron.c" />
     <ClCompile Include="..\src\devices\fineoffset.c" />
@@ -183,6 +184,7 @@
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
     <ClCompile Include="..\src\devices\hcs200.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
+    <ClCompile Include="..\src\devices\holman_ws5029.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
@@ -215,7 +217,8 @@
     <ClCompile Include="..\src\devices\oregon_scientific.c" />
     <ClCompile Include="..\src\devices\oregon_scientific_sl109h.c" />
     <ClCompile Include="..\src\devices\oregon_scientific_v1.c" />
-    <ClCompile Include="..\src\devices\philips.c" />
+    <ClCompile Include="..\src\devices\philips_aj3650.c" />
+    <ClCompile Include="..\src\devices\philips_aj7010.c" />
     <ClCompile Include="..\src\devices\prologue.c" />
     <ClCompile Include="..\src\devices\proove.c" />
     <ClCompile Include="..\src\devices\quhwa.c" />

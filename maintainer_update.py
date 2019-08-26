@@ -51,9 +51,24 @@ def get_help_text(option):
         help_text = e.output
 
     # trim help text
-    help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
-    help_text = re.sub(r'(?s).*option requires an argument -- .',
-                       'Option ' + option + ':', help_text)
+    help_text = re.sub(r'(?s).*Usage:', '', help_text)
+    help_text = re.sub(r'(?s).*option requires an argument -- .', '', help_text)
+    # help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'### \1', help_text)
+    return help_text
+
+
+def markup_man_text(help_text):
+    # sub section headings
+    help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'.SS "\1"', help_text)
+    # indented lines
+    help_text = re.sub(r'(?m)^\t(.*)$', r'.RS\n\1\n.RE', help_text)
+    # options
+    help_text = re.sub(r'(?m)^\s*\[(\S*)(.*)\]\s*(.*)$',
+                       r'.TP\n[ \\\\fB\1\\\\fI\2\\\\fP ]\n\3', help_text)
+    # fix hyphens
+    help_text = re.sub(r'-', '\\-', help_text)
+    # fix quotes
+    help_text = re.sub(r'(?m)^\'', ' \'', help_text)
     return help_text
 
 
@@ -101,9 +116,14 @@ repl += get_help_text('-w') + '\n'
 replace_block(r'```',
               r'```', repl, 'README.md')
 
+# MAN pages
+repl = markup_man_text(repl)
+replace_block(r'\.\\" body',
+              r'\.\\" end', '\n'+repl, 'man/man1/rtl_433.1')
+
 # src/CMakeLists.txt
 repl = src_files + device_files
-repl = '\n\t' + ('\n\t'.join(repl)) + '\n'
+repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_executable\(rtl_433$',
               r'^\)', repl, 'src/CMakeLists.txt')
 

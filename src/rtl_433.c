@@ -44,6 +44,7 @@
 #include "samp_grab.h"
 #include "am_analyze.h"
 #include "confparse.h"
+#include "term_ctl.h"
 #include "compat_paths.h"
 
 #ifdef _WIN32
@@ -72,9 +73,10 @@ static void print_version(void)
 
 static void usage(int exit_code)
 {
-    fprintf(stderr,
+    term_help_printf(
             "Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.\n"
-            "\nUsage:\t\t= General options =\n"
+            "\nUsage:\n"
+            "\t\t= General options =\n"
             "  [-V] Output the version string and exit\n"
             "  [-v] Increase verbosity (can be used multiple times).\n"
             "       -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).\n"
@@ -84,7 +86,7 @@ static void usage(int exit_code)
             "  [-g <gain> | help] (default: auto)\n"
             "  [-t <settings>] apply a list of keyword=value settings for SoapySDR devices\n"
             "       e.g. -t \"antenna=A,bandwidth=4.5M,rfnotch_ctrl=false\"\n"
-            "  [-f <frequency>] [-f...] Receive frequency(s) (default: %i Hz)\n"
+            "  [-f <frequency>] Receive frequency(s) (default: %i Hz)\n"
             "  [-H <seconds>] Hop interval for polling of multiple frequencies (default: %i seconds)\n"
             "  [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)\n"
             "  [-s <sample rate>] Set sample rate (default: %i Hz)\n"
@@ -92,8 +94,8 @@ static void usage(int exit_code)
             "  [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)\n"
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
-            "  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)\n"
-            "  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: %i)\n"
+            "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
+            "  [-l <level>] Change detection level used to determine pulses (0-16384) (0=auto) (default: %i)\n"
             "  [-z <value>] Override short value in data decoder\n"
             "  [-x <value>] Override long value in data decoder\n"
             "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
@@ -115,8 +117,8 @@ static void usage(int exit_code)
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
-            "  [-T <seconds>] Specify number of seconds to run\n"
-            "  [-E] Stop after outputting successful event(s)\n"
+            "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
+            "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
             "  [-h] Output this usage help and exit\n"
             "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
@@ -129,7 +131,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
     char disabledc;
 
     if (devices) {
-        fprintf(stderr, "Supported device protocols:\n");
+        term_help_printf("\t\t= Supported device protocols =\n");
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 2) // if not hidden
@@ -142,32 +144,34 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
 
 static void help_device(void)
 {
-    fprintf(stderr,
+    term_help_printf(
+            "\t\t= Input device selection =\n"
 #ifdef RTLSDR
             "\tRTL-SDR device driver is available.\n"
 #else
             "\tRTL-SDR device driver is not available.\n"
 #endif
-            "[-d <RTL-SDR USB device index>] (default: 0)\n"
-            "[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
+            "  [-d <RTL-SDR USB device index>] (default: 0)\n"
+            "  [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]\n"
             "\tTo set gain for RTL-SDR use -g <gain> to set an overall gain in dB.\n"
 #ifdef SOAPYSDR
             "\tSoapySDR device driver is available.\n"
 #else
             "\tSoapySDR device driver is not available.\n"
 #endif
-            "[-d \"\" Open default SoapySDR device\n"
-            "[-d driver=rtlsdr Open e.g. specific SoapySDR device\n"
+            "  [-d \"\"] Open default SoapySDR device\n"
+            "  [-d driver=rtlsdr] Open e.g. specific SoapySDR device\n"
             "\tTo set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).\n"
-            "[-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
+            "  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)\n"
             "\tSpecify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234\n");
     exit(0);
 }
 
 static void help_gain(void)
 {
-    fprintf(stderr,
-            "-g <gain>] (default: auto)\n"
+    term_help_printf(
+            "\t\t= Gain option =\n"
+            "  [-g <gain>] (default: auto)\n"
             "\tFor RTL-SDR: gain in dB (\"0\" is auto).\n"
             "\tFor SoapySDR: gain in dB for automatic distribution (\"\" is auto), or string of gain elements.\n"
             "\tE.g. \"LNA=20,TIA=8,PGA=2\" for LimeSDR.\n");
@@ -176,8 +180,9 @@ static void help_gain(void)
 
 static void help_output(void)
 {
-    fprintf(stderr,
-            "[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
+    term_help_printf(
+            "\t\t= Output format option =\n"
+            "  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
@@ -195,8 +200,9 @@ static void help_output(void)
 
 static void help_meta(void)
 {
-    fprintf(stderr,
-            "[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
+    term_help_printf(
+            "\t\t= Meta information option =\n"
+            "  [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
             "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
@@ -219,8 +225,9 @@ static void help_meta(void)
 
 static void help_read(void)
 {
-    fprintf(stderr,
-            "[-r <filename>] Read data from input file instead of a receiver\n"
+    term_help_printf(
+            "\t\t= Read file option =\n"
+            "  [-r <filename>] Read data from input file instead of a receiver\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tA center frequency is detected as (fractional) number suffixed with 'M',\n"
             "\t'Hz', 'kHz', 'MHz', or 'GHz'.\n\n"
@@ -237,9 +244,10 @@ static void help_read(void)
 
 static void help_write(void)
 {
-    fprintf(stderr,
-            "[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
-            "[-W <filename>] Save data stream to output file, overwrite existing file\n"
+    term_help_printf(
+            "\t\t= Write file option =\n"
+            "  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)\n"
+            "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tFile content and format are detected as parameters, possible options are:\n"
             "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
@@ -664,7 +672,6 @@ static void parse_conf_args(r_cfg_t *cfg, int argc, char *argv[])
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
 {
-    unsigned i;
     int n;
     r_device *flex_device;
 
@@ -1010,6 +1017,12 @@ sighandler(int signum)
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
         cfg.do_exit = 1;
+        sdr_stop(cfg.dev);
+        return TRUE;
+    }
+    else if (CTRL_BREAK_EVENT == signum) {
+        fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
+        cfg.do_exit_async = 1;
         sdr_stop(cfg.dev);
         return TRUE;
     }

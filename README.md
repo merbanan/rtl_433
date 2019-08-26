@@ -15,6 +15,8 @@ See [BUILDING.md](BUILDING.md)
 
 Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
 
+On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
+
 ## How to add support for unsupported sensors
 
 Read the Test Data section at the bottom.
@@ -24,7 +26,8 @@ Read the Test Data section at the bottom.
     rtl_433 -h
 
 ```
-Usage:		= General options =
+
+		= General options =
   [-V] Output the version string and exit
   [-v] Increase verbosity (can be used multiple times).
        -v : verbose, -vv : verbose decoders, -vvv : debug decoders, -vvvv : trace decoding).
@@ -34,7 +37,7 @@ Usage:		= General options =
   [-g <gain> | help] (default: auto)
   [-t <settings>] apply a list of keyword=value settings for SoapySDR devices
        e.g. -t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
-  [-f <frequency>] [-f...] Receive frequency(s) (default: 433920000 Hz)
+  [-f <frequency>] Receive frequency(s) (default: 433920000 Hz)
   [-H <seconds>] Hop interval for polling of multiple frequencies (default: 600 seconds)
   [-p <ppm_error] Correct rtl-sdr tuner frequency offset error (default: 0)
   [-s <sample rate>] Set sample rate (default: 250000 Hz)
@@ -42,8 +45,8 @@ Usage:		= General options =
   [-R <device> | help] Enable only the specified device decoding protocol (can be used multiple times)
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-G] Enable blacklisted device decoding protocols, for testing only.
-  [-X <spec> | help] Add a general purpose decoder (-R 0 to disable all other decoders)
-  [-l <level>] Change detection level used to determine pulses [0-16384] (0 = auto) (default: 0)
+  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
+  [-l <level>] Change detection level used to determine pulses (0-16384) (0=auto) (default: 0)
   [-z <value>] Override short value in data decoder
   [-x <value>] Override long value in data decoder
   [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
@@ -65,14 +68,14 @@ Usage:		= General options =
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
-  [-T <seconds>] Specify number of seconds to run
-  [-E] Stop after outputting successful event(s)
+  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
+  [-E hop | quit] Hop/Quit after outputting successful event(s)
   [-h] Output this usage help and exit
        Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
 
 
-Option -R:
-Supported device protocols:
+
+		= Supported device protocols =
     [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
     [03]  Prologue Temperature Sensor
@@ -130,7 +133,7 @@ Supported device protocols:
     [59]  Steelmate TPMS
     [60]  Schrader TPMS
     [61]* LightwaveRF
-    [62]  Elro DB286A Doorbell
+    [62]* Elro DB286A Doorbell
     [63]  Efergy Optical
     [64]* Honda Car Key
     [67]  Radiohead ASK
@@ -139,7 +142,7 @@ Supported device protocols:
     [70]  Honeywell Door/Window Sensor
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
-    [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
+    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3 sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
@@ -160,8 +163,8 @@ Supported device protocols:
     [91]  inFactory
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
-    [94]  Philips outdoor temperature sensor
-    [95]  Schrader TPMS EG53MA4
+    [94]  Philips outdoor temperature sensor (type AJ3650)
+    [95]  Schrader TPMS EG53MA4, PA66GF35
     [96]  Nexa
     [97]  Thermopro TP08/TP12/TP20 thermometer
     [98]  GE Color Effects
@@ -200,28 +203,34 @@ Supported device protocols:
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
+    [134]  Holman Industries WS5029 weather station
+    [135]  Philips outdoor temperature sensor (type AJ7010)
+    [136]  ESIC EMT7110 power meter
 
 * Disabled by default, use -R n or -G
 
-Option -d:
+
+		= Input device selection =
 	RTL-SDR device driver is available.
-[-d <RTL-SDR USB device index>] (default: 0)
-[-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
+  [-d <RTL-SDR USB device index>] (default: 0)
+  [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
 	SoapySDR device driver is available.
-[-d "" Open default SoapySDR device
-[-d driver=rtlsdr Open e.g. specific SoapySDR device
+  [-d ""] Open default SoapySDR device
+  [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
-[-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
+  [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
 	Specify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234
 
-Option -g:
--g <gain>] (default: auto)
+
+		= Gain option =
+  [-g <gain>] (default: auto)
 	For RTL-SDR: gain in dB ("0" is auto).
 	For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
 	E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
 
-Option -X:
+
+		= Flex decoder spec =
 Use -X <spec> to add a flexible general purpose decoder.
 
 <spec> is "key=value[,key=value...]"
@@ -274,8 +283,9 @@ Available options are:
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 
 
-Option -F:
-[-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.
+
+		= Output format option =
+  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
@@ -289,8 +299,9 @@ Option -F:
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
-Option -M:
-[-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
+
+		= Meta information option =
+  [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
 	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
 	Use "time:unix" to show the seconds since unix epoch as time meta data.
@@ -306,8 +317,13 @@ Option -M:
 	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
 
-Option -r:
-[-r <filename>] Read data from input file instead of a receiver
+Note:	Use "newmodel" to transition to new model keys. This will become the default someday.
+	A table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.
+
+
+
+		= Read file option =
+  [-r <filename>] Read data from input file instead of a receiver
 	Parameters are detected from the full path, file name, and extension.
 
 	A center frequency is detected as (fractional) number suffixed with 'M',
@@ -325,9 +341,10 @@ Option -r:
 	E.g. default detection by extension: path/filename.am.s16
 	forced overrides: am:s16:path/filename.ext
 
-Option -w:
-[-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
-[-W <filename>] Save data stream to output file, overwrite existing file
+
+		= Write file option =
+  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+  [-W <filename>] Save data stream to output file, overwrite existing file
 	Parameters are detected from the full path, file name, and extension.
 
 	File content and format are detected as parameters, possible options are:

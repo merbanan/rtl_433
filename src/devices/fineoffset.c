@@ -332,7 +332,7 @@ Data layout:
 - ?: 2 bits ?
 - P: 14 bit PM2.5 reading in ug/m3
 - ?: 2 bits ?
-- A: 14 bit PM10 reading in ug/m3
+- A: 14 bit PM10.0 reading in ug/m3
 - ?: 8 bits ?
 - C: 8 bit CRC checksum of the previous 6 bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
@@ -377,7 +377,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "pm10_ug_m3",       "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -442,6 +442,14 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
+
+    // Verify type code
+    int msg_type = b[0] & 0xf0;
+    if (msg_type != 0xe0) {
+        if (decoder->verbose)
+            fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
+        return DECODE_ABORT_EARLY;
+    }
 
     // Verify checksum
     int sum = (add_bytes(b, 6) & 0xff) - b[6];
@@ -817,7 +825,7 @@ static char *output_fields_WH25[] = {
     "light_lux",
     //WH0290
     "pm2_5_ug_m3",
-    "pm10_ug_m3",
+    "pm10_0_ug_m3",
     "battery",
     "mic",
     NULL,

@@ -24,8 +24,12 @@
 /// Check that there are no mixed tabs/spaces.
 static int style_check(char *path)
 {
+    char *strict = strstr(path, "/devices/");
+
     FILE *fp = fopen(path, "r");
     assert(fp);
+    if(!fp)
+      exit(EXIT_FAILURE);
 
     int read_errors = 0;
     int long_errors = 0;
@@ -34,6 +38,9 @@ static int style_check(char *path)
 
     int leading_tabs = 0;
     int leading_spcs = 0;
+
+    int use_stdout = 0;
+    int use_printf = 0;
 
     char str[MAX_LEN];
     while (fgets(str, MAX_LEN, fp)) {
@@ -55,6 +62,16 @@ static int style_check(char *path)
         if (len >= 4 && str[0] == ' ' && str[1] == ' ' && str[2] == ' ' && str[3] == ' ') {
             leading_spcs++;
         }
+
+        if (strstr(str, "stdout")) {
+            use_stdout++;
+        }
+        char *p;
+        if ((p = strstr(str, "printf"))) {
+            if (p == str || p[-1] < '_'|| p[-1] > 'z') {
+                use_printf++;
+            }
+        }
     }
     if (leading_tabs && leading_spcs) {
         tabs_errors = leading_tabs > leading_spcs ? leading_spcs : leading_tabs;
@@ -68,8 +85,14 @@ static int style_check(char *path)
         printf("File \"%s\" has %d CRLF errors.\n", path, crlf_errors);
     if (tabs_errors)
         printf("File \"%s\" has %d MIXED tab/spaces errors.\n", path, tabs_errors);
+    if (leading_tabs)
+        printf("File \"%s\" has %d TAB indented lines.\n", path, leading_tabs);
+    if (strict && use_stdout)
+        printf("File \"%s\" has %d STDOUT lines.\n", path, use_stdout);
+    if (strict && use_printf)
+        printf("File \"%s\" has %d PRINTF lines.\n", path, use_printf);
 
-    return read_errors + long_errors + crlf_errors + tabs_errors;
+    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + (strict ? use_stdout + use_printf : 0);
 }
 
 int main(int argc, char *argv[])

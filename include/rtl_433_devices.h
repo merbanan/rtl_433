@@ -17,7 +17,7 @@
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
     DECL(new_template) \
-    DECL(acurite_rain_gauge) \
+    DECL(acurite_rain_896) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
     DECL(mebus433) \
@@ -80,7 +80,7 @@
     DECL(honeywell) \
     DECL(maverick_et73x) \
     DECL(rftech) \
-    DECL(lacrosse_TX141TH_Bv2) \
+    DECL(lacrosse_tx141x) \
     DECL(acurite_00275rm) \
     DECL(lacrosse_tx35) \
     DECL(lacrosse_tx29) \
@@ -101,7 +101,7 @@
     DECL(infactory) \
     DECL(ft004b) \
     DECL(fordremote) \
-    DECL(philips) \
+    DECL(philips_aj3650) \
     DECL(schrader_EG53MA4) \
     DECL(nexa) \
     DECL(thermopro_tp12) \
@@ -141,7 +141,10 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
-    DECL(current_cost_envir)
+    DECL(holman_ws5029) \
+    DECL(philips_aj7010) \
+    DECL(esic_emt7110) \
+    DECL(current_cost_envir) \
 
     /* Add new decoders here. */
 

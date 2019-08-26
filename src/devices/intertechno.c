@@ -22,19 +22,19 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
 
     if (decoder->verbose > 1) {
-        fprintf(stdout, "Switch event:\n");
-        fprintf(stdout, "protocol       = Intertechno\n");
-        fprintf(stdout, "rid            = %x\n", b[0]);
-        fprintf(stdout, "rid            = %x\n", b[1]);
-        fprintf(stdout, "rid            = %x\n", b[2]);
-        fprintf(stdout, "rid            = %x\n", b[3]);
-        fprintf(stdout, "rid            = %x\n", b[4]);
-        fprintf(stdout, "rid            = %x\n", b[5]);
-        fprintf(stdout, "rid            = %x\n", b[6]);
-        fprintf(stdout, "rid            = %x\n", b[7]);
-        fprintf(stdout, "ADDR Slave     = %i\n", b[7] & 0x0f);
-        fprintf(stdout, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
-        fprintf(stdout, "command        = %i\n",( b[6] & 0x07));
+        fprintf(stderr, "Switch event:\n");
+        fprintf(stderr, "protocol       = Intertechno\n");
+        fprintf(stderr, "rid            = %x\n", b[0]);
+        fprintf(stderr, "rid            = %x\n", b[1]);
+        fprintf(stderr, "rid            = %x\n", b[2]);
+        fprintf(stderr, "rid            = %x\n", b[3]);
+        fprintf(stderr, "rid            = %x\n", b[4]);
+        fprintf(stderr, "rid            = %x\n", b[5]);
+        fprintf(stderr, "rid            = %x\n", b[6]);
+        fprintf(stderr, "rid            = %x\n", b[7]);
+        fprintf(stderr, "ADDR Slave     = %i\n", b[7] & 0x0f);
+        fprintf(stderr, "ADDR Master    = %i\n",( b[7] & 0xf0) >> 4);
+        fprintf(stderr, "command        = %i\n",( b[6] & 0x07));
     }
 
     sprintf(id_str, "%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4]);

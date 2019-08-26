@@ -20,7 +20,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 ########################################################################
 # Get version info from Git
@@ -153,14 +153,14 @@ endif()
 ########################################################################
 include_directories(
     BEFORE
-    ${CMAKE_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include
 )
 
 ########################################################################
 # Create uninstall target
 ########################################################################
 configure_file(
-    ${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
 @ONLY)
 
@@ -203,7 +203,7 @@ include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
 ########################################################################
 # Configure CI deploy
 ########################################################################
-configure_file(${CMAKE_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
+configure_file(${PROJECT_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
 
 ########################################################################
 # Add subdirectories
@@ -234,3 +234,7 @@ INSTALL(
     FILES
     DESTINATION lib/pkgconfig
 )
+
+install(DIRECTORY man
+    DESTINATION share
+    PATTERN ".md" EXCLUDE)

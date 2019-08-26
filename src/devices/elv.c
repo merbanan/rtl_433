@@ -29,17 +29,22 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // check and combine the 3 repetitions
     for (i = 0; i < 14; i++) {
-        if(bb[0][i]==bb[1][i] || bb[0][i]==bb[2][i]) bb_p[i]=bb[0][i];
-        else if(bb[1][i]==bb[2][i])                  bb_p[i]=bb[1][i];
-        else return 0;
+        if (bb[0][i] == bb[1][i] || bb[0][i] == bb[2][i])
+            bb_p[i] = bb[0][i];
+        else if (bb[1][i] == bb[2][i])
+            bb_p[i] = bb[1][i];
+        else
+            return 0;
     }
 
     // read 9 bytes with stopbit ...
     for (i = 0; i < 9; i++) {
-        dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
-        stopbit=AD_POP (bb_p, 1, bit); bit+=1;
+        dec[i] = AD_POP(bb_p, 8, bit);
+        bit += 8;
+        stopbit = AD_POP(bb_p, 1, bit);
+        bit += 1;
         if (!stopbit) {
-//            fprintf(stdout, "!stopbit: %i\n", i);
+//            fprintf(stderr, "!stopbit: %i\n", i);
             return 0;
         }
         checksum_calculated ^= dec[i];
@@ -49,11 +54,11 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Read checksum
     checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
-//        fprintf(stdout, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
+//        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
         return 0;
     }
 
-//for (i = 0; i < bytes; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
+//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     // based on 15_CUL_EM.pm
     char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";
@@ -84,7 +89,7 @@ static char *elv_em1000_output_fields[] = {
     "total",
     "current",
     "peak",
-    NULL
+    NULL,
 };
 
 r_device elv_em1000 = {
@@ -118,7 +123,8 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-        if(decoder->verbose) fprintf(stdout, "!stopbit\n");
+        if (decoder->verbose)
+            fprintf(stderr, "!stopbit\n");
         return 0;
     }
     check_calculated ^= dec[0];
@@ -129,17 +135,21 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            if(decoder->verbose) fprintf(stdout, "!stopbit %i\n", bit);
+            if (decoder->verbose)
+                fprintf(stderr, "!stopbit %i\n", bit);
             return 0;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
-    if(decoder->verbose) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
+    if (decoder->verbose) {
+        bitrow_print(dec, nibbles * 8);
+    }
 
     if (check_calculated) {
-        if(decoder->verbose) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
+        if (decoder->verbose)
+            fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
         return 0;
     }
 
@@ -148,7 +158,8 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-        if(decoder->verbose) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        if (decoder->verbose)
+            fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
         return 0;
     }
 
@@ -182,7 +193,7 @@ static char *elv_ws2000_output_fields[] = {
     "temperature",
     "humidity",
     "pressure",
-    NULL
+    NULL,
 };
 
 r_device elv_ws2000 = {

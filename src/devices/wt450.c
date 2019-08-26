@@ -66,7 +66,6 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t battery_low;
     int seq;
     float temp;
-    uint8_t bit;
     uint8_t parity;
     data_t *data;
 

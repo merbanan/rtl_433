@@ -209,7 +209,8 @@ void term_free(void *ctx)
     _term_free(ctx);
 #else
     FILE *fp = (FILE *)ctx;
-    fprintf(fp, "\033[0m");
+    if (term_has_color(ctx))
+        fprintf(fp, "\033[0m");
 #endif
 }
 
@@ -291,7 +292,7 @@ int term_puts(void *ctx, char const *buf)
     FILE *fp;
 
     if (!ctx)
-        fprintf(stderr, "%s", buf);
+        return fprintf(stderr, "%s", buf);
 
 #ifdef _WIN32
     console_t *console = (console_t *)ctx;
@@ -305,15 +306,15 @@ int term_puts(void *ctx, char const *buf)
 
     buf_len = strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
-        if (*p != '~') {
-            fputc(*p, fp);
-            len++;
-        }
-        else {
+        if (*p == '~') {
             p++;
             color = ctx ? term_get_color_map(*p) : -1;
             if (color >= 0)
                 term_set_fg(ctx, (term_color_t)color);
+        }
+        else {
+            fputc(*p, fp);
+            len++;
         }
     }
     return len;
@@ -332,5 +333,117 @@ int term_printf(void *ctx, char const *format, ...)
     vsnprintf(buf, sizeof(buf)-1, format, args);
     len = term_puts(ctx, buf);
     va_end (args);
+    return len;
+}
+
+int term_help_puts(void *ctx, char const *buf)
+{
+    char const *p = buf;
+    int i, len, buf_len, color, state = 0, set_color = -1, next_color = -1;
+    FILE *fp;
+
+    if (!ctx)
+        return fprintf(stderr, "%s", buf);
+
+#ifdef _WIN32
+    console_t *console = (console_t *)ctx;
+    fp = console->file;
+#else
+    fp = (FILE *)ctx;
+#endif
+
+    if (!fp)
+        fp = stderr;
+
+    buf_len = strlen(buf);
+    for (i = len = 0; *p && i < buf_len; i++, p++) {
+        if (*p == '~') {
+            p++;
+            color = ctx ? term_get_color_map(*p) : -1;
+            if (color >= 0)
+                term_set_fg(ctx, (term_color_t)color);
+            continue;
+        }
+
+        if (state == 0 && *p == '[') {
+            state = 1;
+            next_color = 5;
+        }
+        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ' ' || p[1] == '\n' || p[1] == '\0')) {
+            state = 0;
+            set_color = 0;
+        }
+        else if (state == 1 && *p == ' ') {
+            state = 2;
+            next_color = 6;
+        }
+        else if (state == 2 && *p == '|') {
+            set_color = 0;
+            next_color = 6;
+        }
+
+        else if (state == 0 && *p == '=' && p[1] == ' ') {
+            state = 3;
+            set_color = 1;
+        }
+        else if (state == 3 && *p == '=') {
+            state = 0;
+            next_color = 0;
+        }
+
+        else if (state == 0 && *p == '\'') {
+            state = 4;
+            next_color = 4;
+        }
+        else if (state == 4 && *p == '\'') {
+            state = 0;
+            set_color = 0;
+        }
+
+        else if (state == 0 && *p == '\"') {
+            state = 5;
+            set_color = 4;
+        }
+        else if (state == 5 && *p == '\"') {
+            state = 0;
+            next_color = 0;
+        }
+
+        if (set_color >= 0) {
+            color = ctx ? color_map[set_color] : -1;
+            if (color >= 0)
+                term_set_fg(ctx, (term_color_t)color);
+        }
+        set_color = next_color;
+        next_color = -1;
+
+        fputc(*p, fp);
+        len++;
+    }
+    return len;
+}
+
+int term_help_printf(char const *format, ...)
+{
+    int len;
+    va_list args;
+    char buf[4000];
+
+    va_start(args, format);
+
+    void *term = term_init(stderr);
+    if (!term_has_color(term)) {
+        term_free(term);
+        term = NULL;
+    }
+
+    // Terminate first in case a buggy '_MSC_VER < 1900' is used.
+    buf[sizeof(buf) - 1] = '\0';
+    vsnprintf(buf, sizeof(buf) - 1, format, args);
+    len = term_help_puts(term, buf);
+
+    term_free(term);
+
+    va_end(args);
     return len;
 }
