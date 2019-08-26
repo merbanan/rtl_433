@@ -1,13 +1,15 @@
-/* OpenEnergyMonitor.org emonTx sensor protocol
- *
- * Copyright (C) 2016 Tommy Vestermark
- * Copyright (C) 2016 David Woodhouse
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    OpenEnergyMonitor.org emonTx sensor protocol.
+
+    Copyright (C) 2016 Tommy Vestermark
+    Copyright (C) 2016 David Woodhouse
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
 #include "decoder.h"
 
 // We don't really *use* this because there's no endianness support
@@ -131,31 +133,31 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "node",
-    "ct1",
-    "ct2",
-    "ct3",
-    "ct4",
-    "Vrms/batt", // TODO: delete this
-    "batt_Vrms",
-    "temp1_C",
-    "temp2_C",
-    "temp3_C",
-    "temp4_C",
-    "temp5_C",
-    "temp6_C",
-    "pulse",
-    NULL
+        "model",
+        "node",
+        "ct1",
+        "ct2",
+        "ct3",
+        "ct4",
+        "Vrms/batt", // TODO: delete this
+        "batt_Vrms",
+        "temp1_C",
+        "temp2_C",
+        "temp3_C",
+        "temp4_C",
+        "temp5_C",
+        "temp6_C",
+        "pulse",
+        NULL,
 };
 
 r_device emontx = {
-    .name           = "emonTx OpenEnergyMonitor",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 2000000.0f / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
-    .long_width     = 2000000.0f / (49230 + 49261),
-    .reset_limit    = 1200, // 600 zeros...
-    .decode_fn      = &emontx_callback,
-    .disabled       = 0,
-    .fields     = output_fields,
+        .name        = "emonTx OpenEnergyMonitor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 2000000.0f / (49230 + 49261), // 49261kHz for RFM69, 49230kHz for RFM12B
+        .long_width  = 2000000.0f / (49230 + 49261),
+        .reset_limit = 1200, // 600 zeros...
+        .decode_fn   = &emontx_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

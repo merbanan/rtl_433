@@ -1,22 +1,30 @@
-/* Efergy IR is a devices that periodically reports current energy consumption
- * on frequency ~433.55 MHz. The data that is transmitted consists of 8
- * bytes:
- *
- * Byte 1-4: Start bits (0000), then static data (probably device id)
- * Byte 5-7: all zeros
- * Byte 8: Pulse Count
- * Byte 9: sample frequency (15 seconds)
- * Byte 10: seconds
- * Byte 11: bytes0-10 crc16 xmodem XOR with FF
- * Byte 12: ?crc16 xmodem
- * if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
- * else  energy= ((pulsecount/n_imp) * (3600/seconds))
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Efergy IR Optical energy consumption meter.
+
+    Copyright (C) 2016 Adrian Stevenson <adrian_stevenson2002@yahoo.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Efergy IR is a devices that periodically reports current energy consumption
+on frequency ~433.55 MHz. The data that is transmitted consists of 8
+bytes:
+
+- Byte 1-4: Start bits (0000), then static data (probably device id)
+- Byte 5-7: all zeros
+- Byte 8: Pulse Count
+- Byte 9: sample frequency (15 seconds)
+- Byte 10: seconds
+- Byte 11: bytes0-10 crc16 xmodem XOR with FF
+- Byte 12: ?crc16 xmodem
+
+if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
+else  energy= ((pulsecount/n_imp) * (3600/seconds))
+
+*/
 
 #include "decoder.h"
 
@@ -113,20 +121,20 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "pulses",
-    "energy",
-    NULL
+        "model",
+        "pulses",
+        "energy",
+        NULL,
 };
 
 r_device efergy_optical = {
-    .name           = "Efergy Optical",
-    .modulation     = FSK_PULSE_PWM,
-    .short_width    = 64,
-    .long_width     = 136,
-    .sync_width     = 500,
-    .reset_limit    = 400,
-    .decode_fn      = &efergy_optical_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Efergy Optical",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 64,
+        .long_width  = 136,
+        .sync_width  = 500,
+        .reset_limit = 400,
+        .decode_fn   = &efergy_optical_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

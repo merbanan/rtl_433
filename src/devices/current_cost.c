@@ -1,6 +1,18 @@
+/** @file
+    CurrentCost TX, CurrentCost Counter current sensors.
+
+    Copyright (C) 2015 Emmanuel Navarro <enavarro222@gmail.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
 #include "decoder.h"
 
-static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitbuffer_invert(bitbuffer);
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bb[0];
@@ -71,22 +83,22 @@ static int current_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "dev_id", // TODO: delete this
-    "id",
-    "power0",
-    "power1",
-    "power2",
-    NULL
+        "model",
+        "dev_id", // TODO: delete this
+        "id",
+        "power0",
+        "power1",
+        "power2",
+        NULL,
 };
 
 r_device current_cost = {
-    .name           = "CurrentCost Current Sensor",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 250,
-    .long_width     = 250, // NRZ
-    .reset_limit    = 8000,
-    .decode_fn      = &current_cost_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "CurrentCost Current Sensor",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 250,
+        .long_width  = 250, // NRZ
+        .reset_limit = 8000,
+        .decode_fn   = &current_cost_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

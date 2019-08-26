@@ -70,7 +70,7 @@ static int holman_ws5029_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof (preamble));
+    unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof (preamble) * 8);
     if (offset + 192 > bitbuffer->bits_per_row[0]) {
         return DECODE_ABORT_EARLY;
     }
