@@ -259,6 +259,9 @@
     <ClCompile Include="..\src\devices\esa.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\esic_emt7110.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\esperanza_ews.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

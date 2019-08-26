@@ -54,6 +54,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/elv.c \
                        devices/emontx.c \
                        devices/esa.c \
+                       devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
                        devices/eurochron.c \
                        devices/fineoffset.c \

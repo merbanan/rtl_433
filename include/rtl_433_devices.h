@@ -143,6 +143,7 @@
     DECL(rubicson_48659) \
     DECL(holman_ws5029) \
     DECL(philips_aj7010) \
+    DECL(esic_emt7110) \
 
     /* Add new decoders here. */
 
