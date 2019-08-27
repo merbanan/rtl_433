@@ -2,11 +2,96 @@
 
 ## [Unreleased]
 
-- MQTT output
 - HTTP server, JSON-RPC
 - GPS meta data
-- Stats reporting
-- SoapySDR: added option to select antenna [-t]
+
+## Release 19.08 (2019-08-29)
+
+### Highlights
+
+- Added MQTT output (#1016)
+- Added stats reporting (#733)
+- Added SoapySDR general keyword settings option, e.g. antenna
+- Added new model keys option
+- Changed Normalize odd general keys on devices (#1010)
+- Changed Use battery_ok instead of battery for newmodel
+- Added report model description option (#987)
+- Added pulse data text file support (#967)
+- Added color to console help output
+- Fixed CF32 loader; addeded CS8, CF32 dumper
+
+### Changed
+
+- Added CurrentCost EnviR support (#1115)
+- Added ESIC-EMT7170 power meter (#1132)
+- Added LaCrosse-TX141Bv3 support (#1134)
+- Added channel to inFactory-TH (#1133)
+- Added man page rtl_433.1 (#1121)
+- Added color to console help output
+- Added support for Philips AJ7010 (#1047)
+- Added frequency hopping signal support for win32 (#1128)
+- Added Holman WS5029 decoder
+- Added Acurite Rain 899 support
+- Added support for Oregon scientific THGR328N and RTGR328N (#1107) (#1109)
+- Added frequency hop on USR1 signal
+- Added '-E hop' option
+- Added option for multiple hop times
+- Added sensor similar to GT-WT-02 (#1080)
+- Added Rubicson 48659 Cooking Thermometer
+- Added TFA Dostmann 30.3196 decoder (#983)
+- Added support for HCS200 KeeLoq encoder (#1081)
+- Added channel output to lacrosse_TX141TH_Bv2 (#1097)
+- Added IKEA Sparsnäs decoder.
+- Added support for Eurochron weather station sensor (#1090)
+- Added MQTT topic format strings (#1079)
+- Added two EV1527 based sample configurations (#1087)
+- Added DirecTV RC66RX Remote Control
+- Added support for Ecowitt temperature sensor
+- Added Companion WTR001 decoder (#1055)
+- Changed Thermopro TP12 also supports TP20 (#1061)
+- Added configuration for PIR-EF4 sensor (#1049)
+- Added Alecto WS-1200 v1/v2/DCF decoders to Fineoffset (#975)
+- Added TS-FT002 decoder (#1015)
+- Added Fine Offset WH32B support (#1040)
+- Added LaCrosse-WS3600 support, change LaCrosse-WS to LaCrosse-WS2310
+- Added LaCrosse WS7000 support (#1029) (#1030)
+- Changed Omit humidity on Prologue if invalid
+- Added MQTT output (#1016)
+- Added stats reporting (#733)
+- Added Interface Specification for data output (#827)
+- Added checksum to Ambient Weather TX-8300
+- Added Interlogix glassbreak subtype
+- Added Jansite TPMS support (#1020)
+- Added Oregon Scientific RTHN129 support (#941)
+- Changed Use battery_ok instead of battery for newmodel
+- Changed Update battery_low, temperatureN keys
+- Changed Normalize odd general keys on devices (#1010)
+- Fixed Efergy-e2 current reading exponent
+- Added FS20 remote decoder (#999)
+- Added SoapySDR general keyword settings option
+- Added option to select antenna on SoapySDR devices (#968)
+- Fixed CF32 loader; added CS8, CF32 dumper
+- Added ASAN to Debug builds
+- Changed tfa_twin_plus_30.3049: Add mic to output
+- Added new model keys option
+- Enhanced Kedsum, S3318, Esperanza with MIC (#985)
+- Added support for XT300/XH300 soil moisture sensor (#946)
+- Changed Schrader unit from bar to kPa
+- Added report model description option (#987)
+- Added native scale for SDRplay
+- Added Chungear BCF-0019x2 example conf
+- Changed GT-WT-02 to support newer timings; changed model name
+- Added pulse data text file support (#967)
+- Added Digitech XC0346 support to Fine Offset WH1050 (#922)
+- Added bitbuffer NRZI(NRZS/NRZM) decodes
+- Added Rosenborg/WH5 quirk to Fineoffset
+- Added support for Silverline doorbells (#942)
+- Changed TPMS Toyota to match shorter preamble
+- Changed TPMS Citroen data readings
+- Changed TPMS Renault data readings
+- Added Digitech XC-0324 temperature sensor decoder (#849)
+- Added sample rate switching
+- Added Mongoose
 
 ## Release 18.12 (2018-12-16)
 
