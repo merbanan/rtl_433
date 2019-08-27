@@ -1,0 +1,10 @@
+# ignore VuePress build files
+.vuepress/dist
+node_modules
+yarn.lock
+# ignore copied files
+README.md
+CHANGELOG.md
+EXAMPLES.md
+TESTS.md
+VS15.md
