@@ -7,11 +7,11 @@ The official source code is in the https://github.com/merbanan/rtl_433/ reposito
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
 Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
 
-![rtl_433 screenshot](./screenshot.png)
+![rtl_433 screenshot](./docs/screenshot.png)
 
 ## Building/installation
 
-See [BUILDING.md](BUILDING.md)
+See [BUILDING.md](docs/BUILDING.md)
 
 Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
 
