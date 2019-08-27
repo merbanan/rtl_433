@@ -217,6 +217,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
     data_t *data_subtype = NULL;
     data_t *data_channel = NULL;
     data_t *data_id      = NULL;
+    data_t *data_protocol = NULL;
     for (data_t *d = data; d; d = d->next) {
         if (!strcmp(d->key, "type"))
             data_type = d;
@@ -228,6 +229,8 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
             data_channel = d;
         else if (!strcmp(d->key, "id"))
             data_id = d;
+        else if (!strcmp(d->key, "protocol")) // NOTE: needs "-M protocol"
+            data_protocol = d;
     }
 
     // consume entire format string
@@ -281,6 +284,8 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
             data_token = data_channel;
         else if (!strncmp(t_start, "id", t_end - t_start))
             data_token = data_id;
+        else if (!strncmp(t_start, "protocol", t_end - t_start))
+            data_token = data_protocol;
         else {
             fprintf(stderr, "%s: unknown token \"%.*s\"\n", __func__, (int)(t_end - t_start), t_start);
             exit(1);
