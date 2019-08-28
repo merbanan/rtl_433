@@ -9,7 +9,12 @@ Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-S
 
 ![rtl_433 screenshot](./docs/screenshot.png)
 
-## Building/installation
+## Building / Installation
+
+rtl_433 is written in portable C (C99 standard) and known to compile on Linux (also embedded), MacOS, and Windows systems.
+Older compilers and toolchains are supported as a key-goal.
+Low resource consumption and very few dependencies allow rtl_433 to run on embedded hardware like (repurposed) routers.
+Systems with 32-bit i686 and 64-bit x86-64 as well as (embedded) ARM, like the Raspberry Pi and PlutoSDR are well supported.
 
 See [BUILDING.md](docs/BUILDING.md)
 
@@ -278,6 +283,8 @@ Available options are:
 	match=<bits> : only match if the <bits> are found
 	preamble=<bits> : match and align at the <bits> preamble
 		<bits> is a row spec of {<bit count>}<bits as hex number>
+	unique : suppress duplicate row output
+
 	countonly : suppress detailed row output
 
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
