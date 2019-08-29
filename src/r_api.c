@@ -306,6 +306,43 @@ char const **well_known_output_fields(r_cfg_t *cfg)
     return well_known_default;
 }
 
+/** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
+static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
+{
+    if (cfg->new_model_keys) {
+        for (char const **p = fields; *p; ++p) {
+            if (!strcmp(*p, "battery")) *p = "battery_ok";
+        }
+    }
+
+    if (cfg->conversion_mode == CONVERT_SI) {
+        for (char const **p = fields; *p; ++p) {
+            if (!strcmp(*p, "temperature_F")) *p = "temperature_C";
+            else if (!strcmp(*p, "pressure_PSI")) *p = "pressure_kPa";
+            else if (!strcmp(*p, "rain_in")) *p = "rain_mm";
+            else if (!strcmp(*p, "rain_rate_in_h")) *p = "rain_rate_mm_h";
+            else if (!strcmp(*p, "wind_avg_mi_h")) *p = "wind_avg_km_h";
+            else if (!strcmp(*p, "wind_max_mi_h")) *p = "wind_max_km_h";
+        }
+    }
+
+    if (cfg->conversion_mode == CONVERT_CUSTOMARY) {
+        for (char const **p = fields; *p; ++p) {
+            if (!strcmp(*p, "temperature_C")) *p = "temperature_F";
+            else if (!strcmp(*p, "temperature_1_C")) *p = "temperature_1_F";
+            else if (!strcmp(*p, "temperature_2_C")) *p = "temperature_2_F";
+            else if (!strcmp(*p, "setpoint_C")) *p = "setpoint_F";
+            else if (!strcmp(*p, "pressure_hPa")) *p = "pressure_inHg";
+            else if (!strcmp(*p, "pressure_kPa")) *p = "pressure_PSI";
+            else if (!strcmp(*p, "rain_mm")) *p = "rain_in";
+            else if (!strcmp(*p, "rain_rate_mm_h")) *p = "rain_rate_in_h";
+            else if (!strcmp(*p, "wind_avg_km_h")) *p = "wind_avg_mi_h";
+            else if (!strcmp(*p, "wind_max_km_h")) *p = "wind_max_mi_h";
+        }
+    }
+    return fields;
+}
+
 // find the fields output for CSV
 char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *num_fields)
 {
@@ -326,6 +363,7 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *nu
                         r_dev->protocol_num, r_dev->name);
         }
     }
+    convert_csv_fields(cfg, (char const **)field_list.elems);
 
     if (num_fields)
         *num_fields = field_list.len;
