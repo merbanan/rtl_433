@@ -69,6 +69,7 @@ r_device *flex_create_device(char *spec); // maybe put this in some header file?
 static void print_version(void)
 {
     fprintf(stderr, "%s\n", version_string());
+    fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
 static void usage(int exit_code)

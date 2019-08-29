@@ -12,8 +12,12 @@ module.exports = {
       ['/', 'Overview'],
       'BUILDING',
       'CHANGELOG',
+      'PRIMER',
+      'OPERATION',
       'DATA_FORMAT',
       'EXAMPLES',
+      'HARDWARE',
+      'LINKS',
       'TESTS',
       'VS15'
     ]
