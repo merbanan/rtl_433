@@ -642,7 +642,8 @@ FSK_PWM :         FSK Pulse Width Modulation
 .RS
 FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
 .RE
-<short>, <long>, <sync>, and <reset> are the timings for the decoder in µs
+<short>, <long>, <sync> are nominal modulation timings in us,
+<reset>, <gap>, <tolerance> are maximum modulation timings in us:
 PCM     short: Nominal width of pulse [us]
          long: Nominal width of bit period [us]
 PPM     short: Nominal width of '0' gap [us]
@@ -650,9 +651,9 @@ PPM     short: Nominal width of '0' gap [us]
 PWM     short: Nominal width of '1' pulse [us]
          long: Nominal width of '0' pulse [us]
          sync: Nominal width of sync pulse [us] (optional)
-          gap: Maximum gap size before new row of bits [us]
-    tolerance: Maximum pulse deviation [us] (optional)
-        reset: Maximum gap size before End Of Message [us].
+common    gap: Maximum gap size before new row of bits [us]
+        reset: Maximum gap size before End Of Message [us]
+    tolerance: Maximum pulse deviation [us] (optional).
 Available options are:
 .RS
 bits=<n> : only match if at least one row has <n> bits
