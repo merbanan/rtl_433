@@ -223,11 +223,11 @@ where:
   - `short`: Nominal width of pulse [us]
   - `long`: Nominal width of bit period [us]
 - PPM
-  - `short`: Nominal width of '0' gap [us]
-  - `long`: Nominal width of '1' gap [us]
+  - `short`: Nominal width of `0` gap [us]
+  - `long`: Nominal width of `1` gap [us]
 - PWM
-  - `short`: Nominal width of '1' pulse [us]
-  - `long`: Nominal width of '0' pulse [us]
+  - `short`: Nominal width of `1` pulse [us]
+  - `long`: Nominal width of `0` pulse [us]
   - `sync`: Nominal width of sync pulse [us] (optional)
 - common
   - `gap`: Maximum gap size before new row of bits [us]
@@ -300,7 +300,7 @@ Sample data can be loaded or dumped with `-r`, `-w`, `-W`, and codes verified wi
 
 ```
   [-r <filename> | help] Read data from input file instead of a receiver
-  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
+  [-w <filename> | help] Save data stream to output file (a `-` dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
   [-y <code>] Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
 ```
@@ -323,7 +323,7 @@ File content and format options are:
 Use the `-w` and `-W` option to dump all signal data:
 
 ```
-  [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
+  [-w <filename>] Save data stream to output file (a `-` dumps samples to stdout)
   [-W <filename>] Save data stream to output file, overwrite existing file
 ```
 
@@ -380,10 +380,12 @@ File content and format are detected by th extension, possible options are:
 - `ook`
 - `vcd`
 
-Overrides can be prefixed to the actual filename, separated by colon (':').
+Overrides can be prefixed to the actual filename, separated by colon (`:`).
 E.g. default detection by extension: path/filename.am.s16 and forced overrides: am:s16:path/filename.ext
 
+::: warning
 Note that not all file types are supported/applicable by loaders or dumpers.
+:::
 
 ## Outputs
 
@@ -408,7 +410,9 @@ A colorful, column based output intended for screen display.
 
 Append output to file with `:<filename>` (e.g. `-F kv:log.txt`), defaults to stdout.
 
+::: warning
 Note: the `kv` output is not a machine-readable key-value format, use the JSON output for that.
+:::
 
 ### JSON output
 
@@ -424,7 +428,9 @@ Use `-F csv` to add an output in CSV format.
 
 Append output to file with `:<filename>` (e.g. `-F csv:log.csv`), defaults to stdout.
 
-Note: the `csv` output is not recommended, use the JSON output for a machine-readable format.
+::: warning
+Note: the `csv` output is not recommended for post-processing, use the JSON output for a machine-readable format.
+:::
 
 ### MQTT output
 
