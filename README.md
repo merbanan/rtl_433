@@ -1,6 +1,6 @@
 This fork contains support for Sonoff RM433 remote control.
 
-![RM433 example]((./docs/rm433.png)
+![RM433 example](./docs/rm433.png)
 
 
 
