@@ -141,6 +141,7 @@ add_executable(rtl_433
     devices/wt450.c
     devices/x10_rf.c
     devices/x10_sec.c
+    devices/sonoff_rm433.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
