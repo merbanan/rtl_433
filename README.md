@@ -1,6 +1,6 @@
-This fork contains support for Sonoff RM433 remote control.
+This fork contains support for [Sonoff RM433 remote control](https://www.itead.cc/sonoff-rm433-remote-controller-base.html).
 
-![RM433 example]((./docs/rm433.png)
+![RM433 example](./docs/rm433.png)
 
 
 
