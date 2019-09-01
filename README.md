@@ -1,3 +1,12 @@
+This fork contains support for Sonoff RM433 remote control.
+
+
+
+
+
+
+
+
 # rtl_433
 
 rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, and 915 MHz ISM bands.
