@@ -1,8 +1,9 @@
 # rtl_433 examples
 
-Some example readers/relays for rtl_433 JSON UDP data. Should work with Python 2 and also Python 3.
+You likely need to filter and transform rtl_433's output before sending it to a database.
+It's recommended you read the JSON data and process it to your specific requirements.
 
-Consider using PEP 3143 - Standard daemon process library or run with Supervisord.
+Some example pipes/relays for rtl_433 JSON data. Should work with Python 2 and also Python 3.
 
 The `pipe` examples read JSON output from `rtl_433` using a pipe, i.e.
 

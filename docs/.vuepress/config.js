@@ -15,7 +15,6 @@ module.exports = {
       'PRIMER',
       'OPERATION',
       'DATA_FORMAT',
-      'EXAMPLES',
       'HARDWARE',
       'LINKS',
       'TESTS',
