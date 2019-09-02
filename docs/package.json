@@ -7,6 +7,8 @@
     "docs:build": "vuepress build"
   },
   "devDependencies": {
-    "vuepress": "^0.14.11"
+    "vuepress": "^1.0.0",
+    "@vuepress/plugin-back-to-top": "^1.0.0",
+    "@vuepress/plugin-medium-zoom": "^1.0.0"
   }
 }

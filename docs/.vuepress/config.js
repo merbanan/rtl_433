@@ -11,14 +11,15 @@ module.exports = {
     sidebar: [
       ['/', 'Overview'],
       'BUILDING',
+      'VS15',
       'CHANGELOG',
       'PRIMER',
       'OPERATION',
       'DATA_FORMAT',
       'HARDWARE',
+      'INTEGRATION',
       'LINKS',
       'TESTS',
-      'VS15'
     ]
   }
 };
