@@ -13,14 +13,15 @@ static int rm433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int key;
     int tmp;
 
-    if (bitbuffer->bits_per_row[0]!=25){
-        return 0;
-    }
-
     for (int i=0;i<bitbuffer->num_rows;i++) {
+
+        if (bitbuffer->bits_per_row[i]!=25){
+          continue;
+        }
+        
         // check last byte
         if (bitbuffer->bb[i][3]!=0x80) {
-            printf("===0x%x \n",bitbuffer->bb[i][3]);
+            //printf("===0x%x \n",bitbuffer->bb[i][3]);
             continue;
         }
 
