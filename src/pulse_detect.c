@@ -175,9 +175,9 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 #define OOK_EST_LOW_RATIO   1024        // Constant for slowness of OOK low level (noise) estimator (very slow)
 
 // FSK adaptive frequency estimator constants
-#define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
-#define FSK_EST_SLOW        64         // Constant for slowness of FSK estimators
-#define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
+#define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta (@250k)
+#define FSK_EST_SLOW         64         // Constant for slowness of FSK estimators (@250k)
+#define FSK_EST_FAST         16         // Constant for slowness of FSK estimators (@250k)
 
 /// Internal state data for pulse_FSK_detect()
 typedef struct {
@@ -211,16 +211,20 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 {
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate
     int const fm_f2_delta = abs(fm_n - s->fm_f2_est); // Get delta from F2 frequency estimate
+    unsigned int const pd_min_pulse_samples_scaled = PD_MIN_PULSE_SAMPLES * (fsk_pulses->sample_rate/1000) / 250;
+    int const fsk_default_fm_delta_scaled = FSK_DEFAULT_FM_DELTA * 250 / (fsk_pulses->sample_rate/1000);
+    int const fsk_est_fast_scaled = FSK_EST_FAST * (fsk_pulses->sample_rate/1000) / 250;
+    int const fsk_est_slow_scaled = FSK_EST_SLOW * (fsk_pulses->sample_rate/1000) / 250; 
     s->fsk_pulse_length++;
 
     switch(s->fsk_state) {
         case PD_FSK_STATE_INIT:        // Initial frequency - High or low?
             // Initial samples?
-            if (s->fsk_pulse_length < PD_MIN_PULSE_SAMPLES) {
+            if (s->fsk_pulse_length < pd_min_pulse_samples_scaled) {
                 s->fm_f1_est = s->fm_f1_est/2 + fm_n/2;        // Quick initial estimator
             }
             // Above default frequency delta?
-            else if (fm_f1_delta > (FSK_DEFAULT_FM_DELTA/2)) {
+            else if (fm_f1_delta > (fsk_default_fm_delta_scaled/2)) {
                 // Positive frequency delta - Initial frequency was low (gap)
                 if (fm_n > s->fm_f1_est) {
                     s->fsk_state = PD_FSK_STATE_F1;
@@ -241,7 +245,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             }
             // Still below threshold
             else {
-                s->fm_f1_est += fm_n/FSK_EST_FAST - s->fm_f1_est/FSK_EST_FAST;    // Fast estimator
+                s->fm_f1_est += fm_n/fsk_est_fast_scaled - s->fm_f1_est/fsk_est_fast_scaled;    // Fast estimator
             }
             break;
         case PD_FSK_STATE_F1:        // Pulse high at F1 frequency
@@ -249,7 +253,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             if (fm_f1_delta > fm_f2_delta) {
                 s->fsk_state = PD_FSK_STATE_F2;
                 // Store if pulse is not too short (suppress spurious)
-                if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
+                if (s->fsk_pulse_length >= pd_min_pulse_samples_scaled) {
                     fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;    // Store pulse width
                     s->fsk_pulse_length = 0;
                 }
@@ -267,9 +271,9 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             // Still below threshold
             else {
                 if (fm_n > s->fm_f1_est)
-                    s->fm_f1_est += fm_n/FSK_EST_FAST - s->fm_f1_est/FSK_EST_FAST;    // Fast estimator
+                    s->fm_f1_est += fm_n/fsk_est_fast_scaled - s->fm_f1_est/fsk_est_fast_scaled;    // Fast estimator
                 else
-                    s->fm_f1_est += fm_n/FSK_EST_SLOW - s->fm_f1_est/FSK_EST_SLOW;    // Slow estimator
+                    s->fm_f1_est += fm_n/fsk_est_slow_scaled - s->fm_f1_est/fsk_est_slow_scaled;    // Slow estimator
             }
             break;
         case PD_FSK_STATE_F2:        // Pulse gap at F2 frequency
@@ -277,7 +281,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             if (fm_f2_delta > fm_f1_delta) {
                 s->fsk_state = PD_FSK_STATE_F1;
                 // Store if pulse is not too short (suppress spurious)
-                if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
+                if (s->fsk_pulse_length >= pd_min_pulse_samples_scaled) {
                     fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;    // Store gap width
                     fsk_pulses->num_pulses++;    // Go to next pulse
                     s->fsk_pulse_length = 0;
@@ -299,9 +303,9 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             // Still below threshold
             else {
                 if (fm_n < s->fm_f2_est)
-                    s->fm_f2_est += fm_n/FSK_EST_FAST - s->fm_f2_est/FSK_EST_FAST;    // Fast estimator
+                    s->fm_f2_est += fm_n/fsk_est_fast_scaled - s->fm_f2_est/fsk_est_fast_scaled;    // Fast estimator
                 else
-                    s->fm_f2_est += fm_n/FSK_EST_SLOW - s->fm_f2_est/FSK_EST_SLOW;    // Slow estimator
+                    s->fm_f2_est += fm_n/fsk_est_slow_scaled - s->fm_f2_est/fsk_est_slow_scaled;    // Slow estimator
             }
             break;
         case PD_FSK_STATE_ERROR:        // Stay here until cleared
@@ -366,6 +370,7 @@ void pulse_detect_free(pulse_detect_t *pulse_detect)
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses)
 {
     int const samples_per_ms = samp_rate / 1000;
+    int const pd_min_pulse_samples_scaled = PD_MIN_PULSE_SAMPLES * samp_rate / 250000;
     pulse_detect_t *s = pulse_detect;
     s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);    // Be sure to set initial minimum level
 
@@ -420,7 +425,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 // End of pulse detected?
                 if (am_n < (ook_threshold - ook_hysteresis)) {    // Gap?
                     // Check for spurious short pulses
-                    if (s->pulse_length < PD_MIN_PULSE_SAMPLES) {
+                    if (s->pulse_length < pd_min_pulse_samples_scaled) {
                         s->ook_state = PD_OOK_STATE_IDLE;
                     }
                     else {
@@ -453,7 +458,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 // Or this gap is for real?
-                else if (s->pulse_length >= PD_MIN_PULSE_SAMPLES) {
+                else if (s->pulse_length >= pd_min_pulse_samples_scaled) {
                     s->ook_state = PD_OOK_STATE_GAP;
                     // Determine if FSK modulation is detected
                     if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
