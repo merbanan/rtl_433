@@ -510,60 +510,56 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     uint8_t *b = bitbuffer->bb[0];
     data_t *data;
 
-    // Check stream for possible Oregon Scientific v3 protocol data (skip part of first and last bytes to get past sync/startup bit errors)
+    // Check stream for possible Oregon Scientific v3 protocol preamble
     if ((((b[0]&0xf) != 0x0f) || (b[1] != 0xff) || ((b[2]&0xc0) != 0xc0))
             && (((b[0]&0xf) != 0x00) || (b[1] != 0x00) || ((b[2]&0xc0) != 0x00))) {
         if (b[3] != 0) {
             if (decoder->verbose)
                 bitrow_printf(b, bitbuffer->bits_per_row[0], "Unrecognized Msg in OS v3: ");
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     unsigned char msg[BITBUF_COLS] = {0};
+    int msg_pos = 0;
     int msg_len = 0;
-    unsigned int sync_test_val     = ((unsigned)b[2] << 24) | (b[3] << 16) | (b[4] << 8);
 
-    // WGR800X has {335} 00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c
+    // e.g. WGR800X has {335} 00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c
     // aligned (at 11) and reflected that's 3 packets:
     // {324} 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70   00 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70   00 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70
-    uint8_t const wgr800x_pattern[] = {0x00, 0x05};
-    int wgr800x_pos = bitbuffer_search(bitbuffer, 0, 0, wgr800x_pattern, 16) + 16;
-    if (bitbuffer->bits_per_row[0] - wgr800x_pos >= 11 * 8) {
-        msg_len = bitbuffer->bits_per_row[0] - wgr800x_pos;
-        bitbuffer_extract_bytes(bitbuffer, 0, wgr800x_pos, msg, msg_len);
-        reflect_nibbles(msg, (msg_len + 7) / 8);
-    } else
 
-    // FIXME: this really isn't great and needs a rework
-    // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction
-    for (int pattern_index = 0; pattern_index < 16; pattern_index++) {
-        unsigned int mask     = (unsigned int)(0xfff00000 >> pattern_index);
-        unsigned int pattern  = (unsigned int)(0xffa00000 >> pattern_index);
-        unsigned int pattern2 = (unsigned int)(0xff500000 >> pattern_index);
-        unsigned int pattern3 = (unsigned int)(0x00500000 >> pattern_index);
-        unsigned int pattern4 = (unsigned int)(0x04600000 >> pattern_index);
-        //fprintf(stderr, "OS v3 Sync nibble search - test_val=%08x pattern=%08x    mask=%08x\n", sync_test_val, pattern, mask);
-        if (((sync_test_val & mask) != pattern)
-                && ((sync_test_val & mask) != pattern2)
-                && ((sync_test_val & mask) != pattern3)
-                && ((sync_test_val & mask) != pattern4))
-            continue;
+    // full preamble is 00 00 00 5 (shorter for WGR800X)
+    uint8_t const os_pattern[] = {0x00, 0x05};
+    // CM180 preamble is 00 00 00 46, with 0x46 already data
+    uint8_t const cm180_pattern[] = {0x00, 0x46};
+    // workaround for a broken manchester demod
+    // CM160 preamble might look like 7f ff ff aa, i.e. ff ff f5
+    uint8_t const alt_pattern[] = {0xff, 0xf5};
 
-        // Found sync byte - start working on decoding the stream data.
-        // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload
-        int start_byte = 3 + (pattern_index >> 3);
-        int start_bit  = (pattern_index + 4) & 0x07; // this really looks broken
+    int os_pos    = bitbuffer_search(bitbuffer, 0, 0, os_pattern, 16) + 16;
+    int cm180_pos = bitbuffer_search(bitbuffer, 0, 0, cm180_pattern, 16) + 8; // keep the 0x46
+    int alt_pos   = bitbuffer_search(bitbuffer, 0, 0, alt_pattern, 16) + 16;
 
-        int msg_pos = start_byte * 8 + start_bit; // this should be pattern_index + 28; or 20, maybe.
-        msg_len = bitbuffer->bits_per_row[0] - msg_pos;
-        //fprintf(stderr, "Oregon Scientific v3 Sync test val %08x ok, starting decode at bit %d\n", sync_test_val, msg_pos);
-
-        bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
-        reflect_nibbles(msg, (msg_len + 7) / 8);
-
-        break;
+    if (bitbuffer->bits_per_row[0] - os_pos >= 7 * 8) {
+        msg_pos = os_pos;
+        msg_len = bitbuffer->bits_per_row[0] - os_pos;
     }
+
+    else if (bitbuffer->bits_per_row[0] - cm180_pos >= 11 * 8) {
+        msg_pos = cm180_pos;
+        msg_len = bitbuffer->bits_per_row[0] - cm180_pos;
+    }
+
+    else if (bitbuffer->bits_per_row[0] - alt_pos >= 7 * 8) {
+        msg_pos = alt_pos;
+        msg_len = bitbuffer->bits_per_row[0] - alt_pos;
+    }
+
+    if (msg_len == 0)
+        return DECODE_ABORT_EARLY;
+
+    bitbuffer_extract_bytes(bitbuffer, 0, msg_pos, msg, msg_len);
+    reflect_nibbles(msg, (msg_len + 7) / 8);
 
     int sensor_id = (msg[0] << 8) | msg[1];
     if (sensor_id == ID_THGR810) {
@@ -712,7 +708,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
             return 1;
         }
     }
-    else if ((msg[0] != 0) && (msg[1]!= 0)) { // sync nibble was found    and some data is present...
+    else if ((msg[0] != 0) && (msg[1] != 0)) { // sync nibble was found and some data is present...
         if (decoder->verbose) {
             fprintf(stderr, "Message received from unrecognized Oregon Scientific v3 sensor.\n");
             bitrow_printf(msg, msg_len, "Message: ");
@@ -731,7 +727,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
 static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = oregon_scientific_v2_1_decode(decoder, bitbuffer);
-    if (ret == 0)
+    if (ret <= 0)
         ret = oregon_scientific_v3_decode(decoder, bitbuffer);
     return ret;
 }
