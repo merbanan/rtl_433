@@ -523,6 +523,19 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     unsigned char msg[BITBUF_COLS] = {0};
     int msg_len = 0;
     unsigned int sync_test_val     = ((unsigned)b[2] << 24) | (b[3] << 16) | (b[4] << 8);
+
+    // WGR800X has {335} 00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c   00 00 00 b1 22 40 0e 00 06 00 00 00 19 7c
+    // aligned (at 11) and reflected that's 3 packets:
+    // {324} 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70   00 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70   00 00 0a 19 84 00 e0 00 c0 00 00 00 3d 70
+    uint8_t const wgr800x_pattern[] = {0x00, 0x05};
+    int wgr800x_pos = bitbuffer_search(bitbuffer, 0, 0, wgr800x_pattern, 16) + 16;
+    if (bitbuffer->bits_per_row[0] - wgr800x_pos >= 11 * 8) {
+        msg_len = bitbuffer->bits_per_row[0] - wgr800x_pos;
+        bitbuffer_extract_bytes(bitbuffer, 0, wgr800x_pos, msg, msg_len);
+        reflect_nibbles(msg, (msg_len + 7) / 8);
+    } else
+
+    // FIXME: this really isn't great and needs a rework
     // Could be extra/dropped bits in stream.    Look for sync byte at expected position +/- some bits in either direction
     for (int pattern_index = 0; pattern_index < 16; pattern_index++) {
         unsigned int mask     = (unsigned int)(0xfff00000 >> pattern_index);
