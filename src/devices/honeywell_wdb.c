@@ -76,7 +76,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2]&0xF);
     tmp = (bytes[3]&0x30) >> 4;
     switch (tmp) {
-        case 0x1: class = "PIR Motion sensor"; break;
+        case 0x1: class = "PIR-Motion"; break;
         case 0x2: class = "Doorbell"; break;
         default:  class = "Unknown"; break;
     }
@@ -95,12 +95,12 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Honeywell-ActivLink","Honeywell Wireless Doorbell"),
+            _X("subtype","class"),         "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
             "id",            "Id",          DATA_FORMAT, "%x",   DATA_INT,    device,
-            "class",         "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
+            "battery",       "Battery",     DATA_STRING, battery ? "LOW" : "OK",
             "alert",         "Alert",       DATA_FORMAT, "%s",   DATA_STRING, alert,
             "secret_knock",  "Secret Knock",DATA_FORMAT, "%d",   DATA_INT,    secret_knock,
             "relay",         "Relay",       DATA_FORMAT, "%d",   DATA_INT,    relay,
-            "battery",       "Battery",     DATA_STRING, battery ? "LOW" : "OK",
             "mic",           "Integrity",   DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
@@ -111,12 +111,13 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
         "model",
+        "subtype",
+        "class", // TODO: remove this
         "id",
-        "class",
+        "battery",
         "alert",
         "secret_knock",
         "relay",
-        "battery",
         "mic",
         NULL,
 };

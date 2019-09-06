@@ -92,9 +92,9 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
             "id",               "ID Code",      DATA_INT,    sensor_id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "button",           "Button ",      DATA_INT,    button_pressed,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
+            "button",           "Button ",      DATA_INT,    button_pressed,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -117,9 +117,9 @@ static char *output_fields[] = {
         "id",
         "channel",
         "battery",
-        "button",
         "temperature_C",
         "humidity",
+        "button",
         "mic",
         NULL,
 };

@@ -82,8 +82,8 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _X("id","rid"),            "",            DATA_INT, id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-            "button",        "Button",      DATA_INT, button,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
+            "button",        "Button",      DATA_INT, button,
             NULL);
 
     if (humidity != 0xcc) // 0xcc is "invalid"
@@ -103,9 +103,9 @@ static char *output_fields[] = {
         "rid", // TODO: delete this
         "channel",
         "battery",
-        "button",
         "temperature_C",
         "humidity",
+        "button",
         NULL};
 
 r_device prologue = {

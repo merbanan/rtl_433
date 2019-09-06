@@ -185,9 +185,9 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, _X("Acurite-609TXC","Acurite 609TXC Sensor"),
                 "id",               "",             DATA_INT,    id,
                 "battery",          "",             DATA_STRING, battery_low ? "LOW" : "OK",
-                "status",           "",             DATA_INT,    status,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_INT,    humidity,
+                "status",           "",             DATA_INT,    status,
                 NULL);
         /* clang-format on */
 
@@ -386,6 +386,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
             "model",            "",                 DATA_STRING, _X("Acurite-6045M","Acurite Lightning 6045M"),
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
+            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
             "humidity",         "humidity",         DATA_INT,    humidity,
             "strike_count",     "strike_count",     DATA_INT,    strike_count,
@@ -393,7 +394,6 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
             "active",           "active_mode",      DATA_INT,    active,    // @todo convert to bool
             "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,     // @todo convert to bool
             "ussb1",            "unk_status1",      DATA_INT,    ussb1,    // @todo convert to bool
-            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
             NULL);
@@ -507,11 +507,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",                "",             DATA_STRING, _X("Acurite-Tower","Acurite tower sensor"),
                     "id",                   "",             DATA_INT,    sensor_id,
-                    "sensor_id",            NULL,           DATA_FORMAT, "0x%04x",   DATA_INT, sensor_id, // TODO: hex output not working, delete at 1.0 release
                     "channel",              NULL,           DATA_STRING, &channel_str,
+                    _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_INT,    humidity,
-                    _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
                     NULL);
             /* clang-format on */
 
@@ -562,11 +561,11 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
+                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL, DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
                         _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
@@ -588,11 +587,11 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
+                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL, DATA_INT,  sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
@@ -616,11 +615,11 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-3n1","Acurite 3n1 sensor"),
+                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
@@ -782,8 +781,8 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, _X("Acurite-986","Acurite 986 Sensor"),
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
-                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
                 NULL);
         /* clang-format on */
@@ -908,7 +907,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             /* clang-format off */
             data = data_make(
                     "model",           "",             DATA_STRING,    model ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
-                    "probe",           "",             DATA_INT,       probe,
+                    _X("subtype","probe"), "Probe",    DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
                     "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
@@ -989,9 +988,9 @@ static char *acurite_th_output_fields[] = {
     "model",
     "id",
     "battery",
-    "status",
     "temperature_C",
     "humidity",
+    "status",
     NULL,
 };
 
@@ -1013,16 +1012,18 @@ r_device acurite_th = {
  */
 static char *acurite_txr_output_fields[] = {
     "model",
+    "subtype",
+    "message_type", // TODO: remove this
     "id",
-    "sensor_id",
+    "sensor_id", // TODO: remove this
     "channel",
-    "temperature_C",
-    "humidity",
+    "sequence_num",
     "battery_low", // TODO: remove this
     "battery_ok",
-    "sequence_num",
     "battery",
-    "message_type",
+    "temperature_C",
+    "temperature_F",
+    "humidity",
     "wind_speed_mph", // TODO: remove this
     "wind_speed_kph", // TODO: remove this
     "wind_avg_mi_h",
@@ -1031,7 +1032,6 @@ static char *acurite_txr_output_fields[] = {
     "rain_inch", // TODO: remove this
     "rain_in",
     "rain_mm",
-    "temperature_F",
     NULL,
 };
 
@@ -1062,8 +1062,8 @@ static char *acurite_986_output_fields[] = {
     "model",
     "id",
     "channel",
-    "temperature_F",
     "battery",
+    "temperature_F",
     "status",
     NULL,
 };
@@ -1116,7 +1116,8 @@ r_device acurite_606 = {
 
 static char *acurite_00275rm_output_fields[] = {
     "model",
-    "probe",
+    "subtype",
+    "probe", // TODO: remove this
     "id",
     "battery",
     "temperature_C",

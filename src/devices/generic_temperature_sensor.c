@@ -43,22 +43,24 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
     battery = (b[1] & 0xF0) >> 4;
     temp_f  = (float)((signed short)(((b[1] & 0x3f) * 256 + b[2]) << 2)) / 160.0;
 
+    /* clang-format off */
     data = data_make(
             "model",        "",             DATA_STRING,    _X("Generic-Temperature","Generic temperature sensor 1"),
             "id",           "Id",           DATA_INT,   device,
-            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.02f C",  DATA_DOUBLE,    temp_f,
             "battery",          "Battery?",     DATA_INT,                   battery,
+            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.02f C",  DATA_DOUBLE,    temp_f,
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
     "model",
     "id",
-    "temperature_C",
     "battery",
+    "temperature_C",
     NULL
 };
 

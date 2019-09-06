@@ -226,38 +226,43 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // PRESENTING DATA
     if (msg_type == 0) {
+        /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                "msg_type",         "Msg type",         DATA_INT,       msg_type,
+                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
+                "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
                 "direction_deg",    "Wind degrees",     DATA_INT,       direction_deg,
                 _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
                 _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
                 _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
-                "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
+        /* clang-format on */
     }
     else if (msg_type == 1) {
         char clock_str[23];
         sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 
+        /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                "msg_type",         "Msg type",         DATA_INT,       msg_type,
+                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
+        /* clang-format on */
     }
     else {
+        /* clang-format off */
         data = data_make(
                 "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH3080 Weather Station"),
-                "msg_type",         "Msg type",         DATA_INT,       msg_type,
+                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
                 "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
                 "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",
                 "uv_index",         "UV Index",         DATA_INT,       uv_index,
@@ -265,42 +270,44 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "wm",               "Watts/m",          DATA_FORMAT,    "%.2f",     DATA_DOUBLE,    wm,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
+        /* clang-format on */
     }
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "humidity",
-    "direction_deg",
-    "speed", // TODO: remove this
-    "gust", // TODO: remove this
-    "wind_avg_km_h",
-    "wind_max_km_h",
-    "rain", // TODO: remove this
-    "rain_mm",
-    "msg_type",
-    "signal",
-    "radio_clock",
-    "battery",
-    "sensor_code",
-    "uv_status",
-    "uv_index",
-    "lux",
-    "wm",
-    NULL
+        "model",
+        "subtype",
+        "id",
+        "battery",
+        "temperature_C",
+        "humidity",
+        "direction_deg",
+        "speed", // TODO: remove this
+        "gust",  // TODO: remove this
+        "wind_avg_km_h",
+        "wind_max_km_h",
+        "rain", // TODO: remove this
+        "rain_mm",
+        "msg_type", // TODO: remove this
+        "signal",
+        "radio_clock",
+        "sensor_code",
+        "uv_status",
+        "uv_index",
+        "lux",
+        "wm",
+        NULL,
 };
 
 r_device fineoffset_wh1080 = {
-    .name           = "Fine Offset Electronics WH1080/WH3080 Weather Station",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 544,     // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
-    .long_width     = 1524,    // Maximum pulse period (long pulse + fixed gap)
-    .reset_limit    = 2800,    // We just want 1 package
-    .decode_fn      = &fineoffset_wh1080_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Fine Offset Electronics WH1080/WH3080 Weather Station",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 544,  // Short pulse 544µs, long pulse 1524µs, fixed gap 1036µs
+        .long_width  = 1524, // Maximum pulse period (long pulse + fixed gap)
+        .reset_limit = 2800, // We just want 1 package
+        .decode_fn   = &fineoffset_wh1080_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

@@ -87,9 +87,9 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",    "",                 DATA_STRING, _X("Efergy-e2CT","Efergy e2 CT"),
             "id",       "Transmitter ID",   DATA_INT,    address,
+            "battery",  "Battery",          DATA_STRING, battery ? "OK" : "LOW",
             "current",  "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
             "interval", "Interval",         DATA_FORMAT, "%ds", DATA_INT, interval,
-            "battery",  "Battery",          DATA_STRING, battery ? "OK" : "LOW",
             "learn",    "Learning",         DATA_STRING, learn ? "YES" : "NO",
             "mic",      "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
@@ -102,9 +102,9 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "battery",
         "current",
         "interval",
-        "battery",
         "learn",
         NULL,
 };

@@ -194,22 +194,22 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
 
-
+    /* clang-format off */
     data = data_make(
             "model",       "Model",         DATA_STRING, _X("Interlogix-Security","Interlogix"),
             _X("subtype","device_type"),     "Device Type",   DATA_STRING, device_type,
             "id",          "ID",            DATA_STRING, device_serial,
-            "raw_message", "Raw Message",   DATA_STRING, raw_message,
             "battery",     "Battery",       DATA_STRING, low_battery,
             "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
             "switch2",     "Switch2 State", DATA_STRING, f2_latch_state,
             "switch3",     "Switch3 State", DATA_STRING, f3_latch_state,
             "switch4",     "Switch4 State", DATA_STRING, f4_latch_state,
             "switch5",     "Switch5 State", DATA_STRING, f5_latch_state,
+            "raw_message", "Raw Message",   DATA_STRING, raw_message,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
@@ -225,7 +225,7 @@ static char *output_fields[] = {
     "switch3",
     "switch4",
     "switch5",
-    NULL
+    NULL,
 };
 
 r_device interlogix = {
