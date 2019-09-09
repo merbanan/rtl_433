@@ -1,0 +1,57 @@
+From e6f124779d1c1edd050a6fc42389fcfdbd03915a Mon Sep 17 00:00:00 2001
+From: Gisle Vanem <gvanem@yahoo.no>
+Date: Mon, 9 Sep 2019 10:27:08 +0200
+Subject: [PATCH] Fixes in Mongoose for MSVC debug-mode (-MDd) (#1146)
+
+In debug-mode (_DEBUG is defined), 'strdup()' is already defined to '_strdmp_dbg()'.
+And 'free()' is defined to '_free_dbg()'.
+---
+ include/mongoose.h | 4 ++--
+ src/mongoose.c     | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/mongoose.h b/include/mongoose.h
+index 57c12af..f2b8891 100644
+--- a/include/mongoose.h
++++ b/include/mongoose.h
+@@ -227,7 +227,7 @@ typedef int bool;
+ #include <stdbool.h>
+ #endif
+ 
+-#if defined(_MSC_VER) && _MSC_VER >= 1800
++#if defined(_MSC_VER) && (_MSC_VER >= 1800) && !defined(_DEBUG)
+ #define strdup _strdup
+ #endif
+ 
+@@ -3634,7 +3634,7 @@ struct mg_iface {
+ 
+ struct mg_iface_vtable {
+   void (*init)(struct mg_iface *iface);
+-  void (*free)(struct mg_iface *iface);
++  void (*_free)(struct mg_iface *iface);
+   void (*add_conn)(struct mg_connection *nc);
+   void (*remove_conn)(struct mg_connection *nc);
+   time_t (*poll)(struct mg_iface *iface, int timeout_ms);
+diff --git a/src/mongoose.c b/src/mongoose.c
+index 593f8c6..c68a627 100644
+--- a/src/mongoose.c
++++ b/src/mongoose.c
+@@ -2577,7 +2577,7 @@ void mg_mgr_free(struct mg_mgr *m) {
+   {
+     int i;
+     for (i = 0; i < m->num_ifaces; i++) {
+-      m->ifaces[i]->vtable->free(m->ifaces[i]);
++      m->ifaces[i]->vtable->_free(m->ifaces[i]);
+       MG_FREE(m->ifaces[i]);
+     }
+     MG_FREE(m->ifaces);
+@@ -4494,7 +4494,7 @@ static int mg_socks_if_create_conn(struct mg_connection *c) {
+ }
+ 
+ static void mg_socks_if_destroy_conn(struct mg_connection *c) {
+-  c->iface->vtable->free(c->iface);
++  c->iface->vtable->_free(c->iface);
+   MG_FREE(c->iface);
+   c->iface = NULL;
+   LOG(LL_DEBUG, ("%p", c));
+
