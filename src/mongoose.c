@@ -2577,7 +2577,7 @@ void mg_mgr_free(struct mg_mgr *m) {
   {
     int i;
     for (i = 0; i < m->num_ifaces; i++) {
-      m->ifaces[i]->vtable->free(m->ifaces[i]);
+      m->ifaces[i]->vtable->_free(m->ifaces[i]);
       MG_FREE(m->ifaces[i]);
     }
     MG_FREE(m->ifaces);
@@ -4494,7 +4494,7 @@ static int mg_socks_if_create_conn(struct mg_connection *c) {
 }
 
 static void mg_socks_if_destroy_conn(struct mg_connection *c) {
-  c->iface->vtable->free(c->iface);
+  c->iface->vtable->_free(c->iface);
   MG_FREE(c->iface);
   c->iface = NULL;
   LOG(LL_DEBUG, ("%p", c));
