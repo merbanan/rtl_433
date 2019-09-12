@@ -25,13 +25,11 @@ static int rm433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        // addresse 
+        // addresse = 2 first bytes encoded to int
         addr = (bitbuffer->bb[i][0] << 8) | bitbuffer->bb[i][1];
 
-        // key code should start w/ a "f" for example 0xf3
-        if (bitbuffer->bb[i][2] >>4 != 0x0f)
-            continue;
-
+        // btn is the lower part of the byte, so mask it w/ a 0xf
+        // usually this is byte start w/ a 0 or a F
         tmp = bitbuffer->bb[i][2] & 0x0f;
         switch (tmp) {
             case 7:  key=1; break;
