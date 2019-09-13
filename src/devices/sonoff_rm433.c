@@ -47,7 +47,8 @@ static int rm433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
 
         data = data_make(
-                "model",    "",                 DATA_STRING, _X("Sonoff RM433","Sonoff RM433 Remote control"),
+                "brand",    "",                 DATA_STRING, "SONOFF",
+                "model",    "",                 DATA_STRING, _X("RM433","RM433"),
                 "id",       "id",               DATA_FORMAT, "0x%04X", DATA_INT, addr,
                 "button",   "button",           DATA_FORMAT, "0x%02X", DATA_INT, key,
                 NULL);
@@ -58,6 +59,7 @@ static int rm433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
+    "brand",
     "model",
     "id",
     "button",
