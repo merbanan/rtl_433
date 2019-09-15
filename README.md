@@ -211,6 +211,7 @@ Read the Test Data section at the bottom.
     [134]  Holman Industries WS5029 weather station
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
+    [137]  Globaltronics QUIGG GT-TMBBQ-05
 
 * Disabled by default, use -R n or -G
 

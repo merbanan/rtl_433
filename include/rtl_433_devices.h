@@ -144,6 +144,7 @@
     DECL(holman_ws5029) \
     DECL(philips_aj7010) \
     DECL(esic_emt7110) \
+    DECL(gt_tmbbq05) \
 
     /* Add new decoders here. */
 
