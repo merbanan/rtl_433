@@ -109,6 +109,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/prologue.c \
                        devices/proove.c \
                        devices/quhwa.c \
+                       devices/quigg_bbq.c \
                        devices/radiohead_ask.c \
                        devices/rftech.c \
                        devices/rubicson.c \

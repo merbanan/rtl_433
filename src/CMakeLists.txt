@@ -108,6 +108,7 @@ add_executable(rtl_433
     devices/prologue.c
     devices/proove.c
     devices/quhwa.c
+    devices/quigg_bbq.c
     devices/radiohead_ask.c
     devices/rftech.c
     devices/rubicson.c
