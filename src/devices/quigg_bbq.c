@@ -1,4 +1,12 @@
-/* Quigg BBQ GT-TMBBQ-05
+/* 
+Copyright (C) 2019 Olaf Glage
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+Quigg BBQ GT-TMBBQ-05
 
 BBQ thermometer sold at Aldi (germany)
 Simple device, no possibility to select channel. Single temperature measurement.
