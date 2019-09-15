@@ -634,7 +634,7 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Alecto-WS1200v2 DCF",
+            "model",            "",             DATA_STRING, "Alecto-WS1200v2",
             "id",               "ID",           DATA_INT, id,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,

@@ -19,7 +19,7 @@
 
 #include "decoder.h"
 
-static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t const *bitbuffer, int row)
+static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 {
     uint8_t const *b = bitbuffer->bb[row];
     int const length = bitbuffer->bits_per_row[row];

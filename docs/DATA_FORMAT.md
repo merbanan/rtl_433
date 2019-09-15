@@ -12,6 +12,9 @@ particular device model.
   * Time stamp. String containing date and time of when the message was received. Format is dependent on
     current locale unless the `-M utc` command line argument is used.
 
+* **type** (string) (Optional)
+  * Classification of the general device type. Currently only used for `"TPMS"`.
+
 * **model** (string) (Required)
   * Device model. Human readable string concisely describing the device by manufacturer name
     and manufacturers model designation according to the following syntax: `"<Manufacturer>-<Model>"`.
@@ -22,9 +25,6 @@ particular device model.
     be inferred from the data content.
   * Avoid the special characters: `"/&$*#+[]()"`.
   * Length of *model* string should be less than 32 characters.
-
-* **type** (string) (Optional)
-  * Classification of the general device type. Currently only used for `"TPMS"`.
 
 * **subtype** (string) (Optional)
   * Device type or function in a common protocol. Examples are various sensors, triggers, keyfob in wireless security.
@@ -51,7 +51,7 @@ particular device model.
     * "PARITY" - Parity bit (odd, even, multiple)
 
 ## Common Device Data
-Various data fields, which are common across devices of different types
+Various data fields, which are common across devices of different types.
 
 * **battery_ok** (double) (Optional)
   * Battery status indication as a level between 0 (empty) and 1 (full). If the sensor can only report a binary status the value shall be 1 for "OK" and 0 for "LOW".
