@@ -182,6 +182,7 @@
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c" />
     <ClCompile Include="..\src\devices\gt_tmbbq05.c" />
     <ClCompile Include="..\src\devices\gt_wt_02.c" />
+    <ClCompile Include="..\src\devices\gt_wt_03.c" />
     <ClCompile Include="..\src\devices\hcs200.c" />
     <ClCompile Include="..\src\devices\hideki.c" />
     <ClCompile Include="..\src\devices\holman_ws5029.c" />
