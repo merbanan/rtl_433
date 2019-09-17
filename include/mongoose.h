@@ -227,7 +227,7 @@ typedef int bool;
 #include <stdbool.h>
 #endif
 
-#if defined(_MSC_VER) && _MSC_VER >= 1800
+#if defined(_MSC_VER) && (_MSC_VER >= 1800) && !defined(_DEBUG)
 #define strdup _strdup
 #endif
 
@@ -3634,7 +3634,7 @@ struct mg_iface {
 
 struct mg_iface_vtable {
   void (*init)(struct mg_iface *iface);
-  void (*free)(struct mg_iface *iface);
+  void (*_free)(struct mg_iface *iface);
   void (*add_conn)(struct mg_connection *nc);
   void (*remove_conn)(struct mg_connection *nc);
   time_t (*poll)(struct mg_iface *iface, int timeout_ms);

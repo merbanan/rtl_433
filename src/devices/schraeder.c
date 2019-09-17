@@ -124,7 +124,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
     sprintf(flags_str, "%08x", flags);
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Schrader Electronics EG53MA4",
+            "model",            "",             DATA_STRING, "Schrader-EG53MA4",
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,

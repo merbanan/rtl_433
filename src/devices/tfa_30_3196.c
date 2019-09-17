@@ -93,9 +93,9 @@ static int tfa_303196_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "TFA-303196",
             "id",               "",             DATA_INT,    chk,
             "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "mic",              "Integrity",    DATA_STRING, "missing",
             NULL);
     /* clang-format on */
@@ -108,9 +108,9 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "battery_ok",
         "mic",
         NULL,
 };

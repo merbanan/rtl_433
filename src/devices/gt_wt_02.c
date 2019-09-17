@@ -73,13 +73,13 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
         return 0; // DECODE_FAIL_MIC
 
     // humidity: see above the note about working range
-    int humidity = (b[3]>>1);  // extract bits for humidity
+    int humidity = (b[3] >> 1); // extract bits for humidity
     if (humidity <= 10) // actually the sensors sends 10 below working range of 20%
         humidity = 0;
     else if (humidity > 90) // actually the sensors sends 110 above working range of 90%
         humidity = 100;
 
-    int sensor_id      =  b[0];           // 8 bits
+    int sensor_id      = (b[0]);          // 8 bits
     int battery_low    = (b[1] >> 7 & 1); // 1 bits
     int button_pressed = (b[1] >> 6 & 1); // 1 bits
     int channel        = (b[1] >> 4 & 3); // 2 bits
@@ -92,9 +92,9 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
             "id",               "ID Code",      DATA_INT,    sensor_id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "button",           "Button ",      DATA_INT,    button_pressed,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
+            "button",           "Button ",      DATA_INT,    button_pressed,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -103,11 +103,11 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     return 1;
 }
 
-static int gt_wt_02_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int gt_wt_02_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
     // iterate through all rows, return on first successful
-    for(int row=0; row<bitbuffer->num_rows && !counter; row++)
+    for (int row = 0; row < bitbuffer->num_rows && !counter; ++row)
         counter += gt_wt_02_process_row(decoder, bitbuffer, row);
     return counter;
 }
@@ -117,21 +117,21 @@ static char *output_fields[] = {
         "id",
         "channel",
         "battery",
-        "button",
         "temperature_C",
         "humidity",
+        "button",
         "mic",
         NULL,
 };
 
 r_device gt_wt_02 = {
-        .name        = "GT-WT-02 Sensor",
+        .name        = "Globaltronics GT-WT-02 Sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2500, // 3ms (old) / 2ms (new)
         .long_width  = 5000, // 6ms (old) / 4ms (new)
         .gap_limit   = 8000, // 10ms (old) / 9ms (new) sync gap
         .reset_limit = 12000,
-        .decode_fn   = &gt_wt_02_callback,
+        .decode_fn   = &gt_wt_02_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

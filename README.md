@@ -113,7 +113,7 @@ Read the Test Data section at the bottom.
     [22]* X10 RF
     [23]  DSC Security Contact
     [24]* Brennenstuhl RCS 2044
-    [25]  GT-WT-02 Sensor
+    [25]  Globaltronics GT-WT-02 Sensor
     [26]  Danfoss CFR Thermostat
     [29]  Chuango Security Technology
     [30]  Generic Remote SC226x EV1527
@@ -221,6 +221,8 @@ Read the Test Data section at the bottom.
     [134]  Holman Industries WS5029 weather station
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
+    [137]  Globaltronics QUIGG GT-TMBBQ-05
+    [138]  Globaltronics GT-WT-03 Sensor
 
 * Disabled by default, use -R n or -G
 

@@ -85,16 +85,18 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int button      = b[4] >> 7;
     int battery_low = (b[4] & 0x40) >> 6;
 
+    /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Conrad-S3318P","S3318P Temperature & Humidity Sensor"),
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "button",           "Button",       DATA_INT, button,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "button",           "Button",       DATA_INT, button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;

@@ -50,4 +50,8 @@ There are specialized chips like the [EV1527](https://www.sunrom.com/get/206000)
 
 868 is also interesting. Mostly FSK is used, where 433 mostly uses OOK (ASK).
 
+> I would like to send a doorbell button push to MQTT. rtl_433 doesn't decode it, but it's a simple button, so I only need a trigger event. With rtl_433 -a -R 0 I am able to catch the button with {25}... code. What is the correct way to send the raw data to MQTT?
+
+Use `-A` and note the `-X` line. Then use that to write a flex decoder. See e.g. [EV1527-PIR-Sgooway.conf](https://github.com/merbanan/rtl_433/blob/master/conf/EV1527-PIR-Sgooway.conf).
+
 Have fun.

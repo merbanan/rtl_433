@@ -56,8 +56,8 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             "model", "", DATA_STRING, "RF-tech",
             "id", "Id", DATA_INT, sensor_id,
             "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
-            "button", "Button", DATA_INT, button,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
+            "button", "Button", DATA_INT, button,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -69,9 +69,9 @@ static char *csv_output_fields[] = {
     "model",
     "id",
     "battery",
-    "button",
     "temperature_C",
-    NULL
+    "button",
+    NULL,
 };
 
 r_device rftech = {

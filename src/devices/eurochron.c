@@ -67,26 +67,27 @@ static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     button = (b[1] & 0x10) >> 4;
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "Eurochron-TH",
-            "id", "", DATA_INT, device,
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            "humidity","Humidity", DATA_INT, humidity,
-            "battery_ok", "Battery", DATA_INT, !battery_low,
-            "button", "Button", DATA_INT, button,
+            "model",            "",             DATA_STRING, "Eurochron-TH",
+            "id",               "",             DATA_INT,    device,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "humidity",         "Humidity",     DATA_INT,    humidity,
+            "button",           "Button",       DATA_INT,    button,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "battery_ok",
         "button",
         NULL,
 };

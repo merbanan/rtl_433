@@ -439,14 +439,14 @@ Use `-F mqtt` to add an output in MQTT format.
 Specify MQTT server with e.g. `-F mqtt://localhost:1883`.
 
 Add MQTT options with e.g. `-F "mqtt://host:1883,opt=arg"`.
-Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `<format>[=topic]`.
+Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `<format>[=<topic>]`.
 
 Supported MQTT formats: (default is all formats)
 - `events`: posts JSON event data
 - `states`: posts JSON state data
 - `devices`: posts device and sensor info in nested topics
 
-The topic string will expand keys like [/model], see below.
+The `<topic>` string will expand keys like `[/model]`, see below.
 E.g. `-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"`
 
 ### MQTT Format Strings
@@ -457,9 +457,10 @@ Use format strings of:
 - `[token:default]` expand to token or default
 - `[/token]` expand to token with leading slash or nothing
 - `[/token:default]` expand to token or default with leading slash
-- the channel-or-id (replaceid) would only be possible with an extra token for that.
 
-Tokens are `type`, `model`, `subtype`, `channel`, `id` for now.
+Tokens are `type`, `model`, `subtype`, `channel`, `id`, and `protocol` for now.
+
+Note that for `protocol` to be available you first need to add it to the meta-data with `-M protocol`.
 
 Examples:
 
@@ -470,9 +471,9 @@ Examples:
 - ...
 
 Defaults are a base topic of `rtl_433/<hostname>/` continued
-- for "devices" with `devices[/type][/model][/subtype][/channel][/id]`
-- for "events" with `events`
-- for "states" with `states`
+- for `devices` with `devices[/type][/model][/subtype][/channel][/id]`
+- for `events` with `events`
+- for `states` with `states`
 
 ### SYSLOG output
 

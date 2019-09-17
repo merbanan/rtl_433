@@ -172,37 +172,38 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         pressure = 200 + dec[10] * 100 + dec[9] * 10 + dec[8];
     }
 
+    /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, "ELV-WS2000",
-            "id",           "", DATA_INT, code,
-            "subtype",      "", DATA_STRING, subtype,
-            "temperature",  "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
-            "humidity",     "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
-            "pressure",     "", DATA_INT, pressure,
+            "model",            "", DATA_STRING, "ELV-WS2000",
+            "subtype",          "", DATA_STRING, subtype,
+            "id",               "", DATA_INT,    code,
+            "temperature_C",    "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
+            "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
+            "pressure_hPa",     "", DATA_FORMAT, "%d hPa", DATA_INT, pressure,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *elv_ws2000_output_fields[] = {
-    "model",
-    "id",
-    "subtype",
-    "temperature",
-    "humidity",
-    "pressure",
-    NULL,
+        "model",
+        "id",
+        "subtype",
+        "temperature_C",
+        "humidity",
+        "pressure_hPa",
+        NULL,
 };
 
 r_device elv_ws2000 = {
-    .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 366,  // 0 => 854us, 1 => 366us according to link in top
-    .long_width     = 854,  // no repetitions
-    .reset_limit    = 1000, // Longest pause is 854us according to link
-    .decode_fn      = &ws2000_callback,
-    .disabled       = 1,
-    .fields         = elv_ws2000_output_fields,
+        .name        = "ELV WS 2000",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 366,  // 0 => 854us, 1 => 366us according to link in top
+        .long_width  = 854,  // no repetitions
+        .reset_limit = 1000, // Longest pause is 854us according to link
+        .decode_fn   = &ws2000_callback,
+        .disabled    = 1,
+        .fields      = elv_ws2000_output_fields,
 };

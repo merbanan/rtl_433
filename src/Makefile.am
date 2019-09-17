@@ -68,7 +68,9 @@ rtl_433_SOURCES      = abuf.c \
                        devices/generic_motion.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
+                       devices/gt_tmbbq05.c \
                        devices/gt_wt_02.c \
+                       devices/gt_wt_03.c \
                        devices/hcs200.c \
                        devices/hideki.c \
                        devices/holman_ws5029.c \
