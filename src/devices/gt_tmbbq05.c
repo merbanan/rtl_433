@@ -16,9 +16,10 @@ Simple device, no possibility to select channel. Single temperature measurement.
 
 The temperature is transmitted in Fahrenheit with an addon of 90. Accuracy is 10 bit. No decimals.
 One data row contains 33 bits and is repeated 8 times. Each followed by a 0-row. So we have 16 rows in total.
-First 9 bits seem to be a static header, I assume for sync purposes (001001001).
+First bit seem to be a static 0. By ignoring this we get nice byte boundaries.
+Next 8 bits are static per device (even after battery change)
 Next 8 bits contain the lower 8 bits of the temperature.
-Next 8 bits are static. Purpose unknown. Maybe hard wired channel inside device?
+Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
 Next 6 bits vary, but purpose is unknown. I assume a kind of CRC as they are the same for same temperatures.
 
@@ -47,15 +48,19 @@ Here's the data I used to reverse engineer, more sampes in rtl_test
 001001001011001110111100100011011  13
 001001001010010010111100100011011  LO
 
+second device:
+011100110101001001011001100010001  73
+011100110101010111011001100011000  81
+
 Frame structure:
+    Byte:   H 1        2        3        4
+    Type:   0 SSSSSSSS tttttttt ssssssss TTcccccc
 
-    Byte:             1        2        3
-    Type:   001001001 tttttttt ssssssss TTcccccc
-
+- SS = static per device (even after battery change)
 - tt = temperature+90 F lower 8 bits
+- ss = static per device (even after battery change)
 - TT = temperature+90 F upper 2 bits
-- ss = unknown, static -> maybe channel?
-- cc = unknown, changes -> maybe CRC?
+- cc = unknown, changes for different content, same for same temperature on same device -> I guess CRC
 */
 
 #include "decoder.h"
@@ -76,16 +81,20 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0 || bitbuffer->bits_per_row[r] != 33)
         return DECODE_ABORT_LENGTH;
 
-    // remove the 9 leading bits and extract the 3 bytes carrying the data
-    uint8_t data_bytes[3];
-    bitbuffer_extract_bytes(bitbuffer, r, 9, data_bytes, 24);
+    // remove the first leading bit and extract the 4 bytes carrying the data
+    uint8_t data_bytes[4];
+    bitbuffer_extract_bytes(bitbuffer, r, 1, data_bytes, 32);
 
-    // concat the upper bits to the lower bits and substract the fixed offset 90
-    int tempf = ((data_bytes[2] >> 6) | data_bytes[0]) - 90;
+    // temperature: concat the upper bits to the lower bits and substract the fixed offset 90
+    int tempf = ((data_bytes[3] >> 6) | data_bytes[1]) - 90;
+
+    // device id: concat the two bytes
+    int device_id = (data_bytes[0]<<8) | data_bytes[2];
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "GT-TMBBQ05",
+            "id",               "ID Code",      DATA_INT,    device_id,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, (double)tempf,
             NULL);
     /* clang-format on */
@@ -96,6 +105,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+        "id",
         "temperature_F",
         NULL,
 };
@@ -105,8 +115,8 @@ r_device gt_tmbbq05 = {
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
-        .gap_limit   = 4100,
-        .reset_limit = 9000,
+        .gap_limit   = 4200,
+        .reset_limit = 9100,
         .decode_fn   = &gt_tmbbq05_decode,
         .disabled    = 0,
         .fields      = output_fields,
