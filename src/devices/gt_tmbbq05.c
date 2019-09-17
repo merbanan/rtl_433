@@ -89,7 +89,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int tempf = ((data_bytes[3] >> 6) | data_bytes[1]) - 90;
 
     // device id: concat the two bytes
-    int device_id = data_bytes[0]*256 + data_bytes[2];
+    int device_id = (data_bytes[0]<<8) | data_bytes[2];
 
     /* clang-format off */
     data = data_make(
@@ -115,8 +115,8 @@ r_device gt_tmbbq05 = {
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
-        .gap_limit   = 4024,
-        .reset_limit = 9020,
+        .gap_limit   = 4200,
+        .reset_limit = 9100,
         .decode_fn   = &gt_tmbbq05_decode,
         .disabled    = 0,
         .fields      = output_fields,
