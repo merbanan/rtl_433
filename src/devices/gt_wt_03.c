@@ -8,7 +8,7 @@
     the Free Software Foundation, either version 2 of the License, or
     (at your option) any later version.
 */
-/**
+/** @fn int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Globaltronics GT-WT-03 sensor on 433.92MHz.
 
 The 01-set sensor has 60 ms packet gap with 10 repeats.
@@ -31,21 +31,59 @@ Data layout:
    TYP IIIIIIII HHHHHHHH BMCCTTTT TTTTTTTT XXXXXXXX
 
 - I: Random Device Code: changes with battery reset
-- H: Humidity: 8 Bit 00-99, Display LL=10%, Display HH=110% (Range 20-90%)
+- H: Humidity: 8 Bit 00-99, Display LL=10%, Display HH=110% (Range 20-95%)
 - B: Battery: 0=OK 1=LOW
 - M: Manual Send Button Pressed: 0=not pressed, 1=pressed
 - C: Channel: 00=CH1, 01=CH2, 10=CH3
-- T: Temperature: 12 Bit 2's complement, scaled by 10
-- X: Checksum, unknown
+- T: Temperature: 12 Bit 2's complement, scaled by 10, range-50.0 C (-50.1 shown as Lo) to +70.0 C (+70.1 C is shown as Hi)
+- X: Checksum, xor shifting key per byte
 
 Humidity:
-- the working range is 20-90 %
+- the working range is 20-95 %
 - if "LL" in display view it sends 10 %
 - if "HH" in display view it sends 110%
+
+Checksum:
+Per byte xor the key for each 1-bit, shift per bit. Key list per bit, starting at MSB:
+- 0x00 [07]
+- 0x80 [06]
+- 0x40 [05]
+- 0x20 [04]
+- 0x10 [03]
+- 0x88 [02]
+- 0xc4 [01]
+- 0x62 [00]
+
+Battery voltages:
+- U=<2,65V +- ~5% Battery indicator
+- U=>2.10C +- 5% plausible readings
+- U=2,00V +- ~5% Temperature offset -5°C Humidity offset unknown
+- U=<1,95V +- ~5% does not initialize anymore
+- U=1,90V +- 5% temperature offset -15°C
+- U=1,80V +- 5% Display is showing refresh pattern
+- U=1.75V +- ~5% TX causes cut out
 
 */
 
 #include "decoder.h"
+
+static uint8_t chk_rollbyte(uint8_t const message[], unsigned bytes, uint16_t gen)
+{
+    uint8_t sum = 0;
+    for (unsigned k = 0; k < bytes; ++k) {
+        uint8_t data = message[k];
+        uint16_t key = gen;
+        for (int i = 7; i >= 0; --i) {
+            // XOR key into sum if data bit is set
+            if ((data >> i) & 1)
+                sum ^= key & 0xff;
+
+            // roll the key right
+            key = (key >> 1);
+        }
+    }
+    return sum;
+}
 
 static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -69,15 +107,19 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
         return DECODE_ABORT_EARLY;
 
-    // TODO: accept only correct checksum
-    //if (... != checksum)
-    //    return DECODE_FAIL_MIC;
+    // accept only correct checksum
+    int chk = chk_rollbyte(b, 4, 0x3100) ^ b[4] ^ 0x2d;
+    if (chk) {
+        if (decoder->verbose)
+            bitrow_printf(b, 5, "%s: Invalid checksum ", __func__);
+        return DECODE_FAIL_MIC;
+    }
 
     // humidity: see above the note about working range
     int humidity = b[1]; // extract 8 bits humidity
     if (humidity <= 10) // actually the sensors sends 10 below working range of 20%
         humidity = 0;
-    else if (humidity > 90) // actually the sensors sends 110 above working range of 90%
+    else if (humidity > 95) // actually the sensors sends 110 above working range of 90%
         humidity = 100;
 
     int sensor_id      = (b[0]);          // 8 bits
@@ -96,7 +138,7 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
             "button",           "Button",       DATA_INT,    button_pressed,
-            //"mic",              "Integrity",    DATA_STRING, "TODO",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
