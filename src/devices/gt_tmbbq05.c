@@ -21,32 +21,34 @@ Next 8 bits are static per device (even after battery change)
 Next 8 bits contain the lower 8 bits of the temperature.
 Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
-Next 6 bits vary, but purpose is unknown. I assume a kind of CRC as they are the same for same temperatures.
+Next 2 bits are unknown
+Last 4 bits are the sum of the preceeding 5 nibbles (mod 0xf)
 
 Here's the data I used to reverse engineer, more sampes in rtl_test
-001001001100010000111100110010110  HI
-001001001010101010111100110010000  507
-001001001010011010111100110010111  499
-001001001110101110111100101010110  381
-001001001110000000111100101011110  358
-001001001001011010111100101010001  211
-001001001001000000111100101000011  198
-001001001111010110111100100000110  145
-001001001101100010111100100001001  89
-001001001101011010111100100010101  83
-001001001101011010111100100010101  83
-001001001101010110111100100010011  81
-001001001101010010111100100000000  79
-001001001101010000111100100010000  78
-001001001101001110111100100011111  77
-001001001101001100111100100001101  76
-001001001101001010111100100001100  75
-001001001101001010111100100001100  75
-001001001101000110111100100001010  73
-001001001100010100111100100010000  48
-001001001011011110111100100000010  21
-001001001011001110111100100011011  13
-001001001010010010111100100011011  LO
+
+    y001001001100010000111100110010110  [HI]
+    y001001001010101010111100110010000 [507]
+    y001001001010011010111100110010111  [499]
+    y001001001110101110111100101010110  [381]
+    y001001001110000000111100101011110  [358]
+    y001001001001011010111100101010001  [211]
+    y001001001001000000111100101000011  [198]
+    y001001001111010110111100100000110  [145]
+    y001001001101100010111100100001001  [89]
+    y001001001101011010111100100010101  [83]
+    y001001001101010110111100100010011  [81]
+    y001001001101010010111100100000000  [79]
+    y001001001101010000111100100010000  [78]
+    y001001001101001110111100100011111  [77]
+    y001001001101001100111100100001101  [76]
+    y001001001101001010111100100001100  [75]
+    y001001001101000110111100100001010  [73]
+    y001001001100010100111100100010000  [48]
+    y001001001011011110111100100000010  [21]
+    y001001001011001110111100100011011  [13]
+    y001001001010010010111100100011011  [LO]
+
+PRE:9b TL:8h ID:8h TH:2b 6h
 
 second device:
 011100110101001001011001100010001  73
@@ -54,20 +56,21 @@ second device:
 
 Frame structure:
     Byte:   H 1        2        3        4
-    Type:   0 SSSSSSSS tttttttt ssssssss TTcccccc
+    Type:   0 SSSSSSSS tttttttt ssssssss TT??cccc
 
-- SS = static per device (even after battery change)
-- tt = temperature+90 F lower 8 bits
-- ss = static per device (even after battery change)
-- TT = temperature+90 F upper 2 bits
-- cc = unknown, changes for different content, same for same temperature on same device -> I guess CRC
+- S: static per device (even after battery change)
+- t: temperature+90 F lower 8 bits
+- s: static per device (even after battery change)
+- T: temperature+90 F upper 2 bits
+- c: sum of first 5 nibbles
+
 */
 
 #include "decoder.h"
 
 static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[4];
     data_t *data;
 
     if (decoder->verbose > 1) {
@@ -82,20 +85,26 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     // remove the first leading bit and extract the 4 bytes carrying the data
-    uint8_t data_bytes[4];
-    bitbuffer_extract_bytes(bitbuffer, r, 1, data_bytes, 32);
+    bitbuffer_extract_bytes(bitbuffer, r, 1, b, 32);
+
+    int sum = add_nibbles(b, 3) + (b[3] >> 4);
+    if ((sum & 0xf) != (b[3] & 0xf)) {
+        bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
+        return DECODE_FAIL_MIC;
+    }
 
     // temperature: concat the upper bits to the lower bits and substract the fixed offset 90
-    int tempf = ((data_bytes[3] >> 6) | data_bytes[1]) - 90;
+    int tempf = (((b[3] & 0xc0) << 2) | b[1]) - 90;
 
     // device id: concat the two bytes
-    int device_id = (data_bytes[0]<<8) | data_bytes[2];
+    int device_id = (b[0] << 8) | b[2];
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "GT-TMBBQ05",
             "id",               "ID Code",      DATA_INT,    device_id,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, (double)tempf,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -107,6 +116,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "temperature_F",
+        "mic",
         NULL,
 };
 
