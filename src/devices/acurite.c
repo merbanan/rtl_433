@@ -109,7 +109,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // This needs more validation to positively identify correct sensor type, but it basically works if message is really from acurite raingauge and it doesn't have any errors
     if (bitbuffer->bits_per_row[0] < 24)
         return DECODE_ABORT_LENGTH;
-    
+
     if ((b[0] == 0) || (b[1] == 0) || (b[2] == 0) || (b[3] != 0) || (b[4] != 0))
         return DECODE_ABORT_EARLY;
 
@@ -633,7 +633,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 channel     = bb[0] >> 6;
-                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // TODO: a tip is 1mm?
+                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.2mm
 
                 /* clang-format off */
                 data = data_make(
@@ -641,7 +641,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",               "",                         DATA_INT,    sensor_id,
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%d mm", DATA_DOUBLE, raincounter,
+                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%d mm", DATA_DOUBLE, raincounter * 0.2,
                         NULL);
                 /* clang-format on */
 
