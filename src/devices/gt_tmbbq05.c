@@ -21,7 +21,8 @@ Next 8 bits are static per device (even after battery change)
 Next 8 bits contain the lower 8 bits of the temperature.
 Next 8 bits are static per device (even after battery change)
 Next 2 bits contain the upper 2 bits of the temperature
-Next 2 bits are unknown
+Next 1 bit is unknown
+Next 1 bit is an odd parity bit
 Last 4 bits are the sum of the preceeding 5 nibbles (mod 0xf)
 
 Here's the data I used to reverse engineer, more sampes in rtl_test
@@ -56,12 +57,13 @@ second device:
 
 Frame structure:
     Byte:   H 1        2        3        4
-    Type:   0 SSSSSSSS tttttttt ssssssss TT??cccc
+    Type:   0 SSSSSSSS tttttttt ssssssss TT?Pcccc
 
 - S: static per device (even after battery change)
 - t: temperature+90 F lower 8 bits
 - s: static per device (even after battery change)
 - T: temperature+90 F upper 2 bits
+- P: odd parity bit
 - c: sum of first 5 nibbles
 
 */
@@ -70,7 +72,7 @@ Frame structure:
 
 static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[4];
+    uint8_t b[4],p[4];
     data_t *data;
 
     if (decoder->verbose > 1) {
@@ -86,6 +88,17 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // remove the first leading bit and extract the 4 bytes carrying the data
     bitbuffer_extract_bytes(bitbuffer, r, 1, b, 32);
+
+    /* Parity check over 7 nibbles (must be ODD) */
+    memcpy(p, b, 4);
+    p[3]=p[3]&0xF0;
+
+    if (parity_bytes(p, 4)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "gt_tmbbq05_decode: parity check failed (should be ODD)\n");
+        }
+        return 0;
+    }
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);
     if ((sum & 0xf) != (b[3] & 0xf)) {
@@ -103,7 +116,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "GT-TMBBQ05",
             "id",               "ID Code",      DATA_INT,    device_id,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, (double)tempf,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, (float)tempf,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
