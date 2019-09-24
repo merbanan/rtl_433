@@ -53,6 +53,7 @@ Per byte xor the key for each 1-bit, shift per bit. Key list per bit, starting a
 - 0x88 [02]
 - 0xc4 [01]
 - 0x62 [00]
+Note: this can also be seen as lower byte of a Galois/Fibonacci LFSR-16, gen 0x00, init 0x3100 (or 0x62 if reversed) resetting at every byte.
 
 Battery voltages:
 - U=<2,65V +- ~5% Battery indicator

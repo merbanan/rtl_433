@@ -182,6 +182,7 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 2 && !strncasecmp("u8", t, 2)) file_type_set_format(&info->format, F_U8);
             else if (len == 2 && !strncasecmp("s8", t, 2)) file_type_set_format(&info->format, F_S8);
             else if (len == 3 && !strncasecmp("cu8", t, 3)) file_type_set_format(&info->format, F_CU8);
+            else if (len == 4 && !strncasecmp("data", t, 4)) file_type_set_format(&info->format, F_CU8); // compat
             else if (len == 3 && !strncasecmp("cs8", t, 3)) file_type_set_format(&info->format, F_CS8);
             else if (len == 3 && !strncasecmp("u16", t, 3)) file_type_set_format(&info->format, F_U16);
             else if (len == 3 && !strncasecmp("s16", t, 3)) file_type_set_format(&info->format, F_S16);
@@ -193,10 +194,11 @@ static void file_type(char const *filename, file_info_t *info)
             else if (len == 4 && !strncasecmp("cs16", t, 4)) file_type_set_format(&info->format, F_CS16);
             else if (len == 4 && !strncasecmp("cs32", t, 4)) file_type_set_format(&info->format, F_CS32);
             else if (len == 4 && !strncasecmp("cf32", t, 4)) file_type_set_format(&info->format, F_CF32);
+            else if (len == 5 && !strncasecmp("cfile", t, 5)) file_type_set_format(&info->format, F_CF32); // compat
             else if (len == 5 && !strncasecmp("logic", t, 5)) file_type_set_content(&info->format, F_LOGIC);
-            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8);
-            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8);
-            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32);
+            else if (len == 3 && !strncasecmp("complex16u", t, 10)) file_type_set_format(&info->format, F_CU8); // compat
+            else if (len == 3 && !strncasecmp("complex16s", t, 10)) file_type_set_format(&info->format, F_CS8); // compat
+            else if (len == 4 && !strncasecmp("complex", t, 7)) file_type_set_format(&info->format, F_CF32); // compat
             //else fprintf(stderr, "Skipping type (len %ld) %s\n", len, t);
         } else {
             p++; // skip non-alphanum char otherwise
