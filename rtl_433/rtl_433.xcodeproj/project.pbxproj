@@ -1,0 +1,114 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXFileReference section */
+		2A4074B6233AD4DF0036E3FB /* cmake */ = {isa = PBXFileReference; lastKnownFileType = folder; name = cmake; path = ../cmake; sourceTree = "<group>"; };
+		2A4074B7233AD4DF0036E3FB /* rtl433.pc.in */ = {isa = PBXFileReference; lastKnownFileType = text; name = rtl433.pc.in; path = ../rtl433.pc.in; sourceTree = "<group>"; };
+		2A4074B8233AD4E00036E3FB /* build */ = {isa = PBXFileReference; lastKnownFileType = folder; name = build; path = ../build; sourceTree = "<group>"; };
+		2A4074B9233AD4E00036E3FB /* m4 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = m4; path = ../m4; sourceTree = "<group>"; };
+		2A4074BA233AD4E00036E3FB /* src */ = {isa = PBXFileReference; lastKnownFileType = folder; name = src; path = ../src; sourceTree = "<group>"; };
+		2A4074BB233AD4E00036E3FB /* vs15 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = vs15; path = ../vs15; sourceTree = "<group>"; };
+		2A4074BC233AD4E00036E3FB /* screenshot.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = screenshot.png; path = ../screenshot.png; sourceTree = "<group>"; };
+		2A4074BD233AD4E00036E3FB /* git-version-gen */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = "git-version-gen"; path = "../git-version-gen"; sourceTree = "<group>"; };
+		2A4074BE233AD4E00036E3FB /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		2A4074BF233AD4E00036E3FB /* configure.ac */ = {isa = PBXFileReference; lastKnownFileType = text; name = configure.ac; path = ../configure.ac; sourceTree = "<group>"; };
+		2A4074C0233AD4E00036E3FB /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = CHANGELOG.md; path = ../CHANGELOG.md; sourceTree = "<group>"; };
+		2A4074C1233AD4E00036E3FB /* COPYING */ = {isa = PBXFileReference; lastKnownFileType = text; name = COPYING; path = ../COPYING; sourceTree = "<group>"; };
+		2A4074C2233AD4E00036E3FB /* tests */ = {isa = PBXFileReference; lastKnownFileType = folder; name = tests; path = ../tests; sourceTree = "<group>"; };
+		2A4074C3233AD4E00036E3FB /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; name = CMakeLists.txt; path = ../CMakeLists.txt; sourceTree = "<group>"; };
+		2A4074C4233AD4E00036E3FB /* maintainer_update.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = maintainer_update.py; path = ../maintainer_update.py; sourceTree = "<group>"; };
+		2A4074C5233AD4E00036E3FB /* conf */ = {isa = PBXFileReference; lastKnownFileType = folder; name = conf; path = ../conf; sourceTree = "<group>"; };
+		2A4074C6233AD4E00036E3FB /* BUILDING.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; name = BUILDING.md; path = ../BUILDING.md; sourceTree = "<group>"; };
+		2A4074C7233AD4E10036E3FB /* do_build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = do_build.sh; path = ../do_build.sh; sourceTree = "<group>"; };
+		2A4074C8233AD4E10036E3FB /* include */ = {isa = PBXFileReference; lastKnownFileType = folder; name = include; path = ../include; sourceTree = "<group>"; };
+		2A4074C9233AD4E10036E3FB /* Doxyfile.in */ = {isa = PBXFileReference; lastKnownFileType = text; name = Doxyfile.in; path = ../Doxyfile.in; sourceTree = "<group>"; };
+		2A4074CA233AD4E10036E3FB /* AUTHORS */ = {isa = PBXFileReference; lastKnownFileType = text; name = AUTHORS; path = ../AUTHORS; sourceTree = "<group>"; };
+		2A4074CB233AD4E10036E3FB /* Makefile.am */ = {isa = PBXFileReference; lastKnownFileType = text; name = Makefile.am; path = ../Makefile.am; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		2A4074AF233AD4A50036E3FB = {
+			isa = PBXGroup;
+			children = (
+				2A4074CA233AD4E10036E3FB /* AUTHORS */,
+				2A4074B8233AD4E00036E3FB /* build */,
+				2A4074C6233AD4E00036E3FB /* BUILDING.md */,
+				2A4074C0233AD4E00036E3FB /* CHANGELOG.md */,
+				2A4074B6233AD4DF0036E3FB /* cmake */,
+				2A4074C3233AD4E00036E3FB /* CMakeLists.txt */,
+				2A4074C5233AD4E00036E3FB /* conf */,
+				2A4074BF233AD4E00036E3FB /* configure.ac */,
+				2A4074C1233AD4E00036E3FB /* COPYING */,
+				2A4074C7233AD4E10036E3FB /* do_build.sh */,
+				2A4074C9233AD4E10036E3FB /* Doxyfile.in */,
+				2A4074BD233AD4E00036E3FB /* git-version-gen */,
+				2A4074C8233AD4E10036E3FB /* include */,
+				2A4074B9233AD4E00036E3FB /* m4 */,
+				2A4074C4233AD4E00036E3FB /* maintainer_update.py */,
+				2A4074CB233AD4E10036E3FB /* Makefile.am */,
+				2A4074BE233AD4E00036E3FB /* README.md */,
+				2A4074B7233AD4DF0036E3FB /* rtl433.pc.in */,
+				2A4074BC233AD4E00036E3FB /* screenshot.png */,
+				2A4074BA233AD4E00036E3FB /* src */,
+				2A4074C2233AD4E00036E3FB /* tests */,
+				2A4074BB233AD4E00036E3FB /* vs15 */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		2A4074B0233AD4A50036E3FB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1000;
+			};
+			buildConfigurationList = 2A4074B3233AD4A50036E3FB /* Build configuration list for PBXProject "rtl_433" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 2A4074AF233AD4A50036E3FB;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		2A4074B4233AD4A50036E3FB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		2A4074B5233AD4A50036E3FB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2A4074B3233AD4A50036E3FB /* Build configuration list for PBXProject "rtl_433" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A4074B4233AD4A50036E3FB /* Debug */,
+				2A4074B5233AD4A50036E3FB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2A4074B0233AD4A50036E3FB /* Project object */;
+}

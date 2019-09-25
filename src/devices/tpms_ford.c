@@ -14,12 +14,45 @@
  * T = likely Temperature
  * F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
  * C = Checksum, SUM bytes 0 to 6 = byte 7
+ 
+ 
+ Modifying for TRW Hyundai Elantra
+ Preamble is 111 0001 0101 0101 (0x7155)
+ 
+ PPTT IDID IDID FFCC
+ Pressure in hex(One byte PP) to dec+60 = pressure in kPa
+ Temperature hex(One byte TT) to dec -50 = temp in C
+ ID in hex(2 Words = 4 bytes)
+ Flags (FF) = ???? ?SBT (Missing Acceleration, market - Europe/US/Asia, Tire type, Alert Mode, park mode, High Line vs Low LIne etc)
+ S=Storage bit
+ B=Battery low bit
+ T=Triggered bit
+ C0 =1100 0000 = Battery OK, Not Triggered
+ C1 =1100 0001 = Battery OK, Triggered
+ C2 =1100 0010 = Battery Low, Not Triggered
+ C3 =1100 0011 = Battery Low, Triggered
+ C5 =1100 0101 = Battery OK, Triggered, Storage Mode
+ E1 =1110 0001 = Mx Sensor Clone for Elantra 2012 US market ? Low Line
+ C1		 = Mx Sensor Clone for Genesis Sedan 2012 US market ? High Line
+ 
+ CC = CRC8
+ 994A02226097C127
+ (99 4A 02 22 60 97 C1)CRC8 = 27
+ http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
+ 024C801A2D39C197
+ (024C801A2D39C1)CRC8 = 97
+ 
+ Manchester decoded data
+ 0000000101001100000000110001011011101100111001101110000101010111 (64 bits)
+ B[0]		b[1]		b[2]		b[3]		b[4]		b[5]		[b6]		b[7]	
+ 0000	0001 	0100 	1100 	0000	0011	0001	0110	1110	1100	1110	0110	1110	0001	0101	0111
+ P	P	T	T	I	I	I	I	I	I	I	I	F	F	C	C
 */
 
 #include "decoder.h"
 
-// full preamble is 55 55 55 56 (inverted: aa aa aa a9)
-static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
+/*preamble = 111000101010101 0x71 0x55, inverted = 000111010101010 0x0e 0xaa */
+static const uint8_t preamble_pattern[2] = { 0x0e, 0xaa }; // 15 bits
 
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -28,10 +61,15 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int id;
-    char id_str[9];
+    char id_str[8];
     int code;
     char code_str[7];
-
+	unsigned status, pressure1, pressure2, temp, battery_low, counter, failed;
+	float pressure_kpa, temperature_c;
+	int crc;
+	/*unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned start,
+	 bitbuffer_t *outbuf, unsigned max)*/
+	
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 64 data bits
     if (start_pos-bitpos < 128) {
@@ -39,18 +77,19 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     }
     b = packet_bits.bb[0];
 
-    if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
+   /* if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
         return 0;
-    }
-
-    id = b[0]<<24 | b[1]<<16 | b[2]<<8 | b[3];
+    }*/
+	//uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init)
+	crc = b[7];
+	if (crc8(b, 7, 0x07, 0x00) != crc) {
+		return 0;
+	}
+    id = b[2]<<24 | b[3]<<16 | b[4]<<8 | b[5];
     sprintf(id_str, "%08x", id);
 
-    code = b[4]<<16 | b[5]<<8 | b[6];
-    sprintf(code_str, "%06x", code);
-
     data = data_make(
-        "model",        "",     DATA_STRING, "Ford",
+        "model",        "",     DATA_STRING, "Elantra",
         "type",         "",     DATA_STRING, "TPMS",
         "id",           "",     DATA_STRING, id_str,
         "code",         "",     DATA_STRING, code_str,
@@ -70,12 +109,14 @@ static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
-        // Find a preamble with enough bits after it that it could be a complete packet
+		/*unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
+		 const uint8_t *pattern, unsigned pattern_bits_len)*/
+		// Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 144 <=
+                (const uint8_t *)&preamble_pattern, 15)) + 128 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_ford_decode(decoder, bitbuffer, row, bitpos + 16);
-            bitpos += 15;
+            events += tpms_ford_decode(decoder, bitbuffer, row, bitpos + 15);
+            bitpos += 14;
         }
     }
 
@@ -92,11 +133,11 @@ static char *output_fields[] = {
 };
 
 r_device tpms_ford = {
-    .name           = "Ford TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
+    .name           = "Elantra TPMS",
+    .modulation     = FSK_PCM,
+    .short_width    = 49, // 12-13 samples @250k
+    .long_width     = 49, // FSK
+    .reset_limit    = 50000, // Maximum gap size before End Of Message [us].
     .decode_fn      = &tpms_ford_callback,
     .disabled       = 0,
     .fields         = output_fields,

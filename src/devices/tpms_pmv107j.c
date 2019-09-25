@@ -17,6 +17,8 @@
  * N: Inverted tire pressure
  * T: Tire temperature (Celsius +40, range from -40 to +215 C)
  * C: CRC over bits 0 - 57, poly 0x13, init 0
+ *
+
  */
 
 #include "decoder.h"
