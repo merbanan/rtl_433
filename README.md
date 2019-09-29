@@ -69,120 +69,121 @@ Usage:	= General options =
 		 Use -d, -g, -R, -X, -F, -M, -r, or -w without argument for more help
 
 Supported device protocols:
-    [01]  Silvercrest Remote Control
-    [02]  Rubicson Temperature Sensor
-    [03]  Prologue Temperature Sensor
-    [04]  Waveman Switch Transmitter
-    [06]* ELV EM 1000
-    [07]* ELV WS 2000
-    [08]  LaCrosse TX Temperature / Humidity Sensor
-    [10]* Acurite 896 Rain Gauge
-    [11]  Acurite 609TXC Temperature and Humidity Sensor
-    [12]  Oregon Scientific Weather Sensor
-    [13]* Mebus 433
-    [14]* Intertechno 433
-    [15]  KlikAanKlikUit Wireless Switch
-    [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
-    [17]  Cardin S466-TX2
-    [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
-    [19]  Nexus Temperature & Humidity Sensor
-    [20]  Ambient Weather Temperature Sensor
-    [21]  Calibeur RF-104 Sensor
-    [22]* X10 RF
-    [23]  DSC Security Contact
-    [24]* Brennenstuhl RCS 2044
-    [25]  GT-WT-02 Sensor
-    [26]  Danfoss CFR Thermostat
-    [29]  Chuango Security Technology
-    [30]  Generic Remote SC226x EV1527
-    [31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
-    [32]  Fine Offset Electronics WH1080/WH3080 Weather Station
-    [33]  WT450
-    [34]  LaCrosse WS-2310 Weather Station
-    [35]  Esperanza EWS
-    [36]  Efergy e2 classic
-    [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
-    [38]  Generic temperature sensor 1
-    [39]  WG-PB12V1 Temperature Sensor
-    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
-    [41]  Acurite 986 Refrigerator / Freezer Thermometer
-    [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
-    [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
-    [44]  CurrentCost Current Sensor
-    [45]  emonTx OpenEnergyMonitor
-    [46]  HT680 Remote control
-    [47]  S3318P Temperature & Humidity Sensor
-    [48]  Akhan 100F14 remote keyless entry
-    [49]  Quhwa
-    [50]  OSv1 Temperature Sensor
-    [51]  Proove
-    [52]  Bresser Thermo-/Hygro-Sensor 3CH
-    [53]  Springfield Temperature and Soil Moisture
-    [54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
-    [55]  Acurite 606TX Temperature Sensor
-    [56]  TFA pool temperature sensor
-    [57]  Kedsum Temperature & Humidity Sensor
-    [58]  Blyss DC5-UK-WH
-    [59]  Steelmate TPMS
-    [60]  Schrader TPMS
-    [61]* LightwaveRF
-    [62]  Elro DB286A Doorbell
-    [63]  Efergy Optical
-    [64]  Honda Car Key
-    [67]  Radiohead ASK
-    [68]  Kerui PIR / Contact Sensor
-    [69]  Fine Offset WH1050 Weather Station
-    [70]  Honeywell Door/Window Sensor
-    [71]  Maverick ET-732/733 BBQ Sensor
-    [72]* RF-tech
-    [73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
-    [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
-    [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
-    [76]  LaCrosse TX29IT Temperature sensor
-    [77]  Vaillant calorMatic 340f Central Heating Control
-    [78]  Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
-    [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
-    [80]  IBIS beacon
-    [81]  Oil Ultrasonic STANDARD FSK
-    [82]  Citroen TPMS
-    [83]  Oil Ultrasonic STANDARD ASK
-    [84]  Thermopro TP11 Thermometer
-    [85]  Solight TE44
-    [86]  Wireless Smoke and Heat Detector GS 558
-    [87]  Generic wireless motion sensor
-    [88]  Toyota TPMS
-    [89]  Ford TPMS
-    [90]  Renault TPMS
-    [91]  inFactory
-    [92]  FT-004-B Temperature Sensor
-    [93]  Ford Car Key
-    [94]  Philips outdoor temperature sensor
-    [95]  Schrader TPMS EG53MA4
-    [96]  Nexa
-    [97]  Thermopro TP08/TP12 thermometer
-    [98]  GE Color Effects
-    [99]  X10 Security
-    [100]  Interlogix GE UTC Security Devices
-    [101]* Dish remote 6.3
-    [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
-    [103]  Sensible Living Mini-Plant Moisture Sensor
-    [104]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
-    [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
-    [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
-    [107]* Wireless M-Bus, Mode F, 2.4kbps
-    [108]  WS Temperature Sensor
-    [109]  WT0124 Pool Thermometer
-    [110]  PMV-107J (Toyota) TPMS
-    [111]  Emos TTX201 Temperature Sensor
-    [112]  Ambient Weather TX-8300 Temperature/Humidity Sensor
-    [113]  Ambient Weather WH31E Thermo-Hygrometer Sensor
-    [114]  Maverick et73
-    [115]  Honeywell Wireless Doorbell
-    [116]  Honeywell Wireless Doorbell (FSK)
-    [117]* ESA1000 / ESA2000 Energy Monitor
-    [118]* Biltema rain gauge
-    [119]  Bresser Weather Center 5-in-1
-    [120]* Digitech XC-0324 temperature sensor
+[01]  Silvercrest Remote Control
+[02]  Rubicson Temperature Sensor
+[03]  Prologue Temperature Sensor
+[04]  Waveman Switch Transmitter
+[06]* ELV EM 1000
+[07]* ELV WS 2000
+[08]  LaCrosse TX Temperature / Humidity Sensor
+[10]* Acurite 896 Rain Gauge
+[11]  Acurite 609TXC Temperature and Humidity Sensor
+[12]  Oregon Scientific Weather Sensor
+[13]* Mebus 433
+[14]* Intertechno 433
+[15]  KlikAanKlikUit Wireless Switch
+[16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
+[17]  Cardin S466-TX2
+[18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
+[19]  Nexus Temperature & Humidity Sensor
+[20]  Ambient Weather Temperature Sensor
+[21]  Calibeur RF-104 Sensor
+[22]* X10 RF
+[23]  DSC Security Contact
+[24]* Brennenstuhl RCS 2044
+[25]  GT-WT-02 Sensor
+[26]  Danfoss CFR Thermostat
+[29]  Chuango Security Technology
+[30]  Generic Remote SC226x EV1527
+[31]  TFA-Twin-Plus-30.3049, Conrad KW9010, Ea2 BL999
+[32]  Fine Offset Electronics WH1080/WH3080 Weather Station
+[33]  WT450
+[34]  LaCrosse WS-2310 Weather Station
+[35]  Esperanza EWS
+[36]  Efergy e2 classic
+[37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
+[38]  Generic temperature sensor 1
+[39]  WG-PB12V1 Temperature Sensor
+[40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+[41]  Acurite 986 Refrigerator / Freezer Thermometer
+[42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
+[43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
+[44]  CurrentCost Current Sensor
+[45]  emonTx OpenEnergyMonitor
+[46]  HT680 Remote control
+[47]  S3318P Temperature & Humidity Sensor
+[48]  Akhan 100F14 remote keyless entry
+[49]  Quhwa
+[50]  OSv1 Temperature Sensor
+[51]  Proove
+[52]  Bresser Thermo-/Hygro-Sensor 3CH
+[53]  Springfield Temperature and Soil Moisture
+[54]  Oregon Scientific SL109H Remote Thermal Hygro Sensor
+[55]  Acurite 606TX Temperature Sensor
+[56]  TFA pool temperature sensor
+[57]  Kedsum Temperature & Humidity Sensor
+[58]  Blyss DC5-UK-WH
+[59]  Steelmate TPMS
+[60]  Schrader TPMS
+[61]* LightwaveRF
+[62]  Elro DB286A Doorbell
+[63]  Efergy Optical
+[64]  Honda Car Key
+[67]  Radiohead ASK
+[68]  Kerui PIR / Contact Sensor
+[69]  Fine Offset WH1050 Weather Station
+[70]  Honeywell Door/Window Sensor
+[71]  Maverick ET-732/733 BBQ Sensor
+[72]* RF-tech
+[73]  LaCrosse TX141-Bv2/TX141TH-Bv2 sensor
+[74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
+[75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
+[76]  LaCrosse TX29IT Temperature sensor
+[77]  Vaillant calorMatic 340f Central Heating Control
+[78]  Fine Offset Electronics, WH25, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
+[79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
+[80]  IBIS beacon
+[81]  Oil Ultrasonic STANDARD FSK
+[82]  Citroen TPMS
+[83]  Oil Ultrasonic STANDARD ASK
+[84]  Thermopro TP11 Thermometer
+[85]  Solight TE44
+[86]  Wireless Smoke and Heat Detector GS 558
+[87]  Generic wireless motion sensor
+[88]  Toyota TPMS
+[89]  Ford TPMS
+[90]  Renault TPMS
+[91]  Elantra2012 TPMS
+[92]  inFactory
+[93]  FT-004-B Temperature Sensor
+[94]  Ford Car Key
+[95]  Philips outdoor temperature sensor
+[96]  Schrader TPMS EG53MA4
+[97]  Nexa
+[98]  Thermopro TP08/TP12 thermometer
+[99]  GE Color Effects
+[100]  X10 Security
+[101]  Interlogix GE UTC Security Devices
+[102]* Dish remote 6.3
+[103]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
+[104]  Sensible Living Mini-Plant Moisture Sensor
+[105]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
+[106]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
+[107]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
+[108]* Wireless M-Bus, Mode F, 2.4kbps
+[109]  WS Temperature Sensor
+[110]  WT0124 Pool Thermometer
+[111]  PMV-107J (Toyota) TPMS
+[112]  Emos TTX201 Temperature Sensor
+[113]  Ambient Weather TX-8300 Temperature/Humidity Sensor
+[114]  Ambient Weather WH31E Thermo-Hygrometer Sensor
+[115]  Maverick et73
+[116]  Honeywell Wireless Doorbell
+[117]  Honeywell Wireless Doorbell (FSK)
+[118]* ESA1000 / ESA2000 Energy Monitor
+[119]* Biltema rain gauge
+[120]  Bresser Weather Center 5-in-1
+[121]* Digitech XC-0324 temperature sensor
 
 * Disabled by default, use -R n or -G
 

@@ -96,6 +96,7 @@
     DECL(tpms_toyota) \
     DECL(tpms_ford) \
     DECL(tpms_renault) \
+    DECL(tpms_elantra2012) \
     DECL(infactory) \
     DECL(ft004b) \
     DECL(fordremote) \

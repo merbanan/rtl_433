@@ -137,3 +137,4 @@
 - Added Generic off-brand wireless motion sensor and alarm system
 - Added Wireless Smoke and Heat Detector GS 558
 - Added Solight TE44 wireless thermometer
+- Added support for Elantra 2012 TPMS
