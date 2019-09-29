@@ -130,6 +130,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/thermopro_tp12.c \
                        devices/tpms_citroen.c \
                        devices/tpms_ford.c \
+                       devices/tpms_elantra2012.c \
                        devices/tpms_jansite.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
