@@ -87,9 +87,9 @@ sprintf(code_str, "%x", code);
 pressure_kpa=b[0]+60;
 pressure_psi=pressure_kpa*0.14503779473358;
 temperature_c=b[1]-50;
-storage=(b[6] & (1<<2));//3rd bit
-battery_low=(b[6] & (1<<1));//2nd bit
-lf_triggered=(b[6] & (1<<0));//1st bit
+if (b[6] & (1<<2)){	storage= 1;}//3rd bit
+if(b[6] & (1<<1)){battery_low=1;}//2nd bit
+if(b[6] & (1<<0)){lf_triggered=1;}//1st bit
 
 
 data = data_make(
