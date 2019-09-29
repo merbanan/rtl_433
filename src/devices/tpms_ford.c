@@ -63,10 +63,10 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int id;
-    char id_str[8];
+    char id_str[16];
     int code;
     char code_str[7];
-	unsigned status, pressure1, pressure2, temp, battery_low, counter, failed;
+	unsigned status,pressure, temp, battery_low, counter, failed;
 	float pressure_kpa, temperature_c;
 	int crc;
 
@@ -76,23 +76,23 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
     // require 64 data bits
 	
-	printf("manchester decode called");
-	printf("start_pos=%d",start_pos);
+	//printf("manchester decode called");
+	//printf("start_pos=%d",start_pos);
 	if (start_pos-bitpos < 128) {
 		return 0;
 	}
-	unsigned z=start_pos-bitpos;
-	printf("size=%d",z);
+	//unsigned z=start_pos-bitpos;
+	//printf("size=%d",z);
 	b = packet_bits.bb[0];
 	
-	printf("byte 0=%d",b[0]);
-	printf("byte 1=%d",b[1]);
-	printf("byte 2=%d",b[2]);
-	printf("byte 3=%d",b[3]);
-	printf("byte 4=%d",b[4]);
-	printf("byte 5=%d",b[5]);
-	printf("byte 6=%d",b[6]);
-	printf("byte 7=%d",b[7]);
+	//printf("byte 0=%d",b[0]);
+	//printf("byte 1=%d",b[1]);
+	//printf("byte 2=%d",b[2]);
+	//printf("byte 3=%d",b[3]);
+	//printf("byte 4=%d",b[4]);
+	//printf("byte 5=%d",b[5]);
+	//printf("byte 6=%d",b[6]);
+	//printf("byte 7=%d",b[7]);
 	
 	
    /* if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
@@ -106,8 +106,8 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 	
 	//printf("CRC passed");
     id = b[2]<<24 | b[3]<<16 | b[4]<<8 | b[5];
-    //sprintf(id_str, "%08x", id);
-	printf("%08x", id);
+    sprintf(id_str, "%08x", id);
+	//printf("%08x", id);
 
     data = data_make(
         "model",        "",     DATA_STRING, "Elantra",
@@ -123,20 +123,20 @@ static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int row;
     unsigned bitpos;
     int events = 0;
-	printf("main function called");
+	//printf("main function called");
 	//bitbuffer_invert(bitbuffer);
 	//printf("inverted");
 	
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
-		bitbuffer_print(bitbuffer);
+		//bitbuffer_print(bitbuffer);
 		/*unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
 		 const uint8_t *pattern, unsigned pattern_bits_len)*/
 		// Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 (const uint8_t *)&preamble_pattern, 16)) + 128 <=
                 bitbuffer->bits_per_row[row]) {
-			printf("bit_pos=%d",bitpos);
+			//printf("bit_pos=%d",bitpos);
 			//bitrow_t tmp;
 			//bitbuffer_extract_bytes(bitbuffer, row, bitpos, tmp, len);
 			bitbuffer_print(bitbuffer);
