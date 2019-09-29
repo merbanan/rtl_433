@@ -1,8 +1,8 @@
 /** @file
     High-level utility functions for decoders.
- 
+
     Copyright (C) 2018 Christian Zuckschwerdt
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -14,10 +14,10 @@
 
 #include <stdarg.h>
 #include "bitbuffer.h"
-#include "rtl_433_devices.h"
+#include "r_device.h"
 
-/// Create a new r_device, copy from template if not NULL.
-r_device *create_device(r_device *template);
+/// Create a new r_device, copy from dev_template if not NULL.
+r_device *create_device(r_device *dev_template);
 
 /// Output data.
 void decoder_output_data(r_device *decoder, data_t *data);

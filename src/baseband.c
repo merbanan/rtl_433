@@ -120,7 +120,7 @@ void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     but the b coeffs are small so it wont happen
     Q15.14>>14 = Q15.0 \o/
 */
-void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, FilterState *state)
+void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)
 {
     ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
     //static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
@@ -175,7 +175,7 @@ int16_t atan2_int16(int16_t y, int16_t x)
     return angle;
 }
 
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
@@ -246,7 +246,7 @@ int32_t atan2_int32(int32_t y, int32_t x)
 }
 
 /// for evaluation.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, DemodFM_State *state)
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};

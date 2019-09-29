@@ -75,7 +75,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_counter++;
                 if (a->signal_pulse_counter >= PULSE_DATA_SIZE) {
                     a->signal_pulse_counter = 0;
-                    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+                    fprintf(stderr, "Too many pulses detected, probably bad input data or input parameters\n");
                     return;
                 }
             }

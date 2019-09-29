@@ -56,7 +56,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         temp_c = (float) temp / 10.0;
 
         data = data_make(
-                        "model",         "",            DATA_STRING, "Rubicson Temperature Sensor",
+                        "model",         "",            DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
                         "id",            "House Code",  DATA_INT,    sensor_id,
                         "channel",       "Channel",     DATA_INT,    channel,
                         "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",

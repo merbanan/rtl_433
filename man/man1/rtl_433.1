@@ -1,0 +1,880 @@
+.TH "RTL_433" "1" "2019-08-21" "rtl_433" "rtl_433 Commands"
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.ss \n[.ss] 0
+.nh
+.ad l
+.de URL
+\fI\\$2\fP <\\$1>\\$3
+..
+.als MTO URL
+.if \n[.g] \{\
+.  mso www.tmac
+.  am URL
+.    ad l
+.  .
+.  am MTO
+.    ad l
+.  .
+.  LINKSTYLE blue R < >
+.\}
+.SH "NAME"
+rtl_433 \- Generic RF data receiver and decoder for ISM band devices using RTL-SDR and SoapySDR.
+.SH "DESCRIPTION"
+.sp
+This manual page documents briefly the \fBrtl_433\fP command.
+.sp
+\fBrtl_433\fP is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD),
+315 MHz, and 915 MHz ISM bands. It works with RTL\-SDR and/or SoapySDR. Activly tested
+and supported are Realtek RTL2832 based DVB dongles (using RTL\-SDR) and LimeSDR
+(LimeSDR USB and LimeSDR mini engineering samples kindly provided by MyriadRf),
+PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
+.SH "SYNOPSIS"
+.sp
+\fBrtl_433\fP [\fIOPTION\fP]... \fIFILE\fP...
+.SH "OPTIONS"
+.sp
+A summary of options is included below.
+Detailed information on some options follows.
+.\" body
+.SS "General options"
+.TP
+[ \fB\-V\fI\fP ]
+Output the version string and exit
+.TP
+[ \fB\-v\fI\fP ]
+Increase verbosity (can be used multiple times).
+       \-v : verbose, \-vv : verbose decoders, \-vvv : debug decoders, \-vvvv : trace decoding).
+.TP
+[ \fB\-c\fI <path>\fP ]
+Read config options from a file
+.SS "Tuner options"
+.TP
+[ \fB\-d\fI <RTL\-SDR USB device index> | :<RTL\-SDR USB device serial> | <SoapySDR device query> | rtl_tcp | help\fP ]
+[\-g <gain> | help] (default: auto)
+.TP
+[ \fB\-t\fI <settings>\fP ]
+apply a list of keyword=value settings for SoapySDR devices
+       e.g. \-t "antenna=A,bandwidth=4.5M,rfnotch_ctrl=false"
+.TP
+[ \fB\-f\fI <frequency>\fP ]
+Receive frequency(s) (default: 433920000 Hz)
+.TP
+[ \fB\-H\fI <seconds>\fP ]
+Hop interval for polling of multiple frequencies (default: 600 seconds)
+.TP
+[ \fB\-p\fI <ppm_error\fP ]
+Correct rtl\-sdr tuner frequency offset error (default: 0)
+.TP
+[ \fB\-s\fI <sample rate>\fP ]
+Set sample rate (default: 250000 Hz)
+.SS "Demodulator options"
+.TP
+[ \fB\-R\fI <device> | help\fP ]
+Enable only the specified device decoding protocol (can be used multiple times)
+       Specify a negative number to disable a device decoding protocol (can be used multiple times)
+.TP
+[ \fB\-G\fI\fP ]
+Enable blacklisted device decoding protocols, for testing only.
+.TP
+[ \fB\-X\fI <spec> | help\fP ]
+Add a general purpose decoder (prepend \-R 0 to disable all decoders)
+.TP
+[ \fB\-l\fI <level>\fP ]
+Change detection level used to determine pulses (0\-16384) (0=auto) (default: 0)
+.TP
+[ \fB\-z\fI <value>\fP ]
+Override short value in data decoder
+.TP
+[ \fB\-x\fI <value>\fP ]
+Override long value in data decoder
+.TP
+[ \fB\-n\fI <value>\fP ]
+Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
+.SS "Analyze/Debug options"
+.TP
+[ \fB\-a\fI\fP ]
+Analyze mode. Print a textual description of the signal.
+.TP
+[ \fB\-A\fI\fP ]
+Pulse Analyzer. Enable pulse analysis and decode attempt.
+       Disable all decoders with \-R 0 if you want analyzer output only.
+.TP
+[ \fB\-y\fI <code>\fP ]
+Verify decoding of demodulated test data (e.g. "{25}fb2dd58") with enabled devices
+.SS "File I/O options"
+.TP
+[ \fB\-S\fI none | all | unknown | known\fP ]
+Signal auto save. Creates one file per signal.
+       Note: Saves raw I/Q samples (uint8 pcm, 2 channel). Preferred mode for generating test files.
+.TP
+[ \fB\-r\fI <filename> | help\fP ]
+Read data from input file instead of a receiver
+.TP
+[ \fB\-w\fI <filename> | help\fP ]
+Save data stream to output file (a '\-' dumps samples to stdout)
+.TP
+[ \fB\-W\fI <filename> | help\fP ]
+Save data stream to output file, overwrite existing file
+.SS "Data output options"
+.TP
+[ \fB\-F\fI kv | json | csv | mqtt | syslog | null | help\fP ]
+Produce decoded output in given format.
+       Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
+       Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
+.TP
+[ \fB\-M\fI time[:<options>] | protocol | level | stats | bits | help\fP ]
+Add various meta data to each output.
+.TP
+[ \fB\-K\fI FILE | PATH | <tag>\fP ]
+Add an expanded token or fixed tag to every output line.
+.TP
+[ \fB\-C\fI native | si | customary\fP ]
+Convert units in decoded output.
+.TP
+[ \fB\-T\fI <seconds>\fP ]
+Specify number of seconds to run, also 12:34 or 1h23m45s
+.TP
+[ \fB\-E\fI hop | quit\fP ]
+Hop/Quit after outputting successful event(s)
+.TP
+[ \fB\-h\fI\fP ]
+Output this usage help and exit
+       Use \-d, \-g, \-R, \-X, \-F, \-M, \-r, \-w, or \-W without argument for more help
+.SS "Supported device protocols"
+.TP
+[ \fB01\fI\fP ]
+Silvercrest Remote Control
+.TP
+[ \fB02\fI\fP ]
+Rubicson Temperature Sensor
+.TP
+[ \fB03\fI\fP ]
+Prologue Temperature Sensor
+.TP
+[ \fB04\fI\fP ]
+Waveman Switch Transmitter
+.TP
+[ \fB06\fI\fP ]
+* ELV EM 1000
+.TP
+[ \fB07\fI\fP ]
+* ELV WS 2000
+.TP
+[ \fB08\fI\fP ]
+LaCrosse TX Temperature / Humidity Sensor
+.TP
+[ \fB10\fI\fP ]
+* Acurite 896 Rain Gauge
+.TP
+[ \fB11\fI\fP ]
+Acurite 609TXC Temperature and Humidity Sensor
+.TP
+[ \fB12\fI\fP ]
+Oregon Scientific Weather Sensor
+.TP
+[ \fB13\fI\fP ]
+* Mebus 433
+.TP
+[ \fB14\fI\fP ]
+* Intertechno 433
+.TP
+[ \fB15\fI\fP ]
+KlikAanKlikUit Wireless Switch
+.TP
+[ \fB16\fI\fP ]
+AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
+.TP
+[ \fB17\fI\fP ]
+Cardin S466\-TX2
+.TP
+[ \fB18\fI\fP ]
+Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
+.TP
+[ \fB19\fI\fP ]
+Nexus Temperature & Humidity Sensor
+.TP
+[ \fB20\fI\fP ]
+Ambient Weather Temperature Sensor
+.TP
+[ \fB21\fI\fP ]
+Calibeur RF\-104 Sensor
+.TP
+[ \fB22\fI\fP ]
+* X10 RF
+.TP
+[ \fB23\fI\fP ]
+DSC Security Contact
+.TP
+[ \fB24\fI\fP ]
+* Brennenstuhl RCS 2044
+.TP
+[ \fB25\fI\fP ]
+Globaltronics GT\-WT\-02 Sensor
+.TP
+[ \fB26\fI\fP ]
+Danfoss CFR Thermostat
+.TP
+[ \fB29\fI\fP ]
+Chuango Security Technology
+.TP
+[ \fB30\fI\fP ]
+Generic Remote SC226x EV1527
+.TP
+[ \fB31\fI\fP ]
+TFA\-Twin\-Plus\-30.3049, Conrad KW9010, Ea2 BL999
+.TP
+[ \fB32\fI\fP ]
+Fine Offset Electronics WH1080/WH3080 Weather Station
+.TP
+[ \fB33\fI\fP ]
+WT450, WT260H, WT405H
+.TP
+[ \fB34\fI\fP ]
+LaCrosse WS\-2310 / WS\-3600 Weather Station
+.TP
+[ \fB35\fI\fP ]
+Esperanza EWS
+.TP
+[ \fB36\fI\fP ]
+Efergy e2 classic
+.TP
+[ \fB37\fI\fP ]
+* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
+.TP
+[ \fB38\fI\fP ]
+Generic temperature sensor 1
+.TP
+[ \fB39\fI\fP ]
+WG\-PB12V1 Temperature Sensor
+.TP
+[ \fB40\fI\fP ]
+Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+.TP
+[ \fB41\fI\fP ]
+Acurite 986 Refrigerator / Freezer Thermometer
+.TP
+[ \fB42\fI\fP ]
+HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
+.TP
+[ \fB43\fI\fP ]
+Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
+.TP
+[ \fB44\fI\fP ]
+CurrentCost Current Sensor
+.TP
+[ \fB45\fI\fP ]
+emonTx OpenEnergyMonitor
+.TP
+[ \fB46\fI\fP ]
+HT680 Remote control
+.TP
+[ \fB47\fI\fP ]
+Conrad S3318P Temperature & Humidity Sensor
+.TP
+[ \fB48\fI\fP ]
+Akhan 100F14 remote keyless entry
+.TP
+[ \fB49\fI\fP ]
+Quhwa
+.TP
+[ \fB50\fI\fP ]
+OSv1 Temperature Sensor
+.TP
+[ \fB51\fI\fP ]
+Proove / Nexa / KlikAanKlikUit Wireless Switch
+.TP
+[ \fB52\fI\fP ]
+Bresser Thermo\-/Hygro\-Sensor 3CH
+.TP
+[ \fB53\fI\fP ]
+Springfield Temperature and Soil Moisture
+.TP
+[ \fB54\fI\fP ]
+Oregon Scientific SL109H Remote Thermal Hygro Sensor
+.TP
+[ \fB55\fI\fP ]
+Acurite 606TX Temperature Sensor
+.TP
+[ \fB56\fI\fP ]
+TFA pool temperature sensor
+.TP
+[ \fB57\fI\fP ]
+Kedsum Temperature & Humidity Sensor, Pearl NC\-7415
+.TP
+[ \fB58\fI\fP ]
+Blyss DC5\-UK\-WH
+.TP
+[ \fB59\fI\fP ]
+Steelmate TPMS
+.TP
+[ \fB60\fI\fP ]
+Schrader TPMS
+.TP
+[ \fB61\fI\fP ]
+* LightwaveRF
+.TP
+[ \fB62\fI\fP ]
+* Elro DB286A Doorbell
+.TP
+[ \fB63\fI\fP ]
+Efergy Optical
+.TP
+[ \fB64\fI\fP ]
+* Honda Car Key
+.TP
+[ \fB67\fI\fP ]
+Radiohead ASK
+.TP
+[ \fB68\fI\fP ]
+Kerui PIR / Contact Sensor
+.TP
+[ \fB69\fI\fP ]
+Fine Offset WH1050 Weather Station
+.TP
+[ \fB70\fI\fP ]
+Honeywell Door/Window Sensor
+.TP
+[ \fB71\fI\fP ]
+Maverick ET\-732/733 BBQ Sensor
+.TP
+[ \fB72\fI\fP ]
+* RF\-tech
+.TP
+[ \fB73\fI\fP ]
+LaCrosse TX141\-Bv2, TX141TH\-Bv2, TX141\-Bv3 sensor
+.TP
+[ \fB74\fI\fP ]
+Acurite 00275rm,00276rm Temp/Humidity with optional probe
+.TP
+[ \fB75\fI\fP ]
+LaCrosse TX35DTH\-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
+.TP
+[ \fB76\fI\fP ]
+LaCrosse TX29IT Temperature sensor
+.TP
+[ \fB77\fI\fP ]
+Vaillant calorMatic VRT340f Central Heating Control
+.TP
+[ \fB78\fI\fP ]
+Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
+.TP
+[ \fB79\fI\fP ]
+Fine Offset Electronics, WH0530 Temperature/Rain Sensor
+.TP
+[ \fB80\fI\fP ]
+IBIS beacon
+.TP
+[ \fB81\fI\fP ]
+Oil Ultrasonic STANDARD FSK
+.TP
+[ \fB82\fI\fP ]
+Citroen TPMS
+.TP
+[ \fB83\fI\fP ]
+Oil Ultrasonic STANDARD ASK
+.TP
+[ \fB84\fI\fP ]
+Thermopro TP11 Thermometer
+.TP
+[ \fB85\fI\fP ]
+Solight TE44
+.TP
+[ \fB86\fI\fP ]
+Wireless Smoke and Heat Detector GS 558
+.TP
+[ \fB87\fI\fP ]
+Generic wireless motion sensor
+.TP
+[ \fB88\fI\fP ]
+Toyota TPMS
+.TP
+[ \fB89\fI\fP ]
+Ford TPMS
+.TP
+[ \fB90\fI\fP ]
+Renault TPMS
+.TP
+[ \fB91\fI\fP ]
+inFactory
+.TP
+[ \fB92\fI\fP ]
+FT\-004\-B Temperature Sensor
+.TP
+[ \fB93\fI\fP ]
+Ford Car Key
+.TP
+[ \fB94\fI\fP ]
+Philips outdoor temperature sensor (type AJ3650)
+.TP
+[ \fB95\fI\fP ]
+Schrader TPMS EG53MA4, PA66GF35
+.TP
+[ \fB96\fI\fP ]
+Nexa
+.TP
+[ \fB97\fI\fP ]
+Thermopro TP08/TP12/TP20 thermometer
+.TP
+[ \fB98\fI\fP ]
+GE Color Effects
+.TP
+[ \fB99\fI\fP ]
+X10 Security
+.TP
+[ \fB100\fI\fP ]
+Interlogix GE UTC Security Devices
+.TP
+[ \fB101\fI\fP ]
+* Dish remote 6.3
+.TP
+[ \fB102\fI\fP ]
+SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
+.TP
+[ \fB103\fI\fP ]
+Sensible Living Mini\-Plant Moisture Sensor
+.TP
+[ \fB104\fI\fP ]
+* Wireless M\-Bus, Mode C&T, 100kbps (\-f 868950000 \-s 1200000)
+.TP
+[ \fB105\fI\fP ]
+* Wireless M\-Bus, Mode S, 32.768kbps (\-f 868300000 \-s 1000000)
+.TP
+[ \fB106\fI\fP ]
+* Wireless M\-Bus, Mode R, 4.8kbps (\-f 868330000)
+.TP
+[ \fB107\fI\fP ]
+* Wireless M\-Bus, Mode F, 2.4kbps
+.TP
+[ \fB108\fI\fP ]
+Hyundai WS SENZOR Remote Temperature Sensor
+.TP
+[ \fB109\fI\fP ]
+WT0124 Pool Thermometer
+.TP
+[ \fB110\fI\fP ]
+PMV\-107J (Toyota) TPMS
+.TP
+[ \fB111\fI\fP ]
+Emos TTX201 Temperature Sensor
+.TP
+[ \fB112\fI\fP ]
+Ambient Weather TX\-8300 Temperature/Humidity Sensor
+.TP
+[ \fB113\fI\fP ]
+Ambient Weather WH31E Thermo\-Hygrometer Sensor
+.TP
+[ \fB114\fI\fP ]
+Maverick et73
+.TP
+[ \fB115\fI\fP ]
+Honeywell ActivLink, Wireless Doorbell
+.TP
+[ \fB116\fI\fP ]
+Honeywell ActivLink, Wireless Doorbell (FSK)
+.TP
+[ \fB117\fI\fP ]
+* ESA1000 / ESA2000 Energy Monitor
+.TP
+[ \fB118\fI\fP ]
+* Biltema rain gauge
+.TP
+[ \fB119\fI\fP ]
+Bresser Weather Center 5\-in\-1
+.TP
+[ \fB120\fI\fP ]
+* Digitech XC\-0324 temperature sensor
+.TP
+[ \fB121\fI\fP ]
+Opus/Imagintronix XT300 Soil Moisture
+.TP
+[ \fB122\fI\fP ]
+* FS20
+.TP
+[ \fB123\fI\fP ]
+* Jansite TPMS Model TY02S
+.TP
+[ \fB124\fI\fP ]
+LaCrosse/ELV/Conrad WS7000/WS2500 weather sensors
+.TP
+[ \fB125\fI\fP ]
+TS\-FT002 Wireless Ultrasonic Tank Liquid Level Meter With Temperature Sensor
+.TP
+[ \fB126\fI\fP ]
+Companion WTR001 Temperature Sensor
+.TP
+[ \fB127\fI\fP ]
+Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
+.TP
+[ \fB128\fI\fP ]
+DirecTV RC66RX Remote Control
+.TP
+[ \fB129\fI\fP ]
+* Eurochron temperature and humidity sensor
+.TP
+[ \fB130\fI\fP ]
+* IKEA Sparsnäs Energy Meter Monitor
+.TP
+[ \fB131\fI\fP ]
+Microchip HCS200 KeeLoq Hopping Encoder based remotes
+.TP
+[ \fB132\fI\fP ]
+TFA Dostmann 30.3196 T/H outdoor sensor
+.TP
+[ \fB133\fI\fP ]
+Rubicson 48659 Thermometer
+.TP
+[ \fB134\fI\fP ]
+Holman Industries WS5029 weather station
+.TP
+[ \fB135\fI\fP ]
+Philips outdoor temperature sensor (type AJ7010)
+.TP
+[ \fB136\fI\fP ]
+ESIC EMT7110 power meter
+.TP
+[ \fB137\fI\fP ]
+Globaltronics QUIGG GT\-TMBBQ\-05
+.TP
+[ \fB138\fI\fP ]
+Globaltronics GT\-WT\-03 Sensor
+
+* Disabled by default, use \-R n or \-G
+.SS "Input device selection"
+.RS
+RTL\-SDR device driver is available.
+.RE
+.TP
+[ \fB\-d\fI <RTL\-SDR USB device index>\fP ]
+(default: 0)
+.TP
+[ \fB\-d\fI :<RTL\-SDR USB device serial (can be set with rtl_eeprom \-s)>\fP ]
+.RS
+To set gain for RTL\-SDR use \-g <gain> to set an overall gain in dB.
+.RE
+.RS
+SoapySDR device driver is available.
+.RE
+.TP
+[ \fB\-d\fI ""\fP ]
+Open default SoapySDR device
+.TP
+[ \fB\-d\fI driver=rtlsdr\fP ]
+Open e.g. specific SoapySDR device
+.RS
+To set gain for SoapySDR use \-g ELEM=val,ELEM=val,... e.g. \-g LNA=20,TIA=8,PGA=2 (for LimeSDR).
+.RE
+.TP
+[ \fB\-d\fI rtl_tcp[:[//]host[:port]\fP ]
+(default: localhost:1234)
+.RS
+Specify host/port to connect to with e.g. \-d rtl_tcp:127.0.0.1:1234
+.RE
+.SS "Gain option"
+.TP
+[ \fB\-g\fI <gain>\fP ]
+(default: auto)
+.RS
+For RTL\-SDR: gain in dB ("0" is auto).
+.RE
+.RS
+For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
+.RE
+.RS
+E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
+.RE
+.SS "Flex decoder spec"
+Use \-X <spec> to add a flexible general purpose decoder.
+
+<spec> is "key=value[,key=value...]"
+Common keys are:
+.RS
+name=<name> (or: n=<name>)
+.RE
+.RS
+modulation=<modulation> (or: m=<modulation>)
+.RE
+.RS
+short=<short> (or: s=<short>)
+.RE
+.RS
+long=<long> (or: l=<long>)
+.RE
+.RS
+sync=<sync> (or: y=<sync>)
+.RE
+.RS
+reset=<reset> (or: r=<reset>)
+.RE
+.RS
+gap=<gap> (or: g=<gap>)
+.RE
+.RS
+tolerance=<tolerance> (or: t=<tolerance>)
+.RE
+where:
+<name> can be any descriptive name tag you need in the output
+<modulation> is one of:
+.RS
+OOK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
+.RE
+.RS
+OOK_PCM :         Pulse Code Modulation (RZ or NRZ)
+.RE
+.RS
+OOK_PPM :         Pulse Position Modulation
+.RE
+.RS
+OOK_PWM :         Pulse Width Modulation
+.RE
+.RS
+OOK_DMC :         Differential Manchester Code
+.RE
+.RS
+OOK_PIWM_RAW :    Raw Pulse Interval and Width Modulation
+.RE
+.RS
+OOK_PIWM_DC :     Differential Pulse Interval and Width Modulation
+.RE
+.RS
+OOK_MC_OSV1 :     Manchester Code for OSv1 devices
+.RE
+.RS
+FSK_PCM :         FSK Pulse Code Modulation
+.RE
+.RS
+FSK_PWM :         FSK Pulse Width Modulation
+.RE
+.RS
+FSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit
+.RE
+<short>, <long>, <sync> are nominal modulation timings in us,
+<reset>, <gap>, <tolerance> are maximum modulation timings in us:
+PCM     short: Nominal width of pulse [us]
+         long: Nominal width of bit period [us]
+PPM     short: Nominal width of '0' gap [us]
+         long: Nominal width of '1' gap [us]
+PWM     short: Nominal width of '1' pulse [us]
+         long: Nominal width of '0' pulse [us]
+         sync: Nominal width of sync pulse [us] (optional)
+common    gap: Maximum gap size before new row of bits [us]
+        reset: Maximum gap size before End Of Message [us]
+    tolerance: Maximum pulse deviation [us] (optional).
+Available options are:
+.RS
+bits=<n> : only match if at least one row has <n> bits
+.RE
+.RS
+rows=<n> : only match if there are <n> rows
+.RE
+.RS
+repeats=<n> : only match if some row is repeated <n> times
+.RE
+.RS
+	use opt>=n to match at least <n> and opt<=n to match at most <n>
+.RE
+.RS
+invert : invert all bits
+.RE
+.RS
+reflect : reflect each byte (MSB first to MSB last)
+.RE
+.RS
+match=<bits> : only match if the <bits> are found
+.RE
+.RS
+preamble=<bits> : match and align at the <bits> preamble
+.RE
+.RS
+	<bits> is a row spec of {<bit count>}<bits as hex number>
+.RE
+.RS
+unique : suppress duplicate row output
+.RE
+
+.RS
+countonly : suppress detailed row output
+.RE
+
+E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
+.SS "Output format option"
+.TP
+[ \fB\-F\fI kv|json|csv|mqtt|syslog|null\fP ]
+Produce decoded output in given format.
+.RS
+Without this option the default is KV output. Use "\-F null" to remove the default.
+.RE
+.RS
+Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
+.RE
+.RS
+Specify MQTT server with e.g. \-F mqtt://localhost:1883
+.RE
+.RS
+Add MQTT options with e.g. \-F "mqtt://host:1883,opt=arg"
+.RE
+.RS
+MQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]
+.RE
+.RS
+Supported MQTT formats: (default is all)
+.RE
+.RS
+  events: posts JSON event data
+.RE
+.RS
+  states: posts JSON state data
+.RE
+.RS
+  devices: posts device and sensor info in nested topics
+.RE
+.RS
+The topic string will expand keys like [/model]
+.RE
+.RS
+E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+.RE
+.RS
+Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
+.RE
+.SS "Meta information option"
+.TP
+[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|newmodel\fP ]
+Add various metadata to every output line.
+.RS
+Use "time" to add current date and time meta data (preset for live inputs).
+.RE
+.RS
+Use "time:rel" to add sample position meta data (preset for read\-file and stdin).
+.RE
+.RS
+Use "time:unix" to show the seconds since unix epoch as time meta data.
+.RE
+.RS
+Use "time:iso" to show the time with ISO\-8601 format (YYYY\-MM\-DD"T"hh:mm:ss).
+.RE
+.RS
+Use "time:off" to remove time meta data.
+.RE
+.RS
+Use "time:usec" to add microseconds to date time meta data.
+.RE
+.RS
+Use "time:utc" to output time in UTC.
+.RE
+.RS
+	(this may also be accomplished by invocation with TZ environment variable set).
+.RE
+.RS
+	"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
+.RE
+.RS
+Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
+.RE
+.RS
+Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+.RE
+.RS
+Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
+.RE
+.RS
+  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
+.RE
+.RS
+Use "bits" to add bit representation to code outputs (for debug).
+.RE
+
+Note:	Use "newmodel" to transition to new model keys. This will become the default someday.
+.RS
+A table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.
+.RE
+.SS "Read file option"
+.TP
+[ \fB\-r\fI <filename>\fP ]
+Read data from input file instead of a receiver
+.RS
+Parameters are detected from the full path, file name, and extension.
+.RE
+
+.RS
+A center frequency is detected as (fractional) number suffixed with 'M',
+.RE
+.RS
+ 'Hz', 'kHz', 'MHz', or 'GHz'.
+.RE
+
+.RS
+A sample rate is detected as (fractional) number suffixed with 'k',
+.RE
+.RS
+ 'sps', 'ksps', 'Msps', or 'Gsps'.
+.RE
+
+.RS
+File content and format are detected as parameters, possible options are:
+.RE
+.RS
+ 'cu8', 'cs16', 'cf32' ('IQ' implied), and 'am.s16'.
+.RE
+
+.RS
+Parameters must be separated by non\-alphanumeric chars and are case\-insensitive.
+.RE
+.RS
+Overrides can be prefixed, separated by colon (':')
+.RE
+
+.RS
+E.g. default detection by extension: path/filename.am.s16
+.RE
+.RS
+forced overrides: am:s16:path/filename.ext
+.RE
+.SS "Write file option"
+.TP
+[ \fB\-w\fI <filename>\fP ]
+Save data stream to output file (a '\-' dumps samples to stdout)
+.TP
+[ \fB\-W\fI <filename>\fP ]
+Save data stream to output file, overwrite existing file
+.RS
+Parameters are detected from the full path, file name, and extension.
+.RE
+
+.RS
+File content and format are detected as parameters, possible options are:
+.RE
+.RS
+ 'cu8', 'cs16', 'cf32' ('IQ' implied),
+.RE
+.RS
+ 'am.s16', 'am.f32', 'fm.s16', 'fm.f32',
+.RE
+.RS
+ 'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.
+.RE
+
+.RS
+Parameters must be separated by non\-alphanumeric chars and are case\-insensitive.
+.RE
+.RS
+Overrides can be prefixed, separated by colon (':')
+.RE
+
+.RS
+E.g. default detection by extension: path/filename.am.s16
+.RE
+.RS
+forced overrides: am:s16:path/filename.ext
+.RE
+
+.\" end
+.SH "RESOURCES"
+.sp
+\fBProject web site:\fP \c
+.URL "https://github.com/merbanan/rtl_433" "" ""
+.SH "COPYING"
+.sp
+Copyright \(co 2012\-2019 Benjamin Larsson, Christian W. Zuckschwerdt, and many contributors.
+.br
+Free use of this software is granted under the terms of the GPL\-2+ License.

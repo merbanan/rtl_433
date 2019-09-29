@@ -1,5 +1,8 @@
 language: c
 os: linux
+# we need more depth for git describe
+git:
+  depth: false
 matrix:
   include:
 # Test Visual Studio 2017 CMake (MSBuild)
@@ -10,7 +13,7 @@ matrix:
         - export PATH=$MSBUILD_PATH:$PATH
         - mkdir build
         - cd build
-        - cmake -G "Visual Studio 15 2017 Win64" ..
+        - cmake -DENABLE_RTLSDR=OFF -G "Visual Studio 15 2017 Win64" ..
         - MSBuild.exe rtl433.sln
 # Test Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR
 #    - os: windows
@@ -23,7 +26,7 @@ matrix:
 
 # Test with Precise default (GCC 4.6.3, CMake 2.8.7) and no libs
     - compiler: gcc
-      env: NOTE=No-RTL-SDR
+      env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
@@ -52,7 +55,7 @@ matrix:
 
 # Test with Precise Clang (clang 3.4, CMake 2.8.7) and no libs
     - compiler: clang
-      env: NOTE=No-RTL-SDR
+      env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
@@ -118,7 +121,7 @@ matrix:
 
 # Test with Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR
     - compiler: gcc
-      env: NOTE=RTLSDR-and-SoapySDR
+      env: SOAPYSDR=ON
       dist: xenial
       addons:
         apt:
@@ -133,7 +136,7 @@ matrix:
             - cmake
 # Test with Xenial default (gcc 5.4, cmake 3.12) only SoapySDR
     - compiler: gcc
-      env: NOTE=Only-SoapySDR
+      env: RTLSDR=OFF SOAPYSDR=ON
       dist: xenial
       addons:
         apt:
@@ -160,7 +163,7 @@ matrix:
             - cmake
 # Test with mingw 32 bit
     - compiler: i686-w64-mingw32-gcc
-      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
       dist: trusty
       addons:
         apt:
@@ -173,7 +176,7 @@ matrix:
             - gcc-multilib
 # Test with mingw 64 bit
     - compiler: x86_64-w64-mingw32-gcc
-      env: CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
+      env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
       dist: trusty
       addons:
         apt:
@@ -183,16 +186,28 @@ matrix:
             - gcc-mingw-w64-x86-64
             - mingw-w64-x86-64-dev
             - gcc-mingw-w64
+            - p7zip
+      before_deploy: ./do_sysroot.sh
+      deploy:
+        provider: bintray
+        file: "build/bintray.json"
+        user: "chzu"
+        key:
+          secure: Ynhd9UIByGUQPYA3Ow1Jap1bMxB0Pyw+pQV9iQJoG2yCW//ubJ+UnHfYb3KfIWrEK7VVP52m7Mwk9+PrYBmrkNbc3IYc2rYGdbHgC82SRiPbOIxPUwz2X81j1AQZZhN2nc95yudsajpoSqQ7AkIyMyt5FN3NSNN44tKYD5YjuNUaYa2b6SEWNFyG7MHxCqqyykNIraxPS5I5ZOmN4t+ugpgcKd8gLCd4TJQ0355WfHhr1oTrJvgvxGirXOsUm3lC0lequ+BEVHjOjeKl8vybwiculLTIn2rgc9ysoca8sa60+W5ArTo56rPbODQTqZ7sEWSKhE48dJx36JGlM7zLrMLTzcP6tyhpJ2qwG0KQWJkAdCtkSTlOc5+nTojsS6eG8aN3/D/PuxRvjZO3zSwt9OsL2BPWo0DnZ2ZluMN0wzGTJeN/+B4f7rmX0rX9yLrxRMWftr69rmf4dS/ymtK8Yy9QLqgV3SKoIkhMy4e8ksBDnJ227+EwrLktRKaTt04Vg51Ip2mIlCJT9gR93NlsUgMtwCfexAgbIFrPykycwt+Ra6gADMrfZz2sHmphS6+WwsIgCljm9eHSYzU66lLwb1AAI4tuSNlPDAKUBzwNRfE2OArnGvLhn9pSUQ9zpyXgDpmBuj4hI9kfZArLBQBRCGP7gZM2lHh6nmWXDm6y4Ak=
+        skip_cleanup: true # to upload artifacts created during the build
+        #on:
+        #  branch: master
+        #  condition: "-n $BINTRAY_DEPLOY"
 
 # Full test suite
     - language: python
       compiler: gcc
-      env: RUN_RTL_433_TESTS=1
+      env: RTLSDR=OFF RUN_RTL_433_TESTS=1
       dist: trusty
       python:
           - "2.7"
       install:
-          - pip install deepdiff
+          - pip install deepdiff==3.3.0
       addons:
         apt:
           packages:

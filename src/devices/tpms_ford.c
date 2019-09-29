@@ -23,42 +23,42 @@ static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-	data_t *data;
-	unsigned int start_pos;
-	bitbuffer_t packet_bits = {0};
-	uint8_t *b;
-	unsigned id;
-	char id_str[9];
-	int code;
-	char code_str[7];
-	
-	start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
-		// require 64 data bits
-	if (start_pos-bitpos < 128) {
-		return 0;
-	}
-	b = packet_bits.bb[0];
-	
-	if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
-		return 0;
-	}
-	
-	id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
-	sprintf(id_str, "%08x", id);
-	
-	code = b[4]<<16 | b[5]<<8 | b[6];
-	sprintf(code_str, "%06x", code);
-	
-	data = data_make(
-					 "model",        "",     DATA_STRING, "Ford",
-					 "type",         "",     DATA_STRING, "TPMS",
-					 "id",           "",     DATA_STRING, id_str,
-					 "code",         "",     DATA_STRING, code_str,
-					 "mic",          "",     DATA_STRING, "CHECKSUM",
-					 NULL);
-	
-	decoder_output_data(decoder, data);
-	return 1;
+    data_t *data;
+    unsigned int start_pos;
+    bitbuffer_t packet_bits = {0};
+    uint8_t *b;
+    unsigned id;
+    char id_str[9];
+    int code;
+    char code_str[7];
+
+    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+    // require 64 data bits
+    if (start_pos-bitpos < 128) {
+        return 0;
+    }
+    b = packet_bits.bb[0];
+
+    if (((b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]) & 0xff) != b[7]) {
+        return 0;
+    }
+
+    id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
+    sprintf(id_str, "%08x", id);
+
+    code = b[4]<<16 | b[5]<<8 | b[6];
+    sprintf(code_str, "%06x", code);
+
+    data = data_make(
+        "model",        "",     DATA_STRING, "Ford",
+        "type",         "",     DATA_STRING, "TPMS",
+        "id",           "",     DATA_STRING, id_str,
+        "code",         "",     DATA_STRING, code_str,
+        "mic",          "",     DATA_STRING, "CHECKSUM",
+        NULL);
+
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {

@@ -12,9 +12,9 @@
 
 /*
  * Interlogix/GE/UTC Wireless 319.5 mhz Devices
- * 
+ *
  * Frequency: 319508000
- * 
+ *
  * Decoding done per us patent #5761206
  * https://www.google.com/patents/US5761206
  *
@@ -118,7 +118,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    // set message starting postion (just past preamble and sync bit) and exit if msg length not met
+    // set message starting position (just past preamble and sync bit) and exit if msg length not met
     bit_offset += (sizeof preamble) * 8;
 
     if (bitbuffer->bits_per_row[row] - bit_offset < INTERLOGIX_MSG_BIT_LEN - 1) {
@@ -168,6 +168,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     case 0xf: device_type = "keyfob"; break;
     case 0x4: device_type = "motion"; break;
     case 0x6: device_type = "heat"; break;
+    case 0x9: device_type = "glass"; break; // switch1 changes from open to closed on trigger
 
     default: device_type = "unknown"; break;
     }
@@ -193,29 +194,30 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     }
 
-
+    /* clang-format off */
     data = data_make(
-            "model",       "Model",         DATA_STRING, "Interlogix",
+            "model",       "Model",         DATA_STRING, _X("Interlogix-Security","Interlogix"),
+            _X("subtype","device_type"),     "Device Type",   DATA_STRING, device_type,
             "id",          "ID",            DATA_STRING, device_serial,
-            "device_type", "Device Type",   DATA_STRING, device_type,
-            "raw_message", "Raw Message",   DATA_STRING, raw_message,
             "battery",     "Battery",       DATA_STRING, low_battery,
             "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
             "switch2",     "Switch2 State", DATA_STRING, f2_latch_state,
             "switch3",     "Switch3 State", DATA_STRING, f3_latch_state,
             "switch4",     "Switch4 State", DATA_STRING, f4_latch_state,
             "switch5",     "Switch5 State", DATA_STRING, f5_latch_state,
+            "raw_message", "Raw Message",   DATA_STRING, raw_message,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
     "model",
+    "subtype",
     "id",
-    "device_type",
+    "device_type", // TODO: delete this
     "raw_message",
     "battery",
     "switch1",
@@ -223,7 +225,7 @@ static char *output_fields[] = {
     "switch3",
     "switch4",
     "switch5",
-    NULL
+    NULL,
 };
 
 r_device interlogix = {

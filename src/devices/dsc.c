@@ -118,8 +118,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
             if (decoder->verbose > 1) {
-                fprintf(stderr, "DSC Invalid start/sync bits ");
-                bitrow_print(b, 40);
+                bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
             }
             continue;
         }
@@ -130,10 +129,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
         bytes[4] = ((b[5]));
 
-        // XXX change to decoder->verbose
         if (decoder->verbose) {
-            fprintf(stdout, "DSC Contact Raw Data: ");
-            bitrow_print(bytes, 40);
+            bitrow_printf(bytes, 40, "DSC Contact Raw Data: ");
         }
 
         status = bytes[0];
@@ -179,12 +176,12 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
         data = data_make(
-                "model", "", DATA_STRING, "DSC Contact",
+                "model", "", DATA_STRING, _X("DSC-Security","DSC Contact"),
                 "id", "", DATA_INT, esn,
                 "closed", "", DATA_INT, s_closed, // @todo make bool
                 "event", "", DATA_INT, s_event, // @todo make bool
                 "tamper", "", DATA_INT, s_tamper, // @todo make bool
-                "battery_low", "", DATA_INT, s_battery_low, // @todo make bool
+                _X("battery_ok","battery_low"), "", DATA_INT, _X(!s_battery_low,s_battery_low),
                 "xactivity", "", DATA_INT, s_xactivity, // @todo make bool
 
                 // Note: the following may change or be removed
@@ -212,8 +209,9 @@ static char *output_fields[] = {
     "model",
     "id",
     "status",
+    "battery_ok",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device DSC = {

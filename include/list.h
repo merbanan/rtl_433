@@ -1,13 +1,16 @@
 /** @file
     Generic list.
- 
+
     Copyright (C) 2018 Christian Zuckschwerdt
- 
+
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
+
+#ifndef INCLUDE_LIST_H_
+#define INCLUDE_LIST_H_
 
 #include <stddef.h>
 
@@ -37,3 +40,5 @@ void list_clear(list_t *list, list_elem_free_fn elem_free);
 
 /// Clear the list, free backing, does not free list itself.
 void list_free_elems(list_t *list, list_elem_free_fn elem_free);
+
+#endif /* INCLUDE_LIST_H_ */

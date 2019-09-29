@@ -1,19 +1,19 @@
 /** @file
     A general structure for extracting hierarchical data from the devices;
     typically key-value pairs, but allows for more rich data as well.
- 
+
     Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
- 
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 2 of the License, or
     (at your option) any later version.
- 
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
- 
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -37,18 +37,6 @@
     #ifndef restrict
     #define restrict __restrict
     #endif
-#endif
-
-/*
- * The only place '<strings.h>' is currenly needed is in 'src/devices/flex.c'.
- * But it's cleaner to keep such trivia here.
- */
-#ifdef _MSC_VER
-    #include <string.h>
-    #define strcasecmp(s1,s2)     _stricmp(s1,s2)
-    #define strncasecmp(s1,s2,n)  _strnicmp(s1,s2,n)
-#else
-    #include <strings.h>
 #endif
 
 typedef enum {
@@ -191,5 +179,7 @@ void data_output_free(struct data_output *output);
 void print_value(data_output_t *output, data_type_t type, void *value, char *format);
 
 void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
+
+size_t data_print_jsons(data_t *data, char *dst, size_t len);
 
 #endif // INCLUDE_DATA_H_

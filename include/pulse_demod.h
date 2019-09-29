@@ -15,7 +15,7 @@
 #define INCLUDE_PULSE_DEMOD_H_
 
 #include "pulse_detect.h"
-#include "rtl_433_devices.h"
+#include "r_device.h"
 
 /// Demodulate a Pulse Code Modulation signal.
 ///
@@ -65,10 +65,10 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device);
 
 /// Demodulate a Manchester encoded signal with a hardcoded zerobit in front.
 ///
-/// Demodulate a Manchester encoded signal where first rising edge is counted as a databit 
+/// Demodulate a Manchester encoded signal where first rising edge is counted as a databit
 /// and therefore always will be zero (Most likely a hardcoded Oregon Scientific peculiarity)
 ///
-/// Clock is recovered from the data based on pulse width. When time since last bit is more 
+/// Clock is recovered from the data based on pulse width. When time since last bit is more
 /// than 1.5 times the clock half period (short_width) it is declared a data edge where:
 /// - Rising edge means bit = 0
 /// - Falling edge means bit = 1

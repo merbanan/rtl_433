@@ -1,21 +1,23 @@
 /** @file
-    Definition of r_device and all available decoders.
+    Declaration of all available decoders.
 */
 
 #ifndef INCLUDE_RTL_433_DEVICES_H_
 #define INCLUDE_RTL_433_DEVICES_H_
+
+#include "r_device.h"
 
 #define DEVICES \
     DECL(silvercrest) \
     DECL(rubicson) \
     DECL(prologue) \
     DECL(waveman) \
-    DECL(template) \
+    DECL(new_template) \
     DECL(elv_em1000) \
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
-    DECL(template) \
-    DECL(acurite_rain_gauge) \
+    DECL(new_template) \
+    DECL(acurite_rain_896) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
     DECL(mebus433) \
@@ -32,8 +34,8 @@
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(chuango) \
     DECL(generic_remote) \
     DECL(tfa_twin_plus_303049) \
@@ -70,15 +72,15 @@
     DECL(elro_db286a) \
     DECL(efergy_optical) \
     DECL(hondaremote) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(radiohead_ask) \
     DECL(kerui) \
     DECL(fineoffset_wh1050) \
     DECL(honeywell) \
     DECL(maverick_et73x) \
     DECL(rftech) \
-    DECL(lacrosse_TX141TH_Bv2) \
+    DECL(lacrosse_tx141x) \
     DECL(acurite_00275rm) \
     DECL(lacrosse_tx35) \
     DECL(lacrosse_tx29) \
@@ -100,7 +102,7 @@
     DECL(infactory) \
     DECL(ft004b) \
     DECL(fordremote) \
-    DECL(philips) \
+    DECL(philips_aj3650) \
     DECL(schrader_EG53MA4) \
     DECL(nexa) \
     DECL(thermopro_tp12) \
@@ -126,47 +128,27 @@
     DECL(esa) \
     DECL(bt_rain) \
     DECL(bresser_5in1) \
-    DECL(digitech_xc0324)
+    DECL(digitech_xc0324) \
+    DECL(opus_xt300) \
+    DECL(fs20) \
+    DECL(tpms_jansite) \
+    DECL(lacrosse_ws7000) \
+    DECL(ts_ft002) \
+    DECL(companion_wtr001) \
+    DECL(ecowitt) \
+    DECL(directv) \
+    DECL(eurochron) \
+    DECL(ikea_sparsnas) \
+    DECL(hcs200) \
+    DECL(tfa_303196) \
+    DECL(rubicson_48659) \
+    DECL(holman_ws5029) \
+    DECL(philips_aj7010) \
+    DECL(esic_emt7110) \
+    DECL(gt_tmbbq05) \
+    DECL(gt_wt_03) \
 
-struct bitbuffer;
-struct data;
-
-typedef struct r_device {
-    unsigned protocol_num; ///< fixed sequence number, assigned in main().
-
-    /* information provided by each decoder */
-    char *name;
-    unsigned modulation;
-    float short_width;
-    float long_width;
-    float reset_limit;
-    float gap_limit;
-    float sync_width;
-    float tolerance;
-    int (*decode_fn)(struct r_device *decoder, struct bitbuffer *bitbuffer);
-    struct r_device *(*create_fn)(char *args);
-    unsigned disabled;
-    char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
-
-    /* public for each decoder */
-    int verbose;
-    int verbose_bits;
-    void (*output_fn)(struct r_device *decoder, struct data *data);
-
-    /* private for flex decoder and output callback */
-    void *decode_ctx;
-    void *output_ctx;
-
-    /* private pulse limits (converted to count of samples) */
-    float f_short_width; ///< precision reciprocal for PCM.
-    float f_long_width;  ///< precision reciprocal for PCM.
-    int s_short_width;
-    int s_long_width;
-    int s_reset_limit;
-    int s_gap_limit;
-    int s_sync_width;
-    int s_tolerance;
-} r_device;
+    /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
 DEVICES

@@ -16,8 +16,10 @@ rtl_433_SOURCES      = abuf.c \
                        list.c \
                        mongoose.c \
                        optparse.c \
+                       output_mqtt.c \
                        pulse_demod.c \
                        pulse_detect.c \
+                       r_api.c \
                        r_util.c \
                        rtl_433.c \
                        samp_grab.c \
@@ -38,35 +40,46 @@ rtl_433_SOURCES      = abuf.c \
                        devices/calibeur.c \
                        devices/cardin.c \
                        devices/chuango.c \
+                       devices/companion_wtr001.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
                        devices/digitech_xc0324.c \
+                       devices/directv.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
+                       devices/ecowitt.c \
                        devices/efergy_e2_classic.c \
                        devices/efergy_optical.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
                        devices/esa.c \
+                       devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
+                       devices/eurochron.c \
                        devices/fineoffset.c \
                        devices/fineoffset_wh1050.c \
                        devices/fineoffset_wh1080.c \
                        devices/flex.c \
                        devices/fordremote.c \
+                       devices/fs20.c \
                        devices/ft004b.c \
                        devices/ge_coloreffects.c \
                        devices/generic_motion.c \
                        devices/generic_remote.c \
                        devices/generic_temperature_sensor.c \
+                       devices/gt_tmbbq05.c \
                        devices/gt_wt_02.c \
+                       devices/gt_wt_03.c \
+                       devices/hcs200.c \
                        devices/hideki.c \
+                       devices/holman_ws5029.c \
                        devices/hondaremote.c \
                        devices/honeywell.c \
                        devices/honeywell_wdb.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
+                       devices/ikea_sparsnas.c \
                        devices/infactory.c \
                        devices/inovalley-kw9015b.c \
                        devices/interlogix.c \
@@ -76,6 +89,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/lacrosse.c \
                        devices/lacrosse_TX141TH_Bv2.c \
                        devices/lacrosse_tx35.c \
+                       devices/lacrosse_ws7000.c \
                        devices/lacrossews.c \
                        devices/lightwave_rf.c \
                        devices/m_bus.c \
@@ -88,16 +102,19 @@ rtl_433_SOURCES      = abuf.c \
                        devices/nexus.c \
                        devices/oil_standard.c \
                        devices/oil_watchman.c \
+                       devices/opus_xt300.c \
                        devices/oregon_scientific.c \
                        devices/oregon_scientific_sl109h.c \
                        devices/oregon_scientific_v1.c \
-                       devices/philips.c \
+                       devices/philips_aj3650.c \
+                       devices/philips_aj7010.c \
                        devices/prologue.c \
                        devices/proove.c \
                        devices/quhwa.c \
                        devices/radiohead_ask.c \
                        devices/rftech.c \
                        devices/rubicson.c \
+                       devices/rubicson_48659.c \
                        devices/s3318p.c \
                        devices/schraeder.c \
                        devices/silvercrest.c \
@@ -106,16 +123,18 @@ rtl_433_SOURCES      = abuf.c \
                        devices/solight_te44.c \
                        devices/springfield.c \
                        devices/steelmate.c \
+                       devices/tfa_30_3196.c \
                        devices/tfa_pool_thermometer.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
                        devices/thermopro_tp12.c \
                        devices/tpms_citroen.c \
                        devices/tpms_ford.c \
-                       devices/tpms_elantra2012.c \
+                       devices/tpms_jansite.c \
                        devices/tpms_pmv107j.c \
                        devices/tpms_renault.c \
                        devices/tpms_toyota.c \
+                       devices/ts_ft002.c \
                        devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
                        devices/waveman.c \

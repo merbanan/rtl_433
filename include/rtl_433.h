@@ -40,12 +40,15 @@ typedef enum {
     REPORT_TIME_DEFAULT,
     REPORT_TIME_DATE,
     REPORT_TIME_SAMPLES,
+    REPORT_TIME_UNIX,
+    REPORT_TIME_ISO,
     REPORT_TIME_OFF,
 } time_mode_t;
 
 typedef struct r_cfg {
     char *dev_query;
     char *gain_str;
+    char *settings_str;
     int ppm_error;
     uint32_t out_block_size;
     char const *test_data;
@@ -57,10 +60,12 @@ typedef struct r_cfg {
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
     uint32_t center_frequency;
-    time_t rawtime_old;
+    int hop_times;
+    int hop_time[MAX_FREQS];
+    time_t hop_start_time;
     int duration;
     time_t stop_time;
-    int stop_after_successful_events_flag;
+    int after_successful_events_flag;
     uint32_t samp_rate;
     uint64_t input_pos;
     uint32_t bytes_to_read;
@@ -74,12 +79,22 @@ typedef struct r_cfg {
     time_mode_t report_time;
     int report_time_hires;
     int report_time_utc;
+    int report_description;
+    int report_stats;
+    int stats_interval;
+    int stats_now;
+    time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
+    int new_model_keys;
+    /* stats*/
+    unsigned frames_count; ///< stats counter for interval
+    unsigned frames_fsk; ///< stats counter for interval
+    unsigned frames_events; ///< stats counter for interval
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

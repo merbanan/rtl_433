@@ -42,7 +42,7 @@ unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_co
     unsigned shl = bit_offset - pos * 8;      // shift left we need to align
     unsigned len = (shl + bit_count + 7) / 8; // number of bytes we need
     unsigned shr = 8 * len - shl - bit_count; // actual shift right
-//    printf("pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
+//    fprintf(stderr, "pos: %d, shl: %d, len: %d, shr: %d\n", pos, shl, len, shr);
     unsigned long val = data[pos];
     val = (uint8_t)(val << shl) >> shl; // mask off top bits
     for (unsigned i = 1; i < len - 1; ++i) {
@@ -83,6 +83,7 @@ struct flex_params {
     unsigned max_repeats;
     unsigned invert;
     unsigned reflect;
+    unsigned unique;
     unsigned count_only;
     unsigned match_len;
     bitrow_t match_bits;
@@ -90,6 +91,44 @@ struct flex_params {
     bitrow_t preamble_bits;
     struct flex_get getter[GETTER_SLOTS];
 };
+
+static void print_row_bytes(char *row_bytes, uint8_t *bits, int num_bits)
+{
+    row_bytes[0] = '\0';
+    // print byte-wide
+    for (int col = 0; col < (num_bits + 7) / 8; ++col) {
+        sprintf(&row_bytes[2 * col], "%02x", bits[col]);
+    }
+    // remove last nibble if needed
+    row_bytes[2 * (num_bits + 3) / 8] = '\0';
+}
+
+static void render_getters(data_t *data, uint8_t *bits, struct flex_params *params)
+{
+    // add a data line for each getter
+    for (int g = 0; g < GETTER_SLOTS && params->getter[g].bit_count > 0; ++g) {
+        struct flex_get *getter = &params->getter[g];
+        unsigned long val;
+        if (getter->mask)
+            val = compact_number(bits, getter->bit_offset, getter->mask);
+        else
+            val = extract_number(bits, getter->bit_offset, getter->bit_count);
+        int m;
+        for (m = 0; getter->map[m].val; m++) {
+            if (getter->map[m].key == val) {
+                data_append(data,
+                        getter->name, "", DATA_STRING, getter->map[m].val,
+                        NULL);
+                break;
+            }
+        }
+        if (!getter->map[m].val) {
+            data_append(data,
+                    getter->name, "", DATA_INT, val,
+                    NULL);
+        }
+    }
+}
 
 static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -138,9 +177,12 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // discard unless match
     if (params->match_len) {
+        r = -1;
         match_count = 0;
         for (i = 0; i < bitbuffer->num_rows; i++) {
             if (bitbuffer_search(bitbuffer, i, 0, params->match_bits, params->match_len) < bitbuffer->bits_per_row[i]) {
+                if (r < 0)
+                    r = i;
                 match_count++;
             }
         }
@@ -150,10 +192,13 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // discard unless match, this should be an AND condition
     if (params->preamble_len) {
+        r = -1;
         match_count = 0;
         for (i = 0; i < bitbuffer->num_rows; i++) {
             unsigned pos = bitbuffer_search(bitbuffer, i, 0, params->preamble_bits, params->preamble_len);
             if (pos < bitbuffer->bits_per_row[i]) {
+                if (r < 0)
+                    r = i;
                 match_count++;
                 pos += params->preamble_len;
                 unsigned len = bitbuffer->bits_per_row[i] - pos;
@@ -171,56 +216,57 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_print(bitbuffer);
     }
 
+    // discard duplicates
+    if (params->unique) {
+        print_row_bytes(row_bytes, bitbuffer->bb[r], bitbuffer->bits_per_row[r]);
+
+        /* clang-format off */
+        data = data_make(
+                "model", "", DATA_STRING, params->name,
+                "count", "", DATA_INT, match_count,
+                "num_rows", "", DATA_INT, bitbuffer->num_rows,
+                "len", "", DATA_INT, bitbuffer->bits_per_row[r],
+                "data", "", DATA_STRING, row_bytes,
+                NULL);
+        /* clang-format on */
+
+        // add a data line for each getter
+        render_getters(data, bitbuffer->bb[r], params);
+
+        decoder_output_data(decoder, data);
+        return 0;
+    }
+
     if (params->count_only) {
+        /* clang-format off */
         data = data_make(
                 "model", "", DATA_STRING, params->name,
                 "count", "", DATA_INT, match_count,
                 NULL);
-        decoder_output_data(decoder, data);
+        /* clang-format on */
 
+        decoder_output_data(decoder, data);
         return 0;
     }
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
-        row_bytes[0] = '\0';
-        // print byte-wide
-        for (int col = 0; col < (bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
-            sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
-        }
-        // remove last nibble if needed
-        row_bytes[2 * (bitbuffer->bits_per_row[i] + 3) / 8] = '\0';
+        print_row_bytes(row_bytes, bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
+        /* clang-format off */
         row_data[i] = data_make(
                 "len", "", DATA_INT, bitbuffer->bits_per_row[i],
                 "data", "", DATA_STRING, row_bytes,
                 NULL);
+        /* clang-format on */
+
         // add a data line for each getter
-        for (int g = 0; g < GETTER_SLOTS && params->getter[g].bit_count > 0; ++g) {
-            struct flex_get *getter = &params->getter[g];
-            unsigned long val;
-            if (getter->mask)
-                val = compact_number(bitbuffer->bb[i], getter->bit_offset, getter->mask);
-            else
-                val = extract_number(bitbuffer->bb[i], getter->bit_offset, getter->bit_count);
-            int m;
-            for (m = 0; getter->map[m].val; m++) {
-                if (getter->map[m].key == val) {
-                    data_append(row_data[i],
-                            getter->name, "", DATA_STRING, getter->map[m].val,
-                            NULL);
-                    break;
-                }
-            }
-            if (!getter->map[m].val) {
-                data_append(row_data[i],
-                        getter->name, "", DATA_INT, val,
-                        NULL);
-            }
-        }
+        render_getters(row_data[i], bitbuffer->bb[i], params);
+
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
         sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
+    /* clang-format off */
     data = data_make(
             "model", "", DATA_STRING, params->name,
             "count", "", DATA_INT, match_count,
@@ -228,6 +274,8 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "rows", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_DATA, row_data),
             "codes", "", DATA_ARRAY, data_array(bitbuffer->num_rows, DATA_STRING, row_codes),
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     for (i = 0; i < bitbuffer->num_rows; i++) {
         free(row_codes[i]);
@@ -242,7 +290,7 @@ static char *output_fields[] = {
         "num_rows",
         "rows",
         "codes",
-        NULL
+        NULL,
 };
 
 static void usage()
@@ -255,6 +303,7 @@ static void usage()
 static void help()
 {
     fprintf(stderr,
+            "\t\t= Flex decoder spec =\n"
             "Use -X <spec> to add a flexible general purpose decoder.\n\n"
             "<spec> is \"key=value[,key=value...]\"\n"
             "Common keys are:\n"
@@ -280,7 +329,8 @@ static void help()
             "\tFSK_PCM :         FSK Pulse Code Modulation\n"
             "\tFSK_PWM :         FSK Pulse Width Modulation\n"
             "\tFSK_MC_ZEROBIT :  Manchester Code with fixed leading zero bit\n"
-            "<short>, <long>, <sync>, and <reset> are the timings for the decoder in µs\n"
+            "<short>, <long>, <sync> are nominal modulation timings in us,\n"
+            "<reset>, <gap>, <tolerance> are maximum modulation timings in us:\n"
             "PCM     short: Nominal width of pulse [us]\n"
             "         long: Nominal width of bit period [us]\n"
             "PPM     short: Nominal width of '0' gap [us]\n"
@@ -288,9 +338,9 @@ static void help()
             "PWM     short: Nominal width of '1' pulse [us]\n"
             "         long: Nominal width of '0' pulse [us]\n"
             "         sync: Nominal width of sync pulse [us] (optional)\n"
-            "          gap: Maximum gap size before new row of bits [us]\n"
-            "    tolerance: Maximum pulse deviation [us] (optional)\n"
-            "        reset: Maximum gap size before End Of Message [us].\n"
+            "common    gap: Maximum gap size before new row of bits [us]\n"
+            "        reset: Maximum gap size before End Of Message [us]\n"
+            "    tolerance: Maximum pulse deviation [us] (optional).\n"
             "Available options are:\n"
             "\tbits=<n> : only match if at least one row has <n> bits\n"
             "\trows=<n> : only match if there are <n> rows\n"
@@ -301,6 +351,7 @@ static void help()
             "\tmatch=<bits> : only match if the <bits> are found\n"
             "\tpreamble=<bits> : match and align at the <bits> preamble\n"
             "\t\t<bits> is a row spec of {<bit count>}<bits as hex number>\n"
+            "\tunique : suppress duplicate row output\n\n"
             "\tcountonly : suppress detailed row output\n\n"
             "E.g. -X \"n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3\"\n\n");
     exit(0);
@@ -419,40 +470,6 @@ static void parse_getter(const char *arg, struct flex_get *getter)
     */
 }
 
-static char *strip_ws(char *str)
-{
-    if (!str)
-        return str;
-    while (*str == ' ' || *str == '\t' || *str == '\r' || *str == '\n')
-        ++str;
-    char *e = str; // end pointer (last non ws)
-    char *p = str; // scanning pointer
-    while (*p) {
-        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n')
-            ++p;
-        if (*p)
-            e = p++;
-    }
-    *++e = '\0';
-    return str;
-}
-
-static char *remove_ws(char *str)
-{
-    if (!str)
-        return str;
-    char *d = str; // dst pointer
-    char *s = str; // src pointer
-    while (*s) {
-        while (*s == ' ' || *s == '\t' || *s == '\r' || *s == '\n')
-            ++s;
-        if (*s)
-            *d++ = *s++;
-    }
-    *d++ = '\0';
-    return str;
-}
-
 r_device *flex_create_device(char *spec)
 {
     if (!spec || !*spec || *spec == '?' || !strncasecmp(spec, "help", strlen(spec))) {
@@ -472,7 +489,7 @@ r_device *flex_create_device(char *spec)
         *args++ = '\0';
     }
 
-    c = strip_ws(strtok(spec, ":"));
+    c = trim_ws(strtok(spec, ":"));
     if (c == NULL) {
         fprintf(stderr, "Bad flex spec, missing name!\n");
         usage();
@@ -558,7 +575,7 @@ r_device *flex_create_device(char *spec)
     char *key, *val;
     while (getkwargs(&args, &key, &val)) {
         key = remove_ws(key);
-        val = strip_ws(val);
+        val = trim_ws(val);
         if (!key || !*key)
             continue;
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
@@ -610,6 +627,9 @@ r_device *flex_create_device(char *spec)
 
         else if (!strcasecmp(key, "countonly"))
             params->count_only = val ? atoi(val) : 1;
+
+        else if (!strcasecmp(key, "unique"))
+            params->unique = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "get")) {
             if (get_count < GETTER_SLOTS)

@@ -25,7 +25,7 @@
 #define PD_MAX_PULSE_MS 100     // Pulse width in ms to exceed to declare End Of Package (e.g. for non OOK packages)
 
 /// Data for a compact representation of generic pulse train.
-typedef struct {
+typedef struct pulse_data {
     uint64_t offset;            ///< Offset to first pulse in number of samples from start of stream.
     uint32_t sample_rate;       ///< Sample rate the pulses are recorded with.
     unsigned start_ago;         ///< Start of first pulse in number of samples ago.
@@ -43,6 +43,12 @@ typedef struct {
     float snr_db;
     float noise_db;
 } pulse_data_t;
+
+// Package types
+enum package_types {
+    PULSE_DATA_OOK = 1,
+    PULSE_DATA_FSK = 2,
+};
 
 typedef struct pulse_detect pulse_detect_t;
 
@@ -77,19 +83,19 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
 ///
 /// Function is stateful and can be called with chunks of input data.
-/// @param envelope_data: Samples with amplitude envelope of carrier 
+/// @param envelope_data: Samples with amplitude envelope of carrier
 /// @param fm_data: Samples with frequency offset from center frequency
 /// @param len: Number of samples in input buffers
 /// @param samp_rate: Sample rate in samples per second
-/// @param *pulses: Will return a pulse_data_t structure
-/// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
+/// @param[in,out] pulses: Will return a pulse_data_t structure
+/// @param[in,out] fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @return 0 if all input sample data is processed
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses);
 
 /// Analyze and print result.
-void pulse_analyzer(pulse_data_t *data);
+void pulse_analyzer(pulse_data_t *data, int package_type);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

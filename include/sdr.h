@@ -86,12 +86,30 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose);
 */
 int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose);
 
+/** Set device antenna.
+
+    @param dev the device handle
+    @param antenna_str name of the antenna (example 'Tuner 2 50 ohm')
+    @param verbose the verbosity level for reports to stderr
+    @return 0 on success
+*/
+int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose);
+
 /** Get device sample rate.
 
     @param dev the device handle
     @return sample rate in samples/second on success, 0 otherwise
 */
 uint32_t sdr_get_sample_rate(sdr_dev_t *dev);
+
+/** Apply a list of sdr settings.
+
+    @param dev the device handle
+    @param sdr_settings keyword list of settings
+    @param verbose the verbosity level for reports to stderr
+    @return 0 on success
+*/
+int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose);
 
 /** Activate stream (only needed for SoapySDR).
 

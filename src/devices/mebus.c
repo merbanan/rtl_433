@@ -32,7 +32,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         unknown2 = (bb[1][3] & 0xf0) >> 4;
 
         data = data_make(
-                "model",         "",            DATA_STRING, "Mebus/433",
+                "model",         "",            DATA_STRING, _X("Mebus-433","Mebus/433"),
                 "id",            "Address",     DATA_INT, address,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",

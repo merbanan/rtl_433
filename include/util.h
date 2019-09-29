@@ -15,11 +15,11 @@
 #include <stdint.h>
 
 // Helper macros, collides with MSVC's stdlib.h unless NOMINMAX is used
-#ifndef max
-#define max(a,b) ((a) > (b) ? (a) : (b))
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
+#ifndef MIN
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
 /// Reverse (reflect) the bits in an 8 bit byte.
@@ -33,6 +33,26 @@ uint8_t reverse8(uint8_t x);
 /// @param message bytes of message data
 /// @param num_bytes number of bytes to reflect
 void reflect_bytes(uint8_t message[], unsigned num_bytes);
+
+/// Reflect (reverse LSB to MSB) each nibble in an 8 bit byte, preserves nibble order.
+///
+/// @param x: input byte
+/// @return reflected nibbles
+uint8_t reflect4(uint8_t x);
+
+/// Reflect (reverse LSB to MSB) each nibble in a number of bytes.
+///
+/// @param message bytes of nibble message data
+/// @param num_bytes number of bytes to reflect
+void reflect_nibbles(uint8_t message[], unsigned num_bytes);
+
+/// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of successfully unstuffed nibbles.
+///
+/// @param message: bytes of message data
+/// @param offset_bits: start offset of message in bits
+/// @param num_bits: message length in bits
+/// @param dst: target buffer for extracted nibbles, at least num_bits/5 size
+unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// CRC-4.
 ///
@@ -138,5 +158,12 @@ uint8_t xor_bytes(uint8_t const message[], unsigned num_bytes);
 /// @param num_bytes number of bytes to sum
 /// @return summation value
 int add_bytes(uint8_t const message[], unsigned num_bytes);
+
+/// Compute Addition of a number of nibbles (byte wise).
+///
+/// @param message bytes (of two nibbles) of message data
+/// @param num_bytes number of bytes to sum
+/// @return summation value
+int add_nibbles(uint8_t const message[], unsigned num_bytes);
 
 #endif /* INCLUDE_UTIL_H_ */

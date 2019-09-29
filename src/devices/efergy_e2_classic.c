@@ -1,26 +1,31 @@
-/* Efergy e2 classic (electricity meter)
- *
- * This electricity meter periodically reports current power consumption
- * on frequency ~433.55 MHz. The data that is transmitted consists of 8
- * bytes:
- *
- * Byte 1: Start bits (00)
- * Byte 2-3: Device id
- * Byte 4: Learn mode, sending interval and battery status
- * Byte 5-7: Current power consumption
- *    Byte 5: Integer value (High byte)
- *    Byte 6: integer value (Low byte)
- *    Byte 7: exponent (values between -3 and 3)
- * Byte 8: Checksum
- *
- * Power calculations come from Nathaniel Elijah's program EfergyRPI_001.
- *
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Efergy e2 classic (electricity meter).
+
+    Copyright (C) 2015 Robert Högberg <robert.hogberg@gmail.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Efergy e2 classic (electricity meter).
+
+This electricity meter periodically reports current power consumption
+on frequency ~433.55 MHz. The data that is transmitted consists of 8
+bytes:
+
+- Byte 1: Start bits (00)
+- Byte 2-3: Device id
+- Byte 4: Learn mode, sending interval and battery status
+- Byte 5-7: Current power consumption
+  -  Byte 5: Integer value (High byte)
+  -  Byte 6: integer value (Low byte)
+  -  Byte 7: exponent (values between -3? and 4?)
+- Byte 8: Checksum
+
+Power calculations come from Nathaniel Elijah's program EfergyRPI_001.
+*/
 
 #include "decoder.h"
 
@@ -70,48 +75,49 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     uint16_t address = bytes[2] << 8 | bytes[1];
-    uint8_t learn = (bytes[3] & 0x80) >> 7;
+    uint8_t learn    = (bytes[3] & 0x80) >> 7;
     uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
-    uint8_t battery = (bytes[3] & 0x40) >> 6;
-    uint8_t fact = (-(int8_t)bytes[6] + 15);
-    float current_adc = (float)((bytes[4] << 8 | bytes[5])) / (1 << fact);
+    uint8_t battery  = (bytes[3] & 0x40) >> 6;
+    uint8_t fact     = -(int8_t)bytes[6] + 15;
+    if (fact < 10 || fact > 20) // full range unknown so far
+        return 0; // invalid exponent
+    float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 
-
-    // Output data
+    /* clang-format off */
     data = data_make(
-                     "model",    "",               DATA_STRING, "Efergy e2 CT",
-                     "id",       "Transmitter ID", DATA_INT, address,
-                     "current",  "Current",        DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
-                     "interval", "Interval",       DATA_FORMAT, "%ds", DATA_INT, interval,
-                     "battery",  "Battery",        DATA_STRING, battery ? "OK" : "LOW",
-                     "learn",    "Learning",       DATA_STRING, learn ? "YES" : "NO",
-                     "mic",      "Integrity",      DATA_STRING, "CHECKSUM",
-                     NULL);
+            "model",    "",                 DATA_STRING, _X("Efergy-e2CT","Efergy e2 CT"),
+            "id",       "Transmitter ID",   DATA_INT,    address,
+            "battery",  "Battery",          DATA_STRING, battery ? "OK" : "LOW",
+            "current",  "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,
+            "interval", "Interval",         DATA_FORMAT, "%ds", DATA_INT, interval,
+            "learn",    "Learning",         DATA_STRING, learn ? "YES" : "NO",
+            "mic",      "Integrity",        DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "current",
-    "interval",
-    "battery",
-    "learn",
-    NULL
+        "model",
+        "id",
+        "battery",
+        "current",
+        "interval",
+        "learn",
+        NULL,
 };
 
 r_device efergy_e2_classic = {
-    .name           = "Efergy e2 classic",
-    .modulation     = FSK_PULSE_PWM,
-	.short_width    = 64,
-	.long_width     = 136,
-	.sync_width     = 500,
-	.gap_limit      = 200,
-	.reset_limit    = 400,
-    .decode_fn      = &efergy_e2_classic_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Efergy e2 classic",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 64,
+        .long_width  = 136,
+        .sync_width  = 500,
+        .gap_limit   = 200,
+        .reset_limit = 400,
+        .decode_fn   = &efergy_e2_classic_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
