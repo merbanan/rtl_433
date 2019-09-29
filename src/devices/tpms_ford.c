@@ -54,7 +54,7 @@
 #include "decoder.h"
 
 /*preamble = 111000101010101 0x71 0x55*/
-static const uint8_t preamble_pattern[2] = {0x71,0x55}; // 31 bits
+static const uint8_t preamble_pattern[2] = {0x71,0x55}; // 16 bits
 
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -65,7 +65,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     int id;
     char id_str[16];
     int code;
-    char code_str[7];
+    char code_str[16];
 	unsigned lf_triggered,battery_low, storage;
 	float pressure_kpa, temperature_c,pressure_psi;
 	int crc;
@@ -82,6 +82,8 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 	
     id = b[2]<<24 | b[3]<<16 | b[4]<<8 | b[5];
     sprintf(id_str, "%08x", id);
+	code=b[6];
+	sprintf(code_str, "%x", code);
 	pressure_kpa=b[0]+60;
 	pressure_psi=pressure_kpa*0.14503779473358;
 	temperature_c=b[1]-50;
@@ -100,7 +102,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 		"battery_low",	"",		DATA_INT,		battery_low,
 		"LF_triggered",	"",		DATA_INT,		lf_triggered,
 		"Storage",		"",		DATA_INT,		storage,
-		//"CRC",		"",		
+		"Flags",		"",		DATA_STRING,	code_str,
         NULL);
 
     decoder_output_data(decoder, data);
@@ -136,13 +138,14 @@ static char *output_fields[] = {
 	"battery_low",
 	"LF_triggered",
 	"Storage",
+	"Flags",
     NULL
 };
 
 r_device tpms_ford = {
     .name           = "Elantra2012 TPMS",
     .modulation     = FSK_PULSE_PCM,
-    .short_width    = 49, // 12-13 samples @250k
+    .short_width    = 49, // 12-13 samples @1024k
     .long_width     = 49, // FSK
     .reset_limit    = 50000, // Maximum gap size before End Of Message [us].
     .decode_fn      = &tpms_ford_callback,
