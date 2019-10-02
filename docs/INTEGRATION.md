@@ -118,7 +118,8 @@ See [rtl_433_graphite_relay.py](https://github.com/merbanan/rtl_433/tree/master/
 
 ### InfluxDB
 
-TBD.
+- InfluxDB comes with MQTT integration through telegraf, foolow the *input/consumer plugin* from <https://www.influxdata.com/integration/mqtt-monitoring/> to <https://github.com/influxdata/telegraf/tree/master/plugins/inputs/mqtt_consumer>
+- There is a python script to directly dump the JSON output of rtl_433 into influxdb: <https://github.com/azrdev/rtl433_influx/>
 
 ### MySQL
 
