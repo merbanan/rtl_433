@@ -68,7 +68,7 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate);
 void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id);
 
 /// Read the next pulse_data_t structure from OOK text.
-void pulse_data_load(FILE *file, pulse_data_t *data);
+void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate);
 
 /// Print a header for the OOK text format.
 void pulse_data_print_pulse_header(FILE *file);

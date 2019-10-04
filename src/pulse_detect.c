@@ -98,14 +98,15 @@ void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
         fprintf(file, "#%.f 0/\n", pos * scale);
 }
 
-void pulse_data_load(FILE *file, pulse_data_t *data)
+void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
 {
     char s[256];
     int i    = 0;
     int size = sizeof(data->pulse) / sizeof(int);
 
     pulse_data_clear(data);
-    data->sample_rate = 1000000; // assumes 1us timescale
+    data->sample_rate = sample_rate;
+    double to_sample = sample_rate / 1e6;
     // read line-by-line
     while (i < size && fgets(s, sizeof(s), file)) {
         // TODO: we should parse sample rate and timescale
@@ -130,8 +131,8 @@ void pulse_data_load(FILE *file, pulse_data_t *data)
         p          = endptr + 1;
         long space = strtol(p, &endptr, 10);
         //fprintf(stderr, "read: mark %ld space %ld\n", mark, space);
-        data->pulse[i] = (int)mark;
-        data->gap[i++] = (int)space;
+        data->pulse[i] = (int)(to_sample * mark);
+        data->gap[i++] = (int)(to_sample * space);
     }
     //fprintf(stderr, "read %d pulses\n", i);
     data->num_pulses = i;
