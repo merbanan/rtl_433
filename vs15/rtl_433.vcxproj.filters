@@ -487,6 +487,9 @@
     <ClCompile Include="..\src\devices\tpms_citroen.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_elantra2012.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tpms_ford.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

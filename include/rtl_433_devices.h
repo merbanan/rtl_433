@@ -147,6 +147,7 @@
     DECL(gt_tmbbq05) \
     DECL(gt_wt_03) \
     DECL(norgo) \
+    DECL(tpms_elantra2012) \
 
     /* Add new decoders here. */
 
