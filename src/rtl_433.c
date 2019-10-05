@@ -1253,7 +1253,7 @@ int main(int argc, char **argv) {
             // special case for pulse data file-inputs
             if (demod->load_info.format == PULSE_OOK) {
                 while (!cfg.do_exit) {
-                    pulse_data_load(in_file, &demod->pulse_data);
+                    pulse_data_load(in_file, &demod->pulse_data, cfg.samp_rate);
                     if (!demod->pulse_data.num_pulses)
                         break;
 
