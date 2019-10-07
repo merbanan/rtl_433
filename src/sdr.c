@@ -21,6 +21,7 @@
 #include "optparse.h"
 #ifdef RTLSDR
 #include "rtl-sdr.h"
+#include <libusb.h> /* libusb_error_name(), libusb_strerror() */
 #endif
 #ifdef SOAPYSDR
 #include <SoapySDR/Device.h>
@@ -1083,8 +1084,22 @@ int sdr_start(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_t buf_num, uin
 #endif
 
 #ifdef RTLSDR
-    if (dev->rtlsdr_dev)
-        return rtlsdr_read_async(dev->rtlsdr_dev, cb, ctx, buf_num, buf_len);
+    if (dev->rtlsdr_dev) {
+        int r = rtlsdr_read_async(dev->rtlsdr_dev, cb, ctx, buf_num, buf_len);
+        // rtlsdr_read_async() returns possible error codes from:
+        //     if (!dev) return -1;
+        //     if (RTLSDR_INACTIVE != dev->async_status) return -2;
+        //     r = libusb_submit_transfer(dev->xfer[i]);
+        //     r = libusb_handle_events_timeout_completed(dev->ctx, &tv,
+        //     r = libusb_cancel_transfer(dev->xfer[i]);
+        // We can safely assume it's an libusb error.
+        if (r < 0) {
+            fprintf(stderr, "\n%s: %s!\n"
+                    "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
+                    libusb_error_name(r), libusb_strerror(r));
+        }
+        return r;
+    }
 #endif
 
     return -1;
