@@ -20,7 +20,7 @@ static unsigned bcd2int(uint8_t bcd) {
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
 static uint8_t m_bus_decode_3of6(uint8_t byte) {
     uint8_t out = 0xFF; // Error
-fprintf(stderr,"Decode %0X\n", byte);
+    //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
         case 22:    out = 0x0;  break;  // 0x16
         case 13:    out = 0x1;  break;  // 0x0D
@@ -45,14 +45,11 @@ fprintf(stderr,"Decode %0X\n", byte);
 
 
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
+// Bad data must be handled with second layer CRC
 static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes) {
     for (unsigned n=0; n<num_bytes; ++n) {
-        fprintf(stderr,"Decode %u, %u\n", n, bit_offset);
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
-        if (nibble_h > 0xF || nibble_l > 0xF) {
-            return -1;  // Decode error!
-        }
         output[n] = (nibble_h << 4) | nibble_l;
     }
     return 0;
@@ -262,6 +259,9 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return 0;
     }
+    if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %d\n", bit_offset);
+    bitbuffer_print(bitbuffer);
+    }
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
@@ -299,10 +299,12 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }   // Mode C
     // Mode T
     else {
+        bit_offset -= 8; // Rewind offset to start of telegram
         if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
+        if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %d\n", data_in.length); }
         if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
             return 0;
