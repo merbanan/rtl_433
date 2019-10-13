@@ -18,6 +18,7 @@ add_executable(rtl_433
     output_mqtt.c
     pulse_demod.c
     pulse_detect.c
+    fsk_demod.c
     r_api.c
     r_util.c
     rtl_433.c

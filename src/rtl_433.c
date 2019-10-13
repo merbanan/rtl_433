@@ -72,6 +72,13 @@ static void print_version(void)
     fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
+FILE *fsk_max_track_s16_file;
+FILE *fsk_min_track_s16_file;
+FILE *fsk_mid_track_s16_file;
+FILE *fsk_demod_s16_file;
+FILE *fsk_hysteris_hi_s16_file;
+FILE *fsk_hysteris_low_s16_file;
+
 static void usage(int exit_code)
 {
     term_help_printf(
@@ -1077,6 +1084,15 @@ int main(int argc, char **argv) {
 
     /* initialize tables */
     baseband_init();
+
+    /* fsk demod debug files */
+
+    fsk_max_track_s16_file = fopen("fsk_max_track_s16", "wb");
+    fsk_min_track_s16_file = fopen("fsk_min_track_s16", "wb");
+    fsk_mid_track_s16_file = fopen("fsk_mid_track_s16", "wb");
+    fsk_demod_s16_file = fopen("fsk_demod_s16", "wb");
+    fsk_hysteris_hi_s16_file = fopen("fsk_hysteris_hi", "wb");
+    fsk_hysteris_low_s16_file = fopen("fsk_hysteris_low_s16", "wb");
 
     r_device r_devices[] = {
 #define DECL(name) name,

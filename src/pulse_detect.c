@@ -11,6 +11,7 @@
 
 #include "pulse_detect.h"
 #include "pulse_demod.h"
+#include "fsk_demod.h"
 #include "util.h"
 #include "decoder.h"
 #include <limits.h>
@@ -180,20 +181,6 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 #define FSK_EST_SLOW        64         // Constant for slowness of FSK estimators
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
 
-/// Internal state data for pulse_FSK_detect()
-typedef struct {
-    unsigned int fsk_pulse_length; ///< Counter for internal FSK pulse detection
-    enum {
-        PD_FSK_STATE_INIT  = 0, ///< Initial frequency estimation
-        PD_FSK_STATE_F1    = 1, ///< High frequency (pulse)
-        PD_FSK_STATE_F2    = 2, ///< Low frequency (gap)
-        PD_FSK_STATE_ERROR = 3  ///< Error - stay here until cleared
-    } fsk_state;
-
-    int fm_f1_est; ///< Estimate for the F1 frequency for FSK
-    int fm_f2_est; ///< Estimate for the F2 frequency for FSK
-
-} pulse_FSK_state_t;
 
 /// Demodulate Frequency Shift Keying (FSK) sample by sample
 ///
@@ -224,7 +211,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
             else if (fm_f1_delta > (FSK_DEFAULT_FM_DELTA/2)) {
                 // Positive frequency delta - Initial frequency was low (gap)
                 if (fm_n > s->fm_f1_est) {
-                    s->fsk_state = PD_FSK_STATE_F1;
+                    s->fsk_state = PD_FSK_STATE_FH;
                     s->fm_f2_est = s->fm_f1_est;    // Switch estimates
                     s->fm_f1_est = fm_n;            // Prime F1 estimate
                     fsk_pulses->pulse[0] = 0;        // Initial frequency was a gap...
@@ -234,7 +221,7 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
                 }
                 // Negative Frequency delta - Initial frequency was high (pulse)
                 else {
-                    s->fsk_state = PD_FSK_STATE_F2;
+                    s->fsk_state = PD_FSK_STATE_FL;
                     s->fm_f2_est = fm_n;    // Prime F2 estimate
                     fsk_pulses->pulse[0] = s->fsk_pulse_length;    // Store pulse width
                     s->fsk_pulse_length = 0;
@@ -245,10 +232,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
                 s->fm_f1_est += fm_n/FSK_EST_FAST - s->fm_f1_est/FSK_EST_FAST;    // Fast estimator
             }
             break;
-        case PD_FSK_STATE_F1:        // Pulse high at F1 frequency
+        case PD_FSK_STATE_FH:        // Pulse high at F1 frequency
             // Closer to F2 than F1?
             if (fm_f1_delta > fm_f2_delta) {
-                s->fsk_state = PD_FSK_STATE_F2;
+                s->fsk_state = PD_FSK_STATE_FL;
                 // Store if pulse is not too short (suppress spurious)
                 if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
                     fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length;    // Store pulse width
@@ -273,10 +260,10 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
                     s->fm_f1_est += fm_n/FSK_EST_SLOW - s->fm_f1_est/FSK_EST_SLOW;    // Slow estimator
             }
             break;
-        case PD_FSK_STATE_F2:        // Pulse gap at F2 frequency
+        case PD_FSK_STATE_FL:        // Pulse gap at F2 frequency
             // Freq closer to F1 than F2 ?
             if (fm_f2_delta > fm_f1_delta) {
-                s->fsk_state = PD_FSK_STATE_F1;
+                s->fsk_state = PD_FSK_STATE_FH;
                 // Store if pulse is not too short (suppress spurious)
                 if (s->fsk_pulse_length >= PD_MIN_PULSE_SAMPLES) {
                     fsk_pulses->gap[fsk_pulses->num_pulses] = s->fsk_pulse_length;    // Store gap width
@@ -322,7 +309,7 @@ void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 {
     if (fsk_pulses->num_pulses < PD_MAX_PULSES) { // Avoid overflow
         s->fsk_pulse_length++;
-        if (s->fsk_state == PD_FSK_STATE_F1) {
+        if (s->fsk_state == PD_FSK_STATE_FH) {
             fsk_pulses->pulse[fsk_pulses->num_pulses] = s->fsk_pulse_length; // Store last pulse
             fsk_pulses->gap[fsk_pulses->num_pulses]   = 0;                   // Zero gap at end
         }
@@ -402,6 +389,9 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->pulse_length = 0;
                     s->max_pulse = 0;
                     s->FSK_state = (pulse_FSK_state_t){0};
+                    s->FSK_state.var_test_max = INT16_MIN;
+                    s->FSK_state.var_test_min = INT16_MAX;
+                    s->FSK_state.skip_samples = 10;
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
@@ -443,7 +433,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
                 // FSK Demodulation
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    // pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
                 }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
@@ -473,7 +464,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    // pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
                 }
                 break;
             case PD_OOK_STATE_GAP:
