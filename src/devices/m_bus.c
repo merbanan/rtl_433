@@ -106,6 +106,14 @@ const char* m_bus_device_type_str(uint8_t devType) {
         case 0x17:  str = "Hot/Cold Water meter";  break;
         case 0x18:  str = "Pressure";  break;
         case 0x19:  str = "A/D Converter";  break;
+        case 0x1A:  str = "Smoke detector"; break;
+        case 0x1B:  str = "Room sensor"; break;
+        case 0x1C:  str = "Gas detector"; break;
+        case 0x20:  str = "Breaker (electricity)"; break;
+        case 0x21:  str = "Valve (gas or water)"; break;
+        case 0x28:  str = "Waste water meter"; break;
+        case 0x29:  str = "Garbage"; break;
+        case 0x2A:  str = "Carbon dioxide"; break;
         default:    break;  // Unknown
     }
     return str;
