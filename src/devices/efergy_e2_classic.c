@@ -62,15 +62,11 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    unsigned checksum = 0;
-    for (unsigned i = 0; i < 7; ++i) {
-        checksum += bytes[i];
-    }
+    unsigned checksum = add_bytes(bytes, 7);
     if (checksum == 0) {
         return 0; // reduce false positives
     }
-    checksum &= 0xff;
-    if (checksum != bytes[7]) {
+    if ((checksum & 0xff) != bytes[7]) {
         return 0;
     }
 
@@ -79,7 +75,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t interval = (((bytes[3] & 0x30) >> 4) + 1) * 6;
     uint8_t battery  = (bytes[3] & 0x40) >> 6;
     uint8_t fact     = -(int8_t)bytes[6] + 15;
-    if (fact < 10 || fact > 20) // full range unknown so far
+    if (fact < 9 || fact > 20) // full range unknown so far
         return 0; // invalid exponent
     float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 
