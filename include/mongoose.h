@@ -23,7 +23,7 @@
 #ifndef CS_MONGOOSE_SRC_COMMON_H_
 #define CS_MONGOOSE_SRC_COMMON_H_
 
-#define MG_VERSION "6.13"
+#define MG_VERSION "6.16"
 
 /* Local tweaks, applied before any of Mongoose's own headers. */
 #ifdef MG_LOCALS
@@ -58,8 +58,9 @@
 #define CS_P_NRF51 12
 #define CS_P_NRF52 10
 #define CS_P_PIC32 11
+#define CS_P_RS14100 18
 #define CS_P_STM32 16
-/* Next id: 18 */
+/* Next id: 19 */
 
 /* If not specified explicitly, we guess platform by defines. */
 #ifndef CS_PLATFORM
@@ -91,6 +92,8 @@
 #elif defined(TARGET_IS_TM4C129_RA0) || defined(TARGET_IS_TM4C129_RA1) || \
     defined(TARGET_IS_TM4C129_RA2)
 #define CS_PLATFORM CS_P_TM4C129
+#elif defined(RS14100)
+#define CS_PLATFORM CS_P_RS14100
 #elif defined(STM32)
 #define CS_PLATFORM CS_P_STM32
 #endif
@@ -125,7 +128,11 @@
 /* Amalgamated: #include "common/platforms/platform_nxp_lpc.h" */
 /* Amalgamated: #include "common/platforms/platform_nxp_kinetis.h" */
 /* Amalgamated: #include "common/platforms/platform_pic32.h" */
+/* Amalgamated: #include "common/platforms/platform_rs14100.h" */
 /* Amalgamated: #include "common/platforms/platform_stm32.h" */
+#if CS_PLATFORM == CS_P_CUSTOM
+#include <platform_custom.h>
+#endif
 
 /* Common stuff */
 
@@ -339,6 +346,8 @@ typedef struct _stati64 cs_stat_t;
 #ifndef MG_NET_IF
 #define MG_NET_IF MG_NET_IF_SOCKET
 #endif
+
+unsigned int sleep(unsigned int seconds);
 
 /* https://stackoverflow.com/questions/16647819/timegm-cross-platform */
 #define timegm _mkgmtime
@@ -1529,7 +1538,7 @@ int sl_set_ssl_opts(int sock, struct mg_connection *nc);
 
 #endif /* SL_MAJOR_VERSION_NUM < 2 */
 
-int slfs_open(const unsigned char *fname, uint32_t flags);
+int slfs_open(const unsigned char *fname, uint32_t flags, uint32_t *token);
 
 #endif /* MG_NET_IF == MG_NET_IF_SIMPLELINK */
 
@@ -1905,6 +1914,70 @@ char *inet_ntoa(struct in_addr in);
 
 #endif /* CS_COMMON_PLATFORMS_PLATFORM_PIC32_H_ */
 #ifdef MG_MODULE_LINES
+#line 1 "common/platforms/platform_rs14100.h"
+#endif
+/*
+ * Copyright (c) 2014-2019 Cesanta Software Limited
+ * All rights reserved
+ *
+ * Licensed under the Apache License, Version 2.0 (the ""License"");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an ""AS IS"" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef CS_COMMON_PLATFORMS_PLATFORM_RS14100_H_
+#define CS_COMMON_PLATFORMS_PLATFORM_RS14100_H_
+#if CS_PLATFORM == CS_P_RS14100
+
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#ifdef MGOS_HAVE_VFS_COMMON
+#include <mgos_vfs.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define to64(x) strtoll(x, NULL, 10)
+#define INT64_FMT "lld"
+#define SIZE_T_FMT "u"
+typedef struct stat cs_stat_t;
+#define DIRSEP '/'
+
+#ifndef CS_ENABLE_STDIO
+#define CS_ENABLE_STDIO 1
+#endif
+
+#ifndef MG_ENABLE_FILESYSTEM
+#define MG_ENABLE_FILESYSTEM 1
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CS_PLATFORM == CS_P_RS14100 */
+#endif /* CS_COMMON_PLATFORMS_PLATFORM_RS14100_H_ */
+#ifdef MG_MODULE_LINES
 #line 1 "common/platforms/platform_stm32.h"
 #endif
 /*
@@ -2237,6 +2310,8 @@ struct mg_str mg_mk_str_n(const char *s, size_t len);
 /* Macro for initializing mg_str. */
 #define MG_MK_STR(str_literal) \
   { str_literal, sizeof(str_literal) - 1 }
+#define MG_MK_STR_N(str_literal, len) \
+  { str_literal, len }
 #define MG_NULL_STR \
   { NULL, 0 }
 
@@ -2277,12 +2352,20 @@ int mg_strcmp(const struct mg_str str1, const struct mg_str str2);
 int mg_strncmp(const struct mg_str str1, const struct mg_str str2, size_t n);
 
 /*
+ * Free the string (assuming it was heap allocated).
+ */
+void mg_strfree(struct mg_str *s);
+
+/*
  * Finds the first occurrence of a substring `needle` in the `haystack`.
  */
 const char *mg_strstr(const struct mg_str haystack, const struct mg_str needle);
 
 /* Strip whitespace at the start and the end of s */
 struct mg_str mg_strstrip(struct mg_str s);
+
+/* Returns 1 if s starts with the given prefix. */
+int mg_str_starts_with(struct mg_str s, struct mg_str prefix);
 
 #ifdef __cplusplus
 }
@@ -2362,6 +2445,14 @@ void mbuf_free(struct mbuf *);
 size_t mbuf_append(struct mbuf *, const void *data, size_t data_size);
 
 /*
+ * Appends data to the Mbuf and frees it (data must be heap-allocated).
+ *
+ * Returns the number of bytes appended or 0 if out of memory.
+ * data is freed irrespective of return value.
+ */
+size_t mbuf_append_and_free(struct mbuf *, void *data, size_t data_size);
+
+/*
  * Inserts data at a specified offset in the Mbuf.
  *
  * Existing data will be shifted forwards and the buffer will
@@ -2380,6 +2471,12 @@ void mbuf_remove(struct mbuf *, size_t data_size);
  * resize is not performed.
  */
 void mbuf_resize(struct mbuf *, size_t new_size);
+
+/* Moves the state from one mbuf to the other. */
+void mbuf_move(struct mbuf *from, struct mbuf *to);
+
+/* Removes all the data from mbuf (if any). */
+void mbuf_clear(struct mbuf *);
 
 /* Shrinks an Mbuf by resizing its `size` to `len`. */
 void mbuf_trim(struct mbuf *);
@@ -2621,6 +2718,8 @@ const char *mg_next_comma_list_entry(const char *list, struct mg_str *val,
 
 /*
  * Like `mg_next_comma_list_entry()`, but takes `list` as `struct mg_str`.
+ * NB: Test return value's .p, not .len. On last itreation that yields result
+ * .len will be 0 but .p will not. When finished, .p will be NULL.
  */
 struct mg_str mg_next_comma_list_entry_n(struct mg_str list, struct mg_str *val,
                                          struct mg_str *eq_val);
@@ -3928,6 +4027,7 @@ struct mg_connection {
 #define MG_F_WANT_READ (1 << 6)          /* SSL specific */
 #define MG_F_WANT_WRITE (1 << 7)         /* SSL specific */
 #define MG_F_IS_WEBSOCKET (1 << 8)       /* Websocket specific */
+#define MG_F_RECV_AND_CLOSE (1 << 9) /* Drain rx and close the connection. */
 
 /* Flags that are settable by user */
 #define MG_F_SEND_AND_CLOSE (1 << 10)      /* Push remaining data and close  */
@@ -4013,7 +4113,7 @@ int mg_mgr_poll(struct mg_mgr *mgr, int milli);
  * `func` callback function will be called by the IO thread for each
  * connection. When called, the event will be `MG_EV_POLL`, and a message will
  * be passed as the `ev_data` pointer. Maximum message size is capped
- * by `MG_CTL_MSG_MESSAGE_SIZE` which is set to 8192 bytes.
+ * by `MG_CTL_MSG_MESSAGE_SIZE` which is set to 8192 bytes by default.
  */
 void mg_broadcast(struct mg_mgr *mgr, mg_event_handler_t cb, void *data,
                   size_t len);
@@ -4751,6 +4851,14 @@ struct mg_http_multipart_part {
   struct mg_str data;
   int status; /* <0 on error */
   void *user_data;
+  /*
+   * User handler can indicate how much of the data was consumed
+   * by setting this variable. By default, it is assumed that all
+   * data has been consumed by the handler.
+   * If not all data was consumed, user's handler will be invoked again later
+   * with the remainder.
+   */
+  size_t num_data_consumed;
 };
 
 /* SSI call context */
@@ -4769,7 +4877,7 @@ struct mg_ssi_call_ctx {
 
 #if MG_ENABLE_HTTP_WEBSOCKET
 #define MG_EV_WEBSOCKET_HANDSHAKE_REQUEST 111 /* struct http_message * */
-#define MG_EV_WEBSOCKET_HANDSHAKE_DONE 112    /* NULL */
+#define MG_EV_WEBSOCKET_HANDSHAKE_DONE 112    /* struct http_message * */
 #define MG_EV_WEBSOCKET_FRAME 113             /* struct websocket_message * */
 #define MG_EV_WEBSOCKET_CONTROL_FRAME 114     /* struct websocket_message * */
 #endif
@@ -4808,7 +4916,9 @@ struct mg_ssi_call_ctx {
  * - MG_EV_WEBSOCKET_HANDSHAKE_REQUEST: server has received the WebSocket
  *   handshake request. `ev_data` contains parsed HTTP request.
  * - MG_EV_WEBSOCKET_HANDSHAKE_DONE: server has completed the WebSocket
- *   handshake. `ev_data` is `NULL`.
+ *   handshake. `ev_data` is a `struct http_message` containing the
+ *   client's request (server mode) or server's response (client).
+ *   In client mode handler can examine `resp_code`, which should be 101.
  * - MG_EV_WEBSOCKET_FRAME: new WebSocket frame has arrived. `ev_data` is
  *   `struct websocket_message *`
  *
