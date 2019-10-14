@@ -41,7 +41,7 @@ Mac OS X with MacPorts:
 
 Mac OS X with Homebrew:
 
-    brew install rtl-sdr cmake
+    brew install rtl-sdr cmake pkg-config
 
 ### CMake
 
