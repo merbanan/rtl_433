@@ -148,6 +148,7 @@
     DECL(gt_wt_03) \
     DECL(norgo) \
     DECL(tpms_elantra2012) \
+    DECL(auriol_hg02832) \
 
     /* Add new decoders here. */
 
