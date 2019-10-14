@@ -321,7 +321,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_in, &block1);
     return 1;
 }
 
