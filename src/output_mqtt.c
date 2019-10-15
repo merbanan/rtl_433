@@ -384,7 +384,19 @@ static void print_mqtt_string(data_output_t *output, char const *str, char *form
 static void print_mqtt_double(data_output_t *output, double data, char *format)
 {
     char str[20];
-    int ret = snprintf(str, 20, "%f", data);
+    // use scientific notation for very big/small values
+    if (data > 1e7 || data < 1e-4) {
+        int ret = snprintf(str, 20, "%g", data);
+    }
+    else {
+        int ret = snprintf(str, 20, "%.5f", data);
+        // remove trailing zeros, always keep one digit after the decimal point
+        char *p = str + ret - 1;
+        while (*p == '0' && p[-1] != '.') {
+            *p-- = '\0';
+        }
+    }
+
     print_mqtt_string(output, str, format);
 }
 
