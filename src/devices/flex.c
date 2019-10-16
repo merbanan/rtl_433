@@ -264,7 +264,8 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
+            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     /* clang-format off */
     data = data_make(
@@ -426,8 +427,10 @@ const char *parse_map(const char *arg, struct flex_get *getter)
         const char *e = c;
         while (*e != ' ' && *e != ']') e++;
         val = malloc(e - c + 1);
-        memcpy(val, c, e - c);
-        val[e - c] = '\0';
+        if (val) { // NOTE: might silently skip on alloc failure.
+            memcpy(val, c, e - c);
+            val[e - c] = '\0';
+        }
         c = e;
 
         // store result
@@ -477,7 +480,13 @@ r_device *flex_create_device(char *spec)
     }
 
     struct flex_params *params = calloc(1, sizeof(*params));
+    if (!params)
+        return NULL; // NOTE: might silently return NULL on alloc failure.
     r_device *dev = calloc(1, sizeof(*dev));
+    if (!dev) {
+        free(params);
+        return NULL; // NOTE: might silently return NULL on alloc failure.
+    }
     dev->decode_ctx = params;
     char *c, *o;
     int get_count = 0;
@@ -501,7 +510,8 @@ r_device *flex_create_device(char *spec)
     params->name  = strdup(c);
     int name_size = strlen(c) + 27;
     dev->name = malloc(name_size);
-    snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
+    if (dev->name) // NOTE: might silently skip on alloc failure.
+        snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
     if (c != NULL) {

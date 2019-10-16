@@ -56,6 +56,15 @@ void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, pulse_
     }
 }
 
+__attribute__((always_inline))
+static inline void chk_ret(int ret)
+{
+    if (ret < 0) {
+        perror("File output error");
+        exit(1);
+    }
+}
+
 void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
 {
     char time_str[LOCAL_TIME_BUFLEN];
@@ -64,17 +73,17 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
         timescale = "1 us";
     else
         timescale = "100 ns";
-    fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0));
-    fprintf(file, "$version rtl_433 0.1.0 $end\n");
-    fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate));
-    fprintf(file, "$timescale %s $end\n", timescale);
-    fprintf(file, "$scope module rtl_433 $end\n");
-    fprintf(file, "$var wire 1 / FRAME $end\n");
-    fprintf(file, "$var wire 1 ' AM $end\n");
-    fprintf(file, "$var wire 1 \" FM $end\n");
-    fprintf(file, "$upscope $end\n");
-    fprintf(file, "$enddefinitions $end\n");
-    fprintf(file, "#0 0/ 0' 0\"\n");
+    chk_ret(fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0)));
+    chk_ret(fprintf(file, "$version rtl_433 0.1.0 $end\n"));
+    chk_ret(fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate)));
+    chk_ret(fprintf(file, "$timescale %s $end\n", timescale));
+    chk_ret(fprintf(file, "$scope module rtl_433 $end\n"));
+    chk_ret(fprintf(file, "$var wire 1 / FRAME $end\n"));
+    chk_ret(fprintf(file, "$var wire 1 ' AM $end\n"));
+    chk_ret(fprintf(file, "$var wire 1 \" FM $end\n"));
+    chk_ret(fprintf(file, "$upscope $end\n"));
+    chk_ret(fprintf(file, "$enddefinitions $end\n"));
+    chk_ret(fprintf(file, "#0 0/ 0' 0\"\n"));
 }
 
 void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
@@ -87,15 +96,15 @@ void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
     uint64_t pos = data->offset;
     for (unsigned n = 0; n < data->num_pulses; ++n) {
         if (n == 0)
-            fprintf(file, "#%.f 1/ 1%c\n", pos * scale, ch_id);
+            chk_ret(fprintf(file, "#%.f 1/ 1%c\n", pos * scale, ch_id));
         else
-            fprintf(file, "#%.f 1%c\n", pos * scale, ch_id);
+            chk_ret(fprintf(file, "#%.f 1%c\n", pos * scale, ch_id));
         pos += data->pulse[n];
-        fprintf(file, "#%.f 0%c\n", pos * scale, ch_id);
+        chk_ret(fprintf(file, "#%.f 0%c\n", pos * scale, ch_id));
         pos += data->gap[n];
     }
     if (data->num_pulses > 0)
-        fprintf(file, "#%.f 0/\n", pos * scale);
+        chk_ret(fprintf(file, "#%.f 0/\n", pos * scale));
 }
 
 void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
@@ -142,29 +151,29 @@ void pulse_data_print_pulse_header(FILE *file)
 {
     char time_str[LOCAL_TIME_BUFLEN];
 
-    fprintf(file, ";pulse data\n");
-    fprintf(file, ";version 1\n");
-    fprintf(file, ";timescale 1us\n");
-    //fprintf(file, ";samplerate %u\n", data->sample_rate);
-    fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 0));
+    chk_ret(fprintf(file, ";pulse data\n"));
+    chk_ret(fprintf(file, ";version 1\n"));
+    chk_ret(fprintf(file, ";timescale 1us\n"));
+    //chk_ret(fprintf(file, ";samplerate %u\n", data->sample_rate));
+    chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 0)));
 }
 
 void pulse_data_dump(FILE *file, pulse_data_t *data)
 {
     if (data->fsk_f2_est) {
-        fprintf(file, ";fsk %d pulses\n", data->num_pulses);
-        fprintf(file, ";freq1 %.0f\n", data->freq1_hz);
-        fprintf(file, ";freq2 %.0f\n", data->freq2_hz);
+        chk_ret(fprintf(file, ";fsk %d pulses\n", data->num_pulses));
+        chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
+        chk_ret(fprintf(file, ";freq2 %.0f\n", data->freq2_hz));
     }
     else {
-        fprintf(file, ";ook %d pulses\n", data->num_pulses);
-        fprintf(file, ";freq1 %.0f\n", data->freq1_hz);
+        chk_ret(fprintf(file, ";ook %d pulses\n", data->num_pulses));
+        chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
     }
     double to_us = 1e6 / data->sample_rate;
     for (unsigned i = 0; i < data->num_pulses; ++i) {
-        fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us);
+        chk_ret(fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us));
     }
-    fprintf(file, ";end\n");
+    chk_ret(fprintf(file, ";end\n"));
 }
 
 // OOK adaptive level estimator constants

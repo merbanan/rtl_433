@@ -25,7 +25,7 @@ am_analyze_t *am_analyze_create(void)
 {
     am_analyze_t *a;
     a = calloc(1, sizeof(am_analyze_t));
-    return a;
+    return a; // NOTE: might silently return NULL on alloc failure.
 }
 
 void am_analyze_free(am_analyze_t *a)

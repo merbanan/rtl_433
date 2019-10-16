@@ -38,6 +38,7 @@ typedef struct am_analyze {
     unsigned signal_pulse_data[4000][3];
 } am_analyze_t;
 
+/// Create an AM-Analyzer. Might fail and return NULL.
 am_analyze_t *am_analyze_create(void);
 
 void am_analyze_free(am_analyze_t *a);

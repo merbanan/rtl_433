@@ -167,6 +167,10 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
             fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
         }
         p  = malloc(sizeof(*p));
+        if (!p) {
+            fprintf(stderr, "Could not register protocol\n");
+            exit(1);
+        }
         *p = *r_dev; // copy
     }
 
@@ -485,7 +489,8 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 free(d->value);
                 d->type = DATA_INT;
                 d->value = malloc(sizeof(int));
-                *(int *)d->value = ok;
+                if (d->value) // NOTE: might silently skip on alloc failure.
+                    *(int *)d->value = ok;
                 break;
             }
         }
@@ -863,6 +868,10 @@ void add_null_output(r_cfg_t *cfg, char *param)
 void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
     file_info_t *dumper = calloc(1, sizeof(*dumper));
+    if (!dumper) {
+        fprintf(stderr, "Could not add dumper\n");
+        exit(1);
+    }
     list_push(&cfg->demod->dumper, dumper);
 
     parse_file_info(spec, dumper);

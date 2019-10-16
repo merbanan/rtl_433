@@ -18,9 +18,18 @@ r_device fineoffset_WH2;
 static r_device *fineoffset_WH2_create(char *arg)
 {
     r_device *r_dev = create_device(&fineoffset_WH2);
+    if (!r_dev) {
+        fprintf(stderr, "create_device() failed");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
 
     if (arg && !strcmp(arg, "no-wh5")) {
         int *quirk = malloc(sizeof (*quirk));
+        if (!quirk) {
+            fprintf(stderr, "malloc() failed");
+            free(r_dev);
+            return NULL; // NOTE: returns NULL on alloc failure.
+        }
         *quirk = 1;
         r_dev->decode_ctx = quirk;
     }

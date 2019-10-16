@@ -31,7 +31,7 @@ samp_grab_t *samp_grab_create(unsigned size)
     samp_grab_t *g;
     g = calloc(1, sizeof(*g));
     if (!g) {
-        return NULL;
+        return NULL; // NOTE: silently return NULL on alloc failure.
     }
 
     g->sg_buf  = malloc(size);
@@ -41,7 +41,7 @@ samp_grab_t *samp_grab_create(unsigned size)
 
     if (!g->sg_buf) {
         free(g);
-        return NULL;
+        return NULL; // NOTE: silently return NULL on alloc failure.
     }
 
     return g;

@@ -20,10 +20,10 @@
 r_device *create_device(r_device *dev_template)
 {
     r_device *r_dev = malloc(sizeof (*r_dev));
-    if (dev_template)
+    if (r_dev && dev_template)
         *r_dev = *dev_template; // copy
 
-    return r_dev;
+    return r_dev; // NOTE: might silently return NULL on alloc failure.
 }
 
 // variadic print functions
@@ -126,6 +126,8 @@ static char *bitrow_print_bits(bitrow_t const bitrow, unsigned bit_len)
     char *row_bits, *p;
 
     p = row_bits = malloc(bit_len + bit_len / 4 + 1); // "1..\0" (1 space per nibble)
+    if (!row_bits)
+        return NULL; // NOTE: might silently return NULL on alloc failure.
 
     // print bit-wide with a space every nibble
     for (unsigned i = 0; i < bit_len; ++i) {
@@ -163,7 +165,8 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
 
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
+            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
 
         if (decoder->verbose_bits) {
             row_bits[i] = bitrow_print_bits(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
@@ -214,7 +217,8 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
 
         // a simpler representation for csv output
         row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
+            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
 
     data = data_make(
@@ -247,7 +251,8 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
 
     // a simpler representation for csv output
     row_code = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-    sprintf(row_code, "{%d}%s", bit_len, row_bytes);
+    if (row_code) // NOTE: might silently skip on alloc failure.
+        sprintf(row_code, "{%d}%s", bit_len, row_bytes);
 
     data = data_make(
             "msg", "", DATA_STRING, msg,

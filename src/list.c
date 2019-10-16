@@ -11,11 +11,16 @@
 
 #include "list.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 void list_ensure_size(list_t *list, size_t min_size)
 {
     if (!list->elems || list->size < min_size) {
         list->elems = realloc(list->elems, min_size * sizeof(*list->elems));
+        if (!list->elems) {
+            fprintf(stderr, "realloc() failed");
+            exit(1); // NOTE: abort on alloc failure.
+        }
         list->size  = min_size;
 
         list->elems[list->len] = NULL; // ensure a terminating NULL

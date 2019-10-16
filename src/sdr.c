@@ -152,9 +152,8 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     fprintf(stderr, "rtl_tcp connected to %s:%s (Tuner: %s)\n", host, port, tuner_name);
 
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
-
     if (!dev)
-        return -1;
+        return -1; // NOTE: silently return on alloc failure.
 
     dev->rtl_tcp = sock;
     dev->sample_size = sizeof(uint8_t); // CU8
@@ -187,7 +186,7 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_
         free(dev->buffer);
         dev->buffer = malloc(buf_len);
         if (!dev->buffer)
-            return -1;
+            return -1; // NOTE: silently return on alloc failure.
         dev->buffer_size = buf_len;
     }
     uint8_t *buffer = dev->buffer;
@@ -295,6 +294,8 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
     char vendor[256] = "n/a", product[256] = "n/a", serial[256] = "n/a";
     int r = -1;
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
+    if (!dev)
+        return -1; // NOTE: silently return on alloc failure.
 
     for (uint32_t i = dev_query ? dev_index : 0;
             //cast quiets -Wsign-compare; if dev_index were < 0, would have returned -1 above
@@ -604,6 +605,8 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
         SoapySDR_setLogLevel(SOAPY_SDR_DEBUG);
 
     sdr_dev_t *dev = calloc(1, sizeof(sdr_dev_t));
+    if (!dev)
+        return -1; // NOTE: silently return on alloc failure.
 
     dev->soapy_dev = SoapySDRDevice_makeStrArgs(dev_query);
     if (!dev->soapy_dev) {
@@ -659,7 +662,8 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint3
         free(dev->buffer);
         dev->buffer = malloc(buf_len);
         if (!dev->buffer)
-            return -1;
+            return -1; // NOTE: silently return on alloc failure.
+
         dev->buffer_size = buf_len;
     }
     int16_t *buffer = dev->buffer;

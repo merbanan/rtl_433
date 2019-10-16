@@ -138,6 +138,10 @@ static BOOL _term_has_color(console_t *console)
 static void *_term_init(FILE *fp)
 {
     console_t *console = calloc(1, sizeof(*console));
+    if (!console) {
+        fprintf(stderr, "term_init failed\n");
+        return NULL; // NOTE: return NULL on alloc failure.
+    }
 
     int fd = fileno(fp);
     if (fd == STDOUT_FILENO) {

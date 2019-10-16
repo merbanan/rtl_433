@@ -330,6 +330,10 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
             if (mqtt->states) {
                 size_t message_size = 20000; // state message need a large buffer
                 char *message       = malloc(message_size);
+                if (!message) {
+                    fprintf(stderr, "malloc() failed\n");
+                    return; // NOTE: skip on alloc failure.
+                }
                 data_print_jsons(data, message, message_size);
                 expand_topic(mqtt->topic, mqtt->states, data, mqtt->hostname);
                 mqtt_client_publish(mqtt->mgr, mqtt->topic, message);

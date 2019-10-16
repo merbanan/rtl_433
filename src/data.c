@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "limits.h"
+#include <limits.h>
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #define _XOPEN_SOURCE 500
 
@@ -174,7 +174,7 @@ data_array_t *data_array(int num_values, data_type_t type, void *values)
         array->num_values = num_values;
         array->type = type;
     }
-    return array;
+    return array; // NOTE: might silently return NULL on alloc failure.
 
 alloc_error:
     if (array)
