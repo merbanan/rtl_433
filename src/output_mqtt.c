@@ -193,12 +193,12 @@ static void print_mqtt_array(data_output_t *output, data_array_t *array, char *f
 static char *append_topic(char *topic, data_t *data)
 {
     if (data->type == DATA_STRING) {
-        strcpy(topic, data->value);
+        strcpy(topic, data->value.v_ptr);
         mqtt_sanitize_topic(topic);
-        topic += strlen(data->value);
+        topic += strlen(data->value.v_ptr);
     }
     else if (data->type == DATA_INT) {
-        topic += sprintf(topic, "%d", *(int *)data->value);
+        topic += sprintf(topic, "%d", data->value.v_int);
     }
     else {
         fprintf(stderr, "Can't append data type %d to topic\n", data->type);

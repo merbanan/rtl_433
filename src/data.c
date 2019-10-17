@@ -111,14 +111,14 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .array_is_boxed           = false,
       .array_elementwise_import = NULL,
       .array_element_release    = NULL,
-      .value_release            = (value_release_fn) free },
+      .value_release            = NULL },
 
     //  DATA_DOUBLE
     { .array_element_size       = sizeof(double),
       .array_is_boxed           = false,
       .array_elementwise_import = NULL,
       .array_element_release    = NULL,
-      .value_release            = (value_release_fn) free },
+      .value_release            = NULL },
 
     //  DATA_STRING
     { .array_element_size       = sizeof(char*),
@@ -200,7 +200,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     type = va_arg(ap, data_type_t);
     do {
         data_t *current;
-        void *value = NULL;
+        data_value_t value = {0};
 
         switch (type) {
         case DATA_FORMAT:
@@ -216,37 +216,23 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             assert(0);
             break;
         case DATA_DATA:
-            value = va_arg(ap, data_t *);
+            value.v_ptr = va_arg(ap, data_t *);
             break;
         case DATA_INT:
-            value = malloc(sizeof(int));
-            if (!value)
-                WARN_MALLOC("vdata_make()");
-            else // NOTE: skipped on alloc failure
-                *(int *)value = va_arg(ap, int);
+            value.v_int = va_arg(ap, int);
             break;
         case DATA_DOUBLE:
-            value = malloc(sizeof(double));
-            if (!value)
-                WARN_MALLOC("vdata_make()");
-            else // NOTE: skipped on alloc failure
-                *(double *)value = va_arg(ap, double);
+            value.v_dbl = va_arg(ap, double);
             break;
         case DATA_STRING:
-            value = strdup(va_arg(ap, char *));
-            if (!value)
+            value.v_ptr = strdup(va_arg(ap, char *));
+            if (!value.v_ptr)
                 WARN_STRDUP("vdata_make()");
             break;
         case DATA_ARRAY:
-            value = va_arg(ap, data_t *);
+            value.v_ptr = va_arg(ap, data_t *);
             break;
         }
-
-        // also some null arguments are mapped to an alloc error;
-        // that's ok, because they originate (typically..) from
-        // an alloc error anyway
-        if (!value)
-            goto alloc_error;
 
         current = calloc(1, sizeof(*current));
         if (!current) {
@@ -355,7 +341,7 @@ void data_free(data_t *data)
     while (data) {
         data_t *prev_data = data;
         if (dmt[data->type].value_release)
-            dmt[data->type].value_release(data->value);
+            dmt[data->type].value_release(data->value.v_ptr);
         free(data->format);
         free(data->pretty_key);
         free(data->key);
@@ -400,7 +386,7 @@ void data_output_free(data_output_t *output)
 
 /* output helpers */
 
-void print_value(data_output_t *output, data_type_t type, void *value, char *format)
+void print_value(data_output_t *output, data_type_t type, data_value_t value, char *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -408,19 +394,19 @@ void print_value(data_output_t *output, data_type_t type, void *value, char *for
         assert(0);
         break;
     case DATA_DATA:
-        output->print_data(output, value, format);
+        output->print_data(output, value.v_ptr, format);
         break;
     case DATA_INT:
-        output->print_int(output, *(int *)value, format);
+        output->print_int(output, value.v_int, format);
         break;
     case DATA_DOUBLE:
-        output->print_double(output, *(double *)value, format);
+        output->print_double(output, value.v_dbl, format);
         break;
     case DATA_STRING:
-        output->print_string(output, value, format);
+        output->print_string(output, value.v_ptr, format);
         break;
     case DATA_ARRAY:
-        output->print_array(output, value, format);
+        output->print_array(output, value.v_ptr, format);
         break;
     }
 }
@@ -428,17 +414,13 @@ void print_value(data_output_t *output, data_type_t type, void *value, char *for
 void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
-#ifdef RTL_433_NO_VLAs
-    char *buffer = alloca (element_size);
-#else
-    char buffer[element_size];
-#endif
+    data_value_t value = {0};
 
     if (!dmt[array->type].array_is_boxed) {
-        memcpy(buffer, (void **)((char *)array->values + element_size * idx), element_size);
-        print_value(output, array->type, buffer, format);
+        memcpy(&value, (char *)array->values + element_size * idx, element_size);
+        print_value(output, array->type, value, format);
     } else {
-        print_value(output, array->type, *(void **)((char *)array->values + element_size * idx), format);
+        print_value(output, array->type, *(data_value_t*)((char *)array->values + element_size * idx), format);
     }
 }
 
