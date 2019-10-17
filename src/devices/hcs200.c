@@ -26,10 +26,6 @@ rtl_433 -R 0 -X 'n=name,m=OOK_PWM,s=370,l=772,r=14000,g=4000,t=152,y=0,preamble=
 
 #include "decoder.h"
 
-// the preamble mentioned above, 0xfff (12 bits)
-static const uint8_t preamble_bits = 12;
-static const uint8_t preamble[2] = {0xff, 0xf0};
-
 static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -43,12 +39,10 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (78 != bitbuffer->bits_per_row[0])
         return DECODE_ABORT_LENGTH;
 
-    /* Reject codes with an incorrect preamble */
-    unsigned int location = bitbuffer_search(bitbuffer, 0, 0, preamble, preamble_bits);
-    // expect the preamble to start at bit 0
-    if (location != 0) {
+    /* Reject codes with an incorrect preamble (expected 0xfff) */
+    if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "HCS200: Preamble not found %d\n", location);
+            fprintf(stderr, "HCS200: Preamble not found\n");
         return DECODE_ABORT_EARLY;
     }
 
