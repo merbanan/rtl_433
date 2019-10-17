@@ -37,7 +37,14 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Reject codes of wrong length */
     if (78 != bitbuffer->bits_per_row[0])
-        return 0;
+        return DECODE_ABORT_LENGTH;
+
+    /* Reject codes with an incorrect preamble (expected 0xfff) */
+    if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
+        if (decoder->verbose > 1)
+            fprintf(stderr, "HCS200: Preamble not found\n");
+        return DECODE_ABORT_EARLY;
+    }
 
     // align buffer, shifting by 4 bits
     for (i = 1; i < 10; i++) {
