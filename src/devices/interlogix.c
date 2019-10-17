@@ -92,13 +92,11 @@
 
 #define INTERLOGIX_MSG_BIT_LEN 46
 
-#define MESSAGE_LENGTH 59
-
-// preamble message.  only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
-static unsigned char preamble = 0x01;
-
 static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // preamble message
+    // only searching for 0000 0001 (bottom 8 bits of the 13 bits preamble)
+    static const unsigned char preamble = 0x01;
     data_t *data;
     unsigned int row = 0;
     char device_type_id[2];
@@ -116,7 +114,10 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    if (bitbuffer->bits_per_row[0] != MESSAGE_LENGTH) {
+    // Check if the message length is between the length seen in test files (59)
+    // and the 64 bits discussed above.
+    if (bitbuffer->bits_per_row[0] < 59
+        || bitbuffer->bits_per_row[0] > 64) {
         return DECODE_ABORT_LENGTH;
     }
 
