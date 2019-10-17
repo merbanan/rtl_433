@@ -141,7 +141,7 @@ float inhg2hpa(float inhg);
     @param suffix: the pattern to search
     @return true if the string ends with the specified suffix, false otherwise.
 */
-bool str_endswith(const char *restrict str, const char *restrict suffix);
+bool str_endswith(char const *restrict str, char const *restrict suffix);
 
 /** Replace a pattern in a string.
 
@@ -152,12 +152,12 @@ bool str_endswith(const char *restrict str, const char *restrict suffix);
     @param with: the replacement pattern
     @return a new string that has rep replaced with with
 */
-char *str_replace(char *orig, char *rep, char *with);
+char *str_replace(char const *orig, char const *rep, char const *with);
 
 /** Make a nice printable string for a frequency.
 
     @param freq: the frequency to convert to a string.
 */
-const char *nice_freq (double freq);
+char const *nice_freq (double freq);
 
 #endif /* INCLUDE_R_UTIL_H_ */

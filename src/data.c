@@ -386,7 +386,7 @@ void data_output_free(data_output_t *output)
 
 /* output helpers */
 
-void print_value(data_output_t *output, data_type_t type, data_value_t value, char *format)
+void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format)
 {
     switch (type) {
     case DATA_FORMAT:
@@ -411,7 +411,7 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     }
 }
 
-void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx)
+void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx)
 {
     int element_size = dmt[array->type].array_element_size;
     data_value_t value = {0};
@@ -426,7 +426,7 @@ void print_array_value(data_output_t *output, data_array_t *array, char *format,
 
 /* JSON printer */
 
-static void print_json_array(data_output_t *output, data_array_t *array, char *format)
+static void print_json_array(data_output_t *output, data_array_t *array, char const *format)
 {
     fprintf(output->file, "[");
     for (int c = 0; c < array->num_values; ++c) {
@@ -437,7 +437,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char *f
     fprintf(output->file, "]");
 }
 
-static void print_json_data(data_output_t *output, data_t *data, char *format)
+static void print_json_data(data_output_t *output, data_t *data, char const *format)
 {
     bool separator = false;
     fputc('{', output->file);
@@ -453,7 +453,7 @@ static void print_json_data(data_output_t *output, data_t *data, char *format)
     fputc('}', output->file);
 }
 
-static void print_json_string(data_output_t *output, const char *str, char *format)
+static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
     fprintf(output->file, "\"");
     while (*str) {
@@ -465,12 +465,12 @@ static void print_json_string(data_output_t *output, const char *str, char *form
     fprintf(output->file, "\"");
 }
 
-static void print_json_double(data_output_t *output, double data, char *format)
+static void print_json_double(data_output_t *output, double data, char const *format)
 {
     fprintf(output->file, "%.3f", data);
 }
 
-static void print_json_int(data_output_t *output, int data, char *format)
+static void print_json_int(data_output_t *output, int data, char const *format)
 {
     fprintf(output->file, "%d", data);
 }
@@ -551,7 +551,7 @@ typedef struct {
 
 #define KV_SEP "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ "
 
-static void print_kv_data(data_output_t *output, data_t *data, char *format)
+static void print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -623,7 +623,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char *format)
     }
 }
 
-static void print_kv_array(data_output_t *output, data_array_t *array, char *format)
+static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -636,21 +636,21 @@ static void print_kv_array(data_output_t *output, data_array_t *array, char *for
     //fprintf(output->file, " ]");
 }
 
-static void print_kv_double(data_output_t *output, double data, char *format)
+static void print_kv_double(data_output_t *output, double data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     kv->column += fprintf(output->file, format ? format : "%.3f", data);
 }
 
-static void print_kv_int(data_output_t *output, int data, char *format)
+static void print_kv_int(data_output_t *output, int data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     kv->column += fprintf(output->file, format ? format : "%d", data);
 }
 
-static void print_kv_string(data_output_t *output, const char *data, char *format)
+static void print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
@@ -702,7 +702,7 @@ typedef struct {
     const char *separator;
 } data_output_csv_t;
 
-static void print_csv_data(data_output_t *output, data_t *data, char *format)
+static void print_csv_data(data_output_t *output, data_t *data, char const *format)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -728,7 +728,7 @@ static void print_csv_data(data_output_t *output, data_t *data, char *format)
     --csv->data_recursion;
 }
 
-static void print_csv_array(data_output_t *output, data_array_t *array, char *format)
+static void print_csv_array(data_output_t *output, data_array_t *array, char const *format)
 {
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
@@ -737,7 +737,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char *fo
     }
 }
 
-static void print_csv_string(data_output_t *output, const char *str, char *format)
+static void print_csv_string(data_output_t *output, const char *str, char const *format)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -834,12 +834,12 @@ alloc_error:
     free(csv);
 }
 
-static void print_csv_double(data_output_t *output, double data, char *format)
+static void print_csv_double(data_output_t *output, double data, char const *format)
 {
     fprintf(output->file, "%.3f", data);
 }
 
-static void print_csv_int(data_output_t *output, int data, char *format)
+static void print_csv_int(data_output_t *output, int data, char const *format)
 {
     fprintf(output->file, "%d", data);
 }
@@ -879,7 +879,7 @@ typedef struct {
     abuf_t msg;
 } data_print_jsons_t;
 
-static void format_jsons_array(data_output_t *output, data_array_t *array, char *format)
+static void format_jsons_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
@@ -892,7 +892,7 @@ static void format_jsons_array(data_output_t *output, data_array_t *array, char 
     abuf_cat(&jsons->msg, "]");
 }
 
-static void format_jsons_object(data_output_t *output, data_t *data, char *format)
+static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
@@ -910,7 +910,7 @@ static void format_jsons_object(data_output_t *output, data_t *data, char *forma
     abuf_cat(&jsons->msg, "}");
 }
 
-static void format_jsons_string(data_output_t *output, const char *str, char *format)
+static void format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
@@ -941,7 +941,7 @@ static void format_jsons_string(data_output_t *output, const char *str, char *fo
     jsons->msg.left = size;
 }
 
-static void format_jsons_double(data_output_t *output, double data, char *format)
+static void format_jsons_double(data_output_t *output, double data, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     // use scientific notation for very big/small values
@@ -959,7 +959,7 @@ static void format_jsons_double(data_output_t *output, double data, char *format
     }
 }
 
-static void format_jsons_int(data_output_t *output, int data, char *format)
+static void format_jsons_int(data_output_t *output, int data, char const *format)
 {
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     abuf_printf(&jsons->msg, "%d", data);
@@ -1064,7 +1064,7 @@ typedef struct {
     char hostname[_POSIX_HOST_NAME_MAX + 1];
 } data_output_syslog_t;
 
-static void print_syslog_data(data_output_t *output, data_t *data, char *format)
+static void print_syslog_data(data_output_t *output, data_t *data, char const *format)
 {
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
