@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "confparse.h"
+#include "fatal.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -59,8 +60,9 @@ char *readconf(char const *path)
         return NULL;
     }
 
-    conf = (char *)malloc(file_size + 1);
-    if (conf == NULL) {
+    conf = malloc(file_size + 1);
+    if (!conf) {
+        WARN_MALLOC("readconf()");
         fprintf(stderr, "Failed to allocate memory for \"%s\"\n", path);
         fclose(fp);
         return NULL;

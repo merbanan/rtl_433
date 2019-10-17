@@ -10,6 +10,7 @@
 
 #include "decoder.h"
 #include "optparse.h"
+#include "fatal.h"
 #include <stdlib.h>
 
 static inline int bit(const uint8_t *bytes, unsigned bit)
@@ -263,8 +264,10 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         render_getters(row_data[i], bitbuffer->bb[i], params);
 
         // a simpler representation for csv output
-        row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
+        row_codes[i] = malloc(8 + bitbuffer->bits_per_row[i] / 4 + 1); // "{nnnn}..\0"
+        if (!row_codes[i])
+            WARN_MALLOC("flex_decode()");
+        else // NOTE: skipped on alloc failure.
             sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
     }
     /* clang-format off */
@@ -427,7 +430,9 @@ const char *parse_map(const char *arg, struct flex_get *getter)
         const char *e = c;
         while (*e != ' ' && *e != ']') e++;
         val = malloc(e - c + 1);
-        if (val) { // NOTE: might silently skip on alloc failure.
+        if (!val)
+            WARN_MALLOC("parse_map()");
+        else { // NOTE: skipped on alloc failure.
             memcpy(val, c, e - c);
             val[e - c] = '\0';
         }
@@ -458,8 +463,11 @@ static void parse_getter(const char *arg, struct flex_get *getter)
             getter->bit_count = parse_bits(arg, bitrow);
             getter->mask = extract_number(bitrow, 0, getter->bit_count);
         }
-        else
+        else {
             getter->name = strdup(arg);
+            if (!getter->name)
+                FATAL_STRDUP("parse_getter()");
+        }
         arg = p;
     }
     if (!getter->name) {
@@ -480,18 +488,23 @@ r_device *flex_create_device(char *spec)
     }
 
     struct flex_params *params = calloc(1, sizeof(*params));
-    if (!params)
-        return NULL; // NOTE: might silently return NULL on alloc failure.
+    if (!params) {
+        WARN_CALLOC("flex_create_device()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
     r_device *dev = calloc(1, sizeof(*dev));
     if (!dev) {
+        WARN_CALLOC("flex_create_device()");
         free(params);
-        return NULL; // NOTE: might silently return NULL on alloc failure.
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
     dev->decode_ctx = params;
     char *c, *o;
     int get_count = 0;
 
     spec = strdup(spec);
+    if (!spec)
+        FATAL_STRDUP("flex_create_device()");
     // locate optional args and terminate mandatory args
     char *args = strchr(spec, ',');
     if (args) {
@@ -508,10 +521,13 @@ r_device *flex_create_device(char *spec)
     if (!strncasecmp(c, "name=", 5))
         c += 5;
     params->name  = strdup(c);
+    if (!params->name)
+        FATAL_STRDUP("flex_create_device()");
     int name_size = strlen(c) + 27;
     dev->name = malloc(name_size);
-    if (dev->name) // NOTE: might silently skip on alloc failure.
-        snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
+    if (!dev->name)
+        FATAL_MALLOC("flex_create_device()");
+    snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
 
     c = strtok(NULL, ":");
     if (c != NULL) {

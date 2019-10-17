@@ -10,6 +10,7 @@
 */
 
 #include "r_util.h"
+#include "fatal.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -169,9 +170,10 @@ char *str_replace(char *orig, char *rep, char *with)
     }
 
     tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result)
-        return NULL;
+    if (!result) {
+        WARN_MALLOC("str_replace()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
 
     // first time through the loop, all the variables are set correctly
     // from here on,

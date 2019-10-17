@@ -27,6 +27,7 @@
 #include "optparse.h"
 #include "output_mqtt.h"
 #include "compat_time.h"
+#include "fatal.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -81,10 +82,8 @@ void r_init_cfg(r_cfg_t *cfg)
     list_ensure_size(&cfg->output_handler, 16);
 
     cfg->demod = calloc(1, sizeof(*cfg->demod));
-    if (!cfg->demod) {
-        fprintf(stderr, "Could not create demod!\n");
-        exit(1);
-    }
+    if (!cfg->demod)
+        FATAL_CALLOC("r_init_cfg()");
 
     cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
 
@@ -95,10 +94,8 @@ void r_init_cfg(r_cfg_t *cfg)
 r_cfg_t *r_create_cfg(void)
 {
     r_cfg_t *cfg = calloc(1, sizeof(*cfg));
-    if (!cfg) {
-        fprintf(stderr, "Could not create cfg!\n");
-        exit(1);
-    }
+    if (!cfg)
+        FATAL_CALLOC("r_create_cfg()");
 
     r_init_cfg(cfg);
 
@@ -167,10 +164,8 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
             fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
         }
         p  = malloc(sizeof(*p));
-        if (!p) {
-            fprintf(stderr, "Could not register protocol\n");
-            exit(1);
-        }
+        if (!p)
+            FATAL_CALLOC("register_protocol()");
         *p = *r_dev; // copy
     }
 
@@ -485,12 +480,15 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
                 free(d->key);
                 d->key = strdup("battery_ok");
+                if (!d->key)
+                    FATAL_STRDUP("data_acquired_handler()");
                 int ok = d->value && !strcmp(d->value, "OK");
                 free(d->value);
                 d->type = DATA_INT;
                 d->value = malloc(sizeof(int));
-                if (d->value) // NOTE: might silently skip on alloc failure.
-                    *(int *)d->value = ok;
+                if (!d->value)
+                    FATAL_MALLOC("data_acquired_handler()");
+                *(int *)d->value = ok;
                 break;
             }
         }
@@ -868,10 +866,8 @@ void add_null_output(r_cfg_t *cfg, char *param)
 void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
     file_info_t *dumper = calloc(1, sizeof(*dumper));
-    if (!dumper) {
-        fprintf(stderr, "Could not add dumper\n");
-        exit(1);
-    }
+    if (!dumper)
+        FATAL_CALLOC("add_dumper()");
     list_push(&cfg->demod->dumper, dumper);
 
     parse_file_info(spec, dumper);

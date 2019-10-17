@@ -14,16 +14,21 @@
 #include "data.h"
 #include "util.h"
 #include "decoder_util.h"
+#include "fatal.h"
 
 // create decoder functions
 
 r_device *create_device(r_device *dev_template)
 {
     r_device *r_dev = malloc(sizeof (*r_dev));
-    if (r_dev && dev_template)
+    if (!r_dev) {
+        WARN_MALLOC("create_device()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
+    if (dev_template)
         *r_dev = *dev_template; // copy
 
-    return r_dev; // NOTE: might silently return NULL on alloc failure.
+    return r_dev;
 }
 
 // variadic print functions
@@ -121,13 +126,39 @@ void decoder_output_message(r_device *decoder, char const *msg)
     decoder_output_data(decoder, data);
 }
 
-static char *bitrow_print_bits(bitrow_t const bitrow, unsigned bit_len)
+static char *bitrow_asprint_code(bitrow_t const bitrow, unsigned bit_len)
+{
+    char *row_code;
+    char row_bytes[BITBUF_COLS * 2 + 1];
+
+    row_bytes[0] = '\0';
+    // print byte-wide
+    for (unsigned col = 0; col < (unsigned)(bit_len + 7) / 8; ++col) {
+        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
+    }
+    // remove last nibble if needed
+    row_bytes[2 * (bit_len + 3) / 8] = '\0';
+
+    // a simple bitrow representation
+    row_code = malloc(8 + bit_len / 4 + 1); // "{nnnn}..\0"
+    if (!row_code) {
+        WARN_MALLOC("decoder_output_bitbuffer()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
+    sprintf(row_code, "{%d}%s", bit_len, row_bytes);
+
+    return row_code;
+}
+
+static char *bitrow_asprint_bits(bitrow_t const bitrow, unsigned bit_len)
 {
     char *row_bits, *p;
 
     p = row_bits = malloc(bit_len + bit_len / 4 + 1); // "1..\0" (1 space per nibble)
-    if (!row_bits)
-        return NULL; // NOTE: might silently return NULL on alloc failure.
+    if (!row_bits) {
+        WARN_MALLOC("bitrow_asprint_bits()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
 
     // print bit-wide with a space every nibble
     for (unsigned i = 0; i < bit_len; ++i) {
@@ -151,25 +182,13 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
     data_t *data;
     char *row_codes[BITBUF_ROWS];
     char *row_bits[BITBUF_ROWS] = {0};
-    char row_bytes[BITBUF_COLS * 2 + 1];
     unsigned i;
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
-        row_bytes[0] = '\0';
-        // print byte-wide
-        for (unsigned col = 0; col < (unsigned)(bitbuffer->bits_per_row[i] + 7) / 8; ++col) {
-            sprintf(&row_bytes[2 * col], "%02x", bitbuffer->bb[i][col]);
-        }
-        // remove last nibble if needed
-        row_bytes[2 * (bitbuffer->bits_per_row[i] + 3) / 8] = '\0';
-
-        // a simpler representation for csv output
-        row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
-            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+        row_codes[i] = bitrow_asprint_code(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
 
         if (decoder->verbose_bits) {
-            row_bits[i] = bitrow_print_bits(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
+            row_bits[i] = bitrow_asprint_bits(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
         }
     }
 
@@ -216,9 +235,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
                 NULL);
 
         // a simpler representation for csv output
-        row_codes[i] = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-        if (row_codes[i]) // NOTE: might silently skip on alloc failure.
-            sprintf(row_codes[i], "{%d}%s", bitbuffer->bits_per_row[i], row_bytes);
+        row_codes[i] = bitrow_asprint_code(bitbuffer->bb[i], bitbuffer->bits_per_row[i]);
     }
 
     data = data_make(
@@ -239,20 +256,8 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
     data_t *data;
     char *row_code;
     char *row_bits = NULL;
-    char row_bytes[BITBUF_COLS * 2 + 1];
 
-    row_bytes[0] = '\0';
-    // print byte-wide
-    for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
-        sprintf(&row_bytes[2 * col], "%02x", bitrow[col]);
-    }
-    // remove last nibble if needed
-    row_bytes[2 * (bit_len + 3) / 8] = '\0';
-
-    // a simpler representation for csv output
-    row_code = malloc(8 + BITBUF_COLS * 2 + 1); // "{nnn}..\0"
-    if (row_code) // NOTE: might silently skip on alloc failure.
-        sprintf(row_code, "{%d}%s", bit_len, row_bytes);
+    row_code = bitrow_asprint_code(bitrow, bit_len);
 
     data = data_make(
             "msg", "", DATA_STRING, msg,
@@ -260,7 +265,7 @@ void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bi
             NULL);
 
     if (decoder->verbose_bits) {
-        row_bits = bitrow_print_bits(bitrow, bit_len);
+        row_bits = bitrow_asprint_bits(bitrow, bit_len);
         data_append(data,
                 "bits", "", DATA_STRING, row_bits,
                 NULL);

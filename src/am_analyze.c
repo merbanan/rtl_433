@@ -15,6 +15,7 @@
 
 #include "bitbuffer.h"
 #include "samp_grab.h"
+#include "fatal.h"
 
 #include "am_analyze.h"
 
@@ -25,7 +26,9 @@ am_analyze_t *am_analyze_create(void)
 {
     am_analyze_t *a;
     a = calloc(1, sizeof(am_analyze_t));
-    return a; // NOTE: might silently return NULL on alloc failure.
+    if (!a)
+        WARN_CALLOC("am_analyze_create()");
+    return a; // NOTE: returns NULL on alloc failure.
 }
 
 void am_analyze_free(am_analyze_t *a)

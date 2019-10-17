@@ -52,6 +52,7 @@
 
 #include "term_ctl.h"
 #include "abuf.h"
+#include "fatal.h"
 
 #include "data.h"
 
@@ -163,18 +164,24 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
     data_array_t *array = calloc(1, sizeof(data_array_t));
-    if (array) {
-        int element_size = dmt[type].array_element_size;
-        array->values = calloc(num_values, element_size);
-        if (!array->values)
-            goto alloc_error;
-        if (!import_values(array->values, values, num_values, type))
-            goto alloc_error;
-
-        array->num_values = num_values;
-        array->type = type;
+    if (!array) {
+        WARN_CALLOC("data_array()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
-    return array; // NOTE: might silently return NULL on alloc failure.
+
+    int element_size = dmt[type].array_element_size;
+    array->values    = calloc(num_values, element_size);
+    if (!array->values) {
+        WARN_CALLOC("data_array()");
+        goto alloc_error;
+    }
+    if (!import_values(array->values, values, num_values, type))
+        goto alloc_error;
+
+    array->num_values = num_values;
+    array->type       = type;
+
+    return array;
 
 alloc_error:
     if (array)
@@ -198,8 +205,10 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         switch (type) {
         case DATA_FORMAT:
             format = strdup(va_arg(ap, char *));
-            if (!format)
+            if (!format) {
+                WARN_STRDUP("vdata_make()");
                 goto alloc_error;
+            }
             type = va_arg(ap, data_type_t);
             continue;
             break;
@@ -211,16 +220,22 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             break;
         case DATA_INT:
             value = malloc(sizeof(int));
-            if (value)
+            if (!value)
+                WARN_MALLOC("vdata_make()");
+            else // NOTE: skipped on alloc failure
                 *(int *)value = va_arg(ap, int);
             break;
         case DATA_DOUBLE:
             value = malloc(sizeof(double));
-            if (value)
+            if (!value)
+                WARN_MALLOC("vdata_make()");
+            else // NOTE: skipped on alloc failure
                 *(double *)value = va_arg(ap, double);
             break;
         case DATA_STRING:
             value = strdup(va_arg(ap, char *));
+            if (!value)
+                WARN_STRDUP("vdata_make()");
             break;
         case DATA_ARRAY:
             value = va_arg(ap, data_t *);
@@ -234,17 +249,23 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             goto alloc_error;
 
         current = calloc(1, sizeof(*current));
-        if (!current)
+        if (!current) {
+            WARN_CALLOC("vdata_make()");
             goto alloc_error;
+        }
         if (prev)
             prev->next = current;
 
         current->key = strdup(key);
-        if (!current->key)
+        if (!current->key) {
+            WARN_STRDUP("vdata_make()");
             goto alloc_error;
+        }
         current->pretty_key = strdup(pretty_key ? pretty_key : key);
-        if (!current->pretty_key)
+        if (!current->pretty_key) {
+            WARN_STRDUP("vdata_make()");
             goto alloc_error;
+        }
         current->type = type;
         current->format = format;
         current->value = value;
@@ -484,8 +505,8 @@ struct data_output *data_output_json_create(FILE *file)
 {
     data_output_t *output = calloc(1, sizeof(data_output_t));
     if (!output) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
+        WARN_CALLOC("data_output_json_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 
     output->print_data   = print_json_data;
@@ -670,8 +691,8 @@ struct data_output *data_output_kv_create(FILE *file)
 {
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
+        WARN_CALLOC("data_output_kv_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 
     kv->output.print_data   = print_kv_data;
@@ -766,8 +787,10 @@ static void data_output_csv_start(struct data_output *output, const char **field
     csv->separator = ",";
 
     allowed = calloc(num_fields, sizeof(const char *));
-    if (!allowed)
+    if (!allowed) {
+        WARN_CALLOC("data_output_csv_start()");
         goto alloc_error;
+    }
     memcpy(allowed, fields, sizeof(const char *) * num_fields);
 
     qsort(allowed, num_fields, sizeof(char *), compare_strings);
@@ -789,12 +812,16 @@ static void data_output_csv_start(struct data_output *output, const char **field
     num_unique_fields = i;
 
     csv->fields = calloc(num_unique_fields + 1, sizeof(const char *));
-    if (!csv->fields)
+    if (!csv->fields) {
+        WARN_CALLOC("data_output_csv_start()");
         goto alloc_error;
+    }
 
     use_count = calloc(num_unique_fields, sizeof(*use_count));
-    if (!use_count)
+    if (!use_count) {
+        WARN_CALLOC("data_output_csv_start()");
         goto alloc_error;
+    }
 
     for (i = 0; i < num_fields; ++i) {
         const char **field = bsearch(&fields[i], allowed, num_unique_fields, sizeof(const char *),
@@ -847,8 +874,8 @@ struct data_output *data_output_csv_create(FILE *file)
 {
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
+        WARN_CALLOC("data_output_csv_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 
     csv->output.print_data   = print_csv_data;
@@ -1102,8 +1129,8 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
 {
     data_output_syslog_t *syslog = calloc(1, sizeof(data_output_syslog_t));
     if (!syslog) {
-        fprintf(stderr, "calloc() failed");
-        return NULL;
+        WARN_CALLOC("data_output_syslog_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 #ifdef _WIN32
     WSADATA wsa;

@@ -35,12 +35,15 @@ static int style_check(char *path)
     int long_errors = 0;
     int crlf_errors = 0;
     int tabs_errors = 0;
+    int memc_errors = 0;
 
     int leading_tabs = 0;
     int leading_spcs = 0;
 
     int use_stdout = 0;
     int use_printf = 0;
+
+    int need_cond = 0;
 
     char str[MAX_LEN];
     while (fgets(str, MAX_LEN, fp)) {
@@ -72,6 +75,17 @@ static int style_check(char *path)
                 use_printf++;
             }
         }
+        if (need_cond && !strstr(str, "if (!")) {
+            // we had an alloc but no check on the following line
+            memc_errors++;
+        }
+        need_cond = 0;
+        if (strstr(str, "alloc(") && !strstr(str, "alloc()")) {
+            need_cond++;
+        }
+        if (strstr(str, "strdup(") && !strstr(str, "strdup()")) {
+            need_cond++;
+        }
     }
     if (leading_tabs && leading_spcs) {
         tabs_errors = leading_tabs > leading_spcs ? leading_spcs : leading_tabs;
@@ -85,6 +99,8 @@ static int style_check(char *path)
         printf("File \"%s\" has %d CRLF errors.\n", path, crlf_errors);
     if (tabs_errors)
         printf("File \"%s\" has %d MIXED tab/spaces errors.\n", path, tabs_errors);
+    if (memc_errors)
+        printf("File \"%s\" has %d ALLOC check errors.\n", path, memc_errors);
     if (leading_tabs)
         printf("File \"%s\" has %d TAB indented lines.\n", path, leading_tabs);
     if (strict && use_stdout)
@@ -92,7 +108,7 @@ static int style_check(char *path)
     if (strict && use_printf)
         printf("File \"%s\" has %d PRINTF lines.\n", path, use_printf);
 
-    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + (strict ? use_stdout + use_printf : 0);
+    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + (strict ? use_stdout + use_printf : 0) + memc_errors;
 }
 
 int main(int argc, char *argv[])

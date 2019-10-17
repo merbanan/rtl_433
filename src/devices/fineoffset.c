@@ -11,6 +11,7 @@
 */
 
 #include "decoder.h"
+#include "fatal.h"
 #include <stdlib.h>
 
 r_device fineoffset_WH2;
@@ -19,14 +20,14 @@ static r_device *fineoffset_WH2_create(char *arg)
 {
     r_device *r_dev = create_device(&fineoffset_WH2);
     if (!r_dev) {
-        fprintf(stderr, "create_device() failed");
+        fprintf(stderr, "fineoffset_WH2_create() failed");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
     if (arg && !strcmp(arg, "no-wh5")) {
         int *quirk = malloc(sizeof (*quirk));
         if (!quirk) {
-            fprintf(stderr, "malloc() failed");
+            WARN_MALLOC("fineoffset_WH2_create()");
             free(r_dev);
             return NULL; // NOTE: returns NULL on alloc failure.
         }

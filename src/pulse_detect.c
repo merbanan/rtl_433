@@ -13,6 +13,7 @@
 #include "pulse_demod.h"
 #include "util.h"
 #include "decoder.h"
+#include "fatal.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,7 +57,6 @@ void pulse_data_dump_raw(uint8_t *buf, unsigned len, uint64_t buf_offset, pulse_
     }
 }
 
-__attribute__((always_inline))
 static inline void chk_ret(int ret)
 {
     if (ret < 0) {
@@ -364,7 +364,10 @@ struct pulse_detect {
 
 pulse_detect_t *pulse_detect_create()
 {
-    return calloc(1, sizeof(pulse_detect_t));
+    pulse_detect_t *pulse_detect = calloc(1, sizeof(pulse_detect_t));
+    if (!pulse_detect)
+        WARN_CALLOC("pulse_detect_create()");
+    return pulse_detect;
 }
 
 void pulse_detect_free(pulse_detect_t *pulse_detect)
