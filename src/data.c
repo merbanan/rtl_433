@@ -202,7 +202,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     data_t *prev = first;
     while (prev && prev->next)
         prev = prev->next;
-    char *format = NULL;
+    char const *format = NULL;
     int skip = 0; // skip the data item if this is set
     type = va_arg(ap, data_type_t);
     do {
@@ -221,11 +221,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
                 fprintf(stderr, "vdata_make() format type used twice\n");
                 goto alloc_error;
             }
-            format = strdup(va_arg(ap, char *));
-            if (!format) {
-                WARN_STRDUP("vdata_make()");
-                goto alloc_error;
-            }
+            format = va_arg(ap, char const *);
             type = va_arg(ap, data_type_t);
             continue;
         case DATA_COUNT:
@@ -259,7 +255,6 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         if (skip) {
             if (value_release) // could use dmt[type].value_release
                 value_release(value.v_ptr);
-            free(format);
             format = NULL;
             skip = 0;
         }
@@ -283,16 +278,8 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             if (!first)
                 first = current;
 
-            current->key = strdup(key);
-            if (!current->key) {
-                WARN_STRDUP("vdata_make()");
-                goto alloc_error;
-            }
-            current->pretty_key = strdup(pretty_key ? pretty_key : key);
-            if (!current->pretty_key) {
-                WARN_STRDUP("vdata_make()");
-                goto alloc_error;
-            }
+            current->key = key;
+            current->pretty_key = pretty_key ? pretty_key : key;
         }
 
         // next args
@@ -311,7 +298,6 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     return first;
 
 alloc_error:
-    free(format); // if not consumed
     data_free(first);
     return NULL;
 }
@@ -381,9 +367,6 @@ void data_free(data_t *data)
         data_t *prev_data = data;
         if (dmt[data->type].value_release)
             dmt[data->type].value_release(data->value.v_ptr);
-        free(data->format);
-        free(data->pretty_key);
-        free(data->key);
         data = data->next;
         free(prev_data);
     }
@@ -656,7 +639,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
         }
 
         // print key
-        char *key = *data->pretty_key ? data->pretty_key : data->key;
+        char const *key = *data->pretty_key ? data->pretty_key : data->key;
         kv->column += fprintf(output->file, "%-10s: ", key);
         // print value
         if (color)

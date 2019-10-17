@@ -54,10 +54,10 @@ typedef union data_value {
 } data_value_t;
 
 typedef struct data {
-    char        *key;
-    char        *pretty_key; /**< the name used for displaying data to user in with a nicer name */
+    char const  *key;
+    char const  *pretty_key; /**< the name used for displaying data to user in with a nicer name */
     data_type_t type;
-    char        *format; /**< if not null, contains special formatting string */
+    char const  *format; /**< if not null, contains special formatting string */
     data_value_t value;
     unsigned    retain; /**< incremented on data_retain, data_free only frees if this is zero */
     struct data *next; /**< chaining to the next element in the linked list; NULL indicates end-of-list */

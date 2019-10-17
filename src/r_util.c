@@ -157,7 +157,7 @@ bool str_endswith(char const *restrict str, char const *restrict suffix)
 // https://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c/779960#779960
 //
 // You must free the result if result is non-NULL.
-char *str_replace(char const *orig, char const *rep, char const *with)
+static char *new_str_replace(char const *orig, char const *rep, char const *with)
 {
     char *result;  // the return string
     char const *ins; // the next insert point
@@ -203,6 +203,68 @@ char *str_replace(char const *orig, char const *rep, char const *with)
     }
     strcpy(tmp, orig);
     return result;
+}
+
+struct replace_map {
+    char const *src;
+    char *dst;
+    char const *rep;
+    char const *with;
+};
+
+#define REPLACE_MAP_SIZE 100
+static struct replace_map replace_map[REPLACE_MAP_SIZE];
+
+/*
+    "temperature_C", "_C", "_F"
+    "%.1f C", "C", "F"
+    "%.01f C", "C", "F"
+    "pressure_kPa", "_kPa", "_PSI"
+    "%.1f kPa", "kPa", "PSI"
+    "%.0f C", "C", "F"
+    "temperature_1_C", "_C", "_F"
+    "wind_avg_km_h", "_km_h", "_mi_h"
+    "%.1f km/h", "km/h", "mi/h"
+    "%.02f C", "C", "F"
+    "rain_mm", "_mm", "_in"
+    "%.02f mm", "mm", "in"
+    "%.1f mm", "mm", "in"
+    "%.1f", "C", "F"
+    "%.2f C", "C", "F"
+    "setpoint_C", "_C", "_F"
+    "pressure_hPa", "_hPa", "_inHg"
+    "%.01f hPa", "hPa", "inHg"
+    "%.02f", "km/h", "mi/h"
+    "wind_max_km_h", "_km_h", "_mi_h"
+    "%3.1f", "mm", "in"
+    "%.01f mm", "mm", "in"
+    "%3.2f mm", "mm", "in"
+    "temperature_2_C", "_C", "_F"
+    "%.0f hPa", "hPa", "inHg"
+*/
+
+char *str_replace(char const *orig, char const *rep, char const *with)
+{
+    if (!orig)
+        return NULL;
+
+    struct replace_map *p = replace_map;
+    for (; p->src; ++p) {
+        if (!strcmp(p->src, orig)) {
+            if (p->rep != rep || p->with != with) {
+                fprintf(stderr, "%s: mismatch in \"%s\", \"%s\", \"%s\"\n", __func__, orig, rep, with);
+            }
+            return p->dst;
+        }
+    }
+    // not found: replace and append
+    fprintf(stderr, "%s: appending \"%s\", \"%s\", \"%s\"\n", __func__, orig, rep, with);
+    char *dst = new_str_replace(orig, rep, with);
+    p->src    = orig;
+    p->dst    = dst;
+    p->rep    = rep;
+    p->with   = with;
+    return dst;
 }
 
 // Make a more readable string for a frequency.
