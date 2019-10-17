@@ -391,7 +391,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->FSK_state = (pulse_FSK_state_t){0};
                     s->FSK_state.var_test_max = INT16_MIN;
                     s->FSK_state.var_test_min = INT16_MAX;
-                    s->FSK_state.skip_samples = 10;
+                    s->FSK_state.skip_samples = 40;
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
