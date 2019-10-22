@@ -27,6 +27,8 @@
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
 
+#define INPUT_LINE_MAX 8192 /**< enough for a complete textual bitbuffer (25*256) */
+
 struct sdr_dev;
 struct r_device;
 

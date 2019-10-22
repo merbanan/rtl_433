@@ -1196,7 +1196,43 @@ int main(int argc, char **argv) {
         cfg.out_block_size = DEFAULT_BUF_LENGTH;
     }
 
-    // Special case for test data
+    // Special case for streaming test data
+    if (cfg.test_data && (!strcasecmp(cfg.test_data, "-") || *cfg.test_data == '@')) {
+        FILE *fp;
+        char line[INPUT_LINE_MAX];
+
+        if (*cfg.test_data == '@') {
+            fprintf(stderr, "Reading test data from \"%s\"\n", &cfg.test_data[1]);
+            fp = fopen(&cfg.test_data[1], "r");
+        } else {
+            fprintf(stderr, "Reading test data from stdin\n");
+            fp = stdin;
+        }
+        if (!fp) {
+            fprintf(stderr, "Failed to open %s\n", cfg.test_data);
+            exit(1);
+        }
+
+        while (fgets(line, INPUT_LINE_MAX, fp)) {
+            if (cfg.verbosity)
+                fprintf(stderr, "Processing test data \"%s\"...\n", line);
+            r = 0;
+            for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+                r_device *r_dev = *iter;
+                if (cfg.verbosity)
+                    fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                r += pulse_demod_string(line, r_dev);
+            }
+        }
+
+        if (*cfg.test_data == '@') {
+            fclose(fp);
+        }
+
+        r_free_cfg(&cfg);
+        exit(!r);
+    }
+    // Special case for string test data
     if (cfg.test_data) {
         r = 0;
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
