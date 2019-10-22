@@ -1217,6 +1217,33 @@ int main(int argc, char **argv) {
             if (cfg.verbosity)
                 fprintf(stderr, "Processing test data \"%s\"...\n", line);
             r = 0;
+            // test a single decoder?
+            if (*line == '[') {
+                char *e = NULL;
+                unsigned d = (unsigned)strtol(&line[1], &e, 10);
+                if (!e || *e != ']') {
+                    fprintf(stderr, "Bad protocol number %.5s.\n", line);
+                    exit(1);
+                }
+                e++;
+                r_device *r_dev = NULL;
+                for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+                    r_device *r_dev_i = *iter;
+                    if (r_dev_i->protocol_num == d) {
+                        r_dev = r_dev_i;
+                        break;
+                    }
+                }
+                if (!r_dev) {
+                    fprintf(stderr, "Unknown protocol number %u.\n", d);
+                    exit(1);
+                }
+                if (cfg.verbosity)
+                    fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                r += pulse_demod_string(e, r_dev);
+                continue;
+            }
+            // otherwise test all decoders
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
                 if (cfg.verbosity)
