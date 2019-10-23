@@ -61,20 +61,6 @@ unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned
     return ipos;
 }
 
-char *ge_command_name(uint8_t command) {
-    char *out = "0xxx";
-
-    switch(command) {
-        case 0x5a:  return "change";  break;
-        case 0xaa:  return "on";      break;
-        case 0x55:  return "off";     break;
-        default:
-            sprintf(out, "0x%x", command);
-            return out;
-            break;
-    }
-}
-
 static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos)
 {
     data_t *data;
@@ -113,11 +99,21 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     // Extract command from the second byte
     bitbuffer_extract_bytes(&packet_bits, 0, 8, &command, 8);
 
+    char cmd[7];
+    switch(command) {
+        case 0x5a:  snprintf(cmd, sizeof(cmd), "change");  break;
+        case 0xaa:  snprintf(cmd, sizeof(cmd), "on");      break;
+        case 0x55:  snprintf(cmd, sizeof(cmd), "off");     break;
+        default:
+            snprintf(cmd, sizeof(cmd), "0x%x", command);
+            break;
+    }
+
     // Format data
     data = data_make(
         "model",         "",     DATA_STRING, _X("GE-ColorEffects","GE Color Effects Remote"),
         "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
-        "command",       "",     DATA_STRING, ge_command_name(command),
+        "command",       "",     DATA_STRING, cmd,
         NULL);
 
     decoder_output_data(decoder, data);
