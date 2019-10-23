@@ -123,7 +123,12 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                         (const uint8_t *)&preamble_pattern, 16)) + 128 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
+            int event = tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
+            if (event > 0) {
+                // not very clean, we ideally want the event to bubble up for accounting.
+                // however, by adding them all together the accounting is wrong too.
+                events += event;
+            }
             bitpos += 15;
         }
     }
