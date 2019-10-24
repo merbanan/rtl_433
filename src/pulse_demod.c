@@ -34,7 +34,7 @@ static int account_event(r_device *device, int ret)
     }
     else {
         fprintf(stderr, "Decoder gave invalid return value %d: notify maintainer\n", ret);
-        ret = 0;
+        exit(1);
     }
     return ret;
 }
