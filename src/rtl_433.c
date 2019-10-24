@@ -285,6 +285,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     get_time_now(&demod->now);
 
     n_samples = len / 2 / demod->sample_size;
+    if (n_samples * 2 * demod->sample_size != len) {
+        fprintf(stderr, "Sample buffer length not aligned to sample size!\n");
+    }
+    if (!n_samples) {
+        fprintf(stderr, "Sample buffer too short!\n");
+        return; // keep the watchdog timer running
+    }
 
     // age the frame position if there is one
     if (demod->frame_start_ago)
