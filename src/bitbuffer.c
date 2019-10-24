@@ -346,6 +346,8 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             }
 
             width = strtol(c + 1, (char **)&c, 0);
+            if (!*c)
+                break; // no closing brace and end of string
             if (width > BITBUF_COLS * 8)
                 width = BITBUF_COLS * 8;
             continue;
