@@ -26,7 +26,9 @@
 #include <stdbool.h>
 #include <limits.h>
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 500
+#endif
 
 #ifndef _MSC_VER
 #include <unistd.h>

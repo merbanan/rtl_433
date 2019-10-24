@@ -388,7 +388,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
         int minutes = ((msg[5] & 0x0F) * 10) + ((msg[5] & 0xF0) >> 4);
         int seconds = ((msg[4] & 0x0F) * 10) + ((msg[4] & 0xF0) >> 4);
 
-        char clock_str[23];
+        char clock_str[24];
         sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",
                 year, month, day, hours, minutes, seconds);
 

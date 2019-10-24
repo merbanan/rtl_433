@@ -414,7 +414,7 @@ int term_help_puts(void *ctx, char const *buf)
         }
 
         if (set_color >= 0) {
-            color = ctx ? color_map[set_color] : -1;
+            color = ctx ? (int)color_map[set_color] : -1;
             if (color >= 0)
                 term_set_fg(ctx, (term_color_t)color);
         }
