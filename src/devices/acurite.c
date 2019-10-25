@@ -649,8 +649,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else {
+                if (decoder->verbose > 1) {
                 fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
                     __func__, sensor_id, channel, bb[3], message_type);
+                }
             }
         }
 
