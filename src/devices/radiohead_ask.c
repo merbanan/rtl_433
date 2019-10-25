@@ -71,7 +71,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         if (decoder->verbose > 1) {
             fprintf(stderr, "RH ASK preamble not found\n");
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     // read "bytes" of 12 bit
@@ -89,14 +89,14 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
             if (decoder->verbose) {
                 fprintf(stderr, "Error on 6to4 decoding high nibble: %X\n", rxBits[0]);
             }
-            return 0;
+            return DECODE_FAIL_SANITY;
         }
         uint8_t lo_nibble = symbol_6to4(rxBits[1]);
         if (lo_nibble > 0xF) {
             if (decoder->verbose) {
                 fprintf(stderr, "Error on 6to4 decoding low nibble: %X\n", rxBits[1]);
             }
-            return 0;
+            return DECODE_FAIL_SANITY;
         }
         uint8_t byte = hi_nibble << 4 | lo_nibble;
         payload[nb_bytes] = byte;
@@ -106,6 +106,15 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         nb_bytes++;
     }
 
+    // Prevent buffer underflow when calculating CRC
+    if (msg_len < 2) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr,
+                "radiohead_ask: message too short to contain crc\n");
+        }
+        return DECODE_ABORT_LENGTH;
+    }
+
     // Check CRC
     crc = (payload[msg_len - 1] << 8) | payload[msg_len - 2];
     crc_recompute = ~crc16lsb(payload, msg_len - 2, 0x8408, 0xFFFF);
@@ -113,7 +122,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         if (decoder->verbose) {
             fprintf(stderr, "CRC error: %04X != %04X\n", crc_recompute, crc);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     return msg_len;
