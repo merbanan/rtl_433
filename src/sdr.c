@@ -368,7 +368,7 @@ static int soapysdr_set_bandwidth(SoapySDRDevice *dev, uint32_t bandwidth)
 static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
 {
     int r = 0;
-    char *value, *set_value;
+    char const *value, *set_value;
     if (on == 0)
         value = "0";
     else if (on == 1)
@@ -390,7 +390,7 @@ static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
         fprintf(stderr, "Enabled direct sampling mode, input 1/I.\n");}
     if (atoi(set_value) == 2) {
         fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
-    if (on == 3) {
+    if (atoi(set_value) == 3) {
         fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
     return r;
 }

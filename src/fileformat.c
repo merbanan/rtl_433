@@ -283,7 +283,7 @@ void assert_file_type(int check, char const *spec)
 
 void assert_str_equal(char const *a, char const *b)
 {
-    if (a != b && strcmp(a, b)) {
+    if (a != b && (!a || !b || strcmp(a, b))) {
         fprintf(stderr, "\nTEST failed: \"%s\" == \"%s\"\n", a, b);
     } else {
         fprintf(stderr, ".");

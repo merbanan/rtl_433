@@ -890,10 +890,14 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         fprintf(stderr, "debug option (-D) is deprecated. See -v to increase verbosity\n");
         break;
     case 'z':
+        if (!arg)
+            usage(1);
         if (cfg->demod->am_analyze)
             cfg->demod->am_analyze->override_short = atoi(arg);
         break;
     case 'x':
+        if (!arg)
+            usage(1);
         if (cfg->demod->am_analyze)
             cfg->demod->am_analyze->override_long = atoi(arg);
         break;
@@ -968,6 +972,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->output_tag = arg;
         break;
     case 'C':
+        if (!arg)
+            usage(1);
         if (strcmp(arg, "native") == 0) {
             cfg->conversion_mode = CONVERT_NATIVE;
         }
