@@ -145,7 +145,7 @@ static char *bitrow_asprint_code(bitrow_t const bitrow, unsigned bit_len)
         WARN_MALLOC("decoder_output_bitbuffer()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    sprintf(row_code, "{%d}%s", bit_len, row_bytes);
+    sprintf(row_code, "{%u}%s", bit_len, row_bytes);
 
     return row_code;
 }

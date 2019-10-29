@@ -299,7 +299,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bit_len < ROW_BITLEN_MIN) || (bit_len > ROW_BITLEN_MAX)) {
         if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %u (expected between %u and %u).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
+            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %d (expected between %d and %d).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
         }
         return 0;
     }

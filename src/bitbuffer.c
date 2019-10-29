@@ -249,7 +249,7 @@ static void print_bitrow(bitrow_t const bitrow, unsigned bit_len, unsigned highe
 {
     unsigned row_len = 0;
 
-    fprintf(stderr, "{%2d} ", bit_len);
+    fprintf(stderr, "{%2u} ", bit_len);
     for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
         row_len += fprintf(stderr, "%02x ", bitrow[col]);
     }
@@ -289,7 +289,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
 
     fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
-        fprintf(stderr, "[%02d] ", row);
+        fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
     }
     if (bits->num_rows >= BITBUF_ROWS) {

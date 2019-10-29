@@ -87,7 +87,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 unsigned padded_start = a->signal_start - FRAME_PAD;
                 unsigned padded_end   = a->counter - FRAME_END_MIN + FRAME_PAD;
                 unsigned padded_len   = padded_end - padded_start;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d, signal_len = %d, pulses_found = %d\n",
+                fprintf(stderr, "*** signal_start = %u, signal_end = %u, signal_len = %u, pulses_found = %u\n",
                         padded_start, padded_end, padded_len, a->pulses_found);
 
                 am_analyze_classify(a); // clears signal_pulse_data
@@ -106,7 +106,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
 void am_analyze_classify(am_analyze_t *aa)
 {
     unsigned int i, k, max = 0, min = 1000000, t;
-    unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
+    unsigned int delta, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3];
     unsigned int signal_distance_data[PULSE_DATA_SIZE] = {0};
     bitbuffer_t bits = {0};
@@ -134,10 +134,10 @@ void am_analyze_classify(am_analyze_t *aa)
     //TODO use Lloyd-Max quantizer instead
     k = 1;
     while ((k < 10) && (delta > 0)) {
-        min_new = 0;
-        count_min = 0;
-        max_new = 0;
-        count_max = 0;
+        unsigned min_new = 0;
+        unsigned count_min = 0;
+        unsigned max_new = 0;
+        unsigned count_max = 0;
 
         for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (aa->signal_pulse_data[i][0] > 0) {
@@ -160,7 +160,7 @@ void am_analyze_classify(am_analyze_t *aa)
         max = max_new;
         t = (min + max) / 2;
 
-        fprintf(stderr, "Iteration %d. t: %d    min: %d (%d)    max: %d (%d)    delta %d\n", k, t, min, count_min, max, count_max, delta);
+        fprintf(stderr, "Iteration %u. t: %u    min: %u (%u)    max: %u (%u)    delta %u\n", k, t, min, count_min, max, count_max, delta);
         k++;
     }
 

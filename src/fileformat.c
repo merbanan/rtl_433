@@ -110,7 +110,6 @@ static uint32_t file_type_guess_auto_format(uint32_t type)
     else if (type == F_CS8) return CS8_IQ;
     else if (type == F_S16) return S16_AM;
     else if (type == F_U8) return U8_LOGIC;
-    else if (type == F_Q) return F32_Q;
     else if (type == F_VCD) return VCD_LOGIC;
     else if (type == F_OOK) return PULSE_OOK;
     else if (type == F_CS16) return CS16_IQ;

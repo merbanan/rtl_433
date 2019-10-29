@@ -110,7 +110,7 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_raw = ((b[3] & 0x3f) << 8) | b[2];
     temp_c   = (temp_raw / 353.0) - 9.2; // TODO: this is very likely wrong
     if (decoder->verbose) {
-        fprintf(stderr, "\ntemperature: raw: %u\t%08X\tconverted: %.2f\n", temp_raw, temp_raw, temp_c);
+        fprintf(stderr, "\ntemperature: raw: %d\t%08X\tconverted: %.2f\n", temp_raw, temp_raw, temp_c);
     }
 
     /* clang-format off */

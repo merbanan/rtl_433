@@ -123,7 +123,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Channel */
     channel = packet[0] & 0x0f;
-    if (channel > (sizeof(channel_map) / sizeof(channel_map[0])))
+    if (channel >= (sizeof(channel_map) / sizeof(channel_map[0])))
         channel = 0;
     else
         channel = channel_map[channel];

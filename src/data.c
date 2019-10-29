@@ -198,7 +198,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     data_t *prev = first;
     while (prev && prev->next)
         prev = prev->next;
-    char *format = false;
+    char *format = NULL;
     type = va_arg(ap, data_type_t);
     do {
         data_t *current;

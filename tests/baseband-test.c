@@ -162,4 +162,13 @@ int main(int argc, char *argv[])
         baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, &fm_state);
     );
     write_buf("bb.cs16.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
+
+    free(cu8_buf);
+    free(y16_buf);
+    free(cs16_buf);
+    free(y32_buf);
+    free(u16_buf);
+    free(u32_buf);
+    free(s16_buf);
+    free(s32_buf);
 }

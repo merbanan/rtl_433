@@ -438,6 +438,7 @@ static void data_output_mqtt_free(data_output_t *output)
 
 static char *mqtt_topic_default(char const *topic, char const *base, char const *suffix)
 {
+    char path[256];
     char const *p;
     if (topic) {
         p = topic;
@@ -446,7 +447,6 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
         p = suffix;
     }
     else {
-        char path[256];
         snprintf(path, sizeof(path), "%s/%s", base, suffix);
         p = path;
     }
