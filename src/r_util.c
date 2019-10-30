@@ -50,7 +50,7 @@ char *format_time_str(char *buf, char const *format, time_t time_secs)
 char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
 {
     struct timeval now;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     if (!tv) {
         tv = &now;
@@ -58,12 +58,16 @@ char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
     }
 
     time_t t_secs = tv->tv_sec;
-    tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
+#ifdef _WIN32 /* MinGW might have localtime_r but apparently not MinGW64 */
+    localtime_s(&tm_info, &t_secs); // win32 doesn't have localtime_r()
+#else
+    localtime_r(&t_secs, &tm_info); // thread-safe
+#endif
 
     if (!format || !*format)
         format = "%Y-%m-%d %H:%M:%S";
 
-    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, tm_info);
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     return buf;
 }
