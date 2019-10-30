@@ -50,6 +50,21 @@ enum package_types {
     PULSE_DATA_FSK = 2,
 };
 
+/// state data for pulse_FSK_detect()
+typedef struct {
+    unsigned int fsk_pulse_length; ///< Counter for internal FSK pulse detection
+    enum {
+        PD_FSK_STATE_INIT  = 0, ///< Initial frequency estimation
+        PD_FSK_STATE_FH    = 1, ///< High frequency (pulse)
+        PD_FSK_STATE_FL    = 2, ///< Low frequency (gap)
+        PD_FSK_STATE_ERROR = 3  ///< Error - stay here until cleared
+    } fsk_state;
+
+    int fm_f1_est; ///< Estimate for the F1 frequency for FSK
+    int fm_f2_est; ///< Estimate for the F2 frequency for FSK
+
+} pulse_FSK_state_t;
+
 typedef struct pulse_detect pulse_detect_t;
 
 /// Clear the content of a pulse_data_t structure.
