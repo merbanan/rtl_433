@@ -206,6 +206,10 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
 
         switch (type) {
         case DATA_FORMAT:
+            if (format) {
+                fprintf(stderr, "vdata_make() format type used twice\n");
+                goto alloc_error;
+            }
             format = strdup(va_arg(ap, char *));
             if (!format) {
                 WARN_STRDUP("vdata_make()");
@@ -234,15 +238,29 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         case DATA_ARRAY:
             value.v_ptr = va_arg(ap, data_t *);
             break;
+        default:
+            fprintf(stderr, "vdata_make() bad data type (%d)\n", type);
+            goto alloc_error;
         }
 
         current = calloc(1, sizeof(*current));
         if (!current) {
             WARN_CALLOC("vdata_make()");
+            if (dmt[type].value_release)
+                dmt[type].value_release(value.v_ptr);
             goto alloc_error;
         }
+        current->type   = type;
+        current->format = format;
+        format          = NULL; // consumed
+        current->value  = value;
+        current->next   = NULL;
+
         if (prev)
             prev->next = current;
+        prev = current;
+        if (!first)
+            first = current;
 
         current->key = strdup(key);
         if (!current->key) {
@@ -254,27 +272,24 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             WARN_STRDUP("vdata_make()");
             goto alloc_error;
         }
-        current->type = type;
-        current->format = format;
-        current->value = value;
-        current->next = NULL;
 
-        prev = current;
-        if (!first)
-            first = current;
-
+        // next args
         key = va_arg(ap, const char *);
         if (key) {
             pretty_key = va_arg(ap, const char *);
             type = va_arg(ap, data_type_t);
-            format = NULL;
         }
     } while (key);
     va_end(ap);
+    if (format) {
+        fprintf(stderr, "vdata_make() format type without data\n");
+        goto alloc_error;
+    }
 
     return first;
 
 alloc_error:
+    free(format); // if not consumed
     data_free(first);
     return NULL;
 }
