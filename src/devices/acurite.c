@@ -368,7 +368,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
         exception++;
     }
 
-    // FIXME - temporarily leaving the old output for ease of debugging
+    // TODO: temporarily leaving the old output for ease of debugging
     // and backward compatibility. Remove when doing a "1.0" release.
     if (decoder->verbose) {
         fprintf(stderr, "Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",

@@ -30,7 +30,7 @@
     DECL(ambient_weather) \
     DECL(calibeur_RF104) \
     DECL(X10_RF) \
-    DECL(DSC) \
+    DECL(dsc_security) \
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
@@ -124,7 +124,7 @@
     DECL(maverick_et73) \
     DECL(honeywell_wdb) \
     DECL(honeywell_wdb_fsk) \
-    DECL(esa) \
+    DECL(esa_energy) \
     DECL(bt_rain) \
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \

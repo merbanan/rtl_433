@@ -214,7 +214,7 @@ static char *output_fields[] = {
     NULL,
 };
 
-r_device DSC = {
+r_device dsc_security = {
     .name          = "DSC Security Contact",
     .modulation    = OOK_PULSE_PCM_RZ,
     .short_width   = 250,    // Pulse length, 250 µs
