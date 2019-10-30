@@ -169,7 +169,7 @@ char *str_replace(char const *orig, char const *rep, char const *with)
         ins = tmp + len_rep;
     }
 
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * (size_t)count + 1);
     if (!result) {
         WARN_MALLOC("str_replace()");
         return NULL; // NOTE: returns NULL on alloc failure.

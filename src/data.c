@@ -156,7 +156,7 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
             }
         }
     } else {
-        memcpy(dst, src, element_size * num_values);
+        memcpy(dst, src, (size_t)element_size * num_values);
     }
     return true; // error is returned early
 }

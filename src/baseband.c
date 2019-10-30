@@ -272,8 +272,8 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
         ar = x_buf[2*n];
         ai = x_buf[2*n+1];
         // Calculate phase difference vector: x[n] * conj(x[n-1])
-        pr = (int64_t)ar*br+ai*bi;  // May exactly overflow an int32_t (-32768*-32768 + -32768*-32768)
-        pi = (int64_t)ai*br-ar*bi;
+        pr = (int64_t)ar*br + (int64_t)ai*bi;  // May exactly overflow an int32_t (-32768*-32768 + -32768*-32768)
+        pi = (int64_t)ai*br - (int64_t)ar*bi;
 //        xlp = (int32_t)((atan2f(pi, pr) / M_PI) * INT32_MAX);    // Floating point implementation
         xlp = atan2_int32(pi, pr);  // Integer implementation
 //        xlp = atan2_int16(pi>>16, pr>>16) << 16;  // Integer implementation

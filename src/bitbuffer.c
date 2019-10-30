@@ -245,7 +245,7 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     return ipos;
 }
 
-static void print_bitrow(bitrow_t const bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
+static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
 {
     unsigned row_len = 0;
 
@@ -307,12 +307,12 @@ void bitbuffer_debug(const bitbuffer_t *bits)
     print_bitbuffer(bits, 1);
 }
 
-void bitrow_print(bitrow_t const bitrow, unsigned bit_len)
+void bitrow_print(uint8_t const *bitrow, unsigned bit_len)
 {
     print_bitrow(bitrow, bit_len, 0, 0);
 }
 
-void bitrow_debug(bitrow_t const bitrow, unsigned bit_len)
+void bitrow_debug(uint8_t const *bitrow, unsigned bit_len)
 {
     print_bitrow(bitrow, bit_len, 0, 1);
 }

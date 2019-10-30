@@ -63,10 +63,10 @@ void bitbuffer_print(const bitbuffer_t *bits);
 void bitbuffer_debug(const bitbuffer_t *bits);
 
 /// Print the content of a bit row (byte buffer).
-void bitrow_print(bitrow_t const bitrow, unsigned bit_len);
+void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 
 /// Debug the content of a bit row (byte buffer).
-void bitrow_debug(bitrow_t const bitrow, unsigned bit_len);
+void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
 /// Parse a string into a bitbuffer.
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
