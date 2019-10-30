@@ -149,7 +149,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     block1->A_DevType = in->data[9];
 
     // Store length of data
-    out->length      = block1->L-9;
+    out->length      = block1->L-9 + BLOCK1A_SIZE-2;
 
     // Validate CRC
     if (!m_bus_crc_valid(decoder, in->data, 10)) return 0;
@@ -161,10 +161,11 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         return 0;
     }
 
+    memcpy(out->data, in->data, BLOCK1A_SIZE-2);
     // Get all remaining data blocks and concatenate into data array (removing CRC bytes)
     for (unsigned n=0; n < num_data_blocks; ++n) {
         const uint8_t *in_ptr   = in->data+BLOCK1A_SIZE+n*18;       // Pointer to where data starts. Each block is 18 bytes
-        uint8_t *out_ptr        = out->data+n*16;                   // Pointer into block where data starts.
+        uint8_t *out_ptr        = out->data+n*16 + BLOCK1A_SIZE-2;                   // Pointer into block where data starts.
         uint8_t block_size      = MIN(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
 
         // Validate CRC
