@@ -35,14 +35,16 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float temp_c, rainrate;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 4, NUM_BITS);
+    if (row < 0)
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] != NUM_BITS && bitbuffer->bits_per_row[row] != NUM_BITS + 1)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff && b[3] == 0xff)
-        return 0; // prevent false positive checksum
+        return DECODE_FAIL_SANITY; // prevent false positive checksum
 
     id       = b[0];
     battery  = b[1] >> 7;
