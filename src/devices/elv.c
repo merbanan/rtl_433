@@ -70,11 +70,11 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data = data_make(
             "model",    "", DATA_STRING, "ELV-EM1000",
-            "id",       "", DATA_STRING, code,
+            "id",       "", DATA_INT, code,
             "seq",      "", DATA_INT, seqno,
-            "total",    "", DATA_STRING, total,
-            "current",  "", DATA_STRING, current,
-            "peak",     "", DATA_FORMAT, peak,
+            "total",    "", DATA_INT, total,
+            "current",  "", DATA_INT, current,
+            "peak",     "", DATA_INT, peak,
             NULL);
 
     decoder_output_data(decoder, data);
