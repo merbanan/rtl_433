@@ -359,7 +359,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         }
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, cfg->fsk_pulse_detect_mode);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago)
