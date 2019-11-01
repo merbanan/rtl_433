@@ -4330,19 +4330,27 @@ int mg_socketpair(sock_t sp[2], int sock_type) {
   sa2 = sa;
 
   if ((sock = socket(AF_INET, sock_type, 0)) == INVALID_SOCKET) {
+    // abort
   } else if (bind(sock, &sa.sa, len) != 0) {
+    // abort
   } else if (sock_type == SOCK_STREAM && listen(sock, 1) != 0) {
+    // abort
   } else if (getsockname(sock, &sa.sa, &len) != 0) {
+    // abort
   } else if ((sp[0] = socket(AF_INET, sock_type, 0)) == INVALID_SOCKET) {
+    // abort
   } else if (sock_type == SOCK_STREAM && connect(sp[0], &sa.sa, len) != 0) {
+    // abort
   } else if (sock_type == SOCK_DGRAM &&
              (bind(sp[0], &sa2.sa, len) != 0 ||
               getsockname(sp[0], &sa2.sa, &len) != 0 ||
               connect(sp[0], &sa.sa, len) != 0 ||
               connect(sock, &sa2.sa, len) != 0)) {
+    // abort
   } else if ((sp[1] = (sock_type == SOCK_DGRAM ? sock : mg_socketpair_accept(
                                                             sock, &sa, len))) ==
              INVALID_SOCKET) {
+    // abort
   } else {
     mg_set_close_on_exec(sp[0]);
     mg_set_close_on_exec(sp[1]);
@@ -7271,7 +7279,8 @@ static void mg_http_construct_etag(char *buf, size_t buf_len,
 
 #ifndef WINCE
 static void mg_gmt_time_string(char *buf, size_t buf_len, time_t *t) {
-  strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime(t));
+  struct tm tm;
+  strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime_r(t, &tm));
 }
 #else
 /* Look wince_lib.c for WindowsCE implementation */
@@ -7886,6 +7895,7 @@ static void mg_print_dir_entry(struct mg_connection *nc, const char *file_name,
   int is_dir = S_ISDIR(stp->st_mode);
   const char *slash = is_dir ? "/" : "";
   struct mg_str href;
+  struct tm tm;
 
   if (is_dir) {
     snprintf(size, sizeof(size), "%s", "[DIRECTORY]");
@@ -7904,7 +7914,7 @@ static void mg_print_dir_entry(struct mg_connection *nc, const char *file_name,
       snprintf(size, sizeof(size), "%.1fG", (double) fsize / 1073741824);
     }
   }
-  strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&stp->st_mtime));
+  strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime_r(&stp->st_mtime, &tm));
   mg_escape(file_name, path, sizeof(path));
   href = mg_url_encode(mg_mk_str(file_name));
   mg_printf_http_chunk(nc,

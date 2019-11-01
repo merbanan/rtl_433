@@ -352,10 +352,8 @@ unsigned int sleep(unsigned int seconds);
 /* https://stackoverflow.com/questions/16647819/timegm-cross-platform */
 #define timegm _mkgmtime
 
-#define gmtime_r(a, b) \
-  do {                 \
-    *(b) = *gmtime(a); \
-  } while (0)
+#define gmtime_r(a, b) (gmtime_s((b), (a)), (b))
+#define localtime_r(a, b) (localtime_s((b), (a)), (b))
 
 #endif /* CS_PLATFORM == CS_P_WINDOWS */
 #endif /* CS_COMMON_PLATFORMS_PLATFORM_WINDOWS_H_ */
