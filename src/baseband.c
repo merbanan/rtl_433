@@ -175,19 +175,31 @@ int16_t atan2_int16(int16_t y, int16_t x)
     return angle;
 }
 
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
+
+///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
+//static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
+//static int const blp[2] = {FIX(0.13673), FIX(0.13673)};
+///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
+//static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
+//static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
+
+
+static int32_t const alps_16[][2] = {{FIX(1.00000), FIX(0.72654)},
+                                     {FIX(1.00000), FIX(0.50953)}};
+static int32_t const blps_16[][2] = {{FIX(0.13673), FIX(0.13673)},
+                                     {FIX(0.24524), FIX(0.24524)}};
+
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
 {
-    ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-    //static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
-    //static int const blp[2] = {FIX(0.13673), FIX(0.13673)};
-    ///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
-    static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
-    static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
 
     int16_t ar, ai;  // New IQ sample: x[n]
     int16_t br, bi;  // Old IQ sample: x[n-1]
     int32_t pr, pi;  // Phase difference vector
     int16_t xlp, ylp, xlp_old, ylp_old;  // Low Pass filter variables
+
+    /* Select filter coeffs */
+    const int32_t *alp = alps_16[fpdm];
+    const int32_t *blp = blps_16[fpdm];
 
     // Pre-feed old sample
     ar = state->br; ai = state->bi;
@@ -246,7 +258,7 @@ int32_t atan2_int32(int32_t y, int32_t x)
 }
 
 /// for evaluation.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state)
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
 {
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};

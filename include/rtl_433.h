@@ -14,7 +14,7 @@
 #define DEFAULT_HOP_TIME        (60*10)
 #define DEFAULT_ASYNC_BUF_NUMBER    0 // Force use of default value (librtlsdr default: 15)
 #define DEFAULT_BUF_LENGTH      (16 * 32 * 512) // librtlsdr default
-
+#define FSK_PULSE_DETECTOR_LIMIT 800000000
 /*
  * Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
  * 0 = automatic adaptive level limit, else fixed level limit
@@ -62,6 +62,7 @@ typedef struct r_cfg {
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
     uint32_t center_frequency;
+    int fsk_pulse_detect_mode;
     int hop_times;
     int hop_time[MAX_FREQS];
     time_t hop_start_time;

@@ -36,6 +36,7 @@
 #include "sdr.h"
 #include "baseband.h"
 #include "pulse_detect.h"
+#include "pulse_detect_fsk.h"
 #include "pulse_demod.h"
 #include "data.h"
 #include "r_util.h"
@@ -101,6 +102,7 @@ static void usage(int exit_code)
             "  [-z <value>] Override short value in data decoder\n"
             "  [-x <value>] Override long value in data decoder\n"
             "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
+            "  [-Y <mode>] FSK pulse detector mode, old(0)|minmax(1)|auto(2).\n"
             "\t\t= Analyze/Debug options =\n"
             "  [-a] Analyze mode. Print a textual description of the signal.\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
@@ -319,11 +321,20 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
     // FM demodulation
+    /* Select the correct fsk pulse detector */
+    unsigned fpdm = cfg->fsk_pulse_detect_mode;
+    if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
+        if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT)
+            fpdm = FSK_PULSE_DETECT_NEW;
+        else
+            fpdm = FSK_PULSE_DETECT_OLD;
+    }
+
     if (demod->enable_FM_demod) {
         if (demod->sample_size == 1) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state);
+            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state);
+            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
         }
     }
 
@@ -348,7 +359,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         }
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, cfg->fsk_pulse_detect_mode);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago)
@@ -591,7 +602,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -622,6 +633,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"signal_grabber", 'S'},
         {"override_short", 'z'},
         {"override_long", 'x'},
+        {"fsk_pulse_detect_mode", 'Y'},
         {"output", 'F'},
         {"output_tag", 'K'},
         {"convert", 'C'},
@@ -1004,6 +1016,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'y':
         cfg->test_data = arg;
+        break;
+    case 'Y':
+        cfg->fsk_pulse_detect_mode = atoi(arg);
         break;
     case 'E':
         if (arg && !strcmp(arg, "hop")) {

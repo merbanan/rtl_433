@@ -31,6 +31,8 @@ struct dm_state {
     filter_state_t lowpass_filter_state;
     demodfm_state_t demod_FM_state;
     int enable_FM_demod;
+    unsigned fsk_pulse_detect_mode;
+    unsigned frequency;
     samp_grab_t *samp_grab;
     am_analyze_t *am_analyze;
     int analyze_pulses;
