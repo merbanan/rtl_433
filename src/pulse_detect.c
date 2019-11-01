@@ -257,6 +257,9 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->pulse_length = 0;
                     s->max_pulse = 0;
                     s->FSK_state = (pulse_FSK_state_t){0};
+                    s->FSK_state.var_test_max = INT16_MIN;
+                    s->FSK_state.var_test_min = INT16_MAX;
+                    s->FSK_state.skip_samples = 40;
                     s->ook_state = PD_OOK_STATE_PULSE;
                 }
                 else {    // We are still idle..
@@ -298,7 +301,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 }
                 // FSK Demodulation
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    if (fpdm == FSK_PULSE_DETECT_OLD)
+                        pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    else
+                        pulse_FSK_detect_mm(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
                 }
                 break;
             case PD_OOK_STATE_GAP_START:    // Beginning of gap - it might be a spurious gap
@@ -314,7 +320,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     // Determine if FSK modulation is detected
                     if (fsk_pulses->num_pulses > PD_MIN_PULSES) {
                         // Store last pulse/gap
-                        pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
+                        if (fpdm == FSK_PULSE_DETECT_OLD)
+                            pulse_FSK_wrap_up(fsk_pulses, &s->FSK_state);
                         // Store estimates
                         fsk_pulses->fsk_f1_est = s->FSK_state.fm_f1_est;
                         fsk_pulses->fsk_f2_est = s->FSK_state.fm_f2_est;
@@ -328,7 +335,10 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 } // if
                 // FSK Demodulation (continue during short gap - we might return...)
                 if (pulses->num_pulses == 0) {    // Only during first pulse
-                    pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    if (fpdm == FSK_PULSE_DETECT_OLD)
+                        pulse_FSK_detect(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
+                    else
+                        pulse_FSK_detect_mm(fm_data[s->data_counter], fsk_pulses, &s->FSK_state);
                 }
                 break;
             case PD_OOK_STATE_GAP:

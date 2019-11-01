@@ -16,6 +16,7 @@
 
 void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
 void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
+void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
 
 #define    FSK_PULSE_DETECT_START 0
 enum {

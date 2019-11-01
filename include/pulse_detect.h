@@ -63,6 +63,12 @@ typedef struct {
     int fm_f1_est; ///< Estimate for the F1 frequency for FSK
     int fm_f2_est; ///< Estimate for the F2 frequency for FSK
 
+    int16_t var_test_max;
+    int16_t var_test_min;
+    int16_t maxx;
+    int16_t minn;
+    int16_t midd;
+    int skip_samples;
 } pulse_FSK_state_t;
 
 typedef struct pulse_detect pulse_detect_t;
