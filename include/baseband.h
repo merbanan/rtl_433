@@ -63,10 +63,10 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param len: number of samples to process
     @param[in,out] state: State to store between chunk processing
 */
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state);
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm);
 
 /// For evaluation.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state);
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm);
 
 /** Initialize tables and constants.
     Should be called once at startup.
