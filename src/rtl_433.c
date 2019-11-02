@@ -734,7 +734,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (cfg->frequencies < MAX_FREQS) {
             uint32_t sr = atouint32_metric(arg, "-f: ");
             /* If the frequency is above 800MHz sample at 1MS/s */
-            if ((sr > 800000000) && (cfg->samp_rate == DEFAULT_SAMPLE_RATE))
+            if ((sr > FSK_PULSE_DETECTOR_LIMIT) && (cfg->samp_rate == DEFAULT_SAMPLE_RATE))
                 cfg->samp_rate = 1000000;
             cfg->frequency[cfg->frequencies++] = sr;
         } else
