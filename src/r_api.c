@@ -21,6 +21,7 @@
 #include "r_private.h"
 #include "r_device.h"
 #include "pulse_demod.h"
+#include "pulse_detect_fsk.h"
 #include "sdr.h"
 #include "data.h"
 #include "list.h"
@@ -77,6 +78,7 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->out_block_size  = DEFAULT_BUF_LENGTH;
     cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
     cfg->conversion_mode = CONVERT_NATIVE;
+    cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
 
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
