@@ -1,5 +1,5 @@
 /** @file
-    InfluxDB output for rtl_433 events
+    InfluxDB output for rtl_433 events.
 
     Copyright (C) 2019 Daniel Krueger
     based on output_mqtt.c
@@ -15,9 +15,11 @@
 #include "output_influx.h"
 #include "optparse.h"
 #include "util.h"
+#include "fatal.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 
 #include "mongoose.h"
@@ -44,7 +46,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
 {
     // note that while shutting down the ctx is NULL
     influx_client_t *ctx = (influx_client_t *)nc->mgr->user_data;
-    struct http_message *hm = (struct http_message *) ev_data;
+    struct http_message *hm = (struct http_message *)ev_data;
 
     switch (ev) {
     case MG_EV_CONNECT: {
@@ -61,7 +63,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             ctx->prev_status = connect_status;
         break;
     }
-    case MG_EV_HTTP_CHUNK:  // response is normally empty (so mongoose thinks we received a chunk only)
+    case MG_EV_HTTP_CHUNK: // response is normally empty (so mongoose thinks we received a chunk only)
     case MG_EV_HTTP_REPLY:
         nc->flags |= MG_F_CLOSE_IMMEDIATELY;
         if (hm->resp_code == 204) {
@@ -88,8 +90,7 @@ static struct mg_mgr *influx_client_init(influx_client_t *ctx, char const *url, 
 {
     struct mg_mgr *mgr = calloc(1, sizeof(*mgr));
     if (!mgr) {
-        fprintf(stderr, "calloc() failed in %s() %s:%d\n", __func__, __FILE__, __LINE__);
-        exit(1);
+        FATAL_CALLOC("influx_client_init()");
     }
 
     strncpy(ctx->url, url, sizeof(ctx->url) - 1);
@@ -132,11 +133,11 @@ static void influx_client_send(influx_client_t *ctx)
 /// clean the tag/identifier inplace to [-.A-Za-z0-9], esp. not whitespace, =, comma and replace any leading _ by x
 static char *influx_sanitize_tag(char *tag, char *end)
 {
-    for (char *p = tag; *p && p!=end; ++p)
+    for (char *p = tag; *p && p != end; ++p)
         if (*p != '-' && *p != '.' && (*p < 'A' || *p > 'Z') && (*p < 'a' || *p > 'z') && (*p < '0' || *p > '9'))
             *p = '_';
 
-    for (char *p = tag; *p && p!=end; ++p)
+    for (char *p = tag; *p && p != end; ++p)
         if (*p == '_')
             *p = 'x';
         else
@@ -160,7 +161,7 @@ static size_t mbuf_reserve(struct mbuf *a, size_t len)
     return len;
 }
 
-static char* mbuf_snprintf(struct mbuf *a, const char* format, ...)
+static char *mbuf_snprintf(struct mbuf *a, char const *format, ...)
 {
     char *str = &a->buf[a->len];
     int size;
@@ -176,7 +177,7 @@ static char* mbuf_snprintf(struct mbuf *a, const char* format, ...)
     return str;
 }
 
-static void mbuf_remove_part(struct mbuf *a, char* pos, size_t len)
+static void mbuf_remove_part(struct mbuf *a, char *pos, size_t len)
 {
     if (pos >= a->buf && pos < &a->buf[a->len] && &pos[len] <= &a->buf[a->len]) {
         memmove(pos, &pos[len], a->len - (pos - a->buf) - len);
@@ -184,14 +185,14 @@ static void mbuf_remove_part(struct mbuf *a, char* pos, size_t len)
     }
 }
 
-static void print_influx_array(data_output_t *output, data_array_t *array, char *format)
+static void print_influx_array(data_output_t *output, data_array_t *array, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "\"array\""); // TODO
 }
 
-static void print_influx_data_escaped(data_output_t *output, data_t *data, char *format)
+static void print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
@@ -200,12 +201,12 @@ static void print_influx_data_escaped(data_output_t *output, data_t *data, char 
     output->print_string(output, str, format);
 }
 
-static void print_influx_string_escaped(data_output_t *output, char const *str, char *format)
+static void print_influx_string_escaped(data_output_t *output, char const *str, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *databuf = &influx->databufs[influx->databufidxfill];
     size_t size = databuf->size - databuf->len;
-    char* buf = &databuf->buf[databuf->len];
+    char *buf = &databuf->buf[databuf->len];
 
     if (size < strlen(str) + 3) {
         return;
@@ -230,7 +231,7 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
     databuf->len = databuf->size - size;
 }
 
-static void print_influx_string(data_output_t *output, char const *str, char *format)
+static void print_influx_string(data_output_t *output, char const *str, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
@@ -238,7 +239,7 @@ static void print_influx_string(data_output_t *output, char const *str, char *fo
 }
 
 // Generate InfluxDB line protocol
-static void print_influx_data(data_output_t *output, data_t *data, char *format)
+static void print_influx_data(data_output_t *output, data_t *data, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     char *str;
@@ -356,14 +357,14 @@ static void print_influx_data(data_output_t *output, data_t *data, char *format)
     influx_client_send(influx);
 }
 
-static void print_influx_double(data_output_t *output, double data, char *format)
+static void print_influx_double(data_output_t *output, double data, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%f", data);
 }
 
-static void print_influx_int(data_output_t *output, int data, char *format)
+static void print_influx_int(data_output_t *output, int data, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
@@ -396,8 +397,7 @@ struct data_output *data_output_influx_create(char *opts)
 {
     influx_client_t *influx = calloc(1, sizeof(influx_client_t));
     if (!influx) {
-        fprintf(stderr, "calloc() failed in %s() %s:%d\n", __func__, __FILE__, __LINE__);
-        exit(1);
+        FATAL_CALLOC("data_output_influx_create()");
     }
 
     gethostname(influx->hostname, sizeof(influx->hostname) - 1);
@@ -425,13 +425,13 @@ struct data_output *data_output_influx_create(char *opts)
     // check if valid URL has been provided
     struct mg_str host, path, query;
     if (mg_parse_uri(mg_mk_str(url), NULL, NULL, &host, NULL, &path,
-                   &query, NULL) != 0
-        || !host.len || !path.len || !query.len) {
+                &query, NULL) != 0
+            || !host.len || !path.len || !query.len) {
         fprintf(stderr, "Invalid URL to InfluxDB specified.%s%s%s\n"
                         "Something like \"influx://<host>/write?org=<org>&bucket=<bucket>\" required at least.\n",
-                        !host.len ? " No host specified." : "",
-                        !path.len ? " No path component specified." : "",
-                        !query.len ? " No query parameters specified." : "");
+                !host.len ? " No host specified." : "",
+                !path.len ? " No path component specified." : "",
+                !query.len ? " No query parameters specified." : "");
         exit(1);
     }
 
