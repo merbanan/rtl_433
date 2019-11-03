@@ -203,6 +203,8 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     do {
         data_t *current;
         data_value_t value = {0};
+        // store explicit release function, CSA checker gets confused without this
+        value_release_fn value_release = NULL; // appease CSA checker
 
         switch (type) {
         case DATA_FORMAT:
@@ -222,6 +224,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             assert(0);
             break;
         case DATA_DATA:
+            value_release = (value_release_fn)data_free; // appease CSA checker
             value.v_ptr = va_arg(ap, data_t *);
             break;
         case DATA_INT:
@@ -231,11 +234,13 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             value.v_dbl = va_arg(ap, double);
             break;
         case DATA_STRING:
+            value_release = (value_release_fn)free; // appease CSA checker
             value.v_ptr = strdup(va_arg(ap, char *));
             if (!value.v_ptr)
                 WARN_STRDUP("vdata_make()");
             break;
         case DATA_ARRAY:
+            value_release = (value_release_fn)data_array_free; // appease CSA checker
             value.v_ptr = va_arg(ap, data_t *);
             break;
         default:
@@ -246,8 +251,8 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         current = calloc(1, sizeof(*current));
         if (!current) {
             WARN_CALLOC("vdata_make()");
-            if (dmt[type].value_release)
-                dmt[type].value_release(value.v_ptr);
+            if (value_release) // could use dmt[type].value_release
+                value_release(value.v_ptr);
             goto alloc_error;
         }
         current->type   = type;
