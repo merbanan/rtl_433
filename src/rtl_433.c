@@ -115,7 +115,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.\n"
+            "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
@@ -186,7 +186,7 @@ static void help_output(void)
 {
     term_help_printf(
             "\t\t= Output format option =\n"
-            "  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.\n"
+            "  [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.\n"
             "\tWithout this option the default is KV output. Use \"-F null\" to remove the default.\n"
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
@@ -198,6 +198,9 @@ static void help_output(void)
             "\t  devices: posts device and sensor info in nested topics\n"
             "\tThe topic string will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
+            "\tSpecify InfluxDB 2.0 server with e.g. -F \"influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>\"\n"
+            "\tSpecify InfluxDB 1.x server with e.g. -F \"influx://localhost:8086/write?db=<db>&p=<password>&u=<user>\"\n"
+            "\t  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended\n"
             "\tSpecify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n");
     exit(0);
 }
@@ -972,6 +975,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         else if (strncmp(arg, "mqtt", 4) == 0) {
             add_mqtt_output(cfg, arg_param(arg));
+        }
+        else if (strncmp(arg, "http", 4) == 0
+                || strncmp(arg, "influx", 6) == 0) {
+            add_influx_output(cfg, arg);
         }
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));
