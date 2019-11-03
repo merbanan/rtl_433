@@ -35,7 +35,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         b = bitbuffer->bb[row];
         // Validate package
-        if (((bitbuffer->bits_per_row[row] <= 385) || (bitbuffer->bits_per_row[row] > 394)) ||
+        if (((bitbuffer->bits_per_row[row] < 385) || (bitbuffer->bits_per_row[row] > 394)) ||
                 ((b[0] != 0xFF ) || (b[38] != 0xFF)))
             continue;
 
