@@ -1,3 +1,6 @@
+#ifndef INCLUDE_MONGOOSE_H_
+#define INCLUDE_MONGOOSE_H_
+
 #ifdef MG_MODULE_LINES
 #line 1 "mongoose/src/mg_common.h"
 #endif
@@ -6750,3 +6753,5 @@ struct mg_iface *mg_socks_mk_iface(struct mg_mgr *, const char *proxy_addr);
 
 #endif
 #endif
+
+#endif /* INCLUDE_MONGOOSE_H_ */
