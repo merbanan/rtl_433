@@ -193,7 +193,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (type == 5) {
         // 5 = WS2500-19 Brightness sensor
-        int brightness = (b[4] * 100) + (b[3] * 10) + (b[2] * 1);
+        unsigned brightness = (b[4] * 100) + (b[3] * 10) + (b[2] * 1);
         int b_exponent = b[5]; // 10^exp
         int exposition = (b[8] * 100) + (b[7] * 10) + (b[6] * 1);
         for (int i = b_exponent; i > 0; --i)

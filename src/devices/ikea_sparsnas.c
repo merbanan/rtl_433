@@ -106,14 +106,14 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
 
                 d2 = b7 ^ k2;
                 battery_dec = battery_enc ^ k2;
-                dec_sensor_id = d0 << 24 | d1 << 16 | d2 << 8 | d3;
+                dec_sensor_id = (unsigned)d0 << 24 | d1 << 16 | d2 << 8 | d3;
 
                 if (dec_sensor_id > 999999) {
                     continue; //sensor id is at most 6 digits
                 }
 
                 for (k4=0;k4<0xFF;++k4) {
-                    key_sensor_id  = (k0 << 24 | k4 << 16 | k2 << 8 | k1) + IKEA_SPARSNAS_ID_KEY_SUB;
+                    key_sensor_id  = ((unsigned)k0 << 24 | k4 << 16 | k2 << 8 | k1) + IKEA_SPARSNAS_ID_KEY_SUB;
 
                     if ((dec_sensor_id == key_sensor_id) && (battery_dec <= 100)) {
                         return dec_sensor_id;
@@ -199,7 +199,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decrypted[5 + i] = buffer[5 + i] ^ key[i % 5];
 
     // Additional integrity checks
-    uint32_t rcv_sensor_id = decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
+    uint32_t rcv_sensor_id = (unsigned)decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
     if (decoder->verbose > 1) {
         fprintf(stderr, "IKEA Sparsnäs: CRC OK (%X == %X)\n", crc_calculated, crc_received);
@@ -245,7 +245,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //Value extraction and interpretation
     uint16_t sequence_number = (decrypted[9] << 8 | decrypted[10]);
     uint16_t effect = (decrypted[11] <<  8 | decrypted[12]);
-    uint32_t pulses = (decrypted[13] << 24 | decrypted[14] << 16 | decrypted[15] << 8 | decrypted[16]);
+    uint32_t pulses = ((unsigned)decrypted[13] << 24 | decrypted[14] << 16 | decrypted[15] << 8 | decrypted[16]);
     uint8_t battery =  decrypted[17];
     float watt = effect * 24.;
     uint8_t mode = decrypted[4]^0x0f;
