@@ -42,3 +42,22 @@ list(REMOVE_ITEM STYLE_CHECK_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")
 add_test(style-check style-check ${STYLE_CHECK_FILES})
+
+########################################################################
+# Define clang static analyzer checks
+########################################################################
+if(BUILD_TESTING_ANALYZER)
+file(GLOB ANALYZER_CHECK_FILES  ../include/*.h ../src/*.c ../src/devices/*.c)
+list(REMOVE_ITEM ANALYZER_CHECK_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")
+add_test(clang-analyzer
+    clang
+    -I${CMAKE_CURRENT_SOURCE_DIR}/../include
+    --analyze
+    -Xanalyzer
+    -analyzer-output=text
+    -Xanalyzer
+    -analyzer-disable-checker=deadcode.DeadStores
+    ${ANALYZER_CHECK_FILES})
+endif()
