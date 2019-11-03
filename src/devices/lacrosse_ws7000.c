@@ -68,7 +68,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (type > 5) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%u)\n", type);
+            fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%d)\n", type);
         return 0;
     }
 

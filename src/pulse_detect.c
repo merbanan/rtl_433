@@ -29,7 +29,7 @@ void pulse_data_print(pulse_data_t const *data)
 {
     fprintf(stderr, "Pulse data: %u pulses\n", data->num_pulses);
     for (unsigned n = 0; n < data->num_pulses; ++n) {
-        fprintf(stderr, "[%3u] Pulse: %4u, Gap: %4u, Period: %4u\n", n, data->pulse[n], data->gap[n], data->pulse[n] + data->gap[n]);
+        fprintf(stderr, "[%3u] Pulse: %4d, Gap: %4d, Period: %4d\n", n, data->pulse[n], data->gap[n], data->pulse[n] + data->gap[n]);
     }
 }
 

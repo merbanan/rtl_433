@@ -315,7 +315,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
     if (dtv_bit_len != DTV_BITLEN_MAX) {
         if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %u).\n", dtv_bit_len, DTV_BITLEN_MAX);
+            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %d).\n", dtv_bit_len, DTV_BITLEN_MAX);
         }
         return 0;
     }

@@ -139,7 +139,7 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 
 // If we make this an inline function instead of a macro, it means we don't
 // have to worry about using bit numbers with side-effects (bit++).
-static inline int bit(const uint8_t *bytes, unsigned bit)
+static inline int bit_at(const uint8_t *bytes, unsigned bit)
 {
     return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
 }
@@ -153,7 +153,7 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
     unsigned ppos = 0; // cursor on init pattern
 
     while (ipos < len && ppos < pattern_bits_len) {
-        if (bit(bits, ipos) == bit(pattern, ppos)) {
+        if (bit_at(bits, ipos) == bit_at(pattern, ppos)) {
             ppos++;
             ipos++;
             if (ppos == pattern_bits_len)
@@ -183,8 +183,8 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
     while (ipos < len) {
         uint8_t bit1, bit2;
 
-        bit1 = bit(bits, ipos++);
-        bit2 = bit(bits, ipos++);
+        bit1 = bit_at(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
 
         if (bit1 == bit2)
             break;
@@ -209,9 +209,9 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     // the first long pulse will determine the clock
     // if needed skip one short pulse to get in synch
     while (ipos < len) {
-        bit1 = bit(bits, ipos++);
-        bit2 = bit(bits, ipos++);
-        bit3 = bit(bits, ipos);
+        bit1 = bit_at(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
+        bit3 = bit_at(bits, ipos);
 
         if (bit1 != bit2) {
             if (bit2 != bit3) {
@@ -231,10 +231,10 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     }
 
     while (ipos < len) {
-        bit1 = bit(bits, ipos++);
+        bit1 = bit_at(bits, ipos++);
         if (bit1 == bit2)
             break; // clock missing, abort
-        bit2 = bit(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
 
         if (bit1 == bit2)
             bitbuffer_add_bit(outbuf, 1);

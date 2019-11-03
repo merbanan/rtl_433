@@ -1230,9 +1230,9 @@ int main(int argc, char **argv) {
         fprintf(stderr,
                 "Output block size wrong value, falling back to default\n");
         fprintf(stderr,
-                "Minimal length: %u\n", MINIMAL_BUF_LENGTH);
+                "Minimal length: %d\n", MINIMAL_BUF_LENGTH);
         fprintf(stderr,
-                "Maximal length: %u\n", MAXIMAL_BUF_LENGTH);
+                "Maximal length: %d\n", MAXIMAL_BUF_LENGTH);
         cfg->out_block_size = DEFAULT_BUF_LENGTH;
     }
 
