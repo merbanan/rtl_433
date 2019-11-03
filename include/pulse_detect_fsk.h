@@ -14,6 +14,9 @@
 #ifndef INCLUDE_PULSE_DETECT_FSK_H_
 #define INCLUDE_PULSE_DETECT_FSK_H_
 
+#include <stdint.h>
+#include "pulse_detect.h"
+
 void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
 void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);
 void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s);

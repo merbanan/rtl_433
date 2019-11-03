@@ -14,6 +14,7 @@
 
 #include <stdarg.h>
 #include "bitbuffer.h"
+#include "data.h"
 #include "r_device.h"
 
 /// Create a new r_device, copy from dev_template if not NULL.
