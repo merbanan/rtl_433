@@ -417,7 +417,7 @@ r_device m_bus_mode_c_t = {
     .long_width     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
     .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .disabled       = 0,    // Disable per default, as it runs on non-standard frequency
 };
 
 
