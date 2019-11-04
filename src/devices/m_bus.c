@@ -192,7 +192,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     block1->A_DevType = in->data[9];
 
     // Store length of data
-    out->length      = block1->L-(9+2);     // Subtract Block 1 and CRC bytes (but include CI)
+    out->length      = block1->L-(9+2) + BLOCK1B_SIZE-2;
 
     // Check length of package is sufficient
     if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
@@ -204,7 +204,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     if (!m_bus_crc_valid(decoder, in->data, MIN(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
 
     // Get data from Block 2
-    memcpy(out->data, in->data+BLOCK1B_SIZE, (MIN(block1->L-11, BLOCK2B_SIZE-2)));
+    memcpy(out->data, in->data, (MIN(block1->L-11, BLOCK2B_SIZE-2))+BLOCK1B_SIZE);
 
     // Extract extra block for long telegrams (not tested!)
     uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
@@ -213,7 +213,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
         if (!m_bus_crc_valid(decoder, in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;
 
         // Get Block 3
-        memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
+        memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
 
         out->length -= 2;   // Subtract the two extra CRC bytes
     }
@@ -251,7 +251,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
 
 
 static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    static const uint8_t PREAMBLE_T[]  = {0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
+    static const uint8_t PREAMBLE_T[]  = {0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = {0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = {0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
 
