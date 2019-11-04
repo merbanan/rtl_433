@@ -220,7 +220,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     return 1;
 }
 
-static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1)
+static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
 {
     data_t  *data;
     char    str_buf[1024];
@@ -234,6 +234,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     // Output data
     data = data_make(
         "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
+        "mode",     "Mode",         DATA_STRING,    mode,
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,
         "version",  "Version",      DATA_INT,       block1->A_Version,
@@ -257,6 +258,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+    char *mode = "";
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
@@ -277,6 +279,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bit_offset += 8;
     // Mode C
     if (next_byte == 0x54) {
+        mode = "C";
         next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
         bit_offset += 8;
         // Format A
@@ -308,6 +311,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }   // Mode C
     // Mode T
     else {
+        mode = "T";
         bit_offset -= 8; // Rewind offset to start of telegram
         if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
@@ -322,7 +326,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, mode);
     return 1;
 }
 
@@ -354,7 +358,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Decode
     if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, "R");
     return 1;
 }
 
@@ -403,7 +407,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, "F");
     return 1;
 }
 
