@@ -102,7 +102,7 @@ static void usage(int exit_code)
             "  [-z <value>] Override short value in data decoder\n"
             "  [-x <value>] Override long value in data decoder\n"
             "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
-            "  [-Y <mode>] FSK pulse detector mode, old(0)|minmax(1)|auto(2).\n"
+            "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
             "\t\t= Analyze/Debug options =\n"
             "  [-a] Analyze mode. Print a textual description of the signal.\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
@@ -1025,7 +1025,21 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->test_data = arg;
         break;
     case 'Y':
-        cfg->fsk_pulse_detect_mode = atoi(arg);
+        if (!arg)
+            usage(1);
+        if (strcmp(arg, "auto") == 0) {
+            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
+        }
+        else if (strcmp(arg, "classic") == 0) {
+            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_OLD;
+        }
+        else if (strcmp(arg, "minmax") == 0) {
+            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
+        }
+        else {
+            fprintf(stderr, "Invalid FSK pulse detector mode: %s\n", arg);
+            usage(1);
+        }
         break;
     case 'E':
         if (arg && !strcmp(arg, "hop")) {
