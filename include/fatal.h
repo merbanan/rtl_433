@@ -12,8 +12,8 @@
 #ifndef INCLUDE_FATAL_H_
 #define INCLUDE_FATAL_H_
 
-#define STR(x) #x
-#define STRINGIFY(x) STR(x)
+#define STRINGIFYX(x) #x
+#define STRINGIFY(x) STRINGIFYX(x)
 #define FILE_LINE __FILE__ ":" STRINGIFY(__LINE__)
 #define FATAL(what) do { fprintf(stderr, "FATAL: " what " from " FILE_LINE "\n"); exit(1); } while (0)
 #define FATAL_MALLOC(what) FATAL("low memory? malloc() failed in " what)
