@@ -1359,8 +1359,12 @@ int main(int argc, char **argv) {
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
                 demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
-            } else {
+            } else if (demod->load_info.format == CS16_IQ
+                    || demod->load_info.format == CF32_IQ) {
                 demod->sample_size = sizeof(int16_t); // CF32, CS16
+            } else {
+                fprintf(stderr, "Input format invalid: %s\n", file_info_string(&demod->load_info));
+                break;
             }
             if (cfg->verbosity) {
                 fprintf(stderr, "Input format: %s\n", file_info_string(&demod->load_info));
