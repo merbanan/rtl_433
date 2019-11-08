@@ -469,7 +469,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (decoder->verbose) {
             fprintf(stderr, "%s: Parity: ", __func__);
-            for (uint8_t i = 0; i < browlen; i++) {
+            for (int i = 0; i < browlen; i++) {
                 fprintf(stderr, "%d", parity8(bb[i]));
             }
             fprintf(stderr,"\n");
@@ -735,7 +735,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // Reverse the bits, msg sent LSB first
-        for (uint8_t i = 0; i < browlen; i++)
+        for (int i = 0; i < browlen; i++)
             br[i] = reverse8(bb[i]);
 
         if (decoder->verbose)
