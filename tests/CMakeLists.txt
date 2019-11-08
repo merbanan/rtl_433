@@ -52,6 +52,7 @@ list(REMOVE_ITEM ANALYZER_CHECK_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/../include/mongoose.h"
     "${CMAKE_CURRENT_SOURCE_DIR}/../src/mongoose.c")
 add_test(clang-analyzer
+    ${CMAKE_CURRENT_SOURCE_DIR}/exitcode-for-output.sh
     clang
     -I${CMAKE_CURRENT_SOURCE_DIR}/../include
     --analyze

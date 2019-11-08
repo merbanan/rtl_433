@@ -821,7 +821,7 @@ static void data_output_csv_start(struct data_output *output, const char **field
         goto alloc_error;
     }
 
-    use_count = calloc(num_unique_fields, sizeof(*use_count));
+    use_count = calloc(num_unique_fields + 1, sizeof(*use_count)); // '+ 1' so we never alloc size 0
     if (!use_count) {
         WARN_CALLOC("data_output_csv_start()");
         goto alloc_error;
