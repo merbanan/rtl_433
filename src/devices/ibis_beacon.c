@@ -28,7 +28,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char code_str[63];
 
     // 224 bits data + 12 bits preamble
-    if(bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 232 || bitbuffer->bits_per_row[0] > 250) {
+    if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 232 || bitbuffer->bits_per_row[0] > 250) {
         return 0; // Unrecognized data
     }
 

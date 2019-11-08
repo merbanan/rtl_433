@@ -37,7 +37,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         char *p = tristate;
         for (int byte = 0; byte < 5; byte++) {
             for (int bit = 7; bit > 0; bit -= 2) {
-                switch ((b[byte] >> (bit-1)) & 0x03){
+                switch ((b[byte] >> (bit-1)) & 0x03) {
                     case 0x00: *p++ = '0'; break;
                     case 0x01: *p++ = 'X'; break; // Invalid code 01
                     case 0x02: *p++ = 'Z'; break; // Floating state Z is 10

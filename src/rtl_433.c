@@ -1399,7 +1399,7 @@ int main(int argc, char **argv) {
                 if (demod->load_info.format == CF32_IQ) {
                     n_read = fread(test_mode_float_buf, sizeof(float), DEFAULT_BUF_LENGTH / 2, in_file);
                     // clamp float to [-1,1] and scale to Q0.15
-                    for(unsigned long n = 0; n < n_read; n++) {
+                    for (unsigned long n = 0; n < n_read; n++) {
                         int s_tmp = test_mode_float_buf[n] * INT16_MAX;
                         if (s_tmp < -INT16_MAX)
                             s_tmp = -INT16_MAX;

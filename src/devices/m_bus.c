@@ -289,7 +289,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
@@ -298,7 +298,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
         }   // Format B
         // Unknown Format
         else {
@@ -318,12 +318,12 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
         if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %d\n", data_in.length); }
-        if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
+        if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
             return 0;
         }
         // Decode
-        if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
     m_bus_output_data(decoder, &data_out, &block1, mode);
@@ -356,7 +356,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
     // Decode
-    if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+    if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
     m_bus_output_data(decoder, &data_out, &block1, "R");
     return 1;

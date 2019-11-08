@@ -195,7 +195,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (size_t i = 0; i < 5; i++)
         decrypted[i] = buffer[i];
 
-    for(size_t i = 0; i < 13; i++)
+    for (size_t i = 0; i < 13; i++)
         decrypted[5 + i] = buffer[5 + i] ^ key[i % 5];
 
     // Additional integrity checks
@@ -250,7 +250,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float watt = effect * 24.;
     uint8_t mode = decrypted[4]^0x0f;
 
-    if(mode == 1) {     //Note that mode cycles between 0-3 when you first put in the batteries in
+    if (mode == 1) {     //Note that mode cycles between 0-3 when you first put in the batteries in
       watt = ((3600000.0 / ikea_sparsnas_pulses_per_kwh) * 1024.0) / effect;
     } else if (mode == 0 ) { // special mode for low power usage
       watt = effect * 0.24 / ikea_sparsnas_pulses_per_kwh;

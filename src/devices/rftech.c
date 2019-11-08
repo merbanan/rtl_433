@@ -23,7 +23,7 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
-    if(r < 0 || bitbuffer->bits_per_row[r] != 24)
+    if (r < 0 || bitbuffer->bits_per_row[r] != 24)
         return 0;
 
     /* Example of message:
@@ -47,7 +47,8 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
      */
     sensor_id = bb[r][0];
     value = (bb[r][1] & 0x7f) + (bb[r][2] & 0x0f) / 10.0;
-    if(bb[r][1] & 0x80) value = -value;
+    if (bb[r][1] & 0x80)
+        value = -value;
 
     battery = (bb[r][2] & 0x80) == 0x80;
     button = (bb[r][2] & 0x60) != 0;

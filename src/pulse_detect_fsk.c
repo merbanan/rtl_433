@@ -172,8 +172,8 @@ void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 /// @param fm_n: One single sample of FM data
 /// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
 /// @param *s: Internal state
-void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s){
-
+void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
+{
     int16_t mid = 0;
 
     /* Skip a few samples in the beginning, need for framing

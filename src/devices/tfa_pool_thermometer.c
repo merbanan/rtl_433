@@ -29,8 +29,8 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
     int temp_raw;
     float temp_f;
 
-    for(i=1;i<8;i++){
-        if(bitbuffer->bits_per_row[i]!=28){
+    for (i = 1; i < 8; i++) {
+        if (bitbuffer->bits_per_row[i] != 28) {
             /*10 24 bits frame*/
             return 0;
         }
