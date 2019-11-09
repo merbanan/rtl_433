@@ -27,7 +27,7 @@
 #define FSK_EST_FAST        16          // Constant for slowness of FSK estimators
 
 
-/// Demodulate Frequency Shift Keying (FSK) sample by sample
+/// Demodulate Frequency Shift Keying (FSK) sample by sample.
 ///
 /// Function is stateful between calls
 /// Builds estimate for initial frequency. When frequency deviates more than a
@@ -37,9 +37,9 @@
 /// frequency is closer to other frequency estimate.
 /// Includes spurious suppression by coalescing pulses when pulse/gap widths are too short.
 /// Pulses equal higher frequency (F1) and Gaps equal lower frequency (F2)
-/// @param fm_n: One single sample of FM data
-/// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
-/// @param *s: Internal state
+/// @param fm_n One single sample of FM data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+/// @param s Internal state
 void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 {
     int const fm_f1_delta = abs(fm_n - s->fm_f1_est); // Get delta from F1 frequency estimate
@@ -145,11 +145,11 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
     } // switch(s->fsk_state)
 }
 
-/// Wrap up FSK modulation and store last data at End Of Package
+/// Wrap up FSK modulation and store last data at End Of Package.
 ///
-/// @param fm_n: One single sample of FM data
-/// @param *fsk_pulses: Pulse_data_t structure for FSK demodulated data
-/// @param *s: Internal state
+/// @param fm_n One single sample of FM data
+/// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
+/// @param s Internal state
 void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 {
     if (fsk_pulses->num_pulses < PD_MAX_PULSES) { // Avoid overflow
@@ -166,12 +166,12 @@ void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 }
 
 
-/// Demodulate Frequency Shift Keying (FSK) sample by sample
+/// Demodulate Frequency Shift Keying (FSK) sample by sample.
 ///
 /// Function is stateful between calls
-/// @param fm_n: One single sample of FM data
-/// @param *fsk_pulses: Will return a pulse_data_t structure for FSK demodulated data
-/// @param *s: Internal state
+/// @param fm_n One single sample of FM data
+/// @param fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
+/// @param s Internal state
 void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)
 {
     int16_t mid = 0;

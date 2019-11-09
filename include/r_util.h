@@ -29,116 +29,110 @@
 
 /** Get current time with usec precision.
 
-    @param tv: output for current time
+    @param tv output for current time
 */
 void get_time_now(struct timeval *tv);
 
 /** Printable timestamp in local time.
 
-    @param buf[out]: output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
-    @param format: time format string, uses "%Y-%m-%d %H:%M:%S" if NULL
-    @param time_secs: 0 for now, or seconds since the epoch
+    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
+    @param format time format string, uses "%Y-%m-%d %H:%M:%S" if NULL
+    @param time_secs 0 for now, or seconds since the epoch
     @return buf pointer (for short hand use as operator)
 */
 char *format_time_str(char *buf, char const *format, time_t time_secs);
 
 /** Printable timestamp in local time with microseconds.
 
-    @param buf[out]: output buffer, long enough for "YYYY-MM-DD HH:MM:SS.uuuuuu"
-    @param format: time format string without usec, uses "%Y-%m-%d %H:%M:%S" if NULL
-    @param tv: NULL for now, or seconds and microseconds since the epoch
+    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS.uuuuuu"
+    @param format time format string without usec, uses "%Y-%m-%d %H:%M:%S" if NULL
+    @param tv NULL for now, or seconds and microseconds since the epoch
     @return buf pointer (for short hand use as operator)
 */
 char *usecs_time_str(char *buf, char const *format, struct timeval *tv);
 
 /** Printable sample position.
 
-    @param sample_pos sample position
-    @param buf: output buffer, long enough for "@0.000000s"
+    @param sample_file_pos sample position
+    @param buf output buffer, long enough for "@0.000000s"
     @return buf pointer (for short hand use as operator)
 */
 char *sample_pos_str(float sample_file_pos, char *buf);
 
 /** Convert Celsius to Fahrenheit.
 
-    @param celsius: temperature in Celsius
+    @param celsius temperature in Celsius
     @return temperature value in Fahrenheit
 */
 float celsius2fahrenheit(float celsius);
 
-
 /** Convert Fahrenheit to Celsius.
 
-    @param celsius: temperature in Fahrenheit
+    @param fahrenheit temperature in Fahrenheit
     @return temperature value in Celsius
 */
 float fahrenheit2celsius(float fahrenheit);
 
-
 /** Convert Kilometers per hour (kph) to Miles per hour (mph).
 
-    @param kph: speed in Kilometers per hour
+    @param kph speed in Kilometers per hour
     @return speed in miles per hour
 */
 float kmph2mph(float kph);
 
 /** Convert Miles per hour (mph) to Kilometers per hour (kmph).
 
-    @param mph: speed in Kilometers per hour
+    @param mph speed in Kilometers per hour
     @return speed in kilometers per hour
 */
-float mph2kmph(float kph);
-
+float mph2kmph(float mph);
 
 /** Convert millimeters (mm) to inches (inch).
 
-    @param mm: measurement in millimeters
+    @param mm measurement in millimeters
     @return measurement in inches
 */
 float mm2inch(float mm);
 
 /** Convert inches (inch) to millimeters (mm).
 
-    @param inch: measurement in inches
+    @param inch measurement in inches
     @return measurement in millimeters
 */
 float inch2mm(float inch);
 
-
 /** Convert kilo Pascal (kPa) to pounds per square inch (PSI).
 
-    @param kpa: pressure in kPa
+    @param kpa pressure in kPa
     @return pressure in PSI
 */
 float kpa2psi(float kpa);
 
 /** Convert pounds per square inch (PSI) to kilo Pascal (kPa).
 
-    @param psi: pressure in PSI
+    @param psi pressure in PSI
     @return pressure in kPa
 */
 float psi2kpa(float psi);
 
-
 /** Convert hecto Pascal (hPa) to inches of mercury (inHg).
 
-    @param kpa: pressure in kPa
+    @param hpa pressure in kPa
     @return pressure in inHg
 */
 float hpa2inhg(float hpa);
 
 /** Convert inches of mercury (inHg) to hecto Pascal (hPa).
 
-    @param kpa: pressure in inHg
+    @param inhg pressure in inHg
     @return pressure in hPa
 */
 float inhg2hpa(float inhg);
 
-
 /** Return true if the string ends with the specified suffix, otherwise return false.
 
-    @param str: string to search for patterns
-    @param suffix: the pattern to search
+    @param str string to search for patterns
+    @param suffix the pattern to search
     @return true if the string ends with the specified suffix, false otherwise.
 */
 bool str_endswith(char const *restrict str, char const *restrict suffix);
@@ -147,16 +141,16 @@ bool str_endswith(char const *restrict str, char const *restrict suffix);
 
     This utility function is useful when converting native units to si or customary.
 
-    @param orig: string to search for patterns
-    @param rep: the pattern to replace
-    @param with: the replacement pattern
+    @param orig string to search for patterns
+    @param rep the pattern to replace
+    @param with the replacement pattern
     @return a new string that has rep replaced with with
 */
 char *str_replace(char const *orig, char const *rep, char const *with);
 
 /** Make a nice printable string for a frequency.
 
-    @param freq: the frequency to convert to a string.
+    @param freq the frequency to convert to a string.
 */
 char const *nice_freq (double freq);
 

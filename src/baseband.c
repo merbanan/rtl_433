@@ -150,8 +150,8 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     Returns arc tangent of y/x across all quadrants in radians.
     Error max 0.07 radians.
     Reference: http://dspguru.com/dsp/tricks/fixed-point-atan2-with-self-normalization
-    @param y: Numerator (imaginary value of complex vector)
-    @param x: Denominator (real value of complex vector)
+    @param y Numerator (imaginary value of complex vector)
+    @param x Denominator (real value of complex vector)
     @return angle in radians (Pi equals INT16_MAX)
 */
 int16_t atan2_int16(int16_t y, int16_t x)

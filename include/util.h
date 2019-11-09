@@ -24,7 +24,7 @@
 
 /// Reverse (reflect) the bits in an 8 bit byte.
 ///
-/// @param x: input byte
+/// @param x input byte
 /// @return bit reversed byte
 uint8_t reverse8(uint8_t x);
 
@@ -36,7 +36,7 @@ void reflect_bytes(uint8_t message[], unsigned num_bytes);
 
 /// Reflect (reverse LSB to MSB) each nibble in an 8 bit byte, preserves nibble order.
 ///
-/// @param x: input byte
+/// @param x input byte
 /// @return reflected nibbles
 uint8_t reflect4(uint8_t x);
 
@@ -48,27 +48,27 @@ void reflect_nibbles(uint8_t message[], unsigned num_bytes);
 
 /// Unstuff nibbles with 1-bit separator (4B1S) to bytes, returns number of successfully unstuffed nibbles.
 ///
-/// @param message: bytes of message data
-/// @param offset_bits: start offset of message in bits
-/// @param num_bits: message length in bits
-/// @param dst: target buffer for extracted nibbles, at least num_bits/5 size
+/// @param message bytes of message data
+/// @param offset_bits start offset of message in bits
+/// @param num_bits message length in bits
+/// @param dst target buffer for extracted nibbles, at least num_bits/5 size
 unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// CRC-4.
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial CRC polynomial
+/// @param init starting crc value
 /// @return CRC value
 uint8_t crc4(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
 /// CRC-7.
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial CRC polynomial
+/// @param init starting crc value
 /// @return CRC value
 uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
@@ -77,20 +77,20 @@ uint8_t crc7(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8
 /// Example polynomial: 0x31 = x8 + x5 + x4 + 1 (x8 is implicit)
 /// Example polynomial: 0x80 = x8 + x7 (a normal bit-by-bit parity XOR)
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: byte is from x^7 to x^0 (x^8 is implicitly one)
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial byte is from x^7 to x^0 (x^8 is implicitly one)
+/// @param init starting crc value
 /// @return CRC value
 uint8_t crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
 /// "Little-endian" Cyclic Redundancy Check CRC-8 LE
 /// Input and output are reflected, i.e. least significant bit is shifted in first.
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial CRC polynomial
+/// @param init starting crc value
 /// @return CRC value
 uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t init);
 
@@ -98,19 +98,19 @@ uint8_t crc8le(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uin
 /// Input and output are reflected, i.e. least significant bit is shifted in first.
 /// Note that poly and init already need to be reflected.
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial CRC polynomial
+/// @param init starting crc value
 /// @return CRC value
 uint16_t crc16lsb(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
 /// CRC-16.
 ///
-/// @param message[]: array of bytes to check
-/// @param nBytes: number of bytes in message
-/// @param polynomial: CRC polynomial
-/// @param init: starting crc value
+/// @param message array of bytes to check
+/// @param nBytes number of bytes in message
+/// @param polynomial CRC polynomial
+/// @param init starting crc value
 /// @return CRC value
 uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, uint16_t init);
 
@@ -134,7 +134,7 @@ uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key);
 
 /// Compute bit parity of a single byte (8 bits).
 ///
-/// @param byte: single byte to check
+/// @param byte single byte to check
 /// @return 1 odd parity, 0 even parity
 int parity8(uint8_t byte);
 

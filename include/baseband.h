@@ -18,9 +18,9 @@
 /** This will give a noisy envelope of OOK/ASK signals.
 
     Subtract the bias (-128) and get an envelope estimation (absolute squared)
-    @param iq_buf: input samples (I/Q samples in interleaved uint8)
-    @param[out] y_buf: output
-    @param len: number of samples to process
+    @param iq_buf input samples (I/Q samples in interleaved uint8)
+    @param[out] y_buf output
+    @param len number of samples to process
 */
 void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
@@ -48,20 +48,20 @@ typedef struct demodfm_state {
 /** Lowpass filter.
 
     Function is stateful
-    @param x_buf: input samples to be filtered
-    @param[out] y_buf: output from filter
-    @param len: number of samples to process
-    @param[in,out] state: State to store between chunk processing
+    @param x_buf input samples to be filtered
+    @param[out] y_buf output from filter
+    @param len number of samples to process
+    @param[in,out] state State to store between chunk processing
 */
 void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state);
 
 /** FM demodulator.
 
     Function is stateful
-    @param x_buf: input samples (I/Q samples in interleaved uint8)
-    @param[out] y_buf: output from FM demodulator
-    @param len: number of samples to process
-    @param[in,out] state: State to store between chunk processing
+    @param x_buf input samples (I/Q samples in interleaved uint8)
+    @param[out] y_buf output from FM demodulator
+    @param num_samples number of samples to process
+    @param[in,out] state State to store between chunk processing
 */
 void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm);
 
