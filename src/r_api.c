@@ -107,10 +107,10 @@ r_cfg_t *r_create_cfg(void)
 
 void r_free_cfg(r_cfg_t *cfg)
 {
-    if (cfg->dev)
+    if (cfg->dev) {
         sdr_deactivate(cfg->dev);
-    if (cfg->dev)
         sdr_close(cfg->dev);
+    }
 
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
@@ -164,7 +164,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
     }
     else {
         if (arg && *arg) {
-            fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
+            fprintf(stderr, "Protocol [%u] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
         }
         p  = malloc(sizeof(*p));
         if (!p)
@@ -180,7 +180,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
     list_push(&cfg->demod->r_devs, p);
 
     if (cfg->verbosity) {
-        fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        fprintf(stderr, "Registering protocol [%u] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 }
 
@@ -214,8 +214,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 
 void update_protocols(r_cfg_t *cfg)
 {
-    float samples_per_us = cfg->samp_rate / 1.0e6;
-
     for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         update_protocol(cfg, r_dev);
@@ -363,7 +361,7 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *nu
             if (r_dev->fields)
                 list_push_all(&field_list, (void **)r_dev->fields);
             else
-                fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
+                fprintf(stderr, "rtl_433: warning: %u \"%s\" does not support CSV output\n",
                         r_dev->protocol_num, r_dev->name);
         }
     }
@@ -413,7 +411,7 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
             break;
         default:
-            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
         }
     }
 
@@ -447,7 +445,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
             p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
             break;
         default:
-            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
         }
     }
 
@@ -867,6 +865,7 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
 
 void add_null_output(r_cfg_t *cfg, char *param)
 {
+    (void)param;
     list_push(&cfg->output_handler, NULL);
 }
 

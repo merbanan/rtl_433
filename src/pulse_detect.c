@@ -162,7 +162,7 @@ void pulse_data_print_pulse_header(FILE *file)
 void pulse_data_dump(FILE *file, pulse_data_t *data)
 {
     if (data->fsk_f2_est) {
-        chk_ret(fprintf(file, ";fsk %d pulses\n", data->num_pulses));
+        chk_ret(fprintf(file, ";fsk %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
         chk_ret(fprintf(file, ";freq2 %.0f\n", data->freq2_hz));
     }
@@ -406,7 +406,7 @@ typedef struct {
 } histogram_t;
 
 /// Generate a histogram (unsorted)
-void histogram_sum(histogram_t *hist, int const *data, unsigned len, float tolerance)
+static void histogram_sum(histogram_t *hist, int const *data, unsigned len, float tolerance)
 {
     unsigned bin;    // Iterator will be used outside for!
 
@@ -437,7 +437,7 @@ void histogram_sum(histogram_t *hist, int const *data, unsigned len, float toler
 }
 
 /// Delete bin from histogram
-void histogram_delete_bin(histogram_t *hist, unsigned index)
+static void histogram_delete_bin(histogram_t *hist, unsigned index)
 {
     hist_bin_t const zerobin = {0};
     if (hist->bins_count < 1) return;    // Avoid out of bounds
@@ -451,7 +451,7 @@ void histogram_delete_bin(histogram_t *hist, unsigned index)
 
 
 /// Swap two bins in histogram
-void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned index2)
+static void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned index2)
 {
     hist_bin_t    tempbin;
     if ((index1 < hist->bins_count) && (index2 < hist->bins_count)) {        // Avoid out of bounds
@@ -463,7 +463,7 @@ void histogram_swap_bins(histogram_t *hist, unsigned index1, unsigned index2)
 
 
 /// Sort histogram with mean value (order lowest to highest)
-void histogram_sort_mean(histogram_t *hist)
+static void histogram_sort_mean(histogram_t *hist)
 {
     if (hist->bins_count < 2) return;        // Avoid underflow
     // Compare all bins (bubble sort)
@@ -478,7 +478,7 @@ void histogram_sort_mean(histogram_t *hist)
 
 
 /// Sort histogram with count value (order lowest to highest)
-void histogram_sort_count(histogram_t *hist)
+static void histogram_sort_count(histogram_t *hist)
 {
     if (hist->bins_count < 2) return;        // Avoid underflow
     // Compare all bins (bubble sort)
@@ -493,7 +493,7 @@ void histogram_sort_count(histogram_t *hist)
 
 
 /// Fuse histogram bins with means within tolerance
-void histogram_fuse_bins(histogram_t *hist, float tolerance)
+static void histogram_fuse_bins(histogram_t *hist, float tolerance)
 {
     if (hist->bins_count < 2) return;        // Avoid underflow
     // Compare all bins
@@ -518,7 +518,7 @@ void histogram_fuse_bins(histogram_t *hist, float tolerance)
 }
 
 /// Print a histogram
-void histogram_print(histogram_t const *hist, uint32_t samp_rate)
+static void histogram_print(histogram_t const *hist, uint32_t samp_rate)
 {
     for (unsigned n = 0; n < hist->bins_count; ++n) {
         fprintf(stderr, " [%2u] count: %4u,  width: %4.0f us [%.0f;%.0f]\t(%4i S)\n", n,

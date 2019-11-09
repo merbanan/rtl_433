@@ -109,9 +109,9 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// @param envelope_data Samples with amplitude envelope of carrier
 /// @param fm_data Samples with frequency offset from center frequency
 /// @param len Number of samples in input buffers
-/// @param level_limit
+/// @param level_limit Manual level override
 /// @param samp_rate Sample rate in samples per second
-/// @param sample_offset
+/// @param sample_offset Offset tracking for ringbuffer
 /// @param[in,out] pulses Will return a pulse_data_t structure
 /// @param[in,out] fsk_pulses Will return a pulse_data_t structure for FSK demodulated data
 /// @param fpdm Index of filter setting to use

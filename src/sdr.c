@@ -95,7 +95,6 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     struct addrinfo hints, *res, *res0;
     int ret;
     SOCKET sock;
-    const char *cause = NULL;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = PF_UNSPEC;
@@ -310,17 +309,17 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
         if (verbose)
-            fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
+            fprintf(stderr, "trying device  %u:  %s, %s, SN: %s\n",
                     i, vendor, product, serial);
 
         r = rtlsdr_open(&dev->rtlsdr_dev, i);
         if (r < 0) {
             if (verbose)
-                fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n", i);
+                fprintf(stderr, "Failed to open rtlsdr device #%u.\n\n", i);
         }
         else {
             if (verbose)
-                fprintf(stderr, "Using device %d: %s\n",
+                fprintf(stderr, "Using device %u: %s\n",
                         i, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t); // CU8
             *sample_size = sizeof(uint8_t); // CU8
@@ -461,7 +460,6 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
 
 static int soapysdr_gain_str_set(SoapySDRDevice *dev, char *gain_str, int verbose)
 {
-    SoapySDRKwargs args = {0};
     int r = 0;
 
     // Disable automatic gain
@@ -976,7 +974,7 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set sample rate.\n");
         else
-            fprintf(stderr, "Sample rate set to %d S/s.\n", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+            fprintf(stderr, "Sample rate set to %u S/s.\n", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
     }
     return r;
 }

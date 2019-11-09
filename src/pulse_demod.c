@@ -69,7 +69,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         ) {
             // Data is corrupt
             if (device->verbose > 3) {
-                fprintf(stderr, "bitbuffer cleared at %d: pulse %d, gap %d, period %d\n",
+                fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
                         n, pulses->pulse[n], pulses->gap[n],
                         pulses->pulse[n] + pulses->gap[n]);
             }

@@ -57,9 +57,11 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_data[a->signal_pulse_counter][0] = a->counter;
                 a->signal_pulse_data[a->signal_pulse_counter][1] = -1;
                 a->signal_pulse_data[a->signal_pulse_counter][2] = -1;
-                if (debug_output) fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
-                if (debug_output) fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
-                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, am_buf[i]);
+                if (debug_output) {
+                    fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
+                    fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
+                    fprintf(stderr, "pulse_start[%u] found at sample %u, value = %d\n", a->pulses_found, a->counter, am_buf[i]);
+                }
                 a->prev_pulse_start = a->pulse_start;
                 a->print = 0;
                 a->print2 = 1;
@@ -69,8 +71,10 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
         if (am_buf[i] < threshold) {
             if (a->print2) {
                 a->pulse_avg += a->counter - a->pulse_start;
-                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
-                        a->pulses_found, a->counter, a->counter - a->pulse_start, (a->pulses_found) ? (a->pulse_avg / a->pulses_found) : 0);
+                if (debug_output) {
+                    fprintf(stderr, "pulse_end  [%u] found at sample %u, pulse length = %u, pulse avg length = %u\n",
+                            a->pulses_found, a->counter, a->counter - a->pulse_start, (a->pulses_found) ? (a->pulse_avg / a->pulses_found) : 0);
+                }
                 a->pulse_end = a->counter;
                 a->print2 = 0;
                 a->signal_pulse_data[a->signal_pulse_counter][1] = a->counter;
@@ -171,7 +175,7 @@ void am_analyze_classify(am_analyze_t *aa)
     }
     /* 50% decision limit */
     if (min != 0 && max / min > 1) {
-        fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
+        fprintf(stderr, "Pulse coding: Short pulse length %u - Long pulse length %u\n", min, max);
         signal_type = 2;
     } else {
         fprintf(stderr, "Distance coding: Pulse length %d\n", (min + max) / 2);
@@ -271,8 +275,8 @@ void am_analyze_classify(am_analyze_t *aa)
         a[1] = aa->override_long;
     }
 
-    fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n", a[0], a[1], a[2]);
-    fprintf(stderr, "\np_limit: %d\n", p_limit);
+    fprintf(stderr, "\nShort distance: %u, long distance: %u, packet distance: %u\n", a[0], a[1], a[2]);
+    fprintf(stderr, "\np_limit: %u\n", p_limit);
 
     bitbuffer_clear(&bits);
     if (signal_type == 1) {

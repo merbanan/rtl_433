@@ -156,14 +156,14 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    char *endptr    = (char *)str;
+    char *endptr    = NULL;
     double val      = 0.0;
     unsigned colons = 0;
 
     do {
         double num = strtod(str, &endptr);
 
-        if (str == endptr) {
+        if (!endptr || str == endptr) {
             fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
             exit(1);
         }

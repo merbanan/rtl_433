@@ -206,7 +206,7 @@ static void file_type(char const *filename, file_info_t *info)
 }
 
 // return the last colon not followed by a backslash, otherwise NULL
-char const *last_plain_colon(char const *p)
+static char const *last_plain_colon(char const *p)
 {
     char const *found = NULL;
     char const *next = strchr(p, ':');

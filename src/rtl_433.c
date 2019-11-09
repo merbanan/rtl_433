@@ -139,7 +139,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
         for (i = 0; i < num_devices; i++) {
             disabledc = devices[i].disabled ? '*' : ' ';
             if (devices[i].disabled <= 2) // if not hidden
-                fprintf(stderr, "    [%02d]%c %s\n", i + 1, disabledc, devices[i].name);
+                fprintf(stderr, "    [%02u]%c %s\n", i + 1, disabledc, devices[i].name);
         }
         fprintf(stderr, "\n* Disabled by default, use -R n or -G\n");
     }
@@ -1229,9 +1229,9 @@ int main(int argc, char **argv) {
                     && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
                 r_dev = *++iter;
             if (num == r_dev->protocol_num)
-                fprintf(stderr, " %d", num);
+                fprintf(stderr, " %u", num);
             else
-                fprintf(stderr, " %d-%d", num, r_dev->protocol_num);
+                fprintf(stderr, " %u-%u", num, r_dev->protocol_num);
         }
         fprintf(stderr, " ]");
     }
