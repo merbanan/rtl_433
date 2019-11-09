@@ -18,7 +18,7 @@
 
 static uint16_t scaled_squares[256];
 
-/** precalculate lookup table for envelope detection. */
+/// precalculate lookup table for envelope detection.
 static void calc_squares()
 {
     int i;
@@ -26,11 +26,8 @@ static void calc_squares()
         scaled_squares[i] = (127 - i) * (127 - i);
 }
 
-/** This will give a noisy envelope of OOK/ASK signals.
-    Subtract the bias (-128) and get an envelope estimation
-    The output will be written in the input buffer
-    @returns   pointer to the input buffer
-*/
+// This will give a noisy envelope of OOK/ASK signals.
+// Subtract the bias (-128) and get an envelope estimation.
 void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -39,10 +36,9 @@ void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-/** This will give a noisy envelope of OOK/ASK signals.
-    Subtracts the bias (-128) and calculates the norm (scaled by 16384).
-    Using a LUT is slower for O1 and above.
-*/
+/// This will give a noisy envelope of OOK/ASK signals.
+/// Subtracts the bias (-128) and calculates the norm (scaled by 16384).
+/// Using a LUT is slower for O1 and above.
 void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -53,9 +49,8 @@ void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     }
 }
 
-/** 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
-    Note that magnitude emphasizes quiet signals / deemphasizes loud signals.
-*/
+/// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
+/// Note that magnitude emphasizes quiet signals / deemphasizes loud signals.
 void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
@@ -114,11 +109,11 @@ void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 /** Something that might look like a IIR lowpass filter.
 
     [b,a] = butter(1, Wc) # low pass filter with cutoff pi*Wc radians
-    Q1.15*Q15.0 = Q16.15
-    Q16.15>>1 = Q15.14
-    Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
-    but the b coeffs are small so it wont happen
-    Q15.14>>14 = Q15.0 \o/
+    - Q1.15*Q15.0 = Q16.15
+    - Q16.15>>1 = Q15.14
+    - Q15.14 + Q15.14 + Q15.14 could possibly overflow to 17.14
+    - but the b coeffs are small so it wont happen
+    - Q15.14>>14 = Q15.0
 */
 void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)
 {
@@ -154,7 +149,7 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param x Denominator (real value of complex vector)
     @return angle in radians (Pi equals INT16_MAX)
 */
-int16_t atan2_int16(int16_t y, int16_t x)
+static int16_t atan2_int16(int16_t y, int16_t x)
 {
     static int32_t const I_PI_4 = INT16_MAX/4;      // M_PI/4
     static int32_t const I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
@@ -236,7 +231,7 @@ void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_s
 #define FIX32(x) ((int)(x * S_CONST32))
 
 /// for evaluation.
-int32_t atan2_int32(int32_t y, int32_t x)
+static int32_t atan2_int32(int32_t y, int32_t x)
 {
     static int64_t const I_PI_4 = INT32_MAX / 4;          // M_PI/4
     static int64_t const I_3_PI_4 = 3ll * INT32_MAX / 4;  // 3*M_PI/4

@@ -147,7 +147,6 @@ void pulse_FSK_detect(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state_t 
 
 /// Wrap up FSK modulation and store last data at End Of Package.
 ///
-/// @param fm_n One single sample of FM data
 /// @param fsk_pulses Pulse_data_t structure for FSK demodulated data
 /// @param s Internal state
 void pulse_FSK_wrap_up(pulse_data_t *fsk_pulses, pulse_FSK_state_t *s)

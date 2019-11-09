@@ -109,6 +109,8 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
 
 /** Constructs an array from given data of the given uniform type.
 
+    @param num_values The number of values to be copied.
+    @param type The type of values to be copied.
     @param ptr The contents pointed by the argument are copied in.
 
     @return The constructed data array object, typically placed inside a data_t or NULL

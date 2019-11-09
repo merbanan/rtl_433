@@ -72,7 +72,6 @@ running this decoder with debug level :
 
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
-/// @param[out] data returns the decoded information as a data_t*
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
