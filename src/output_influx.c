@@ -162,6 +162,11 @@ static size_t mbuf_reserve(struct mbuf *a, size_t len)
 }
 
 static char *mbuf_snprintf(struct mbuf *a, char const *format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 2, 3)))
+#endif
+;
+static char *mbuf_snprintf(struct mbuf *a, char const *format, ...)
 {
     char *str = &a->buf[a->len];
     int size;
@@ -171,8 +176,8 @@ static char *mbuf_snprintf(struct mbuf *a, char const *format, ...)
     va_end(ap);
     if (size > 0) {
         // vsnprintf might return size larger than actually filled
-        size = strlen(str);
-        a->len += size;
+        size_t len = strlen(str);
+        a->len += len;
     }
     return str;
 }
@@ -195,9 +200,8 @@ static void print_influx_array(data_output_t *output, data_array_t *array, char 
 static void print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
 {
     influx_client_t *influx = (influx_client_t *)output;
-    struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     char str[1000];
-    size_t size = data_print_jsons(data, str, sizeof (str));
+    data_print_jsons(data, str, sizeof (str));
     output->print_string(output, str, format);
 }
 

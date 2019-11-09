@@ -308,7 +308,7 @@ int term_puts(void *ctx, char const *buf)
     if (!fp)
         fp = stderr;
 
-    buf_len = strlen(buf);
+    buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
         if (*p == '~') {
             p++;
@@ -359,7 +359,7 @@ int term_help_puts(void *ctx, char const *buf)
     if (!fp)
         fp = stderr;
 
-    buf_len = strlen(buf);
+    buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
         if (*p == '~') {
             p++;
