@@ -91,6 +91,9 @@ Override long value in data decoder
 .TP
 [ \fB\-n\fI <value>\fP ]
 Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
+.TP
+[ \fB\-Y\fI auto | classic | minmax\fP ]
+FSK pulse detector mode.
 .SS "Analyze/Debug options"
 .TP
 [ \fB\-a\fI\fP ]
@@ -118,7 +121,7 @@ Save data stream to output file (a '\-' dumps samples to stdout)
 Save data stream to output file, overwrite existing file
 .SS "Data output options"
 .TP
-[ \fB\-F\fI kv | json | csv | mqtt | syslog | null | help\fP ]
+[ \fB\-F\fI kv | json | csv | mqtt | influx | syslog | null | help\fP ]
 Produce decoded output in given format.
        Append output to file with :<filename> (e.g. \-F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
@@ -435,7 +438,7 @@ SimpliSafe Home Security System (May require disabling automatic gain for KeyPad
 Sensible Living Mini\-Plant Moisture Sensor
 .TP
 [ \fB104\fI\fP ]
-* Wireless M\-Bus, Mode C&T, 100kbps (\-f 868950000 \-s 1200000)
+Wireless M\-Bus, Mode C&T, 100kbps (\-f 868950000 \-s 1200000)
 .TP
 [ \fB105\fI\fP ]
 * Wireless M\-Bus, Mode S, 32.768kbps (\-f 868300000 \-s 1000000)
@@ -708,7 +711,7 @@ countonly : suppress detailed row output
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 .SS "Output format option"
 .TP
-[ \fB\-F\fI kv|json|csv|mqtt|syslog|null\fP ]
+[ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|null\fP ]
 Produce decoded output in given format.
 .RS
 Without this option the default is KV output. Use "\-F null" to remove the default.
@@ -742,6 +745,15 @@ The topic string will expand keys like [/model]
 .RE
 .RS
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+.RE
+.RS
+Specify InfluxDB 2.0 server with e.g. \-F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
+.RE
+.RS
+Specify InfluxDB 1.x server with e.g. \-F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
+.RE
+.RS
+  Additional parameter \-M time:unix:usec:utc for correct timestamps in InfluxDB recommended
 .RE
 .RS
 Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514

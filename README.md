@@ -55,6 +55,7 @@ Read the Test Data section at the bottom.
   [-z <value>] Override short value in data decoder
   [-x <value>] Override long value in data decoder
   [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
+  [-Y auto | classic | minmax] FSK pulse detector mode.
 		= Analyze/Debug options =
   [-a] Analyze mode. Print a textual description of the signal.
   [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
@@ -67,7 +68,7 @@ Read the Test Data section at the bottom.
   [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename> | help] Save data stream to output file, overwrite existing file
 		= Data output options =
-  [-F kv | json | csv | mqtt | syslog | null | help] Produce decoded output in given format.
+  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
@@ -178,7 +179,7 @@ Read the Test Data section at the bottom.
     [101]* Dish remote 6.3
     [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
-    [104]* Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
+    [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
     [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
@@ -298,7 +299,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Output format option =
-  [-F kv|json|csv|mqtt|syslog|null] Produce decoded output in given format.
+  [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
 	Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
 	Specify MQTT server with e.g. -F mqtt://localhost:1883
@@ -310,6 +311,9 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	  devices: posts device and sensor info in nested topics
 	The topic string will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
+	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
+	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
 
