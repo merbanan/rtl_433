@@ -76,6 +76,10 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0)
         return 0;
 
+    // frame too long: false positive
+    if (bitbuffer->bits_per_row[r] > 4*8)
+        return 0;
+
     b = bitbuffer->bb[r];
 
     // if ((b[2] & 0x0f) != 0x03)
