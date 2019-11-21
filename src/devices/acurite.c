@@ -633,7 +633,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 channel     = bb[0] >> 6;
-                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.2mm
+                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.01 inch, i.e. 0.254mm 
 
                 /* clang-format off */
                 data = data_make(
@@ -641,7 +641,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",               "",                         DATA_INT,    sensor_id,
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%d mm", DATA_DOUBLE, raincounter * 0.2,
+                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
                         NULL);
                 /* clang-format on */
 
