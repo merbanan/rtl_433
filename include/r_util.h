@@ -24,7 +24,7 @@
     #endif
 #endif
 
-// buffer to hold localized timestamp "YYYY-MM-DD HH:MM:SS.000000"
+// buffer to hold localized timestamp "YYYY-MM-DD HH:MM:SS.000000+0000"
 #define LOCAL_TIME_BUFLEN 32
 
 /** Get current time with usec precision.
@@ -35,21 +35,23 @@ void get_time_now(struct timeval *tv);
 
 /** Printable timestamp in local time.
 
-    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS"
+    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS+0000"
     @param format time format string, uses "%Y-%m-%d %H:%M:%S" if NULL
+    @param with_tz 1 to add a time offset, 0 otherwise
     @param time_secs 0 for now, or seconds since the epoch
     @return buf pointer (for short hand use as operator)
 */
-char *format_time_str(char *buf, char const *format, time_t time_secs);
+char *format_time_str(char *buf, char const *format, int with_tz, time_t time_secs);
 
 /** Printable timestamp in local time with microseconds.
 
-    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS.uuuuuu"
+    @param[out] buf output buffer, long enough for "YYYY-MM-DD HH:MM:SS.uuuuuu+0000"
     @param format time format string without usec, uses "%Y-%m-%d %H:%M:%S" if NULL
+    @param with_tz 1 to add a time offset, 0 otherwise
     @param tv NULL for now, or seconds and microseconds since the epoch
     @return buf pointer (for short hand use as operator)
 */
-char *usecs_time_str(char *buf, char const *format, struct timeval *tv);
+char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval *tv);
 
 /** Printable sample position.
 
