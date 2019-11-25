@@ -144,6 +144,7 @@ add_executable(rtl_433
     devices/vaillant_vrt340f.c
     devices/waveman.c
     devices/wg_pb12v1.c
+    devices/ws2032.c
     devices/wssensor.c
     devices/wt0124.c
     devices/wt450.c

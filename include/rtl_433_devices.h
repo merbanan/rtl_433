@@ -152,6 +152,7 @@
     DECL(fineoffset_WH51) \
     DECL(holman_ws5029pwm) \
     DECL(archos_tbh) \
+    DECL(ws2032) \
 
     /* Add new decoders here. */
 
