@@ -1364,6 +1364,7 @@ int main(int argc, char **argv) {
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
                 demod->sample_size = sizeof(int16_t); // CF32, CS16
+	    } else if (demod->load_info.format == PULSE_OOK) {
             } else {
                 fprintf(stderr, "Input format invalid: %s\n", file_info_string(&demod->load_info));
                 break;
