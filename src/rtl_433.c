@@ -1385,7 +1385,11 @@ int main(int argc, char **argv) {
                         run_fsk_demods(&demod->r_devs, &demod->pulse_data);
                     }
                     else {
-                        run_ook_demods(&demod->r_devs, &demod->pulse_data);
+                        int p_events = run_ook_demods(&demod->r_devs, &demod->pulse_data);
+                        if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
+                        if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                            pulse_analyzer(&demod->pulse_data, PULSE_DATA_OOK);
+}
                     }
                 }
 
