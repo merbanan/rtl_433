@@ -26,7 +26,7 @@
 static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-    int i,device,channel;
+    int i,device,channel,battery;
     int temp_raw;
     float temp_f;
 
@@ -41,11 +41,13 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
     temp_raw = ((bb[1][1]&0xF)<<8)+bb[1][2];
     temp_f   = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) / 10.0;
     channel  = (signed short)((bb[1][3]&0xC0)>>6);
+    battery  = ((bb[1][3]&0x20)>>5);
 
     data = data_make(
             "model",            "",                 DATA_STRING,    _X("TFA-Pool","TFA pool temperature sensor"),
             "id",               "Id",               DATA_INT,   device,
             "channel",          "Channel",          DATA_INT,   channel,
+            "battery",          "Battery",          DATA_STRING,    battery ? "OK" : "LOW",
             "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temp_f,
             NULL);
     decoder_output_data(decoder, data);
@@ -58,6 +60,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
+    "battery",
     "temperature_C",
     NULL
 };
