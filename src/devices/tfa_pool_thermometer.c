@@ -60,7 +60,7 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
             "model",            "",                 DATA_STRING,    _X("TFA-Pool","TFA pool temperature sensor"),
             "id",               "Id",               DATA_INT,   device,
             "channel",          "Channel",          DATA_INT,   channel,
-            "battery",          "Battery",          DATA_STRING,    battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",          DATA_STRING,    battery ? "OK" : "LOW",
             "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temp_f,
             NULL);
     decoder_output_data(decoder, data);
@@ -73,7 +73,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
-    "battery",
+    "battery_ok",
     "temperature_C",
     NULL
 };
