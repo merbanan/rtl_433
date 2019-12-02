@@ -11,13 +11,14 @@
 /*
 10 24 bits frames
 
-    AAAAIIII IIIITTTT TTTTTTTT DDEE
+    CCCCIIII IIIITTTT TTTTTTTT DDBF
 
-- A: ?
+- C: checksum, sum of nibbles - 1
 - I: device id (changing only after reset)
 - T: temperature
 - D: channel number
-- E: ?
+- B: battery status
+- F: first transmission
 */
 
 #include "decoder.h"
