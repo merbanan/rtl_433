@@ -26,7 +26,7 @@
 static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-    int i,device,channel,battery;
+    int i,checksum,checksum_rx,device,channel,battery;
     int temp_raw;
     float temp_f;
 
@@ -37,11 +37,24 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
         }
     }
 
-    device   = (((bb[1][0]&0xF)<<4)+((bb[1][1]&0xF0)>>4));
-    temp_raw = ((bb[1][1]&0xF)<<8)+bb[1][2];
-    temp_f   = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) / 10.0;
-    channel  = (signed short)((bb[1][3]&0xC0)>>6);
-    battery  = ((bb[1][3]&0x20)>>5);
+    checksum_rx = ((bb[1][0]&0xF0)>>4);
+    device      = (((bb[1][0]&0xF)<<4)+((bb[1][1]&0xF0)>>4));
+    temp_raw    = ((bb[1][1]&0xF)<<8)+bb[1][2];
+    temp_f      = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) / 10.0;
+    channel     = (signed short)((bb[1][3]&0xC0)>>6);
+    battery     = ((bb[1][3]&0x20)>>5);
+
+    checksum    = 0x0F & ( ( bb[1][0] & 0x0F ) +
+                           ( bb[1][1] >> 4 )   +
+                           ( bb[1][1] & 0x0F ) +
+                           ( bb[1][2] >> 4 )   +
+                           ( bb[1][2] & 0x0F ) +
+                           ( bb[1][3] >> 4 ) - 1 );
+
+    if (checksum_rx != checksum) {
+    //    fprintf(stderr, "checksum_rx != checksum: %d %d\n", checksum_rx, checksum);
+        return 0;
+    }
 
     data = data_make(
             "model",            "",                 DATA_STRING,    _X("TFA-Pool","TFA pool temperature sensor"),
