@@ -53,7 +53,7 @@ static int tfa_pool_thermometer_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     if (checksum_rx != checksum) {
     //    fprintf(stderr, "checksum_rx != checksum: %d %d\n", checksum_rx, checksum);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     data = data_make(
