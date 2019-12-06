@@ -37,7 +37,8 @@ Data layout:
 
 #include "decoder.h"
 
-static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int id, humidity, batt_low, button, channel;

@@ -1,32 +1,37 @@
-/**
- * Copyright (C) 2017 Timopen, cleanup by Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Biltema-Rain sensor.
 
-/* Based on the springfield.c code, there is a lack of samples and data
- * thus the decoder is disabled by default.
- *
- * nibble[0] and nibble[1] is the id, changes with every reset.
- * nibble[2] first bit is battery (0=OK).
- * nibble[3] bit 1 is tx button pressed.
- * nibble[3] bit 2 = below zero, subtract temperature with 1024. I.e. 11 bit 2's complement.
- * nibble[3](bit 3 and 4) + nibble[4] + nibble[5] is the temperature in Celsius with one decimal.
- * nibble[2](bit 2-4) + nibble[6] + nibble[7] is the rain rate, increases 25!? with every tilt of
- * the teeter (1.3 mm rain) after 82 tilts it starts over but carries the rest to the next round
- * e.g tilt 82 = 2 divide by 19.23 to get mm.
- * nibble[8] is checksum, have not figured it out yet. Last bit is sync? or included in checksum?.
- */
+    Copyright (C) 2017 Timopen, cleanup by Benjamin Larsson
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Biltema-Rain sensor.
+
+Based on the springfield.c code, there is a lack of samples and data
+thus the decoder is disabled by default.
+
+- nibble[0] and nibble[1] is the id, changes with every reset.
+- nibble[2] first bit is battery (0=OK).
+- nibble[3] bit 1 is tx button pressed.
+- nibble[3] bit 2 = below zero, subtract temperature with 1024. I.e. 11 bit 2's complement.
+- nibble[3](bit 3 and 4) + nibble[4] + nibble[5] is the temperature in Celsius with one decimal.
+- nibble[2](bit 2-4) + nibble[6] + nibble[7] is the rain rate, increases 25!? with every tilt of
+  the teeter (1.3 mm rain) after 82 tilts it starts over but carries the rest to the next round
+  e.g tilt 82 = 2 divide by 19.23 to get mm.
+- nibble[8] is checksum, have not figured it out yet. Last bit is sync? or included in checksum?.
+*/
 
 #include "decoder.h"
 
 // Actually 37 bits for all but last transmission which is 36 bits
 #define NUM_BITS 36
 
-static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int row;
@@ -80,26 +85,25 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "transmit", // TODO: delete this
-    "temperature_C",
-    "rainrate", // TODO: remove this
-    "rain_rate_mm_h",
-    "button",
-    NULL,
+        "model",
+        "id",
+        "channel",
+        "battery",
+        "transmit", // TODO: delete this
+        "temperature_C",
+        "rainrate", // TODO: remove this
+        "rain_rate_mm_h",
+        "button",
+        NULL,
 };
 
 r_device bt_rain = {
-    .name = "Biltema rain gauge",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 1940,
-    .long_width     = 3900,
-    .gap_limit      = 4100,
-    .reset_limit    = 8800,
-    .decode_fn      = &bt_rain_callback,
-    .disabled       = 1,
-    .fields         = output_fields
-};
+        .name        = "Biltema rain gauge",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1940,
+        .long_width  = 3900,
+        .gap_limit   = 4100,
+        .reset_limit = 8800,
+        .decode_fn   = &bt_rain_decode,
+        .disabled    = 1,
+        .fields      = output_fields};

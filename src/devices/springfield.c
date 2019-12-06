@@ -1,25 +1,27 @@
-/* Springfield PreciseTemp Wireless Temperature and Soil Moisture Station
- * http://www.amazon.com/Springfield-Digital-Moisture-Meter-Freeze/dp/B0037BNHLS
- *
- * Data is transmitted in the following form:
- *
- * Nibble
- *  0-1   Power On ID
- *   2    Flags and Channel - BTCC
- *           B - Battery 0 = OK, 1 = LOW
- *           T - Transmit 0 = AUTO, 1 = MANUAL (TX Button Pushed)
- *          CC - Channel 00 = 1, 01 = 2, 10 = 3
- *  3-5   Temperature Celsius X 10 - 3 nibbles 2s complement
- *   6    Moisture Level - 0 - 10
- *   7    Checksum of nibbles 0 - 6 (simple xor of nibbles)
- *   8    Unknown
- *
- * Actually 37 bits for all but last transmission which is 36 bits
- */
+/**
+Springfield PreciseTemp Wireless Temperature and Soil Moisture Station.
+
+http://www.amazon.com/Springfield-Digital-Moisture-Meter-Freeze/dp/B0037BNHLS
+
+Data is transmitted in the following form:
+
+    Nibble
+     0-1   Power On ID
+      2    Flags and Channel - BTCC
+              B - Battery 0 = OK, 1 = LOW
+              T - Transmit 0 = AUTO, 1 = MANUAL (TX Button Pushed)
+             CC - Channel 00 = 1, 01 = 2, 10 = 3
+     3-5   Temperature Celsius X 10 - 3 nibbles 2s complement
+      6    Moisture Level - 0 - 10
+      7    Checksum of nibbles 0 - 6 (simple xor of nibbles)
+      8    Unknown
+
+Actually 37 bits for all but last transmission which is 36 bits.
+*/
 
 #include "decoder.h"
 
-static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = 0;
     int row;
@@ -80,26 +82,25 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "sid", // TODO: delete this
-    "id",
-    "channel",
-    "battery",
-    "transmit", // TODO: delete this
-    "temperature_C",
-    "moisture",
-    "button",
-    NULL,
+        "model",
+        "sid", // TODO: delete this
+        "id",
+        "channel",
+        "battery",
+        "transmit", // TODO: delete this
+        "temperature_C",
+        "moisture",
+        "button",
+        NULL,
 };
 
 r_device springfield = {
-    .name           = "Springfield Temperature and Soil Moisture",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 2000,
-    .long_width     = 4000,
-    .gap_limit      = 5000,
-    .reset_limit    = 9200,
-    .decode_fn      = &springfield_callback,
-    .disabled       = 0,
-    .fields         = output_fields
-};
+        .name        = "Springfield Temperature and Soil Moisture",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 5000,
+        .reset_limit = 9200,
+        .decode_fn   = &springfield_decode,
+        .disabled    = 0,
+        .fields      = output_fields};
