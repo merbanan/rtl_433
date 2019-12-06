@@ -68,13 +68,16 @@ static int wssensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         fprintf(stderr, "TemperatureC = %.1f\n", temperature_c);
     }
 
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Hyundai-WS","WS Temperature Sensor"),
             "id",            "House Code",  DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
+            "button",           "Button",       DATA_INT, startup,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -86,6 +89,7 @@ static char *output_fields[] = {
     "channel",
     "battery",
     "temperature_C",
+    "button",
     NULL,
 };
 

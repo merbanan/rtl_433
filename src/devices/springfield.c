@@ -25,7 +25,7 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int row;
     int chk;
     uint8_t *b;
-    int sid, battery, transmit, channel, temp;
+    int sid, battery, button, channel, temp;
     float temp_c;
     int moisture, uk1;
     data_t *data;
@@ -50,25 +50,29 @@ static int springfield_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         sid      = (b[0]);
         battery  = (b[1] >> 7) & 1;
-        transmit = (b[1] >> 6) & 1;
+        button   = (b[1] >> 6) & 1;
         channel  = ((b[1] >> 4) & 0x03) + 1;
         temp     = (b[1] & 0x0f) << 8 | b[2];
         temp     = (int16_t)(temp << 4) >> 4; // sign extend
-        temp_c    = temp * 0.1;
-        moisture =  b[3] >> 4;
-        uk1      =  b[4] >> 4;    /* unknown. */
+        temp_c   = temp * 0.1;
+        moisture = b[3] >> 4;
+        uk1      = b[4] >> 4; /* unknown. */
 
+        /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, _X("Springfield-Soil","Springfield Temperature & Moisture"),
                 _X("id","sid"),              "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
-                "transmit",         "Transmit",     DATA_STRING, transmit ? "MANUAL" : "AUTO",
+                "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
                 "moisture",         "Moisture",     DATA_INT,    moisture,
+                "button",           "Button",       DATA_INT,    button,
 //                "uk1",            "uk1",          DATA_INT,    uk1,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
         ret++;
     }
@@ -81,10 +85,11 @@ static char *output_fields[] = {
     "id",
     "channel",
     "battery",
-    "transmit",
+    "transmit", // TODO: delete this
     "temperature_C",
     "moisture",
-    NULL
+    "button",
+    NULL,
 };
 
 r_device springfield = {

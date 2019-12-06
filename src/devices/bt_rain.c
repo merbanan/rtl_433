@@ -30,7 +30,7 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
     int row;
-    int id, battery, rain, transmit, channel;
+    int id, battery, rain, button, channel;
     int16_t temp_raw;
     float temp_c, rainrate;
 
@@ -49,7 +49,7 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     id       = b[0];
     battery  = b[1] >> 7;
     channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
-    transmit = (b[1] & 0x08) >> 3;
+    button = (b[1] & 0x08) >> 3;
 
     temp_raw = ((b[1] & 0x07) << 13) | (b[2] << 5); // use sign extend
     temp_c = (temp_raw >> 5) * 0.1f;
@@ -62,15 +62,19 @@ static int bt_rain_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         rain += ((rest + 1) / 2) * 2048 + 12 * 2048;
     rainrate = rain * 0.052f; // 19.23mm per tip
 
+    /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Biltema-Rain",
             "id",               "ID",               DATA_INT, id,
             "channel",          "Channel",          DATA_INT, channel,
             "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
-            "transmit",         "Transmit",         DATA_STRING, transmit ? "MANUAL" : "AUTO",
+            "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            "button",           "Button",       DATA_INT, button,
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -80,11 +84,12 @@ static char *output_fields[] = {
     "id",
     "channel",
     "battery",
-    "transmit",
+    "transmit", // TODO: delete this
     "temperature_C",
     "rainrate", // TODO: remove this
     "rain_rate_mm_h",
-    NULL
+    "button",
+    NULL,
 };
 
 r_device bt_rain = {
