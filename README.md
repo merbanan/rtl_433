@@ -217,6 +217,7 @@ Read the Test Data section at the bottom.
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
+    [142]  Auriol AFW2A1 temperature/humidity sensor
 
 * Disabled by default, use -R n or -G
 

@@ -33,6 +33,7 @@ add_executable(rtl_433
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
+    devices/auriol_afw2a1.c
     devices/auriol_hg02832.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c
