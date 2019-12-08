@@ -9,8 +9,8 @@
     (at your option) any later version.
 */
 
-/*
-version=0.01.001 beta
+/**
+version=0.01.002 beta
 
 Lidl Auriol AFW 2 A1 sensor.
 IAN 311588
@@ -65,19 +65,15 @@ e.g.:
 
 static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    int row;
     uint8_t *b;
     int id;
     int channel;
-    int battery_low = 1;
-    int tx_button = 1;
+    int battery_low;
+    int tx_button;
     int16_t temp_raw;
     float temp_c;
     int humidity;
 
-    row = bitbuffer_find_repeated_row(bitbuffer, 12, 36);
-    if (bitbuffer->num_rows != 12)
-        return DECODE_ABORT_EARLY;
     if (bitbuffer->bits_per_row[0] != 36 
         || bitbuffer->bits_per_row[1] != 36
         || bitbuffer->bits_per_row[2] != 36
@@ -92,12 +88,14 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
         || bitbuffer->bits_per_row[11] != 36)
         return DECODE_ABORT_LENGTH;
 
-    b = bitbuffer->bb[row];
+    b = bitbuffer->bb[1];
 
-    id        = b[0];
-    channel   = b[1] >> 4;
-    temp_raw  = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend
-    temp_c    = (temp_raw >> 4) * 0.1f;
+    id          = b[0];
+    battery_low = b[1] >> 7; 
+    tx_button   = (b[1] & 0x40) >> 6;
+    channel     = (b[1] & 0x30) >> 4;
+    temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend
+    temp_c      = (temp_raw >> 4) * 0.1f;
     // 0xa is fixed. If it differs, it is a wrong device. Could anyone confirm that?
     if ((b[3] >> 4) != 0xa) {
         if (decoder->verbose) {
@@ -107,42 +105,13 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     humidity = (((b[3] & 0x0f) << 4) | (b[4] >> 4)); 
 
-    if ((channel == 0x3) || (channel == 0x7) || (channel == 0xb) || (channel == 0xf) 
-        || (humidity > 0x64) || (humidity < 0x00) || (temp_c < -51.1) || (temp_c > 76.7)) {
-        if (decoder->verbose) {
-            fprintf(stderr, "Auriol-AFW2A1 data error\n");
-        }
-        return DECODE_FAIL_SANITY;
-    }
-
-    if ((channel == 0x0) || (channel == 0x1) || (channel == 0x2)) {
-        channel = channel + 1;
-        battery_low = 1;
-        tx_button = 0;
-    }
-    else if ((channel == 0x4) || (channel == 0x5) || (channel == 0x6)) {
-        channel = channel - 4 + 1;
-        battery_low = 1;
-        tx_button = 1;
-    }
-    else if ((channel == 0x8) || (channel == 0x9) || (channel == 0xa)) {
-        channel = channel - 8 + 1;
-        battery_low = 0;
-        tx_button = 0;
-    }
-    else if ((channel == 0xc) || (channel == 0xd) || (channel == 0xe)) {
-        channel = channel - 12 + 1;
-        battery_low = 0;
-        tx_button = 1;
-    }
-
     /* clang-format off */
     data = data_make(
             "model",            "",                  DATA_STRING, "Auriol-AFW2A1",
             "id",               "",                  DATA_INT,    id,
-            "channel",          "Channel",           DATA_INT,    channel,
-            "battery",          "Battery",           DATA_STRING, battery_low ? "LOW" : "OK",
-            "button",           "Button",            DATA_STRING, tx_button ? "true" : "false",
+            "channel",          "Channel",           DATA_INT,    channel + 1,
+            "battery_ok",       "Battery",           DATA_INT,    battery_low,
+            "button",           "Button",            DATA_INT,    tx_button,
             "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",          DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
             NULL);
