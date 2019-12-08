@@ -10,7 +10,7 @@
 */
 
 /*
-version=0.01.000 beta
+version=0.01.001 beta
 
 Lidl Auriol AFW 2 A1 sensor.
 IAN 311588
@@ -26,7 +26,7 @@ The ID is retained even if the batteries are changed.
 The device has three channels and a transmit button.
 
 Data layout:
-The sensor transmits 12 identical messages in a single package of 36 bits each ~60 seconds, depending on the temperature.
+The sensor transmits 12 identical messages of 36 bits in a single package each ~60 seconds, depending on the temperature.
 e.g.:
 [00] {36} 90 80 ba a3 a0 : 10010000 10000000 10111010 10100011 1010
 ...
@@ -34,7 +34,7 @@ e.g.:
      0           1           2           3           4
  9    0      8    0      b    a      a    3      a    0
 |1001|0000| |1000|0000| |1011|1010| |1010|0011| |1010|
-|id       | |chan|temp| |temp     | |fix |hum        |
+|id       | |chan|temp            | |fix |hum        |
 --------------------------------------------------------
 10010000  = id=0x90=144; 8 bit
 1000      = channel=0x8=8=8-8+1=1; 4 bit
@@ -108,7 +108,7 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     humidity = (((b[3] & 0x0f) << 4) | (b[4] >> 4)); 
 
     if ((channel == 0x3) || (channel == 0x7) || (channel == 0xb) || (channel == 0xf) 
-        || (humidity_rel > 0x64) || (humidity_rel < 0x00) || (temp_c < -51.1) || (temp_c > 76.7)) {
+        || (humidity > 0x64) || (humidity < 0x00) || (temp_c < -51.1) || (temp_c > 76.7)) {
         if (decoder->verbose) {
             fprintf(stderr, "Auriol-AFW2A1 data error\n");
         }
@@ -163,6 +163,7 @@ static char *output_fields[] = {
         NULL,
 };
 
+// ToDo: The timings have come about through trial and error. Audit this against weak signals!
 r_device auriol_afw2a1 = {
         .name        = "Auriol AFW2A1 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
@@ -172,6 +173,6 @@ r_device auriol_afw2a1 = {
         .gap_limit   = 2012,
         .reset_limit = 3954,
         .decode_fn   = &auriol_afw2a1_decode,
-        .disabled    = 0,
+        .disabled    = 0, // No side effects known.
         .fields      = output_fields,
 };
