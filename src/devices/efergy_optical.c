@@ -39,7 +39,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
     double energy, n_imp;
-    double pulsecount;
+    int pulsecount;
     double seconds;
     data_t *data;
     uint16_t crc;
@@ -107,19 +107,19 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     
     pulsecount = bytes[8];
 
-    energy = ((pulsecount/n_imp) * (3600/seconds));
+    energy = (((double)pulsecount/n_imp) * (3600/seconds));
 
     //New code for calculating various energy values for differing pulse-kwh values
     const int imp_kwh[] = {4000, 3200, 2000, 1000, 500, 0};
     for (unsigned i = 0; imp_kwh[i] != 0; ++i) {
-        energy = ((pulsecount/imp_kwh[i]) * (3600/seconds));
+        energy = (((double)pulsecount/imp_kwh[i]) * (3600/seconds));
 
         /* clang-format off */
         data = data_make(
                 "model",    "Model",        DATA_STRING, _X("Efergy-Optical","Efergy Optical"),
                 "id",       "",             DATA_INT,   id,
-		"pulses", "Pulse-rate",     DATA_FORMAT, "%i", DATA_INT, imp_kwh[i],
-                "pulsecount",  "Pulse-count",   DATA_FORMAT, "%.01f", DATA_DOUBLE, pulsecount,
+		"pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
+                "pulsecount", "Pulse-count", DATA_INT, pulsecount,
                 "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
                 NULL);
         /* clang-format on */
@@ -132,6 +132,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "pulses",
+	"pulsecount",
         "energy",
         NULL,
 };
