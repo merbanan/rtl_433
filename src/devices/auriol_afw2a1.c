@@ -10,7 +10,7 @@
 */
 
 /**
-version=0.01.002 beta
+version=0.01.003 beta
 
 Lidl Auriol AFW 2 A1 sensor.
 IAN 311588
@@ -66,32 +66,21 @@ e.g.:
 static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b;
+    int row;
     int id;
     int channel;
-    int battery_low;
+    int battery_ok;
     int tx_button;
     int16_t temp_raw;
     float temp_c;
     int humidity;
 
-    if (bitbuffer->bits_per_row[0] != 36 
-        || bitbuffer->bits_per_row[1] != 36
-        || bitbuffer->bits_per_row[2] != 36
-        || bitbuffer->bits_per_row[3] != 36
-        || bitbuffer->bits_per_row[4] != 36
-        || bitbuffer->bits_per_row[5] != 36
-        || bitbuffer->bits_per_row[6] != 36
-        || bitbuffer->bits_per_row[7] != 36
-        || bitbuffer->bits_per_row[8] != 36
-        || bitbuffer->bits_per_row[9] != 36
-        || bitbuffer->bits_per_row[10] != 36
-        || bitbuffer->bits_per_row[11] != 36)
-        return DECODE_ABORT_LENGTH;
+    row = bitbuffer_find_repeated_row(bitbuffer, 12, 36);
 
-    b = bitbuffer->bb[1];
+    b = bitbuffer->bb[row];
 
     id          = b[0];
-    battery_low = b[1] >> 7; 
+    battery_ok  = b[1] >> 7; 
     tx_button   = (b[1] & 0x40) >> 6;
     channel     = (b[1] & 0x30) >> 4;
     temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend
@@ -103,14 +92,22 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
         }
         return DECODE_FAIL_SANITY;
     }
-    humidity = (((b[3] & 0x0f) << 4) | (b[4] >> 4)); 
+    humidity = (((b[3] & 0x0f) << 4) | (b[4] >> 4));
+
+    if ((channel == 0x3) || (channel == 0x7) || (channel == 0xb) || (channel == 0xf) 
+        || (humidity > 0x64) || (humidity < 0x00) || (temp_c < -51.1) || (temp_c > 76.7)) {
+        if (decoder->verbose) {
+            fprintf(stderr, "Auriol-AFW2A1 data error\n");
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     /* clang-format off */
     data = data_make(
             "model",            "",                  DATA_STRING, "Auriol-AFW2A1",
             "id",               "",                  DATA_INT,    id,
             "channel",          "Channel",           DATA_INT,    channel + 1,
-            "battery_ok",       "Battery",           DATA_INT,    battery_low,
+            "battery_ok",       "Battery",           DATA_INT,    battery_ok,
             "button",           "Button",            DATA_INT,    tx_button,
             "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",          DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
