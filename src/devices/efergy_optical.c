@@ -118,7 +118,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",    "Model",        DATA_STRING, _X("Efergy-Optical","Efergy Optical"),
                 "id",       "",             DATA_INT,   id,
-		"pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
+                "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
                 "pulsecount", "Pulse-count", DATA_INT, pulsecount,
                 "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
                 NULL);
@@ -132,7 +132,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "pulses",
-	"pulsecount",
+        "pulsecount",
         "energy",
         NULL,
 };
