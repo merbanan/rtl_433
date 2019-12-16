@@ -411,6 +411,15 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
+static char *output_fields[] = {
+    "model",
+    "mode",
+    "id",
+    "version",
+    "type",
+    "type_string",
+    NULL
+};
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
 // Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
@@ -422,6 +431,7 @@ r_device m_bus_mode_c_t = {
     .reset_limit    = 500,  //
     .decode_fn      = &m_bus_mode_c_t_callback,
     .disabled       = 0,
+    .fields         = output_fields,
 };
 
 
