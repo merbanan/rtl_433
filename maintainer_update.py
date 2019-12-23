@@ -124,11 +124,17 @@ if (verbose):
 r_devices_used = len(r_devices) + 5
 
 # src/CMakeLists.txt
-repl = src_files + device_files
+repl = src_files[:]
 repl.remove('rtl_433.c') # exclude apps from lib sources
 repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_library\(r_433 STATIC$',
               r'^\)', repl, 'src/CMakeLists.txt')
+
+# src/devices/CMakeLists.txt
+repl = [item.removeprefix('devices/') for item in device_files]
+repl = '\n    ' + ('\n    '.join(repl)) + '\n'
+replace_block(r'add_library\(r_decoders STATIC$',
+              r'^\)', repl, 'src/devices/CMakeLists.txt')
 
 # include/rtl_433.h
 # update '#define MAX_PROTOCOLS ?' with actual count

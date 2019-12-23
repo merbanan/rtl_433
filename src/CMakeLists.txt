@@ -4,7 +4,7 @@
 # commodity libraries
 # consider -fvisibility=hidden
 # Proper object library type was only introduced with CMake 2.8.8
-add_library(r_433 STATIC
+add_library(r_lib STATIC
     abuf.c
     am_analyze.c
     baseband.c
@@ -48,288 +48,6 @@ add_library(r_433 STATIC
     sigmf.c
     term_ctl.c
     write_sigrok.c
-    devices/abmt.c
-    devices/acurite.c
-    devices/acurite_01185m.c
-    devices/akhan_100F14.c
-    devices/alecto.c
-    devices/alps_fwb1u545.c
-    devices/ambient_weather.c
-    devices/ambientweather_tx8300.c
-    devices/ambientweather_wh31e.c
-    devices/ant_antplus.c
-    devices/apator_metra_eitn30.c
-    devices/apator_metra_erm30.c
-    devices/arad_ms_meter.c
-    devices/archos_tbh.c
-    devices/arexx_ml.c
-    devices/astrostart_2000.c
-    devices/atech_ws308.c
-    devices/audiovox_pro_oe3b.c
-    devices/auriol_4ld5661.c
-    devices/auriol_aft77b2.c
-    devices/auriol_afw2a1.c
-    devices/auriol_ahfl.c
-    devices/auriol_hg02832.c
-    devices/badger_orion_endpoint.c
-    devices/badger_water.c
-    devices/baldr_rain.c
-    devices/baldr_therm.c
-    devices/blueline.c
-    devices/blyss.c
-    devices/bm5.c
-    devices/brennenstuhl_rcs_2044.c
-    devices/bresser_3ch.c
-    devices/bresser_5in1.c
-    devices/bresser_6in1.c
-    devices/bresser_7in1.c
-    devices/bresser_leakage.c
-    devices/bresser_lightning.c
-    devices/bresser_st1005h.c
-    devices/bt_rain.c
-    devices/burnhardbbq.c
-    devices/calibeur.c
-    devices/cardin.c
-    devices/cavius.c
-    devices/ced7000.c
-    devices/celsia_czc1.c
-    devices/chamberlain_cwpirc.c
-    devices/chrysler_car_remote.c
-    devices/chuango.c
-    devices/cmr113.c
-    devices/code_alarm_car_remote.c
-    devices/companion_wtr001.c
-    devices/compustar_1wg3r.c
-    devices/continental_car_remote.c
-    devices/cotech_36_7959.c
-    devices/ctt_life_power_hybrid.c
-    devices/current_cost.c
-    devices/danfoss.c
-    devices/deltadore_x3d.c
-    devices/digitech_xc0324.c
-    devices/directv.c
-    devices/dish_remote_6_3.c
-    devices/dsc.c
-    devices/ec3k.c
-    devices/ecodhome.c
-    devices/ecowitt.c
-    devices/efergy_e2_classic.c
-    devices/efergy_optical.c
-    devices/efth800.c
-    devices/elro_db286a.c
-    devices/elv.c
-    devices/emax.c
-    devices/emontx.c
-    devices/emos_e6016.c
-    devices/emos_e6016_rain.c
-    devices/enocean_erp1.c
-    devices/ert_idm.c
-    devices/ert_scm.c
-    devices/esa.c
-    devices/esic_emt7110.c
-    devices/esperanza_ews.c
-    devices/eurochron.c
-    devices/fineoffset.c
-    devices/fineoffset_wh1050.c
-    devices/fineoffset_wh1080.c
-    devices/fineoffset_wh31l.c
-    devices/fineoffset_wh43.c
-    devices/fineoffset_wh45.c
-    devices/fineoffset_wh46.c
-    devices/fineoffset_wh55.c
-    devices/fineoffset_wn34.c
-    devices/fineoffset_ws80.c
-    devices/fineoffset_ws85.c
-    devices/fineoffset_ws90.c
-    devices/flex.c
-    devices/flowis.c
-    devices/fordremote.c
-    devices/fs20.c
-    devices/ft004b.c
-    devices/funkbus.c
-    devices/gasmate_ba1008.c
-    devices/ge_coloreffects.c
-    devices/geevon.c
-    devices/geevon_tx19.c
-    devices/generic_motion.c
-    devices/generic_remote.c
-    devices/generic_temperature_sensor.c
-    devices/geo_minim.c
-    devices/gm_car_remote.c
-    devices/govee.c
-    devices/govee_h5059.c
-    devices/gridstream.c
-    devices/gt_tmbbq05.c
-    devices/gt_wt_02.c
-    devices/gt_wt_03.c
-    devices/hcs200.c
-    devices/hcs361.c
-    devices/hideki.c
-    devices/holman_ws5029.c
-    devices/homelead_hg9901.c
-    devices/hondaremote.c
-    devices/honeywell.c
-    devices/honeywell_cm921.c
-    devices/honeywell_wdb.c
-    devices/ht680.c
-    devices/ibis_beacon.c
-    devices/ikea_sparsnas.c
-    devices/infactory.c
-    devices/inkbird_ith20r.c
-    devices/inovalley-kw9015b.c
-    devices/insteon.c
-    devices/interlogix.c
-    devices/intertechno.c
-    devices/jasco.c
-    devices/kedsum.c
-    devices/kerui.c
-    devices/klimalogg.c
-    devices/lacrosse.c
-    devices/lacrosse_breezepro.c
-    devices/lacrosse_r1.c
-    devices/lacrosse_th3.c
-    devices/lacrosse_tx141x.c
-    devices/lacrosse_tx22uit.c
-    devices/lacrosse_tx31u.c
-    devices/lacrosse_tx34.c
-    devices/lacrosse_tx35.c
-    devices/lacrosse_wr1.c
-    devices/lacrosse_ws7000.c
-    devices/lacrossews.c
-    devices/lightwave_rf.c
-    devices/m_bus.c
-    devices/markisol.c
-    devices/marlec_solar.c
-    devices/maverick_et73.c
-    devices/maverick_et73x.c
-    devices/maverick_xr30.c
-    devices/maverick_xr50.c
-    devices/mebus.c
-    devices/megacode.c
-    devices/mic6sc2_car_remote.c
-    devices/missil_ml0757.c
-    devices/mueller_hotrod.c
-    devices/neptune_r900.c
-    devices/new_template.c
-    devices/newkaku.c
-    devices/nexa.c
-    devices/nexus.c
-    devices/nice_flor_s.c
-    devices/nidec_car_remote.c
-    devices/norgo.c
-    devices/oil_smart.c
-    devices/oil_standard.c
-    devices/oil_watchman.c
-    devices/oil_watchman_advanced.c
-    devices/opus_xt300.c
-    devices/oregon_scientific.c
-    devices/oregon_scientific_sl109h.c
-    devices/oregon_scientific_v1.c
-    devices/oria_wa150km.c
-    devices/philips_aj3650.c
-    devices/philips_aj7010.c
-    devices/proflame2.c
-    devices/prologue.c
-    devices/proove.c
-    devices/quhwa.c
-    devices/quinetic.c
-    devices/radiohead_ask.c
-    devices/rainpoint.c
-    devices/rainpoint_hcs012arf.c
-    devices/regency_fan.c
-    devices/revolt_nc5462.c
-    devices/revolt_zx7717.c
-    devices/rfm69_lowpowerlab_moteino.c
-    devices/rftech.c
-    devices/risco_agility.c
-    devices/rojaflex.c
-    devices/rosstech_dcu706.c
-    devices/rubicson.c
-    devices/rubicson_48659.c
-    devices/rubicson_pool_48942.c
-    devices/s3318p.c
-    devices/sainlogic_sa8.c
-    devices/schou_72543_rain.c
-    devices/schraeder.c
-    devices/scmplus.c
-    devices/secplus_v1.c
-    devices/secplus_v2.c
-    devices/sharp_spc775.c
-    devices/shenzhen_wale_wl_th6r.c
-    devices/siemens_5wy72xx.c
-    devices/silvercrest.c
-    devices/simplisafe.c
-    devices/simplisafe_gen3.c
-    devices/smoke_gs558.c
-    devices/solight_te44.c
-    devices/somfy_iohc.c
-    devices/somfy_rts.c
-    devices/springfield.c
-    devices/srsmith_pool_srs_2c_tx.c
-    devices/steelmate.c
-    devices/telldus_ft0385r.c
-    devices/tfa_14_1504_v2.c
-    devices/tfa_30_3196.c
-    devices/tfa_30_3221.c
-    devices/tfa_drop_30.3233.c
-    devices/tfa_marbella.c
-    devices/tfa_pool_thermometer.c
-    devices/tfa_twin_plus_30.3049.c
-    devices/thermopro_tp11.c
-    devices/thermopro_tp12.c
-    devices/thermopro_tp211b.c
-    devices/thermopro_tp28b.c
-    devices/thermopro_tp82xb.c
-    devices/thermopro_tp86xb.c
-    devices/thermopro_tx2.c
-    devices/thermopro_tx2c.c
-    devices/thermopro_tx7b.c
-    devices/thermor.c
-    devices/thermor_a6n_132tx.c
-    devices/tpms_abarth124.c
-    devices/tpms_airpuxem.c
-    devices/tpms_ave.c
-    devices/tpms_bmw.c
-    devices/tpms_bmw_g3.c
-    devices/tpms_citroen.c
-    devices/tpms_eezrv.c
-    devices/tpms_elantra2012.c
-    devices/tpms_ford.c
-    devices/tpms_gear_hive.c
-    devices/tpms_gm.c
-    devices/tpms_hyundai_vdo.c
-    devices/tpms_jansite.c
-    devices/tpms_jansite_solar.c
-    devices/tpms_kia.c
-    devices/tpms_nissan.c
-    devices/tpms_pmv107j.c
-    devices/tpms_porsche.c
-    devices/tpms_renault.c
-    devices/tpms_renault_0435r.c
-    devices/tpms_schrader_motorcycle.c
-    devices/tpms_toyota.c
-    devices/tpms_truck.c
-    devices/tpms_trw.c
-    devices/tpms_tyreguard400.c
-    devices/ts_ft002.c
-    devices/ttx201.c
-    devices/universalfanctrl.c
-    devices/vaillant_vrt340f.c
-    devices/vauno_en8822c.c
-    devices/vevor_7in1.c
-    devices/visonic_powercode.c
-    devices/wallarge_cltx001.c
-    devices/watts_thermostat.c
-    devices/waveman.c
-    devices/wec2103.c
-    devices/wg_pb12v1.c
-    devices/ws2032.c
-    devices/wssensor.c
-    devices/wt0124.c
-    devices/wt450.c
-    devices/x10_rf.c
-    devices/x10_sec.c
-    devices/yale_hsa.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
@@ -338,7 +56,7 @@ if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES "
 endif()
 
 add_executable(rtl_433 rtl_433.c)
-target_link_libraries(rtl_433 r_433)
+target_link_libraries(rtl_433 r_decoders r_lib)
 
 # target_compile_definitions was only added with CMake 2.8.11
 if(THREADS_HAVE_PTHREAD_ARG)
@@ -368,7 +86,12 @@ target_link_libraries(rtl_433 m)
 endif()
 
 # Explicitly say that we want C99
-set_target_properties(rtl_433 r_433 PROPERTIES C_STANDARD 99)
+set_target_properties(rtl_433 r_lib PROPERTIES C_STANDARD 99)
+
+########################################################################
+# Device decoders subdirectory
+########################################################################
+add_subdirectory(devices)
 
 ########################################################################
 # Install built library files & utilities
