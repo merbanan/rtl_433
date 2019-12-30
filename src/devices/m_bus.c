@@ -114,6 +114,12 @@ const char* m_bus_device_type_str(uint8_t devType) {
         case 0x28:  str = "Waste water meter"; break;
         case 0x29:  str = "Garbage"; break;
         case 0x2A:  str = "Carbon dioxide"; break;
+        case 0x25:  str = "Customer unit (display device)";break;
+        case 0x31:  str = "Communication controller";break;
+        case 0x32:  str = "Unidirectional repeater";break;
+        case 0x33:  str = "Bidirectional repeater";break;
+        case 0x36:  str = "Radio converter (system side)";break;
+        case 0x37:  str = "Radio converter (meter side)";break;
         default:    break;  // Unknown
     }
     return str;
