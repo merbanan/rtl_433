@@ -4,12 +4,14 @@ set -e
 # performs a standard out-of-tree build and transform environment vars to cmake options
 # set RTLSDR=ON/OFF/AUTO (default: ON)
 # set SOAPYSDR=ON/OFF/AUTO (default: AUTO)
+# set GPSD=ON/OFF/AUTO (default: AUTO)
 # set CMAKE_TOOLCHAIN_FILE=file (default: unset)
 # set RUN_RTL_433_TESTS=1 (default: unset)
 
 RTLSDR="${RTLSDR:-ON}"
 SOAPYSDR="${SOAPYSDR:-AUTO}"
-set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR
+GPSD="${GPSD:-AUTO}"
+set -- -DENABLE_RTLSDR=$RTLSDR -DENABLE_SOAPYSDR=$SOAPYSDR -DENABLE_GPSD=$GPSD
 
 mkdir -p build
 cd build

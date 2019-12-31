@@ -127,7 +127,26 @@ endif()
 
 else()
     message(STATUS "SoapySDR device input disabled.")
+endif()    
+
+set_property(CACHE ENABLE_GPSD PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_GPSD STREQUAL "OFF")
+    message(STATUS "GPSd support disabled.")
+else()
+find_package(LibGPSD)
+
+if(LIBGPSD_FOUND)
+    message(STATUS "GPSd support will be compiled")
+    include_directories(${LIBGPSD_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBGPSD_LIBRARIES})
+    ADD_DEFINITIONS(-DGPSD)
+elseif(ENABLE_GPSD STREQUAL "AUTO")
+    message(STATUS "GPSd development files not found, GPS support will be disabled.")
+else()
+    message(FATAL_ERROR "GPSd development files not found.")
 endif()
+endif()
+
 
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...

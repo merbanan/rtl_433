@@ -27,6 +27,7 @@ add_executable(rtl_433
     sdr.c
     term_ctl.c
     util.c
+    gps_rtl.c
     devices/acurite.c
     devices/akhan_100F14.c
     devices/alecto.c

@@ -123,6 +123,9 @@ static void usage(int exit_code)
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
+#ifdef GPSD
+            "  [-u host:port] Connect to GPSd on the given hostname and port. Generally localhost:2947\n"
+#endif
             "  [-h] Output this usage help and exit\n"
             "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
             DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
@@ -583,6 +586,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         sdr_stop(cfg->dev);
         fprintf(stderr, "Time expired, exiting!\n");
     }
+#ifdef GPSD
+    if(cfg->gps.enabled) {
+        rtl_gps_update(&cfg->gps);
+    }
+#endif
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->stats_now ? 3 : cfg->report_stats));
         flush_report_data(cfg);
@@ -607,7 +615,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:u:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -645,6 +653,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
+        {"report_gpsd_position", 'u'},
         {NULL, 0}};
 
 static void parse_conf_text(r_cfg_t *cfg, char *conf)
@@ -1053,6 +1062,35 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else {
             cfg->after_successful_events_flag = atobv(arg, 1);
         }
+        break;
+    case 'u':
+#ifdef GPSD
+        if (arg && strlen(arg) != 1) {
+            //arg = arg + 1;
+            int i, count;
+            for (i = 0, count=0; arg[i]; i++) {
+              count += (arg[i] == ':');
+            }
+            if(count != 1) {
+                (void)fprintf(stderr,"GPS requires a host and port.\n");
+                usage(1);
+            }
+            cfg->gps.host = strtok(arg,":");
+            cfg->gps.port = strtok(NULL,":");
+            cfg->gps.enabled = rtl_gps_open(&cfg->gps);
+            if(cfg->gps.enabled) {
+                (void)fprintf(stderr,"GPS Connect Success.\n");
+            } else {
+                (void)fprintf(stderr,"GPS Connect Failed.\n");
+                exit(-1);
+            }
+        } else {
+            usage(1);
+        }
+#else
+        fprintf(stderr, "Failure: GPSd was not configured in this build\n");
+        exit(-1);
+#endif
         break;
     default:
         usage(1);
@@ -1540,6 +1578,9 @@ int main(int argc, char **argv) {
         cfg->do_exit_async = 0;
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
     }
+#ifdef GPSD
+    rtl_gps_close(&cfg->gps);
+#endif
 
     if (cfg->report_stats > 0) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->report_stats));

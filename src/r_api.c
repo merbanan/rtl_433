@@ -30,6 +30,9 @@
 #include "output_influx.h"
 #include "compat_time.h"
 #include "fatal.h"
+#ifdef GPSD
+#include "gps_rtl.h"
+#endif
 
 #ifdef _WIN32
 #include <io.h>
@@ -365,6 +368,9 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *nu
                         r_dev->protocol_num, r_dev->name);
         }
     }
+#ifdef GPSD
+    rtl_gps_csv_fields(&field_list);
+#endif
     convert_csv_fields(cfg, (char const **)field_list.elems);
 
     if (num_fields)
@@ -688,6 +694,9 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 "time", "", DATA_STRING, time_str,
                 NULL);
     }
+#ifdef GPSD
+    rtl_gps_data_append(&cfg->gps, data);
+#endif
 
     // prepend "tag" if available
     if (cfg->output_tag) {
