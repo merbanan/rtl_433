@@ -9,6 +9,9 @@ rtl_433 currently supports these input types:
 Building rtl_433 with RTL-SDR or SoapySDR support is optional but using RTL-SDR is highly recommended.
 The libraries and header files for RTL-SDR and/or SoapySDR should be installed beforehand.
 
+## GPSd Support
+Building rtl_433 with gpsd support is optional and requires additional dependencies of gpsd and libgps-dev (or your distro's equivalent). The build script, do_build.sh needs to be updated enable support, and is done by setting `GPSD="${GPSD:-ON}"` 
+
 ## Nightly builds
 
 Some distributions offer nightly builds.

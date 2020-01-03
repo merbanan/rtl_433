@@ -76,7 +76,7 @@ Read the Test Data section at the bottom.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)
-  [-u host:port] Connect to GPSd on the given hostname and port. Generally localhost:2947
+  [-u[=host:port]] Connect to GPSd, optionally on the given host and port. Default localhost:2947
   [-h] Output this usage help and exit
        Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
 

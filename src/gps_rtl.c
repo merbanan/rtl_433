@@ -70,34 +70,34 @@ void rtl_gps_close(struct rtl_gps * p) {
  * produces formats that are not valid JSON. For instance the below code will not produce valid JSON as the
  * result is an unquoted string
  *
- *	data_append(data,
+ *    data_append(data,
  *                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
- *			NULL);
+ *            NULL);
  *
  *
  */
 //
 void rtl_gps_double_append( data_t *data, char* shortName, char* longName, char* fmt, double value) {
-	char buffer[256];
-	snprintf(buffer, 256, fmt, value);
-	data_append(data,
-			shortName,longName,DATA_STRING,buffer,
-			NULL);
+    char buffer[256];
+    snprintf(buffer, 256, fmt, value);
+    data_append(data,
+            shortName,longName,DATA_STRING,buffer,
+            NULL);
 
 }
 void rtl_gps_data_append(struct rtl_gps * p, data_t *data) {
     if(p->enabled) {
-		data_append(data, GPS_STATUS_SHORT,  "GpsFixStatus",        DATA_FORMAT, "%d", DATA_INT, p->data.status , NULL);
-		if(p->connected && p->data.status != 0) {
-			data_append(data, GPS_MODE_SHORT,  "GpsMode",        DATA_FORMAT, "%d", DATA_INT, p->data.fix.mode , NULL);
-			if(p->data.fix.mode >= MODE_2D) {
-				rtl_gps_double_append(data, LAT_SHORT_SHORT, "Latitude", "%.7f", p->data.fix.latitude);
-				rtl_gps_double_append(data, LONG_SHORT_SHORT, "Longitude", "%.7f", p->data.fix.longitude);
-			}
-			if(p->data.fix.mode >= MODE_3D) {
-				rtl_gps_double_append(data, ALTITUDE_SHORT, "Altitude", "%.3f", p->data.fix.altitude);
-			}
-		}
+        data_append(data, GPS_STATUS_SHORT,  "GpsFixStatus",        DATA_FORMAT, "%d", DATA_INT, p->data.status , NULL);
+        if(p->connected && p->data.status != 0) {
+            data_append(data, GPS_MODE_SHORT,  "GpsMode",        DATA_FORMAT, "%d", DATA_INT, p->data.fix.mode , NULL);
+            if(p->data.fix.mode >= MODE_2D) {
+                rtl_gps_double_append(data, LAT_SHORT_SHORT, "Latitude", "%.7f", p->data.fix.latitude);
+                rtl_gps_double_append(data, LONG_SHORT_SHORT, "Longitude", "%.7f", p->data.fix.longitude);
+            }
+            if(p->data.fix.mode >= MODE_3D) {
+                rtl_gps_double_append(data, ALTITUDE_SHORT, "Altitude", "%.3f", p->data.fix.altitude);
+            }
+        }
     }
 }
 int rtl_gps_open__(struct rtl_gps * p) {

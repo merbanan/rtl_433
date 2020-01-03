@@ -124,7 +124,7 @@ static void usage(int exit_code)
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
 #ifdef GPSD
-            "  [-u host:port] Connect to GPSd on the given hostname and port. Generally localhost:2947\n"
+            "  [-u[=host:port]] Connect to GPSd, optionally on the given host and port. Default localhost:2947\n"
 #endif
             "  [-h] Output this usage help and exit\n"
             "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
@@ -615,7 +615,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:u:"
+#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:u::"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -1065,18 +1065,26 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'u':
 #ifdef GPSD
+        cfg->gps.host = NULL;
+        cfg->gps.port = NULL;
         if (arg && strlen(arg) != 1) {
-            //arg = arg + 1;
             int i, count;
             for (i = 0, count=0; arg[i]; i++) {
               count += (arg[i] == ':');
             }
             if(count != 1) {
-                (void)fprintf(stderr,"GPS requires a host and port.\n");
+                (void)fprintf(stderr,"GPS requires a host and port. Example: -u=localhost:2947\n");
                 usage(1);
             }
+            //First character is a =, skip it
+            arg = arg + 1;
             cfg->gps.host = strtok(arg,":");
             cfg->gps.port = strtok(NULL,":");
+        } else {
+            cfg->gps.host = "localhost";
+            cfg->gps.port = "2947";
+        }
+        if(cfg->gps.host != NULL && cfg->gps.port != NULL) {
             cfg->gps.enabled = rtl_gps_open(&cfg->gps);
             if(cfg->gps.enabled) {
                 (void)fprintf(stderr,"GPS Connect Success.\n");
