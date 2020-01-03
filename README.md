@@ -76,11 +76,12 @@ Read the Test Data section at the bottom.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)
+  [-u host:port] Connect to GPSd on the given hostname and port. Generally localhost:2947
   [-h] Output this usage help and exit
        Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
 
 
-
+R'
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
@@ -220,27 +221,27 @@ Read the Test Data section at the bottom.
 
 * Disabled by default, use -R n or -G
 
-
+d'
 		= Input device selection =
 	RTL-SDR device driver is available.
   [-d <RTL-SDR USB device index>] (default: 0)
   [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
-	SoapySDR device driver is available.
+	SoapySDR device driver is not available.
   [-d ""] Open default SoapySDR device
   [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
   [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
 	Specify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234
 
-
+g'
 		= Gain option =
   [-g <gain>] (default: auto)
 	For RTL-SDR: gain in dB ("0" is auto).
 	For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
 	E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
 
-
+X'
 		= Flex decoder spec =
 Use -X <spec> to add a flexible general purpose decoder.
 
@@ -297,7 +298,7 @@ Available options are:
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 
 
-
+F'
 		= Output format option =
   [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
@@ -316,7 +317,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
-
+M'
 		= Meta information option =
   [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
@@ -338,7 +339,7 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 	A table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.
 
 
-
+r'
 		= Read file option =
   [-r <filename>] Read data from input file instead of a receiver
 	Parameters are detected from the full path, file name, and extension.
@@ -358,7 +359,7 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 	E.g. default detection by extension: path/filename.am.s16
 	forced overrides: am:s16:path/filename.ext
 
-
+w'
 		= Write file option =
   [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename>] Save data stream to output file, overwrite existing file

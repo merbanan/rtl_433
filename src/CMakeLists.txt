@@ -12,6 +12,7 @@ add_executable(rtl_433
     data.c
     decoder_util.c
     fileformat.c
+    gps_rtl.c
     list.c
     mongoose.c
     optparse.c
@@ -27,7 +28,6 @@ add_executable(rtl_433
     sdr.c
     term_ctl.c
     util.c
-    gps_rtl.c
     devices/acurite.c
     devices/akhan_100F14.c
     devices/alecto.c
