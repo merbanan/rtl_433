@@ -35,9 +35,7 @@ Protocol slightly similar (and based on) Jansite Solar TPMS by Andreas Spiess an
 #include "decoder.h"
 
 // preamble
-// 1111 0011 0110
-// 1111 0011 1000
-static const unsigned char preamble_pattern = {0x0f}; // after invert
+static const unsigned char preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
 
 static int tpms_abarth_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
