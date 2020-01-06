@@ -219,10 +219,15 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         return DECODE_ABORT_LENGTH;
     }
+    // Classification heuristics
     if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8)
-        model = MODEL_WH24; // nominal 3 bits postamble
+        if (bit_offset < 61)
+            model = MODEL_WH24; // nominal 3 bits postamble
+        else
+            model = MODEL_WH65B;
     else
         model = MODEL_WH65B; // nominal 12 bits postamble
+
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
     if (decoder->verbose) {
