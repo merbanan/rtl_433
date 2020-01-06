@@ -447,3 +447,8 @@ If you see this error:
 then
 
     sudo rmmod dvb_usb_rtl28xxu rtl2832
+
+
+## Releases
+
+Version numbering scheme used is year.month. We try to keep the API compatible between releases but focus is on maintainablity.
