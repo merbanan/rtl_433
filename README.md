@@ -357,6 +357,9 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 
 	E.g. default detection by extension: path/filename.am.s16
 	forced overrides: am:s16:path/filename.ext
+	
+	Reading from pipes also support format options.
+	E.g reading complex 32-bit float: CU32:-
 
 
 		= Write file option =
