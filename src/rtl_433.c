@@ -245,7 +245,9 @@ static void help_read(void)
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
             "\tOverrides can be prefixed, separated by colon (':')\n\n"
             "\tE.g. default detection by extension: path/filename.am.s16\n"
-            "\tforced overrides: am:s16:path/filename.ext\n");
+            "\tforced overrides: am:s16:path/filename.ext\n\n"
+            "\tReading from pipes also support format options.\n"
+            "\tE.g reading complex 32-bit float: CU32:-\n");
     exit(0);
 }
 
