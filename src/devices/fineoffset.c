@@ -603,6 +603,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery",          "Battery",      DATA_FORMAT, "%.01f V", DATA_DOUBLE, battery,
             "moisture",         "Moisture",     DATA_FORMAT, "%u %%", DATA_INT, moisture,
             "ad",               "AD",           DATA_FORMAT, "%u", DATA_INT, ad,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
