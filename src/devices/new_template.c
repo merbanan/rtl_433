@@ -264,6 +264,10 @@ static char *output_fields[] = {
  * - r_device.h for the list of defined names
  *
  * This device is disabled and hidden, it can not be enabled.
+ *
+ * To enable your device, add it to the list in include/rtl_433_devices.h
+ * and to src/CMakeLists.txt.
+ *
  */
 r_device new_template = {
         .name        = "Template decoder",
