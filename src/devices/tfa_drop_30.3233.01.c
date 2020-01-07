@@ -69,23 +69,21 @@ to 9 and 10 tips of the bucket, respectively.
  * require at least 5 repeated packets.
  *
  */
-#define TFA_DROP_BITLEN      66
-#define TFA_DROP_STARTBYTE   0x3 /* Inverted already */
-#define TFA_DROP_MINREPEATS  5
+#define TFA_DROP_BITLEN 66
+#define TFA_DROP_STARTBYTE 0x3 /* Inverted already */
+#define TFA_DROP_MINREPEATS 5
 
 static int tfa_drop_30_3233_01_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    int r; // a row index
+    int r;      // a row index
     uint8_t *b; // bits of a row
     uint32_t sensor_id;
     uint16_t rain_counter;
     float rain_mm;
     uint8_t battery_low;
 
-
     bitbuffer_invert(bitbuffer);
-
 
     /*
      * Or, if you expect repeated packets
@@ -143,7 +141,6 @@ static char *output_fields[] = {
         "battery_ok",
         NULL,
 };
-
 
 r_device tfa_drop_30_3233_01 = {
         .name        = "TFA Drop Rain Gauge 30.3233.01",
