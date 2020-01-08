@@ -209,7 +209,7 @@ Read the Test Data section at the bottom.
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
-    [134]  Holman Industries WS5029 weather station
+    [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
@@ -217,6 +217,8 @@ Read the Test Data section at the bottom.
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
+    [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
+    [143]  Holman Industries iWeather WS5029 weather station (older PWM)
 
 * Disabled by default, use -R n or -G
 
@@ -357,7 +359,7 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 
 	E.g. default detection by extension: path/filename.am.s16
 	forced overrides: am:s16:path/filename.ext
-	
+
 	Reading from pipes also support format options.
 	E.g reading complex 32-bit float: CU32:-
 

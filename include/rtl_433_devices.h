@@ -141,7 +141,7 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
-    DECL(holman_ws5029) \
+    DECL(holman_ws5029pcm) \
     DECL(philips_aj7010) \
     DECL(esic_emt7110) \
     DECL(gt_tmbbq05) \
@@ -150,6 +150,7 @@
     DECL(tpms_elantra2012) \
     DECL(auriol_hg02832) \
     DECL(fineoffset_WH51) \
+    DECL(holman_ws5029pwm) \
 
     /* Add new decoders here. */
 

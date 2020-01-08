@@ -528,7 +528,7 @@ TFA Dostmann 30.3196 T/H outdoor sensor
 Rubicson 48659 Thermometer
 .TP
 [ \fB134\fI\fP ]
-Holman Industries WS5029 weather station
+Holman Industries iWeather WS5029 weather station (newer PCM)
 .TP
 [ \fB135\fI\fP ]
 Philips outdoor temperature sensor (type AJ7010)
@@ -550,6 +550,12 @@ Elantra2012 TPMS
 .TP
 [ \fB141\fI\fP ]
 Auriol HG02832, HG05124A\-DCF, Rubicson 48957 temperature/humidity sensor
+.TP
+[ \fB142\fI\fP ]
+Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
+.TP
+[ \fB143\fI\fP ]
+Holman Industries iWeather WS5029 weather station (older PWM)
 
 * Disabled by default, use \-R n or \-G
 .SS "Input device selection"
@@ -850,6 +856,13 @@ E.g. default detection by extension: path/filename.am.s16
 .RE
 .RS
 forced overrides: am:s16:path/filename.ext
+.RE
+
+.RS
+Reading from pipes also support format options.
+.RE
+.RS
+E.g reading complex 32\-bit float: CU32:\-
 .RE
 .SS "Write file option"
 .TP
