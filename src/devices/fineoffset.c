@@ -589,7 +589,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode data
     char id[7];
-    sprintf( id, "%2.2x%2.2x%2.2x", b[1], b[2], b[3]);
+    sprintf( id, "%2x%2x%2x", b[1], b[2], b[3]);
     int boost = (b[4] & 0xe0) >> 5;
     float battery = (b[4] & 0x1f) * 0.1;
     int ad = (((int)b[7] & 0x01) << 8) | (int)b[8];
@@ -599,10 +599,10 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Fineoffset-WH51",
             "id",               "ID",           DATA_STRING, id,
-            "boost",            "Transmission boost", DATA_FORMAT, "%u", DATA_INT, boost,
-            "battery",          "Battery",      DATA_FORMAT, "%.01f V", DATA_DOUBLE, battery,
+            "battery_mV",       "Battery",      DATA_FORMAT, "%.01f V", DATA_DOUBLE, battery,
             "moisture",         "Moisture",     DATA_FORMAT, "%u %%", DATA_INT, moisture,
-            "ad",               "AD",           DATA_FORMAT, "%u", DATA_INT, ad,
+            "boost",            "Transmission boost", DATA_FORMAT, "%u", DATA_INT, boost,
+            "ad_raw",           "AD_raw",       DATA_FORMAT, "%u", DATA_INT, ad,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -953,10 +953,11 @@ static char *output_fields_WH25[] = {
 static char *output_fields_WH51[] = {
     "model",
     "id",
-    "boost",
     "battery",
     "moisture",
-    "ad",
+    "boost",
+    "ad_raw",
+    "mic",
     NULL,
 };
 
