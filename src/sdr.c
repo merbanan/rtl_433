@@ -354,6 +354,10 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
         return centigain;
     }
     int *gains = calloc(gains_count, sizeof(int));
+    if (!gains) {
+        WARN_CALLOC("rtlsdr_find_tuner_gain()");
+        return centigain; // NOTE: just aborts on alloc failure.
+    }
     r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
 
     /* Find allowed gain */
