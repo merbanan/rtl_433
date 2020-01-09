@@ -17,7 +17,6 @@ def sanitize(text):
 
 
 def rtl_433_probe():
-    statsd_host = "localhost"
     statsd_host = "127.0.0.1"
     statsd_port = 8125
     statsd_prefix = 'rtlsdr'

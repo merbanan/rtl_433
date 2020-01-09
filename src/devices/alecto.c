@@ -88,12 +88,12 @@ int alecto_checksum(r_device *decoder, bitrow_t *bb)
     /* Quit if checksum does not work out */
     if (csum != (bb[1][4] >> 4) || csum2 != (bb[5][4] >> 4)) {
         //fprintf(stderr, "\nAlectoV1 CRC error");
-        if(decoder->verbose) {
+        if (decoder->verbose) {
             fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
         }
         return 0;
     } //Invalid checksum
-    if (decoder->verbose){
+    if (decoder->verbose) {
         fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
     }
 

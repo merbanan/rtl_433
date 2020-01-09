@@ -70,11 +70,11 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data = data_make(
             "model",    "", DATA_STRING, "ELV-EM1000",
-            "id",       "", DATA_STRING, code,
+            "id",       "", DATA_INT, code,
             "seq",      "", DATA_INT, seqno,
-            "total",    "", DATA_STRING, total,
-            "current",  "", DATA_STRING, current,
-            "peak",     "", DATA_FORMAT, peak,
+            "total",    "", DATA_INT, total,
+            "current",  "", DATA_INT, current,
+            "peak",     "", DATA_INT, peak,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -163,9 +163,9 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    char *subtype  = dec[0] <= 7 ? types[dec[0]] : "?";
+    char *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";
     int code       = dec[1] & 7;
-    float temp     = (dec[1] & 8 ? -1.0 : 1.0) * (dec[4] * 10 + dec[3] + dec[2] * 0.1);
+    float temp     = ((dec[1] & 8) ? -1.0 : 1.0) * (dec[4] * 10 + dec[3] + dec[2] * 0.1);
     float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1;
     int pressure   = 0;
     if (dec[0]==4) {

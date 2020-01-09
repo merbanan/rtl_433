@@ -63,10 +63,10 @@ void bitbuffer_print(const bitbuffer_t *bits);
 void bitbuffer_debug(const bitbuffer_t *bits);
 
 /// Print the content of a bit row (byte buffer).
-void bitrow_print(bitrow_t const bitrow, unsigned bit_len);
+void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 
 /// Debug the content of a bit row (byte buffer).
-void bitrow_debug(bitrow_t const bitrow, unsigned bit_len);
+void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
 /// Parse a string into a bitbuffer.
 void bitbuffer_parse(bitbuffer_t *bits, const char *code);
@@ -103,7 +103,6 @@ unsigned count_repeats(bitbuffer_t *bits, unsigned row);
 /// Return the row index or -1.
 int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigned min_bits);
 
-
 /// Return a single bit from a bitrow at bit_idx position.
 static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
 {
@@ -113,8 +112,8 @@ static inline uint8_t bitrow_get_bit(const bitrow_t bitrow, unsigned bit_idx)
 /// Return a single byte from a bitrow at bit_idx position (which may be unaligned).
 static inline uint8_t bitrow_get_byte(const bitrow_t bitrow, unsigned bit_idx)
 {
-    return ((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
-            (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
+    return (uint8_t)((bitrow[(bit_idx >> 3)] << (bit_idx & 7)) |
+                     (bitrow[(bit_idx >> 3) + 1] >> (8 - (bit_idx & 7))));
 }
 
 #endif /* INCLUDE_BITBUFFER_H_ */

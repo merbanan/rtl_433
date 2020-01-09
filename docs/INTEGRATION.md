@@ -118,7 +118,27 @@ See [rtl_433_graphite_relay.py](https://github.com/merbanan/rtl_433/tree/master/
 
 ### InfluxDB
 
-TBD.
+There is built-in support for an InfluxDB output.
+
+Specify an InfluxDB 2.0 server with e.g.
+
+    rtl_433 -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
+
+Specify an InfluxDB 1.x server with e.g.
+
+    rtl_433 -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
+
+It is recommended to additionally use the option `-M time:unix:usec:utc` for correct timestamps in InfluxDB.
+
+If you want to filter messages before they are inserted into the InfluxDB or if you want to transform the data
+see [rtl_433_influxdb_relay.py](https://github.com/merbanan/rtl_433/tree/master/examples/rtl_433_influxdb_relay.py)
+for an example script.
+
+The [rtl433_influx](https://github.com/azrdev/rtl433_influx/) project allows to dump the JSON output of rtl_433 into InfluxDB.
+
+InfluxDB also comes with MQTT integration through Telegraf,
+see [MQTT Monitoring](https://www.influxdata.com/integration/mqtt-monitoring/)
+and [MQTT Consumer Input Plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/mqtt_consumer).
 
 ### MySQL
 

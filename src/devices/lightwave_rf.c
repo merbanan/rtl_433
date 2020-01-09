@@ -82,12 +82,12 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Strip delimiter bits
     // row_in = 1, row_out = 2
     bitbuffer_add_row(bitbuffer);
-    for(unsigned n=0; n<10; ++n) { // We have 10 bytes
+    for (unsigned n = 0; n < 10; ++n) { // We have 10 bytes
         delimiter_bit = bitrow_get_bit(bb[1], bit_idx++);
         if (delimiter_bit == 0)
             return 0; // Decode error
 
-        for(unsigned m=0; m<8; ++m) {
+        for (unsigned m = 0; m < 8; ++m) {
             bitbuffer_add_bit(bitbuffer, bitrow_get_bit(bb[1], bit_idx++));
         }
     }
@@ -96,7 +96,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode bytes to nibbles
     // row_in = 2, row_out = 3
     bitbuffer_add_row(bitbuffer);
-    for(unsigned n=0; n<10; ++n) { // We have 10 bytes/nibbles
+    for (unsigned n = 0; n < 10; ++n) { // We have 10 bytes/nibbles
         int nibble = lightwave_rf_nibble_from_byte(bb[2][n]);
         if (nibble < 0) {
             if (decoder->verbose) {

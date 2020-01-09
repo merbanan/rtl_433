@@ -34,7 +34,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
     int status;
     uint8_t id;
 
-    for(int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
+    for (int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
         if (bitbuffer->bits_per_row[row_index] != 38) // expected length is 38 bit
             continue;
 

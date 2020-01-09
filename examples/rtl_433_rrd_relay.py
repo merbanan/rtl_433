@@ -114,7 +114,7 @@ def rtl_433_probe(sock):
                 humidity = data["humidity"]
 
             try:
-                _info = rrdtool.info(rrd_file)
+                rrdtool.info(rrd_file)
             except rrdtool.OperationalError:
                 create_rrd(rrd_file)
 

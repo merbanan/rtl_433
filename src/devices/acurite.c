@@ -368,7 +368,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
         exception++;
     }
 
-    // FIXME - temporarily leaving the old output for ease of debugging
+    // TODO: temporarily leaving the old output for ease of debugging
     // and backward compatibility. Remove when doing a "1.0" release.
     if (decoder->verbose) {
         fprintf(stderr, "Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",
@@ -469,7 +469,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (decoder->verbose) {
             fprintf(stderr, "%s: Parity: ", __func__);
-            for (uint8_t i = 0; i < browlen; i++) {
+            for (int i = 0; i < browlen; i++) {
                 fprintf(stderr, "%d", parity8(bb[i]));
             }
             fprintf(stderr,"\n");
@@ -633,7 +633,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 channel     = bb[0] >> 6;
-                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.2mm
+                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.01 inch, i.e. 0.254mm 
 
                 /* clang-format off */
                 data = data_make(
@@ -641,7 +641,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",               "",                         DATA_INT,    sensor_id,
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%d mm", DATA_DOUBLE, raincounter * 0.2,
+                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
                         NULL);
                 /* clang-format on */
 
@@ -649,8 +649,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 valid++;
             }
             else {
+                if (decoder->verbose > 1) {
                 fprintf(stderr, "%s: Acurite 5n1 sensor 0x%04X Ch %c, Status %02X, Unknown message type 0x%02x\n",
                     __func__, sensor_id, channel, bb[3], message_type);
+                }
             }
         }
 
@@ -733,7 +735,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // Reverse the bits, msg sent LSB first
-        for (uint8_t i = 0; i < browlen; i++)
+        for (int i = 0; i < browlen; i++)
             br[i] = reverse8(bb[i]);
 
         if (decoder->verbose)

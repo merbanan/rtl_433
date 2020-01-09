@@ -88,8 +88,7 @@ typedef struct data {
     @param key Name of the first value to put in.
     @param pretty_key Pretty name for the key. Use "" if to omit pretty label for this field completely,
                       or NULL if to use key name for it.
-    @param type Type of the first value to put in.
-    @param ... The value of the first value to put in, followed by the rest of the
+    @param ... Type and then value of the item to put in, followed by the rest of the
                key-type-values. The list is terminated with a NULL.
 
     @return A constructed data_t* object or NULL if there was a memory allocation error.
@@ -110,6 +109,8 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
 
 /** Constructs an array from given data of the given uniform type.
 
+    @param num_values The number of values to be copied.
+    @param type The type of values to be copied.
     @param ptr The contents pointed by the argument are copied in.
 
     @return The constructed data array object, typically placed inside a data_t or NULL
@@ -129,11 +130,11 @@ void data_free(data_t *data);
 struct data_output;
 
 typedef struct data_output {
-    void (*print_data)(struct data_output *output, data_t *data, char *format);
-    void (*print_array)(struct data_output *output, data_array_t *data, char *format);
-    void (*print_string)(struct data_output *output, const char *data, char *format);
-    void (*print_double)(struct data_output *output, double data, char *format);
-    void (*print_int)(struct data_output *output, int data, char *format);
+    void (*print_data)(struct data_output *output, data_t *data, char const *format);
+    void (*print_array)(struct data_output *output, data_array_t *data, char const *format);
+    void (*print_string)(struct data_output *output, const char *data, char const *format);
+    void (*print_double)(struct data_output *output, double data, char const *format);
+    void (*print_int)(struct data_output *output, int data, char const *format);
     void (*output_start)(struct data_output *output, const char **fields, int num_fields);
     void (*output_poll)(struct data_output *output);
     void (*output_free)(struct data_output *output);
@@ -173,9 +174,9 @@ void data_output_free(struct data_output *output);
 
 /* data output helpers */
 
-void print_value(data_output_t *output, data_type_t type, data_value_t value, char *format);
+void print_value(data_output_t *output, data_type_t type, data_value_t value, char const *format);
 
-void print_array_value(data_output_t *output, data_array_t *array, char *format, int idx);
+void print_array_value(data_output_t *output, data_array_t *array, char const *format, int idx);
 
 size_t data_print_jsons(data_t *data, char *dst, size_t len);
 

@@ -13,6 +13,7 @@
 #define INCLUDE_AM_ANALYZE_H_
 
 #include <stdint.h>
+#include "samp_grab.h"
 
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
 

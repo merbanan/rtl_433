@@ -279,7 +279,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int r;                   // a row index
     bitrow_t bitrow;         // space for a possibly modified bitbuffer row
     uint8_t bit_len;         // row length is variable, so need to keep track of this
-    bitrow_t dtv_buf;        // A location for our decoded bitrow data
+    bitrow_t dtv_buf= {0};   // A location for our decoded bitrow data
     unsigned dtv_bit_len;
     unsigned row_sync_pos;
     unsigned row_sync_len;
@@ -299,7 +299,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bit_len < ROW_BITLEN_MIN) || (bit_len > ROW_BITLEN_MAX)) {
         if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %u (expected between %u and %u).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
+            fprintf(stderr, "directv: incorrect number of bits in bitbuffer: %d (expected between %d and %d).\n", bit_len, ROW_BITLEN_MIN, ROW_BITLEN_MAX);
         }
         return 0;
     }
@@ -315,7 +315,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Make sure we have exactly 40 bits (DTV_BITLEN_MAX)
     if (dtv_bit_len != DTV_BITLEN_MAX) {
         if (decoder->verbose >= 2) {
-            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %u).\n", dtv_bit_len, DTV_BITLEN_MAX);
+            fprintf(stderr, "directv: Incorrect number of decoded bits: %u (should be %d).\n", dtv_bit_len, DTV_BITLEN_MAX);
         }
         return 0;
     }

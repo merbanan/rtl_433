@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
     );
     write_buf("bb.lp.am.s16", u16_buf, sizeof(int16_t) * n_samples);
     MEASURE("baseband_demod_FM",
-        baseband_demod_FM(cu8_buf, s16_buf, n_samples, &fm_state);
+        baseband_demod_FM(cu8_buf, s16_buf, n_samples, &fm_state, 0);
     );
     write_buf("bb.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
 
@@ -159,7 +159,16 @@ int main(int argc, char *argv[])
     //write_buf("bb.fm.s32", s32_buf, sizeof(int32_t) * n_samples);
 
     MEASURE("baseband_demod_FM_cs16",
-        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, &fm_state);
+        baseband_demod_FM_cs16(cs16_buf, s16_buf, n_samples, &fm_state, 0);
     );
     write_buf("bb.cs16.fm.s16", s16_buf, sizeof(int16_t) * n_samples);
+
+    free(cu8_buf);
+    free(y16_buf);
+    free(cs16_buf);
+    free(y32_buf);
+    free(u16_buf);
+    free(u32_buf);
+    free(s16_buf);
+    free(s32_buf);
 }

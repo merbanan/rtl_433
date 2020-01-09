@@ -37,7 +37,7 @@ if [ ! -z "$4" ] ; then
 fi
 
 # create channels
-rtl_433 -q -s ${rate}k -r "$file" -w F32:I:analog-1-4-1 -w F32:Q:analog-1-5-1 -w F32:AM:analog-1-6-1 -w F32:FM:analog-1-7-1 -w U8:LOGIC:logic-1-1 >/dev/null 2>&1
+rtl_433 -s ${rate}k -r "$file" -w F32:I:analog-1-4-1 -w F32:Q:analog-1-5-1 -w F32:AM:analog-1-6-1 -w F32:FM:analog-1-7-1 -w U8:LOGIC:logic-1-1 >/dev/null 2>&1
 # create version tag
 echo -n "2" >version
 # create meta data

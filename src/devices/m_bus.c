@@ -20,7 +20,7 @@ static unsigned bcd2int(uint8_t bcd) {
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
 static uint8_t m_bus_decode_3of6(uint8_t byte) {
     uint8_t out = 0xFF; // Error
-fprintf(stderr,"Decode %0X\n", byte);
+    //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
         case 22:    out = 0x0;  break;  // 0x16
         case 13:    out = 0x1;  break;  // 0x0D
@@ -45,14 +45,11 @@ fprintf(stderr,"Decode %0X\n", byte);
 
 
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
+// Bad data must be handled with second layer CRC
 static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes) {
     for (unsigned n=0; n<num_bytes; ++n) {
-        fprintf(stderr,"Decode %u, %u\n", n, bit_offset);
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
-        if (nibble_h > 0xF || nibble_l > 0xF) {
-            return -1;  // Decode error!
-        }
         output[n] = (nibble_h << 4) | nibble_l;
     }
     return 0;
@@ -109,6 +106,20 @@ const char* m_bus_device_type_str(uint8_t devType) {
         case 0x17:  str = "Hot/Cold Water meter";  break;
         case 0x18:  str = "Pressure";  break;
         case 0x19:  str = "A/D Converter";  break;
+        case 0x1A:  str = "Smoke detector"; break;
+        case 0x1B:  str = "Room sensor"; break;
+        case 0x1C:  str = "Gas detector"; break;
+        case 0x20:  str = "Breaker (electricity)"; break;
+        case 0x21:  str = "Valve (gas or water)"; break;
+        case 0x28:  str = "Waste water meter"; break;
+        case 0x29:  str = "Garbage"; break;
+        case 0x2A:  str = "Carbon dioxide"; break;
+        case 0x25:  str = "Customer unit (display device)";break;
+        case 0x31:  str = "Communication controller";break;
+        case 0x32:  str = "Unidirectional repeater";break;
+        case 0x33:  str = "Bidirectional repeater";break;
+        case 0x36:  str = "Radio converter (system side)";break;
+        case 0x37:  str = "Radio converter (meter side)";break;
         default:    break;  // Unknown
     }
     return str;
@@ -144,7 +155,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     block1->A_DevType = in->data[9];
 
     // Store length of data
-    out->length      = block1->L-9;
+    out->length      = block1->L-9 + BLOCK1A_SIZE-2;
 
     // Validate CRC
     if (!m_bus_crc_valid(decoder, in->data, 10)) return 0;
@@ -156,10 +167,11 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         return 0;
     }
 
+    memcpy(out->data, in->data, BLOCK1A_SIZE-2);
     // Get all remaining data blocks and concatenate into data array (removing CRC bytes)
     for (unsigned n=0; n < num_data_blocks; ++n) {
         const uint8_t *in_ptr   = in->data+BLOCK1A_SIZE+n*18;       // Pointer to where data starts. Each block is 18 bytes
-        uint8_t *out_ptr        = out->data+n*16;                   // Pointer into block where data starts.
+        uint8_t *out_ptr        = out->data+n*16 + BLOCK1A_SIZE-2;                   // Pointer into block where data starts.
         uint8_t block_size      = MIN(block1->L-9-n*16, 16)+2;      // Maximum block size is 16 Data + 2 CRC
 
         // Validate CRC
@@ -186,7 +198,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     block1->A_DevType = in->data[9];
 
     // Store length of data
-    out->length      = block1->L-(9+2);     // Subtract Block 1 and CRC bytes (but include CI)
+    out->length      = block1->L-(9+2) + BLOCK1B_SIZE-2;
 
     // Check length of package is sufficient
     if ((block1->L < 12) || (block1->L+1 > (int)in->length)) {   // L includes all bytes except itself
@@ -198,7 +210,7 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
     if (!m_bus_crc_valid(decoder, in->data, MIN(block1->L-1, (BLOCK1B_SIZE+BLOCK2B_SIZE)-2))) return 0;
 
     // Get data from Block 2
-    memcpy(out->data, in->data+BLOCK1B_SIZE, (MIN(block1->L-11, BLOCK2B_SIZE-2)));
+    memcpy(out->data, in->data, (MIN(block1->L-11, BLOCK2B_SIZE-2))+BLOCK1B_SIZE);
 
     // Extract extra block for long telegrams (not tested!)
     uint8_t L_OFFSET = BLOCK1B_SIZE+BLOCK2B_SIZE-1;     // How much to subtract from L (127)
@@ -207,14 +219,14 @@ static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bu
         if (!m_bus_crc_valid(decoder, in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2)) return 0;
 
         // Get Block 3
-        memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK1B_SIZE+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
+        memcpy(out->data+(BLOCK2B_SIZE-2), in->data+BLOCK2B_SIZE, block1->L-L_OFFSET-2);
 
         out->length -= 2;   // Subtract the two extra CRC bytes
     }
     return 1;
 }
 
-static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1)
+static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const m_bus_block1_t *block1, const char *mode)
 {
     data_t  *data;
     char    str_buf[1024];
@@ -228,6 +240,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     // Output data
     data = data_make(
         "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
+        "mode",     "Mode",         DATA_STRING,    mode,
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,
         "version",  "Version",      DATA_INT,       block1->A_Version,
@@ -244,13 +257,14 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
 
 
 static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    static const uint8_t PREAMBLE_T[]  = {0x55, 0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
+    static const uint8_t PREAMBLE_T[]  = {0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = {0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = {0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
 
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
     m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+    char *mode = "";
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
@@ -262,12 +276,16 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return 0;
     }
+    if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %d\n", bit_offset);
+    bitbuffer_print(bitbuffer);
+    }
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
 
     uint8_t next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
     bit_offset += 8;
     // Mode C
     if (next_byte == 0x54) {
+        mode = "C";
         next_byte = bitrow_get_byte(bitbuffer->bb[0], bit_offset);
         bit_offset += 8;
         // Format A
@@ -277,7 +295,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
         } // Format A
         // Format B
         else if (next_byte == 0x3D) {
@@ -286,7 +304,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
             bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
             // Decode
-            if(!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
+            if (!m_bus_decode_format_b(decoder, &data_in, &data_out, &block1))    return 0;
         }   // Format B
         // Unknown Format
         else {
@@ -299,19 +317,22 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }   // Mode C
     // Mode T
     else {
+        mode = "T";
+        bit_offset -= 8; // Rewind offset to start of telegram
         if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
-        if(m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
+        if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %d\n", data_in.length); }
+        if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
             return 0;
         }
         // Decode
-        if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+        if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
     }   // Mode T
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, mode);
     return 1;
 }
 
@@ -341,9 +362,9 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/8;
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, data_in.data, data_in.length*8);
     // Decode
-    if(!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+    if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, "R");
     return 1;
 }
 
@@ -392,10 +413,19 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    m_bus_output_data(decoder, &data_out, &block1);
+    m_bus_output_data(decoder, &data_out, &block1, "F");
     return 1;
 }
 
+static char *output_fields[] = {
+    "model",
+    "mode",
+    "id",
+    "version",
+    "type",
+    "type_string",
+    NULL
+};
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),
 // Frequency 868.95 MHz, Bitrate 100 kbps, Modulation NRZ FSK
@@ -406,7 +436,8 @@ r_device m_bus_mode_c_t = {
     .long_width     = 10,   // NRZ encoding (bit width = pulse width)
     .reset_limit    = 500,  //
     .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .disabled       = 0,
+    .fields         = output_fields,
 };
 
 

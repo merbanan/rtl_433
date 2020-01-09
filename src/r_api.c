@@ -21,11 +21,13 @@
 #include "r_private.h"
 #include "r_device.h"
 #include "pulse_demod.h"
+#include "pulse_detect_fsk.h"
 #include "sdr.h"
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
 #include "output_mqtt.h"
+#include "output_influx.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -77,6 +79,7 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->out_block_size  = DEFAULT_BUF_LENGTH;
     cfg->samp_rate       = DEFAULT_SAMPLE_RATE;
     cfg->conversion_mode = CONVERT_NATIVE;
+    cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
 
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
@@ -104,10 +107,10 @@ r_cfg_t *r_create_cfg(void)
 
 void r_free_cfg(r_cfg_t *cfg)
 {
-    if (cfg->dev)
+    if (cfg->dev) {
         sdr_deactivate(cfg->dev);
-    if (cfg->dev)
         sdr_close(cfg->dev);
+    }
 
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
@@ -161,7 +164,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
     }
     else {
         if (arg && *arg) {
-            fprintf(stderr, "Protocol [%d] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
+            fprintf(stderr, "Protocol [%u] \"%s\" does not take arguments \"%s\"!\n", r_dev->protocol_num, r_dev->name, arg);
         }
         p  = malloc(sizeof(*p));
         if (!p)
@@ -177,7 +180,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
     list_push(&cfg->demod->r_devs, p);
 
     if (cfg->verbosity) {
-        fprintf(stderr, "Registering protocol [%d] \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        fprintf(stderr, "Registering protocol [%u] \"%s\"\n", r_dev->protocol_num, r_dev->name);
     }
 }
 
@@ -211,8 +214,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
 
 void update_protocols(r_cfg_t *cfg)
 {
-    float samples_per_us = cfg->samp_rate / 1.0e6;
-
     for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
         update_protocol(cfg, r_dev);
@@ -223,20 +224,22 @@ void update_protocols(r_cfg_t *cfg)
 
 void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
 {
-    float asnr   = (float)pulse_data->ook_high_estimate / ((float)pulse_data->ook_low_estimate + 1);
+    float ook_high_estimate = pulse_data->ook_high_estimate > 0 ? pulse_data->ook_high_estimate : 1;
+    float ook_low_estimate = pulse_data->ook_low_estimate > 0 ? pulse_data->ook_low_estimate : 1;
+    float asnr   = ook_high_estimate / ook_low_estimate;
     float foffs1 = (float)pulse_data->fsk_f1_est / INT16_MAX * cfg->samp_rate / 2.0;
     float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
     if (cfg->demod->sample_size == 1) { // amplitude (CU8)
-        pulse_data->rssi_db = 10.0f * log10f(pulse_data->ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->noise_db = 10.0f * log10f(pulse_data->ook_low_estimate + 1) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);
     }
     else { // magnitude (CS16)
-        pulse_data->rssi_db = 20.0f * log10f(pulse_data->ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->noise_db = 20.0f * log10f(pulse_data->ook_low_estimate + 1) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->rssi_db = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->snr_db  = 20.0f * log10f(asnr);
     }
 }
@@ -354,13 +357,11 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *nu
     list_t *r_devs = &cfg->demod->r_devs;
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (!r_dev->disabled) {
-            if (r_dev->fields)
-                list_push_all(&field_list, (void **)r_dev->fields);
-            else
-                fprintf(stderr, "rtl_433: warning: %d \"%s\" does not support CSV output\n",
-                        r_dev->protocol_num, r_dev->name);
-        }
+        if (r_dev->fields)
+            list_push_all(&field_list, (void **)r_dev->fields);
+        else
+            fprintf(stderr, "rtl_433: warning: %u \"%s\" does not support CSV output\n",
+                    r_dev->protocol_num, r_dev->name);
     }
     convert_csv_fields(cfg, (char const **)field_list.elems);
 
@@ -408,7 +409,7 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
             p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
             break;
         default:
-            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
         }
     }
 
@@ -442,7 +443,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
             p_events += pulse_demod_manchester_zerobit(fsk_pulse_data, r_dev);
             break;
         default:
-            fprintf(stderr, "Unknown modulation %d in protocol!\n", r_dev->modulation);
+            fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);
         }
     }
 
@@ -845,6 +846,11 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
 }
 
+void add_influx_output(r_cfg_t *cfg, char *param)
+{
+    list_push(&cfg->output_handler, data_output_influx_create(param));
+}
+
 void add_syslog_output(r_cfg_t *cfg, char *param)
 {
     char *host = "localhost";
@@ -857,6 +863,7 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
 
 void add_null_output(r_cfg_t *cfg, char *param)
 {
+    (void)param;
     list_push(&cfg->output_handler, NULL);
 }
 

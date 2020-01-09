@@ -60,8 +60,9 @@ void term_set_bg(void *ctx, term_color_t color);
  * Takes a var-arg format.
  *
  * E.g.:
- *   void *term = term_init(stdout);
- *   term_printf (term, "~4Hello ~2world~0.\n");
+ *
+ *     void *term = term_init(stdout);
+ *     term_printf (term, "~4Hello ~2world~0.\n");
  *
  *   will print to stdout with 'Hello' mapped to colour 4
  *   and 'world' mapped to colour 2. See 'term_set_color_map()' below.

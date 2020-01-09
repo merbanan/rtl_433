@@ -30,7 +30,7 @@
     DECL(ambient_weather) \
     DECL(calibeur_RF104) \
     DECL(X10_RF) \
-    DECL(DSC) \
+    DECL(dsc_security) \
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
@@ -124,7 +124,7 @@
     DECL(maverick_et73) \
     DECL(honeywell_wdb) \
     DECL(honeywell_wdb_fsk) \
-    DECL(esa) \
+    DECL(esa_energy) \
     DECL(bt_rain) \
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \
@@ -141,7 +141,7 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
-    DECL(holman_ws5029) \
+    DECL(holman_ws5029pcm) \
     DECL(philips_aj7010) \
     DECL(esic_emt7110) \
     DECL(gt_tmbbq05) \
@@ -149,6 +149,8 @@
     DECL(norgo) \
     DECL(tpms_elantra2012) \
     DECL(auriol_hg02832) \
+    DECL(fineoffset_WH51) \
+    DECL(holman_ws5029pwm) \
     DECL(tbh) \
 
     /* Add new decoders here. */

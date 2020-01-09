@@ -1,7 +1,8 @@
 /** @file
     Decoder for Holman Industries WS5029 weather station.
 
-    Copyright (C) 2019 Ryan Mounce <ryan@mounce.com.au>
+    Copyright (C) 2019 Ryan Mounce <ryan@mounce.com.au> (PCM version)
+    Copyright (C) 2018 Brad Campbell (PWM version)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -49,7 +50,7 @@ $ rtl_433 -f 917M -X 'name=WS5029,modulation=FSK_PCM,short=100,long=100,preamble
 
 #include "decoder.h"
 
-static int holman_ws5029_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int const wind_dir_degr[] = {0, 23, 45, 68, 90, 113, 135, 158, 180, 203, 225, 248, 270, 293, 315, 338};
     uint8_t const preamble[] = {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x98, 0xF3, 0xA5};
@@ -127,13 +128,93 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device holman_ws5029 = {
-        .name        = "Holman Industries WS5029 weather station",
+r_device holman_ws5029pcm = {
+        .name        = "Holman Industries iWeather WS5029 weather station (newer PCM)",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,
         .long_width  = 100,
         .reset_limit = 19200,
-        .decode_fn   = &holman_ws5029_decode,
+        .decode_fn   = &holman_ws5029pcm_decode,
+        .disabled    = 0,
+        .fields      = output_fields,
+};
+
+// The checksum used is an xor of all 11 bytes.
+// The bottom nybble results in 0. The top does not
+// and I've been unable to figure out why. We only
+// check the bottom nybble therefore.
+// Have tried all permutations of init/poly for lfsr8 & crc8
+// Rain is 0.79mm / count
+//  618 counts / 488.2mm - 190113 - Multiplier is exactly 0.79
+// Wind is discrete kph
+//
+// Preamble is 0xaa 0xa5. Device is 0x98
+
+static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    uint8_t const preamble[] = {0x55, 0x5a, 0x67}; // Preamble/Device inverted
+
+    data_t *data;
+    uint8_t *b;
+    uint16_t temp_raw;
+    int id, humidity, speed_kmh, wind_dir, battery_low;
+    float temp_c, rain_mm;
+
+    // Data is inverted, but all these checks can be performed
+    // and validated prior to inverting the buffer. Invert
+    // only if we have a valid row to process.
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 96);
+    if (r < 0 || bitbuffer->bits_per_row[r] != 96)
+        return 0;
+
+    b = bitbuffer->bb[r];
+
+    // Test for preamble / device code
+    if (memcmp(b, preamble, 3))
+        return 0;
+
+    // Test Checksum.
+    if ((xor_bytes(b, 11) & 0xF) ^ 0xF)
+        return 0;
+
+    // Invert data for processing
+    bitbuffer_invert(bitbuffer);
+
+    id          = b[3];                                                // changes on each power cycle
+    battery_low = (b[4] & 0x80);                                       // High bit is low battery indicator
+    temp_raw    = (int16_t)(((b[4] & 0x0f) << 12) | (b[5] << 4)) >> 4; // uses sign-extend
+    temp_c      = temp_raw * 0.1;                                      // Convert sign extended int to float
+    humidity    = b[6];                                                // Simple 0-100 RH
+    rain_mm     = ((b[7] << 4) + (b[8] >> 4)) * 0.79;                  // Multiplier tested empirically over 618 pulses
+    speed_kmh   = ((b[8] & 0xF) << 4) + (b[9] >> 4);                   // In discrete kph
+    wind_dir    = b[9] & 0xF;                                          // 4 bit wind direction, clockwise from North
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",                 DATA_STRING, "Holman-WS5029",
+            "id",               "",                 DATA_INT,    id,
+            "battery_ok",       "",                 DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
+            "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
+            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
+            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
+            "direction_deg",    "Wind degrees",     DATA_INT,    (int)(wind_dir * 22.5),
+            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+r_device holman_ws5029pwm = {
+        .name        = "Holman Industries iWeather WS5029 weather station (older PWM)",
+        .modulation  = FSK_PULSE_PWM,
+        .short_width = 488,
+        .long_width  = 976,
+        .reset_limit = 6000,
+        .gap_limit   = 2000,
+        .decode_fn   = &holman_ws5029pwm_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

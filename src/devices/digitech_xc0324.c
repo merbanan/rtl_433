@@ -72,7 +72,6 @@ running this decoder with debug level :
 
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
-/// @param[out] data: returns the decoded information as a data_t*
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
 {
@@ -197,7 +196,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     r, bitpos, events, &data);
             // Keep production output (decoder->verbose == 0) separate from
             // (simulated) development stage output (decoder->verbose > 0)
-            if (result & !decoder->verbose) { // Production output
+            if (result && !decoder->verbose) { // Production output
                 data_append(data,
                         "message_num", "Message repeat count", DATA_INT, events, NULL);
                 decoder_output_data(decoder, data);

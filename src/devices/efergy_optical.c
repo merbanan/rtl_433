@@ -13,16 +13,23 @@ Efergy IR is a devices that periodically reports current energy consumption
 on frequency ~433.55 MHz. The data that is transmitted consists of 8
 bytes:
 
-- Byte 0-3: Start bits (0000), then static data (probably device id)
-- Byte 4-6: all zeros
-- Byte 7: Pulse Count
-- Byte 8: sample frequency (15 seconds)
-- Byte 9: seconds
+- Byte 0-2: Start bits (0000), then static data (probably device id)
+- Byte 3: seconds (64: 30s - red led; 80: 60s - orange led; 96: 90s - green led)
+- Byte 4-7: all zeros
+- Byte 8: Pulse Count
+- Byte 9: sample frequency (15 seconds)
 - Byte 10-11: bytes 0-9 crc16 xmodem XOR with FF
 
 if pulse count <3 then energy =(( pulsecount/impulse-perkwh) * (3600/seconds))
 else  energy= ((pulsecount/n_imp) * (3600/seconds))
 
+Transmitter can operate in 3 modes (signaled in bytes[3]):
+- red led: information is sent every 30s
+- orange led: information is sent every 60s
+- green led: information is sent every 90s
+
+To get the mode: short-push the physical button on transmitter.
+To set the mode: long-push the physical button on transmitter.
 */
 
 #include "decoder.h"
@@ -32,7 +39,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
     double energy, n_imp;
-    double pulsecount;
+    int pulsecount;
     double seconds;
     data_t *data;
     uint16_t crc;
@@ -87,35 +94,32 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    unsigned id = ((unsigned)bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | (bytes[3]);
+    unsigned id = ((unsigned)bytes[0] << 16) | (bytes[1] << 8) | (bytes[2]);
 
     // this setting depends on your electricity meter's optical output
     n_imp = 3200;
 
+    // interval:
+    // - red led (every 30s):    bytes[3]=64 (0100 0000)
+    // - orange led (every 60s): bytes[3]=80 (0101 0000)
+    // - green led (every 90s):  bytes[3]=96 (0110 0000)
+    seconds = (((bytes[3] & 0x30 ) >> 4 ) + 1) * 30.0;
+    
     pulsecount = bytes[8];
-    seconds = bytes[9];
 
-    //some logic for low pulse count not sure how I reached this formula
-    if (pulsecount < 3) {
-        energy = ((pulsecount/n_imp) * (3600/seconds));
-    }
-    else {
-        energy = ((pulsecount/n_imp) * (3600/30));
-    }
+    energy = (((double)pulsecount/n_imp) * (3600/seconds));
+
     //New code for calculating various energy values for differing pulse-kwh values
-    const int imp_kwh[] = {3200, 2000, 1000, 500, 0};
+    const int imp_kwh[] = {4000, 3200, 2000, 1000, 500, 0};
     for (unsigned i = 0; imp_kwh[i] != 0; ++i) {
-        if (pulsecount < 3) {
-            energy = ((pulsecount/imp_kwh[i]) * (3600/seconds));
-        }
-        else {
-            energy = ((pulsecount/imp_kwh[i]) * (3600/30));
-        }
+        energy = (((double)pulsecount/imp_kwh[i]) * (3600/seconds));
+
         /* clang-format off */
         data = data_make(
                 "model",    "Model",        DATA_STRING, _X("Efergy-Optical","Efergy Optical"),
                 "id",       "",             DATA_INT,   id,
-                "pulses",   "Pulse-rate",   DATA_FORMAT, "%i", DATA_INT, imp_kwh[i],
+                "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
+                "pulsecount", "Pulse-count", DATA_INT, pulsecount,
                 "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
                 NULL);
         /* clang-format on */
@@ -128,6 +132,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "pulses",
+        "pulsecount",
         "energy",
         NULL,
 };

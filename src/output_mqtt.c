@@ -177,7 +177,7 @@ typedef struct {
     //char *hass;
 } data_output_mqtt_t;
 
-static void print_mqtt_array(data_output_t *output, data_array_t *array, char *format)
+static void print_mqtt_array(data_output_t *output, data_array_t *array, char const *format)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
@@ -307,7 +307,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
 }
 
 // <prefix>[/type][/model][/subtype][/channel][/id]/battery: "OK"|"LOW"
-static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
+static void print_mqtt_data(data_output_t *output, data_t *data, char const *format)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
@@ -377,13 +377,13 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char *format)
     *orig = '\0'; // restore topic
 }
 
-static void print_mqtt_string(data_output_t *output, char const *str, char *format)
+static void print_mqtt_string(data_output_t *output, char const *str, char const *format)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
     mqtt_client_publish(mqtt->mgr, mqtt->topic, str);
 }
 
-static void print_mqtt_double(data_output_t *output, double data, char *format)
+static void print_mqtt_double(data_output_t *output, double data, char const *format)
 {
     char str[20];
     // use scientific notation for very big/small values
@@ -402,7 +402,7 @@ static void print_mqtt_double(data_output_t *output, double data, char *format)
     print_mqtt_string(output, str, format);
 }
 
-static void print_mqtt_int(data_output_t *output, int data, char *format)
+static void print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
     int ret = snprintf(str, 20, "%d", data);
@@ -438,6 +438,7 @@ static void data_output_mqtt_free(data_output_t *output)
 
 static char *mqtt_topic_default(char const *topic, char const *base, char const *suffix)
 {
+    char path[256];
     char const *p;
     if (topic) {
         p = topic;
@@ -446,7 +447,6 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
         p = suffix;
     }
     else {
-        char path[256];
         snprintf(path, sizeof(path), "%s/%s", base, suffix);
         p = path;
     }

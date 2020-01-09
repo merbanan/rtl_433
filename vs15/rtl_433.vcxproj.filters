@@ -47,6 +47,9 @@
     <ClInclude Include="..\include\decoder_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\fatal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\fileformat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -59,6 +62,9 @@
     <ClInclude Include="..\include\optparse.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\output_influx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\output_mqtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\pulse_detect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pulse_detect_fsk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\r_api.h">
@@ -142,6 +151,9 @@
     <ClCompile Include="..\src\optparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\output_influx.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\output_mqtt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -149,6 +161,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\pulse_detect.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\pulse_detect_fsk.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\r_api.c">

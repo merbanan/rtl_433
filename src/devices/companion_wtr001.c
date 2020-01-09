@@ -115,7 +115,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-    if (temp_tenth_raw > 111) {
+    if (temp_whole_raw > 111) {
         // Value is too high (outside published specs)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Whole part of Temperature is too high (%d - 41 is greater than 70)\n", temp_whole_raw);

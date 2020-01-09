@@ -28,9 +28,13 @@ static int account_event(r_device *device, int ret)
         device->decode_ok += 1;
         device->decode_messages += ret;
     }
-    else {
+    else if (ret >= DECODE_FAIL_SANITY) {
         device->decode_fails[-ret] += 1;
         ret = 0;
+    }
+    else {
+        fprintf(stderr, "Decoder gave invalid return value %d: notify maintainer\n", ret);
+        exit(1);
     }
     return ret;
 }
@@ -65,7 +69,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         ) {
             // Data is corrupt
             if (device->verbose > 3) {
-                fprintf(stderr, "bitbuffer cleared at %d: pulse %d, gap %d, period %d\n",
+                fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
                         n, pulses->pulse[n], pulses->gap[n],
                         pulses->pulse[n] + pulses->gap[n]);
             }

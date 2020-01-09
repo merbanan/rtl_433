@@ -51,7 +51,7 @@ void bitbuffer_debugf(const bitbuffer_t *bitbuffer, char const *restrict format,
     bitbuffer_debug(bitbuffer);
 }
 
-void bitrow_printf(bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
+void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...)
 {
     va_list ap;
     va_start(ap, format);
@@ -60,7 +60,7 @@ void bitrow_printf(bitrow_t const bitrow, unsigned bit_len, char const *restrict
     bitrow_print(bitrow, bit_len);
 }
 
-void bitrow_debugf(bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
+void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...)
 {
     va_list ap;
     va_start(ap, format);
@@ -101,7 +101,7 @@ void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbu
     decoder_output_bitbuffer_array(decoder, bitbuffer, msg);
 }
 
-void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...)
+void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...)
 {
     char msg[60]; // fixed length limit
     va_list ap;
@@ -126,7 +126,7 @@ void decoder_output_message(r_device *decoder, char const *msg)
     decoder_output_data(decoder, data);
 }
 
-static char *bitrow_asprint_code(bitrow_t const bitrow, unsigned bit_len)
+static char *bitrow_asprint_code(uint8_t const *bitrow, unsigned bit_len)
 {
     char *row_code;
     char row_bytes[BITBUF_COLS * 2 + 1];
@@ -145,12 +145,12 @@ static char *bitrow_asprint_code(bitrow_t const bitrow, unsigned bit_len)
         WARN_MALLOC("decoder_output_bitbuffer()");
         return NULL; // NOTE: returns NULL on alloc failure.
     }
-    sprintf(row_code, "{%d}%s", bit_len, row_bytes);
+    sprintf(row_code, "{%u}%s", bit_len, row_bytes);
 
     return row_code;
 }
 
-static char *bitrow_asprint_bits(bitrow_t const bitrow, unsigned bit_len)
+static char *bitrow_asprint_bits(uint8_t const *bitrow, unsigned bit_len)
 {
     char *row_bits, *p;
 
@@ -251,7 +251,7 @@ void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuf
     }
 }
 
-void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg)
+void decoder_output_bitrow(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *msg)
 {
     data_t *data;
     char *row_code;

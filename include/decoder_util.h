@@ -14,6 +14,7 @@
 
 #include <stdarg.h>
 #include "bitbuffer.h"
+#include "data.h"
 #include "r_device.h"
 
 /// Create a new r_device, copy from dev_template if not NULL.
@@ -36,7 +37,7 @@ void decoder_output_bitbuffer(r_device *decoder, bitbuffer_t const *bitbuffer, c
 void decoder_output_bitbuffer_array(r_device *decoder, bitbuffer_t const *bitbuffer, char const *msg);
 
 /// Output a message and the content of a bit row (byte buffer).
-void decoder_output_bitrow(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *msg);
+void decoder_output_bitrow(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *msg);
 
 // print helpers
 
@@ -50,7 +51,7 @@ void decoder_output_bitbufferf(r_device *decoder, bitbuffer_t const *bitbuffer, 
 void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbuffer, char const *restrict format, ...);
 
 /// Output a message with args and the content of a bit row (byte buffer).
-void decoder_output_bitrowf(r_device *decoder, bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...);
+void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
 
 /// Print the content of the bitbuffer.
 void bitbuffer_printf(const bitbuffer_t *bitbuffer, char const *restrict format, ...);
@@ -60,10 +61,10 @@ void bitbuffer_printf(const bitbuffer_t *bitbuffer, char const *restrict format,
 void bitbuffer_debugf(const bitbuffer_t *bitbuffer, char const *restrict format, ...);
 
 /// Print the content of a bit row (byte buffer).
-void bitrow_printf(bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...);
+void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
 
 /// Debug print the content of a bit row (byte buffer).
 /// For quick and easy debugging, not for regular usage.
-void bitrow_debugf(bitrow_t const bitrow, unsigned bit_len, char const *restrict format, ...);
+void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
 
 #endif /* INCLUDE_DECODER_UTIL_H_ */

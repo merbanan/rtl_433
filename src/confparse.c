@@ -54,6 +54,11 @@ char *readconf(char const *path)
     char *conf;
     off_t file_size = fsize(path);
 
+    if (file_size < 0) {
+        fprintf(stderr, "Failed to stat \"%s\"\n", path);
+        return NULL;
+    }
+
     fp = fopen(path, "rb");
     if (fp == NULL) {
         fprintf(stderr, "Failed to open \"%s\"\n", path);

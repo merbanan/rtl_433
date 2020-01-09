@@ -18,7 +18,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t b[5]; // 36 bits
 
-    for (uint8_t row = 0;row < bitbuffer->num_rows;row++){
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 41 || // Length of packet is 41 (36+5)
                 (bitbuffer->bb[row][0] & 0xf8) != 0xa8) // Sync is 10101xxx (5 bits)
         continue;
@@ -37,7 +37,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         char *p = tristate;
         for (int byte = 0; byte < 5; byte++) {
             for (int bit = 7; bit > 0; bit -= 2) {
-                switch ((b[byte] >> (bit-1)) & 0x03){
+                switch ((b[byte] >> (bit-1)) & 0x03) {
                     case 0x00: *p++ = '0'; break;
                     case 0x01: *p++ = 'X'; break; // Invalid code 01
                     case 0x02: *p++ = 'Z'; break; // Floating state Z is 10

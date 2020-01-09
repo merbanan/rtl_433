@@ -1,3 +1,6 @@
+#ifndef INCLUDE_MONGOOSE_H_
+#define INCLUDE_MONGOOSE_H_
+
 #ifdef MG_MODULE_LINES
 #line 1 "mongoose/src/mg_common.h"
 #endif
@@ -228,7 +231,7 @@
 #include <windows.h>
 #include <process.h>
 
-#if _MSC_VER < 1700
+#if defined(_MSC_VER) && (_MSC_VER < 1700)
 typedef int bool;
 #else
 #include <stdbool.h>
@@ -352,10 +355,8 @@ unsigned int sleep(unsigned int seconds);
 /* https://stackoverflow.com/questions/16647819/timegm-cross-platform */
 #define timegm _mkgmtime
 
-#define gmtime_r(a, b) \
-  do {                 \
-    *(b) = *gmtime(a); \
-  } while (0)
+#define gmtime_r(a, b) (gmtime_s((b), (a)), (b))
+#define localtime_r(a, b) (localtime_s((b), (a)), (b))
 
 #endif /* CS_PLATFORM == CS_P_WINDOWS */
 #endif /* CS_COMMON_PLATFORMS_PLATFORM_WINDOWS_H_ */
@@ -6752,3 +6753,5 @@ struct mg_iface *mg_socks_mk_iface(struct mg_mgr *, const char *proxy_addr);
 
 #endif
 #endif
+
+#endif /* INCLUDE_MONGOOSE_H_ */

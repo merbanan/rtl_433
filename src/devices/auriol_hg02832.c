@@ -9,10 +9,15 @@
     (at your option) any later version.
 */
 
-/*
-Lidl Auriol HG02832 sensor.
+/**
+Lidl Auriol HG02832 sensor, also Rubicson 48957 (Transmitter for 48956).
 
-S.a. (#1161).
+S.a. (#1161), (#1205).
+
+Also works for the newer version HG05124A-DCF, IAN 321304_1901, version 07/2019.
+However, the display occasionally shows 0.1 C incorrectly, especially with odd values.
+But this is not an error of the evaluation of a single message, the sensor sends it this way.
+Perhaps the value is averaged in the station.
 
 PWM with 252 us short, 612 us long, and 860 us sync.
 Preamble is a long pulsem, then 3 times sync pulse, sync gap, then data.
@@ -24,7 +29,7 @@ Data layout:
 
 - I: id, 8 bit
 - H: humidity, 8 bit
-- F: flags, 4 bit (Batt, ?, Chan, Chan)
+- F: flags, 4 bit (Batt, TX-Button, Chan, Chan)
 - T: temperature, 12 bit, deg. C scale 10
 - C: checksum, 8 bit
 
@@ -32,10 +37,11 @@ Data layout:
 
 #include "decoder.h"
 
-static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
-    int id, humidity, flags, batt_low, channel;
+    int id, humidity, batt_low, button, channel;
     int16_t temp_raw;
     float temp_c;
 
@@ -58,8 +64,9 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     id       = b[0];
     humidity = b[1];
-    flags    = b[2] >> 4;
-    batt_low = b[2] >> 7;
+    //flags    = b[2] >> 4;
+    batt_low = (b[2]) >> 7;
+    button   = (b[2] & 0x40) >> 6;
     channel  = (b[2] & 0x30) >> 4;
 
     temp_raw = ((b[2] & 0x0f) << 12) | (b[3] << 4); // use sign extend
@@ -73,6 +80,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
             "battery_ok",       "Battery",      DATA_INT,    !batt_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
+            "button",           "Button",       DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -84,14 +92,17 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
 static char *output_fields[] = {
         "model",
         "id",
+        "channel",
+        "battery_ok",
         "temperature_C",
         "humidity",
+        "button",
         "mic",
         NULL,
 };
 
 r_device auriol_hg02832 = {
-        .name        = "Auriol HG02832 temperature/humidity sensor",
+        .name        = "Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 252,
         .long_width  = 612,

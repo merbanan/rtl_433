@@ -68,7 +68,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (type > 5) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%u)\n", type);
+            fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%d)\n", type);
         return 0;
     }
 
@@ -95,7 +95,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (type == 0) {
         // 0 = WS7000-27/28 Thermo sensor
-        int sign          = b[1] & 0x8 ? -1 : 1;
+        int sign          = (b[1] & 0x8) ? -1 : 1;
         float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
 
         /* clang-format off */
@@ -113,7 +113,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (type == 1) {
         // 1 = WS7000-22/25 Thermo/Humidity sensor
-        int sign          = b[1] & 0x8 ? -1 : 1;
+        int sign          = (b[1] & 0x8) ? -1 : 1;
         float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
         int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1);
 
@@ -171,7 +171,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (type == 4) {
         // 4 = WS7000-20 Thermo/Humidity/Barometer sensor
-        int sign          = b[1] & 0x8 ? -1 : 1;
+        int sign          = (b[1] & 0x8) ? -1 : 1;
         float temperature = ((b[4] * 10) + (b[3] * 1) + (b[2] * 0.1)) * sign;
         int humidity      = (b[7] * 10) + (b[6] * 1) + (b[5] * 0.1);
         int pressure      = (b[10] * 100) + (b[9] * 10) + (b[8] * 1) + 200;
@@ -193,7 +193,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (type == 5) {
         // 5 = WS2500-19 Brightness sensor
-        int brightness = (b[4] * 100) + (b[3] * 10) + (b[2] * 1);
+        unsigned brightness = (b[4] * 100) + (b[3] * 10) + (b[2] * 1);
         int b_exponent = b[5]; // 10^exp
         int exposition = (b[8] * 100) + (b[7] * 10) + (b[6] * 1);
         for (int i = b_exponent; i > 0; --i)

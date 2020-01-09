@@ -58,9 +58,8 @@ int abuf_printf(abuf_t *buf, const char *restrict format, ...)
 
     int n = vsnprintf(buf->tail, buf->left, format, ap);
 
-    size_t len = 0;
     if (n > 0) {
-        len = (size_t)n < buf->left ? (size_t)n : buf->left;
+        size_t len = (size_t)n < buf->left ? (size_t)n : buf->left;
         buf->tail += len;
         buf->left -= len;
     }

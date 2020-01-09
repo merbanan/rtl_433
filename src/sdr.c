@@ -95,7 +95,6 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
     struct addrinfo hints, *res, *res0;
     int ret;
     SOCKET sock;
-    const char *cause = NULL;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = PF_UNSPEC;
@@ -310,17 +309,17 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
         rtlsdr_get_device_usb_strings(i, vendor, product, serial);
 
         if (verbose)
-            fprintf(stderr, "trying device  %d:  %s, %s, SN: %s\n",
+            fprintf(stderr, "trying device  %u:  %s, %s, SN: %s\n",
                     i, vendor, product, serial);
 
         r = rtlsdr_open(&dev->rtlsdr_dev, i);
         if (r < 0) {
             if (verbose)
-                fprintf(stderr, "Failed to open rtlsdr device #%d.\n\n", i);
+                fprintf(stderr, "Failed to open rtlsdr device #%u.\n\n", i);
         }
         else {
             if (verbose)
-                fprintf(stderr, "Using device %d: %s\n",
+                fprintf(stderr, "Using device %u: %s\n",
                         i, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t); // CU8
             *sample_size = sizeof(uint8_t); // CU8
@@ -336,6 +335,44 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
         *out_dev = dev;
     }
     return r;
+}
+
+static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
+{
+    int r = -1;
+
+    /* Get allowed gains */
+    int gains_count = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, NULL);
+    if (gains_count < 0) {
+        if (verbose)
+            fprintf(stderr, "Unable to get exact gains\n");
+        return centigain;
+    }
+    if (gains_count < 1) {
+        if (verbose)
+            fprintf(stderr, "No exact gains\n");
+        return centigain;
+    }
+    int *gains = calloc(gains_count, sizeof(int));
+    if (!gains) {
+        WARN_CALLOC("rtlsdr_find_tuner_gain()");
+        return centigain; // NOTE: just aborts on alloc failure.
+    }
+    r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
+
+    /* Find allowed gain */
+    for (int i = 0; i < gains_count; ++i) {
+        if (centigain <= gains[i]) {
+            centigain = gains[i];
+            break;
+        }
+    }
+    if (centigain > gains[gains_count - 1]) {
+        centigain = gains[gains_count - 1];
+    }
+    free(gains);
+
+    return centigain;
 }
 
 #endif
@@ -368,7 +405,7 @@ static int soapysdr_set_bandwidth(SoapySDRDevice *dev, uint32_t bandwidth)
 static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
 {
     int r = 0;
-    char *value, *set_value;
+    char const *value, *set_value;
     if (on == 0)
         value = "0";
     else if (on == 1)
@@ -390,7 +427,7 @@ static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
         fprintf(stderr, "Enabled direct sampling mode, input 1/I.\n");}
     if (atoi(set_value) == 2) {
         fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
-    if (on == 3) {
+    if (atoi(set_value) == 3) {
         fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
     return r;
 }
@@ -461,7 +498,6 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
 
 static int soapysdr_gain_str_set(SoapySDRDevice *dev, char *gain_str, int verbose)
 {
-    SoapySDRKwargs args = {0};
     int r = 0;
 
     // Disable automatic gain
@@ -714,7 +750,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint3
         // rescale cs16 buffer
         if (dev->fullScale >= 2047.0 && dev->fullScale <= 2048.0) {
             for (i = 0; i < n_read * 2; ++i)
-                buffer[i] <<= 4;
+                buffer[i] *= 16; // prevent left shift of negative value
         }
         else if (dev->fullScale < 32767.0) {
             int upscale = 32768 / dev->fullScale;
@@ -914,6 +950,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
             fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
 
     /* Set the tuner gain */
+    gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
     r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, gain);
     if (verbose) {
         if (r < 0)
@@ -976,7 +1013,7 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to set sample rate.\n");
         else
-            fprintf(stderr, "Sample rate set to %d S/s.\n", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
+            fprintf(stderr, "Sample rate set to %u S/s.\n", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
     }
     return r;
 }

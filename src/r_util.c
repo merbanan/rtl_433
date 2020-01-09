@@ -50,7 +50,7 @@ char *format_time_str(char *buf, char const *format, time_t time_secs)
 char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
 {
     struct timeval now;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     if (!tv) {
         tv = &now;
@@ -58,12 +58,16 @@ char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
     }
 
     time_t t_secs = tv->tv_sec;
-    tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
+#ifdef _WIN32 /* MinGW might have localtime_r but apparently not MinGW64 */
+    localtime_s(&tm_info, &t_secs); // win32 doesn't have localtime_r()
+#else
+    localtime_r(&t_secs, &tm_info); // thread-safe
+#endif
 
     if (!format || !*format)
         format = "%Y-%m-%d %H:%M:%S";
 
-    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, tm_info);
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
     snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
     return buf;
 }
@@ -130,7 +134,7 @@ float inhg2hpa(float inhg)
 }
 
 
-bool str_endswith(const char *restrict str, const char *restrict suffix)
+bool str_endswith(char const *restrict str, char const *restrict suffix)
 {
     int str_len = strlen(str);
     int suffix_len = strlen(suffix);
@@ -143,10 +147,10 @@ bool str_endswith(const char *restrict str, const char *restrict suffix)
 // https://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c/779960#779960
 //
 // You must free the result if result is non-NULL.
-char *str_replace(char *orig, char *rep, char *with)
+char *str_replace(char const *orig, char const *rep, char const *with)
 {
     char *result;  // the return string
-    char *ins;     // the next insert point
+    char const *ins; // the next insert point
     char *tmp;     // varies
     int len_rep;   // length of rep (the string to remove)
     int len_with;  // length of with (the string to replace rep with)
@@ -169,7 +173,7 @@ char *str_replace(char *orig, char *rep, char *with)
         ins = tmp + len_rep;
     }
 
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * (size_t)count + 1);
     if (!result) {
         WARN_MALLOC("str_replace()");
         return NULL; // NOTE: returns NULL on alloc failure.
@@ -192,7 +196,7 @@ char *str_replace(char *orig, char *rep, char *with)
 }
 
 // Make a more readable string for a frequency.
-const char *nice_freq (double freq)
+char const *nice_freq (double freq)
 {
   static char buf[30];
 

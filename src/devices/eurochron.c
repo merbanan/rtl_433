@@ -1,39 +1,40 @@
-/* Eurochron temperature and humidity sensor
- * (c) 2019 by Oliver Weyhmüller
- *
- *
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- *
- *
- * Datagram format:
- *
- * IIIIIIII B00P0000 HHHHHHHH TTTTTTTT TTTT
- *
- *    I: ID (new ID will be generated at battery change!)
- *    B: Battery low
- *    P: TX-Button pressed
- *    H: Humidity (%)
- *    T: Temperature (°C * 10)
- *    0: Unknown / always zero
- *
- * Device type identification is only possible by datagram length
- * and some zero bits. Therefore this device is disabled
- * by default (as it could easily trigger false alarms).
- *
- * Observed update intervals:
- *    - transmission time slot every 12 seconds
- *    - at least once within 120 seconds (with stable values)
- *    - down to 12 seconds (with rapidly changing values)
- */
+/** @file
+    Eurochron temperature and humidity sensor.
+
+    Copyright (c) 2019 by Oliver Weyhmüller
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Eurochron temperature and humidity sensor.
+
+Datagram format:
+
+    IIIIIIII B00P0000 HHHHHHHH TTTTTTTT TTTT
+
+- I: ID (new ID will be generated at battery change!)
+- B: Battery low
+- P: TX-Button pressed
+- H: Humidity (%)
+- T: Temperature (°C10)
+- 0: Unknown / always zero
+
+Device type identification is only possible by datagram length
+and some zero bits. Therefore this device is disabled
+by default (as it could easily trigger false alarms).
+
+Observed update intervals:
+- transmission time slot every 12 seconds
+- at least once within 120 seconds (with stable values)
+- down to 12 seconds (with rapidly changing values)
+*/
 
 #include "decoder.h"
 
-static int eurochron_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int row;
@@ -99,7 +100,7 @@ r_device eurochron = {
         .long_width    = 2024,
         .gap_limit     = 2100,
         .reset_limit   = 8200,
-        .decode_fn     = &eurochron_callback,
+        .decode_fn     = &eurochron_decode,
         .disabled      = 1,
         .fields        = output_fields,
 };

@@ -14,7 +14,6 @@
 from __future__ import print_function
 from __future__ import with_statement
 
-import socket
 import time
 import json
 import paho.mqtt.client as mqtt

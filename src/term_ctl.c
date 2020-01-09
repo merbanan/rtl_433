@@ -272,7 +272,7 @@ static term_color_t color_map[] = {
 int term_set_color_map(int ascii_idx, term_color_t color)
 {
     ascii_idx -= '0';
-    if (ascii_idx < 0 || ascii_idx > DIM(color_map))
+    if (ascii_idx < 0 || ascii_idx >= DIM(color_map))
         return -1;
     color_map[ascii_idx] = color;
     return ascii_idx;
@@ -308,7 +308,7 @@ int term_puts(void *ctx, char const *buf)
     if (!fp)
         fp = stderr;
 
-    buf_len = strlen(buf);
+    buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
         if (*p == '~') {
             p++;
@@ -359,7 +359,7 @@ int term_help_puts(void *ctx, char const *buf)
     if (!fp)
         fp = stderr;
 
-    buf_len = strlen(buf);
+    buf_len = (int)strlen(buf);
     for (i = len = 0; *p && i < buf_len; i++, p++) {
         if (*p == '~') {
             p++;
@@ -414,7 +414,7 @@ int term_help_puts(void *ctx, char const *buf)
         }
 
         if (set_color >= 0) {
-            color = ctx ? color_map[set_color] : -1;
+            color = ctx ? (int)color_map[set_color] : -1;
             if (color >= 0)
                 term_set_fg(ctx, (term_color_t)color);
         }

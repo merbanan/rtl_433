@@ -92,7 +92,7 @@ static char *output_fields[] = {
     NULL
 };
 
-r_device esa = {
+r_device esa_energy = {
     .name           = "ESA1000 / ESA2000 Energy Monitor",
     .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
     .short_width    = 260,

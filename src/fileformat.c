@@ -110,7 +110,6 @@ static uint32_t file_type_guess_auto_format(uint32_t type)
     else if (type == F_CS8) return CS8_IQ;
     else if (type == F_S16) return S16_AM;
     else if (type == F_U8) return U8_LOGIC;
-    else if (type == F_Q) return F32_Q;
     else if (type == F_VCD) return VCD_LOGIC;
     else if (type == F_OOK) return PULSE_OOK;
     else if (type == F_CS16) return CS16_IQ;
@@ -207,7 +206,7 @@ static void file_type(char const *filename, file_info_t *info)
 }
 
 // return the last colon not followed by a backslash, otherwise NULL
-char const *last_plain_colon(char const *p)
+static char const *last_plain_colon(char const *p)
 {
     char const *found = NULL;
     char const *next = strchr(p, ':');
@@ -284,7 +283,7 @@ void assert_file_type(int check, char const *spec)
 
 void assert_str_equal(char const *a, char const *b)
 {
-    if (a != b && strcmp(a, b)) {
+    if (a != b && (!a || !b || strcmp(a, b))) {
         fprintf(stderr, "\nTEST failed: \"%s\" == \"%s\"\n", a, b);
     } else {
         fprintf(stderr, ".");

@@ -8,7 +8,6 @@
 from __future__ import print_function
 
 import socket
-import time
 import json
 import gps
 import threading

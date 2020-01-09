@@ -139,9 +139,9 @@ void bitbuffer_extract_bytes(bitbuffer_t *bitbuffer, unsigned row,
 
 // If we make this an inline function instead of a macro, it means we don't
 // have to worry about using bit numbers with side-effects (bit++).
-static inline int bit(const uint8_t *bytes, unsigned bit)
+static inline uint8_t bit_at(const uint8_t *bytes, unsigned bit)
 {
-    return bytes[bit >> 3] >> (7 - (bit & 7)) & 1;
+    return (uint8_t)(bytes[bit >> 3] >> (7 - (bit & 7)) & 1);
 }
 
 unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
@@ -153,7 +153,7 @@ unsigned bitbuffer_search(bitbuffer_t *bitbuffer, unsigned row, unsigned start,
     unsigned ppos = 0; // cursor on init pattern
 
     while (ipos < len && ppos < pattern_bits_len) {
-        if (bit(bits, ipos) == bit(pattern, ppos)) {
+        if (bit_at(bits, ipos) == bit_at(pattern, ppos)) {
             ppos++;
             ipos++;
             if (ppos == pattern_bits_len)
@@ -183,8 +183,8 @@ unsigned bitbuffer_manchester_decode(bitbuffer_t *inbuf, unsigned row, unsigned 
     while (ipos < len) {
         uint8_t bit1, bit2;
 
-        bit1 = bit(bits, ipos++);
-        bit2 = bit(bits, ipos++);
+        bit1 = bit_at(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
 
         if (bit1 == bit2)
             break;
@@ -201,7 +201,7 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     uint8_t *bits     = inbuf->bb[row];
     unsigned int len  = inbuf->bits_per_row[row];
     unsigned int ipos = start;
-    uint8_t bit1, bit2 = 0, bit3;
+    uint8_t bit1, bit2 = 0;
 
     if (max && len > start + (max * 2))
         len = start + (max * 2);
@@ -209,9 +209,9 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     // the first long pulse will determine the clock
     // if needed skip one short pulse to get in synch
     while (ipos < len) {
-        bit1 = bit(bits, ipos++);
-        bit2 = bit(bits, ipos++);
-        bit3 = bit(bits, ipos);
+        bit1 = bit_at(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
+        uint8_t bit3 = bit_at(bits, ipos);
 
         if (bit1 != bit2) {
             if (bit2 != bit3) {
@@ -231,10 +231,10 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     }
 
     while (ipos < len) {
-        bit1 = bit(bits, ipos++);
+        bit1 = bit_at(bits, ipos++);
         if (bit1 == bit2)
             break; // clock missing, abort
-        bit2 = bit(bits, ipos++);
+        bit2 = bit_at(bits, ipos++);
 
         if (bit1 == bit2)
             bitbuffer_add_bit(outbuf, 1);
@@ -245,11 +245,11 @@ unsigned bitbuffer_differential_manchester_decode(bitbuffer_t *inbuf, unsigned r
     return ipos;
 }
 
-static void print_bitrow(bitrow_t const bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
+static void print_bitrow(uint8_t const *bitrow, unsigned bit_len, unsigned highest_indent, int always_binary)
 {
     unsigned row_len = 0;
 
-    fprintf(stderr, "{%2d} ", bit_len);
+    fprintf(stderr, "{%2u} ", bit_len);
     for (unsigned col = 0; col < (bit_len + 7) / 8; ++col) {
         row_len += fprintf(stderr, "%02x ", bitrow[col]);
     }
@@ -289,7 +289,7 @@ static void print_bitbuffer(const bitbuffer_t *bits, int always_binary)
 
     fprintf(stderr, "bitbuffer:: Number of rows: %d \n", bits->num_rows);
     for (row = 0; row < bits->num_rows; ++row) {
-        fprintf(stderr, "[%02d] ", row);
+        fprintf(stderr, "[%02u] ", row);
         print_bitrow(bits->bb[row], bits->bits_per_row[row], highest_indent, always_binary);
     }
     if (bits->num_rows >= BITBUF_ROWS) {
@@ -307,12 +307,12 @@ void bitbuffer_debug(const bitbuffer_t *bits)
     print_bitbuffer(bits, 1);
 }
 
-void bitrow_print(bitrow_t const bitrow, unsigned bit_len)
+void bitrow_print(uint8_t const *bitrow, unsigned bit_len)
 {
     print_bitrow(bitrow, bit_len, 0, 0);
 }
 
-void bitrow_debug(bitrow_t const bitrow, unsigned bit_len)
+void bitrow_debug(uint8_t const *bitrow, unsigned bit_len)
 {
     print_bitrow(bitrow, bit_len, 0, 1);
 }
@@ -346,6 +346,10 @@ void bitbuffer_parse(bitbuffer_t *bits, const char *code)
             }
 
             width = strtol(c + 1, (char **)&c, 0);
+            if (width > BITBUF_COLS * 8)
+                width = BITBUF_COLS * 8;
+            if (!*c)
+                break; // no closing brace and end of string
             continue;
         }
         else if (*c == '/') {
