@@ -151,7 +151,7 @@
     DECL(auriol_hg02832) \
     DECL(fineoffset_WH51) \
     DECL(holman_ws5029pwm) \
-    DECL(tbh) \
+    DECL(archos_tbh) \
 
     /* Add new decoders here. */
 
