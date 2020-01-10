@@ -31,9 +31,13 @@ Debian:
 
     sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
 
-Centos/Fedora/RHEL (for Centos/RHEL with enabled EPEL):
+Centos/Fedora/RHEL with EPEL repo using cmake:
 
-    sudo dnf install libtool libusb-devel rtl-sdr-devel rtl-sdr
+  * If `dnf` doesn't exist, use `yum`.
+
+````
+sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
+````
 
 Mac OS X with MacPorts:
 
