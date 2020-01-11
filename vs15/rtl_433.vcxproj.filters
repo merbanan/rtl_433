@@ -541,6 +541,9 @@
     <ClCompile Include="..\src\devices\wg_pb12v1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ws2032.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\wssensor.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

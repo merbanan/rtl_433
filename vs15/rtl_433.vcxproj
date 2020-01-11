@@ -260,6 +260,7 @@
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
+    <ClCompile Include="..\src\devices\ws2032.c" />
     <ClCompile Include="..\src\devices\wssensor.c" />
     <ClCompile Include="..\src\devices\wt0124.c" />
     <ClCompile Include="..\src\devices\wt450.c" />

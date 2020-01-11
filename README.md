@@ -220,6 +220,7 @@ Read the Test Data section at the bottom.
     [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
     [143]  Holman Industries iWeather WS5029 weather station (older PWM)
     [144]  TBH weather sensor
+    [145]  WS2032 weather station
 
 * Disabled by default, use -R n or -G
 
