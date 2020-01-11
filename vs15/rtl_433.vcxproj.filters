@@ -379,7 +379,7 @@
     <ClCompile Include="..\src\devices\lacrosse.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\lacrosse_TX141TH_Bv2.c">
+    <ClCompile Include="..\src\devices\lacrosse_tx141x.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx35.c">

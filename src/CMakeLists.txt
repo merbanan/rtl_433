@@ -90,7 +90,7 @@ add_executable(rtl_433
     devices/kedsum.c
     devices/kerui.c
     devices/lacrosse.c
-    devices/lacrosse_TX141TH_Bv2.c
+    devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
