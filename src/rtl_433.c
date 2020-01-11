@@ -216,6 +216,7 @@ static void help_meta(void)
             "\tUse \"time:iso\" to show the time with ISO-8601 format (YYYY-MM-DD\"T\"hh:mm:ss).\n"
             "\tUse \"time:off\" to remove time meta data.\n"
             "\tUse \"time:usec\" to add microseconds to date time meta data.\n"
+            "\tUse \"time:tz\" to output time with timezone offset.\n"
             "\tUse \"time:utc\" to output time in UTC.\n"
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
@@ -858,6 +859,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                     cfg->report_time_hires = 1;
                 else if (!strncasecmp(p, "sec", 3))
                     cfg->report_time_hires = 0;
+                else if (!strncasecmp(p, "tz", 2))
+                    cfg->report_time_tz = 1;
+                else if (!strncasecmp(p, "notz", 4))
+                    cfg->report_time_tz = 0;
                 else if (!strncasecmp(p, "utc", 3))
                     cfg->report_time_utc = 1;
                 else if (!strncasecmp(p, "local", 5))

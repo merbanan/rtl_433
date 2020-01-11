@@ -81,6 +81,7 @@ typedef struct r_cfg {
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
+    int report_time_tz;
     int report_time_utc;
     int report_description;
     int report_stats;

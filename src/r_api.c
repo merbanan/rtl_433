@@ -267,9 +267,9 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
             format = "%Y-%m-%dT%H:%M:%S";
 
         if (cfg->report_time_hires)
-            return usecs_time_str(buf, format, &ago);
+            return usecs_time_str(buf, format, cfg->report_time_tz, &ago);
         else
-            return format_time_str(buf, format, ago.tv_sec);
+            return format_time_str(buf, format, cfg->report_time_tz, ago.tv_sec);
     }
 }
 
