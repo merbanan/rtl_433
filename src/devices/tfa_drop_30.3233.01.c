@@ -41,15 +41,20 @@ the signal completely until the device was reset.
 Data layout:
 
 ```
-CCCCIIII IIIIIIII IIIIIIII BUUUUUUUU RRRRRRRR UUUUUUUU SSSSSSSS UUUUUUUU UUUUUUUU UUUU
+CCCCIIII IIIIIIII IIIIIIII BCUU XXXX RRRRRRRR CCCCCCCC SSSSSSSS MMMMMMMM KKKK
 ```
 
 - C: 4 bit message prefix, always 0x3
 - I: 2.5 byte ID
 - B: 1 bit, battery_low. 0 if battery OK, 1 if battery is low.
+- C: 1 bit, device reset (?). Set to 1 briefly after battery insert.
+- X: Transmission counter: 0x0, 0x2, 0x4, 0x6, 0x8, 0xA, 0xE, 0xE. Rolls over.
 - R: LSB of 16-bit little endian rain counter
 - S: MSB of 16-bit little endian rain counter
-- U: Unknown
+- C: Fixed to 0xaa
+- M: Checksum
+- K: Unknown, Either b1011 or b0111 (post-amble?!). Distribution: 50-50. Parity?
+
 
 The rain bucket counter represents the number of tips of the rain bucket. Each tip of the
 bucket corresponds to 0.254mm of rain.
@@ -57,6 +62,23 @@ bucket corresponds to 0.254mm of rain.
 The rain bucket counter does not start at 0. Instead, the counter starts at 65526
 to indicate 0 tips of the bucket. The counter rolls over at 65535 to 0, which corresponds
 to 9 and 10 tips of the bucket, respectively.
+
+Sensor transmit every 45s. Sleep mode?
+
+If no change is detected, the sensor will broadcast identical data. The second nibble of byte
+3 is a transmission counter: 0x0, 0x2, 0x4, 0x6, 0x8, 0xa, 0xc, 0xe.
+After the transmission with counter 0xe, the counter rolls over to 0x0 and the cycle starts over.
+
+Transmission of identical data lasts at least for 20 minutes, possibly forever.
+
+After battery insert, the sensor will transmit 7 messages in rapid succession, one message
+every 3 seconds. After the first message, the remaining 6 messages have bit 1 of byte 3
+set to 1. This could be some sort of reset indicator. For these messages, the transmission counter
+does not increase.
+
+After these 7 messages, a regular message is sent after 30s. Afterwards, messages are sent
+every 45s.
+
 
 */
 
