@@ -426,7 +426,8 @@ Data layout:
 - B: 8 bit Bitsum (XOR) of the 6 data bytes (high and low nibble exchanged)
 
 WH32B is the same as WH25 but two packets in one transmission of {971} and XOR sum missing.
-TYPE:4h ID:8d FLAGS:2b TEMP_C:10d HUM:8d HPA:16d CHK:8h
+
+    TYPE:4h ID:8d FLAGS:2b TEMP_C:10d HUM:8d HPA:16d CHK:8h
 
 */
 static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -589,21 +590,23 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode data
     char id[7];
-    sprintf( id, "%2x%2x%2x", b[1], b[2], b[3]);
-    int boost = (b[4] & 0xe0) >> 5;
-    float battery = (b[4] & 0x1f) * 0.1;
-    int ad = (((int)b[7] & 0x01) << 8) | (int)b[8];
-    uint8_t moisture = b[6];
+    sprintf(id, "%2x%2x%2x", b[1], b[2], b[3]);
+    int boost           = (b[4] & 0xe0) >> 5;
+    int battery_mv      = (b[4] & 0x1f) * 100;
+    float battery_level = (battery_mv - 700) / 900; // assume 1.6V (100%) to 0.7V (0%) range
+    int ad_raw          = (((int)b[7] & 0x01) << 8) | (int)b[8];
+    int moisture        = b[6];
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH51",
-            "id",               "ID",           DATA_STRING, id,
-            "battery_mV",       "Battery",      DATA_FORMAT, "%.01f V", DATA_DOUBLE, battery,
-            "moisture",         "Moisture",     DATA_FORMAT, "%u %%", DATA_INT, moisture,
-            "boost",            "Transmission boost", DATA_FORMAT, "%u", DATA_INT, boost,
-            "ad_raw",           "AD_raw",       DATA_FORMAT, "%u", DATA_INT, ad,
-            "mic",              "Integrity",    DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "Fineoffset-WH51",
+            "id",               "ID",               DATA_STRING, id,
+            "battery_ok",       "Battery level",    DATA_DOUBLE, battery_level,
+            "battery_mV",       "Battery",          DATA_FORMAT, "%d mV", DATA_DOUBLE, battery_mv,
+            "moisture",         "Moisture",         DATA_FORMAT, "%u %%", DATA_INT, moisture,
+            "boost",            "Transmission boost", DATA_INT, boost,
+            "ad_raw",           "AD raw",           DATA_INT, ad_raw,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
