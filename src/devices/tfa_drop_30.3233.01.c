@@ -20,6 +20,8 @@ Links:
    - https://clientmedia.trade-server.net/1768_tfadost/media/2/66/16266.pdf
  - Manual 2020:
    - https://clientmedia.trade-server.net/1768_tfadost/media/3/04/16304.pdf
+ - Discussion of protocol:
+   - https://github.com/merbanan/rtl_433/issues/1240
 
 The sensor has part number 30.3233.01. The full package, including the
 base station, has part number 47.3005.01.
