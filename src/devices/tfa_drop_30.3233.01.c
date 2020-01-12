@@ -65,6 +65,26 @@ KKKK
 - K: Unknown. Either b1011 or b0111.
      - Distribution: 50:50.
 
+[Bitbench](http://triq.net/bitbench) string:
+
+```
+ID:hh ID:hh ID:hh BAT_LOW:b RESET:b UNKNOWN:bb XMIT_COUNTER:h RAIN_A:d
+CONST:hh RAIN_B:d CHECK:8b UNKNOWN:bbxx xxxx
+```
+
+Some example data:
+
+```
+c240aaff09550021c
+c240aabf095500e04
+c240aafd095500b64
+c240aafb0955003e4
+c240aaf9095500a9c
+c212b7f9035500e5c
+c212b7f703550053c
+c212b7f5035500c44
+```
+
 
 The rain bucket counter represents the number of tips of the rain
 bucket. Each tip of the bucket corresponds to 0.254mm of rain.
