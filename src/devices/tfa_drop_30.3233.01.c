@@ -158,11 +158,11 @@ static int tfa_drop_30_3233_01_decoder(r_device *decoder,
 
     /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "TFA-Drop-30.3233.01",
-            "id",    "", DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
-            "rain_mm", "Rain in MM", DATA_DOUBLE, rain_mm,
+            "model",      "",           DATA_STRING, "TFA-Drop-30.3233.01",
+            "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
+            "rain_mm",    "Rain in MM", DATA_DOUBLE, rain_mm,
             "battery_ok", "Battery OK", DATA_INT,    !battery_low,
-            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
+            "mic",        "Integrity",  DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
