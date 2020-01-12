@@ -590,7 +590,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Decode data
     char id[7];
-    sprintf(id, "%2x%2x%2x", b[1], b[2], b[3]);
+    sprintf(id, "%02x%02x%02x", b[1], b[2], b[3]);
     int boost           = (b[4] & 0xe0) >> 5;
     int battery_mv      = (b[4] & 0x1f) * 100;
     float battery_level = (battery_mv - 700) / 900; // assume 1.6V (100%) to 0.7V (0%) range

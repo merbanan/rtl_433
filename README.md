@@ -145,7 +145,7 @@ Read the Test Data section at the bottom.
     [67]  Radiohead ASK
     [68]  Kerui PIR / Contact Sensor
     [69]  Fine Offset WH1050 Weather Station
-    [70]  Honeywell Door/Window Sensor
+    [70]  Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
     [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W sensor
@@ -329,6 +329,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Use "time:iso" to show the time with ISO-8601 format (YYYY-MM-DD"T"hh:mm:ss).
 	Use "time:off" to remove time meta data.
 	Use "time:usec" to add microseconds to date time meta data.
+	Use "time:tz" to output time with timezone offset.
 	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
 		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
