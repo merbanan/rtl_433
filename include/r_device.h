@@ -54,6 +54,7 @@ typedef struct r_device {
     struct r_device *(*create_fn)(char *args);
     unsigned disabled;
     char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
+    char **demo_pattern; ///< List of demo pattern. NULL-terminated.
 
     /* public for each decoder */
     int new_model_keys; ///< TODO: temporary allow to change to new style model keys
