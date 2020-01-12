@@ -12,6 +12,11 @@
  */
 #include "decoder.h"
 
+#define BLOCK1A_SIZE 12     // Size of Block 1, format A
+#define BLOCK1B_SIZE 10     // Size of Block 1, format B
+#define BLOCK2B_SIZE 118    // Maximum size of Block 2, format B
+#define BLOCK1_2B_SIZE 128
+
 // Convert two BCD encoded nibbles to an integer
 static unsigned bcd2int(uint8_t bcd) {
     return 10*(bcd>>4) + (bcd & 0xF);
@@ -126,6 +131,14 @@ const char* m_bus_device_type_str(uint8_t devType) {
 }
 
 
+// Data structure for application layer
+typedef struct {
+    uint8_t     CI;         // Control info
+    uint8_t     AC;         // Access number
+    uint8_t     ST;
+    uint16_t    CW;         // Configuration word
+} m_bus_block2_t;
+
 // Data structure for block 1
 typedef struct {
     uint8_t     L;        // Length
@@ -135,6 +148,7 @@ typedef struct {
     uint8_t     A_Version;    // Address, Version
     uint8_t     A_DevType;    // Address, Device Type
     uint16_t    CRC;      // Optional (Only for Format A)
+    m_bus_block2_t block2;
 } m_bus_block1_t;
 
 typedef struct {
@@ -142,9 +156,22 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
+static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1) {
+    m_bus_block2_t *b2 = &block1->block2;
+    const uint8_t *b = in->data+BLOCK1A_SIZE;
+
+    b2->CI = b[0];
+    /* Short transport layer */
+    if (b2->CI == 0x7A) {
+        b2->AC = b[1];
+        b2->ST = b[2];
+        b2->CW = b[4]<<8 | b[3];
+    }
+    return 0;
+}
+
 static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
 {
-    static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
 
     // Get Block 1
     block1->L         = in->data[0];
@@ -180,15 +207,14 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         // Get block data
         memcpy(out_ptr, in_ptr, block_size);
     }
+
+    parse_block2(decoder, in, block1);
+
     return 1;
 }
 
 static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
 {
-    static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
-    static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
-    static const uint16_t BLOCK1_2B_SIZE  = 128;
-
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
@@ -252,6 +278,15 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
+
+    if(block1->block2.CI) {
+        data = data_append(data,
+        "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
+        "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
+        "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
+        "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
+        NULL);
+    }
     decoder_output_data(decoder, data);
 }
 
