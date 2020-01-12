@@ -610,7 +610,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -761,10 +761,14 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->gain_str = arg;
         break;
     case 'G':
-        if (atobv(arg, 1)) {
+        if (atobv(arg, 1) == 4) {
             fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
             cfg->no_default_devices = 1;
             register_all_protocols(cfg, 1);
+        }
+        else {
+            fprintf(stderr, "\n\tUse -G for testing only. Enable with -G 4 if you really mean it.\n\n");
+            exit(1);
         }
         break;
     case 'p':
@@ -783,8 +787,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
         break;
     case 'a':
-        if (atobv(arg, 1) && !cfg->demod->am_analyze)
+        if (atobv(arg, 1) == 4 && !cfg->demod->am_analyze) {
             cfg->demod->am_analyze = am_analyze_create();
+        }
+        else {
+            fprintf(stderr, "\n\tUse -a for testing only. Enable with -a 4 if you really mean it.\n\n");
+            exit(1);
+        }
         break;
     case 'A':
         cfg->demod->analyze_pulses = atobv(arg, 1);
