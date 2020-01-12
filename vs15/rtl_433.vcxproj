@@ -149,6 +149,7 @@
     <ClCompile Include="..\src\devices\ambient_weather.c" />
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
+    <ClCompile Include="..\src\devices\archos_tbh.c" />
     <ClCompile Include="..\src\devices\auriol_hg02832.c" />
     <ClCompile Include="..\src\devices\blyss.c" />
     <ClCompile Include="..\src\devices\brennenstuhl_rcs_2044.c" />
@@ -205,7 +206,7 @@
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
     <ClCompile Include="..\src\devices\lacrosse.c" />
-    <ClCompile Include="..\src\devices\lacrosse_TX141TH_Bv2.c" />
+    <ClCompile Include="..\src\devices\lacrosse_tx141x.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />
     <ClCompile Include="..\src\devices\lacrosse_ws7000.c" />
     <ClCompile Include="..\src\devices\lacrossews.c" />
@@ -259,6 +260,7 @@
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
+    <ClCompile Include="..\src\devices\ws2032.c" />
     <ClCompile Include="..\src\devices\wssensor.c" />
     <ClCompile Include="..\src\devices\wt0124.c" />
     <ClCompile Include="..\src\devices\wt450.c" />

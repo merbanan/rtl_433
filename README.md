@@ -145,10 +145,10 @@ Read the Test Data section at the bottom.
     [67]  Radiohead ASK
     [68]  Kerui PIR / Contact Sensor
     [69]  Fine Offset WH1050 Weather Station
-    [70]  Honeywell Door/Window Sensor
+    [70]  Honeywell Door/Window Sensor, 2Gig DW10/DW11, RE208 repeater
     [71]  Maverick ET-732/733 BBQ Sensor
     [72]* RF-tech
-    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3 sensor
+    [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
     [76]  LaCrosse TX29IT Temperature sensor
@@ -209,7 +209,7 @@ Read the Test Data section at the bottom.
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
-    [134]  Holman Industries WS5029 weather station
+    [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
     [135]  Philips outdoor temperature sensor (type AJ7010)
     [136]  ESIC EMT7110 power meter
     [137]  Globaltronics QUIGG GT-TMBBQ-05
@@ -217,6 +217,10 @@ Read the Test Data section at the bottom.
     [139]  Norgo NGE101
     [140]  Elantra2012 TPMS
     [141]  Auriol HG02832, HG05124A-DCF, Rubicson 48957 temperature/humidity sensor
+    [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
+    [143]  Holman Industries iWeather WS5029 weather station (older PWM)
+    [144]  TBH weather sensor
+    [145]  WS2032 weather station
 
 * Disabled by default, use -R n or -G
 
@@ -325,6 +329,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Use "time:iso" to show the time with ISO-8601 format (YYYY-MM-DD"T"hh:mm:ss).
 	Use "time:off" to remove time meta data.
 	Use "time:usec" to add microseconds to date time meta data.
+	Use "time:tz" to output time with timezone offset.
 	Use "time:utc" to output time in UTC.
 		(this may also be accomplished by invocation with TZ environment variable set).
 		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
@@ -357,6 +362,9 @@ Note:	Use "newmodel" to transition to new model keys. This will become the defau
 
 	E.g. default detection by extension: path/filename.am.s16
 	forced overrides: am:s16:path/filename.ext
+
+	Reading from pipes also support format options.
+	E.g reading complex 32-bit float: CU32:-
 
 
 		= Write file option =
@@ -447,3 +455,8 @@ If you see this error:
 then
 
     sudo rmmod dvb_usb_rtl28xxu rtl2832
+
+
+## Releases
+
+Version numbering scheme used is year.month. We try to keep the API compatible between releases but focus is on maintainablity.

@@ -337,6 +337,44 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
     return r;
 }
 
+static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
+{
+    int r = -1;
+
+    /* Get allowed gains */
+    int gains_count = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, NULL);
+    if (gains_count < 0) {
+        if (verbose)
+            fprintf(stderr, "Unable to get exact gains\n");
+        return centigain;
+    }
+    if (gains_count < 1) {
+        if (verbose)
+            fprintf(stderr, "No exact gains\n");
+        return centigain;
+    }
+    int *gains = calloc(gains_count, sizeof(int));
+    if (!gains) {
+        WARN_CALLOC("rtlsdr_find_tuner_gain()");
+        return centigain; // NOTE: just aborts on alloc failure.
+    }
+    r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
+
+    /* Find allowed gain */
+    for (int i = 0; i < gains_count; ++i) {
+        if (centigain <= gains[i]) {
+            centigain = gains[i];
+            break;
+        }
+    }
+    if (centigain > gains[gains_count - 1]) {
+        centigain = gains[gains_count - 1];
+    }
+    free(gains);
+
+    return centigain;
+}
+
 #endif
 
 /* SoapySDR helpers */
@@ -912,6 +950,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
             fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
 
     /* Set the tuner gain */
+    gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
     r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, gain);
     if (verbose) {
         if (r < 0)

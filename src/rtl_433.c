@@ -216,6 +216,7 @@ static void help_meta(void)
             "\tUse \"time:iso\" to show the time with ISO-8601 format (YYYY-MM-DD\"T\"hh:mm:ss).\n"
             "\tUse \"time:off\" to remove time meta data.\n"
             "\tUse \"time:usec\" to add microseconds to date time meta data.\n"
+            "\tUse \"time:tz\" to output time with timezone offset.\n"
             "\tUse \"time:utc\" to output time in UTC.\n"
             "\t\t(this may also be accomplished by invocation with TZ environment variable set).\n"
             "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
@@ -245,7 +246,9 @@ static void help_read(void)
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
             "\tOverrides can be prefixed, separated by colon (':')\n\n"
             "\tE.g. default detection by extension: path/filename.am.s16\n"
-            "\tforced overrides: am:s16:path/filename.ext\n");
+            "\tforced overrides: am:s16:path/filename.ext\n\n"
+            "\tReading from pipes also support format options.\n"
+            "\tE.g reading complex 32-bit float: CU32:-\n");
     exit(0);
 }
 
@@ -607,7 +610,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:aAI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UGy:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -758,10 +761,14 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->gain_str = arg;
         break;
     case 'G':
-        if (atobv(arg, 1)) {
+        if (atobv(arg, 1) == 4) {
             fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
             cfg->no_default_devices = 1;
             register_all_protocols(cfg, 1);
+        }
+        else {
+            fprintf(stderr, "\n\tUse -G for testing only. Enable with -G 4 if you really mean it.\n\n");
+            exit(1);
         }
         break;
     case 'p':
@@ -780,8 +787,13 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
         break;
     case 'a':
-        if (atobv(arg, 1) && !cfg->demod->am_analyze)
+        if (atobv(arg, 1) == 4 && !cfg->demod->am_analyze) {
             cfg->demod->am_analyze = am_analyze_create();
+        }
+        else {
+            fprintf(stderr, "\n\tUse -a for testing only. Enable with -a 4 if you really mean it.\n\n");
+            exit(1);
+        }
         break;
     case 'A':
         cfg->demod->analyze_pulses = atobv(arg, 1);
@@ -856,6 +868,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                     cfg->report_time_hires = 1;
                 else if (!strncasecmp(p, "sec", 3))
                     cfg->report_time_hires = 0;
+                else if (!strncasecmp(p, "tz", 2))
+                    cfg->report_time_tz = 1;
+                else if (!strncasecmp(p, "notz", 4))
+                    cfg->report_time_tz = 0;
                 else if (!strncasecmp(p, "utc", 3))
                     cfg->report_time_utc = 1;
                 else if (!strncasecmp(p, "local", 5))

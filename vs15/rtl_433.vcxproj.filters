@@ -208,6 +208,9 @@
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\archos_tbh.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\auriol_hg02832.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -376,7 +379,7 @@
     <ClCompile Include="..\src\devices\lacrosse.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\lacrosse_TX141TH_Bv2.c">
+    <ClCompile Include="..\src\devices\lacrosse_tx141x.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx35.c">
@@ -536,6 +539,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\wg_pb12v1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ws2032.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\wssensor.c">
