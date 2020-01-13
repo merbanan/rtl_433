@@ -137,6 +137,7 @@ typedef struct {
     uint8_t     AC;         // Access number
     uint8_t     ST;
     uint16_t    CW;         // Configuration word
+    uint8_t     pl_offset;  // Payload offset
 } m_bus_block2_t;
 
 // Data structure for block 1
@@ -156,6 +157,107 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
+
+static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
+
+static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam ) {
+    int consumed_bytes = 0;
+
+    switch (dif_coding&0x03) {
+        case 0x0 : consumed_bytes=0; break;
+        case 0x1 : consumed_bytes=2; break;
+        case 0x2 : consumed_bytes=4; break;
+        case 0x3 : consumed_bytes=6; break;
+        case 0x4 : consumed_bytes=8; break;
+        case 0x5 : consumed_bytes=-1; break;
+        case 0x6 : consumed_bytes=12; break;
+        case 0x7 : consumed_bytes=-1; break;
+    }
+
+    switch (vif_linear) {
+        case 0:
+            switch(vif_uam>>2) {
+                case 0x19:
+                    data = data_append(data,
+                        "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        NULL);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+    return consumed_bytes;
+}
+
+static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out) {
+    uint8_t off = block1->block2.pl_offset;
+    const uint8_t *b = out->data;
+    uint8_t dif = 0;
+    uint8_t dife_array[10] = {0};
+    uint8_t dife_cnt = 0;
+    uint8_t dif_coding = 0;
+    uint8_t dif_ff = 0;
+    uint8_t vif = 0;
+    uint8_t vife_array[10] = {0};
+    uint8_t vife_cnt = 0;
+    uint8_t vif_uam = 0;
+    uint8_t vif_linear = 0;
+    uint8_t vife = 0;
+    uint8_t exponent = 0;
+    int cnt = 0, consumed_bytes;
+
+    /* Align offset pointer, there might be 2 0x2F bytes */
+    if (b[off] == 0x2F) off++;
+    if (b[off] == 0x2F) off++;
+
+// [02 65] 9f08 [42 65] 9e08 [8201 65] 8f08 [02 fb1a] 3601 [42 fb1a] 3701 [8201 fb1a] 3001
+    
+    /* Payload must start with a DIF */
+    while(off < block1->L) {
+//        printf("Counter %d, %d, %d, %02X\n", cnt++, off, block1->L, b[off]);
+
+        /* Parse DIF */
+        dif = b[off];
+        while (b[off]&0x80) {
+            off++;
+            dife_array[dife_cnt++] = b[off];
+            if (dife_cnt >= 10) return;
+        }
+        off++;
+        dif_coding = dif&0x0F;
+        dif_ff = (dif&0x30) >> 4;
+
+        /* Parse VIF */
+        vif = b[off];
+        while (b[off]&0x80) {
+            off++;
+            vife_array[vife_cnt++] = b[off]&0x7F;
+            if (vife_cnt >= 10) return;
+        }
+        off++;
+        /* Linear VIF-extension */
+        if (vif == 0x7B) {
+            vif_linear = 0x7B;
+            vif_uam = vife_array[0];
+        } else if(vif  == 0x7D) {
+            vif_linear = 0x7D;
+            vif_uam = vife_array[0];
+        } else {
+            vif_linear = 0;
+            vif_uam = vif&0x7F;
+        }
+
+        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam);
+        if (consumed_bytes==-1) return;
+
+        off +=consumed_bytes;
+    }
+    return;
+}
+
 static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1) {
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
@@ -166,7 +268,9 @@ static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_
         b2->AC = b[1];
         b2->ST = b[2];
         b2->CW = b[4]<<8 | b[3];
+        b2->pl_offset = BLOCK1A_SIZE-2 + 5;
     }
+//    printf("Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     return 0;
 }
 
@@ -286,6 +390,10 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
         "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
         NULL);
+    }
+    /* Encryption not supported */
+    if (!(block1->block2.CW&0x0500)) {
+        parse_payload(data, block1, out);
     }
     decoder_output_data(decoder, data);
 }
