@@ -117,8 +117,8 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c, speed_kmh;
 
     // Find the most frequent data packet
-    // reduce false positives, require at least 5 out of 12 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, 5, 33); // 33
+    // reduce false positives, require at least 4 out of 12 (only 5-7 for TX141W) repeats.
+    r = bitbuffer_find_repeated_row(bitbuffer, 4, 33); // 33
     if (r < 0) {
         return DECODE_ABORT_LENGTH;
     }
