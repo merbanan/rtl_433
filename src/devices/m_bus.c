@@ -159,37 +159,61 @@ typedef struct {
 
 
 static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
+static float humidity_factor[2] = { 0.1, 1 };
 
-static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam ) {
-    int consumed_bytes = 0;
+static int consumed_bytes[8] = { 0, 1, 2, 3, 4, -1, 6, 8};
 
-    switch (dif_coding&0x03) {
-        case 0x0 : consumed_bytes=0; break;
-        case 0x1 : consumed_bytes=2; break;
-        case 0x2 : consumed_bytes=4; break;
-        case 0x3 : consumed_bytes=6; break;
-        case 0x4 : consumed_bytes=8; break;
-        case 0x5 : consumed_bytes=-1; break;
-        case 0x6 : consumed_bytes=12; break;
-        case 0x7 : consumed_bytes=-1; break;
-    }
+static char* oms_temp[3][4] = {
+{"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
+{"maximum_temperature_1h_C","maximum_temperature_24h_C","error_13","error_14",},
+{"minimum_temperature_1h_C","minimum_temperature_24h_C","error_23","error_24",}
+};
+
+static char* oms_temp_el[3][4] = {
+{"Temperature","Average Temperature 1h","Average Temperature 24h","Error [0][4]", },
+{"Maximum Temperature 1h","Maximum Temperature 24h","Error [1][3]","Error [1][4]",},
+{"Minimum Temperature 1h","Minimum Temperature 24h","Error [2][3]","Error [2][4]",}
+};
+
+static char* oms_hum[3][4] = {
+{"humidity","average_humidity_1h","average_humidity_24h","error_04", },
+{"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
+{"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",}
+};
+
+static char* oms_hum_el[3][4] = {
+{"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
+{"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
+{"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",}
+};
+
+static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff) {
+    int ret = consumed_bytes[dif_coding&0x03];
 
     switch (vif_linear) {
         case 0:
             switch(vif_uam>>2) {
                 case 0x19:
                     data = data_append(data,
-                        "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        oms_temp[dif_ff&0x3][dif_sn&0x7], oms_temp_el[dif_ff&0x3][dif_sn&0x7], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
                         NULL);
                     break;
                 default:
                     break;
             }
             break;
+        case 0x7B:
+            switch(vif_uam>>1) {
+                case 0xD:
+                    data = data_append(data, oms_hum[dif_ff&0x3][dif_sn&0x7], oms_hum_el[dif_ff&0x3][dif_sn&0x7], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1], NULL);
+                    break;
+                default:
+                    break;
+            }
         default:
             break;
     }
-    return consumed_bytes;
+    return ret;
 }
 
 static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out) {
@@ -199,6 +223,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t dife_array[10] = {0};
     uint8_t dife_cnt = 0;
     uint8_t dif_coding = 0;
+    uint8_t dif_sn = 0;
     uint8_t dif_ff = 0;
     uint8_t vif = 0;
     uint8_t vife_array[10] = {0};
@@ -214,18 +239,26 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     if (b[off] == 0x2F) off++;
 
 // [02 65] 9f08 [42 65] 9e08 [8201 65] 8f08 [02 fb1a] 3601 [42 fb1a] 3701 [8201 fb1a] 3001
-    
+
+//[02 65] b408 [42 65] a008 [8201 65] 6408 [22 65] 9608 [12 65] ac08 [62 65] 2808 [52 65] 920802fb1a470142fb1a4a018201fb1a550122fb1a4a0112fb1a4a0162fb1a3c0152fb1a6c01066dbb3197902100
+
     /* Payload must start with a DIF */
     while(off < block1->L) {
-//        printf("Counter %d, %d, %d, %02X\n", cnt++, off, block1->L, b[off]);
+        memset(dife_array, 0, 10);
+        memset(vife_array, 0, 10);
+        dife_cnt = 0;
+        vife_cnt = 0;
 
         /* Parse DIF */
         dif = b[off];
+        dif_sn = (dif&0x40) >> 6;
         while (b[off]&0x80) {
             off++;
             dife_array[dife_cnt++] = b[off];
             if (dife_cnt >= 10) return;
         }
+        // Only use first dife in dife_array
+        dif_sn = ((dife_array[0]&0x0F) << 1) | dif_sn;
         off++;
         dif_coding = dif&0x0F;
         dif_ff = (dif&0x30) >> 4;
@@ -239,10 +272,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         }
         off++;
         /* Linear VIF-extension */
-        if (vif == 0x7B) {
+        if (vif == 0xFB) {
             vif_linear = 0x7B;
             vif_uam = vife_array[0];
-        } else if(vif  == 0x7D) {
+        } else if(vif  == 0xFD) {
             vif_linear = 0x7D;
             vif_uam = vife_array[0];
         } else {
@@ -250,7 +283,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
             vif_uam = vif&0x7F;
         }
 
-        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam);
+        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff);
         if (consumed_bytes==-1) return;
 
         off +=consumed_bytes;
@@ -394,6 +427,10 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     /* Encryption not supported */
     if (!(block1->block2.CW&0x0500)) {
         parse_payload(data, block1, out);
+    } else {
+        data = data_append(data,
+        "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
+                        NULL);
     }
     decoder_output_data(decoder, data);
 }
