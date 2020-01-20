@@ -125,6 +125,7 @@ const char* m_bus_device_type_str(uint8_t devType) {
         case 0x33:  str = "Bidirectional repeater";break;
         case 0x36:  str = "Radio converter (system side)";break;
         case 0x37:  str = "Radio converter (meter side)";break;
+        case 0x94:  str = "Hager TR210 KNX RF";break;
         default:    break;  // Unknown
     }
     return str;
@@ -313,7 +314,15 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
-    m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+    /* Check for KNX RF default values */
+    if ((in->data[2]==0xFF) && (in->data[3]==0x03)) {
+        block1->M_str[0] = 'K';
+        block1->M_str[1] = 'N';
+        block1->M_str[2] = 'X';
+        block1->M_str[3] = '\0';
+    } else {
+        m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+    }
     block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
     block1->A_Version = in->data[8];
     block1->A_DevType = in->data[9];
@@ -597,6 +606,32 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
+static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+    static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
+    unsigned int start_pos;
+    bitbuffer_t packet_bits = {0};
+    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+
+    // Validate package length
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {
+        return 0;
+    }
+
+    // Find a Mode S data package
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
+    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 410);
+    data_in.length = (bitbuffer->bits_per_row[0]);
+    bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
+
+    if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+
+    m_bus_output_data(decoder, &data_out, &block1, "S");
+
+    return 1;
+}
+
 static char *output_fields[] = {
     "model",
     "mode",
@@ -626,12 +661,12 @@ r_device m_bus_mode_c_t = {
 // Untested!!! (Need samples)
 r_device m_bus_mode_s = {
     .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
-    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
-    .long_width     = 0,    // Unused
-    .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
-    .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .modulation     = FSK_PULSE_PCM,
+    .short_width    = (1000.0/32.768),   // ~31 us per bit
+    .long_width     = (1000.0/32.768),
+    .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
+    .decode_fn      = &m_bus_mode_s_callback,
+    .disabled       = 0,    // Disable per default, as it runs on non-standard frequency
 };
 
 
