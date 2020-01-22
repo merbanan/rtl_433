@@ -164,28 +164,32 @@ static float humidity_factor[2] = { 0.1, 1 };
 
 static int consumed_bytes[8] = { 0, 1, 2, 3, 4, -1, 6, 8};
 
-static char* oms_temp[3][4] = {
+static char* oms_temp[4][4] = {
 {"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
 {"maximum_temperature_1h_C","maximum_temperature_24h_C","error_13","error_14",},
-{"minimum_temperature_1h_C","minimum_temperature_24h_C","error_23","error_24",}
+{"minimum_temperature_1h_C","minimum_temperature_24h_C","error_23","error_24",},
+{"error_31","error_32","error_33","error_34",}
 };
 
-static char* oms_temp_el[3][4] = {
+static char* oms_temp_el[4][4] = {
 {"Temperature","Average Temperature 1h","Average Temperature 24h","Error [0][4]", },
 {"Maximum Temperature 1h","Maximum Temperature 24h","Error [1][3]","Error [1][4]",},
-{"Minimum Temperature 1h","Minimum Temperature 24h","Error [2][3]","Error [2][4]",}
+{"Minimum Temperature 1h","Minimum Temperature 24h","Error [2][3]","Error [2][4]",},
+{"error_31","error_32","error_33","error_34",}
 };
 
-static char* oms_hum[3][4] = {
+static char* oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
 {"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
-{"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",}
+{"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
+{"error_31","error_32","error_33","error_34",}
 };
 
-static char* oms_hum_el[3][4] = {
+static char* oms_hum_el[4][4] = {
 {"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
 {"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
-{"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",}
+{"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
+{"Error 31","Error 32","Error 33","Error 34",}
 };
 
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff) {
@@ -196,7 +200,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
             switch(vif_uam>>2) {
                 case 0x19:
                     data = data_append(data,
-                        oms_temp[dif_ff&0x3][dif_sn&0x7], oms_temp_el[dif_ff&0x3][dif_sn&0x7], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
                         NULL);
                     break;
                 default:
@@ -206,7 +210,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         case 0x7B:
             switch(vif_uam>>1) {
                 case 0xD:
-                    data = data_append(data, oms_hum[dif_ff&0x3][dif_sn&0x7], oms_hum_el[dif_ff&0x3][dif_sn&0x7], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1], NULL);
+                    data = data_append(data, oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1], NULL);
                     break;
                 default:
                     break;
