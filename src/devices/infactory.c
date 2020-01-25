@@ -7,9 +7,13 @@
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 inFactory Outdoor sensor transmits data temperature, humidity.
+
+Also NC-3982-913 from Pearl (for FWS-686 station).
+
 Transmissions also includes an id. The sensor transmits
 every 60 seconds 6 packets.
 
@@ -92,7 +96,7 @@ static char *output_fields[] = {
 };
 
 r_device infactory = {
-        .name        = "inFactory",
+        .name        = "inFactory, FreeTec NC-3982-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1850,
         .long_width  = 4050,

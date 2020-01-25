@@ -84,7 +84,7 @@ Read the Test Data section at the bottom.
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
-    [03]  Prologue Temperature Sensor
+    [03]  Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor
     [04]  Waveman Switch Transmitter
     [06]* ELV EM 1000
     [07]* ELV WS 2000
@@ -124,7 +124,7 @@ Read the Test Data section at the bottom.
     [44]  CurrentCost Current Sensor
     [45]  emonTx OpenEnergyMonitor
     [46]  HT680 Remote control
-    [47]  Conrad S3318P Temperature & Humidity Sensor
+    [47]  Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor
     [48]  Akhan 100F14 remote keyless entry
     [49]  Quhwa
     [50]  OSv1 Temperature Sensor
@@ -160,13 +160,13 @@ Read the Test Data section at the bottom.
     [82]  Citroen TPMS
     [83]  Oil Ultrasonic STANDARD ASK
     [84]  Thermopro TP11 Thermometer
-    [85]  Solight TE44
+    [85]  Solight TE44/TE66, EMOS E0107T, NX-6876-917
     [86]  Wireless Smoke and Heat Detector GS 558
     [87]  Generic wireless motion sensor
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
-    [91]  inFactory
+    [91]  inFactory, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor (type AJ3650)
@@ -180,7 +180,7 @@ Read the Test Data section at the bottom.
     [102]  SimpliSafe Home Security System (May require disabling automatic gain for KeyPad decodes)
     [103]  Sensible Living Mini-Plant Moisture Sensor
     [104]  Wireless M-Bus, Mode C&T, 100kbps (-f 868950000 -s 1200000)
-    [105]* Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
+    [105]  Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)
     [106]* Wireless M-Bus, Mode R, 4.8kbps (-f 868330000)
     [107]* Wireless M-Bus, Mode F, 2.4kbps
     [108]  Hyundai WS SENZOR Remote Temperature Sensor
