@@ -116,7 +116,7 @@ The default frequency is 433.92 MHz and can be explicitly requested with `-f 433
 You can give a frequency in Hz, like `-f 433920000` or use suffixes of `k`, `M`, or `G`,
 e.g. `-f 433920k`, or `-f 433.92M`.
 
-Other interesting frequencies are e.g. `-f 868M`, `-f 315M`, `-f 915M`.
+Other interesting frequencies are e.g. `-f 868M`, `-f 315M`, `-f 345M`, `-f 915M`.
 If you fine tune the frequency to your sender device you should avoid hitting the sender frequency dead center.
 The resulting DC (direct current) signal is often attenuated by receivers and hard to make out when analysing samples.
 A small offset of 10 kHz to 50 kHz works best.

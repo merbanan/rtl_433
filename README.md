@@ -1,6 +1,6 @@
 # rtl_433
 
-rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, and 915 MHz ISM bands.
+rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, 345 MHz, and 915 MHz ISM bands.
 
 The official source code is in the https://github.com/merbanan/rtl_433/ repository.
 
