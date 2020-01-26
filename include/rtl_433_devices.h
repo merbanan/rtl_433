@@ -154,6 +154,7 @@
     DECL(archos_tbh) \
     DECL(ws2032) \
     DECL(auriol_afw2a1) \
+    DECL(tfa_drop_303233) \
 
     /* Add new decoders here. */
 

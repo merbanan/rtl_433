@@ -156,7 +156,19 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      */
 
     /*
+     * Several tools are available to reverse engineer a message integrity
+     * check:
+     *
+     * - reveng for CRC: http://reveng.sourceforge.net/
+     *   - Guide: https://hackaday.com/2019/06/27/reverse-engineering-cyclic-redundancy-codes/
+     * - revdgst: https://github.com/triq-org/revdgst/
+     * - trial and error, e.g. via online calculators:
+     *   - https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
+     */
+
+    /*
      * Check message integrity (Parity example)
+     *
      */
     // parity check: odd parity on bits [0 .. 67]
     // i.e. 8 bytes and a nibble.
@@ -264,6 +276,10 @@ static char *output_fields[] = {
  * - r_device.h for the list of defined names
  *
  * This device is disabled and hidden, it can not be enabled.
+ *
+ * To enable your device, add it to the list in include/rtl_433_devices.h
+ * and to src/CMakeLists.txt and src/Makefile.am or run ./maintainer_update.py
+ *
  */
 r_device new_template = {
         .name        = "Template decoder",
