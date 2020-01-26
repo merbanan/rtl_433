@@ -22,7 +22,7 @@ void get_time_now(struct timeval *tv)
         perror("gettimeofday");
 }
 
-char *format_time_str(char *buf, char const *format, time_t time_secs)
+char *format_time_str(char *buf, char const *format, int with_tz, time_t time_secs)
 {
     time_t etime;
     struct tm tm_info;
@@ -43,11 +43,16 @@ char *format_time_str(char *buf, char const *format, time_t time_secs)
     if (!format || !*format)
         format = "%Y-%m-%d %H:%M:%S";
 
-    strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
+    if (with_tz) {
+        strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
+        if (!strcmp(buf + l, "+0000"))
+            strcpy(buf + l, "Z");
+    }
     return buf;
 }
 
-char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
+char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval *tv)
 {
     struct timeval now;
     struct tm tm_info;
@@ -68,7 +73,12 @@ char *usecs_time_str(char *buf, char const *format, struct timeval *tv)
         format = "%Y-%m-%d %H:%M:%S";
 
     size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
-    snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
+    l += snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
+    if (with_tz) {
+        strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
+        if (!strcmp(buf + l, "+0000"))
+            strcpy(buf + l, "Z");
+    }
     return buf;
 }
 

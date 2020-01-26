@@ -24,11 +24,13 @@
 #define ID_RTGN318  0x0cc3 // warning: id is from 0x0cc3 and 0xfcc3
 #define ID_RTGN129  0x0cc3 // same as RTGN318 but different packet size
 #define ID_THGR810  0xf824
+#define ID_THGR810a 0xf8b4 // unconfirmed version
 #define ID_THN802   0xc844
 #define ID_PCR800   0x2914
 #define ID_PCR800a  0x2d14 // Different PCR800 ID - AU version I think
 #define ID_THGR81   0xf824
 #define ID_WGR800   0x1984
+#define ID_WGR800a  0x1994 // unconfirmed version
 #define ID_WGR968   0x3d00
 #define ID_UV800    0xd874
 #define ID_THN129   0xcc43 // THN129 Temp only
@@ -112,15 +114,17 @@ static unsigned int get_os_rollingcode(unsigned char *message)
     return rc;
 }
 
-static unsigned short int power(uint8_t const *msg)
+static unsigned short int cm180_power(uint8_t const *msg)
 {
     unsigned short int val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
-    val *= 1.00188; // unknown if correct
+    // tested accross situations varying from 700 watt to more than 8000 watt to
+    // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
+    val *= 1.00625;
     return val;
 }
 
-static unsigned long long total(uint8_t const *msg)
+static unsigned long long cm180_total(uint8_t const *msg)
 {
     unsigned long long val = 0;
     if ((msg[1] & 0x0F) == 0) {
@@ -545,7 +549,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         msg_len = bitbuffer->bits_per_row[0] - os_pos;
     }
 
-    else if (bitbuffer->bits_per_row[0] - cm180_pos >= 11 * 8) {
+    // 52 bits: secondary frame (instant watts only)
+    // 108 bits: primary frame (instant watts + cumulative wattshour)
+    else if (bitbuffer->bits_per_row[0] - cm180_pos >= 52) {
         msg_pos = cm180_pos;
         msg_len = bitbuffer->bits_per_row[0] - cm180_pos;
     }
@@ -562,7 +568,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     reflect_nibbles(msg, (msg_len + 7) / 8);
 
     int sensor_id = (msg[0] << 8) | msg[1];
-    if (sensor_id == ID_THGR810) {
+    if (sensor_id == ID_THGR810 || sensor_id == ID_THGR810a) {
         if (validate_os_checksum(decoder, msg, 15) != 0)
             return 0;
         float temp_c = get_os_temperature(msg);
@@ -643,7 +649,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         decoder_output_data(decoder, data);
         return 1;
     }
-    else if (sensor_id == ID_WGR800) {
+    else if (sensor_id == ID_WGR800 || sensor_id == ID_WGR800a) {
         if (validate_os_checksum(decoder, msg, 17) != 0)
             return 0;
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
@@ -683,26 +689,35 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         for (int k = 0; k < BITBUF_COLS; k++) { // Reverse nibbles
             msg[k] = (msg[k] & 0xF0) >> 4 | (msg[k] & 0x0F) << 4;
         }
-        unsigned short int ipower = power(msg);
-        unsigned long long itotal = total(msg);
+
+        int sequence = msg[1] & 0x0F;
+        int id       = msg[2] << 8 | (msg[1] & 0xF0);
+        int batt_low = (msg[3] & 0x1); // 8th bit instead of 6th commonly used for other devices
+
+        unsigned short int ipower = cm180_power(msg);
+        unsigned long long itotal = cm180_total(msg);
         float total_energy        = itotal / 3600.0 / 1000.0;
         if (itotal && valid == 0) {
             data = data_make(
-                    "brand",            "",                     DATA_STRING, "OS",
-                    "model",            "",                     DATA_STRING,    _X("Oregon-CM180","CM180"),
-                    "id",                 "House Code", DATA_INT, msg[1]&0x0F,
-                    "power_W",        "Power",            DATA_FORMAT,    "%d W",DATA_INT, ipower,
-                    "energy_kWh", "Energy",         DATA_FORMAT,    "%2.2f kWh",DATA_DOUBLE, total_energy,
+                    "brand",            "",                 DATA_STRING, "OS",
+                    "model",            "",                 DATA_STRING, _X("Oregon-CM180","CM180"),
+                    "id",               "House Code",       DATA_INT,    id,
+                    "battery",          "Battery",          DATA_STRING, batt_low ? "LOW" : "OK",
+                    "power_W",          "Power",            DATA_FORMAT, "%d W",DATA_INT, ipower,
+                    "energy_kWh",       "Energy",           DATA_FORMAT, "%2.2f kWh",DATA_DOUBLE, total_energy,
+                    "sequence",	        "sequence number",	DATA_INT,    sequence,
                     NULL);
             decoder_output_data(decoder, data);
             return 1;
         }
         else if (!itotal) {
             data = data_make(
-                    "brand",    "",                     DATA_STRING, "OS",
-                    "model",    "",                     DATA_STRING,    _X("Oregon-CM180","CM180"),
-                    "id",         "House Code", DATA_INT, msg[1]&0x0F,
-                    "power_W", "Power",         DATA_FORMAT,    "%d W",DATA_INT, ipower,
+                    "brand",            "",                 DATA_STRING, "OS",
+                    "model",            "",                 DATA_STRING, _X("Oregon-CM180","CM180"),
+                    "id",               "House Code",       DATA_INT,    id,
+                    "battery",          "Battery",          DATA_STRING, batt_low ? "LOW" : "OK",
+                    "power_W",          "Power",            DATA_FORMAT, "%d W",DATA_INT, ipower,
+                    "sequence",         "sequence number",  DATA_INT,    sequence,
                     NULL);
             decoder_output_data(decoder, data);
             return 1;
@@ -757,6 +772,7 @@ static char *output_fields[] = {
         "power_W",
         "energy_kWh",
         "radio_clock",
+        "sequence",
         NULL,
 };
 

@@ -109,7 +109,7 @@ static char *output_fields[] = {
         NULL};
 
 r_device prologue = {
-        .name        = "Prologue Temperature Sensor",
+        .name        = "Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,

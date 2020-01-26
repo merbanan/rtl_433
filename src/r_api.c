@@ -267,9 +267,9 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
             format = "%Y-%m-%dT%H:%M:%S";
 
         if (cfg->report_time_hires)
-            return usecs_time_str(buf, format, &ago);
+            return usecs_time_str(buf, format, cfg->report_time_tz, &ago);
         else
-            return format_time_str(buf, format, ago.tv_sec);
+            return format_time_str(buf, format, cfg->report_time_tz, ago.tv_sec);
     }
 }
 
@@ -357,13 +357,11 @@ char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *nu
     list_t *r_devs = &cfg->demod->r_devs;
     for (void **iter = r_devs->elems; iter && *iter; ++iter) {
         r_device *r_dev = *iter;
-        if (!r_dev->disabled) {
-            if (r_dev->fields)
-                list_push_all(&field_list, (void **)r_dev->fields);
-            else
-                fprintf(stderr, "rtl_433: warning: %u \"%s\" does not support CSV output\n",
-                        r_dev->protocol_num, r_dev->name);
-        }
+        if (r_dev->fields)
+            list_push_all(&field_list, (void **)r_dev->fields);
+        else
+            fprintf(stderr, "rtl_433: warning: %u \"%s\" does not support CSV output\n",
+                    r_dev->protocol_num, r_dev->name);
     }
     convert_csv_fields(cfg, (char const **)field_list.elems);
 

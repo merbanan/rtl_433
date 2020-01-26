@@ -13,6 +13,8 @@
 Largely the same as esperanza_ews, kedsum.
 \sa esperanza_ews.c kedsum.c
 
+Also NC-5849-913 from Pearl (for FWS-310 station).
+
 Transmit Interval: every ~50s.
 Message Format: 40 bits (10 nibbles).
 
@@ -111,11 +113,11 @@ static char *output_fields[] = {
     "temperature_F",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device s3318p = {
-    .name           = "Conrad S3318P Temperature & Humidity Sensor",
+    .name           = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
     .modulation     = OOK_PULSE_PPM,
     .short_width    = 1900,
     .long_width     = 3800,
@@ -123,5 +125,5 @@ r_device s3318p = {
     .reset_limit    = 9400,
     .decode_fn      = &s3318p_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };
