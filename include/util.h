@@ -123,6 +123,15 @@ uint16_t crc16(uint8_t const message[], unsigned nBytes, uint16_t polynomial, ui
 /// @return digest value
 uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8_t key);
 
+/// Digest-8 by "LFSR-based Toeplitz hash", byte reflect, bit reflect.
+///
+/// @param message bytes of message data
+/// @param bytes number of bytes to digest
+/// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
+/// @param key initial key
+/// @return digest value
+uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, uint8_t key);
+
 /// Digest-16 by "LFSR-based Toeplitz hash".
 ///
 /// @param data up to 32 bits data, LSB aligned
