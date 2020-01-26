@@ -153,6 +153,7 @@
     DECL(holman_ws5029pwm) \
     DECL(archos_tbh) \
     DECL(ws2032) \
+    DECL(auriol_afw2a1) \
     DECL(tfa_drop_30_3233_01) \
 
     /* Add new decoders here. */
