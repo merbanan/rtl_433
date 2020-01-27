@@ -602,7 +602,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",                 DATA_STRING, "Fineoffset-WH51",
             "id",               "ID",               DATA_STRING, id,
             "battery_ok",       "Battery level",    DATA_DOUBLE, battery_level,
-            "battery_mV",       "Battery",          DATA_FORMAT, "%d mV", DATA_DOUBLE, battery_mv,
+            "battery_mV",       "Battery",          DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
             "moisture",         "Moisture",         DATA_FORMAT, "%u %%", DATA_INT, moisture,
             "boost",            "Transmission boost", DATA_INT, boost,
             "ad_raw",           "AD raw",           DATA_INT, ad_raw,
