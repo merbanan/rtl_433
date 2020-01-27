@@ -694,7 +694,8 @@ r_device *flex_create_device(char *spec)
         usage();
     }
 
-    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
+    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT
+            && dev->modulation != FSK_PULSE_MANCHESTER_ZEROBIT) {
         if (!dev->long_width) {
             fprintf(stderr, "Bad flex spec, missing long width!\n");
             usage();
