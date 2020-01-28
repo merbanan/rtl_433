@@ -46,11 +46,37 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     const int max_zeros = device->s_reset_limit / device->s_long_width;
     const int tolerance = device->s_long_width / 4; // Tolerance is ±25% of a bit period
 
+    // if there is a run of bit-wide toggles (preamble) tune the bit period
+    float f_short = device->f_short_width;
+    float f_long  = device->f_long_width;
+    for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+        int width = 0;
+        int count = 0;
+        while (n < pulses->num_pulses
+                && (int)(pulses->pulse[n] * device->f_short_width + 0.5) == 1
+                && (int)(pulses->gap[n] * device->f_long_width + 0.5) == 1) {
+            width += pulses->pulse[n] + pulses->gap[n];
+            count += 2;
+            n++;
+        }
+        // require at least 8 full bits preamble
+        if (count >= 16) {
+            f_long  = (float)count / width;
+            f_short = (float)count / width * device->s_short_width / device->s_long_width;
+            if (device->verbose > 1) {
+                float to_us = 1e6 / pulses->sample_rate;
+                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (%.2f vs %.2f), %d bit preamble\n",
+                        to_us / f_long, to_us * device->s_long_width,
+                        to_us / f_short, to_us * device->s_short_width, count);
+            }
+        }
+    }
+
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
-        int highs = (pulses->pulse[n]) * device->f_short_width + 0.5;
+        int highs = (pulses->pulse[n]) * f_short + 0.5;
         // Determine number of bit periods in current pulse/gap length (rounded)
-        int periods = (pulses->pulse[n] + pulses->gap[n]) * device->f_long_width + 0.5;
+        int periods = (pulses->pulse[n] + pulses->gap[n]) * f_long + 0.5;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
