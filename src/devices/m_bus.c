@@ -192,7 +192,7 @@ static char* oms_hum_el[4][4] = {
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
-static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff) {
+static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
     int ret = consumed_bytes[dif_coding&0x03];
 
     switch (vif_linear) {
@@ -215,6 +215,16 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 default:
                     break;
             }
+        case 0x7D:
+            switch(vif_uam) {
+                case 0x1b:
+                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (b[0]==0x55) ? "open":"closed", NULL);
+                    break;
+                case 0x3a:
+                    /* Only use 32 bits of 48 available */
+                    data = data_append(data, ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]), NULL);
+                    break;
+            }
         default:
             break;
     }
@@ -230,6 +240,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t dif_coding = 0;
     uint8_t dif_sn = 0;
     uint8_t dif_ff = 0;
+    uint8_t dif_su = 0;
     uint8_t vif = 0;
     uint8_t vife_array[10] = {0};
     uint8_t vife_cnt = 0;
@@ -257,6 +268,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         /* Parse DIF */
         dif = b[off];
         dif_sn = (dif&0x40) >> 6;
+        dif_su = 0;
         while (b[off]&0x80) {
             off++;
             dife_array[dife_cnt++] = b[off];
@@ -264,6 +276,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         }
         // Only use first dife in dife_array
         dif_sn = ((dife_array[0]&0x0F) << 1) | dif_sn;
+        dif_su = ((dife_array[0]&0x40) >> 6);
         off++;
         dif_coding = dif&0x0F;
         dif_ff = (dif&0x30) >> 4;
@@ -288,7 +301,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
             vif_uam = vif&0x7F;
         }
 
-        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff);
+        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
         if (consumed_bytes==-1) return;
 
         off +=consumed_bytes;
