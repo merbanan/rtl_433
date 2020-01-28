@@ -125,7 +125,6 @@ const char* m_bus_device_type_str(uint8_t devType) {
         case 0x33:  str = "Bidirectional repeater";break;
         case 0x36:  str = "Radio converter (system side)";break;
         case 0x37:  str = "Radio converter (meter side)";break;
-        case 0x94:  str = "Hager TR210 KNX RF";break;
         default:    break;  // Unknown
     }
     return str;
@@ -139,6 +138,13 @@ typedef struct {
     uint8_t     ST;
     uint16_t    CW;         // Configuration word
     uint8_t     pl_offset;  // Payload offset
+    /* KNX */
+    uint8_t     knx_ctrl;
+    uint16_t    src;
+    uint16_t    dst;
+    uint8_t     l_npci;
+    uint8_t     tpci;
+    uint8_t     apci;
 } m_bus_block2_t;
 
 // Data structure for block 1
@@ -151,6 +157,8 @@ typedef struct {
     uint8_t     A_DevType;    // Address, Device Type
     uint16_t    CRC;      // Optional (Only for Format A)
     m_bus_block2_t block2;
+    int         knx_mode;
+    uint8_t     knx_sn[6];
 } m_bus_block1_t;
 
 typedef struct {
@@ -313,15 +321,25 @@ static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
 
-    b2->CI = b[0];
-    /* Short transport layer */
-    if (b2->CI == 0x7A) {
-        b2->AC = b[1];
-        b2->ST = b[2];
-        b2->CW = b[4]<<8 | b[3];
-        b2->pl_offset = BLOCK1A_SIZE-2 + 5;
+    if (block1->knx_mode) {
+        b2->knx_ctrl = b[0];
+        b2->src = b[1]<< 8 | b[2];
+        b2->dst = b[3]<< 8 | b[4];
+        b2->l_npci = b[5];
+        b2->tpci = b[6];
+        b2->apci = b[7];
+        /* data */
+    } else {
+        b2->CI = b[0];
+        /* Short transport layer */
+        if (b2->CI == 0x7A) {
+            b2->AC = b[1];
+            b2->ST = b[2];
+            b2->CW = b[4]<<8 | b[3];
+            b2->pl_offset = BLOCK1A_SIZE-2 + 5;
+        }
+    //    printf("Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     }
-//    printf("Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     return 0;
 }
 
@@ -331,18 +349,17 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
+
     /* Check for KNX RF default values */
     if ((in->data[2]==0xFF) && (in->data[3]==0x03)) {
-        block1->M_str[0] = 'K';
-        block1->M_str[1] = 'N';
-        block1->M_str[2] = 'X';
-        block1->M_str[3] = '\0';
+        block1->knx_mode = 1;
+        memcpy(block1->knx_sn, &in->data[4], 6);
     } else {
         m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+        block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
+        block1->A_Version = in->data[8];
+        block1->A_DevType = in->data[9];
     }
-    block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
-    block1->A_Version = in->data[8];
-    block1->A_DevType = in->data[9];
 
     // Store length of data
     out->length      = block1->L-9 + BLOCK1A_SIZE-2;
@@ -427,7 +444,25 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     for (unsigned n=0; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
-    data = data_make(
+    if (block1->knx_mode) {
+        char sn_str[7*2] = {0};
+        for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
+
+        data = data_make(
+        "model",    "",             DATA_STRING,    _X("KNX-RF","KNX-RF"),
+        "sn",       "SN",           DATA_STRING,    sn_str,
+        "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
+        "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
+        "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
+        "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
+        "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
+        "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
+        "data_length","Data Length",DATA_INT,       out->length,
+        "data",     "Data",         DATA_STRING,    str_buf,
+        "mic",      "Integrity",    DATA_STRING,    "CRC",
+        NULL);
+    } else {
+        data = data_make(
         "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
         "mode",     "Mode",         DATA_STRING,    mode,
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
@@ -441,7 +476,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
-
+    }
     if(block1->block2.CI) {
         data = data_append(data,
         "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
