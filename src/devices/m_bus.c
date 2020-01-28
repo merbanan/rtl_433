@@ -691,6 +691,18 @@ static char *output_fields[] = {
     "version",
     "type",
     "type_string",
+    "CI",
+    "AC",
+    "ST",
+    "CW",
+    "sn",
+    "knx_ctrl",
+    "src",
+    "dst",
+    "l_npci",
+    "tpci",
+    "apci",
+    "crc",
     NULL
 };
 
@@ -719,6 +731,7 @@ r_device m_bus_mode_s = {
     .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
     .decode_fn      = &m_bus_mode_s_callback,
     .disabled       = 0,    // Disable per default, as it runs on non-standard frequency
+    .fields         = output_fields,
 };
 
 
