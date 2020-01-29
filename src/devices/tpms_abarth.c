@@ -10,20 +10,6 @@
 */
 
 /**
-Jansite Solar TPMS (Internal/External) Model TY02S
-
-Data layout (nibbles):
-
-    II II II IS PP TT CC
-
-- I: 28 bit ID
-- S: 4 bit Status (deflation alarm, battery low etc)
-- P: 8 bit Pressure (best guess quarter PSI, i.e. ~0.58 kPa)
-- T: 8 bit Temperature (deg. C offset by 50)
-- C: 8 bit Checksum
-*/
-
-/**
 Abarth 124 Spider TPMS by TTigges
 Protocol similar (and based on) Jansite Solar TPMS by Andreas Spiess and Christian W. Zuckschwerdt
 
