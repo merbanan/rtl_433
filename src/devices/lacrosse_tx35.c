@@ -11,7 +11,7 @@ Tune to 868240000Hz
 
 Protocol
 ========
-Example Data (gfile-tx29.data : https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06)
+Example data : https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29.cu8
 ~~~
    a    a    2    d    d    4    9    2    8    4    4    8    6    a    e    c
 Bits :
@@ -19,7 +19,7 @@ Bits :
 Bytes num :
 ----1---- ----2---- ----3---- ----4---- ----5---- ----6---- ----7---- ----8----
 ~~~~~~~~~ 1st byte
-preamble, always "0xaa"
+preamble, sequence 10B repeated 4 times (see below)
           ~~~~~~~~~~~~~~~~~~~ bytes 2 and 3
 brand identifier, always 0x2dd4
                               ~~~~ 1st nibble of bytes 4
@@ -44,14 +44,25 @@ Developer's comments
 ====================
 I have noticed that depending of the device, the message received has different length.
 It seems some sensor send a long preamble (33 bits, 0 / 1 alternated), and some send only
-one byte as the preamble. I own 3 sensors TX29, and two of them send a long preamble.
-So this decoder synchronize on the 0xaa 0x2d 0xd4 preamble, so many 0xaa can occurs before.
-Also, I added 0x9 in the preamble (the weather data length), because this decoder only handle
-this type of message.
-TX29 and TX35 share the same protocol, but pulse are different length, thus this decoder
-handle the two signal and we use two r_device struct (only differing by the pulse width)
+six bits as the preamble. I own 3 sensors TX29, and two of them send a long preamble.
+So this decoder synchronize on the following sequence:
 
-How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.html
+---------------------------------------------
+
+1010 1000 1011 0111 0101 0010 01--
+   A    8    B    7    5    2    4
+
+ 0 -  5 : short preabmle [101010B]
+ 6 - 14 : brand identifier [2DD4h]
+15 - 19 : datalength [9]
+
+---------------------------------------------
+
+Short preamble example (sampling rate - 1Mhz):
+https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29-short-preamble.cu8.
+
+TX29 and TX35 share the same protocol, but pulse are different length, thus this decoder
+handle the two signal and we use two r_device struct (only differing by the pulse width).
 */
 
 #include "decoder.h"
@@ -62,11 +73,11 @@ How to make a decoder : https://enavarro.me/ajouter-un-decodeur-ask-a-rtl_433.ht
 #define LACROSSE_TX29_MODEL          29 // Model number
 #define LACROSSE_TX35_MODEL          35
 
-static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device29or35)
+static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or35)
 {
     data_t *data;
     int brow;
-    uint8_t out[8];
+    uint8_t out[5];
     int r_crc, c_crc;
     int sensor_id, newbatt, battery_low;
     int humidity;
@@ -74,30 +85,27 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
     int events = 0;
 
     static const uint8_t preamble[] = {
-            0xaa, // preamble
-            0x2d, // brand identifier
-            0xd4, // brand identifier
-            0x90, // data length (this decoder work only with data length of 9, so we hardcode it on the preamble)
+            0xa8,
+            0xb7,
+            0x52,
+            0x40,
     };
 
     for (brow = 0; brow < bitbuffer->num_rows; ++brow) {
         // Validate message and reject it as fast as possible : check for preamble
-        unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 28);
+        unsigned int start_pos = bitbuffer_search(bitbuffer, brow, 0, preamble, 26);
         if (start_pos == bitbuffer->bits_per_row[brow])
             continue; // no preamble detected, move to the next row
         if (decoder->verbose)
             fprintf(stderr, "LaCrosse TX29/35 detected, buffer is %d bits length, device is TX%d\n", bitbuffer->bits_per_row[brow], device29or35);
-        // remove preamble and keep only 64 bits
-        bitbuffer_extract_bytes(bitbuffer, brow, start_pos, out, 64);
+        // remove preamble and keep only five octets
+        bitbuffer_extract_bytes(bitbuffer, brow, start_pos+22, out, 40);
 
         /*
          * Check message integrity (CRC/Checksum/parity)
-         * Normally, it is computed on the whole message, from byte 0 (preamble) to byte 6,
-         * but preamble is always the same, so we can speed the process by doing a crc check
-         * only on byte 3,4,5,6
          */
-        r_crc = out[7];
-        c_crc = crc8(&out[3], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
+        r_crc = out[4];
+        c_crc = crc8(&out[0], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
         if (r_crc != c_crc) {
             if (decoder->verbose)
                 fprintf(stderr, "LaCrosse TX29/35 bad CRC: calculated %02x, received %02x\n", c_crc, r_crc);
@@ -109,11 +117,11 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
          * Now that message "envelope" has been validated,
          * start parsing data.
          */
-        sensor_id   = ((out[3] & 0x0f) << 2) | (out[4] >> 6);
-        temp_c      = 10.0 * (out[4] & 0x0f) + 1.0 * ((out[5] >> 4) & 0x0f) + 0.1 * (out[5] & 0x0f) - 40.0;
-        newbatt     = (out[4] >> 5) & 1;
-        battery_low = out[6] >> 7;
-        humidity    = out[6] & 0x7f;
+        sensor_id   = ((out[0] & 0x0f) << 2) | (out[1] >> 6);
+        temp_c      = 10.0 * (out[1] & 0x0f) + 1.0 * ((out[2] >> 4) & 0x0f) + 0.1 * (out[2] & 0x0f) - 40.0;
+        newbatt     = (out[1] >> 5) & 1;
+        battery_low = out[3] >> 7;
+        humidity    = out[3] & 0x7f;
         if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) {
             data = data_make(
                     "brand", "", DATA_STRING, "LaCrosse",
@@ -136,7 +144,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, uint8_t device
                     "mic", "Integrity", DATA_STRING, "CRC",
                     NULL);
         }
-        // humidity = -1; // The TX29-IT sensor do not have humidity. It is replaced by a special value
 
         decoder_output_data(decoder, data);
         events++;
