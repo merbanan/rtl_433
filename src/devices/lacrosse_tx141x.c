@@ -1,5 +1,5 @@
 /** @file
-    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3 sensor
+    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor
 
     Changes done by Andrew Rivett <veggiefrog@gmail.com>. Copyright is
     retained by Robert Fraczkiewicz.
@@ -90,13 +90,14 @@ CRC, the first nibble can be checked by:
 
 The second nibble I could not figure out.
 
-Addition of TX141W:
+Addition of TX141W and TX145wsdth:
 
-    PRE5b ID19h BAT1b TEST?1b CH?2h TYPE4h TEMP_WIND12d 4h HUM8d CHK8h 1x
+    PRE5b ID19h BAT1b TEST?1b CH?2h TYPE4h TEMP_WIND12d HUM_DIR12d CHK8h 1x
 
 - type 1 has temp+hum (temp is offset 500 and scale 10)
-- type 2 has the wind (km/h scale 10)
+- type 2 has wind speed (km/h scale 10) and direction (degrees)
 - checksum is CRC-8 poly 0x31 init 0x00 over preceeding 7 bytes
+
 */
 
 #include "decoder.h"
@@ -117,8 +118,12 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c, speed_kmh;
 
     // Find the most frequent data packet
-    // reduce false positives, require at least 4 out of 12 (only 5-7 for TX141W) repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, 4, 33); // 33
+    // reduce false positives, require at least 5 out of 12 repeats.
+    r = bitbuffer_find_repeated_row(bitbuffer, 5, 33); // 33
+    if (r < 0) {
+        // try again for TX141W/TX145wsdth, require at least 3 out of 4-7 repeats.
+        r = bitbuffer_find_repeated_row(bitbuffer, 3, 64); // 65
+    }
     if (r < 0) {
         return DECODE_ABORT_LENGTH;
     }
@@ -159,7 +164,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         channel     = (b[3] & 0x30) >> 4;
         type        = (b[3] & 0x0f);
         temp_raw    = (b[4] << 4) | (b[5] >> 4);
-        humidity    = b[6];
+        humidity    = ((b[5] & 0x0f) << 8) | b[6];
 
         if (type == 1) {
             // Temp/Hum
@@ -180,6 +185,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (type == 2) {
             // Wind
             speed_kmh = temp_raw * 0.1;
+            // wind direction is in humidity field
 
             /* clang-format off */
             data = data_make(
@@ -188,6 +194,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
                     "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
                     "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+                    "wind_dir_deg",     "Wind direction",   DATA_INT,    humidity,
                     "test",             "Test?",            DATA_INT,    test,
                     NULL);
             /* clang-format on */
@@ -273,15 +280,18 @@ static char *output_fields[] = {
         "id",
         "channel",
         "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
+        "wind_avg_km_h",
+        "wind_dir_deg",
         "test",
         NULL,
 };
 
-// note TX141W: m=OOK_PWM, s=256, l=500, r=1888, y=748
+// note TX141W, TX145wsdth: m=OOK_PWM, s=256, l=500, r=1888, y=748
 r_device lacrosse_tx141x = {
-        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W sensor",
+        .name        = "LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 208,  // short pulse is 208 us + 417 us gap
         .long_width  = 417,  // long pulse is 417 us + 208 us gap
