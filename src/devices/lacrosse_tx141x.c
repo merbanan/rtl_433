@@ -179,6 +179,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "temperature_C",    "Temperature",      DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                     "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "test",             "Test?",            DATA_INT,    test,
+                    "mic",              "Integrity",        DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
@@ -196,6 +197,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
                     "wind_dir_deg",     "Wind direction",   DATA_INT,    humidity,
                     "test",             "Test?",            DATA_INT,    test,
+                    "mic",              "Integrity",        DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
         }
@@ -286,6 +288,7 @@ static char *output_fields[] = {
         "wind_avg_km_h",
         "wind_dir_deg",
         "test",
+        "mic",
         NULL,
 };
 
