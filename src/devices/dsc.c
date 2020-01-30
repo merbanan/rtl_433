@@ -219,7 +219,18 @@ r_device dsc_security = {
     .modulation    = OOK_PULSE_PCM_RZ,
     .short_width   = 250,    // Pulse length, 250 µs
     .long_width    = 500,    // Bit period, 500 µs
-    .reset_limit   = 5000, // Max gap,
+    .reset_limit   = 5000,   // Max gap,
+    .decode_fn     = &dsc_callback,
+    .disabled      = 0,
+    .fields        = output_fields,
+};
+
+r_device dsc_security_ws4945 = {
+    .name          = "DSC Security Contact (WS4945)",
+    .modulation    = OOK_PULSE_PCM_RZ,
+    .short_width   = 536,    // Pulse length, 536 µs
+    .long_width    = 1072,   // Bit period, 1072 µs
+    .reset_limit   = 6000,   // Max gap,
     .decode_fn     = &dsc_callback,
     .disabled      = 0,
     .fields        = output_fields,

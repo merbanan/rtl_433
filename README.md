@@ -223,6 +223,7 @@ Read the Test Data section at the bottom.
     [145]  WS2032 weather station
     [146]  Auriol AFW2A1 temperature/humidity sensor
     [147]  TFA Drop Rain Gauge 30.3233.01
+    [148]  DSC Security Contact (WS4945)
 
 * Disabled by default, use -R n or -G
 
