@@ -123,8 +123,8 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // reduce false positives, require at least 5 out of 12 repeats.
     r = bitbuffer_find_repeated_row(bitbuffer, 5, 33); // 33
     if (r < 0) {
-        // try again for TX141W/TX145wsdth, require at least 3 out of 4-7 repeats.
-        r = bitbuffer_find_repeated_row(bitbuffer, 3, 64); // 65
+        // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
+        r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
     }
     if (r < 0) {
         return DECODE_ABORT_LENGTH;
