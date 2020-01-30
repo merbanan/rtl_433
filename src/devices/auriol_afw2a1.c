@@ -65,6 +65,9 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 12, 36);
+    if (row < 0) {
+        return DECODE_ABORT_EARLY; // no repeated row found
+    }
 
     b = bitbuffer->bb[row];
 
