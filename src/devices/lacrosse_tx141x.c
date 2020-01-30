@@ -80,6 +80,8 @@ Changes:
 - Battery check bit is inverse of TX141TH.
 - temp_f removed, temp_c (celsius) is what's provided by the device.
 
+- TX141TH-BV3 bitlen is 41
+
 The CRC Checksum is not checked. In trying to reverse engineer the
 CRC, the first nibble can be checked by:
 
@@ -131,8 +133,14 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[r] >= 64) {
         device = LACROSSE_TX141W;
     }
-    else if (bitbuffer->bits_per_row[r] > 40) {
+    else if (bitbuffer->bits_per_row[r] > 41) {
         return DECODE_ABORT_LENGTH;
+    }
+    else if (bitbuffer->bits_per_row[r] >= 41) {
+        if (bitbuffer->num_rows > 12) {
+            return DECODE_ABORT_LENGTH; // false-positive with GT-WT03
+        }
+        device = LACROSSE_TX141TH; // actually TX141TH-BV3
     }
     else if (bitbuffer->bits_per_row[r] >= 40) {
         device = LACROSSE_TX141TH;
