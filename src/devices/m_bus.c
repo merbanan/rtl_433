@@ -256,7 +256,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t vif_linear = 0;
     uint8_t vife = 0;
     uint8_t exponent = 0;
-    int cnt = 0, consumed_bytes;
+    int cnt = 0, consumed;
 
     /* Align offset pointer, there might be 2 0x2F bytes */
     if (b[off] == 0x2F) off++;
@@ -309,10 +309,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
             vif_uam = vif&0x7F;
         }
 
-        consumed_bytes = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
-        if (consumed_bytes==-1) return;
+        consumed = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
+        if (consumed == -1) return;
 
-        off +=consumed_bytes;
+        off +=consumed;
     }
     return;
 }
