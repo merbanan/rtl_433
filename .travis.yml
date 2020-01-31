@@ -119,6 +119,56 @@ matrix:
             - librtlsdr-dev
             - cmake
 
+    - name: "ARM64 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      arch: arm64
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+    - name: "ARM64 Xenial Clang (clang 7.0.0, CMake 3.5.1)"
+      compiler: clang
+      arch: arm64
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+    - name: "ARM32 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      arch: arm64
+      dist: xenial
+      env:
+        - RTLSDR=OFF
+        - CC=arm-linux-gnueabihf-gcc
+        - SETARCH="setarch linux32 --verbose --32bit"
+      addons:
+        apt:
+          packages:
+            - crossbuild-essential-armhf
+            - libc6-armhf-cross
+            - cmake
+
+    - name: "i686 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      dist: xenial
+      env:
+        - RTLSDR=OFF
+        - CFLAGS="-m32"
+        - SETARCH="setarch i686 --verbose --3gb"
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - cmake
+
     - name: "Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR"
       compiler: gcc
       env: SOAPYSDR=ON
