@@ -25,6 +25,7 @@
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
 #endif
 #ifdef SOAPYSDR
+#include <SoapySDR/Version.h>
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Logger.h>
@@ -270,7 +271,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
     }
 
     if (verbose)
-        fprintf(stderr, "Found %d device(s)\n\n", device_count);
+        fprintf(stderr, "Found %u device(s)\n\n", device_count);
 
     int dev_index = 0;
     // select rtlsdr device by serial (-d :<serial>)
@@ -689,7 +690,17 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
     dev->sample_size = *sample_size;
 
     SoapySDRKwargs stream_args = {0};
-    if (SoapySDRDevice_setupStream(dev->soapy_dev, &dev->soapy_stream, SOAPY_SDR_RX, format, NULL, 0, &stream_args) != 0) {
+    int r;
+#if SOAPY_SDR_API_VERSION >= 0x00080000
+    // API version 0.8
+#undef SoapySDRDevice_setupStream
+    dev->soapy_stream = SoapySDRDevice_setupStream(dev->soapy_dev, SOAPY_SDR_RX, format, NULL, 0, &stream_args);
+    r = dev->soapy_stream == NULL;
+#else
+    // API version 0.7
+    r = SoapySDRDevice_setupStream(dev->soapy_dev, &dev->soapy_stream, SOAPY_SDR_RX, format, NULL, 0, &stream_args);
+#endif
+    if (r != 0) {
         if (verbose)
             fprintf(stderr, "Failed to setup sdr device\n");
         free(dev);
