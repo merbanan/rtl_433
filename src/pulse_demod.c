@@ -43,13 +43,45 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    const int max_zeros = device->s_reset_limit / device->s_long_width;
-    const int tolerance = device->s_long_width / 4; // Tolerance is ±25% of a bit period
+    int const max_zeros = device->s_reset_limit / device->s_long_width;
+    int tolerance = device->s_tolerance;
+    if (tolerance <= 0)
+        tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
 
-    // if there is a run of bit-wide toggles (preamble) tune the bit period
     float f_short = device->f_short_width;
     float f_long  = device->f_long_width;
-    for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+    // if there is a run of bit-wide toggles (preamble) tune the bit period
+    int min_count = device->s_short_width == device->s_long_width ? 12 : 4;
+    // RZ
+    for (unsigned n = 0; device->s_short_width != device->s_long_width && n < pulses->num_pulses; ++n) {
+        int swidth = 0;
+        int lwidth = 0;
+        int count = 0;
+        while (n < pulses->num_pulses
+                && pulses->pulse[n] >= device->s_short_width - tolerance
+                && pulses->pulse[n] <= device->s_short_width + tolerance
+                && pulses->pulse[n] + pulses->gap[n] >= device->s_long_width - tolerance
+                && pulses->pulse[n] + pulses->gap[n] <= device->s_long_width + tolerance) {
+            swidth += pulses->pulse[n];
+            lwidth += pulses->pulse[n] + pulses->gap[n];
+            count += 1;
+            n++;
+        }
+        // require at least min_count bits preamble
+        if (count >= min_count) {
+            f_long  = (float)count / lwidth;
+            f_short = (float)count / swidth;
+            min_count = count;
+            if (device->verbose > 1) {
+                float to_us = 1e6 / pulses->sample_rate;
+                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble\n",
+                        to_us / f_long, to_us * device->s_long_width,
+                        to_us / f_short, to_us * device->s_short_width, count);
+            }
+        }
+    }
+    // NRZ
+    for (unsigned n = 0; device->s_short_width == device->s_long_width && n < pulses->num_pulses; ++n) {
         int width = 0;
         int count = 0;
         while (n < pulses->num_pulses
@@ -59,14 +91,13 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             count += 2;
             n++;
         }
-        // require at least 8 full bits preamble
-        if (count >= 16) {
-            f_long  = (float)count / width;
-            f_short = (float)count / width * device->s_short_width / device->s_long_width;
+        // require at least min_count full bits preamble
+        if (count >= min_count) {
+            f_short = f_long = (float)count / width;
+            min_count = count;
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
-                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (%.2f vs %.2f), %d bit preamble\n",
-                        to_us / f_long, to_us * device->s_long_width,
+                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble\n",
                         to_us / f_short, to_us * device->s_short_width, count);
             }
         }
