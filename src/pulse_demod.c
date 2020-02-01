@@ -20,8 +20,14 @@
 #include <math.h>
 #include <limits.h>
 
-static int account_event(r_device *device, int ret)
+static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name)
 {
+    // run decoder
+    int ret = 0;
+    if (device->decode_fn) {
+        ret = device->decode_fn(device, bits);
+    }
+
     // statistics accounting
     device->decode_events += 1;
     if (ret > 0) {
@@ -36,6 +42,13 @@ static int account_event(r_device *device, int ret)
         fprintf(stderr, "Decoder gave invalid return value %d: notify maintainer\n", ret);
         exit(1);
     }
+
+    // Debug printout
+    if (!device->decode_fn || (device->verbose && ret > 0)) {
+        fprintf(stderr, "%s(): %s\n", demod_name, device->name);
+        bitbuffer_print(bits);
+    }
+
     return ret;
 }
 
@@ -138,14 +151,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0)                    // Only if data has been accumulated
         ) {
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
     } // for
@@ -204,14 +210,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
                     || (pulses->gap[n] >= device->s_reset_limit))     // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
 
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
     } // for pulses
@@ -299,14 +298,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
         else if (device->s_gap_limit > 0 && pulses->gap[n] > device->s_gap_limit
@@ -358,14 +350,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
             bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
             time_since_last = 0;
@@ -422,14 +407,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
         else if (symbol[n] >= device->s_reset_limit - device->s_tolerance
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -474,14 +452,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
                     || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -524,14 +495,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
                     || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -607,9 +571,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
                     || pulses->gap[n] > device->s_reset_limit)
                 && (bits.num_rows > 0)) { // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
+            events += account_event(device, &bits, __func__);
             return events;
         }
         manbit ^= 1;
@@ -631,14 +593,7 @@ int pulse_demod_string(const char *code, r_device *device)
 
     bitbuffer_parse(&bits, code);
 
-    if (device->decode_fn) {
-        events += account_event(device, device->decode_fn(device, &bits));
-    }
-    // Debug printout
-    if (!device->decode_fn || (device->verbose && events > 0)) {
-        fprintf(stderr, "%s(): %s \n", __func__, device->name);
-        bitbuffer_print(&bits);
-    }
+    events += account_event(device, &bits, __func__);
 
     return events;
 }

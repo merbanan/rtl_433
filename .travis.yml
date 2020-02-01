@@ -5,8 +5,8 @@ git:
   depth: false
 matrix:
   include:
-# Test Visual Studio 2017 CMake (MSBuild)
-    - os: windows
+    - name: "Visual Studio 2017 CMake (MSBuild)"
+      os: windows
       env:
         - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
       script:
@@ -15,8 +15,8 @@ matrix:
         - cd build
         - cmake -DENABLE_RTLSDR=OFF -G "Visual Studio 15 2017 Win64" ..
         - MSBuild.exe rtl433.sln
-# Test Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR
-#    - os: windows
+#    - name: "Visual Studio 2017 (MSBuild), disabled because it assumes RTLSDR"
+#      os: windows
 #      env:
 #        - MSBUILD_PATH="c:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\MSBuild\15.0\Bin"
 #      script:
@@ -24,16 +24,16 @@ matrix:
 #        - cd vs15
 #        - MSBuild.exe rtl_433.sln
 
-# Test with Precise default (GCC 4.6.3, CMake 2.8.7) and no libs
-    - compiler: gcc
+    - name: "Precise default (GCC 4.6.3, CMake 2.8.7) and no libs"
+      compiler: gcc
       env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
           packages:
             - cmake
-# Test with Trusty default (GCC 4.8.2, CMake 2.8.12)
-    - compiler: gcc
+    - name: "Trusty default (GCC 4.8.2, CMake 2.8.12)"
+      compiler: gcc
       dist: trusty
       addons:
         apt:
@@ -42,8 +42,8 @@ matrix:
             - rtl-sdr
             - librtlsdr-dev
             - cmake
-# Test with Xenial default (GCC 5.4.0, CMake 3.5.1)
-    - compiler: gcc
+    - name: "Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
       dist: xenial
       addons:
         apt:
@@ -53,16 +53,16 @@ matrix:
             - librtlsdr-dev
             - cmake
 
-# Test with Precise Clang (clang 3.4, CMake 2.8.7) and no libs
-    - compiler: clang
+    - name: "Precise Clang (clang 3.4, CMake 2.8.7) and no libs"
+      compiler: clang
       env: RTLSDR=OFF
       dist: precise
       addons:
         apt:
           packages:
             - cmake
-# Test with Trusty Clang (clang 5.0.0, CMake 2.8.12)
-    - compiler: clang
+    - name: "Trusty Clang (clang 5.0.0, CMake 2.8.12)"
+      compiler: clang
       dist: trusty
       addons:
         apt:
@@ -71,8 +71,8 @@ matrix:
             - rtl-sdr
             - librtlsdr-dev
             - cmake
-# Test with Xenial Clang (clang 7.0.0, CMake 3.5.1)
-    - compiler: clang
+    - name: "Xenial Clang (clang 7.0.0, CMake 3.5.1)"
+      compiler: clang
       dist: xenial
       addons:
         apt:
@@ -82,8 +82,8 @@ matrix:
             - librtlsdr-dev
             - cmake
 
-# works on Precise and Trusty (GCC 6.5.0)
-    - compiler: gcc-6
+    - name: "Precise or Trusty (GCC 6.5.0)"
+      compiler: gcc-6
       addons:
         apt:
           sources:
@@ -94,8 +94,8 @@ matrix:
             - rtl-sdr
             - librtlsdr-dev
             - cmake
-# works on Precise and Trusty (GCC 7.4.0)
-    - compiler: gcc-7
+    - name: "Precise or Trusty (GCC 7.4.0)"
+      compiler: gcc-7
       addons:
         apt:
           sources:
@@ -106,8 +106,8 @@ matrix:
             - rtl-sdr
             - librtlsdr-dev
             - cmake
-# works on Precise and Trusty (GCC 8.1.0)
-    - compiler: gcc-8
+    - name: "Precise or Trusty (GCC 8.1.0)"
+      compiler: gcc-8
       addons:
         apt:
           sources:
@@ -119,8 +119,58 @@ matrix:
             - librtlsdr-dev
             - cmake
 
-# Test with Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR
-    - compiler: gcc
+    - name: "ARM64 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      arch: arm64
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+    - name: "ARM64 Xenial Clang (clang 7.0.0, CMake 3.5.1)"
+      compiler: clang
+      arch: arm64
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - libusb-1.0.0-dev
+            - rtl-sdr
+            - librtlsdr-dev
+            - cmake
+    - name: "ARM32 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      arch: arm64
+      dist: xenial
+      env:
+        - RTLSDR=OFF
+        - CC=arm-linux-gnueabihf-gcc
+        - SETARCH="setarch linux32 --verbose --32bit"
+      addons:
+        apt:
+          packages:
+            - crossbuild-essential-armhf
+            - libc6-armhf-cross
+            - cmake
+
+    - name: "i686 Xenial default (GCC 5.4.0, CMake 3.5.1)"
+      compiler: gcc
+      dist: xenial
+      env:
+        - RTLSDR=OFF
+        - CFLAGS="-m32"
+        - SETARCH="setarch i686 --verbose --3gb"
+      addons:
+        apt:
+          packages:
+            - gcc-multilib
+            - cmake
+
+    - name: "Xenial default (gcc 5.4, cmake 3.12) RTL-SDR and SoapySDR"
+      compiler: gcc
       env: SOAPYSDR=ON
       dist: xenial
       addons:
@@ -134,8 +184,8 @@ matrix:
             - soapysdr
             - libsoapysdr-dev
             - cmake
-# Test with Xenial default (gcc 5.4, cmake 3.12) only SoapySDR
-    - compiler: gcc
+    - name: "Xenial default (gcc 5.4, cmake 3.12) only SoapySDR"
+      compiler: gcc
       env: RTLSDR=OFF SOAPYSDR=ON
       dist: xenial
       addons:
@@ -146,8 +196,8 @@ matrix:
             - soapysdr
             - libsoapysdr-dev
             - cmake
-# Test with CLang 3.8.0, CMake 2.8.12
-    - compiler: clang-3.8
+    - name: "CLang 3.8.0, CMake 2.8.12"
+      compiler: clang-3.8
       dist: trusty
       addons:
         apt:
@@ -161,8 +211,9 @@ matrix:
             - rtl-sdr
             - librtlsdr-dev
             - cmake
-# Test with mingw 32 bit
-    - compiler: i686-w64-mingw32-gcc
+
+    - name: "Deploy mingw 32 bit"
+      compiler: i686-w64-mingw32-gcc
       env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-i686.cmake
       dist: trusty
       addons:
@@ -174,8 +225,8 @@ matrix:
             - mingw-w64-i686-dev
             - gcc-mingw-w64
             - gcc-multilib
-# Test with mingw 64 bit
-    - compiler: x86_64-w64-mingw32-gcc
+    - name: "Deploy mingw 64 bit"
+      compiler: x86_64-w64-mingw32-gcc
       env: RTLSDR=OFF CMAKE_TOOLCHAIN_FILE=cmake/Toolchain-gcc-mingw-w64-x86-64.cmake
       dist: trusty
       addons:
@@ -199,8 +250,8 @@ matrix:
         #  branch: master
         #  condition: "-n $BINTRAY_DEPLOY"
 
-# Full test suite
-    - language: python
+    - name: "Full test suite"
+      language: python
       compiler: gcc
       env: RTLSDR=OFF RUN_RTL_433_TESTS=1
       dist: trusty

@@ -198,6 +198,8 @@ static void help_output(void)
             "\t  devices: posts device and sensor info in nested topics\n"
             "\tThe topic string will expand keys like [/model]\n"
             "\tE.g. -F \"mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]\"\n"
+            "\tWith MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.\n"
+            "\tIf you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).\n"
             "\tSpecify InfluxDB 2.0 server with e.g. -F \"influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>\"\n"
             "\tSpecify InfluxDB 1.x server with e.g. -F \"influx://localhost:8086/write?db=<db>&p=<password>&u=<user>\"\n"
             "\t  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended\n"
@@ -209,7 +211,7 @@ static void help_meta(void)
 {
     term_help_printf(
             "\t\t= Meta information option =\n"
-            "  [-M time[:<options>]|protocol|level|stats|bits|newmodel] Add various metadata to every output line.\n"
+            "  [-M time[:<options>]|protocol|level|stats|bits|oldmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
             "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
@@ -225,9 +227,7 @@ static void help_meta(void)
             "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
             "\t  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all\n"
             "\tUse \"bits\" to add bit representation to code outputs (for debug).\n"
-            "\nNote:"
-            "\tUse \"newmodel\" to transition to new model keys. This will become the default someday.\n"
-            "\tA table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.\n\n");
+            "\tNote: You can use \"oldmodel\" to get the old model keys. This will be removed shortly.\n");
     exit(0);
 }
 
@@ -909,9 +909,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (!strcasecmp(arg, "description"))
             cfg->report_description = 1;
         else if (!strcasecmp(arg, "newmodel"))
-            cfg->new_model_keys = 1;
+            cfg->old_model_keys = 0;
         else if (!strcasecmp(arg, "oldmodel"))
-            cfg->new_model_keys = 0;
+            cfg->old_model_keys = 1;
         else if (!strncasecmp(arg, "stats", 5)) {
             // there also should be options to set wether to flush on report
             char *p = arg_param(arg);
@@ -1171,10 +1171,9 @@ int main(int argc, char **argv) {
     parse_conf_args(cfg, argc, argv);
 
     // warn if still using old model keys
-    if (!cfg->new_model_keys) {
+    if (cfg->old_model_keys) {
         fprintf(stderr,
-                "\n\tConsider using \"-M newmodel\" to transition to new model keys. This will become the default someday.\n"
-                "\tA table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.\n\n");
+                "\n\tWarning: Using deprecated old model keys (\"-M oldmodel\"). This will be removed shortly.\n\n");
     }
 
     // add all remaining positional arguments as input files

@@ -1,7 +1,10 @@
 ########################################################################
 # Build libraries and executables
 ########################################################################
-add_executable(rtl_433
+# commodity libraries
+# consider -fvisibility=hidden
+# Proper object library type was only introduced with CMake 2.8.8
+add_library(r_433 STATIC
     abuf.c
     am_analyze.c
     baseband.c
@@ -22,7 +25,6 @@ add_executable(rtl_433
     pulse_detect_fsk.c
     r_api.c
     r_util.c
-    rtl_433.c
     samp_grab.c
     sdr.c
     term_ctl.c
@@ -155,11 +157,14 @@ add_executable(rtl_433
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
 endif()
+
+add_executable(rtl_433 rtl_433.c)
+target_link_libraries(rtl_433 r_433)
 
 if(MSVC)
     # needs CMake 3.1 but Windows builds should have that
@@ -180,7 +185,7 @@ target_link_libraries(rtl_433 m)
 endif()
 
 # Explicitly say that we want C99
-set_property(TARGET rtl_433 PROPERTY C_STANDARD 99)
+set_target_properties(rtl_433 r_433 PROPERTIES C_STANDARD 99)
 
 ########################################################################
 # Install built library files & utilities

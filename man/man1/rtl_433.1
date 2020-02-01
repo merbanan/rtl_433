@@ -465,7 +465,7 @@ Emos TTX201 Temperature Sensor
 Ambient Weather TX\-8300 Temperature/Humidity Sensor
 .TP
 [ \fB113\fI\fP ]
-Ambient Weather WH31E Thermo\-Hygrometer Sensor
+Ambient Weather WH31E Thermo\-Hygrometer Sensor, EcoWitt WH40 rain gauge
 .TP
 [ \fB114\fI\fP ]
 Maverick et73
@@ -781,7 +781,7 @@ Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .RE
 .SS "Meta information option"
 .TP
-[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|newmodel\fP ]
+[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|oldmodel\fP ]
 Add various metadata to every output line.
 .RS
 Use "time" to add current date and time meta data (preset for live inputs).
@@ -828,10 +828,8 @@ Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds)
 .RS
 Use "bits" to add bit representation to code outputs (for debug).
 .RE
-
-Note:	Use "newmodel" to transition to new model keys. This will become the default someday.
 .RS
-A table of changes and discussion is at https://github.com/merbanan/rtl_433/pull/986.
+Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 .RE
 .SS "Read file option"
 .TP

@@ -153,7 +153,7 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     r_dev->verbose_bits = cfg->verbose_bits;
 
-    r_dev->new_model_keys = cfg->new_model_keys; // TODO: temporary allow to change to new style model keys
+    r_dev->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
 }
 
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
@@ -311,7 +311,7 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
 static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
 {
-    if (cfg->new_model_keys) {
+    if (!cfg->old_model_keys) {
         for (char const **p = fields; *p; ++p) {
             if (!strcmp(*p, "battery")) *p = "battery_ok";
         }
@@ -476,7 +476,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     r_cfg_t *cfg = r_dev->output_ctx;
 
     // replace textual battery key with numerical battery key
-    if (cfg->new_model_keys) {
+    if (!cfg->old_model_keys) {
         for (data_t *d = data; d; d = d->next) {
             if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
                 free(d->key);
