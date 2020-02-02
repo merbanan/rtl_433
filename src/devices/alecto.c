@@ -118,16 +118,16 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bits = bitbuffer->bits_per_row[1];
 
     if (bits != 36)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     if (bb[1][0] != bb[5][0] || bb[2][0] != bb[6][0]
             || (bb[1][4] & 0xf) != 0 || (bb[5][4] & 0xf) != 0
             || bb[5][0] == 0 || bb[5][1] == 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     ret = alecto_checksum(decoder, bb);
     if (!ret)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     int battery_low = (b[1] & 0x80) >> 7;
     int msg_type    = (b[1] & 0x60) >> 5;

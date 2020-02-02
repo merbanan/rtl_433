@@ -70,7 +70,7 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
 
     // accept only correct checksums, (sum of nibbles modulo 64)
     if ((sum_nibbles & 0x3F) != checksum)
-        return 0; // DECODE_FAIL_MIC
+        return DECODE_FAIL_MIC;
 
     // humidity: see above the note about working range
     int humidity = (b[3] >> 1); // extract bits for humidity
