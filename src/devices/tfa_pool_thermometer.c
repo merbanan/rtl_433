@@ -45,12 +45,6 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
     b = bitbuffer->bb[row];
 
     checksum_rx = ((b[0] & 0xF0) >> 4);
-    device      = ((b[0] & 0x0F) << 4) + ((b[1] & 0xF0) >> 4);
-    temp_raw    = ((b[1] & 0x0F) << 8) + b[2];
-    temp_f      = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) * 0.1;
-    channel     = ((b[3] & 0xC0) >> 6);
-    battery     = ((b[3] & 0x20) >> 5);
-
     checksum = ((b[0] & 0x0F) +
                 (b[1] >> 4) +
                 (b[1] & 0x0F) +
@@ -63,6 +57,12 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
             bitrow_printf(b, bitbuffer->bits_per_row[row], "%s: checksum fail (%02x) ", __func__, checksum);
         return DECODE_FAIL_MIC;
     }
+
+    device      = ((b[0] & 0x0F) << 4) + ((b[1] & 0xF0) >> 4);
+    temp_raw    = ((b[1] & 0x0F) << 8) + b[2];
+    temp_f      = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) * 0.1;
+    channel     = ((b[3] & 0xC0) >> 6);
+    battery     = ((b[3] & 0x20) >> 5);
 
     /* clang-format off */
     data = data_make(
