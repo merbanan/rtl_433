@@ -40,7 +40,8 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 
         cs = (cs & 0xFF) + (cs >> 8);
         checksum = nibble[6] + (nibble[7] << 4);
-        if (checksum != cs)
+        /* reject 0x00 checksums to reduce false positives */
+        if (!checksum || (checksum != cs))
             continue;
 
         sid      = nibble[0];
@@ -62,7 +63,8 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 "channel",      "Channel",      DATA_INT,       channel,
                 "battery",      "Battery",      DATA_STRING,    battery ? "LOW" : "OK",
                 "temperature_C","Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
-                NULL);
+                "mic",          "Integrity",    DATA_STRING,    "CHECKSUM",
+            NULL);
         decoder_output_data(decoder, data);
         ret++;
     }
