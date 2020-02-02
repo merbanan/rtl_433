@@ -153,6 +153,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
     bitrow_t *bb = bitbuffer->bb;
+    uint8_t b[4];
     unsigned int id;
     float temp_f;
     data_t *data;
@@ -161,10 +162,18 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // more then 25 repeats are not uncommon
     row = bitbuffer_find_repeated_row(bitbuffer, 10, 32);
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if ((bitbuffer->bits_per_row[row] > 33) || (bitbuffer->bits_per_row[row] < 10))
-        return 0;
+        return DECODE_ABORT_LENGTH;
+
+    // Verify checksum
+    uint8_t sum = (add_bytes(bb[row], 3) & 0xff) - bb[row][0];
+    if (sum != 0xa6) {
+        if (decoder->verbose)
+            bitrow_printf(b, sizeof (b) * 8, "rubicson_48659: Checksum error: ");
+        return DECODE_FAIL_MIC;
+    }
 
     id = bb[row][0];
     // 1 sign bit and 10 bits for the value
@@ -175,6 +184,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "",            DATA_STRING, _X("Rubicson-48659","Rubicson 48659"),
             "id",            "Id",          DATA_INT,    id,
             "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
