@@ -86,7 +86,7 @@ static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    return DECODE_FAIL_MIC;
 }
 
 static char *output_fields[] = {
