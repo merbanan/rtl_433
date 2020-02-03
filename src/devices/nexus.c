@@ -30,10 +30,10 @@ The sensors can be bought at Clas Ohlsen (Nexus) and Pearl (infactory/FreeTec).
 // NOTE: this should really not be here
 int rubicson_crc_check(bitrow_t *bb);
 
-static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-
 
     if (decoder->verbose > 1) {
         fprintf(stderr,"Possible Nexus: ");
@@ -47,7 +47,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t humidity;
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
-    /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
+    /* The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
      * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
      * So less then 0.5% which should be acceptable.
      */

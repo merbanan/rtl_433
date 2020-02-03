@@ -117,8 +117,7 @@ Afterwards, messages are sent every 45s.
 #define TFA_DROP_STARTBYTE 0x3 /* Inverted already */
 #define TFA_DROP_MINREPEATS 2
 
-static int tfa_drop_303233_decode(r_device *decoder,
-        bitbuffer_t *bitbuffer)
+static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int row_index;

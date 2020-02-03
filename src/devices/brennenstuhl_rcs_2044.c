@@ -97,6 +97,7 @@ static int brennenstuhl_rcs_2044_process_row(r_device *decoder, bitbuffer_t *bit
     return 1;
 }
 
+/** @sa brennenstuhl_rcs_2044_process_row() */
 static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;
