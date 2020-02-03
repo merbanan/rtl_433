@@ -123,8 +123,9 @@ replace_block(r'\.\\" body',
 
 # src/CMakeLists.txt
 repl = src_files + device_files
+repl.remove('rtl_433.c') # exclude apps from lib sources
 repl = '\n    ' + ('\n    '.join(repl)) + '\n'
-replace_block(r'add_executable\(rtl_433$',
+replace_block(r'add_library\(r_433 STATIC$',
               r'^\)', repl, 'src/CMakeLists.txt')
 
 # src/Makefile.am
