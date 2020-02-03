@@ -122,7 +122,7 @@ replace_block(r'\.\\" body',
               r'\.\\" end', '\n'+repl, 'man/man1/rtl_433.1')
 
 # src/CMakeLists.txt
-repl = src_files + device_files
+repl = src_files[:] # + device_files
 repl.remove('rtl_433.c') # exclude apps from lib sources
 repl = '\n    ' + ('\n    '.join(repl)) + '\n'
 replace_block(r'add_library\(r_433 STATIC$',
