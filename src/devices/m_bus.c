@@ -722,7 +722,6 @@ r_device m_bus_mode_c_t = {
 
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
-// Untested!!! (Need samples)
 r_device m_bus_mode_s = {
     .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
     .modulation     = FSK_PULSE_PCM,
@@ -730,7 +729,7 @@ r_device m_bus_mode_s = {
     .long_width     = (1000.0/32.768),
     .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
     .decode_fn      = &m_bus_mode_s_callback,
-    .disabled       = 0,    // Disable per default, as it runs on non-standard frequency
+    .disabled       = 0,
     .fields         = output_fields,
 };
 

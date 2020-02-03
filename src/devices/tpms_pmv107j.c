@@ -1,28 +1,31 @@
-/* FSK 8-byte Differential Manchester encoded TPMS data with CRC-8.
- * Pacific PMV-107J TPMS (315MHz) sensors used by Toyota
- * based on work by Werner Johansson.
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * 66 bits Differential Manchester encoded TPMS data with CRC-8.
- * II II II I F* PP NN TT CC
- * I: ID (28 bit)
- * F*: Flags, 6 bits (BCC00F, battery_low, repeat_counter, failed)
- * P: Tire pressure (PSI/0.363 + 40 or kPa/2.48 + 40)
- * N: Inverted tire pressure
- * T: Tire temperature (Celsius +40, range from -40 to +215 C)
- * C: CRC over bits 0 - 57, poly 0x13, init 0
- */
+/** @file
+    FSK 8-byte Differential Manchester encoded TPMS data with CRC-8.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+FSK 8-byte Differential Manchester encoded TPMS data with CRC-8.
+Pacific PMV-107J TPMS (315MHz) sensors used by Toyota
+based on work by Werner Johansson.
+
+66 bits Differential Manchester encoded TPMS data with CRC-8.
+
+    II II II I F* PP NN TT CC
+
+- I: ID (28 bit)
+- F*: Flags, 6 bits (BCC00F, battery_low, repeat_counter, failed)
+- P: Tire pressure (PSI/0.363 + 40 or kPa/2.48 + 40)
+- N: Inverted tire pressure
+- T: Tire temperature (Celsius +40, range from -40 to +215 C)
+- C: CRC over bits 0 - 57, poly 0x13, init 0
+*/
 
 #include "decoder.h"
-
-// full preamble is (7 bits) 11111 10
-static const unsigned char preamble_pattern[1] = {0xf8}; // 6 bits
 
 static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -92,12 +95,17 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1;
 }
 
-static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/** @sa tpms_pmv107j_decode() */
+static int tpms_pmv107j_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // full preamble is (7 bits) 11111 10
+    uint8_t const preamble_pattern[1] = {0xf8}; // 6 bits
+
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 6)) + 67*2 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 6)) + 67*2 <=
             bitbuffer->bits_per_row[0]) {
         events += tpms_pmv107j_decode(decoder, bitbuffer, 0, bitpos + 6);
         bitpos += 2;
@@ -117,7 +125,7 @@ static char *output_fields[] = {
     "pressure_kPa",
     "temperature_C",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device tpms_pmv107j = {

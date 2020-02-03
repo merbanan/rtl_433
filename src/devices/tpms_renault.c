@@ -1,26 +1,30 @@
-/* FSK 9 byte Manchester encoded TPMS with CRC.
- * Seen on Renault Clio, Renault Captur and maybe Dacia Sandero.
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Packet nibbles:  F F/P PP TT II II II ?? ?? CC
- * F = flags, (seen: c0: 22% c8: 14% d0: 31% d8: 33%) maybe 110??T
- * P = Pressure, 10 bit 0.75 kPa
- * I = id, 24-bit little-endian
- * T = Temperature in C, offset -30
- * ? = Unknown, mostly 0xffff
- * C = Checksum, CRC-8 truncated poly 0x07 init 0x00
- */
+/** @file
+    FSK 9 byte Manchester encoded TPMS with CRC.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+FSK 9 byte Manchester encoded TPMS with CRC.
+Seen on Renault Clio, Renault Captur and maybe Dacia Sandero.
+
+Packet nibbles:
+
+    F F/P PP TT II II II ?? ?? CC
+
+- F = flags, (seen: c0: 22% c8: 14% d0: 31% d8: 33%) maybe 110??T
+- P = Pressure, 10 bit 0.75 kPa
+- I = id, 24-bit little-endian
+- T = Temperature in C, offset -30
+- ? = Unknown, mostly 0xffff
+- C = Checksum, CRC-8 truncated poly 0x07 init 0x00
+*/
 
 #include "decoder.h"
-
-// full preamble is 55 55 55 56 (inverted: aa aa aa a9)
-static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -74,7 +78,11 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1;
 }
 
+/** @sa tpms_renault_decode() */
 static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+    // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
+    uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
+
     int row;
     unsigned bitpos;
     int events = 0;
@@ -85,7 +93,7 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 160 <=
+                preamble_pattern, 16)) + 160 <=
                 bitbuffer->bits_per_row[row]) {
             events += tpms_renault_decode(decoder, bitbuffer, row, bitpos + 16);
             bitpos += 15;
@@ -103,7 +111,7 @@ static char *output_fields[] = {
     "pressure_kPa",
     "temperature_C",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device tpms_renault = {
