@@ -463,7 +463,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         if (dumper->format == CU8_IQ) {
             if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
-                    ((uint8_t *)demod->buf.temp)[n] = (((int16_t *)iq_buf)[n] >> 8) + 128; // scale Q0.15 to Q0.7
+                    ((uint8_t *)demod->buf.temp)[n] = (((int16_t *)iq_buf)[n] / 256) + 128; // scale Q0.15 to Q0.7
                 out_buf = (uint8_t *)demod->buf.temp;
                 out_len = n_samples * 2 * sizeof(uint8_t);
             }
@@ -471,7 +471,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         else if (dumper->format == CS16_IQ) {
             if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
-                    ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] << 8) - 32768; // scale Q0.7 to Q0.15
+                    ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] * 256) - 32768; // scale Q0.7 to Q0.15
                 out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
                 out_len = n_samples * 2 * sizeof(int16_t);
             }
@@ -491,11 +491,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         else if (dumper->format == CF32_IQ) {
             if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
-                    ((float *)demod->buf.temp)[n] = (iq_buf[n] - 128) / 128.0;
+                    ((float *)demod->buf.temp)[n] = (iq_buf[n] - 128) / 128.0f;
             }
             else if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
-                    ((float *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] / 32768.0;
+                    ((float *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] / 32768.0f;
             }
             out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
             out_len = n_samples * 2 * sizeof(float);
@@ -510,33 +510,33 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         }
         else if (dumper->format == F32_AM) {
             for (unsigned long n = 0; n < n_samples; ++n)
-                demod->f32_buf[n] = demod->am_buf[n] * (1.0 / 0x8000); // scale from Q0.15
+                demod->f32_buf[n] = demod->am_buf[n] * (1.0f / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_FM) {
             for (unsigned long n = 0; n < n_samples; ++n)
-                demod->f32_buf[n] = demod->buf.fm[n] * (1.0 / 0x8000); // scale from Q0.15
+                demod->f32_buf[n] = demod->buf.fm[n] * (1.0f / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_I) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
-                    demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0 / 0x80); // scale from Q0.7
+                    demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
                 for (unsigned long n = 0; n < n_samples; ++n)
-                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2] * (1.0 / 0x8000); // scale from Q0.15
+                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2] * (1.0f / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_Q) {
             if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
-                    demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0 / 0x80); // scale from Q0.7
+                    demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
                 for (unsigned long n = 0; n < n_samples; ++n)
-                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2 + 1] * (1.0 / 0x8000); // scale from Q0.15
+                    demod->f32_buf[n] = ((int16_t *)iq_buf)[n * 2 + 1] * (1.0f / 0x8000); // scale from Q0.15
             out_buf = (uint8_t *)demod->f32_buf;
             out_len = n_samples * sizeof(float);
         }
