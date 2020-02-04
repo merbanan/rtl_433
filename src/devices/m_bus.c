@@ -338,7 +338,7 @@ static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_
             b2->CW = b[4]<<8 | b[3];
             b2->pl_offset = BLOCK1A_SIZE-2 + 5;
         }
-    //    printf("Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
+    //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
     }
     return 0;
 }
