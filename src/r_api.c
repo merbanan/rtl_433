@@ -150,6 +150,17 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->s_sync_width  = r_dev->sync_width * samples_per_us;
     r_dev->s_tolerance   = r_dev->tolerance * samples_per_us;
 
+    // check for rounding to zero
+    if ((r_dev->short_width > 0 && r_dev->s_short_width <= 0)
+            || (r_dev->long_width > 0 && r_dev->s_long_width <= 0)
+            || (r_dev->reset_limit > 0 && r_dev->s_reset_limit <= 0)
+            || (r_dev->gap_limit > 0 && r_dev->s_gap_limit <= 0)
+            || (r_dev->sync_width > 0 && r_dev->s_sync_width <= 0)
+            || (r_dev->tolerance > 0 && r_dev->s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        exit(1);
+    }
+
     r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     r_dev->verbose_bits = cfg->verbose_bits;
 
