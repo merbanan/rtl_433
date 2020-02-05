@@ -16,12 +16,14 @@
 Ambient Weather WH31E protocol.
 915 MHz FSK PCM Thermo-Hygrometer Sensor (bundled as Ambient Weather WS-3000-X5).
 
+Note that Ambient Weather and EcoWitt are likely rebranded Fine Offset products.
+
 56 us bit length with a warm-up of 1336 us mark(pulse), 1996 us space(gap),
 a preamble of 48 bit flips (0xaaaaaaaaaaaa) and a 0x2dd4 sync-word.
 
 Data layout:
 
-    YY II CT TT HH XX ?? ?? ?? ?? ??
+    YY II CT TT HH XX AA ?? ?? ?? ??
 
 - Y is a fixed Type Code of 0x30
 - I is a device ID
@@ -29,11 +31,12 @@ Data layout:
 - T is 12bits Temperature in C, scaled by 10, offset 400
 - H is Humidity
 - X is CRC-8, poly 0x31, init 0x00
+- A is SUM-8
 
 Example packets:
 
-    {177} aa aa aa aa aa aa  2d d4  30 c3 8 20a 5e  df   bc 07 56 a7 ae  00 00 00 00
-    {178} aa aa aa aa aa aa  2d d4  30 44 9 21a 39  5a   b3 07 45 04 5f  00 00 00 00
+    {177} aa aa aa aa aa aa  2d d4  30 c3 8 20a 5e  df bc   07 56 a7 ae  00 00 00 00
+    {178} aa aa aa aa aa aa  2d d4  30 44 9 21a 39  5a b3   07 45 04 5f  00 00 00 00
 
 Some payloads:
 
@@ -56,24 +59,40 @@ Data layout:
 
 - Y is a fixed Type Code of 0x40
 - I is a device ID
-- F is probably flags
-- R is the rain bucket tip count
+- F is perhaps flags, but only seen fixed 0x10 so far
+- R is the rain bucket tip count, 0.1mm increments
 - X is CRC-8, poly 0x31, init 0x00
 - A is SUM-8
 
 Some payloads:
 
-    4000 cd6f 1000 00  64 f0 ; 00 027b 0000
-    4000 cd6f 1000 01  55 e2 ; 00 02f6 0000
-    4000 cd6f 1000 02  06 94 ; 00 02ed 0000
-    4000 cd6f 1000 03  37 c6 ; 00 02db 0000
-    4000 cd6f 1000 04  a0 30 ; 00 02b7 0000
-    4000 cd6f 1000 05  91 22 ; 00 02de 0000
-    4000 cd6f 1000 06  c2 54 ; 00 02bd 0000
-    4000 cd6f 1000 07  f3 86 ; 00 027b 0000
-    4000 cd6f 1000 08  dd 71 ; 00 02f6 0000
-    4000 cd6f 1000 09  ec 81 ; 00 02ed 0000
-    4000 cd6f 1000 0a  bf 55 ; 00 02db 0000
+    4000 cd6f 10 0000  64 f0 ; 00 027b 0000
+    4000 cd6f 10 0001  55 e2 ; 00 02f6 0000
+    4000 cd6f 10 0002  06 94 ; 00 02ed 0000
+    4000 cd6f 10 0003  37 c6 ; 00 02db 0000
+    4000 cd6f 10 0004  a0 30 ; 00 02b7 0000
+    4000 cd6f 10 0005  91 22 ; 00 02de 0000
+    4000 cd6f 10 0006  c2 54 ; 00 02bd 0000
+    4000 cd6f 10 0007  f3 86 ; 00 027b 0000
+    4000 cd6f 10 0008  dd 71 ; 00 02f6 0000
+    4000 cd6f 10 0009  ec 81 ; 00 02ed 0000
+    4000 cd6f 10 000a  bf 55 ; 00 02db 0000
+
+Samples with 1.2V battery (last 2 samples contain 1 manual bucket tip)
+
+    4000 cd6f 10 0000  64 f0 ; 00 01de 00b0
+    4000 cd6f 10 0000  64 f0 ; 00 02de 00b0
+    4000 cd6f 10 0000  64 f0 ; 00 02bd 0000
+    4000 cd6f 10 0001  55 e2 ; 00 027b 0000
+    4000 cd6f 10 0001  55 e2 ; 00 027b 0000
+
+Samples with 0.9V battery (last 3 samples contain 1 manual bucket tip)
+
+    4000 cd6f 10 0000  64 f0 ; 00 16de 0000
+    4000 cd6f 10 0000  64 f0 ; 00 02de 0000
+    4000 cd6f 10 0001  55 e2 ; 00 02bd 0000
+    4000 cd6f 10 0001  55 e2 ; 00 027b 0000
+    4000 cd6f 10 0001  55 e2 ; 00 027b 0000
 
 Ecowitt WS68 Anemometer protocol.
 
@@ -125,6 +144,12 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (c_crc) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH31E bad CRC\n", __func__);
+                continue;
+            }
+            uint8_t c_sum = add_bytes(b, 6) - b[6];
+            if (c_sum) {
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: WH31E bad SUM\n", __func__);
                 continue;
             }
 
@@ -179,9 +204,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, "EcoWitt-WH40",
                     "id" ,              "",             DATA_INT,    id,
-                    "channel",          "Channel",      DATA_INT,    channel,
-                    "battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
-                    "rain_raw",         "Rain count",   DATA_INT,    rain_raw,
+                    //"channel",          "Channel",      DATA_INT,    channel,
+                    //"battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
+                    "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
                     NULL);
@@ -212,7 +237,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             battery_ok = batt > 0x30; // wild guess
             int wspeed = b[10];
             int wgust  = b[12];
-            int wdir   = (b[7] >> 4) | b[11];
+            int wdir   = ((b[7] & 0x20) >> 5) | b[11];
             sprintf(extra, "%02x %02x%01x", b[13], b[16], b[17] >> 4);
 
             /* clang-format off */
@@ -224,7 +249,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "lux_raw",          "lux",          DATA_INT,    lux,
                     "wind_avg_raw",     "Wind Speed",   DATA_INT,    wspeed,
                     "wind_max_raw",     "Wind Gust",    DATA_INT,    wgust,
-                    "wind_dir_deg_raw", "Wind dir",     DATA_INT,    wdir,
+                    "wind_dir_deg",     "Wind dir",     DATA_INT,    wdir,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
                     NULL);
@@ -248,7 +273,7 @@ static char *output_fields[] = {
         "battery",
         "temperature_C",
         "humidity",
-        "rain_raw",
+        "rain_mm",
         "lux",
         "wind_avg_km_h",
         "wind_max_km_h",
