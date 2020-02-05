@@ -25,7 +25,13 @@ fi
 out=$2
 
 if [ -z "$3" ] ; then
-  rate=250
+  # strip the "k.cu8"
+  # ${fil:0:-5}  also works
+  temp1=${file%k.cu8}
+  temp2=${temp1##*_}
+  echo "using samplerate ${temp2} K"
+  rate=${temp2}
+  # rate=250
 else
   rate=$3
 fi

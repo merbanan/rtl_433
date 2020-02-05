@@ -12,13 +12,20 @@ if [ ! -r "$1" ] ; then
 fi
 file=$1
 
+# filename=${file##*/}
 filename=$(basename "$file")
 tempdir=$(mktemp -d)
 out="$tempdir/$filename.sr"
 trap "rm -f -- '$out'; rmdir -- '$tempdir'" EXIT
 
 if [ -z "$2" ] ; then
-  rate=250
+  # strip the "k.cu8"
+  # ${fil:0:-5}  also works
+  temp1=${file%k.cu8}
+  temp2=${temp1##*_}
+  echo "using samplerate ${temp2} K"
+  rate=${temp2}
+  # rate=250
 else
   rate=$2
 fi
