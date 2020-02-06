@@ -223,6 +223,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 default:
                     break;
             }
+            break;
         case 0x7D:
             switch(vif_uam) {
                 case 0x1b:
