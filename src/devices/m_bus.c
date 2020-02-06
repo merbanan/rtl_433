@@ -232,6 +232,8 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     /* Only use 32 bits of 48 available */
                     data = data_append(data, ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]), NULL);
                     break;
+                default:
+                    break;
             }
         default:
             break;
