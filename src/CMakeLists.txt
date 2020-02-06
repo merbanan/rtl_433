@@ -29,6 +29,7 @@ add_library(r_433 STATIC
     sdr.c
     term_ctl.c
     util.c
+    write_sigrok.c
     devices/acurite.c
     devices/akhan_100F14.c
     devices/alecto.c

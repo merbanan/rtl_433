@@ -48,6 +48,7 @@
 #include "term_ctl.h"
 #include "compat_paths.h"
 #include "fatal.h"
+#include "write_sigrok.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -1465,10 +1466,16 @@ int main(int argc, char **argv) {
                 fclose(in_file = stdin);
         }
 
+        close_dumpers(cfg);
         free(test_mode_buf);
         free(test_mode_float_buf);
         r_free_cfg(cfg);
         exit(0);
+    }
+
+    if (cfg->sr_filename) {
+        fprintf(stderr, "SR writing not recommended for live input\n");
+        exit(1);
     }
 
     // Normal case, no test data, no in files

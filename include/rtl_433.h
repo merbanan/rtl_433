@@ -94,6 +94,7 @@ typedef struct r_cfg {
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
+    char const *sr_filename;
     int old_model_keys;
     /* stats*/
     unsigned frames_count; ///< stats counter for interval
