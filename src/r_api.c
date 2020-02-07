@@ -28,6 +28,7 @@
 #include "optparse.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
+#include "write_sigrok.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -878,8 +879,45 @@ void add_null_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, NULL);
 }
 
+void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
+{
+    // create channels
+    add_dumper(cfg, "U8:LOGIC:logic-1-1", overwrite);
+    add_dumper(cfg, "F32:I:analog-1-4-1", overwrite);
+    add_dumper(cfg, "F32:Q:analog-1-5-1", overwrite);
+    add_dumper(cfg, "F32:AM:analog-1-6-1", overwrite);
+    add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
+    cfg->sr_filename = spec;
+    cfg->sr_execopen = overwrite;
+}
+
+void close_dumpers(struct r_cfg *cfg)
+{
+    char const *labels[] = {
+            "FRAME", // probe1
+            "ASK", // probe2
+            "FSK", // probe3
+            "I", // analog4
+            "Q", // analog5
+            "AM", // analog6
+            "FM", // analog7
+    };
+    if (cfg->sr_filename) {
+        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
+    }
+    if (cfg->sr_execopen) {
+        open_pulseview(cfg->sr_filename);
+    }
+}
+
 void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
+    size_t spec_len = strlen(spec);
+    if (spec_len >= 3 && !strcmp(&spec[spec_len - 3], ".sr")) {
+        add_sr_dumper(cfg, spec, overwrite);
+        return;
+    }
+
     file_info_t *dumper = calloc(1, sizeof(*dumper));
     if (!dumper)
         FATAL_CALLOC("add_dumper()");
