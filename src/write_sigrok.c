@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #endif
 
@@ -91,9 +92,10 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
 
     char **argv_analog = &argv[arg];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
-        asprintf(&argv[arg++], "analog-1-%u-1", i);
+        (void)asprintf(&argv[arg++], "analog-1-%u-1", i);
     }
 
+    int status = 0;
     pid_t pid = fork();
     if (pid < 0) {
         perror("forking zip");
@@ -111,8 +113,12 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     }
     else {
         // parent process because return value non-zero
-        wait(NULL);
-        printf("Done!\n");
+        wait(&status);
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status)) {
+                fprintf(stderr, "zip exited with status: %d\n", WEXITSTATUS(status));
+            }
+        }
     }
 
     // rm version metadata logic-1-1 analog-1-4-1 analog-1-5-1 analog-1-6-1 analog-1-7-1
@@ -161,6 +167,7 @@ void open_pulseview(char const *filename)
 #endif
 
     fprintf(stderr, "Opening Pulseview...\n");
+    int status = 0;
     pid_t pid = fork();
     if (pid < 0) {
         perror("forking pulseview");
@@ -178,7 +185,12 @@ void open_pulseview(char const *filename)
     }
     else {
         // parent process because return value non-zero
-        wait(NULL);
+        wait(&status);
+        if (WIFEXITED(status)) {
+            if (WEXITSTATUS(status)) {
+                fprintf(stderr, "pulseview open exited with status: %d\n", WEXITSTATUS(status));
+            }
+        }
     }
     free(abspath);
 #endif
