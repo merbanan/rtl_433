@@ -19,6 +19,9 @@
 
 void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[])
 {
+#ifdef _WIN32
+#warning Writing Sigrok not implemented for win32
+#else
     // e.g. uses channels
     // U8:LOGIC:logic-1-1
     // F32:I:analog-1-4-1
@@ -130,10 +133,14 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         }
         free(argv_analog[i]);
     }
+#endif
 }
 
 void open_pulseview(char const *filename)
 {
+#ifdef _WIN32
+#warning Opening Pulseview not implemented for win32
+#else
     char *argv[9] = {0};
     int arg       = 0;
     char *abspath = realpath(filename, NULL);
@@ -151,7 +158,6 @@ void open_pulseview(char const *filename)
     argv[arg++] = "-i";
     argv[arg++] = abspath;
 #endif
-    // how do we open Pulseview on win32?
 
     fprintf(stderr, "Opening Pulseview...\n");
     pid_t pid = fork();
@@ -174,4 +180,5 @@ void open_pulseview(char const *filename)
         wait(NULL);
     }
     free(abspath);
+#endif
 }
