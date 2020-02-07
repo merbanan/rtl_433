@@ -115,6 +115,7 @@
     <ClInclude Include="..\include\sdr.h" />
     <ClInclude Include="..\include\term_ctl.h" />
     <ClInclude Include="..\include\util.h" />
+    <ClInclude Include="..\include\write_sigrok.h" />
     <ClInclude Include="..\src\getopt\getopt.h" />
   </ItemGroup>
   <ItemGroup>
@@ -143,6 +144,7 @@
     <ClCompile Include="..\src\sdr.c" />
     <ClCompile Include="..\src\term_ctl.c" />
     <ClCompile Include="..\src\util.c" />
+    <ClCompile Include="..\src\write_sigrok.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
