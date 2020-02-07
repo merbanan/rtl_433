@@ -92,17 +92,21 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
 
     pid_t pid = fork();
     if (pid < 0) {
-        perror("forking for zip");
+        perror("forking zip");
         return;
     }
     else if (pid == 0) {
         // child process because return value zero
         execvp(argv[0], argv);
-        perror("execve"); // execve() returns only on error
+        // execvp() returns only on error
+        for (int i = 0; i < arg; ++i)
+            fprintf(stderr, "%s ", argv[i]);
+        fprintf(stderr, "\n");
+        perror("execvp");
         exit(1);
     }
     else {
-        // parent process because return value non-zero.
+        // parent process because return value non-zero
         wait(NULL);
         printf("Done!\n");
     }
@@ -139,7 +143,6 @@ void open_pulseview(char const *filename)
     argv[arg++] = "org.sigrok.PulseView";
     argv[arg++] = "--fresh";
     argv[arg++] = "--new";
-    argv[arg++] = "--wait-apps";
     argv[arg++] = "--args";
     argv[arg++] = "-i";
     argv[arg++] = (char *)abspath;
@@ -148,7 +151,9 @@ void open_pulseview(char const *filename)
     argv[arg++] = "-i";
     argv[arg++] = abspath;
 #endif
+    // how do we open Pulseview on win32?
 
+    fprintf(stderr, "Opening Pulseview...\n");
     pid_t pid = fork();
     if (pid < 0) {
         perror("forking pulseview");
@@ -157,11 +162,15 @@ void open_pulseview(char const *filename)
     else if (pid == 0) {
         // child process because return value zero
         execvp(argv[0], argv);
-        perror("execve"); // execve() returns only on error
+        // execvp() returns only on error
+        for (int i = 0; i < arg; ++i)
+            fprintf(stderr, "%s ", argv[i]);
+        fprintf(stderr, "\n");
+        perror("execvp");
         exit(1);
     }
     else {
-        // parent process because return value non-zero.
+        // parent process because return value non-zero
         wait(NULL);
     }
     free(abspath);

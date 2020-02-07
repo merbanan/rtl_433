@@ -888,6 +888,7 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
     add_dumper(cfg, "F32:AM:analog-1-6-1", overwrite);
     add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
     cfg->sr_filename = spec;
+    cfg->sr_execopen = overwrite;
 }
 
 void close_dumpers(struct r_cfg *cfg)
@@ -903,6 +904,9 @@ void close_dumpers(struct r_cfg *cfg)
     };
     if (cfg->sr_filename) {
         write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
+    }
+    if (cfg->sr_execopen) {
+        open_pulseview(cfg->sr_filename);
     }
 }
 
