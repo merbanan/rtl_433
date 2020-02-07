@@ -20,7 +20,7 @@
 void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[])
 {
 #ifdef _WIN32
-#warning Writing Sigrok not implemented for win32
+    fprintf(stderr, "Writing Sigrok not implemented for win32\n");
 #else
     // e.g. uses channels
     // U8:LOGIC:logic-1-1
@@ -139,7 +139,7 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
 void open_pulseview(char const *filename)
 {
 #ifdef _WIN32
-#warning Opening Pulseview not implemented for win32
+    fprintf(stderr, "Opening Pulseview not implemented for win32\n");
 #else
     char *argv[9] = {0};
     int arg       = 0;
