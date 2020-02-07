@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#endif
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/wait.h>
 #endif
