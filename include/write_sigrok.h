@@ -18,8 +18,9 @@
     @param samplerate sample rate for the channels
     @param probes number of binary channels, needs "logic-1-1" file
     @param analogs number of analog channels, needs "analog-1-N-1" with N starting at probes+1
+    @param labels channel labels, probes+analog strings or NULL for generic labels
 */
-void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs);
+void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[]);
 
 /** Open a file in a forked Pulseview.
 

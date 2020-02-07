@@ -892,8 +892,17 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 
 void close_dumpers(struct r_cfg *cfg)
 {
+    char const *labels[] = {
+            "FRAME", // probe1
+            "ASK", // probe2
+            "FSK", // probe3
+            "I", // analog4
+            "Q", // analog5
+            "AM", // analog6
+            "FM", // analog7
+    };
     if (cfg->sr_filename) {
-        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4);
+        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
     }
 }
 

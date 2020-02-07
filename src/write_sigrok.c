@@ -17,7 +17,7 @@
 
 #include "write_sigrok.h"
 
-void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs)
+void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[])
 {
     // e.g. uses channels
     // U8:LOGIC:logic-1-1
@@ -57,10 +57,20 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
             "total probes=%u\n"
             "total analog=%u\n",
             samplerate / 1000, probes, analogs);
-    for (unsigned i = 1; i <= probes; ++i)
-        fprintf(fp, "probe%u=L%u\n", i, i);
-    for (unsigned i = probes + 1; i <= probes + analogs; ++i)
-        fprintf(fp, "analog%u=A%u\n", i, i);
+    if (labels) {
+        char const **label = labels;
+        for (unsigned i = 1; i <= probes; ++i)
+            fprintf(fp, "probe%u=%s\n", i, *label++);
+        for (unsigned i = probes + 1; i <= probes + analogs; ++i)
+            fprintf(fp, "analog%u=%s\n", i, *label++);
+    }
+    else {
+        for (unsigned i = 1; i <= probes; ++i)
+            fprintf(fp, "probe%u=L%u\n", i, i);
+        for (unsigned i = probes + 1; i <= probes + analogs; ++i)
+            fprintf(fp, "analog%u=A%u\n", i, i);
+    }
+
     // EOF
     fclose(fp);
 
