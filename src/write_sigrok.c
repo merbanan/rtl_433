@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #ifndef _MSC_VER
 #include <unistd.h>
+#include <sys/wait.h>
 #endif
 
 #include "write_sigrok.h"
