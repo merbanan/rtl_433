@@ -43,7 +43,7 @@ typedef SSIZE_T ssize_t;
         clock_t stop   = clock();                                          \
         double elapsed = (double)(stop - start) * 1000.0 / CLOCKS_PER_SEC; \
         printf("Time elapsed in ms: %f for: %s\n", elapsed, label);        \
-    } while (0);
+    } while (0)
 
 int read_buf(const char *filename, void *buf, size_t nbyte)
 {
