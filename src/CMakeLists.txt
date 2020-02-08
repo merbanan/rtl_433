@@ -158,10 +158,10 @@ add_library(r_433 STATIC
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format -Wno-format-security")
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-format-security -Wno-large-by-value-copy")
 endif()
 
 add_executable(rtl_433 rtl_433.c)
