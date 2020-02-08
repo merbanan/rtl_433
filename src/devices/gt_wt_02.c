@@ -103,6 +103,7 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     return 1;
 }
 
+/** @sa gt_wt_02_process_row() */
 static int gt_wt_02_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int counter = 0;

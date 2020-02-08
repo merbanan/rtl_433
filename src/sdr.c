@@ -25,6 +25,7 @@
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
 #endif
 #ifdef SOAPYSDR
+#include <SoapySDR/Version.h>
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Logger.h>
@@ -270,7 +271,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
     }
 
     if (verbose)
-        fprintf(stderr, "Found %d device(s)\n\n", device_count);
+        fprintf(stderr, "Found %u device(s)\n\n", device_count);
 
     int dev_index = 0;
     // select rtlsdr device by serial (-d :<serial>)
@@ -335,6 +336,44 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
         *out_dev = dev;
     }
     return r;
+}
+
+static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
+{
+    int r = -1;
+
+    /* Get allowed gains */
+    int gains_count = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, NULL);
+    if (gains_count < 0) {
+        if (verbose)
+            fprintf(stderr, "Unable to get exact gains\n");
+        return centigain;
+    }
+    if (gains_count < 1) {
+        if (verbose)
+            fprintf(stderr, "No exact gains\n");
+        return centigain;
+    }
+    int *gains = calloc(gains_count, sizeof(int));
+    if (!gains) {
+        WARN_CALLOC("rtlsdr_find_tuner_gain()");
+        return centigain; // NOTE: just aborts on alloc failure.
+    }
+    r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
+
+    /* Find allowed gain */
+    for (int i = 0; i < gains_count; ++i) {
+        if (centigain <= gains[i]) {
+            centigain = gains[i];
+            break;
+        }
+    }
+    if (centigain > gains[gains_count - 1]) {
+        centigain = gains[gains_count - 1];
+    }
+    free(gains);
+
+    return centigain;
 }
 
 #endif
@@ -651,7 +690,17 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
     dev->sample_size = *sample_size;
 
     SoapySDRKwargs stream_args = {0};
-    if (SoapySDRDevice_setupStream(dev->soapy_dev, &dev->soapy_stream, SOAPY_SDR_RX, format, NULL, 0, &stream_args) != 0) {
+    int r;
+#if SOAPY_SDR_API_VERSION >= 0x00080000
+    // API version 0.8
+#undef SoapySDRDevice_setupStream
+    dev->soapy_stream = SoapySDRDevice_setupStream(dev->soapy_dev, SOAPY_SDR_RX, format, NULL, 0, &stream_args);
+    r = dev->soapy_stream == NULL;
+#else
+    // API version 0.7
+    r = SoapySDRDevice_setupStream(dev->soapy_dev, &dev->soapy_stream, SOAPY_SDR_RX, format, NULL, 0, &stream_args);
+#endif
+    if (r != 0) {
         if (verbose)
             fprintf(stderr, "Failed to setup sdr device\n");
         free(dev);
@@ -912,6 +961,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
             fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
 
     /* Set the tuner gain */
+    gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
     r = rtlsdr_set_tuner_gain(dev->rtlsdr_dev, gain);
     if (verbose) {
         if (r < 0)

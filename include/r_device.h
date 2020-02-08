@@ -56,7 +56,7 @@ typedef struct r_device {
     char **fields; ///< List of fields this decoder produces; required for CSV output. NULL-terminated.
 
     /* public for each decoder */
-    int new_model_keys; ///< TODO: temporary allow to change to new style model keys
+    int old_model_keys; ///< TODO: temporary allow to change to old style model keys
     int verbose;
     int verbose_bits;
     void (*output_fn)(struct r_device *decoder, struct data *data);

@@ -1,7 +1,10 @@
 ########################################################################
 # Build libraries and executables
 ########################################################################
-add_executable(rtl_433
+# commodity libraries
+# consider -fvisibility=hidden
+# Proper object library type was only introduced with CMake 2.8.8
+add_library(r_433 STATIC
     abuf.c
     am_analyze.c
     baseband.c
@@ -22,17 +25,19 @@ add_executable(rtl_433
     pulse_detect_fsk.c
     r_api.c
     r_util.c
-    rtl_433.c
     samp_grab.c
     sdr.c
     term_ctl.c
     util.c
+    write_sigrok.c
     devices/acurite.c
     devices/akhan_100F14.c
     devices/alecto.c
     devices/ambient_weather.c
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
+    devices/archos_tbh.c
+    devices/auriol_afw2a1.c
     devices/auriol_hg02832.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c
@@ -89,7 +94,7 @@ add_executable(rtl_433
     devices/kedsum.c
     devices/kerui.c
     devices/lacrosse.c
-    devices/lacrosse_TX141TH_Bv2.c
+    devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
@@ -127,11 +132,12 @@ add_executable(rtl_433
     devices/springfield.c
     devices/steelmate.c
     devices/tfa_30_3196.c
+    devices/tfa_drop_30.3233.c
     devices/tfa_pool_thermometer.c
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
-    devices/tpms_abarth.c
+    devices/tpms_abarth124.c
     devices/tpms_citroen.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
@@ -144,6 +150,7 @@ add_executable(rtl_433
     devices/vaillant_vrt340f.c
     devices/waveman.c
     devices/wg_pb12v1.c
+    devices/ws2032.c
     devices/wssensor.c
     devices/wt0124.c
     devices/wt450.c
@@ -152,11 +159,14 @@ add_executable(rtl_433
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    SET_SOURCE_FILES_PROPERTIES(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
 endif()
+
+add_executable(rtl_433 rtl_433.c)
+target_link_libraries(rtl_433 r_433)
 
 if(MSVC)
     # needs CMake 3.1 but Windows builds should have that
@@ -177,7 +187,7 @@ target_link_libraries(rtl_433 m)
 endif()
 
 # Explicitly say that we want C99
-set_property(TARGET rtl_433 PROPERTY C_STANDARD 99)
+set_target_properties(rtl_433 r_433 PROPERTIES C_STANDARD 99)
 
 ########################################################################
 # Install built library files & utilities

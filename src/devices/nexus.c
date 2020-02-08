@@ -1,33 +1,39 @@
-/* Nexus sensor protocol with ID, temperature and optional humidity
- * also FreeTec NC-7345 sensors for FreeTec Weatherstation NC-7344.
- *
- * the sensor sends 36 bits 12 times,
- * the packets are ppm modulated (distance coding) with a pulse of ~500 us
- * followed by a short gap of ~1000 us for a 0 bit or a long ~2000 us gap for a
- * 1 bit, the sync gap is ~4000 us.
- *
- * the data is grouped in 9 nibbles
- * [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1]
- *
- * The 8-bit id changes when the battery is changed in the sensor.
- * flags are 4 bits B 0 C C, where B is the battery status: 1=OK, 0=LOW
- * and CC is the channel: 0=CH1, 1=CH2, 2=CH3
- * temp is 12 bit signed scaled by 10
- * const is always 1111 (0x0F)
- * humidity is 8 bits
- *
- * The sensor can be bought at Clas Ohlsen
- */
+/** @file
+    Nexus temperature and optional humidity sensor protocol.
+*/
+/** @fn int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Nexus sensor protocol with ID, temperature and optional humidity
+also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
+also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station.
+
+The sensor sends 36 bits 12 times,
+the packets are ppm modulated (distance coding) with a pulse of ~500 us
+followed by a short gap of ~1000 us for a 0 bit or a long ~2000 us gap for a
+1 bit, the sync gap is ~4000 us.
+
+The data is grouped in 9 nibbles:
+
+    [id0] [id1] [flags] [temp0] [temp1] [temp2] [const] [humi0] [humi1]
+
+- The 8-bit id changes when the battery is changed in the sensor.
+- flags are 4 bits B 0 C C, where B is the battery status: 1=OK, 0=LOW
+- and CC is the channel: 0=CH1, 1=CH2, 2=CH3
+- temp is 12 bit signed scaled by 10
+- const is always 1111 (0x0F)
+- humidity is 8 bits
+
+The sensors can be bought at Clas Ohlsen (Nexus) and Pearl (infactory/FreeTec).
+*/
 
 #include "decoder.h"
 
 // NOTE: this should really not be here
 int rubicson_crc_check(bitrow_t *bb);
 
-static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
-
 
     if (decoder->verbose > 1) {
         fprintf(stderr,"Possible Nexus: ");
@@ -41,7 +47,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t humidity;
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
-    /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
+    /* The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
      * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
      * So less then 0.5% which should be acceptable.
      */
@@ -102,23 +108,23 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "channel",
-    "battery",
-    "temperature_C",
-    "humidity",
-    NULL
+        "model",
+        "id",
+        "channel",
+        "battery",
+        "temperature_C",
+        "humidity",
+        NULL,
 };
 
 r_device nexus = {
-    .name           = "Nexus Temperature & Humidity Sensor",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 1000,
-    .long_width     = 2000,
-    .gap_limit      = 3000,
-    .reset_limit    = 5000,
-    .decode_fn      = &nexus_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Nexus, FreeTec NC-7345, NX-3980 temperature/humidity sensor",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1000,
+        .long_width  = 2000,
+        .gap_limit   = 3000,
+        .reset_limit = 5000,
+        .decode_fn   = &nexus_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

@@ -210,7 +210,7 @@ void pulse_FSK_detect_mm(int16_t fm_n, pulse_data_t *fsk_pulses, pulse_FSK_state
                     s->fsk_pulse_length = 0;
                     // When pulse buffer is full go to error state
                     if (fsk_pulses->num_pulses >= PD_MAX_PULSES) {
-                        fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
+//                        fprintf(stderr, "pulse_FSK_detect(): Maximum number of pulses reached!\n");
                         s->fsk_state = PD_FSK_STATE_ERROR;
                     }
                 }

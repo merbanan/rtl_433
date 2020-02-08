@@ -34,6 +34,8 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ambient_weather.c \
                        devices/ambientweather_tx8300.c \
                        devices/ambientweather_wh31e.c \
+                       devices/archos_tbh.c \
+                       devices/auriol_afw2a1.c \
                        devices/auriol_hg02832.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
@@ -90,7 +92,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/kedsum.c \
                        devices/kerui.c \
                        devices/lacrosse.c \
-                       devices/lacrosse_TX141TH_Bv2.c \
+                       devices/lacrosse_tx141x.c \
                        devices/lacrosse_tx35.c \
                        devices/lacrosse_ws7000.c \
                        devices/lacrossews.c \
@@ -128,6 +130,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/springfield.c \
                        devices/steelmate.c \
                        devices/tfa_30_3196.c \
+                       devices/tfa_drop_30.3233.c \
                        devices/tfa_pool_thermometer.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
@@ -145,6 +148,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/vaillant_vrt340f.c \
                        devices/waveman.c \
                        devices/wg_pb12v1.c \
+                       devices/ws2032.c \
                        devices/wssensor.c \
                        devices/wt0124.c \
                        devices/wt450.c \

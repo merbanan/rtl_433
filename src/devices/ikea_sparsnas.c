@@ -299,6 +299,6 @@ r_device ikea_sparsnas = {
     .gap_limit     = 1000,
     .reset_limit   = 3000,
     .decode_fn     = &ikea_sparsnas_callback,
-    .disabled      = 1,
+    .disabled      = 0,
     .fields        = output_fields,
 };

@@ -141,7 +141,7 @@
     DECL(hcs200) \
     DECL(tfa_303196) \
     DECL(rubicson_48659) \
-    DECL(holman_ws5029) \
+    DECL(holman_ws5029pcm) \
     DECL(philips_aj7010) \
     DECL(esic_emt7110) \
     DECL(gt_tmbbq05) \
@@ -149,7 +149,14 @@
     DECL(norgo) \
     DECL(tpms_elantra2012) \
     DECL(auriol_hg02832) \
-    DECL(tpms_abarth) \
+    DECL(fineoffset_WH51) \
+    DECL(holman_ws5029pwm) \
+    DECL(archos_tbh) \
+    DECL(ws2032) \
+    DECL(auriol_afw2a1) \
+    DECL(tfa_drop_303233) \
+    DECL(dsc_security_ws4945) \
+    DECL(tpms_abarth124) \
 
     /* Add new decoders here. */
 

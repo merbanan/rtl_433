@@ -12,6 +12,11 @@
  */
 #include "decoder.h"
 
+#define BLOCK1A_SIZE 12     // Size of Block 1, format A
+#define BLOCK1B_SIZE 10     // Size of Block 1, format B
+#define BLOCK2B_SIZE 118    // Maximum size of Block 2, format B
+#define BLOCK1_2B_SIZE 128
+
 // Convert two BCD encoded nibbles to an integer
 static unsigned bcd2int(uint8_t bcd) {
     return 10*(bcd>>4) + (bcd & 0xF);
@@ -126,6 +131,22 @@ const char* m_bus_device_type_str(uint8_t devType) {
 }
 
 
+// Data structure for application layer
+typedef struct {
+    uint8_t     CI;         // Control info
+    uint8_t     AC;         // Access number
+    uint8_t     ST;
+    uint16_t    CW;         // Configuration word
+    uint8_t     pl_offset;  // Payload offset
+    /* KNX */
+    uint8_t     knx_ctrl;
+    uint16_t    src;
+    uint16_t    dst;
+    uint8_t     l_npci;
+    uint8_t     tpci;
+    uint8_t     apci;
+} m_bus_block2_t;
+
 // Data structure for block 1
 typedef struct {
     uint8_t     L;        // Length
@@ -135,6 +156,9 @@ typedef struct {
     uint8_t     A_Version;    // Address, Version
     uint8_t     A_DevType;    // Address, Device Type
     uint16_t    CRC;      // Optional (Only for Format A)
+    m_bus_block2_t block2;
+    int         knx_mode;
+    uint8_t     knx_sn[6];
 } m_bus_block1_t;
 
 typedef struct {
@@ -142,17 +166,203 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
+
+static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
+static float humidity_factor[2] = { 0.1, 1 };
+
+static int consumed_bytes[8] = { 0, 1, 2, 3, 4, -1, 6, 8};
+
+static char* oms_temp[4][4] = {
+{"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
+{"maximum_temperature_1h_C","maximum_temperature_24h_C","error_13","error_14",},
+{"minimum_temperature_1h_C","minimum_temperature_24h_C","error_23","error_24",},
+{"error_31","error_32","error_33","error_34",}
+};
+
+static char* oms_temp_el[4][4] = {
+{"Temperature","Average Temperature 1h","Average Temperature 24h","Error [0][4]", },
+{"Maximum Temperature 1h","Maximum Temperature 24h","Error [1][3]","Error [1][4]",},
+{"Minimum Temperature 1h","Minimum Temperature 24h","Error [2][3]","Error [2][4]",},
+{"error_31","error_32","error_33","error_34",}
+};
+
+static char* oms_hum[4][4] = {
+{"humidity","average_humidity_1h","average_humidity_24h","error_04", },
+{"maximum_humidity_1h","maximum_humidity_24h","error_13","error_14",},
+{"minimum_humidity_1h","minimum_humidity_24h","error_23","error_24",},
+{"error_31","error_32","error_33","error_34",}
+};
+
+static char* oms_hum_el[4][4] = {
+{"Humidity","Average Humidity 1h","Average Humidity 24h","Error [0][4]", },
+{"Maximum Humidity 1h","Maximum Humidity 24h","Error [1][3]","Error [1][4]",},
+{"Minimum Humidity 1h","Minimum Humidity 24h","Error [2][3]","Error [2][4]",},
+{"Error 31","Error 32","Error 33","Error 34",}
+};
+
+static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
+    int ret = consumed_bytes[dif_coding&0x03];
+
+    switch (vif_linear) {
+        case 0:
+            switch(vif_uam>>2) {
+                case 0x19:
+                    data = data_append(data,
+                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        NULL);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 0x7B:
+            switch(vif_uam>>1) {
+                case 0xD:
+                    data = data_append(data, oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1], NULL);
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 0x7D:
+            switch(vif_uam) {
+                case 0x1b:
+                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (b[0]==0x55) ? "open":"closed", NULL);
+                    break;
+                case 0x3a:
+                    /* Only use 32 bits of 48 available */
+                    data = data_append(data, ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]), NULL);
+                    break;
+                default:
+                    break;
+            }
+        default:
+            break;
+    }
+    return ret;
+}
+
+static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out) {
+    uint8_t off = block1->block2.pl_offset;
+    const uint8_t *b = out->data;
+    uint8_t dif = 0;
+    uint8_t dife_array[10] = {0};
+    uint8_t dife_cnt = 0;
+    uint8_t dif_coding = 0;
+    uint8_t dif_sn = 0;
+    uint8_t dif_ff = 0;
+    uint8_t dif_su = 0;
+    uint8_t vif = 0;
+    uint8_t vife_array[10] = {0};
+    uint8_t vife_cnt = 0;
+    uint8_t vif_uam = 0;
+    uint8_t vif_linear = 0;
+    uint8_t vife = 0;
+    uint8_t exponent = 0;
+    int cnt = 0, consumed;
+
+    /* Align offset pointer, there might be 2 0x2F bytes */
+    if (b[off] == 0x2F) off++;
+    if (b[off] == 0x2F) off++;
+
+// [02 65] 9f08 [42 65] 9e08 [8201 65] 8f08 [02 fb1a] 3601 [42 fb1a] 3701 [8201 fb1a] 3001
+
+//[02 65] b408 [42 65] a008 [8201 65] 6408 [22 65] 9608 [12 65] ac08 [62 65] 2808 [52 65] 920802fb1a470142fb1a4a018201fb1a550122fb1a4a0112fb1a4a0162fb1a3c0152fb1a6c01066dbb3197902100
+
+    /* Payload must start with a DIF */
+    while(off < block1->L) {
+        memset(dife_array, 0, 10);
+        memset(vife_array, 0, 10);
+        dife_cnt = 0;
+        vife_cnt = 0;
+
+        /* Parse DIF */
+        dif = b[off];
+        dif_sn = (dif&0x40) >> 6;
+        dif_su = 0;
+        while (b[off]&0x80) {
+            off++;
+            dife_array[dife_cnt++] = b[off];
+            if (dife_cnt >= 10) return;
+        }
+        // Only use first dife in dife_array
+        dif_sn = ((dife_array[0]&0x0F) << 1) | dif_sn;
+        dif_su = ((dife_array[0]&0x40) >> 6);
+        off++;
+        dif_coding = dif&0x0F;
+        dif_ff = (dif&0x30) >> 4;
+
+        /* Parse VIF */
+        vif = b[off];
+        while (b[off]&0x80) {
+            off++;
+            vife_array[vife_cnt++] = b[off]&0x7F;
+            if (vife_cnt >= 10) return;
+        }
+        off++;
+        /* Linear VIF-extension */
+        if (vif == 0xFB) {
+            vif_linear = 0x7B;
+            vif_uam = vife_array[0];
+        } else if(vif  == 0xFD) {
+            vif_linear = 0x7D;
+            vif_uam = vife_array[0];
+        } else {
+            vif_linear = 0;
+            vif_uam = vif&0x7F;
+        }
+
+        consumed = m_bus_decode_records(data, &b[off], dif_coding, vif_linear, vif_uam, dif_sn, dif_ff, dif_su);
+        if (consumed == -1) return;
+
+        off +=consumed;
+    }
+    return;
+}
+
+static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1) {
+    m_bus_block2_t *b2 = &block1->block2;
+    const uint8_t *b = in->data+BLOCK1A_SIZE;
+
+    if (block1->knx_mode) {
+        b2->knx_ctrl = b[0];
+        b2->src = b[1]<< 8 | b[2];
+        b2->dst = b[3]<< 8 | b[4];
+        b2->l_npci = b[5];
+        b2->tpci = b[6];
+        b2->apci = b[7];
+        /* data */
+    } else {
+        b2->CI = b[0];
+        /* Short transport layer */
+        if (b2->CI == 0x7A) {
+            b2->AC = b[1];
+            b2->ST = b[2];
+            b2->CW = b[4]<<8 | b[3];
+            b2->pl_offset = BLOCK1A_SIZE-2 + 5;
+        }
+    //    fprintf(stderr, "Instantaneous Value: %02x%02x : %f\n",b[9],b[10],((b[10]<<8)|b[9])*0.01);
+    }
+    return 0;
+}
+
 static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
 {
-    static const uint16_t BLOCK1A_SIZE = 12;     // Size of Block 1, format A
 
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
-    m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
-    block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
-    block1->A_Version = in->data[8];
-    block1->A_DevType = in->data[9];
+
+    /* Check for KNX RF default values */
+    if ((in->data[2]==0xFF) && (in->data[3]==0x03)) {
+        block1->knx_mode = 1;
+        memcpy(block1->knx_sn, &in->data[4], 6);
+    } else {
+        m_bus_manuf_decode((uint32_t)(in->data[3] << 8 | in->data[2]), block1->M_str);    // Decode Manufacturer
+        block1->A_ID      = bcd2int(in->data[7])*1000000 + bcd2int(in->data[6])*10000 + bcd2int(in->data[5])*100 + bcd2int(in->data[4]);
+        block1->A_Version = in->data[8];
+        block1->A_DevType = in->data[9];
+    }
 
     // Store length of data
     out->length      = block1->L-9 + BLOCK1A_SIZE-2;
@@ -180,15 +390,14 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         // Get block data
         memcpy(out_ptr, in_ptr, block_size);
     }
+
+    parse_block2(decoder, in, block1);
+
     return 1;
 }
 
 static int m_bus_decode_format_b(r_device *decoder, const m_bus_data_t *in, m_bus_data_t *out, m_bus_block1_t *block1)
 {
-    static const uint16_t BLOCK1B_SIZE  = 10;   // Size of Block 1, format B
-    static const uint16_t BLOCK2B_SIZE  = 118;  // Maximum size of Block 2, format B
-    static const uint16_t BLOCK1_2B_SIZE  = 128;
-
     // Get Block 1
     block1->L         = in->data[0];
     block1->C         = in->data[1];
@@ -238,7 +447,25 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     for (unsigned n=0; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
-    data = data_make(
+    if (block1->knx_mode) {
+        char sn_str[7*2] = {0};
+        for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
+
+        data = data_make(
+        "model",    "",             DATA_STRING,    _X("KNX-RF","KNX-RF"),
+        "sn",       "SN",           DATA_STRING,    sn_str,
+        "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
+        "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
+        "dst",      "Dst",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.dst,
+        "l_npci",   "L/NPCI",       DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.l_npci,
+        "tpci",     "TPCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.tpci,
+        "apci",     "APCI",         DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.apci,
+        "data_length","Data Length",DATA_INT,       out->length,
+        "data",     "Data",         DATA_STRING,    str_buf,
+        "mic",      "Integrity",    DATA_STRING,    "CRC",
+        NULL);
+    } else {
+        data = data_make(
         "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
         "mode",     "Mode",         DATA_STRING,    mode,
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
@@ -252,6 +479,23 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "data",     "Data",         DATA_STRING,    str_buf,
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
+    }
+    if(block1->block2.CI) {
+        data = data_append(data,
+        "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
+        "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
+        "ST",     "Device Type",    DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.ST,
+        "CW",     "Configuration Word",DATA_FORMAT, "0x%04X",   DATA_INT, block1->block2.CW,
+        NULL);
+    }
+    /* Encryption not supported */
+    if (!(block1->block2.CW&0x0500)) {
+        parse_payload(data, block1, out);
+    } else {
+        data = data_append(data,
+        "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
+                        NULL);
+    }
     decoder_output_data(decoder, data);
 }
 
@@ -417,6 +661,32 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
+static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+    static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
+    unsigned int start_pos;
+    bitbuffer_t packet_bits = {0};
+    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+
+    // Validate package length
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {
+        return 0;
+    }
+
+    // Find a Mode S data package
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
+    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 410);
+    data_in.length = (bitbuffer->bits_per_row[0]);
+    bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
+
+    if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
+
+    m_bus_output_data(decoder, &data_out, &block1, "S");
+
+    return 1;
+}
+
 static char *output_fields[] = {
     "model",
     "mode",
@@ -424,6 +694,18 @@ static char *output_fields[] = {
     "version",
     "type",
     "type_string",
+    "CI",
+    "AC",
+    "ST",
+    "CW",
+    "sn",
+    "knx_ctrl",
+    "src",
+    "dst",
+    "l_npci",
+    "tpci",
+    "apci",
+    "crc",
     NULL
 };
 
@@ -443,15 +725,15 @@ r_device m_bus_mode_c_t = {
 
 // Mode S1, S1-m, S2, T2 (Meter RX),    (Meter RX not so interesting)
 // Frequency 868.3 MHz, Bitrate 32.768 kbps, Modulation Manchester FSK
-// Untested!!! (Need samples)
 r_device m_bus_mode_s = {
     .name           = "Wireless M-Bus, Mode S, 32.768kbps (-f 868300000 -s 1000000)",   // Minimum samplerate = 1 MHz (15 samples of 32kb/s manchester coded)
-    .modulation     = FSK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = (1000.0/32.768/2),   // ~31 us per bit -> clock half period ~15 us
-    .long_width     = 0,    // Unused
-    .reset_limit    = (1000.0/32.768*1.5), // 3 clock half periods
-    .decode_fn      = &m_bus_mode_c_t_callback,
-    .disabled       = 1,    // Disable per default, as it runs on non-standard frequency
+    .modulation     = FSK_PULSE_PCM,
+    .short_width    = (1000.0/32.768),   // ~31 us per bit
+    .long_width     = (1000.0/32.768),
+    .reset_limit    = ((1000.0/32.768)*9), // 9 bit periods
+    .decode_fn      = &m_bus_mode_s_callback,
+    .disabled       = 0,
+    .fields         = output_fields,
 };
 
 

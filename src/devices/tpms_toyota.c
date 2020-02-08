@@ -1,32 +1,32 @@
-/* FSK 9-byte Differential Manchester encoded TPMS data with CRC-8.
- * Pacific Industries Co.Ltd. PMV-C210
- * Seen on a Toyota Auris(Corolla). The manufacturers of the Toyota TPMS are
- * Pacific Industrial Corp and sometimes TRW Automotive and might also be used
- * in other car brands. Contact me with your observations!
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * There are 14 bits sync followed by 72 bits manchester encoded data and
- * 3 bits trailer.
- * E.g. 01010101001111 00110011 [...64 manchester bits] 00101010111
- *
- * The first 4 bytes are the ID. Followed by 1-bit state,
- * 8-bit values of pressure, temperature, 7-bit state, 8-bit inverted pressure
- * and then the a CRC-8 with 0x07 truncated poly and init 0x80.
- * The temperature is offset by 40 deg C.
- * The pressure seems to be 1/4 PSI offset by -7 PSI (i.e. 28 raw = 0 PSI).
- */
+/** @file
+    FSK 9-byte Differential Manchester encoded TPMS data with CRC-8.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+FSK 9-byte Differential Manchester encoded TPMS data with CRC-8.
+Pacific Industries Co.Ltd. PMV-C210
+Seen on a Toyota Auris(Corolla). The manufacturers of the Toyota TPMS are
+Pacific Industrial Corp and sometimes TRW Automotive and might also be used
+in other car brands. Contact me with your observations!
+
+There are 14 bits sync followed by 72 bits manchester encoded data and
+3 bits trailer.
+E.g. 01010101001111 00110011 [...64 manchester bits] 00101010111
+
+The first 4 bytes are the ID. Followed by 1-bit state,
+8-bit values of pressure, temperature, 7-bit state, 8-bit inverted pressure
+and then the a CRC-8 with 0x07 truncated poly and init 0x80.
+The temperature is offset by 40 deg C.
+The pressure seems to be 1/4 PSI offset by -7 PSI (i.e. 28 raw = 0 PSI).
+*/
 
 #include "decoder.h"
-
-// full preamble is 0101 0101 0011 11 = 55 3c
-// could be shorter   11 0101 0011 11
-static const unsigned char preamble_pattern[2] = {0xa9, 0xe0}; // 12 bits (but pass last bit to decode)
 
 static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -79,12 +79,18 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     return 1;
 }
 
-static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/** @sa tpms_toyota_decode() */
+static int tpms_toyota_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // full preamble is 0101 0101 0011 11 = 55 3c
+    // could be shorter   11 0101 0011 11
+    uint8_t const preamble_pattern[2] = {0xa9, 0xe0}; // 12 bits (but pass last bit to decode)
+
     unsigned bitpos = 0;
     int events = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (const uint8_t *)&preamble_pattern, 12)) + 156 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 12)) + 156 <=
             bitbuffer->bits_per_row[0]) {
         events += tpms_toyota_decode(decoder, bitbuffer, 0, bitpos + 11);
         bitpos += 2;
@@ -101,7 +107,7 @@ static char *output_fields[] = {
     "pressure_PSI",
     "temperature_C",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device tpms_toyota = {

@@ -81,6 +81,7 @@ typedef struct r_cfg {
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
+    int report_time_tz;
     int report_time_utc;
     int report_description;
     int report_stats;
@@ -93,7 +94,9 @@ typedef struct r_cfg {
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
-    int new_model_keys;
+    char const *sr_filename;
+    int sr_execopen;
+    int old_model_keys;
     /* stats*/
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval

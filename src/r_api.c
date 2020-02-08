@@ -28,6 +28,7 @@
 #include "optparse.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
+#include "write_sigrok.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -150,10 +151,21 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->s_sync_width  = r_dev->sync_width * samples_per_us;
     r_dev->s_tolerance   = r_dev->tolerance * samples_per_us;
 
+    // check for rounding to zero
+    if ((r_dev->short_width > 0 && r_dev->s_short_width <= 0)
+            || (r_dev->long_width > 0 && r_dev->s_long_width <= 0)
+            || (r_dev->reset_limit > 0 && r_dev->s_reset_limit <= 0)
+            || (r_dev->gap_limit > 0 && r_dev->s_gap_limit <= 0)
+            || (r_dev->sync_width > 0 && r_dev->s_sync_width <= 0)
+            || (r_dev->tolerance > 0 && r_dev->s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        exit(1);
+    }
+
     r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     r_dev->verbose_bits = cfg->verbose_bits;
 
-    r_dev->new_model_keys = cfg->new_model_keys; // TODO: temporary allow to change to new style model keys
+    r_dev->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
 }
 
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
@@ -267,9 +279,9 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
             format = "%Y-%m-%dT%H:%M:%S";
 
         if (cfg->report_time_hires)
-            return usecs_time_str(buf, format, &ago);
+            return usecs_time_str(buf, format, cfg->report_time_tz, &ago);
         else
-            return format_time_str(buf, format, ago.tv_sec);
+            return format_time_str(buf, format, cfg->report_time_tz, ago.tv_sec);
     }
 }
 
@@ -311,7 +323,7 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
 static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
 {
-    if (cfg->new_model_keys) {
+    if (!cfg->old_model_keys) {
         for (char const **p = fields; *p; ++p) {
             if (!strcmp(*p, "battery")) *p = "battery_ok";
         }
@@ -476,7 +488,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     r_cfg_t *cfg = r_dev->output_ctx;
 
     // replace textual battery key with numerical battery key
-    if (cfg->new_model_keys) {
+    if (!cfg->old_model_keys) {
         for (data_t *d = data; d; d = d->next) {
             if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
                 free(d->key);
@@ -867,8 +879,45 @@ void add_null_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, NULL);
 }
 
+void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
+{
+    // create channels
+    add_dumper(cfg, "U8:LOGIC:logic-1-1", overwrite);
+    add_dumper(cfg, "F32:I:analog-1-4-1", overwrite);
+    add_dumper(cfg, "F32:Q:analog-1-5-1", overwrite);
+    add_dumper(cfg, "F32:AM:analog-1-6-1", overwrite);
+    add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
+    cfg->sr_filename = spec;
+    cfg->sr_execopen = overwrite;
+}
+
+void close_dumpers(struct r_cfg *cfg)
+{
+    char const *labels[] = {
+            "FRAME", // probe1
+            "ASK", // probe2
+            "FSK", // probe3
+            "I", // analog4
+            "Q", // analog5
+            "AM", // analog6
+            "FM", // analog7
+    };
+    if (cfg->sr_filename) {
+        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
+    }
+    if (cfg->sr_execopen) {
+        open_pulseview(cfg->sr_filename);
+    }
+}
+
 void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
+    size_t spec_len = strlen(spec);
+    if (spec_len >= 3 && !strcmp(&spec[spec_len - 3], ".sr")) {
+        add_sr_dumper(cfg, spec, overwrite);
+        return;
+    }
+
     file_info_t *dumper = calloc(1, sizeof(*dumper));
     if (!dumper)
         FATAL_CALLOC("add_dumper()");
