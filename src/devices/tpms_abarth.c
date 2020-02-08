@@ -1,7 +1,5 @@
-/** @file
-    Jansite FSK 7 byte Manchester encoded checksummed TPMS data.
-
-    Copyright (C) 2019 Andreas Spiess and Christian W. Zuckschwerdt <zany@triq.net>
+/*  @file
+    VDO Type TG1C FSK 9 byte Manchester encoded checksummed TPMS data.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -9,27 +7,31 @@
     (at your option) any later version.
 */
 
-/**
-Jansite Solar TPMS (Internal/External) Model TY02S
-Working Temperature:-40 °C to 125 °C
-Working Frequency: 433.92MHz+-38KHz
-Tire monitoring range value: 0kPa-350kPa+-7kPa
+/*
+    (VDO Type TG1C via) Abarth 124 Spider TPMS decoded by TTigges
+    Protocol similar (and based on) Jansite Solar TPMS by Andreas Spiess and Christian W. Zuckschwerdt
 
-Data layout (nibbles):
+    OEM Sensor is said to be a VDO Type TG1C, available in different cars,
+    e.g.: Abarth 124 Spider, some Fiat 124 Spider, some Mazda MX-5 ND (and NC?) and probably some other Mazdas.
+    Mazda reference/part no.: BHB637140A
+    VDO reference/part no.: A2C1132410180
+    
+    Compatible with aftermarket sensors, e.g. Aligator sens.it RS3
 
-    II II II IS PP TT CC
+    // Working Temperature: -50°C to 125°C
+    // Working Frequency: 433.92MHz+-38KHz
+    // Tire monitoring range value: 0kPa-350kPa+-7kPa (to be checked, VDO says 450/900kPa)
 
-- I: 28 bit ID
-- S: 4 bit Status (deflation alarm, battery low etc)
-- P: 8 bit Pressure (best guess quarter PSI, i.e. ~0.58 kPa)
-- T: 8 bit Temperature (deg. C offset by 50)
-- C: 8 bit Checksum
-- The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
-*/
-
-/**
-Abarth 124 Spider TPMS
-Protocol slightly similar (and based on) Jansite Solar TPMS by Andreas Spiess and Christian W. Zuckschwerdt
+    Data layout (nibbles):
+        II II II II ?? PP TT SS CC
+    - I: 32 bit ID
+    - ?: 4 bit unknown (seems to change with status)
+    - ?: 4 bit unknown (seems static)
+    - P: 8 bit Pressure (multiplyed by 1.4 = kPa)
+    - T: 8 bit Temperature (deg. C offset by 50)
+    - S: Status? (first nibble seems static, second nibble seems to change with status)
+    - C: 8 bit Checksum (Checksum8 XOR on bytes 0 to 8)
+    - The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
 */
 
 #include "decoder.h"
@@ -43,34 +45,42 @@ static int tpms_abarth_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
-    unsigned id;
-    char id_str[7 + 1];
-    int flags;
+    char id_str[4 * 2 + 1];
+    char flags[1 * 2 + 1];
     int pressure;
     int temperature;
-    char code_str[7 * 2 + 1];
+    int status;
+    int checksum;
+    char code_str[9 * 2 + 1];
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
+    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
     b = packet_bits.bb[0];
 
-    // TODO: validate checksum
+// check checksum (checksum8 xor)
+    checksum = b[0]^b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8];
+    if (checksum != 0) {
+        return 0;
+    }
 
-    id          = (unsigned)b[0] << 20 | b[1] << 12 | b[2] << 4 | b[3] >> 4;
-    flags       = b[3] >> 4;
+
+    sprintf(flags, "%02x", b[4]);
     pressure    = b[5];
     temperature = b[6];
-    //crc         = b[6];
-    sprintf(id_str, "%07x", id);
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6]); // figure out the checksum
+    status      = b[7];
+    checksum    = b[8];
+    sprintf(id_str, "%02x%02x%02x%02x", b[0], b[1], b[2], b[3]);
+    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]); // figure out the checksum
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Abarth 124 Spider",
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
-            "flags",            "",             DATA_INT, flags,
+        //  "flags",            "",             DATA_STRING, flags,
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.4,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
+            "status",           "",             DATA_INT, status,
+        //  "checksum",         "",             DATA_INT, checksum,
             "code",             "",             DATA_STRING, code_str,
         //  "mic",              "",             DATA_STRING, "CHECKSUM",
             NULL);
@@ -100,9 +110,11 @@ static char *output_fields[] = {
         "model",
         "type",
         "id",
-        "flags",
+        //"flags",
         "pressure_kPa",
         "temperature_C",
+        "status",
+        //"checksum",
         "code",
         //"mic",
         NULL,
@@ -115,6 +127,6 @@ r_device tpms_abarth = {
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
         .decode_fn   = &tpms_abarth_callback,
-        .disabled    = 1, // Unknown checksum
+        .disabled    = 0,
         .fields      = output_fields,
 };
