@@ -149,6 +149,8 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return msg_len; // pass error code on
     }
     data_len = msg_len - RH_ASK_HEADER_LEN - 3;
+    if (data_len <= 0)
+      return DECODE_FAIL_SANITY;
 
     header_to = rh_payload[1];
     header_from = rh_payload[2];

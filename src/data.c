@@ -165,6 +165,9 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
+    if (num_values < 0) {
+      return NULL;
+    }
     data_array_t *array = calloc(1, sizeof(data_array_t));
     if (!array) {
         WARN_CALLOC("data_array()");
