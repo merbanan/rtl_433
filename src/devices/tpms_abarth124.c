@@ -1,4 +1,4 @@
-/*  @file
+/**  @file
     VDO Type TG1C FSK 9 byte Manchester encoded checksummed TPMS data.
 
     This program is free software; you can redistribute it and/or modify
@@ -7,31 +7,31 @@
     (at your option) any later version.
 */
 
-/*
-    (VDO Type TG1C via) Abarth 124 Spider TPMS decoded by TTigges
-    Protocol similar (and based on) Jansite Solar TPMS by Andreas Spiess and Christian W. Zuckschwerdt
+/**
+(VDO Type TG1C via) Abarth 124 Spider TPMS decoded by TTigges
+Protocol similar (and based on) Jansite Solar TPMS by Andreas Spiess and Christian W. Zuckschwerdt
 
-    OEM Sensor is said to be a VDO Type TG1C, available in different cars,
-    e.g.: Abarth 124 Spider, some Fiat 124 Spider, some Mazda MX-5 ND (and NC?) and probably some other Mazdas.
-    Mazda reference/part no.: BHB637140A
-    VDO reference/part no.: A2C1132410180
-    
-    Compatible with aftermarket sensors, e.g. Aligator sens.it RS3
+OEM Sensor is said to be a VDO Type TG1C, available in different cars,
+e.g.: Abarth 124 Spider, some Fiat 124 Spider, some Mazda MX-5 ND (and NC?) and probably some other Mazdas.
+Mazda reference/part no.: BHB637140A
+VDO reference/part no.: A2C1132410180
 
-    // Working Temperature: -50°C to 125°C
-    // Working Frequency: 433.92MHz+-38KHz
-    // Tire monitoring range value: 0kPa-350kPa+-7kPa (to be checked, VDO says 450/900kPa)
+Compatible with aftermarket sensors, e.g. Aligator sens.it RS3
 
-    Data layout (nibbles):
-        II II II II ?? PP TT SS CC
-    - I: 32 bit ID
-    - ?: 4 bit unknown (seems to change with status)
-    - ?: 4 bit unknown (seems static)
-    - P: 8 bit Pressure (multiplyed by 1.4 = kPa)
-    - T: 8 bit Temperature (deg. C offset by 50)
-    - S: Status? (first nibble seems static, second nibble seems to change with status)
-    - C: 8 bit Checksum (Checksum8 XOR on bytes 0 to 8)
-    - The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
+// Working Temperature: -50°C to 125°C
+// Working Frequency: 433.92MHz+-38KHz
+// Tire monitoring range value: 0kPa-350kPa+-7kPa (to be checked, VDO says 450/900kPa)
+
+Data layout (nibbles):
+    II II II II ?? PP TT SS CC
+- I: 32 bit ID
+- ?: 4 bit unknown (seems to change with status)
+- ?: 4 bit unknown (seems static)
+- P: 8 bit Pressure (multiplyed by 1.4 = kPa)
+- T: 8 bit Temperature (deg. C offset by 50)
+- S: Status? (first nibble seems static, second nibble seems to change with status)
+- C: 8 bit Checksum (Checksum8 XOR on bytes 0 to 8)
+- The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
 */
 
 #include "decoder.h"
