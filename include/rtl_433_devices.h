@@ -149,7 +149,6 @@
     DECL(norgo) \
     DECL(tpms_elantra2012) \
     DECL(auriol_hg02832) \
-    DECL(tpms_abarth) \
 
     /* Add new decoders here. */
 
