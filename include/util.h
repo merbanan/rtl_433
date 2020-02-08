@@ -132,6 +132,15 @@ uint8_t lfsr_digest8(uint8_t const message[], unsigned bytes, uint8_t gen, uint8
 /// @return digest value
 uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, uint8_t key);
 
+/// Digest-8 by "LFSR-based Toeplitz hash", Galois
+///
+/// @param message bytes of message data
+/// @param bytes number of bytes to digest
+/// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
+/// @param key initial key
+void lfsr_digest8_galois(int y_rev, int i_rev, int rev, uint8_t *msg,
+        int bytes, uint8_t gen, uint8_t key, uint8_t *sum_add, uint8_t *sum_xor);
+
 /// Digest-16 by "LFSR-based Toeplitz hash".
 ///
 /// @param data up to 32 bits data, LSB aligned

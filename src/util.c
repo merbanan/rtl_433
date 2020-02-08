@@ -221,6 +221,64 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
     return sum;
 }
 
+/* LFSR-based Toeplitz hash */
+void lfsr_digest8_galois(int y_rev, int i_rev, int rev,
+        uint8_t *msg, int bytes, uint8_t gen, uint8_t key, uint8_t *sum_add, uint8_t *sum_xor)
+{
+    // all this will be optimized away
+    int y_min, y_max, y_step;
+    if (y_rev) {
+        y_min = bytes - 1; y_max = -1; y_step = -1;
+    } else {
+        y_min = 0; y_max = bytes-1; y_step = 1;
+    }
+
+    int i_min, i_max, i_step;
+    if (i_rev) {
+        i_min = 7; i_max = -1; i_step = -1;
+    }
+    else {
+        i_min = 0; i_max = 8; i_step = 1;
+    }
+
+    unsigned sum = 0;
+    uint8_t xor = 0;
+    // for (int k = bytes - 1; k >= 0; --k) {
+    // for (int k = 0; k < bytes; ++k) {
+    for (int k = y_min; k != y_max; k += y_step) {
+        u_int8_t data = msg[k];
+        // for (int bit = 7; bit >= 0; --bit) {
+        // for (int bit = 0; bit <= 7; ++bit) {
+        for (int bit = i_min; bit != i_max; bit += i_step) {
+            // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
+            // if data bit is set then xor with key
+            if ((data >> bit) & 1) {
+                sum += key;
+                xor ^= key;
+            }
+
+            // - Galois LFSR -
+            // shift the key right (not roll, the lsb is dropped)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (rev) {
+                if (key & 0x80)
+                    key = (key << 1) ^ gen;
+                else
+                    key = (key << 1);
+
+            } else {
+                if (key & 1)
+                    key = (key >> 1) ^ gen;
+                else
+                    key = (key >> 1);
+            }
+        }
+    }
+    *sum_add = sum;
+    //*sum_add = sum | (sum >> 8);
+    *sum_xor = xor;
+}
+
 uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
 {
     uint16_t sum = 0;
