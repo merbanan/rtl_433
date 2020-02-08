@@ -202,6 +202,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     r = i;
                 match_count++;
                 pos += params->preamble_len;
+                // TODO: refactor to bitbuffer_shift_row()
                 unsigned len = bitbuffer->bits_per_row[i] - pos;
                 bitbuffer_extract_bytes(bitbuffer, i, pos, tmp, len);
                 memcpy(bitbuffer->bb[i], tmp, (len + 7) / 8);
@@ -235,7 +236,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         render_getters(data, bitbuffer->bb[r], params);
 
         decoder_output_data(decoder, data);
-        return 0;
+        return 1;
     }
 
     if (params->count_only) {
@@ -247,7 +248,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format on */
 
         decoder_output_data(decoder, data);
-        return 0;
+        return 1;
     }
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
@@ -285,7 +286,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         free(row_codes[i]);
     }
 
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
@@ -694,7 +695,8 @@ r_device *flex_create_device(char *spec)
         usage();
     }
 
-    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT) {
+    if (dev->modulation != OOK_PULSE_MANCHESTER_ZEROBIT
+            && dev->modulation != FSK_PULSE_MANCHESTER_ZEROBIT) {
         if (!dev->long_width) {
             fprintf(stderr, "Bad flex spec, missing long width!\n");
             usage();

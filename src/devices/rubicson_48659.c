@@ -14,14 +14,13 @@
 /**
 Rubicson 48659 meat thermometer.
 
-{32} II 12 TT MN
+{32} II 12 TT CC
 
 - I = power on id
 - 1 = 0UUU U follows temperature [0-7]
 - 2 = XSTT S = sign, TT = temp high bits (2) X=unknown
 - T = Temp in Farenhight
-- M = xorsum high nibble
-- M = xorsum low nibble (add ^4 to match output)
+- C = Checksum, add 3 bytes - byte 4 should give a6
 
 
 {32} 01 08 71 d4    45
@@ -156,6 +155,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int id;
     float temp_f;
     data_t *data;
+    uint8_t checksum;
 
     // Compare first four bytes of rows that have 32 or 33 bits.
     // more then 25 repeats are not uncommon
@@ -166,6 +166,11 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((bitbuffer->bits_per_row[row] > 33) || (bitbuffer->bits_per_row[row] < 10))
         return 0;
 
+    checksum = add_bytes(bb[row], 3) - bb[row][3];
+    if (checksum != 0xa6) {
+        return DECODE_FAIL_MIC;
+    }
+
     id = bb[row][0];
     // 1 sign bit and 10 bits for the value
     temp_f = ((bb[row][1] & 0x04) >> 2) ? -1 : 1 * (((bb[row][1] & 0x3) << 8) + bb[row][2]);
@@ -175,6 +180,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",         "",            DATA_STRING, _X("Rubicson-48659","Rubicson 48659"),
             "id",            "Id",          DATA_INT,    id,
             "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -186,6 +192,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "temperature_F",
+        "mic",
         NULL,
 };
 

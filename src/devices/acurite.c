@@ -311,9 +311,8 @@ Additional reverse engineering needed:
 @todo - figure out remaining status bits and how to report
 */
 
-static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
+static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
-    int valid = 0;
     float tempf;
     uint8_t humidity, message_type, l_status;
     char channel, channel_str[2];
@@ -323,6 +322,9 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
     int battery_low, active, rfi_detect, ussb1;
     int exception = 0;
     data_t *data;
+
+    int browlen = (bitbuffer->bits_per_row[row] + 7) / 8;
+    uint8_t *bb = bitbuffer->bb[row];
 
     channel = acurite_getChannel(bb[0]);  // same as TXR
     sprintf(channel_str, "%c", channel);  // No DATA_CHAR, need null term. str
@@ -400,9 +402,7 @@ static int acurite_6045_decode(r_device *decoder, bitrow_t bb, int browlen)
     /* clang-format on */
 
     decoder_output_data(decoder, data);
-    valid++;
-
-    return valid;
+    return 1;
 }
 
 /**
@@ -633,7 +633,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Rain Fall Gauge 899
                 // The high 2 bits of byte zero are the channel (bits 7,6), 00 = A, 01 = B, 10 = C
                 channel     = bb[0] >> 6;
-                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.01 inch, i.e. 0.254mm 
+                raincounter = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7f); // one tip is 0.01 inch, i.e. 0.254mm
 
                 /* clang-format off */
                 data = data_make(
@@ -658,7 +658,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         else if (browlen == ACURITE_6045_BITLEN / 8) {
             // TODO: check parity and reject if invalid
-            valid += acurite_6045_decode(decoder, bb, browlen);
+            valid += acurite_6045_decode(decoder, bitbuffer, brow);
         }
 
     }
@@ -859,7 +859,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int crc, battery_low, id, model, valid = 0;
+    int crc, battery_low, id, model_flag, valid = 0;
     data_t *data;
     float tempc, ptempc;
     uint8_t probe, humidity, phumidity, water;
@@ -901,14 +901,14 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //  Decode the combined signal
             id          = (signal[0][0] << 16) | (signal[0][1] << 8) | signal[0][3];
             battery_low = (signal[0][2] & 0x40) == 0;
-            model       = (signal[0][2] & 1);
+            model_flag  = (signal[0][2] & 1);
             tempc       = ((signal[0][4] << 4) | (signal[0][5] >> 4)) * 0.1 - 100;
             probe       = signal[0][5] & 3;
             humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
             //  No probe
             /* clang-format off */
             data = data_make(
-                    "model",           "",             DATA_STRING,    model ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
+                    "model",           "",             DATA_STRING,    model_flag ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
                     _X("subtype","probe"), "Probe",    DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",

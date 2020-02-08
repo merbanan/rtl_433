@@ -39,7 +39,7 @@
 // preamble
 static const unsigned char preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
 
-static int tpms_abarth_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
+static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
     unsigned int start_pos;
@@ -90,7 +90,7 @@ static int tpms_abarth_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     return 1;
 }
 
-static int tpms_abarth_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned bitpos = 0;
     int events      = 0;
@@ -120,13 +120,13 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device tpms_abarth = {
+r_device tpms_abarth124 = {
         .name        = "Abarth 124 Spider TPMS",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 52,  // 12-13 samples @250k
         .long_width  = 52,  // FSK
         .reset_limit = 150, // Maximum gap size before End Of Message [us].
-        .decode_fn   = &tpms_abarth_callback,
+        .decode_fn   = &tpms_abarth124_callback,
         .disabled    = 0,
         .fields      = output_fields,
 };

@@ -74,7 +74,7 @@ void pulse_data_print_vcd_header(FILE *file, uint32_t sample_rate)
         timescale = "1 us";
     else
         timescale = "100 ns";
-    chk_ret(fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0)));
+    chk_ret(fprintf(file, "$date %s $end\n", format_time_str(time_str, NULL, 0, 0)));
     chk_ret(fprintf(file, "$version rtl_433 0.1.0 $end\n"));
     chk_ret(fprintf(file, "$comment Acquisition at %s Hz $end\n", nice_freq(sample_rate)));
     chk_ret(fprintf(file, "$timescale %s $end\n", timescale));
@@ -156,7 +156,7 @@ void pulse_data_print_pulse_header(FILE *file)
     chk_ret(fprintf(file, ";version 1\n"));
     chk_ret(fprintf(file, ";timescale 1us\n"));
     //chk_ret(fprintf(file, ";samplerate %u\n", data->sample_rate));
-    chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 0)));
+    chk_ret(fprintf(file, ";created %s\n", format_time_str(time_str, NULL, 1, 0)));
 }
 
 void pulse_data_dump(FILE *file, pulse_data_t *data)

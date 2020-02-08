@@ -20,8 +20,14 @@
 #include <math.h>
 #include <limits.h>
 
-static int account_event(r_device *device, int ret)
+static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name)
 {
+    // run decoder
+    int ret = 0;
+    if (device->decode_fn) {
+        ret = device->decode_fn(device, bits);
+    }
+
     // statistics accounting
     device->decode_events += 1;
     if (ret > 0) {
@@ -36,6 +42,13 @@ static int account_event(r_device *device, int ret)
         fprintf(stderr, "Decoder gave invalid return value %d: notify maintainer\n", ret);
         exit(1);
     }
+
+    // Debug printout
+    if (!device->decode_fn || (device->verbose && ret > 0)) {
+        fprintf(stderr, "%s(): %s\n", demod_name, device->name);
+        bitbuffer_print(bits);
+    }
+
     return ret;
 }
 
@@ -43,14 +56,71 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    const int max_zeros = device->s_reset_limit / device->s_long_width;
-    const int tolerance = device->s_long_width / 4; // Tolerance is ±25% of a bit period
+    int const max_zeros = device->s_reset_limit / device->s_long_width;
+    int tolerance = device->s_tolerance;
+    if (tolerance <= 0)
+        tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
+
+    float f_short = device->f_short_width;
+    float f_long  = device->f_long_width;
+    // if there is a run of bit-wide toggles (preamble) tune the bit period
+    int min_count = device->s_short_width == device->s_long_width ? 12 : 4;
+    // RZ
+    for (unsigned n = 0; device->s_short_width != device->s_long_width && n < pulses->num_pulses; ++n) {
+        int swidth = 0;
+        int lwidth = 0;
+        int count = 0;
+        while (n < pulses->num_pulses
+                && pulses->pulse[n] >= device->s_short_width - tolerance
+                && pulses->pulse[n] <= device->s_short_width + tolerance
+                && pulses->pulse[n] + pulses->gap[n] >= device->s_long_width - tolerance
+                && pulses->pulse[n] + pulses->gap[n] <= device->s_long_width + tolerance) {
+            swidth += pulses->pulse[n];
+            lwidth += pulses->pulse[n] + pulses->gap[n];
+            count += 1;
+            n++;
+        }
+        // require at least min_count bits preamble
+        if (count >= min_count) {
+            f_long  = (float)count / lwidth;
+            f_short = (float)count / swidth;
+            min_count = count;
+            if (device->verbose > 1) {
+                float to_us = 1e6 / pulses->sample_rate;
+                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble\n",
+                        to_us / f_long, to_us * device->s_long_width,
+                        to_us / f_short, to_us * device->s_short_width, count);
+            }
+        }
+    }
+    // NRZ
+    for (unsigned n = 0; device->s_short_width == device->s_long_width && n < pulses->num_pulses; ++n) {
+        int width = 0;
+        int count = 0;
+        while (n < pulses->num_pulses
+                && (int)(pulses->pulse[n] * device->f_short_width + 0.5) == 1
+                && (int)(pulses->gap[n] * device->f_long_width + 0.5) == 1) {
+            width += pulses->pulse[n] + pulses->gap[n];
+            count += 2;
+            n++;
+        }
+        // require at least min_count full bits preamble
+        if (count >= min_count) {
+            f_short = f_long = (float)count / width;
+            min_count = count;
+            if (device->verbose > 1) {
+                float to_us = 1e6 / pulses->sample_rate;
+                fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble\n",
+                        to_us / f_short, to_us * device->s_short_width, count);
+            }
+        }
+    }
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
-        int highs = (pulses->pulse[n]) * device->f_short_width + 0.5;
+        int highs = (pulses->pulse[n]) * f_short + 0.5;
         // Determine number of bit periods in current pulse/gap length (rounded)
-        int periods = (pulses->pulse[n] + pulses->gap[n]) * device->f_long_width + 0.5;
+        int periods = (pulses->pulse[n] + pulses->gap[n]) * f_long + 0.5;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
@@ -81,14 +151,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0)                    // Only if data has been accumulated
         ) {
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
     } // for
@@ -147,14 +210,7 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
                     || (pulses->gap[n] >= device->s_reset_limit))     // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
 
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
     } // for pulses
@@ -242,14 +298,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
         else if (device->s_gap_limit > 0 && pulses->gap[n] > device->s_gap_limit
@@ -301,14 +350,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
                     || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            // Debug printout
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
+            events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
             bitbuffer_add_bit(&bits, 0); // Prepare for new message with hardcoded 0
             time_since_last = 0;
@@ -365,14 +407,7 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
         else if (symbol[n] >= device->s_reset_limit - device->s_tolerance
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -417,14 +452,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
                     || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -467,14 +495,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
                     || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
-            if (!device->decode_fn || (device->verbose && events > 0)) {
-                fprintf(stderr, "%s(): %s \n", __func__, device->name);
-                bitbuffer_print(&bits);
-            }
-            bitbuffer_clear(&bits);
+            events += account_event(device, &bits, __func__);
         }
     }
 
@@ -550,9 +571,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
                     || pulses->gap[n] > device->s_reset_limit)
                 && (bits.num_rows > 0)) { // Only if data has been accumulated
             //END message ?
-            if (device->decode_fn) {
-                events += account_event(device, device->decode_fn(device, &bits));
-            }
+            events += account_event(device, &bits, __func__);
             return events;
         }
         manbit ^= 1;
@@ -574,14 +593,7 @@ int pulse_demod_string(const char *code, r_device *device)
 
     bitbuffer_parse(&bits, code);
 
-    if (device->decode_fn) {
-        events += account_event(device, device->decode_fn(device, &bits));
-    }
-    // Debug printout
-    if (!device->decode_fn || (device->verbose && events > 0)) {
-        fprintf(stderr, "%s(): %s \n", __func__, device->name);
-        bitbuffer_print(&bits);
-    }
+    events += account_event(device, &bits, __func__);
 
     return events;
 }
