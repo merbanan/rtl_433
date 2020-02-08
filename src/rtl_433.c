@@ -662,6 +662,9 @@ static void parse_conf_text(r_cfg_t *cfg, char *conf)
 
     while ((opt = getconf(&p, conf_keywords, &arg)) != -1) {
         parse_conf_option(cfg, opt, arg);
+        /* Advance to next .conf line */
+        p = trim_ws(p);
+        p = asepc(&p, '#');
     }
 }
 
