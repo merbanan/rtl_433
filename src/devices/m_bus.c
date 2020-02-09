@@ -170,7 +170,7 @@ typedef struct {
 static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
 static float humidity_factor[2] = { 0.1, 1 };
 
-static int consumed_bytes[8] = { 0, 1, 2, 3, 4, -1, 6, 8};
+static int consumed_bytes[8] = { -1, 1, 2, 3, 4, -1, 6, 8};
 
 static char* oms_temp[4][4] = {
 {"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
