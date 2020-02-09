@@ -191,7 +191,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "esn", "", DATA_STRING, esn_str, // to be removed - transitional
                 "status", "", DATA_INT, status,
                 "status_hex", "", DATA_STRING, status_str, // to be removed - once bits are output
-                "mic", "", DATA_STRING, "CRC",
+                "mic", "Integrity", DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
 

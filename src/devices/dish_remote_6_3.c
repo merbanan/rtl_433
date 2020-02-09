@@ -113,7 +113,7 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Check fixed bits to prevent misreads */
     if ((b[0] & 0x03) != 0x02 || (b[1] & 0xe8) != 0xa8) {
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     button = b[0] >> 2;
