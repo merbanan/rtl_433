@@ -27,7 +27,7 @@ Data layout (nibbles):
 - I: 32 bit ID
 - ?: 4 bit unknown (seems to change with status)
 - ?: 4 bit unknown (seems static)
-- P: 8 bit Pressure (multiplyed by 1.4 = kPa)
+- P: 8 bit Pressure (multiplyed by 1.38 = kPa)
 - T: 8 bit Temperature (deg. C offset by 50)
 - S: Status? (first nibble seems static, second nibble seems to change with status)
 - C: 8 bit Checksum (Checksum8 XOR on bytes 0 to 8)
@@ -74,7 +74,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
         //  "flags",            "",             DATA_STRING, flags,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.4,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.38,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "status",           "",             DATA_INT, status,
         //  "checksum",         "",             DATA_INT, checksum,
