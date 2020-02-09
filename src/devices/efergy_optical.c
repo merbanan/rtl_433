@@ -38,9 +38,9 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
-    double energy, n_imp;
+    float energy, n_imp;
     int pulsecount;
-    double seconds;
+    float seconds;
     data_t *data;
     uint16_t crc;
     uint16_t csum1;
@@ -77,7 +77,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // reject false positives
     if ((bytes[8] == 0) && (bytes[9] == 0) && (bytes[10] == 0) && (bytes[11] == 0)) {
-        return DECODE_FAIL_MIC;
+        return DECODE_FAIL_SANITY;
     }
 
     // Calculate checksum for bytes[0..9]
@@ -107,12 +107,12 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     
     pulsecount = bytes[8];
 
-    energy = (((double)pulsecount/n_imp) * (3600/seconds));
+    energy = (((float)pulsecount/n_imp) * (3600/seconds));
 
     //New code for calculating various energy values for differing pulse-kwh values
     const int imp_kwh[] = {4000, 3200, 2000, 1000, 500, 0};
     for (unsigned i = 0; imp_kwh[i] != 0; ++i) {
-        energy = (((double)pulsecount/imp_kwh[i]) * (3600/seconds));
+        energy = (((float)pulsecount/imp_kwh[i]) * (3600/seconds));
 
         /* clang-format off */
         data = data_make(
@@ -121,6 +121,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
                 "pulsecount", "Pulse-count", DATA_INT, pulsecount,
                 "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
+                "mic",       "Integrity",   DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
