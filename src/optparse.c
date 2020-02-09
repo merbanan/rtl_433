@@ -137,7 +137,7 @@ uint32_t atouint32_metric(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    if (val - (uint32_t)val > 1e-6) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget k, M, or G suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -232,7 +232,7 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    if (val - (int)val > 1e-6) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget m, or h suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -306,7 +306,8 @@ int main(int argc, char **argv)
     ASSERT_EQUALS(atouint32_metric("0.0", ""), 0);
     ASSERT_EQUALS(atouint32_metric("1.0", ""), 1);
     ASSERT_EQUALS(atouint32_metric("1.024k", ""), 1024);
-    ASSERT_EQUALS(atouint32_metric("433.92MHz", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.92M", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.94M", ""), 433940000);
     ASSERT_EQUALS(atouint32_metric(" +1 G ", ""), 1000000000);
 
     fprintf(stderr, "optparse:: atoi_time\n");
