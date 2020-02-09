@@ -91,7 +91,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // preamble
-    static const unsigned char preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
+    uint8_t const preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
 
     unsigned bitpos = 0;
     int events      = 0;
