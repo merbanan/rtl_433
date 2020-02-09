@@ -54,7 +54,6 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     b = packet_bits.bb[0];
 
 // check checksum (checksum8 xor)
-    //checksum = b[0]^b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8];
     checksum = xor_bytes(b, 9);
     if (checksum != 0) {
         return 0;
