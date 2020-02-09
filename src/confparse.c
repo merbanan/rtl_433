@@ -133,8 +133,15 @@ int getconf(char **conf, struct conf_keywords const keywords[], char **arg)
         }
 
     } else { // not quoted
-        while (*p && *p != '\r' && *p != '\n')
+        // find end of arg/eol
+        while (*p && *p != '\r' && *p != '\n' && *p != '#')
             p++;
+        // skip eol comments
+        if (*p == '#') {
+            *p++ = '\0';
+            while (*p && *p != '\r' && *p != '\n')
+                p++;
+        }
         if (*p)
             *p++ = '\0';
     }
