@@ -166,17 +166,17 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // only if we have a valid row to process.
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 96);
     if (r < 0 || bitbuffer->bits_per_row[r] != 96)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[r];
 
     // Test for preamble / device code
     if (memcmp(b, preamble, 3))
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Test Checksum.
     if ((xor_bytes(b, 11) & 0xF) ^ 0xF)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // Invert data for processing
     bitbuffer_invert(bitbuffer);

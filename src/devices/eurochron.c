@@ -46,15 +46,15 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
     if (row < 0) // repeated rows?
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 36) // 36 bits per row?
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (b[1] & 0x0F) // is lower nibble of second byte zero?
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     /* Extract data */
     device = b[0];
