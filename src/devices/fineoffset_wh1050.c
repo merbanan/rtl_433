@@ -33,7 +33,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t br[9];
 
     if (bitbuffer->num_rows != 1) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /* The normal preamble for WH1050 is 8 1s (0xFF) followed by 4 0s
@@ -53,14 +53,14 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (bits == 80 && preamble_byte == 0xff) {
         bitbuffer_extract_bytes(bitbuffer, 0, 8, br, 72);
     } else {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // If you calculate the CRC over all 10 bytes including the preamble
     // byte (always 0xFF), then CRC_INIT is 0xFF. But we compare the preamble
     // byte and then discard it.
     if (crc8(br, 9, 0x31, 0x00)) {
-        return 0; // crc mismatch
+        return DECODE_FAIL_MIC; // crc mismatch
     }
 
     // GETTING WEATHER SENSORS DATA
@@ -104,6 +104,7 @@ static char *output_fields[] = {
     "wind_max_km_h",
     "rain", // TODO: delete this
     "rain_mm",
+    "mic",
     NULL,
 };
 

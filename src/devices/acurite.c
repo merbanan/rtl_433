@@ -188,6 +188,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_INT,    humidity,
                 "status",           "",             DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -511,6 +512,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_INT,    humidity,
+                    "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
 
@@ -569,6 +571,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
                         _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -595,6 +598,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -623,6 +627,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -642,6 +647,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
                         "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -786,6 +792,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
@@ -812,19 +819,19 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 33)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (b[4] != 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // reject all blank messages
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     if (decoder->verbose > 1)
         bitbuffer_printf(bitbuffer, "%s: ", __func__);
@@ -832,7 +839,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // calculate the checksum and only continue if we have a matching checksum
     uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
     if (chk != b[3])
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // Processing the temperature:
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
@@ -993,6 +1000,7 @@ static char *acurite_th_output_fields[] = {
     "temperature_C",
     "humidity",
     "status",
+    "mic",
     NULL,
 };
 
