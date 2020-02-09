@@ -36,9 +36,6 @@ Data layout (nibbles):
 
 #include "decoder.h"
 
-// preamble
-static const unsigned char preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
-
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
@@ -90,16 +87,20 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     return 1;
 }
 
+/** @sa tpms_abarth124_decode() */
 static int tpms_abarth124_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // preamble
+    static const unsigned char preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
+
     unsigned bitpos = 0;
     int events      = 0;
 
     bitbuffer_invert(bitbuffer);
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 24)) + 80 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24)) + 80 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_abarth_decode(decoder, bitbuffer, 0, bitpos + 24);
+        events += tpms_abarth124_decode(decoder, bitbuffer, 0, bitpos + 24);
         bitpos += 2;
     }
 
