@@ -162,7 +162,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
                     _X("wind_avg_m_s","wind_speed"),     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
                     _X("wind_max_m_s","wind_gust"),      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
-                    "wind_direction", "Direction",  DATA_INT,    direction,
+                    _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_INT, direction,
                     "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                     NULL);
             decoder_output_data(decoder, data);
