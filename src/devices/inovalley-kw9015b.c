@@ -21,10 +21,10 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 36)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
@@ -54,7 +54,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if ((chksum&0x0F) != (reverse8(b[4]) & 0x0F))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     data = data_make(
             "model", "", DATA_STRING, _X("Inovalley-kw9015b","Inovalley kw9015b"),

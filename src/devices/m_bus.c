@@ -512,13 +512,13 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Find a Mode T or C data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T, sizeof(PREAMBLE_T)*8);
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
     if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %d\n", bit_offset);
     bitbuffer_print(bitbuffer);
@@ -671,7 +671,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Find a Mode S data package

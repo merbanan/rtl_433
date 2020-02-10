@@ -39,9 +39,9 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
 
     // Weather Station 2310 Packets
     if (rowlen != LACROSSE_WS_BITLEN)
-        return 0;
+        return DECODE_ABORT_LENGTH;
     if (pRow[0] != 0x09 && pRow[0] != 0x06)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     for (i = 0; i < (LACROSSE_WS_BITLEN / 4); i++) {
         msg_nybbles[i] = 0;
@@ -77,7 +77,7 @@ static int lacrossews_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
                 checksum, msg_nybbles[12], parity);
         bitrow_print(msg_nybbles, LACROSSE_WS_BITLEN);
     }
-    return 0;
+    return DECODE_FAIL_MIC;
 }
 
 static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -93,7 +93,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (row = 0; row < BITBUF_ROWS; row++) {
         // break out the message nybbles into separate bytes
-        if (!lacrossews_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]))
+        if (lacrossews_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0)
             continue;
 
         ws_id          = (msg_nybbles[0] << 4) + msg_nybbles[1];

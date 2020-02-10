@@ -47,13 +47,13 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             || bitbuffer->bits_per_row[2] != 0
             || bitbuffer->bits_per_row[3] != 0
             || bitbuffer->bits_per_row[4] != 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     // the signal should have 6 repeats with a sync pulse between
     // require at least 4 received repeats
     int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
     if (r < 0 || bitbuffer->bits_per_row[r] != 42)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // remove the two leading 0-bits and align the data
     bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
@@ -61,7 +61,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     int id       = b[0];
     int battery  = b[1] >> 6;

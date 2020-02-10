@@ -19,7 +19,7 @@ static int intertechno_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int command;
 
     if (bb[0][0] != 0 || (bb[1][0] != 0x56 && bb[1][0] != 0x69))
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (decoder->verbose > 1) {
         fprintf(stderr, "Switch event:\n");
