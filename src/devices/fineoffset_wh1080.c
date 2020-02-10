@@ -119,7 +119,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int preamble;         // 7 or 8 preamble bits
 
     if (bitbuffer->num_rows != 1) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     if (bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
@@ -150,7 +150,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         br      = bbuf;
     }
     else {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     if (decoder->verbose) {
@@ -158,17 +158,17 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (br[0] != 0xff) {
-        return 0; // preamble missing
+        return DECODE_FAIL_SANITY; // preamble missing
     }
 
     if (sens_msg == 10) {
         if (crc8(br, 11, 0x31, 0xff)) { // init is 0 if we skip the preamble
-            return 0; // crc mismatch
+            return DECODE_FAIL_MIC; // crc mismatch
         }
     }
     else {
         if (crc8(br, 8, 0x31, 0xff)) { // init is 0 if we skip the preamble
-            return 0; // crc mismatch
+            return DECODE_FAIL_MIC; // crc mismatch
         }
     }
 
@@ -184,7 +184,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         // 0x03 is WH0530, Alecto WS-1200
         // 0x05 is Alecto WS-1200 DCF77
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     // GETTING WEATHER SENSORS DATA
@@ -299,6 +299,7 @@ static char *output_fields[] = {
         "uv_index",
         "lux",
         "wm",
+        "mic",
         NULL,
 };
 

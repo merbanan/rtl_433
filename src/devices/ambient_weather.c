@@ -35,7 +35,7 @@ ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, 
             fprintf(stderr, "Message: ");
             bitrow_print(b, 48);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     deviceID = b[1];

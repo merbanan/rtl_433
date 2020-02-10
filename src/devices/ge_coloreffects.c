@@ -82,15 +82,15 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     // Frame should be 17 decoded bits (not including preamble)
     if (packet_bits.bits_per_row[0] != 17)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // First two bits must be 0
     if (*packet_bits.bb[0] & 0xc0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Last bit must be 0
     if (bit(packet_bits.bb[0], 16) != 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Extract device ID
     // We want bits [2..8]. Since the first two bits are zero, we'll just take the entire first byte

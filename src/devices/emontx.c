@@ -57,7 +57,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             uint8_t b[sizeof(struct emontx)];
         } pkt;
         uint16_t words[14];
-        double vrms;
+        float vrms;
         unsigned i;
 
         bitpos += 22;
@@ -107,7 +107,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (crc != words[13])
             continue;
 
-        vrms = (double)words[4] / 100.0;
+        vrms = (float)words[4] / 100.0;
 
         data = data_make(
                  "model", "", DATA_STRING, _X("emonTx-Energy","emonTx"),
@@ -125,6 +125,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                  words[8] == 3000 ? NULL : "temp4_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[8] / 10.0,
                  words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[9] / 10.0,
                  words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
+                 "mic",           "Integrity",   DATA_STRING, "CRC",
                  NULL);
         decoder_output_data(decoder, data);
         events++;
