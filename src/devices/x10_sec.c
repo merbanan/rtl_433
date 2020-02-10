@@ -101,7 +101,8 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    // TODO: improve decode logging with earlier returns
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

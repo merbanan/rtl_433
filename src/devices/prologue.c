@@ -62,8 +62,9 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Check for Alecto collision */
     ret = alecto_checksum(decoder, bitbuffer->bb);
-    if (ret)
-        return DECODE_FAIL_MIC;
+    // if the checksum is correct, it's not prologue
+    if (ret > 0)
+        return DECODE_FAIL_SANITY;
 
     /* Prologue sensor */
     type     = b[0] >> 4;

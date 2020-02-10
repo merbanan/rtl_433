@@ -89,7 +89,6 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
     }
-    return 0;
     */
 
     int device_id     = (b[9] << 8) | b[10];

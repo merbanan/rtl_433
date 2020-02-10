@@ -30,10 +30,10 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     // Compare first four bytes of rows that have 32 or 33 bits.
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 32);
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 33)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     ic = lfsr_digest8_reflect(bb[row], 3, 0x51, 0x04);
     if (ic != bb[row][3]) {

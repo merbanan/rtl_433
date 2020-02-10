@@ -51,7 +51,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

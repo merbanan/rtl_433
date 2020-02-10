@@ -60,16 +60,16 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
             (bitbuffer->num_rows > 5) ? 5 : 2,
             40);
     if (row < 0) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     bytes = bitbuffer->bb[row];
     if (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3]) {
-        return 0; // reduce false positives
+        return DECODE_ABORT_EARLY; // reduce false positives
     }
 
     if (bitbuffer->bits_per_row[row] != 41)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     ic = lfsr_digest8_reflect(bytes, 4, 0x51, 0x04);
     if (ic != bytes[4]) {

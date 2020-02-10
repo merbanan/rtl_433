@@ -25,7 +25,7 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Reject codes of wrong length */
     if (25 != bitbuffer->bits_per_row[0])
-      return 0;
+      return DECODE_ABORT_LENGTH;
 
     /*
      * Catch the case triggering false positive for other transmitters.
@@ -36,11 +36,11 @@ static int waveman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (0xFF == b[0] &&
             0xFF == b[1] &&
             0xFF == b[2])
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     /* Test if the bit stream has every even bit set to one */
     if (((b[0] & 0xaa) != 0xaa) || ((b[1] & 0xaa) != 0xaa) || ((b[2] & 0xaa) != 0xaa))
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     /* Extract data from the bit stream */
     for (i = 0; i < 3; ++i) {

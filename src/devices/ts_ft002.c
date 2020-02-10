@@ -55,11 +55,11 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
         b[0] = (bitbuffer->bb[0][0] >> 2) | 0x80;
     }
     else
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     int chk = xor_bytes(b, 9);
     if (chk)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // reflect bits (also reverses nibbles)
     reflect_bytes(b, 8);
@@ -84,7 +84,7 @@ static int ts_ft002_decoder(r_device *decoder, bitbuffer_t *bitbuffer)
         transmit = 0;
 
     if (type != 0x11)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     data = data_make(

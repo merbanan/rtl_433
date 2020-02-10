@@ -36,12 +36,13 @@ ss_sensor_parser(r_device *decoder, bitbuffer_t *bitbuffer, int row)
 
     // each row needs to have exactly 92 bits
     if (bitbuffer->bits_per_row[row] != 92)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     uint8_t seq = reverse8(b[8]);
     uint8_t state = reverse8(b[9]);
     uint8_t csum = reverse8(b[10]);
-    if (((seq + state) & 0xff) != csum) return 0;
+    if (((seq + state) & 0xff) != csum)
+      return DECODE_FAIL_MIC;
 
     ss_get_id(id, b);
 
@@ -141,11 +142,13 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Require two identical rows.
     int row = bitbuffer_find_repeated_row(bitbuffer, 2, 90);
-    if (row < 0) return 0;
+    if (row < 0)
+      return DECODE_ABORT_EARLY;
 
     // The row must start with 0xcc5f (0x33a0 inverted).
     uint8_t *b = bitbuffer->bb[row];
-    if (b[0] != 0xcc || b[1] != 0x5f) return 0;
+    if (b[0] != 0xcc || b[1] != 0x5f)
+      return DECODE_ABORT_EARLY;
 
     bitbuffer_invert(bitbuffer);
 
@@ -158,7 +161,7 @@ ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else {
         if (decoder->verbose)
             fprintf(stderr, "Unknown Message Type: %02x\n", b[2]);
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 }
 

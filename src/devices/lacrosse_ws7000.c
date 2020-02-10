@@ -214,7 +214,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0; // should not be reached
+    return DECODE_FAIL_SANITY; // should not be reached
 }
 
 static char *output_fields[] = {

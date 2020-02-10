@@ -77,7 +77,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))
-        return DECODE_ABORT_MIC;
+        return DECODE_FAIL_MIC;
 
     int id          = b[0];
     int channel     = ((b[1] & 0x30) >> 4) + 1;

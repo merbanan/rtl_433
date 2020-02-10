@@ -144,7 +144,8 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         return 1;
     }
-    return 0;
+    // TODO: move up instead of putting at bottom
+    return DECODE_ABORT_LENGTH;
 }
 
 

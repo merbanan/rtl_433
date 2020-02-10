@@ -50,12 +50,12 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     b = packet_bits.bb[0];
 
     if (b[6] == 0 || b[7] == 0) {
-        return 0; // sanity check failed
+        return DECODE_ABORT_EARLY; // sanity check failed
     }
 
     crc = b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8]^b[9];
     if (crc != 0) {
-        return 0; // bad checksum
+        return DECODE_FAIL_MIC; // bad checksum
     }
 
     state = b[0]; // not covered by CRC

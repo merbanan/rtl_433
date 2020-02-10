@@ -102,7 +102,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // each row needs to have at least 128 bits (plus a few more due to bit stuffing)
     if (bitbuffer->bits_per_row[0]<128)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // The protocol uses bit-stuffing => remove 0 bit after five consecutive 1 bits
     // Also, each byte is represented with least significant bit first -> swap them!
@@ -135,13 +135,13 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // A correct message has 128 bits plus potentially two extra bits for clock sync at the end
     if (!(128 <= bitcount && bitcount <= 131) && !(168 <= bitcount && bitcount <= 171))
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // "Normal package":
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7e) && (128 <= bitcount && bitcount <= 131)) {
 
         if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
-            return 0;
+            return DECODE_FAIL_MIC;
         }
 
         // Device ID starts at bit 4:
@@ -168,7 +168,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
 
         if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
-            return 0;
+            return DECODE_FAIL_MIC;
         }
 
         // Device ID starts at bit 12:
@@ -183,7 +183,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0;
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

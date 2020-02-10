@@ -29,14 +29,14 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
     for (i = 1; i < 10; i++) {
         if (bitbuffer->bits_per_row[i] != 24) {
             /*10 24 bits frame*/
-            return 0;
+            return DECODE_ABORT_LENGTH;
         }
     }
 
     // reduce false positives
     if ((b[0] == 0 && b[1] == 0 && b[2] == 0)
             || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     device  = (b[0]);

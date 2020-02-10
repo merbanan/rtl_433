@@ -30,6 +30,7 @@ static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
 
         //This needs additional validation, but works on mine. Suspect each DC5-UK-WH uses different codes as the transmitter
         //is paired to the receivers to avoid being triggered by the neighbours transmitter ?!?
+        // TODO: cleaner implementation with 2 preamble arrays
         if (((b[0] != 0xce) || (b[1] != 0x8e) || (b[2] != 0x2a) || (b[3] != 0x6c) || (b[4] != 0x80)) &&
                 ((b[0] != 0xe7) || (b[1] != 0x37) || (b[2] != 0x7a) || (b[3] != 0x2c) || (b[4] != 0x80)))
             continue;
@@ -45,7 +46,7 @@ static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
         return 1;
     }
 
-    return 0;
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

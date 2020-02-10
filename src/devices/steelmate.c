@@ -94,7 +94,8 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     //Was not a Steelmate TPMS after all
-    return 0;
+    // TODO: improve return codes by aborting early
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

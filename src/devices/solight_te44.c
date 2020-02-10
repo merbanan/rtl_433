@@ -54,10 +54,10 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitrow_t *bb = bitbuffer->bb;
 
     if (bits != 37)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     if (!rubicson_crc_check(bb))
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     id = bb[0][0];
 

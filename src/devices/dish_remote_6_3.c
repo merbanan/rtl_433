@@ -106,7 +106,7 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     r = bitbuffer_find_repeated_row(bitbuffer, MYDEVICE_MINREPEATS, MYDEVICE_BITLEN);
     if (r < 0 || bitbuffer->bits_per_row[r] > MYDEVICE_BITLEN) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     b = bitbuffer->bb[r];

@@ -220,7 +220,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         if (decoder->verbose)
             fprintf(stderr, "%s: unknown frame received\n", __func__);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 }
 

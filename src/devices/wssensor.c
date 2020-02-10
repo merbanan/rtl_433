@@ -40,7 +40,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // require at least 4 received repeats
     int r = bitbuffer_find_repeated_row(bitbuffer, WS_MINREPEATS, WS_REPEATS);
     if (r < 0 || bitbuffer->bits_per_row[r] != WS_PACKETLEN)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[r];
 

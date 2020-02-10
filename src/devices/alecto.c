@@ -69,7 +69,7 @@ Format for Winddirection & Windgust:
 
 #include "decoder.h"
 
-/* return 1 if the checksum passes and 0 if it fails */
+/* return 1 if the checksum passes and DECODE_FAIL_MIC if it fails */
 int alecto_checksum(r_device *decoder, bitrow_t *bb)
 {
     int i, csum = 0, csum2 = 0;
@@ -91,7 +91,7 @@ int alecto_checksum(r_device *decoder, bitrow_t *bb)
         if (decoder->verbose) {
             fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     } //Invalid checksum
     if (decoder->verbose) {
         fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
@@ -126,7 +126,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     ret = alecto_checksum(decoder, bb);
-    if (!ret)
+    if (ret <= 0)
         return DECODE_FAIL_MIC;
 
     int battery_low = (b[1] & 0x80) >> 7;
@@ -197,7 +197,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         humidity = bcd_decode8(reverse8(b[3]));
         if (humidity>100)
-            return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
+            return DECODE_FAIL_SANITY;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
 
         data = data_make(
                 "model",         "",            DATA_STRING, _X("AlectoV1-Temperature","AlectoV1 Temperature Sensor"),
@@ -212,7 +212,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0;
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

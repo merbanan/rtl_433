@@ -177,7 +177,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    // unknown sensor type
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {
