@@ -286,6 +286,9 @@
     <ClCompile Include="..\src\devices\emontx.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ert.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile> 
     <ClCompile Include="..\src\devices\esa.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

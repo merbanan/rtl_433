@@ -59,6 +59,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
+                       devices/ert.c \
                        devices/esa.c \
                        devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
