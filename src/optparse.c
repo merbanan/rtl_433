@@ -137,7 +137,8 @@ uint32_t atouint32_metric(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if (val - (uint32_t)val > 1e-6) {
+    val += 1e-5; // rounding (e.g. 4123456789.99999)
+    if (val - (uint32_t)val > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget k, M, or G suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -232,7 +233,13 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if (val - (int)val > 1e-6) {
+    if (val < 0) {
+        val -= 1e-5; // rounding (e.g. -4123456789.99999)
+    }
+    else {
+        val += 1e-5; // rounding (e.g. 4123456789.99999)
+    }
+    if (val - (int)(val) > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget m, or h suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -294,7 +301,16 @@ char *remove_ws(char *str)
 
 // Unit testing
 #ifdef _TEST
-#define ASSERT_EQUALS(a,b) if ((a) == (b)) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); }
+#define ASSERT_EQUALS(a,b)                                  \
+    do {                                                    \
+        if ((a) == (b))                                     \
+            ++passed;                                       \
+        else {                                              \
+            ++failed;                                       \
+            fprintf(stderr, "FAIL: %d <> %d\n", (a), (b));  \
+        }                                                   \
+    } while (0)
+
 int main(int argc, char **argv)
 {
     unsigned passed = 0;
