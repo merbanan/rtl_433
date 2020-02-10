@@ -17,7 +17,7 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r = bitbuffer_find_repeated_row(bitbuffer, 5, 18);
     if (r < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     uint8_t *b = bitbuffer->bb[r];
 
@@ -28,10 +28,9 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[r] != 18
             || (b[1] & 0x03) != 0x03
             || (b[2] & 0xC0) != 0xC0)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     uint32_t id = (b[0] << 8) | b[1];
-
 
     data_t *data = data_make(
             "model", "", DATA_STRING, _X("Quhwa-Doorbell","Quhwa doorbell"),

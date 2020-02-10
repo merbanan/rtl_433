@@ -24,7 +24,7 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
     if (r < 0 || bitbuffer->bits_per_row[r] != 24)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* Example of message:
      * 01001001 00011010 00000100

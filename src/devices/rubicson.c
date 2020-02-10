@@ -41,7 +41,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float temp_c;
 
     if (!(bits == 36))
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     if (rubicson_crc_check(bb)) {
 
@@ -67,7 +67,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         return 1;
     }
-    return 0;
+    return DECODE_FAIL_MIC;
 }
 
 static char *output_fields[] = {
