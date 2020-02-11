@@ -1,5 +1,5 @@
 /** @file
-    ERT SCM sensors
+    ERT SCM sensors.
 
     Copyright (C) 2020 Benjamin Larsson.
 
@@ -12,34 +12,36 @@
 #include "decoder.h"
 
 /**
-    Random information:
+ERT SCM sensors.
 
-    https://github.com/bemasher/rtlamr
+Random information:
 
-    https://en.wikipedia.org/wiki/Encoder_receiver_transmitter
+https://github.com/bemasher/rtlamr
 
-    https://patentimages.storage.googleapis.com/df/23/d3/f0c33d9b2543ff/WO2007030826A2.pdf
+https://en.wikipedia.org/wiki/Encoder_receiver_transmitter
 
-    96-bit Itron® Standard Consumption Message protocol
-    https://www.smartmetereducationnetwork.com/uploads/how-to-tell-if-I-have-a-ami-dte-smart-advanced-meter/Itron%20Centron%20Meter%20Technical%20Guide1482163-201106090057150.pdf (page 28)
+https://patentimages.storage.googleapis.com/df/23/d3/f0c33d9b2543ff/WO2007030826A2.pdf
+
+96-bit Itron® Standard Consumption Message protocol
+https://www.smartmetereducationnetwork.com/uploads/how-to-tell-if-I-have-a-ami-dte-smart-advanced-meter/Itron%20Centron%20Meter%20Technical%20Guide1482163-201106090057150.pdf (page 28)
+
+Data layout:
 
     SAAA AAAA  AAAA AAAA  AAAA A
+    iiR PPTT TTEE CCCC CCCC CCCC  CCCC CCCC  CCCC IIII  IIII IIII  IIII IIII  IIII XXXX XXXX XXXX  XXXX
 
-    S - Sync bit
-    A - Preamble
+- S - Sync bit
+- A - Preamble
+- i - ERT ID Most Significant bits
+- R - Reserved
+- P - Physical tamper
+- T - ERT Type (4 and 7 are mentioned in the pdf)
+- E - Encoder Tamper
+- C - Consumption data
+- I - ERT ID Least Significant bits
+- X - CRC (polynomial 0x6F63)
 
-     iiR PPTT TTEE CCCC CCCC CCCC  CCCC CCCC  CCCC IIII  IIII IIII  IIII IIII  IIII XXXX XXXX XXXX  XXXX
-
-    i - ERT ID Most Significant bits
-    R - Reserved
-    P - Physical tamper
-    T - ERT Type (4 and 7 are mentioned in the pdf)
-    E - Encoder Tamper
-    C - Consumption data
-    I - ERT ID Least Significant bits
-    X - CRC (polynomial 0x6F63)
-
-    https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTModel45
+https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTModel45
 
 */
 
