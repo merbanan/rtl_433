@@ -175,13 +175,15 @@ data_array_t *data_array(int num_values, data_type_t type, void *values)
     }
 
     int element_size = dmt[type].array_element_size;
-    array->values    = calloc(num_values, element_size);
-    if (!array->values) {
-        WARN_CALLOC("data_array()");
-        goto alloc_error;
+    if (num_values > 0) { // don't alloc empty arrays
+        array->values = calloc(num_values, element_size);
+        if (!array->values) {
+            WARN_CALLOC("data_array()");
+            goto alloc_error;
+        }
+        if (!import_values(array->values, values, num_values, type))
+            goto alloc_error;
     }
-    if (!import_values(array->values, values, num_values, type))
-        goto alloc_error;
 
     array->num_values = num_values;
     array->type       = type;
