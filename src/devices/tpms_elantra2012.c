@@ -116,6 +116,7 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int row;
     unsigned bitpos;
+    int ret    = 0;
     int events = 0;
 
     for (row = 0; row < bitbuffer->num_rows; ++row) {
@@ -124,17 +125,14 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                         preamble_pattern, 16)) + 128 <=
                 bitbuffer->bits_per_row[row]) {
-            int event = tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
-            if (event > 0) {
-                // not very clean, we ideally want the event to bubble up for accounting.
-                // however, by adding them all together the accounting is wrong too.
-                events += event;
-            }
+            ret = tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
+            if (ret > 0)
+                events += ret;
             bitpos += 15;
         }
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

@@ -123,17 +123,20 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
 static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
-    int events = 0;
+    int ret         = 0;
+    int events      = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     // (if the device id and command were all zeros)
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 24)) + 57 <=
             bitbuffer->bits_per_row[0]) {
-        events += ge_coloreffects_decode(decoder, bitbuffer, 0, bitpos + 24);
+        ret = ge_coloreffects_decode(decoder, bitbuffer, 0, bitpos + 24);
+        if (ret > 0)
+            events += ret;
         bitpos++;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

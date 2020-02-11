@@ -39,7 +39,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
         ret = 0;
     }
     else {
-        fprintf(stderr, "Decoder gave invalid return value %d: notify maintainer\n", ret);
+        fprintf(stderr, "Decoder \"%s\" gave invalid return value %d: notify maintainer\n", device->name, ret);
         exit(1);
     }
 

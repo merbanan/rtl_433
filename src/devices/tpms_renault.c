@@ -85,6 +85,7 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     int row;
     unsigned bitpos;
+    int ret    = 0;
     int events = 0;
 
     bitbuffer_invert(bitbuffer);
@@ -95,12 +96,14 @@ static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
                 preamble_pattern, 16)) + 160 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_renault_decode(decoder, bitbuffer, row, bitpos + 16);
+            ret = tpms_renault_decode(decoder, bitbuffer, row, bitpos + 16);
+            if (ret > 0)
+                events += ret;
             bitpos += 15;
         }
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

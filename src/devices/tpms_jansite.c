@@ -80,17 +80,20 @@ static int tpms_jansite_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
 
     unsigned bitpos = 0;
+    int ret         = 0;
     int events      = 0;
 
     bitbuffer_invert(bitbuffer);
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24)) + 80 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_jansite_decode(decoder, bitbuffer, 0, bitpos + 24);
+        ret = tpms_jansite_decode(decoder, bitbuffer, 0, bitpos + 24);
+        if (ret > 0)
+            events += ret;
         bitpos += 2;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

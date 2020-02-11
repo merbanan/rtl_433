@@ -95,16 +95,19 @@ static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // full trailer is 01111110
 
     unsigned bitpos = 0;
-    int events = 0;
+    int ret         = 0;
+    int events      = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 16)) + 178 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        ret = tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        if (ret > 0)
+            events += ret;
         bitpos += 2;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {
