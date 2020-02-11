@@ -482,7 +482,7 @@ static void print_json_string(data_output_t *output, const char *str, char const
 {
     fprintf(output->file, "\"");
     while (*str) {
-        if (*str == '"')
+        if (*str == '"' || *str == '\\')
             fputc('\\', output->file);
         fputc(*str, output->file);
         ++str;
