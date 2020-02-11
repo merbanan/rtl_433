@@ -45,7 +45,6 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int maybe_battery;
     int crc;
 
-    bitbuffer_invert(bitbuffer);
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
     b = packet_bits.bb[0];
 
@@ -89,14 +88,15 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 /** @sa tpms_citroen_decode() */
 static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // full preamble is
-    // 0101 0101  0101 0101  0101 0101  0101 0110 = 55 55 55 56
-    uint8_t const preamble_pattern[2] = {0x55, 0x56};
+    // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
+    uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
     // full trailer is 01111110
 
     unsigned bitpos = 0;
     int ret         = 0;
     int events      = 0;
+
+    bitbuffer_invert(bitbuffer);
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 16)) + 178 <=
