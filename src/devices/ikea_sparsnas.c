@@ -97,7 +97,7 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
     for (k0=0;k0<0xFF;++k0) {
         d0 = b5 ^ k0;
         if (d0 > 0x0F) { //will result in sensor_id > 999999
-            continue;
+            continue; // DECODE_FAIL_SANITY
         }
         for (k1=0;k1<0xFF;++k1) {
             d1 = b6 ^ k1;
@@ -108,8 +108,8 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
                 battery_dec = battery_enc ^ k2;
                 dec_sensor_id = (unsigned)d0 << 24 | d1 << 16 | d2 << 8 | d3;
 
-                if (dec_sensor_id > 999999) {
-                    continue; //sensor id is at most 6 digits
+                if (dec_sensor_id > 999999) { //sensor id is at most 6 digits
+                    continue; // DECODE_FAIL_SANITY
                 }
 
                 for (k4=0;k4<0xFF;++k4) {

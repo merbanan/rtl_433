@@ -107,7 +107,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr,"DSC row %d invalid bit count %d\n",
                 row, bitbuffer->bits_per_row[row]);
             }
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         b = bitbuffer->bb[row];
@@ -120,7 +120,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1) {
                 bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
             }
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         bytes[0] = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
@@ -141,7 +141,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose)
                 fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
                         esn, status, crc);
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         // Decode status bits:

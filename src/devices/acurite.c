@@ -159,7 +159,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         if (bitbuffer->bits_per_row[brow] != 40) {
-           continue;
+           continue; // DECODE_ABORT_LENGTH
         }
 
         bb = bitbuffer->bb[brow];
@@ -167,7 +167,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         cksum = (bb[0] + bb[1] + bb[2] + bb[3]);
 
         if (cksum == 0 || ((cksum & 0xff) != bb[4])) {
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         // Temperature in Celsius is encoded as a 12 bit integer value
@@ -451,7 +451,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer->bits_per_row[brow] != ACURITE_6045_BITLEN) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr, "%s: skipping wrong len\n", __func__);
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         }
 
         // There will be 1 extra false zero bit added by the demod.
@@ -465,7 +465,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (sum == 0 || (sum & 0xff) != bb[browlen - 1]) {
             if (decoder->verbose)
                 bitrow_printf(bb, bitbuffer->bits_per_row[brow], "%s: bad checksum: ", __func__);
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         if (decoder->verbose) {
@@ -729,7 +729,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer->bits_per_row[brow] > 43 ) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr,"%s: skipping wrong len\n", __func__);
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         }
         bb = bitbuffer->bb[brow];
 
@@ -737,7 +737,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // may eliminate these with a better PPM (precise?) demod.
         if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
                 (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         // Reverse the bits, msg sent LSB first
@@ -773,7 +773,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     fprintf(stderr, "%s: CRC fix %02x - %02x\n", __func__, crc, crcc);
             }
             else {
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
         }
 
@@ -881,8 +881,10 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  This sensor repeats signal three times.  Store each copy.
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
-        if (bitbuffer->bits_per_row[brow] != 88) continue;
-        if (nsignal>=3) continue;
+        if (bitbuffer->bits_per_row[brow] != 88)
+          continue; // DECODE_ABORT_LENGTH
+        if (nsignal>=3)
+          continue; // DECODE_ABORT_EARLY
         memcpy(signal[nsignal], bitbuffer->bb[brow], 11);
         if (decoder->verbose)
             bitrow_printf(signal[nsignal], 11 * 8, "%s: ", __func__);

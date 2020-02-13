@@ -183,7 +183,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                         "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
                         XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
-            continue; // to the next row
+            continue; // DECODE_ABORT_LENGTH
         }
         // We have enough bits so search for a message preamble followed by
         // enough bits that it could be a complete message.

@@ -38,7 +38,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if ((bitbuffer->bits_per_row[i] != 20)
                 || ((b[1] == 0) && (b[2] == 0))
                 || count_repeats(bitbuffer, i) < 3)
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
         sprintf(code_str, "%05x", code);

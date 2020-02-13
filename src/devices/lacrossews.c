@@ -97,7 +97,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < BITBUF_ROWS; row++) {
         // break out the message nybbles into separate bytes
         if (lacrossews_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0)
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         ws_id          = (msg_nybbles[0] << 4) + msg_nybbles[1];
         msg_type       = ((msg_nybbles[2] >> 1) & 0x4) + (msg_nybbles[2] & 0x3);

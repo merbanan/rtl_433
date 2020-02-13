@@ -80,7 +80,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             pkt_pos = bitbuffer_search(bitbuffer, 0, bitpos,
                            pkt_hdr_inverted, 11);
             if (pkt_pos > bitpos + 5)
-                continue;
+                continue; // DECODE_ABORT_EARLY
             inverted = 1;
         }
 
@@ -98,14 +98,14 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 pkt.b[i] ^= 0xff;
         }
         if (pkt.p.len != 0x1a || pkt.p.postamble != 0xaa)
-            continue;
+            continue; // DECODE_ABORT_EARLY
         crc = crc16lsb((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
 
         // Ick. If we could just do le16_to_cpu(pkt.p.ct1) we wouldn't need this.
         for (i=0; i<14; i++)
             words[i] = pkt.b[4 + (i * 2)] | (pkt.b[5 + i * 2] << 8);
         if (crc != words[13])
-            continue;
+            continue; // DECODE_FAIL_MIC
 
         vrms = (float)words[4] / 100.0;
 

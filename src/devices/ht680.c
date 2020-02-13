@@ -21,7 +21,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 41 || // Length of packet is 41 (36+5)
                 (bitbuffer->bb[row][0] & 0xf8) != 0xa8) // Sync is 10101xxx (5 bits)
-        continue;
+        continue; // DECODE_ABORT_LENGTH
 
         // remove the 5 sync bits
         bitbuffer_extract_bytes(bitbuffer, row, 5, b, 36);
@@ -30,7 +30,7 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             (b[2] & 0x0c) != 0x08 && // AD10 always "open" on HT680
             (b[3] & 0x30) != 0x20 && // AD13 always "open" on HT680
             (b[4] & 0xf0) != 0xa0) // AD16, AD17 always "open" on HT680
-        continue; // not a HT680
+        continue; // DECODE_ABORT_EARLY
 
         // Tristate coding
         char tristate[21];

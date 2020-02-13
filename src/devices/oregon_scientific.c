@@ -215,7 +215,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
         if (((sync_test_val & mask) != pattern)
                 && ((sync_test_val & mask) != pattern2))
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         // Found sync byte - start working on decoding the stream data.
         // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload

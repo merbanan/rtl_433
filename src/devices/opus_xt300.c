@@ -31,16 +31,16 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 48) {
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         }
         b = bitbuffer->bb[row];
         if (b[0] != 0xFF && ((b[1] | 0x1) & 0xFD) == 0x55) {
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
         chk = add_bytes(b + 1, 4); // sum bytes 1-4
         chk = chk & 0xFF;
         if (chk != 0 && chk != b[5] ) {
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         channel  = (b[1] & 0x03);

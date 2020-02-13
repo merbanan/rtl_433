@@ -37,7 +37,7 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Validate package
         if (((bitbuffer->bits_per_row[row] < 385) || (bitbuffer->bits_per_row[row] > 394)) ||
                 ((b[0] != 0xFF ) || (b[38] != 0xFF)))
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         code = get_command_codes(b);
         device_id = b[44]<<8 | b[45];
