@@ -167,9 +167,14 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
         chk_ret(fprintf(file, ";freq2 %.0f\n", data->freq2_hz));
     }
     else {
-        chk_ret(fprintf(file, ";ook %d pulses\n", data->num_pulses));
+        chk_ret(fprintf(file, ";ook %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
     }
+    chk_ret(fprintf(file, ";samplerate %u Hz\n", data->sample_rate));
+    chk_ret(fprintf(file, ";rssi %.1f dB\n", data->rssi_db));
+    chk_ret(fprintf(file, ";snr %.1f dB\n", data->snr_db));
+    chk_ret(fprintf(file, ";noise %.1f dB\n", data->noise_db));
+
     double to_us = 1e6 / data->sample_rate;
     for (unsigned i = 0; i < data->num_pulses; ++i) {
         chk_ret(fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us));
