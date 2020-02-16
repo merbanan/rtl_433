@@ -104,7 +104,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // - orange led (every 60s): bytes[3]=80 (0101 0000)
     // - green led (every 90s):  bytes[3]=96 (0110 0000)
     seconds = (((bytes[3] & 0x30 ) >> 4 ) + 1) * 30.0;
-    
+
     pulsecount = bytes[8];
 
     energy = (((float)pulsecount/n_imp) * (3600/seconds));
@@ -120,7 +120,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",       "",             DATA_INT,   id,
                 "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
                 "pulsecount", "Pulse-count", DATA_INT, pulsecount,
-                "energy",   "Energy",       DATA_FORMAT, "%.03f KWh", DATA_DOUBLE, energy,
+                _X("energy_kWh","energy"),   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_DOUBLE, energy,
                 "mic",       "Integrity",   DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -134,7 +134,8 @@ static char *output_fields[] = {
         "id",
         "pulses",
         "pulsecount",
-        "energy",
+        "energy", // TODO: remove this
+        "energy_kWh",
         NULL,
 };
 
