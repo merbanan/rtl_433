@@ -388,6 +388,9 @@
     <ClCompile Include="..\src\devices\kerui.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\klimalogg.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

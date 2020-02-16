@@ -209,6 +209,7 @@
     <ClCompile Include="..\src\devices\intertechno.c" />
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
+    <ClCompile Include="..\src\devices\klimalogg.c" />
     <ClCompile Include="..\src\devices\lacrosse.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx141x.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />
