@@ -94,6 +94,7 @@ static char *output_fields[] = {
         "ert_type",
         "encoder_tamper",
         "consumption_data",
+        "mic",
         NULL,
 };
 
