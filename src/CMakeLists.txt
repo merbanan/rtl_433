@@ -94,6 +94,7 @@ add_library(r_433 STATIC
     devices/intertechno.c
     devices/kedsum.c
     devices/kerui.c
+    devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c

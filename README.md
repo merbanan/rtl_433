@@ -225,6 +225,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [147]  TFA Drop Rain Gauge 30.3233.01
     [148]  DSC Security Contact (WS4945)
     [149]  ERT SCM
+    [150]* Klimalogg/30.3180.IT (-f 868950000 -s 2400000)
+
 
 * Disabled by default, use -R n or -G
 

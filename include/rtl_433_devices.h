@@ -156,7 +156,8 @@
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
     DECL(dsc_security_ws4945) \
-    DECL(ert_amr)
+    DECL(ert_amr) \
+    DECL(klimalogg)
 
     /* Add new decoders here. */
 
