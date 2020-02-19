@@ -30,7 +30,7 @@
  * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II  G GG DW WW    TT  T HH RR  R  t
  *
  * C = Check, inverted data of 13 byte further
- * u = unknown (data changes from packet to packet, but meaning is still unknown)
+ * uu = checksum (number/count of set bits within bytes 14-25)
  * I = station ID (maybe)
  * G = wind gust in 1/10 m/s, BCD coded, GGG = 123 => 12.3 m/s
  * D = wind direction 0..F = N..NNE..E..S..W..NNW
