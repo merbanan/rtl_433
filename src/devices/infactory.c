@@ -59,7 +59,7 @@ static void infactory_raw_msg(char *msg, uint8_t *b) {
     *p = 0;
 }
 
-static char* infactory_crc_check(uint8_t *b) {
+static int infactory_crc_check(uint8_t *b) {
     int i;
     uint8_t msg_crc, crc;
     uint8_t msg[5];
@@ -68,7 +68,7 @@ static char* infactory_crc_check(uint8_t *b) {
     // for CRC computation, channel bits are at the CRC position(!)
     msg[1] = (msg[1] & 0x0F) | (msg[4] & 0x0F) << 4;
     crc = msg[0] >> 4;
-    for ( i = 4; i < 36; i++) {
+    for (i = 4; i < 36; i++) {
         crc <<= 1;
         if (msg[i>>3] & (0x80 >> (i&7))) {
             crc |= 1; 
