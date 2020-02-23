@@ -1,6 +1,5 @@
 /** @file
     inFactory outdoor temperature and humidity sensor.
-    Other brand names: nor-tec, GreenBlue, DAY
 
     Copyright (C) 2017 Sirius Weiß <siriuz@gmx.net>
     Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
@@ -17,9 +16,10 @@ Outdoor sensor, transmits temperature and humidity data
 - nor-tec 73383 (weather station + sensor), Schou Company AS, Denmark
 - DAY 73365 (weather station + sensor), Schou Company AS, Denmark
 
+Known brand names: inFactory, nor-tec, GreenBlue, DAY. Manufacturer in China.
 
-Transmissions also includes an id. Every 60 seconds
-the sensor transmits 6 packets:
+
+Transmissions includes an id. Every 60 seconds the sensor transmits 6 packets:
 
     0000 1111 | 0011 0000 | 0101 1100 | 1110 0111 | 0110 0001
     iiii iiii | cccc ub?? | tttt tttt | tttt hhhh | hhhh ??nn
@@ -46,18 +46,6 @@ Payload looks like this:
 */
 
 #include "decoder.h"
-
-static void infactory_raw_msg(char *msg, uint8_t *b) {
-    int i;
-    char c;
-    char *p = msg;
-    for (i = 0; i < 10; i++) {
-        c = ((b[i >> 1]) >> (4 * (1 - (i & 1)))) & 0x0F;
-        c = (c > 9) ? c + 55 : c + 48;
-        *p++ = c;
-    }
-    *p = 0;
-}
 
 static int infactory_crc_check(uint8_t *b) {
     int i;
@@ -86,42 +74,41 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitrow_t *bb;
     data_t *data;
     uint8_t *b;
-    int id, battery, temp_raw, humidity, channel;
+    int id, battery_low, temp_raw, humidity, channel;
     float temp_f;
-    char *mic = "ERROR";
-    char raw_msg[11] = ".........."; // 10 hex chars plus 0
 
     if (bitbuffer->bits_per_row[0] != 40) {
         return DECODE_ABORT_LENGTH;
     }
     bb = bitbuffer->bb;
 
-    /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
     b = bb[0];
+
+    /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
     if (!(b[4]&0x0F))
         return DECODE_ABORT_EARLY;
 
-    id       = b[0];
-    battery  = (b[1] >> 2) & 1;
-    temp_raw = (b[2] << 4) | (b[3] >> 4);
-    humidity = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
-    channel  = b[4] & 0x03;
+    if(!infactory_crc_check(b)) {
+        return DECODE_FAIL_MIC;
+    }
 
-    temp_f   = (float)temp_raw * 0.1 - 90;
+    id          = b[0];
+    battery_low = (b[1] >> 2) & 1;
+    temp_raw    = (b[2] << 4) | (b[3] >> 4);
+    humidity    = (b[3] & 0x0F) * 10 + (b[4] >> 4); // BCD, 'A0'=100%rH
+    channel     = b[4] & 0x03;
 
-    mic = infactory_crc_check(b) ? "CRC" : "CRC_ERROR"; // we could also return DECODE_FAIL_MIC;
-    infactory_raw_msg(raw_msg, b);                      // DEBUG: print raw message bits
+    temp_f      = (float)temp_raw * 0.1 - 90;
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
-            "battery",          "Battery",      DATA_INT, battery,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f °F", DATA_DOUBLE, temp_f,
-            "humidity",         "Humidity",     DATA_FORMAT, "%u %%rH", DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, mic,
-            "rawmsg",           "Datagram",     DATA_STRING, raw_msg,
+            "battery_low",      "Battery",      DATA_STRING, (battery_low ? "LOW" : "OK"),
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -133,13 +120,10 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
+        "battery_low",
         "temperature_F",
         "humidity",
         "mic",
-        "battery",
-#ifdef DEBUG        
-        "rawmsg",
-#endif // DEBUG        
         NULL,
 };
 
