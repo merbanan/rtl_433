@@ -48,24 +48,14 @@ Payload looks like this:
 #include "decoder.h"
 
 static int infactory_crc_check(uint8_t *b) {
-    int i;
-    uint8_t msg_crc, crc;
-    uint8_t msg[5];
+    uint8_t msg_crc, crc, msg[5];
     memcpy(msg, b, 5);
     msg_crc = msg[1] >> 4;
     // for CRC computation, channel bits are at the CRC position(!)
     msg[1] = (msg[1] & 0x0F) | (msg[4] & 0x0F) << 4;
-    crc = msg[0] >> 4;
-    for (i = 4; i < 36; i++) {
-        crc <<= 1;
-        if (msg[i>>3] & (0x80 >> (i&7))) {
-            crc |= 1; 
-        }
-        if (crc & 0x10) {
-            crc ^= 0x13; // Koopmann 0x9, CCITT-4; FP-4; ITU-T G.704
-        }
-    }
-
+    // crc4() only works with full bytes
+    crc = crc4(msg, 4, 0x13, 0); // Koopmann 0x9, CCITT-4; FP-4; ITU-T G.704
+    crc ^= msg[4] >> 4; // last nibble is only XORed
     return (crc == msg_crc);
 }
 
