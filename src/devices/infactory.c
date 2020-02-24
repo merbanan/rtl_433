@@ -95,7 +95,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
-            "battery_ok",       "Battery",      DATA_INT, !battery_low,
+            "battery_ok",       "Battery OK",   DATA_INT, !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -127,12 +127,12 @@ Observed On-Off-Key (OOK) data pattern:
 
 Breakdown:
 
-- four preamble pairs '1'/'0' each with a length of ca. 1000uS
-- syncPre, syncPost, data0, data1 have a '1' start pulse of ca. 500uS
-- syncPre pulse before dataPtr has a '0' pulse length of ca. 8000uS
-- data0 (0-bits) have then a '0' pulse length of ca. 2000uS
-- data1 (1-bits) have then a '0' pulse length of ca. 4000uS
-- syncPost after dataPtr has a '0' pulse length of ca. 16000uS (we declare it received at 12ms)
+- four preamble pairs '1'/'0' each with a length of ca. 1000us
+- syncPre, syncPost, data0, data1 have a '1' start pulse of ca. 500us
+- syncPre pulse before dataPtr has a '0' pulse length of ca. 8000us
+- data0 (0-bits) have then a '0' pulse length of ca. 2000us
+- data1 (1-bits) have then a '0' pulse length of ca. 4000us
+- syncPost after dataPtr has a '0' pulse length of ca. 16000us
 
 This analysis is the reason for the new r_device definitions below.
 NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
@@ -141,11 +141,11 @@ NB: pulse_demod_ppm does not use .gap_limit if .tolerance is set.
 r_device infactory = {
         .name        = "inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor",
         .modulation  = OOK_PULSE_PPM,
-        .sync_width  = 500,   // Sync pulse width (not used)
-        .short_width = 1980,  // Width of a '0' gap
-        .long_width  = 3980,  // Width of a '1' gap
-        .reset_limit = 5000,  // Maximum gap size before End Of Message [us].
-        .tolerance   = 350,
+        .sync_width  = 500,   // Sync pulse width (recognized, but not used)
+        .short_width = 2000,  // Width of a '0' gap
+        .long_width  = 4000,  // Width of a '1' gap
+        .reset_limit = 5000,  // Maximum gap size before End Of Message [us]
+        .tolerance   = 750,   // Width interval 0=[1250..2750] 1=[3250..4750], should be quite robust
         .decode_fn   = &infactory_callback,
         .disabled    = 0,
         .fields      = output_fields,
