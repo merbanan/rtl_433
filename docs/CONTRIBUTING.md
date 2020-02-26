@@ -36,10 +36,10 @@ Verb may be one of the following:
 ## Supporting Additional Devices and Test Data
 
 Some device protocol decoders are disabled by default. When testing to see if your device
-is decoded by rtl_433, use `-G` to enable all device protocols.
+is decoded by rtl_433, use `-G 4` to enable all device protocols.
 This will likely produce false positives, use with caution.
 
-The first step in decoding new devices is to record the signals using `-S all`.
+The first step in decoding new devices is to record the signals using `-S unknown`.
 The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
 
 | Parameter | Description
