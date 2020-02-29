@@ -202,13 +202,16 @@ static char* oms_hum_el[4][4] = {
 
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
     int ret = consumed_bytes[dif_coding&0x03];
+    float temp;
+    int state;
 
     switch (vif_linear) {
         case 0:
             switch(vif_uam>>2) {
                 case 0x19:
+                    temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
                     data = data_append(data,
-                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
                         NULL);
                     break;
                 default:
@@ -227,7 +230,11 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         case 0x7D:
             switch(vif_uam) {
                 case 0x1b:
-                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (b[0]==0x55) ? "open":"closed", NULL);
+                    // If tamper is triggered the bit 0 and 4 is set
+                    // Open  sets bits 2 and 6 to 1
+                    // Close sets bits 2 and 6 to 0
+                    state = b[0]&0x44;
+                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (state==0x44) ? "open":"closed", NULL);
                     break;
                 case 0x3a:
                     /* Only use 32 bits of 48 available */
