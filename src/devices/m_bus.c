@@ -201,7 +201,7 @@ static char* oms_hum_el[4][4] = {
 };
 
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
-    int ret = consumed_bytes[dif_coding&0x03];
+    int ret = consumed_bytes[dif_coding&0x07];
     float temp;
     int state;
 
@@ -301,6 +301,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 
         /* Parse VIF */
         vif = b[off];
+
         while (b[off]&0x80) {
             off++;
             vife_array[vife_cnt++] = b[off]&0x7F;
@@ -619,7 +620,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-
+// Untested code, signal samples missing
 static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
@@ -664,7 +665,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    m_bus_output_data(decoder, &data_out, &block1, "F");
+    //m_bus_output_data(decoder, &data_out, &block1, "F");
     return 1;
 }
 
