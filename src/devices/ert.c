@@ -55,7 +55,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] != 96)
-        return DECODE_ABORT_LENGTH;;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[0];
     if (crc16(&b[2], 10, 0x6F63, 0))
