@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -93,8 +94,10 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     }
 
     char **argv_analog = &argv[arg];
+    char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
-        (void)asprintf(&argv[arg++], "analog-1-%u-1", i);
+        snprintf(str_buf, sizeof(str_buf), "analog-1-%u-1", i);
+        argv[arg++] = strdup(str_buf);
     }
 
     int status = 0;
