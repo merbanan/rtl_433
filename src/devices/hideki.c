@@ -91,8 +91,8 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return DECODE_FAIL_SANITY;
 
     int pkt_len  = (packet[2] >> 1) & 0x1f;
-    int pkt_seq  = packet[3] >> 6;
-    int pkt_type = packet[3] & 0x1f;
+    //int pkt_seq  = packet[3] >> 6;
+    //int pkt_type = packet[3] & 0x1f;
     // 0x0C Anemometer
     // 0x0D UV sensor
     // 0x0E Rain level meter

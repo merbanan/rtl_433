@@ -360,6 +360,7 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
         return centigain; // NOTE: just aborts on alloc failure.
     }
     r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
+    // TODO: check return value and act upon it
 
     /* Find allowed gain */
     for (int i = 0; i < gains_count; ++i) {
