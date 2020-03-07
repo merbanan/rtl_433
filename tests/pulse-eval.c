@@ -177,7 +177,6 @@ int main(int argc, char *argv[])
     size_t n_samples;
     int block_size = 4096000;
     unsigned sample_rate = 250000;
-    int ret = 0;
 
     int argi = 1;
     for (; argi < argc; ++argi) {
