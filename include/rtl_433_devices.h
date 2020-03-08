@@ -162,6 +162,7 @@
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
     DECL(scmplus) \
+    DECL(honeywell_cm921)
 
     /* Add new decoders here. */
 
