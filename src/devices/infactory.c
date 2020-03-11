@@ -67,20 +67,18 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int id, battery_low, temp_raw, humidity, channel;
     float temp_f;
 
-    if (bitbuffer->bits_per_row[0] != 40) {
+    if (bitbuffer->bits_per_row[0] != 40)
         return DECODE_ABORT_LENGTH;
-    }
-    bb = bitbuffer->bb;
 
+    bb = bitbuffer->bb;
     b = bb[0];
 
     /* Check that the last 4 bits of message are not 0 (channel number 1 - 3) */
     if (!(b[4]&0x0F))
         return DECODE_ABORT_EARLY;
 
-    if(!infactory_crc_check(b)) {
+    if(!infactory_crc_check(b))
         return DECODE_FAIL_MIC;
-    }
 
     id          = b[0];
     battery_low = (b[1] >> 2) & 1;
