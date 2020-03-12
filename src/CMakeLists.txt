@@ -123,6 +123,7 @@ add_library(r_433 STATIC
     devices/quhwa.c
     devices/radiohead_ask.c
     devices/rftech.c
+    devices/rolling_code.c
     devices/rubicson.c
     devices/rubicson_48659.c
     devices/s3318p.c
