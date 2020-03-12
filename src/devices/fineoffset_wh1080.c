@@ -21,7 +21,7 @@ Data layout:
 
 - F: 4 bit fixed message format
 - I: 8 bit device id
-- T: 12 bit temperature, offset 40 scale 10, i.e. 0.1C steps -40C
+- T: 12 bit temperature, offset 40 scale 10, i.e. 0.1C steps -40C (top 2 bits are sign, discard)
 - H: 8 bit humidity percent
 - S: 8 bit wind speed, 0.34m/s steps
 - G: 8 bit gust speed, 0.34m/s steps
@@ -188,7 +188,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // GETTING WEATHER SENSORS DATA
-    int temp_raw      = ((br[2] & 0x0f) << 8) | br[3];
+    int temp_raw      = ((br[2] & 0x03) << 8) | br[3]; // only 10 bits, discard top bits
     float temperature = (temp_raw - 400) * 0.1;
     int humidity      = br[4];
     int direction_deg = wind_dir_degr[br[9] & 0x0f];
