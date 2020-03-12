@@ -169,14 +169,14 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     printf("ACODE: ");
     for (int i = 0; i < 10; i++) {
-	a_buffer[i] = '0' + trinary[i * 2];
+	a_buffer[i] = '0' + trinary[i * 2 + 1];
         printf("%d ", trinary[i * 2]);
     }       
     printf("\n");
 
     printf("ROLL:  ");
     for (int i = 0; i < 10; i++) {
-	r_buffer[i] = '0' + trinary[i * 2 + 1];
+	r_buffer[i] = '0' + trinary[i * 2];
         printf("%d ", trinary[i * 2 + 1]);
     }
     printf("\n");
