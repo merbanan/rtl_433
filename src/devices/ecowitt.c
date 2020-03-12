@@ -118,12 +118,12 @@ static char *output_fields[] = {
 
 r_device ecowitt = {
         .name        = "Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A",
-        .modulation  = OOK_PULSE_PWM, // copied from output, OOK_PWM = OOK_PULSE_PWM
-        .short_width = 504,           // copied from output
-        .long_width  = 1480,          // copied from output
-        .gap_limit   = 4800,          // guessing, copied from generic_temperature_sensor
-        .reset_limit = 968,           // copied from output
-        .sync_width  = 0,             // copied from output
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 500,           // 500 us nominal short pulse
+        .long_width  = 1480,          // 1480 us nominal long pulse
+        .gap_limit   = 1500,          // 960 us nominal fixed gap
+        .reset_limit = 2000,          // 31 ms packet distance (too far apart)
+        .sync_width  = 0,
         .decode_fn   = &ecowitt_decode,
         .disabled    = 0,
         .fields      = output_fields,
