@@ -17,6 +17,7 @@
 #include <math.h>
 
 #include "r_api.h"
+#include "r_util.h"
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
@@ -89,7 +90,7 @@ void r_init_cfg(r_cfg_t *cfg)
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
 
-    cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    cfg->demod->level_limit = 0.0;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);

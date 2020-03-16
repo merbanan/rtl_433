@@ -99,7 +99,7 @@ static void usage(int exit_code)
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
-            "  [-l <level>] Change detection level used to determine pulses (0-16384) (0=auto) (default: %i)\n"
+            "  [-l <dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)\n"
             "  [-z <value>] Override short value in data decoder\n"
             "  [-x <value>] Override long value in data decoder\n"
             "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
@@ -126,7 +126,7 @@ static void usage(int exit_code)
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
             "  [-h] Output this usage help and exit\n"
             "       Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help\n\n",
-            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE, DEFAULT_LEVEL_LIMIT);
+            DEFAULT_FREQUENCY, DEFAULT_HOP_TIME, DEFAULT_SAMPLE_RATE);
     exit(exit_code);
 }
 
@@ -366,7 +366,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         }
         while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
-            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, demod->level_limit, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
+            package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
             if (package_type) {
                 // new package: set a first frame start if we are not tracking one already
                 if (!demod->frame_start_ago)
@@ -784,7 +784,17 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->out_block_size = atouint32_metric(arg, "-b: ");
         break;
     case 'l':
-        cfg->demod->level_limit = atouint32_metric(arg, "-l: ");
+        if (!arg)
+            usage(1);
+        cfg->demod->level_limit = atof(arg);
+        if (cfg->demod->level_limit > 0.0) {
+            fprintf(stderr, "\n\tLevel limit has changed to dB, %.0f is %.1f dB.\n\n",
+                    cfg->demod->level_limit, AMP_TO_DB(cfg->demod->level_limit));
+            exit(1);
+        }
+        if (cfg->demod->am_analyze) {
+            cfg->demod->am_analyze->level_limit = DB_TO_AMP(cfg->demod->level_limit);
+        }
         break;
     case 'n':
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
@@ -1184,8 +1194,9 @@ int main(int argc, char **argv) {
         add_infile(cfg, argv[optind++]);
     }
 
+    pulse_detect_set_levels(demod->pulse_detect, demod->level_limit, -12.1442, 9.0);
+
     if (demod->am_analyze) {
-        demod->am_analyze->level_limit = &demod->level_limit;
         demod->am_analyze->frequency   = &cfg->center_frequency;
         demod->am_analyze->samp_rate   = &cfg->samp_rate;
         demod->am_analyze->sample_size = &demod->sample_size;
@@ -1502,8 +1513,8 @@ int main(int argc, char **argv) {
     /* Set the sample rate */
     r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
 
-    if (cfg->verbosity || demod->level_limit)
-        fprintf(stderr, "Bit detection level set to %d%s.\n", demod->level_limit, (demod->level_limit ? "" : " (Auto)"));
+    if (cfg->verbosity || demod->level_limit < 0.0)
+        fprintf(stderr, "Bit detection level set to %.1f%s.\n", demod->level_limit, (demod->level_limit < 0.0 ? "" : " (Auto)"));
 
     r = sdr_apply_settings(cfg->dev, cfg->settings_str, 1); // always verbose for soapy
 

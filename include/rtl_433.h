@@ -15,12 +15,6 @@
 #define DEFAULT_ASYNC_BUF_NUMBER    0 // Force use of default value (librtlsdr default: 15)
 #define DEFAULT_BUF_LENGTH      (16 * 32 * 512) // librtlsdr default
 #define FSK_PULSE_DETECTOR_LIMIT 800000000
-/*
- * Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
- * 0 = automatic adaptive level limit, else fixed level limit
- * 8000 = previous fixed default
- */
-#define DEFAULT_LEVEL_LIMIT     0
 
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
