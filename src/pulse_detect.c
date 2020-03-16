@@ -222,7 +222,7 @@ pulse_detect_t *pulse_detect_create()
         return NULL;
     }
 
-    pulse_detect_set_levels(pulse_detect, 0.0, -12.1442, 9.0);
+    pulse_detect_set_levels(pulse_detect, 0, 0.0, -12.1442, 9.0);
 
     return pulse_detect;
 }
@@ -232,11 +232,18 @@ void pulse_detect_free(pulse_detect_t *pulse_detect)
     free(pulse_detect);
 }
 
-void pulse_detect_set_levels(pulse_detect_t *pulse_detect, float fixed_high_level, float min_high_level, float high_low_ratio)
+void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio)
 {
-    pulse_detect->ook_fixed_high_level = fixed_high_level < 0.0 ? DB_TO_AMP(fixed_high_level) : 0;
-    pulse_detect->ook_min_high_level = DB_TO_AMP(min_high_level);
-    pulse_detect->ook_high_low_ratio = DB_TO_AMP_F(high_low_ratio);
+    if (use_mag_est) {
+        pulse_detect->ook_fixed_high_level = fixed_high_level < 0.0 ? DB_TO_MAG(fixed_high_level) : 0;
+        pulse_detect->ook_min_high_level   = DB_TO_MAG(min_high_level);
+        pulse_detect->ook_high_low_ratio = DB_TO_MAG_F(high_low_ratio);
+    }
+    else { // amp est
+        pulse_detect->ook_fixed_high_level = fixed_high_level < 0.0 ? DB_TO_AMP(fixed_high_level) : 0;
+        pulse_detect->ook_min_high_level   = DB_TO_AMP(min_high_level);
+        pulse_detect->ook_high_low_ratio = DB_TO_AMP_F(high_low_ratio);
+    }
 
     //fprintf(stderr, "fixed_high_level %.1f (%d), min_high_level %.1f (%d), high_low_ratio %.1f (%d)\n",
     //        fixed_high_level, pulse_detect->ook_fixed_high_level,

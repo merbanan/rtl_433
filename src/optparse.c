@@ -49,6 +49,33 @@ char *arg_param(char *arg)
         return p;
 }
 
+double arg_float(const char *str, const char *error_hint)
+{
+    if (!str) {
+        fprintf(stderr, "%smissing number argument\n", error_hint);
+        exit(1);
+    }
+
+    if (!*str) {
+        fprintf(stderr, "%sempty number argument\n", error_hint);
+        exit(1);
+    }
+
+    // allow whitespace and equals char
+    while (*str == ' ' || *str == '=')
+        ++str;
+
+    char *endptr;
+    double val = strtod(str, &endptr);
+
+    if (str == endptr) {
+        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    return val;
+}
+
 char *hostport_param(char *param, char **host, char **port)
 {
     if (param && *param) {

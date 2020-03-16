@@ -91,6 +91,8 @@ void r_init_cfg(r_cfg_t *cfg)
         FATAL_CALLOC("r_init_cfg()");
 
     cfg->demod->level_limit = 0.0;
+    cfg->demod->min_level = -12.1442;
+    cfg->demod->min_snr = 9.0;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -245,7 +247,7 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 1) { // amplitude (CU8)
+    if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
         pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);

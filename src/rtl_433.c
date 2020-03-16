@@ -99,9 +99,7 @@ static void usage(int exit_code)
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
-            "  [-l <dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)\n"
-            "  [-z <value>] Override short value in data decoder\n"
-            "  [-x <value>] Override long value in data decoder\n"
+            "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)\n"
             "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
             "\t\t= Analyze/Debug options =\n"
@@ -318,9 +316,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     // AM demodulation
     if (demod->sample_size == 1) { // CU8
-        envelope_detect(iq_buf, demod->buf.temp, n_samples);
-        //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
-        //magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+        if (demod->use_mag_est) {
+            //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
+            magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+        }
+        else { // amp est
+            envelope_detect(iq_buf, demod->buf.temp, n_samples);
+        }
     } else { // CS16
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
         magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
@@ -642,7 +644,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"signal_grabber", 'S'},
         {"override_short", 'z'},
         {"override_long", 'x'},
-        {"fsk_pulse_detect_mode", 'Y'},
+        {"pulse_detect", 'Y'},
         {"output", 'F'},
         {"output_tag", 'K'},
         {"convert", 'C'},
@@ -784,17 +786,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         cfg->out_block_size = atouint32_metric(arg, "-b: ");
         break;
     case 'l':
-        if (!arg)
-            usage(1);
-        cfg->demod->level_limit = atof(arg);
-        if (cfg->demod->level_limit > 0.0) {
-            fprintf(stderr, "\n\tLevel limit has changed to dB, %.0f is %.1f dB.\n\n",
-                    cfg->demod->level_limit, AMP_TO_DB(cfg->demod->level_limit));
-            exit(1);
-        }
-        if (cfg->demod->am_analyze) {
-            cfg->demod->am_analyze->level_limit = DB_TO_AMP(cfg->demod->level_limit);
-        }
+        n = 1000;
+        if (arg && atoi(arg) > 0)
+            n = atoi(arg);
+        fprintf(stderr, "\n\tLevel limit has changed from \"-l %d\" to \"-Y level=%.1f\" in dB.\n\n", n, AMP_TO_DB(n));
+        exit(1);
         break;
     case 'n':
         cfg->bytes_to_read = atouint32_metric(arg, "-n: ") * 2;
@@ -940,16 +936,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         fprintf(stderr, "debug option (-D) is deprecated. See -v to increase verbosity\n");
         break;
     case 'z':
-        if (!arg)
-            usage(1);
-        if (cfg->demod->am_analyze)
-            cfg->demod->am_analyze->override_short = atoi(arg);
+        fprintf(stderr, "override_short (-z) is deprecated.\n");
         break;
     case 'x':
-        if (!arg)
-            usage(1);
-        if (cfg->demod->am_analyze)
-            cfg->demod->am_analyze->override_long = atoi(arg);
+        fprintf(stderr, "override_long (-x) is deprecated.\n");
         break;
     case 'R':
         if (!arg)
@@ -1058,18 +1048,29 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'Y':
         if (!arg)
             usage(1);
-        if (strcmp(arg, "auto") == 0) {
-            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
-        }
-        else if (strcmp(arg, "classic") == 0) {
-            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_OLD;
-        }
-        else if (strcmp(arg, "minmax") == 0) {
-            cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
-        }
-        else {
-            fprintf(stderr, "Invalid FSK pulse detector mode: %s\n", arg);
-            usage(1);
+        char *p = arg;
+        while (p && *p) {
+            if (!strncmp(p, "auto", 4))
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
+            else if (!strncmp(p, "classic", 7))
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_OLD;
+            else if (!strncmp(p, "minmax", 6))
+                cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
+            else if (!strncmp(p, "ampest", 6))
+                cfg->demod->use_mag_est = 0;
+            else if (!strncmp(p, "magest", 6))
+                cfg->demod->use_mag_est = 1;
+            else if (!strncasecmp(p, "level", 5))
+                cfg->demod->level_limit = arg_float(p + 5, "-Y level: ");
+            else if (!strncasecmp(p, "minlevel", 8))
+                cfg->demod->min_level = arg_float(p + 8, "-Y minlevel: ");
+            else if (!strncasecmp(p, "minsnr", 6))
+                cfg->demod->min_snr = arg_float(p + 6, "-Y minsnr: ");
+            else {
+                fprintf(stderr, "Unknown pulse detector setting: %s\n", p);
+                usage(1);
+            }
+            p = arg_param(p);
         }
         break;
     case 'E':
@@ -1194,9 +1195,10 @@ int main(int argc, char **argv) {
         add_infile(cfg, argv[optind++]);
     }
 
-    pulse_detect_set_levels(demod->pulse_detect, demod->level_limit, -12.1442, 9.0);
+    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr);
 
     if (demod->am_analyze) {
+        demod->am_analyze->level_limit = DB_TO_AMP(demod->level_limit);
         demod->am_analyze->frequency   = &cfg->center_frequency;
         demod->am_analyze->samp_rate   = &cfg->samp_rate;
         demod->am_analyze->sample_size = &demod->sample_size;
