@@ -119,23 +119,66 @@ static void raw_to_chars(uint8_t *src, char *dst) {
 	dst[10] = '\0';
 }
 
-static int32_t trinary_to_int(char *ptr) {
-    int32_t value = 0;
-
-    while (*ptr != '\0') {
+static uint32_t raw_to_uint(uint8_t *ptr) {
+    uint32_t value = 0;
+    
+    for (int i = 0; i < 10; i++) {
         value *= 3;
-        value += *ptr - '0';
-	ptr++;
+        value += ptr[i];
     }
 
     return value;
 }
 
+static void rotate_mirror_add(uint32_t *counter, uint32_t *mirror, int c) {
+    uint32_t result = 0;
+    for (int i = 0; i < c; i++) {
+        uint8_t msb = *mirror >> 31;
+        *mirror <<= 1;
+        *mirror += msb;
+    }
+
+    *counter += *mirror;
+}
+
+static void mirror_counter(uint32_t *counter, uint32_t *mirror) {
+    uint32_t result = 0;
+    for (int i = 0; i < 32; i++) {
+        uint8_t bit = *counter & 0x01;
+        *counter >>= 1;
+        result <<= 1;
+        result |= bit;
+    }
+
+    *mirror = result;
+}
+
+static uint32_t get_rolling_code(uint32_t r1, uint32_t r3) {
+    uint32_t counter = r3;
+    uint32_t mirror = r1;
+
+    counter += mirror;
+
+    rotate_mirror_add(&counter, &mirror, 3);
+    rotate_mirror_add(&counter, &mirror, 2);
+    rotate_mirror_add(&counter, &mirror, 2);
+    rotate_mirror_add(&counter, &mirror, 2);
+    rotate_mirror_add(&counter, &mirror, 1);
+    rotate_mirror_add(&counter, &mirror, 3);
+    rotate_mirror_add(&counter, &mirror, 1);
+    rotate_mirror_add(&counter, &mirror, 1);
+
+    mirror_counter(&counter, &mirror);
+
+    return mirror;
+}
+
 static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // This holds a previous start width 1 rolling code for counter decoding
-    // once we have a start width 3 packet.
-    static int32_t prev_1_r = -1;
+    // This holds a previous start width 1 fixed and rolling codes for 
+    // counter decoding once we have a start width 3 packet.
+    static uint8_t prev_1_a_raw[10] = {'.'};
+    static uint8_t prev_1_r_raw[10] = {'.'};
 
     data_t *data = NULL;
     int index = 0; // a row index
@@ -150,7 +193,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (bitbuffer->num_rows < 1) {
-	prev_1_r = -1;
+	*prev_1_a_raw = '.';
+	*prev_1_r_raw = '.';
 
         return 0;
     }
@@ -165,7 +209,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "Start bit width invalid: %d\n", start_width);
         }
 
-	prev_1_r = -1;
+	*prev_1_a_raw = '.';
+	*prev_1_r_raw = '.';
 
         return 0;
     }
@@ -177,7 +222,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
      if (get_trits(trinary, b, &index, num_bits, debug_output)) {
         fprintf(stderr, "get_trits failed\n");
-	prev_1_r = -1;
+	*prev_1_a_raw = '.';
+	*prev_1_r_raw = '.';
 
         return 0;
     }
@@ -217,14 +263,18 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     if (start_width == 1) {
-	prev_1_r = trinary_to_int(r_buffer);
+	memcpy(prev_1_a_raw, a_raw, sizeof(a_raw));
+	memcpy(prev_1_r_raw, r_raw, sizeof(r_raw));
     }
 
     int counter = -1;
+    char counter_buffer[32];
 
-    if (prev_1_r != -1 && start_width == 3) {
-        counter = prev_1_r;
+    if (*prev_1_r_raw != '.' && start_width == 3) {
+        counter = get_rolling_code(raw_to_uint(prev_1_r_raw), raw_to_uint(r_raw));
     }
+
+    sprintf(counter_buffer, "%08x", counter);
     
     /* clang-format off */
     data = data_make(
@@ -233,7 +283,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "fixed_a_code","", DATA_STRING, a_fixed_buffer,
             "raw_rolling_code",  "", DATA_STRING, r_buffer,
             "start_width", "", DATA_INT, start_width,
-            "counter",   "", DATA_INT, counter,
+            "counter_int",   "", DATA_INT, counter,
+            "counter_string",   "", DATA_STRING, counter_buffer,
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
