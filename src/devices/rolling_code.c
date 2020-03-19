@@ -14,9 +14,9 @@
 (describe the modulation, timing, and transmission, e.g.)
  * The device uses OOK_PULSE_PCM_RZ encoding,
  * The packet starts with either a narrow (500 uS) start pulse or a long (1500 uS) pulse.
- * 0 is defined as a 1500 uS gap to the next pulse.
- * 1 is defined as a 1000 uS gap to the next pulse.
- * 2 is defined as a 500 uS gap to the next pulse.
+ * 0 is defined as a 1500 uS gap followed by a 500 uS pulse.
+ * 1 is defined as a 1000 uS gap followed by a 1000uS  pulse.
+ * 2 is defined as a 500 uS gap followed by a 1500uS pulse.
 
 */
 
@@ -99,19 +99,43 @@ static uint8_t get_trits(uint8_t *nibble_buffer, uint8_t *bit_buffer, int *bit_i
     }
 }
 
-static void cleanup(uint8_t **ptr) {
-    if (*ptr != NULL) {
-       free(*ptr);
+static void fix_a_code(uint8_t *a_raw, uint8_t *r_raw, uint8_t *dst) {
+    uint8_t prev = 0;
+    for (int i = 0; i < 10; i++) {
+        int16_t x = a_raw[i] - r_raw[i];
+	if (x < 0) x += 3;
+	x = x - prev;
+	if (x < 0) x += 3;
+	dst[i] = x & 0xff;
+	prev = a_raw[i];
+    }
+}
+
+static void raw_to_chars(uint8_t *src, char *dst) {
+	for (int i = 0; i < 10; i++) {
+		dst[i] = src[i] + '0';
+	}
+
+	dst[10] = '\0';
+}
+
+static int32_t trinary_to_int(char *ptr) {
+    int32_t value = 0;
+
+    while (*ptr != '\0') {
+        value *= 3;
+        value += *ptr - '0';
+	ptr++;
     }
 
-    *ptr = NULL;
+    return value;
 }
 
 static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // This holds a previous start width 1 packet for counter decoding
+    // This holds a previous start width 1 rolling code for counter decoding
     // once we have a start width 3 packet.
-    static uint8_t *prev_packet = NULL;
+    static int32_t prev_1_r = -1;
 
     data_t *data = NULL;
     int index = 0; // a row index
@@ -126,7 +150,7 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (bitbuffer->num_rows < 1) {
-	cleanup(&prev_packet);
+	prev_1_r = -1;
 
         return 0;
     }
@@ -141,7 +165,7 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "Start bit width invalid: %d\n", start_width);
         }
 
-	cleanup(&prev_packet);
+	prev_1_r = -1;
 
         return 0;
     }
@@ -153,7 +177,7 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
      if (get_trits(trinary, b, &index, num_bits, debug_output)) {
         fprintf(stderr, "get_trits failed\n");
-	cleanup(&prev_packet);
+	prev_1_r = -1;
 
         return 0;
     }
@@ -164,39 +188,50 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }   
     printf("\n");
     
+    // Tease out the individual parts of the message
+
     char a_buffer[11] = {0};
+    char a_fixed_buffer[11] = {0};
     char r_buffer[11] = {0};
+    uint8_t a_raw[10] = {0};
+    uint8_t a_fixed[10] = {0};
+    uint8_t r_raw[10] = {0};
+    uint8_t r_fixed[10] = {0};
 
-    printf("ACODE: ");
     for (int i = 0; i < 10; i++) {
-	a_buffer[i] = '0' + trinary[i * 2 + 1];
-        printf("%d ", trinary[i * 2]);
+	a_raw[i] = trinary[i * 2 + 1];
     }       
-    printf("\n");
+    raw_to_chars(a_raw, a_buffer);
+    printf("RAW ACODE: %s\n", a_buffer);
 
-    printf("ROLL:  ");
     for (int i = 0; i < 10; i++) {
-	r_buffer[i] = '0' + trinary[i * 2];
-        printf("%d ", trinary[i * 2 + 1]);
+	r_raw[i] = trinary[i * 2];
     }
-    printf("\n");
+    raw_to_chars(r_raw, r_buffer);
+    printf("ROLL: %s\n", r_buffer);
+
+    fix_a_code(a_raw, r_raw, a_fixed);
+
+    raw_to_chars(a_fixed, a_fixed_buffer);
+    printf("FIXED ACODE: %s\n", a_fixed_buffer);
+
 
     if (start_width == 1) {
-	prev_packet = malloc(sizeof(trinary));
-        memcpy(prev_packet, trinary, sizeof(trinary));
+	prev_1_r = trinary_to_int(r_buffer);
     }
 
     int counter = -1;
 
-    if (prev_packet != NULL && start_width == 3) {
-        counter = 123;
+    if (prev_1_r != -1 && start_width == 3) {
+        counter = prev_1_r;
     }
     
     /* clang-format off */
     data = data_make(
             "model", "", DATA_STRING, "Rolling Code Transmitter",
-            "a_code","", DATA_STRING, a_buffer,
-            "rolling_code",  "", DATA_STRING, r_buffer,
+            "raw_a_code","", DATA_STRING, a_buffer,
+            "fixed_a_code","", DATA_STRING, a_fixed_buffer,
+            "raw_rolling_code",  "", DATA_STRING, r_buffer,
             "start_width", "", DATA_INT, start_width,
             "counter",   "", DATA_INT, counter,
             NULL);
@@ -216,8 +251,9 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  */
 static char *output_fields[] = {
 	"model",
-        "a_code",
-        "rolling_code",
+        "raw_a_code",
+        "fixed_a_code",
+        "raw_rolling_code",
 	"start_width",
 	"counter",
         NULL,
