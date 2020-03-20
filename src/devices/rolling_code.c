@@ -271,12 +271,14 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (*prev_1_r_raw != '.' && start_width == 3) {
-	char buffer[9];
+	char buffer[11];
 	uint32_t counter = get_rolling_code(raw_to_uint(prev_1_r_raw, RAW_SIZE), raw_to_uint(r_raw, RAW_SIZE));
-    	sprintf(buffer, "%08x", counter);
+    	sprintf(buffer, "%u", counter);
+	data = data_append(data, 
+		"counter", "", DATA_STRING, buffer, NULL);
+	sprintf(buffer, "%08x", counter);
 	data = data_append(data, 
 		"counter_hex", "", DATA_STRING, buffer,
-		"counter", "", DATA_INT, counter,
         	"button_pressed", "", DATA_INT, (int) a_corrected[9],
         	"id_bits", "", DATA_INT, a_corrected[6] * 9 + a_corrected[7] * 3 + a_corrected[8], NULL);
 
