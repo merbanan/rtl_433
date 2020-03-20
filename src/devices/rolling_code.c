@@ -10,28 +10,23 @@
  */
 
 /**
-(this is a markdown formatted section to describe the decoder)
-(describe the modulation, timing, and transmission, e.g.)
- * The device uses OOK_PULSE_PCM_RZ encoding.
- * The packet starts with either a narrow (500 uS) start pulse or a long (1500 uS) pulse.
- * 0 is defined as a 1500 uS gap followed by a  500 uS pulse.
- * 1 is defined as a 1000 uS gap followed by a 1000 uS pulse.
- * 2 is defined as a  500 uS gap followed by a 1500 uS pulse.
+ The device uses OOK_PULSE_PCM_RZ encoding.
+ The packet starts with either a narrow (500 uS) start pulse or a long (1500 uS) pulse.
+ - 0 is defined as a 1500 uS gap followed by a  500 uS pulse.
+ - 1 is defined as a 1000 uS gap followed by a 1000 uS pulse.
+ - 2 is defined as a  500 uS gap followed by a 1500 uS pulse.
 
-*/
+ Transmissions consist of a '1' length packet of 20 'trits' (trinary digits)
+ followed by a '3' length packet of 20 trits. These two packets are repeated
+ some number of times.
+ The trits represent a rolling code that changes on each keypress, a fixed
+ 16 trit device ID,  3 id trits (key pressed), and a 1 trit button id.
+ All of the data is obfuscated and a 1 length and a 3 length packet are
+ required to successfully decode a transmission.
+ */
 
 #include <stdlib.h>
 #include "decoder.h"
-
-/*
- * Message consists of a '1' length packet of 20 'trits' (trinary digits)
- * followed by a '3' length packet of 20 trits. These two packets are repeated
- * some number of times.
- * The trits represent a rolling code that changes on each keypress, a fixed
- * 16 trit device ID,  3 id trits (key pressed), and a 1 trit button id.
- * All of the data is obfuscated and a 1 length and a 3 length packet are
- * required to successfully decode a transmission.
- */
 
 #define MIN_BITS		80
 #define TRINARY_SIZE		20
@@ -322,30 +317,8 @@ static char *output_fields[] = {
         NULL,
 };
 
-/*
- * r_device - registers device/callback. see rtl_433_devices.h
- *
- * Timings:
- *
- * short, long, and reset - specify pulse/period timings in [us].
- *     These timings will determine if the received pulses
- *     match, so your callback will fire after demodulation.
- *
- * Modulation:
- *
- * The function used to turn the received signal into bits.
- * See:
- * - pulse_demod.h for descriptions
- * - r_device.h for the list of defined names
- *
- * This device is disabled and hidden, it can not be enabled.
- *
- * To enable your device, add it to the list in include/rtl_433_devices.h
- * and to src/CMakeLists.txt and src/Makefile.am or run ./maintainer_update.py
- *
- */
 r_device rolling_code = {
-        .name        = "Rolling Code Transmitter",
+        .name        = "Rolling Code Transmitter (-f 315M)",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 500,  // trits are multiples of 500 uS in size
         .long_width  = 500,  // trits are multiples of 500 uS in size
