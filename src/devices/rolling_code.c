@@ -1,7 +1,7 @@
 /** @file
     Decoder for Rolling Code Transmitter
 
-    Copyright (C) 2020 Flemi Oisterhocker
+    Copyright (C) 2020 David E. Tiller
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -12,11 +12,11 @@
 /**
 (this is a markdown formatted section to describe the decoder)
 (describe the modulation, timing, and transmission, e.g.)
- * The device uses OOK_PULSE_PCM_RZ encoding,
+ * The device uses OOK_PULSE_PCM_RZ encoding.
  * The packet starts with either a narrow (500 uS) start pulse or a long (1500 uS) pulse.
- * 0 is defined as a 1500 uS gap followed by a 500 uS pulse.
- * 1 is defined as a 1000 uS gap followed by a 1000uS  pulse.
- * 2 is defined as a 500 uS gap followed by a 1500uS pulse.
+ * 0 is defined as a 1500 uS gap followed by a  500 uS pulse.
+ * 1 is defined as a 1000 uS gap followed by a 1000 uS pulse.
+ * 2 is defined as a  500 uS gap followed by a 1500 uS pulse.
 
 */
 
@@ -24,16 +24,20 @@
 #include "decoder.h"
 
 /*
- * Hypothetical template device
- *
- * Message is 68 bits long
- * Messages start with 0xAA
- * The message is repeated as 5 packets,
- * require at least 3 repeated packets.
- *
+ * Message consists of a '1' length packet of 20 'trits' (trinary digits)
+ * followed by a '3' length packet of 20 trits. These two packets are repeated
+ * some number of times.
+ * The trits represent a rolling code that changes on each keypress, a fixed
+ * 16 trit device ID,  3 id trits (key pressed), and a 1 trit button id.
+ * All of the data is obfuscated and a 1 length and a 3 length packet are
+ * required to successfully decode a transmission.
  */
 
 #define MIN_BITS		80
+#define TRINARY_SIZE		20
+#define RAW_SIZE		10
+#define SPECIAL_BITS		4
+#define DEV_ID_SIZE		(RAW_SIZE * 2 - SPECIAL_BITS)
 
 static int get_start_bit_width(uint8_t *buffer, int *index, int num_bits, int debug_output) {
     int start = 0;
@@ -77,7 +81,7 @@ static uint8_t get_trits(uint8_t *nibble_buffer, uint8_t *bit_buffer, int *bit_i
     }
 
     int nibble_index = 0;
-    while (nibble_index < 20 && *bit_index <= num_bits - 4) {
+   while (nibble_index < TRINARY_SIZE && *bit_index <= num_bits - 4) {
         uint8_t nibble = bitrow_get_bit(bit_buffer, (*bit_index)++) << 3 | bitrow_get_bit(bit_buffer, (*bit_index)++) << 2 | 
             bitrow_get_bit(bit_buffer, (*bit_index)++) << 1 | bitrow_get_bit(bit_buffer, (*bit_index)++);
         
@@ -90,8 +94,8 @@ static uint8_t get_trits(uint8_t *nibble_buffer, uint8_t *bit_buffer, int *bit_i
 	}
     }
 
-    if (nibble_index != 20) {
-        fprintf(stderr, "Not enough bits for 20 nibbles\n");
+    if (nibble_index != TRINARY_SIZE) {
+        fprintf(stderr, "Not enough bits for %d nibbles\n", TRINARY_SIZE);
 
         return 1;
     } else {
@@ -101,7 +105,7 @@ static uint8_t get_trits(uint8_t *nibble_buffer, uint8_t *bit_buffer, int *bit_i
 
 static void fix_a_code(uint8_t *a_raw, uint8_t *r_raw, uint8_t *dst) {
     uint8_t prev = 0;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < RAW_SIZE; i++) {
         int16_t x = a_raw[i] - r_raw[i];
 	if (x < 0) x += 3;
 	x = x - prev;
@@ -111,18 +115,19 @@ static void fix_a_code(uint8_t *a_raw, uint8_t *r_raw, uint8_t *dst) {
     }
 }
 
-static void raw_to_chars(uint8_t *src, char *dst) {
-	for (int i = 0; i < 10; i++) {
+// Buffer has to be len + 1 bytes long.
+static void raw_to_chars(uint8_t *src, char *dst, int len) {
+	for (int i = 0; i < len; i++) {
 		dst[i] = src[i] + '0';
 	}
 
-	dst[10] = '\0';
+	dst[len] = '\0';
 }
 
-static uint32_t raw_to_uint(uint8_t *ptr) {
+static uint32_t raw_to_uint(uint8_t *ptr, int len) {
     uint32_t value = 0;
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < len; i++) {
         value *= 3;
         value += ptr[i];
     }
@@ -175,17 +180,17 @@ static uint32_t get_rolling_code(uint32_t r1, uint32_t r3) {
 
 static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // This holds a previous start width 1 fixed and rolling codes for 
+    // This holds previous start width 1 fixed and rolling codes for 
     // counter decoding once we have a start width 3 packet.
-    static uint8_t prev_1_a_raw[10] = {'.'};
-    static uint8_t prev_1_r_raw[10] = {'.'};
+    static uint8_t prev_1_a_raw[RAW_SIZE] = {'.'};
+    static uint8_t prev_1_r_raw[RAW_SIZE] = {'.'};
 
     data_t *data = NULL;
     int index = 0; // a row index
     uint8_t *b = NULL; // bits of a row
     int num_bits = 0;
     int start_width = 0;
-    uint8_t trinary[20] = {0};
+    uint8_t trinary[TRINARY_SIZE] = {0};
     int debug_output = decoder->verbose;
 
     if (debug_output > 1) {
@@ -228,66 +233,70 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
     
-    printf("START WIDTH %d CODE: ", start_width);
-    for (int i = 0; i < 20; i++) {
-        printf("%d ", trinary[i]);
-    }   
-    printf("\n");
-    
+    if (debug_output > 1) {
+        char buffer[TRINARY_SIZE + 1];
+        raw_to_chars(trinary, buffer, TRINARY_SIZE);
+        data = data_append(data, 
+		"raw_trinary", "", DATA_STRING, buffer,
+        	"start_width", "", DATA_INT, start_width, NULL);
+    }
+
     // Tease out the individual parts of the message
 
-    char a_buffer[11] = {0};
-    char a_fixed_buffer[11] = {0};
-    char r_buffer[11] = {0};
-    uint8_t a_raw[10] = {0};
-    uint8_t a_fixed[10] = {0};
-    uint8_t r_raw[10] = {0};
-    uint8_t r_fixed[10] = {0};
+    uint8_t a_raw[RAW_SIZE] = {0};
+    uint8_t a_corrected[RAW_SIZE] = {0};
+    uint8_t r_raw[RAW_SIZE] = {0};
 
-    for (int i = 0; i < 10; i++) {
+    // Pull out A and R bits
+    for (int i = 0; i < RAW_SIZE; i++) {
 	a_raw[i] = trinary[i * 2 + 1];
-    }       
-    raw_to_chars(a_raw, a_buffer);
-    printf("RAW ACODE: %s\n", a_buffer);
-
-    for (int i = 0; i < 10; i++) {
 	r_raw[i] = trinary[i * 2];
+    }       
+
+    fix_a_code(a_raw, r_raw, a_corrected);
+
+    if (debug_output > 1) {
+	char buffer[RAW_SIZE + 1];
+	raw_to_chars(a_raw, buffer, RAW_SIZE);
+        data = data_append(data, "raw_a", "", DATA_STRING, buffer, NULL);
+	raw_to_chars(r_raw, buffer, RAW_SIZE);
+        data = data_append(data, "raw_r", "", DATA_STRING, buffer, NULL);
+	raw_to_chars(a_corrected, buffer, RAW_SIZE);
+        data = data_append(data, "corrected_a", "", DATA_STRING, buffer, NULL);
     }
-    raw_to_chars(r_raw, r_buffer);
-    printf("ROLL: %s\n", r_buffer);
-
-    fix_a_code(a_raw, r_raw, a_fixed);
-
-    raw_to_chars(a_fixed, a_fixed_buffer);
-    printf("FIXED ACODE: %s\n", a_fixed_buffer);
-
 
     if (start_width == 1) {
 	memcpy(prev_1_a_raw, a_raw, sizeof(a_raw));
 	memcpy(prev_1_r_raw, r_raw, sizeof(r_raw));
     }
 
-    int counter = -1;
-    char counter_buffer[32];
-
     if (*prev_1_r_raw != '.' && start_width == 3) {
-        counter = get_rolling_code(raw_to_uint(prev_1_r_raw), raw_to_uint(r_raw));
+	char buffer[9];
+	uint32_t counter = get_rolling_code(raw_to_uint(prev_1_r_raw, RAW_SIZE), raw_to_uint(r_raw, RAW_SIZE));
+    	sprintf(buffer, "%08x", counter);
+	data = data_append(data, 
+		"counter_hex", "", DATA_STRING, buffer,
+		"counter", "", DATA_INT, counter,
+        	"button_pressed", "", DATA_INT, (int) a_corrected[9],
+        	"id_bits", "", DATA_INT, a_corrected[6] * 9 + a_corrected[7] * 3 + a_corrected[8], NULL);
+
+	uint8_t device_id[DEV_ID_SIZE];
+	memset(device_id, 0, DEV_ID_SIZE);
+	memcpy(device_id + RAW_SIZE, a_corrected, RAW_SIZE - SPECIAL_BITS);
+	// Now fix the previous a_raw
+	fix_a_code(prev_1_a_raw, prev_1_r_raw, a_corrected);
+	memcpy(device_id, a_corrected, RAW_SIZE);
+	uint32_t value = raw_to_uint(device_id, DEV_ID_SIZE);
+	sprintf(buffer, "%08x", value);
+	data = data_append(data, 
+		"device_id", "", DATA_INT, value,
+		"device_id_hex", "", DATA_STRING, buffer, NULL);
     }
 
-    sprintf(counter_buffer, "%08x", counter);
-    
-    /* clang-format off */
-    data = data_make(
-            "model", "", DATA_STRING, "Rolling Code Transmitter",
-            "raw_a_code","", DATA_STRING, a_buffer,
-            "fixed_a_code","", DATA_STRING, a_fixed_buffer,
-            "raw_rolling_code",  "", DATA_STRING, r_buffer,
-            "start_width", "", DATA_INT, start_width,
-            "counter_int",   "", DATA_INT, counter,
-            "counter_string",   "", DATA_STRING, counter_buffer,
-            NULL);
-    /* clang-format on */
-    decoder_output_data(decoder, data);
+    if (data != NULL) {
+	data = data_append(data, "model", "", DATA_STRING, "Rolling Code Transmitter", NULL);
+    	decoder_output_data(decoder, data);
+    }
 
     // Return 1 if message successfully decoded
     return 1;
@@ -302,11 +311,12 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  */
 static char *output_fields[] = {
 	"model",
-        "raw_a_code",
-        "fixed_a_code",
-        "raw_rolling_code",
-	"start_width",
-	"counter",
+        "device_id",
+        "device_id_hex",
+        "counter",
+	"counter_hex",
+	"id_bits",
+	"button_pressed",
         NULL,
 };
 
@@ -335,10 +345,9 @@ static char *output_fields[] = {
 r_device rolling_code = {
         .name        = "Rolling Code Transmitter",
         .modulation  = OOK_PULSE_PCM_RZ,
-        .short_width = 500,  // short gap is 132 us
-        .long_width  = 500,  // long gap is 224 us
-        // .gap_limit   = 2000,  // some distance above long
-        .reset_limit = 2000, // was 61500, // a bit longer than packet gap
+        .short_width = 500,  // trits are multiples of 500 uS in size
+        .long_width  = 500,  // trits are multiples of 500 uS in size
+        .reset_limit = 2000, // this is short enough so we only get 1 row
         .decode_fn   = &rolling_code_decode,
         .disabled    = 1, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
         .fields      = output_fields,
