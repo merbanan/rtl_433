@@ -33,6 +33,9 @@
 #define RAW_SIZE		10
 #define SPECIAL_BITS		4
 #define DEV_ID_SIZE		(RAW_SIZE * 2 - SPECIAL_BITS)
+#define NOT_SET			'.'
+#define BUTTON_TRIT		9
+#define ID_TBIT_START		6
 
 static int get_start_bit_width(uint8_t *buffer, int *index, int num_bits, int debug_output) {
     int start = 0;
@@ -177,8 +180,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // This holds previous start width 1 fixed and rolling codes for 
     // counter decoding once we have a start width 3 packet.
-    static uint8_t prev_1_a_raw[RAW_SIZE] = {'.'};
-    static uint8_t prev_1_r_raw[RAW_SIZE] = {'.'};
+    static uint8_t prev_1_a_corrected[RAW_SIZE] = {NOT_SET};
+    static uint8_t prev_1_r_raw[RAW_SIZE] = {NOT_SET};
 
     data_t *data = NULL;
     int index = 0; // a row index
@@ -193,8 +196,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (bitbuffer->num_rows < 1) {
-	*prev_1_a_raw = '.';
-	*prev_1_r_raw = '.';
+	*prev_1_a_corrected = NOT_SET;
+	*prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -209,8 +212,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "Start bit width invalid: %d\n", start_width);
         }
 
-	*prev_1_a_raw = '.';
-	*prev_1_r_raw = '.';
+	*prev_1_a_corrected = NOT_SET;
+	*prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -222,8 +225,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
      if (get_trits(trinary, b, &index, num_bits, debug_output)) {
         fprintf(stderr, "get_trits failed\n");
-	*prev_1_a_raw = '.';
-	*prev_1_r_raw = '.';
+	*prev_1_a_corrected = NOT_SET;
+	*prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -261,12 +264,12 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (start_width == 1) {
-	memcpy(prev_1_a_raw, a_raw, sizeof(a_raw));
-	memcpy(prev_1_r_raw, r_raw, sizeof(r_raw));
+	memcpy(prev_1_a_corrected, a_corrected, RAW_SIZE);
+	memcpy(prev_1_r_raw, r_raw, RAW_SIZE);
     }
 
-    if (*prev_1_r_raw != '.' && start_width == 3) {
-	char buffer[11];
+    if (*prev_1_r_raw != NOT_SET && start_width == 3) {
+	char buffer[RAW_SIZE + 1];
 	uint32_t counter = get_rolling_code(raw_to_uint(prev_1_r_raw, RAW_SIZE), raw_to_uint(r_raw, RAW_SIZE));
     	sprintf(buffer, "%u", counter);
 	data = data_append(data, 
@@ -274,15 +277,14 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 	sprintf(buffer, "%08x", counter);
 	data = data_append(data, 
 		"counter_hex", "", DATA_STRING, buffer,
-        	"button_pressed", "", DATA_INT, (int) a_corrected[9],
-        	"id_bits", "", DATA_INT, a_corrected[6] * 9 + a_corrected[7] * 3 + a_corrected[8], NULL);
+        	"button_pressed", "", DATA_INT, (int) a_corrected[BUTTON_TRIT],
+        	"id_bits", "", DATA_INT, a_corrected[ID_TBIT_START] * 9 + a_corrected[ID_TBIT_START + 1] * 3 + a_corrected[ID_TBIT_START + 2], NULL);
 
 	uint8_t device_id[DEV_ID_SIZE];
 	memset(device_id, 0, DEV_ID_SIZE);
 	memcpy(device_id + RAW_SIZE, a_corrected, RAW_SIZE - SPECIAL_BITS);
-	// Now fix the previous a_raw
-	fix_a_code(prev_1_a_raw, prev_1_r_raw, a_corrected);
-	memcpy(device_id, a_corrected, RAW_SIZE);
+	
+	memcpy(device_id, prev_1_a_corrected, RAW_SIZE);
 	uint32_t value = raw_to_uint(device_id, DEV_ID_SIZE);
 	sprintf(buffer, "%08x", value);
 	data = data_append(data, 
@@ -291,7 +293,7 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (data != NULL) {
-	data = data_append(data, "model", "", DATA_STRING, "Rolling Code Transmitter", NULL);
+	data = data_prepend(data, "model", "", DATA_STRING, "Rolling Code Transmitter", NULL);
     	decoder_output_data(decoder, data);
     }
 
