@@ -1,7 +1,7 @@
 /** @file
     Honeywell CM921 Thermostat
 
-    Copyright (C) 2020
+    Copyright (C) 2020 Christoph M. Wintersteiger <christoph@winterstiger.at>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -9,25 +9,14 @@
     (at your option) any later version.
 */
 /**
-Honeywell CM921 Thermostat.
+Honeywell CM921 Thermostat (subset of Evohome).
 
 868Mhz FSK, PCM, Start/Stop bits, reversed, Manchester.
 */
 
-#include <stdlib.h>
-#include <mongoose.h>
-
 #include "decoder.h"
 
-#define _DEBUG
-
-static char *hex(bitbuffer_t *b, int row) {
-    size_t lenB = b->bits_per_row[row]/8;
-    if (b->bits_per_row[row] % 8 != 0) lenB++;
-    char *r = malloc(lenB * 2 + 1);
-    cs_to_hex(r, b->bb[row], lenB);
-    return r;
-}
+// #define _DEBUG
 
 static int get_byte(const bitbuffer_t *b, int row, int pos, int end, uint8_t *out)
 {
@@ -74,32 +63,20 @@ typedef struct {
     uint8_t device_id[4][3];
     uint16_t command;
     uint8_t payload_length;
-    uint8_t *payload;
+    uint8_t payload[256];
     uint8_t unparsed_length;
-    uint8_t *unparsed;
+    uint8_t unparsed[256];
     uint8_t crc;
 } message_t;
 
-typedef struct {
-    uint8_t unknown_0; /* always == 0? */
-    uint8_t unknown_1; /* direction? */
-    uint8_t second;
-    uint8_t minute;
-    uint8_t hour : 5;
-    uint8_t day_of_week : 3;
-    uint8_t day;
-    uint8_t month;
-    uint8_t year[2];
-} X313F;
 
-
-data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buffer, size_t buffer_length)
+data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
-    if (buffer && buffer_length > 0)  {
-        char tstr[(buffer_length * 2) + 1];
+    if (buf && buf_sz > 0)  {
+        char tstr[(buf_sz * 2) + 1];
         char *p = tstr;
-        for (unsigned i = 0; i < buffer_length; i++, p+=2)
-            sprintf(p, "%02x", buffer[i]);
+        for (unsigned i = 0; i < buf_sz; i++, p+=2)
+            sprintf(p, "%02x", buf[i]);
         *p = '\0';
         data = data_append(data, name, "", DATA_STRING, tstr, NULL);
     }
@@ -126,7 +103,7 @@ static const dev_map_entry_t device_map[] = {
     { .t = 63, .s = "NUL" }, /* No device */
 };
 
-char* decode_device_id(const uint8_t device_id[3])
+void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_sz)
 {
     uint8_t dev_type = device_id[0] >> 2;
     const char *dev_name = " --";
@@ -134,27 +111,26 @@ char* decode_device_id(const uint8_t device_id[3])
         if (device_map[i].t == dev_type)
             dev_name = device_map[i].s;
 
-    char *res = malloc(sizeof(char) * (6 + strlen(dev_name) + 1));
-    sprintf(res, "%3s:%06d", dev_name, (device_id[0] & 0x03) << 16 | (device_id[1] << 8) | device_id[2]);
-    return res;
+    if (buf_sz < (6 + strlen(dev_name) + 1))
+        return;
+
+    sprintf(buf, "%3s:%06d", dev_name, (device_id[0] & 0x03) << 16 | (device_id[1] << 8) | device_id[2]);
 }
 
 data_t *decode_device_ids(const message_t *msg, data_t *data, int style) {
-    char *ds = calloc(11, msg->num_device_ids);
+    char ds[64] = {0};
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
         if (i != 0) strcat(ds, " ");
 
-        char *did = NULL;
+        char buf[256] = {0};
         if (style == 0)
-            did = decode_device_id(msg->device_id[i]);
+            decode_device_id(msg->device_id[i], buf, 256);
         else {
-            did = malloc(sizeof(char) * 7);
             for (unsigned j = 0; j < 3; j++)
-                sprintf(did + 2*j, "%02x", msg->device_id[i][j]);
+                sprintf(buf + 2*j, "%02x", msg->device_id[i][j]);
         }
-        strcat(ds, did);
-        free(did);
+        strcat(ds, buf);
     }
 
     return data_append(data, "Device IDs", "", DATA_STRING, ds, NULL);
@@ -162,7 +138,7 @@ data_t *decode_device_ids(const message_t *msg, data_t *data, int style) {
 
 #define UNKNOWN_IF(C) if (C) { return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); }
 
-data_t *interpret_message(const message_t *msg, data_t *data)
+data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
 {
     /* Sources of inspiration:
        https://github.com/Evsdd/The-Evohome-Protocol/wiki
@@ -186,7 +162,9 @@ data_t *interpret_message(const message_t *msg, data_t *data)
                     case 0xCA: data = data_append(data, "actuator_run_time", "", DATA_INT, value, NULL); break;
                     case 0xCB: data = data_append(data, "min_flow_temp", "", DATA_INT, value, NULL); break;
                     case 0xCC: /* Unknown, always 0x01? */ break;
-                    default: printf("Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
+                    default:
+                        if (verbose)
+                            printf("Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
                 }
             }
             break;
@@ -197,10 +175,18 @@ data_t *interpret_message(const message_t *msg, data_t *data)
                 case 1:
                     data = data_append(data, "time_request", "", DATA_INT, msg->payload[0], NULL); break;
                 case 9: {
-                    X313F* pl = (X313F*)msg->payload;
+                    uint8_t unknown_0 = msg->payload[0]; /* always == 0? */
+                    uint8_t unknown_1 = msg->payload[1]; /* direction? */
+                    uint8_t second = msg->payload[2];
+                    uint8_t minute = msg->payload[3];
+                    uint8_t day_of_week = msg->payload[4] >> 5;
+                    uint8_t hour = msg->payload[4] & 0x1F;
+                    uint8_t day = msg->payload[5];
+                    uint8_t month = msg->payload[6];
+                    uint8_t year[2] = { msg->payload[7],  msg->payload[8] };
                     char time_str[256];
-                    sprintf(time_str, "%02d:%02d:%02d %02d-%02d-%04d", pl->hour, pl->minute, pl->second, pl->day, pl->month, (pl->year[0] << 8) | pl->year[1]);
-                    data = data_append(data, "time", "", DATA_STRING, time_str, NULL);
+                    sprintf(time_str, "%02d:%02d:%02d %02d-%02d-%04d", hour, minute, second, day, month, (year[0] << 8) | year[1]);
+                    data = data_append(data, "datetime", "", DATA_STRING, time_str, NULL);
                     break;
                 }
             }
@@ -259,7 +245,7 @@ data_t *interpret_message(const message_t *msg, data_t *data)
             break;
         }
         default: /* Unknown command */
-            UNKNOWN_IF(true);
+            UNKNOWN_IF(1);
     }
     return r;
 }
@@ -278,7 +264,7 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
     msg->crc = bitrow_get_byte(bmsg->bb[row], bmsg->bits_per_row[row] - 8);
 
     if (!checksum_ok)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     msg->header = next(bb, &ipos, num_bytes);
 
@@ -291,20 +277,15 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
     msg->command = (next(bb, &ipos, num_bytes) << 8) | next(bb, &ipos, num_bytes);
     msg->payload_length = next(bb, &ipos, num_bytes);
 
-    if (msg->payload_length > 0) {
-        msg->payload = (uint8_t*)malloc(sizeof(uint8_t) * msg->payload_length);
-        for (unsigned i = 0; i < msg->payload_length; i++)
-            msg->payload[i] = next(bb, &ipos, num_bytes);
-    }
+    for (unsigned i = 0; i < msg->payload_length; i++)
+        msg->payload[i] = next(bb, &ipos, num_bytes);
 
     unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
     msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
-    if (msg->unparsed_length != 0) {
-        msg->unparsed = malloc(sizeof(uint8_t) * msg->unparsed_length);
+    if (msg->unparsed_length != 0)
         bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
-    }
 
-    return 1;
+    return ipos;
 }
 
 static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -317,7 +298,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     //                              =0101 0101 0101 1111 1111 0000 0000 01
     //                            =0x   5    5    5    F    F    0    0 4
     // post=10101100
-    // each byte surrounded buy start/stop bits (0byte1)
+    // each byte surrounded by start/stop bits (0byte1)
     // then manchester decode.
     const uint8_t preamble_pattern[4] = { 0x55, 0x5F, 0xF0, 0x04 };
     const uint8_t preamble_bit_length = 30;
@@ -373,7 +354,6 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t packet = {0};
     unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, num_bits);
     unsigned man_errors = num_bits  - (fpos - first_byte - 2);
-    char *packet_hex = hex(&packet, row);
 
 #ifndef _DEBUG
     if (man_errors != 0)
@@ -382,17 +362,22 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "", DATA_STRING, "Honeywell CM921",
-            "Packet",       "", DATA_STRING, packet_hex,
+            "model",     "", DATA_STRING, "Honeywell CM921",
+            "mic",    "MIC", DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
     message_t message;
 
-    if (parse_msg(&packet, row, &message))
-        data = interpret_message(&message, data);
+    int pr = parse_msg(&packet, row, &message);
+
+    if (pr <= 0)
+        return pr;
+
+    data = interpret_message(&message, data, decoder->verbose);
 
 #ifdef _DEBUG
+    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row]/8);
     data = add_hex_string(data, "Header", &message.header, 1);
     uint8_t cmd[2] = { message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
@@ -404,17 +389,14 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     decoder_output_data(decoder, data);
 
-    free(packet_hex);
-    free(message.payload);
-    free(message.unparsed);
     return 1;
 }
 
 static char *output_fields[] = {
         "model",
-        "Packet",
         "Device IDs",
 #ifdef _DEBUG
+        "Packet",
         "Header",
         "Command",
         "Payload",
@@ -422,7 +404,7 @@ static char *output_fields[] = {
         "CRC",
         "# man errors",
 #endif
-        "time",
+        "datetime",
         "domain_id",
         "state",
         "demand",
