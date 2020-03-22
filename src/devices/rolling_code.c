@@ -28,14 +28,14 @@
 #include <stdlib.h>
 #include "decoder.h"
 
-#define MIN_BITS		80
-#define TRINARY_SIZE		20
-#define RAW_SIZE		10
-#define SPECIAL_BITS		4
-#define DEV_ID_SIZE		(RAW_SIZE * 2 - SPECIAL_BITS)
-#define NOT_SET			'.'
-#define BUTTON_TRIT		9
-#define ID_TBIT_START		6
+#define MIN_BITS        80
+#define TRINARY_SIZE    20
+#define RAW_SIZE        10
+#define SPECIAL_BITS    4
+#define DEV_ID_SIZE     (RAW_SIZE * 2 - SPECIAL_BITS)
+#define NOT_SET         '.'
+#define BUTTON_TRIT     9
+#define ID_TBIT_START   6
 
 static int get_start_bit_width(uint8_t *buffer, int *index, int num_bits, int debug_output) {
     int start = 0;
@@ -73,23 +73,25 @@ static uint8_t get_trits(uint8_t *nibble_buffer, uint8_t *bit_buffer, int *bit_i
     if (num_bits - *bit_index < MIN_BITS) {
         if (debug_output > 1) {
             fprintf(stderr, "Too few bits: %d\n", num_bits - *bit_index);
-	}
+        }
 
-	return 1;
+        return 1;
     }
 
     int nibble_index = 0;
-   while (nibble_index < TRINARY_SIZE && *bit_index <= num_bits - 4) {
-        uint8_t nibble = bitrow_get_bit(bit_buffer, (*bit_index)++) << 3 | bitrow_get_bit(bit_buffer, (*bit_index)++) << 2 | 
-            bitrow_get_bit(bit_buffer, (*bit_index)++) << 1 | bitrow_get_bit(bit_buffer, (*bit_index)++);
+    while (nibble_index < TRINARY_SIZE && *bit_index <= num_bits - 4) {
+        uint8_t nibble = bitrow_get_bit(bit_buffer, (*bit_index)++) << 3 | 
+            bitrow_get_bit(bit_buffer, (*bit_index)++) << 2 | 
+            bitrow_get_bit(bit_buffer, (*bit_index)++) << 1 | 
+            bitrow_get_bit(bit_buffer, (*bit_index)++);
         
-	if (nibble == 0x01) nibble_buffer[nibble_index++] = 0;
-	else if (nibble == 0x03) nibble_buffer[nibble_index++] = 1;
-	else if (nibble == 0x07) nibble_buffer[nibble_index++] = 2;
-	else {
-		fprintf(stderr, "Unknown nibble %02x\n", nibble);
-		return 1;
-	}
+        if (nibble == 0x01) nibble_buffer[nibble_index++] = 0;
+        else if (nibble == 0x03) nibble_buffer[nibble_index++] = 1;
+        else if (nibble == 0x07) nibble_buffer[nibble_index++] = 2;
+        else {
+            fprintf(stderr, "Unknown nibble %02x\n", nibble);
+            return 1;
+        }
     }
 
     if (nibble_index != TRINARY_SIZE) {
@@ -105,21 +107,21 @@ static void fix_a_code(uint8_t *a_raw, uint8_t *r_raw, uint8_t *dst) {
     uint8_t prev = 0;
     for (int i = 0; i < RAW_SIZE; i++) {
         int16_t x = a_raw[i] - r_raw[i];
-	if (x < 0) x += 3;
-	x = x - prev;
-	if (x < 0) x += 3;
-	dst[i] = x & 0xff;
-	prev = a_raw[i];
+        if (x < 0) x += 3;
+        x = x - prev;
+        if (x < 0) x += 3;
+        dst[i] = x & 0xff;
+        prev = a_raw[i];
     }
 }
 
 // Buffer has to be len + 1 bytes long.
 static void raw_to_chars(uint8_t *src, char *dst, int len) {
-	for (int i = 0; i < len; i++) {
-		dst[i] = src[i] + '0';
-	}
+    for (int i = 0; i < len; i++) {
+        dst[i] = src[i] + '0';
+    }
 
-	dst[len] = '\0';
+    dst[len] = '\0';
 }
 
 static uint32_t raw_to_uint(uint8_t *ptr, int len) {
@@ -192,12 +194,12 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int debug_output = decoder->verbose;
 
     if (debug_output > 1) {
-    	bitbuffer_printf(bitbuffer, "%s: ", __func__);
+        bitbuffer_printf(bitbuffer, "%s: ", __func__);
     }
 
     if (bitbuffer->num_rows < 1) {
-	*prev_1_a_corrected = NOT_SET;
-	*prev_1_r_raw = NOT_SET;
+        *prev_1_a_corrected = NOT_SET;
+        *prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -212,8 +214,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "Start bit width invalid: %d\n", start_width);
         }
 
-	*prev_1_a_corrected = NOT_SET;
-	*prev_1_r_raw = NOT_SET;
+        *prev_1_a_corrected = NOT_SET;
+        *prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -223,10 +225,10 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * start parsing data.
      */
 
-     if (get_trits(trinary, b, &index, num_bits, debug_output)) {
+    if (get_trits(trinary, b, &index, num_bits, debug_output)) {
         fprintf(stderr, "get_trits failed\n");
-	*prev_1_a_corrected = NOT_SET;
-	*prev_1_r_raw = NOT_SET;
+        *prev_1_a_corrected = NOT_SET;
+        *prev_1_r_raw = NOT_SET;
 
         return 0;
     }
@@ -235,8 +237,8 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         char buffer[TRINARY_SIZE + 1];
         raw_to_chars(trinary, buffer, TRINARY_SIZE);
         data = data_append(data, 
-		"raw_trinary", "", DATA_STRING, buffer,
-        	"start_width", "", DATA_INT, start_width, NULL);
+            "raw_trinary", "", DATA_STRING, buffer,
+            "start_width", "", DATA_INT, start_width, NULL);
     }
 
     // Tease out the individual parts of the message
@@ -247,54 +249,56 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Pull out A and R bits
     for (int i = 0; i < RAW_SIZE; i++) {
-	a_raw[i] = trinary[i * 2 + 1];
-	r_raw[i] = trinary[i * 2];
+        a_raw[i] = trinary[i * 2 + 1];
+        r_raw[i] = trinary[i * 2];
     }       
 
     fix_a_code(a_raw, r_raw, a_corrected);
 
     if (debug_output > 1) {
-	char buffer[RAW_SIZE + 1];
-	raw_to_chars(a_raw, buffer, RAW_SIZE);
+        char buffer[RAW_SIZE + 1];
+        raw_to_chars(a_raw, buffer, RAW_SIZE);
         data = data_append(data, "raw_a", "", DATA_STRING, buffer, NULL);
-	raw_to_chars(r_raw, buffer, RAW_SIZE);
+            raw_to_chars(r_raw, buffer, RAW_SIZE);
         data = data_append(data, "raw_r", "", DATA_STRING, buffer, NULL);
-	raw_to_chars(a_corrected, buffer, RAW_SIZE);
+            raw_to_chars(a_corrected, buffer, RAW_SIZE);
         data = data_append(data, "corrected_a", "", DATA_STRING, buffer, NULL);
     }
 
     if (start_width == 1) {
-	memcpy(prev_1_a_corrected, a_corrected, RAW_SIZE);
-	memcpy(prev_1_r_raw, r_raw, RAW_SIZE);
+        memcpy(prev_1_a_corrected, a_corrected, RAW_SIZE);
+        memcpy(prev_1_r_raw, r_raw, RAW_SIZE);
     }
 
     if (*prev_1_r_raw != NOT_SET && start_width == 3) {
-	char buffer[RAW_SIZE + 1];
-	uint32_t counter = get_rolling_code(raw_to_uint(prev_1_r_raw, RAW_SIZE), raw_to_uint(r_raw, RAW_SIZE));
-    	sprintf(buffer, "%u", counter);
-	data = data_append(data, 
-		"counter", "", DATA_STRING, buffer, NULL);
-	sprintf(buffer, "%08x", counter);
-	data = data_append(data, 
-		"counter_hex", "", DATA_STRING, buffer,
-        	"button_pressed", "", DATA_INT, (int) a_corrected[BUTTON_TRIT],
-        	"id_bits", "", DATA_INT, a_corrected[ID_TBIT_START] * 9 + a_corrected[ID_TBIT_START + 1] * 3 + a_corrected[ID_TBIT_START + 2], NULL);
+        char buffer[RAW_SIZE + 1];
+        uint32_t counter = get_rolling_code(
+            raw_to_uint(prev_1_r_raw, RAW_SIZE), 
+            raw_to_uint(r_raw, RAW_SIZE));
+        sprintf(buffer, "%u", counter);
+        data = data_append(data, "counter", "", DATA_STRING, buffer, NULL);
 
-	uint8_t device_id[DEV_ID_SIZE];
-	memset(device_id, 0, DEV_ID_SIZE);
-	memcpy(device_id + RAW_SIZE, a_corrected, RAW_SIZE - SPECIAL_BITS);
-	
-	memcpy(device_id, prev_1_a_corrected, RAW_SIZE);
-	uint32_t value = raw_to_uint(device_id, DEV_ID_SIZE);
-	sprintf(buffer, "%08x", value);
-	data = data_append(data, 
-		"device_id", "", DATA_INT, value,
-		"device_id_hex", "", DATA_STRING, buffer, NULL);
+        sprintf(buffer, "%08x", counter);
+        data = data_append(data, 
+            "counter_hex", "", DATA_STRING, buffer,
+            "button_pressed", "", DATA_INT, (int) a_corrected[BUTTON_TRIT],
+            "id_bits", "", DATA_INT, a_corrected[ID_TBIT_START] * 9 + a_corrected[ID_TBIT_START + 1] * 3 + a_corrected[ID_TBIT_START + 2], NULL);
+
+        uint8_t device_id[DEV_ID_SIZE];
+        memset(device_id, 0, DEV_ID_SIZE);
+        memcpy(device_id + RAW_SIZE, a_corrected, RAW_SIZE - SPECIAL_BITS);
+    
+        memcpy(device_id, prev_1_a_corrected, RAW_SIZE);
+        uint32_t value = raw_to_uint(device_id, DEV_ID_SIZE);
+        sprintf(buffer, "%08x", value);
+        data = data_append(data, 
+            "device_id", "", DATA_INT, value, 
+            "device_id_hex", "", DATA_STRING, buffer, NULL);
     }
 
     if (data != NULL) {
-	data = data_prepend(data, "model", "", DATA_STRING, "Rolling Code Transmitter", NULL);
-    	decoder_output_data(decoder, data);
+        data = data_prepend(data, "model", "", DATA_STRING, "Rolling Code Transmitter", NULL);
+        decoder_output_data(decoder, data);
     }
 
     // Return 1 if message successfully decoded
@@ -309,23 +313,23 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-	"model",
-        "device_id",
-        "device_id_hex",
-        "counter",
-	"counter_hex",
-	"id_bits",
-	"button_pressed",
-        NULL,
+    "model",
+    "device_id",
+    "device_id_hex",
+    "counter",
+    "counter_hex",
+    "id_bits",
+    "button_pressed",
+    NULL,
 };
 
 r_device rolling_code = {
-        .name        = "Rolling Code Transmitter (-f 315M)",
-        .modulation  = OOK_PULSE_PCM_RZ,
-        .short_width = 500,  // trits are multiples of 500 uS in size
-        .long_width  = 500,  // trits are multiples of 500 uS in size
-        .reset_limit = 2000, // this is short enough so we only get 1 row
-        .decode_fn   = &rolling_code_decode,
-        .disabled    = 1, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
-        .fields      = output_fields,
+    .name        = "Rolling Code Transmitter (-f 315M)",
+    .modulation  = OOK_PULSE_PCM_RZ,
+    .short_width = 500,  // trits are multiples of 500 uS in size
+    .long_width  = 500,  // trits are multiples of 500 uS in size
+    .reset_limit = 2000, // this is short enough so we only get 1 row
+    .decode_fn   = &rolling_code_decode,
+    .disabled    = 1, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+    .fields      = output_fields,
 };
