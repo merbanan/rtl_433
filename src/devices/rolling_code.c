@@ -23,6 +23,9 @@
  16 trit device ID,  3 id trits (key pressed), and a 1 trit button id.
  All of the data is obfuscated and a 1 length and a 3 length packet are
  required to successfully decode a transmission.
+
+ NOTE: This code is made available for legal uses ONLY - any other use is expressly
+ forbidden.
  */
 
 #include <stdlib.h>
