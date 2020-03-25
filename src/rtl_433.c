@@ -1481,10 +1481,10 @@ int main(int argc, char **argv) {
                 fclose(in_file = stdin);
         }
 
-        r_free_cfg(cfg);
         close_dumpers(cfg);
         free(test_mode_buf);
         free(test_mode_float_buf);
+        r_free_cfg(cfg);
         exit(0);
     }
 

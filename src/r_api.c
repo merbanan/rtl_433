@@ -900,6 +900,14 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 
 void close_dumpers(struct r_cfg *cfg)
 {
+    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t *dumper = *iter;
+        if (dumper->file && (dumper->file != stdout)) {
+            fclose(dumper->file);
+            dumper->file = NULL;
+        }
+    }
+
     char const *labels[] = {
             "FRAME", // probe1
             "ASK", // probe2
