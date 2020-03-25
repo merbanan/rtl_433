@@ -429,7 +429,7 @@ const char *parse_map(const char *arg, struct flex_get *getter)
 
         // then parse a string
         const char *e = c;
-        while (*e != ' ' && *e != ']') e++;
+        while (*e && *e != ' ' && *e != ']') e++;
         val = malloc(e - c + 1);
         if (!val)
             WARN_MALLOC("parse_map()");
