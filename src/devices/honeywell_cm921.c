@@ -251,6 +251,9 @@ data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
 }
 
 int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
+    if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8)
+        return DECODE_ABORT_LENGTH;
+
     unsigned num_bytes = bmsg->bits_per_row[0]/8;
     unsigned ipos = 0;
     const uint8_t *bb = bmsg->bb[row];
@@ -360,19 +363,19 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 #endif
 
-    /* clang-format off */
-    data_t *data = data_make(
-            "model",     "", DATA_STRING, "Honeywell CM921",
-            "mic",    "MIC", DATA_STRING, "CHECKSUM",
-            NULL);
-    /* clang-format on */
-
     message_t message;
 
     int pr = parse_msg(&packet, row, &message);
 
     if (pr <= 0)
         return pr;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",     "", DATA_STRING, "Honeywell CM921",
+            "mic",    "MIC", DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
 
     data = interpret_message(&message, data, decoder->verbose);
 
