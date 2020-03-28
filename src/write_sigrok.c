@@ -23,6 +23,7 @@
 #include <windows.h>
 #endif
 
+#include "fatal.h"
 #include "write_sigrok.h"
 
 void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[])
@@ -161,7 +162,11 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
         snprintf(str_buf, sizeof(str_buf), "analog-1-%u-1", i);
-        argv[arg++] = strdup(str_buf);
+        char* dup = strdup(str_buf);
+        if (!dup) {
+          FATAL_STRDUP("write_sigrok()");
+        }
+        argv[arg++] = dup;
     }
 
     int status = 0;
