@@ -326,11 +326,11 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_output_data(decoder, data);
         }
     } else {
+        *prev_1_r_raw = NOT_SET;    // Not used for legacy codes
+
         if (start_width == 2) {
             memcpy(prev_1_a_corrected, trinary, RAW_SIZE);
-        }
-
-        if (*prev_1_a_corrected != NOT_SET && start_width == 6) {
+        } else if (*prev_1_a_corrected != NOT_SET && start_width == 6) {
             char buffer[RAW_SIZE + 1];
 
             memcpy(trinary + RAW_SIZE, trinary, RAW_SIZE);
