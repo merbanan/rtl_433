@@ -384,12 +384,12 @@ static char *output_fields[] = {
 };
 
 r_device rolling_code = {
-    .name        = "Rolling Code Transmitter (-f 315M)",
+    .name        = "Rolling Code Transmitter (-f 433.92M | 315M | 390M)",
     .modulation  = OOK_PULSE_PCM_RZ,
     .short_width = 500,  // trits are multiples of 500 uS in size
     .long_width  = 500,  // trits are multiples of 500 uS in size
     .reset_limit = 5000, // this is short enough so we only get 1 row
     .decode_fn   = &rolling_code_decode,
-    .disabled    = 1, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+    .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
     .fields      = output_fields,
 };
