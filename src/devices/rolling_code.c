@@ -96,7 +96,10 @@ static uint8_t get_trits(uint8_t packet_type, uint8_t *nibble_buffer, uint8_t *b
             else if (nibble == 0x03) nibble_buffer[nibble_index++] = 1;
             else if (nibble == 0x07) nibble_buffer[nibble_index++] = 2;
             else {
-                fprintf(stderr, "Unknown nibble %02x\n", nibble);
+                if (debug_output > 1) {
+                    fprintf(stderr, "Unknown nibble %02x\n", nibble);
+                }
+
                 return 1;
             }
         } else if (packet_type == LEGACY) {
@@ -104,14 +107,19 @@ static uint8_t get_trits(uint8_t packet_type, uint8_t *nibble_buffer, uint8_t *b
             else if (nibble == 0x0f) nibble_buffer[nibble_index++] = 1;
             else if (nibble == 0x3f) nibble_buffer[nibble_index++] = 2;
             else {
-                fprintf(stderr, "Unknown nibble %02x\n", nibble);
+                if (debug_output > 1) {
+                    fprintf(stderr, "Unknown nibble %02x\n", nibble);
+                }
+
                 return 1;
             }
         }
     }
 
     if (nibble_index != num_trits) {
-        fprintf(stderr, "Not enough bits for %d nibbles\n", num_trits);
+        if (debug_output > 1) {
+            fprintf(stderr, "Not enough bits for %d nibbles\n", num_trits);
+        }
 
         return 1;
     } else {
@@ -250,7 +258,10 @@ static int rolling_code_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      */
 
     if (get_trits(packet_type, trinary, b, &index, num_bits, debug_output)) {
-        fprintf(stderr, "get_trits failed\n");
+        if (debug_output > 1) {
+            fprintf(stderr, "get_trits failed\n");
+        }
+
         *prev_1_a_corrected = NOT_SET;
         *prev_1_r_raw = NOT_SET;
 
