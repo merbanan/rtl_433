@@ -26,6 +26,7 @@ stamp-h1
 libtool
 Doxyfile
 .dirstamp
+tags
 
 .tarball-version
 .version

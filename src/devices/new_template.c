@@ -79,7 +79,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * to determine if your limit settings are matched and firing
      * this decode callback.
      *
-     * 1. Enable with -D -D (debug level of 2)
+     * 1. Enable with -vvv (debug decoders)
      * 2. Delete this block when your decoder is working
      */
     //    if (decoder->verbose > 1) {
@@ -179,6 +179,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
     if (!parity) {
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
             fprintf(stderr, "%s: parity check failed\n", __func__);
         }
@@ -189,6 +190,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * Check message integrity (Checksum example)
      */
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
             fprintf(stderr, "%s: checksum error\n", __func__);
         }
@@ -203,7 +205,7 @@ static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     r_crc = b[7];
     c_crc = crc8(b, MYDEVICE_BITLEN / 8, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
     if (r_crc != c_crc) {
-        // example debugging output
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
             fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n",
                     __func__, c_crc, r_crc);
