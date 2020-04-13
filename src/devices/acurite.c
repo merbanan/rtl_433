@@ -221,7 +221,7 @@ Somewhat similar to 592TXR and 5-n-1 weather stations.
 Same pulse characteristics. checksum, and parity checking on data bytes.
 
     0   1   2   3   4   5   6   7   8
-    CI II  BB  HH  ST  TT  LL  DD? KK
+    CI II  BB  HH  ST  TT  LL  DD  KK
 
 - C = Channel
 - I = ID
@@ -265,25 +265,20 @@ Byte 5 - Temperature LSB (7 bits, 8th is parity)
 - 0x80 - even parity
 - 0x7F - Temperature least significant 7 bits
 
-Byte 6 - Lightning Strike count (7 bits, 8th is parity)
+Byte 6 - Lightning Strike count (7 of 8 bit, 8th is parity)
 - 0x80 - even parity
-- 0x7F - strike count (wraps at 127)
-   Stored in EEPROM (or something non-volatile)
-   @todo Does it go from 127 to 1, or to 0?
+- 0x7F - strike count (upper 7 bits) wraps at 255 -> 0
 
-Byte 7 - Edge of Storm Distance Approximation
-- Bits PSSDDDDD  (P = Parity, S = Status, D = Distance
+
+Byte 7 - Edge of Storm Distance Approximation & other bits
+- Bits PLRDDDDD  (P = Parity, S = Status, D = Distance
 - 0x80 - even parity
-- 0x40 - USSB1 (unknown strike status bit) - (possible activity?)
-   currently decoded into "ussb1" output field
-   @todo needs understanding
+- 0x40 - LSB of 8 bit strike counter
 - 0x20 - RFI (radio frequency interference)
-   @todo needs cross-checking with light and/or console
 - 0x1F - distance to edge of storm (theory)
    value 0x1f is possible invalid value indication (value at power up)
-   @todo determine if miles, km, or something else
-   Note: Distance sometimes goes to 0 right after strike counter increment.
-         Status bits might indicate validity of distance.
+   @todo determine mapping function/table.
+
 
 Byte 8 - checksum. 8 bits, no parity.
 
@@ -294,14 +289,14 @@ Data fields:
     Somewhat correlates with the Yellow LED, but stays set longer
     Short periods of RFI on is normal
     long periods of RFI means interference, solid yellow, relocate sensor
-- Strike count - count of detection events, 7 bits, non-volatile
+- Strike count - count of detection events, 8 bits, non-volatile
+    counts up to 255, wraps back to 0.
+    Stored in EEPROM (or something non-volatile), doesn't reset at power up
 - Distance to edge of storm - See AS3935 documentation.
     sensor will make a distance estimate with each strike event.
     Units unknown, data needed from people with Acurite consoles
     0x1f (31) is invalid/undefined value, consumers should check for this.
-- USSB1 - Unknown Strike Status Bit
-    May indicate validity of distance estimate, cleared after sensor beeps
-    Might need to also correlate against RFI bit.
+    Only 5 bits available, needs to cover range of 25 miles/40 KM per spec.
 - exception - bits that were invariant for me have changed.
     save raw_msg for further examination.
 
@@ -344,10 +339,11 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // Available range given encoding with 12 bits -150.0 F to +259.6 F
     int temp_raw = ((bb[4] & 0x1F) << 7) | (bb[5] & 0x7F);
     tempf = (temp_raw - 1500) * 0.1;
-    strike_count = bb[6] & 0x7f;
+
+    // Strike count is 8 bits, LSB in following byte
+    strike_count = ((bb[6] & 0x7f) << 1) | ((bb[7] & 0x40) >> 6);
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
-    ussb1 = (bb[7] & 0x40) == 0x40;
     l_status = (bb[7] & 0x60) >> 5;
 
     /*
@@ -396,7 +392,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "storm_dist",       "storm_distance",   DATA_INT,    strike_distance,
             "active",           "active_mode",      DATA_INT,    active,    // @todo convert to bool
             "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,     // @todo convert to bool
-            "ussb1",            "unk_status1",      DATA_INT,    ussb1,    // @todo convert to bool
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
             NULL);
