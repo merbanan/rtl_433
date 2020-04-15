@@ -32,7 +32,7 @@
  * C = Check, inverted data of 13 byte further
  * uu = checksum (number/count of set bits within bytes 14-25)
  * I = station ID (maybe)
- * G = wind gust in 1/10 m/s, BCD coded, GGG = 123 => 12.3 m/s
+ * G = wind gust in 1/10 m/s, BCD coded, GGG = 0x063 = 99 => 9.9 m/s
  * D = wind direction 0..F = N..NNE..E..S..W..NNW
  * W = wind speed in 1/10 m/s, BCD coded, WWW = 123 => 12.3 m/s
  * T = temperature in 1/10 °C, BCD coded, TTxT = 1203 => 31.2 °C
@@ -102,7 +102,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     float wind_direction_deg = ((msg[17] & 0xf0) >> 4) * 22.5f;
 
-    int gust_raw = (msg[16] & 0x0f) + ((msg[16] & 0xf0) >> 4) * 10 + (msg[15] & 0x0f) * 100;
+    uint16_t gust_raw = ((msg[15] & 0x7f) << 8) + msg[16]; //Ignores inital bit of msg[15]
     float wind_gust = gust_raw * 0.1f;
 
     int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[17] & 0x0f) * 100;
