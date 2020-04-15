@@ -27,14 +27,15 @@
  * ed 93 7f f7 cf f7 ef ed fc ce bf ff ff 12 6c 80 08 30 08 10 12 03 31 40 00 00
  * f1 fd 7f ff af ff ef bd fd b7 c9 ff ff 0e 02 80 00 50 00 10 42 02 48 36 00 00 00 00 (from https://github.com/merbanan/rtl_433/issues/719#issuecomment-388896758)
  * ee b7 7f ff 1f ff ef cb fe 7b d7 fc ff 11 48 80 00 e0 00 10 34 01 84 28 03 00 (from https://github.com/andreafabrizi/BresserWeatherCenter)
- * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II  G GG DW WW    TT  T HH RR  R  t
- *
+ * e3 fd 7f 89 7e 8a ed 68 fe af 9b fd ff 1c 02 80 76 81 75 12 97 01 50 64 02 00 00 00 (Large Wind Values, Gust=37.4m/s Avg=27.5m/s from https://github.com/merbanan/rtl_433/issues/1315)
+ * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II    GG DG WW  W TT  T HH RR  R  t
+ *                                               G-MSB ^     ^ W-MSB  (strange but consistent order)
  * C = Check, inverted data of 13 byte further
  * uu = checksum (number/count of set bits within bytes 14-25)
  * I = station ID (maybe)
- * G = wind gust in 1/10 m/s, BCD coded, GGG = 0x063 = 99 => 9.9 m/s
+ * G = wind gust in 1/10 m/s, normal binary coded, GGxG = 0x76D1 => 0x0176 = 256 + 118 = 374 => 37.4 m/s.  MSB is out of sequence.
  * D = wind direction 0..F = N..NNE..E..S..W..NNW
- * W = wind speed in 1/10 m/s, BCD coded, WWW = 123 => 12.3 m/s
+ * W = wind speed in 1/10 m/s, BCD coded, WWxW = 0x7512 => 0x0275 = 275 => 27.5 m/s. MSB is out of sequence.
  * T = temperature in 1/10 °C, BCD coded, TTxT = 1203 => 31.2 °C
  * t = temperature sign, minus if unequal 0
  * H = humidity in percent, BCD coded, HH = 23 => 23 %
@@ -102,10 +103,10 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     float wind_direction_deg = ((msg[17] & 0xf0) >> 4) * 22.5f;
 
-    uint16_t gust_raw = ((msg[15] & 0x7f) << 8) + msg[16]; //Ignores inital bit of msg[15]
+    int gust_raw = ((msg[17] & 0x0f) << 8) + msg[16]; //fix merbanan/rtl_433#1315
     float wind_gust = gust_raw * 0.1f;
 
-    int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[17] & 0x0f) * 100;
+    int wind_raw = (msg[18] & 0x0f) + ((msg[18] & 0xf0) >> 4) * 10 + (msg[19] & 0x0f) * 100; //fix merbanan/rtl_433#1315
     float wind_avg = wind_raw * 0.1f;
 
     int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
