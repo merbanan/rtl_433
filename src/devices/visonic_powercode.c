@@ -36,7 +36,7 @@ Powercode packet structure is 37 bits. 4 examples follow
 
 Checksum is a londitudinal redundancy check of the 4 bytes containing the device ID and data.
 Bytes are split into nibbles. 1st bit of each nibble is XORed and result is 1st bit of checksum,
-then the same for the 2nd, 3rd and 4th bits. To be implemented.
+then the same for the 2nd, 3rd and 4th bits.
 
 Protocol cribbed from:
  * Visonic MCR-300 UART Manual http://www.el-sys.com.ua/wp-content/uploads/MCR-300_UART_DE3140U0.pdf
@@ -52,8 +52,10 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[32];
     data_t *data;
     char id[7];
+    uint8_t lrc_calculated = 0x00;
+    uint8_t lrc            = 0xff;
 
-    // 37 bits expected, 6 packet repetitions, accept 4 
+    // 37 bits expected, 6 packet repetitions, accept 4
     int row = bitbuffer_find_repeated_row(bitbuffer, 4, 37);
 
     // exit if anything other than one row returned (-1 if failed)
@@ -61,21 +63,39 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     // exit if incorrect number of bits in row or none
-    if (bitbuffer->bits_per_row[row] !=37)
+    if (bitbuffer->bits_per_row[row] != 37)
         return DECODE_ABORT_LENGTH;
 
     // extract message, drop leading start bit and trailing LRC nibble
-    bitbuffer_extract_bytes(bitbuffer, 0, 1, msg, 32);
+    bitbuffer_extract_bytes(bitbuffer, row, 1, msg, 32);
 
-    // TODO: validate checksum here using LRC nibble
+    // extract LRC bits
+    bitbuffer_extract_bytes(bitbuffer, row, 33, &lrc, 4);
+    // Take high nibble of lrc
+    lrc            = (lrc & 0xf0) >> 4;
+    lrc_calculated = 0;
+    for (int i = 0; i < 4; i++) {
+        // low nibble
+        lrc_calculated ^= (msg[i] & 0xf);
+        // high nibble
+        lrc_calculated ^= ((msg[i] & 0xf0) >> 4);
+    }
+    lrc_calculated &= 0x0f;
+
+    if (lrc != lrc_calculated)
+        return DECODE_FAIL_MIC;
+
+    if (decoder->verbose > 1) {
+        fprintf(stderr, "%s: MIC: lrc: %#x, calculated lrc: %#x\n", __func__, lrc, lrc_calculated);
+    }
 
     // debug
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: data byte is %02x\n",__func__,msg[3]);
+        fprintf(stderr, "%s: data byte is %02x\n", __func__, msg[3]);
     }
 
     // format device id
-    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]); 
+    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]);
 
     // populate data byte fields
     /* clang-format off */
@@ -120,6 +140,6 @@ r_device visonic_powercode = {
         .gap_limit   = 900,
         .reset_limit = 5000,
         .decode_fn   = &visonic_powercode_decode,
-        .disabled    = 1,
+        .disabled    = 0,
         .fields      = output_fields,
 };
