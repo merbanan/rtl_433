@@ -28,7 +28,10 @@
  * f1 fd 7f ff af ff ef bd fd b7 c9 ff ff 0e 02 80 00 50 00 10 42 02 48 36 00 00 00 00 (from https://github.com/merbanan/rtl_433/issues/719#issuecomment-388896758)
  * ee b7 7f ff 1f ff ef cb fe 7b d7 fc ff 11 48 80 00 e0 00 10 34 01 84 28 03 00 (from https://github.com/andreafabrizi/BresserWeatherCenter)
  * e3 fd 7f 89 7e 8a ed 68 fe af 9b fd ff 1c 02 80 76 81 75 12 97 01 50 64 02 00 00 00 (Large Wind Values, Gust=37.4m/s Avg=27.5m/s from https://github.com/merbanan/rtl_433/issues/1315)
- * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II    GG DG WW  W TT  T HH RR  R  t
+ * ef a1 ff ff 1f ff ef dc ff de df ff 7f 10 5e 00 00 e0 00 10 23 00 21 20 00 80 00 00 (low batt +ve temp)
+ * ed a1 ff ff 1f ff ef 8f ff d6 df ff 77 12 5e 00 00 e0 00 10 70 00 29 20 00 88 00 00 (low batt -ve temp -7.0C)
+ * ec 91 ff ff 1f fb ef e7 fe ad ed ff f7 13 6e 00 00 e0 04 10 18 01 52 12 00 08 00 00 (good batt -ve temp)
+ * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II    GG DG WW  W TT  T HH RR  R Bt
  *                                               G-MSB ^     ^ W-MSB  (strange but consistent order)
  * C = Check, inverted data of 13 byte further
  * uu = checksum (number/count of set bits within bytes 14-25)
@@ -40,6 +43,7 @@
  * t = temperature sign, minus if unequal 0
  * H = humidity in percent, BCD coded, HH = 23 => 23 %
  * R = rain in mm, BCD coded, RRxR = 1203 => 31.2 mm
+ * B = Battery. 0=Ok, 8=Low.
  *
  */
 
@@ -111,10 +115,13 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
     float rain = rain_raw * 0.1f;
+    
+    int battery_ok = ((msg[25] & 0x80) == 0);
 
     data = data_make(
             "model",            "",             DATA_STRING, "Bresser-5in1",
             "id",               "",             DATA_INT,    sensor_id,
+            "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_INT, humidity,
             _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
@@ -132,6 +139,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
+    "battery",
     "temperature_C",
     "humidity",
     "wind_gust", // TODO: delete this
