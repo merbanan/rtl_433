@@ -158,7 +158,7 @@
     DECL(dsc_security_ws4945) \
     DECL(ert_amr) \
     DECL(klimalogg) \
-    DECL(visonic_powercode)
+    DECL(visonic_powercode) \
 
     /* Add new decoders here. */
 
