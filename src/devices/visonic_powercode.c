@@ -52,8 +52,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[32];
     data_t *data;
     char id[7];
-    uint8_t lrc_calculated = 0x00;
-    uint8_t lrc            = 0xff;
+    uint8_t lrc;
 
     // 37 bits expected, 6 packet repetitions, accept 4
     int row = bitbuffer_find_repeated_row(bitbuffer, 4, 37);
@@ -66,28 +65,11 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[row] != 37)
         return DECODE_ABORT_LENGTH;
 
-    // extract message, drop leading start bit and trailing LRC nibble
-    bitbuffer_extract_bytes(bitbuffer, row, 1, msg, 32);
-
-    // extract LRC bits
-    bitbuffer_extract_bytes(bitbuffer, row, 33, &lrc, 4);
-    // Take high nibble of lrc
-    lrc            = (lrc & 0xf0) >> 4;
-    lrc_calculated = 0;
-    for (int i = 0; i < 4; i++) {
-        // low nibble
-        lrc_calculated ^= (msg[i] & 0xf);
-        // high nibble
-        lrc_calculated ^= ((msg[i] & 0xf0) >> 4);
-    }
-    lrc_calculated &= 0x0f;
-
-    if (lrc != lrc_calculated)
-        return DECODE_FAIL_MIC;
-
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: MIC: lrc: %#x, calculated lrc: %#x\n", __func__, lrc, lrc_calculated);
-    }
+    // extract message, drop leading start bit, include trailing LRC nibble
+    bitbuffer_extract_bytes(bitbuffer, row, 1, msg, 36);
+    lrc = xor_bytes(msg, 5);
+    if (((lrc >> 4) ^ (lrc & 0xf)) != 0)
+       return DECODE_FAIL_MIC;
 
     // debug
     if (decoder->verbose > 1) {
