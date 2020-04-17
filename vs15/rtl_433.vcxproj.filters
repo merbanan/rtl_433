@@ -288,7 +288,7 @@
     </ClCompile>
     <ClCompile Include="..\src\devices\ert.c">
       <Filter>Source Files\devices</Filter>
-    </ClCompile> 
+    </ClCompile>
     <ClCompile Include="..\src\devices\esa.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -551,6 +551,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\visonic_powercode.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\waveman.c">
