@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """rtl_433 maintainer updates to build files and docs."""
 
@@ -46,9 +46,9 @@ def replace_block(from_pattern, to_pattern, repl, filepath):
 def get_help_text(option):
     try:
         help_text = subprocess.check_output(
-            ["./build/src/rtl_433", "-c", "0", option], stderr=subprocess.STDOUT)
+            ["./build/src/rtl_433", "-c", "0", option], stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
-        help_text = e.output
+        help_text = e.output.decode('utf-8')
 
     # trim help text
     help_text = re.sub(r'(?s).*Usage:', '', help_text)
