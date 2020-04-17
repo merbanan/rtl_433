@@ -272,6 +272,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\ts_ft002.c" />
     <ClCompile Include="..\src\devices\ttx201.c" />
     <ClCompile Include="..\src\devices\vaillant_vrt340f.c" />
+    <ClCompile Include="..\src\devices\visonic_powercode.c" />
     <ClCompile Include="..\src\devices\waveman.c" />
     <ClCompile Include="..\src\devices\wg_pb12v1.c" />
     <ClCompile Include="..\src\devices\ws2032.c" />

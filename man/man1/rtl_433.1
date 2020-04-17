@@ -80,14 +80,8 @@ Enable blacklisted device decoding protocols, for testing only.
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-l\fI <level>\fP ]
-Change detection level used to determine pulses (0\-16384) (0=auto) (default: 0)
-.TP
-[ \fB\-z\fI <value>\fP ]
-Override short value in data decoder
-.TP
-[ \fB\-x\fI <value>\fP ]
-Override long value in data decoder
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
 .TP
 [ \fB\-n\fI <value>\fP ]
 Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
@@ -144,6 +138,9 @@ Hop/Quit after outputting successful event(s)
 [ \fB\-h\fI\fP ]
 Output this usage help and exit
        Use \-d, \-g, \-R, \-X, \-F, \-M, \-r, \-w, or \-W without argument for more help
+
+
+R'
 .SS "Supported device protocols"
 .TP
 [ \fB01\fI\fP ]
@@ -573,13 +570,17 @@ TFA Drop Rain Gauge 30.3233.01
 DSC Security Contact (WS4945)
 .TP
 [ \fB149\fI\fP ]
-ERT SCM
+ERT
 .TP
-[ \fB149\fI\fP ]
-Klimalogg/30.3180.IT
-
+[ \fB150\fI\fP ]
+* Klimalogg
+.TP
+[ \fB151\fI\fP ]
+Visonic powercode
 
 * Disabled by default, use \-R n or \-G
+
+d'
 .SS "Input device selection"
 .RS
 RTL\-SDR device driver is available.
@@ -610,6 +611,8 @@ To set gain for SoapySDR use \-g ELEM=val,ELEM=val,... e.g. \-g LNA=20,TIA=8,PGA
 .RS
 Specify host/port to connect to with e.g. \-d rtl_tcp:127.0.0.1:1234
 .RE
+
+g'
 .SS "Gain option"
 .TP
 [ \fB\-g\fI <gain>\fP ]
@@ -623,6 +626,8 @@ For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of g
 .RS
 E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
 .RE
+
+X'
 .SS "Flex decoder spec"
 Use \-X <spec> to add a flexible general purpose decoder.
 
@@ -737,6 +742,9 @@ countonly : suppress detailed row output
 .RE
 
 E.g. \-X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
+
+
+F'
 .SS "Output format option"
 .TP
 [ \fB\-F\fI kv|json|csv|mqtt|influx|syslog|null\fP ]
@@ -792,6 +800,8 @@ Specify InfluxDB 1.x server with e.g. \-F "influx://localhost:8086/write?db=<db>
 .RS
 Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .RE
+
+M'
 .SS "Meta information option"
 .TP
 [ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|oldmodel\fP ]
@@ -844,6 +854,8 @@ Use "bits" to add bit representation to code outputs (for debug).
 .RS
 Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 .RE
+
+r'
 .SS "Read file option"
 .TP
 [ \fB\-r\fI <filename>\fP ]
@@ -893,6 +905,8 @@ Reading from pipes also support format options.
 .RS
 E.g reading complex 32\-bit float: CU32:\-
 .RE
+
+w'
 .SS "Write file option"
 .TP
 [ \fB\-w\fI <filename>\fP ]
