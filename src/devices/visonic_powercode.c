@@ -100,16 +100,17 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // populate data byte fields
     /* clang-format off */
     data = data_make(
-            "model", "Model"          , DATA_STRING, "Visonic-Powercode",
-            "id", "ID"                , DATA_STRING, id,
-            "tamper", "Tamper"        , DATA_INT, ((0x80 & msg[3]) == 0x80) ? 1 : 0,
-            "alarm", "Alarm"          , DATA_INT, ((0x40 & msg[3]) == 0x40) ? 1 : 0,
-            "battery", "Low Battery"  , DATA_INT, ((0x20 & msg[3]) == 0x20) ? 1 : 0,
-            "else", "Else"            , DATA_INT, ((0x10 & msg[3]) == 0x10) ? 1 : 0,
-            "restore", "Restore"      , DATA_INT, ((0x08 & msg[3]) == 0x08) ? 1 : 0,
-            "supervised", "Supervised", DATA_INT, ((0x04 & msg[3]) == 0x04) ? 1 : 0,
-            "spidernet", "Spidernet"  , DATA_INT, ((0x02 & msg[3]) == 0x02) ? 1 : 0,
-            "repeater", "Repeater"    , DATA_INT, ((0x01 & msg[3]) == 0x01) ? 1 : 0,
+            "model",      "Model"      , DATA_STRING, "Visonic-Powercode",
+            "id",         "ID"         , DATA_STRING, id,
+            "tamper",     "Tamper"     , DATA_INT,    ((0x80 & msg[3]) == 0x80) ? 1 : 0,
+            "alarm",      "Alarm"      , DATA_INT,    ((0x40 & msg[3]) == 0x40) ? 1 : 0,
+            "battery",    "Low Battery", DATA_INT,    ((0x20 & msg[3]) == 0x20) ? 1 : 0,
+            "else",       "Else"       , DATA_INT,    ((0x10 & msg[3]) == 0x10) ? 1 : 0,
+            "restore",    "Restore"    , DATA_INT,    ((0x08 & msg[3]) == 0x08) ? 1 : 0,
+            "supervised", "Supervised" , DATA_INT,    ((0x04 & msg[3]) == 0x04) ? 1 : 0,
+            "spidernet",  "Spidernet"  , DATA_INT,    ((0x02 & msg[3]) == 0x02) ? 1 : 0,
+            "repeater",   "Repeater"   , DATA_INT,    ((0x01 & msg[3]) == 0x01) ? 1 : 0,
+            "mic",        "Integrity"  , DATA_STRING, "LRC",
             NULL);
     /* clang-format on */
 
@@ -129,6 +130,7 @@ static char *output_fields[] = {
         "supervised",
         "spidernet",
         "repeater",
+        "mic",
         NULL,
 };
 
