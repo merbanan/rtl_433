@@ -6,7 +6,6 @@
 # It is strongly recommended to run rtl_433 with "-C si" and "-M newmodel".
 
 # Needs Paho-MQTT https://pypi.python.org/pypi/paho-mqtt
-
 # Option: PEP 3143 - Standard daemon process library
 # (use Python 3.x or pip install python-daemon)
 # import daemon
@@ -76,6 +75,17 @@ mappings = {
             "name": "Battery",
             "unit_of_measurement": "%",
             "value_template": "{{ float(value_json.battery_ok) * 99 + 1 }}"
+        }
+    },
+
+    "battery": {
+        "device_type": "binary_sensor",
+        "object_suffix": "battery",
+        "config": {
+            "device_class": "battery",
+            "name": "Battery",
+            "payload_on": "1",
+            "payload_off": "0"
         }
     },
 
@@ -189,9 +199,55 @@ mappings = {
         }
     },
 
-    # motion...
+    "tamper": {
+        "device_type": "binary_sensor",
+        "object_suffix": "tamper",
+        "config": {
+            "device_class": "safety",
+            "payload_on": "1",
+            "payload_off": "0"
+        }
+    },
 
-    # switches...
+    "alarm": {
+        "device_type": "binary_sensor",
+        "object_suffix": "alarm",
+        "config": {
+            "device_class": "safety",
+            "payload_on": "1",
+            "payload_off": "0"
+        }
+    },
+
+    "rssi": {
+        "device_type": "sensor",
+        "object_suffix": "rssi",
+        "config": {
+            "device_class": "signal_strength",
+            "unit_of_measurement": "dB",
+            "value_template": "{{ value }}"
+        }
+    },
+
+    "snr": {
+        "device_type": "sensor",
+        "object_suffix": "snr",
+        "config": {
+            "device_class": "signal_strength",
+            "unit_of_measurement": "dB",
+            "value_template": "{{ value }}"
+        }
+    },
+
+    "noise": {
+        "device_type": "sensor",
+        "object_suffix": "noise",
+        "config": {
+            "device_class": "signal_strength",
+            "unit_of_measurement": "dB",
+            "value_template": "{{ value }}"
+        }
+    },
 
     "depth_cm": {
         "device_type": "sensor",
@@ -203,6 +259,7 @@ mappings = {
             "value_template": "{{ value_json.depth_cm }}"
         }
     },
+
 }
 
 
@@ -225,7 +282,8 @@ def mqtt_message(client, userdata, msg):
     try:
         # Decode JSON payload
         data = json.loads(msg.payload.decode())
-        bridge_event_to_hass(client, msg.topic, data)
+        topicprefix = "/".join(msg.topic.split("/", 2)[:2])
+        bridge_event_to_hass(client, topicprefix, data)
 
     except json.decoder.JSONDecodeError:
         print("JSON decode error: " + msg.payload.decode())
@@ -247,9 +305,10 @@ def publish_config(mqttc, topic, model, instance, mapping):
 
     device_type = mapping["device_type"]
     object_suffix = mapping["object_suffix"]
-    object_id = "-".join([model, instance, object_suffix])
+    object_id = "-".join([model, instance])
+    object_name = "-".join([object_id,object_suffix])
 
-    path = "/".join([DISCOVERY_PREFIX, device_type, object_id, "config"])
+    path = "/".join([DISCOVERY_PREFIX, device_type, object_id, object_name, "config"])
 
     # check timeout
     now = time.time()
@@ -260,13 +319,15 @@ def publish_config(mqttc, topic, model, instance, mapping):
     discovery_timeouts[path] = now + DISCOVERY_INTERVAL
 
     config = mapping["config"].copy()
+    config["name"] = object_name
     config["state_topic"] = topic
+    config["device"] = { "identifiers": instance, "name": object_id, "model": model }
 
     mqttc.publish(path, json.dumps(config))
     print(path, " : ", json.dumps(config))
 
 
-def bridge_event_to_hass(mqttc, topic, data):
+def bridge_event_to_hass(mqttc, topicprefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
     if "model" not in data:
@@ -287,6 +348,7 @@ def bridge_event_to_hass(mqttc, topic, data):
     # detect known attributes
     for key in data.keys():
         if key in mappings:
+            topic = "/".join([topicprefix,"devices",model,instance,key])
             publish_config(mqttc, topic, model, instance, mappings[key])
 
 
