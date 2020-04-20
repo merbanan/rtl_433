@@ -55,6 +55,8 @@
 
 struct sdr_dev {
     SOCKET rtl_tcp;
+    uint32_t rtl_tcp_freq; ///< last known center frequency, rtl_tcp only.
+    uint32_t rtl_tcp_rate; ///< last known sample rate, rtl_tcp only.
 
 #ifdef SOAPYSDR
     SoapySDRDevice *soapy_dev;
@@ -846,8 +848,10 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 {
     int r = -1;
 
-    if (dev->rtl_tcp)
+    if (dev->rtl_tcp) {
+        dev->rtl_tcp_freq = freq;
         r = rtltcp_command(dev, RTLTCP_SET_FREQ, freq);
+    }
 
 #ifdef SOAPYSDR
     SoapySDRKwargs args = {0};
@@ -872,6 +876,9 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 
 uint32_t sdr_get_center_freq(sdr_dev_t *dev)
 {
+    if (dev->rtl_tcp)
+        return dev->rtl_tcp_freq;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         return (int)SoapySDRDevice_getFrequency(dev->soapy_dev, SOAPY_SDR_RX, 0);
@@ -916,7 +923,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
     int r = -1;
 
     if (dev->rtl_tcp)
-        rtltcp_command(dev, RTLTCP_SET_GAIN_MODE, 0);
+        r = rtltcp_command(dev, RTLTCP_SET_GAIN_MODE, 0);
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1017,8 +1024,10 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 {
     int r = -1;
 
-    if (dev->rtl_tcp)
+    if (dev->rtl_tcp) {
+        dev->rtl_tcp_rate = rate;
         r = rtltcp_command(dev, RTLTCP_SET_SAMPLE_RATE, rate);
+    }
 
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
@@ -1041,6 +1050,9 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 
 uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 {
+    if (dev->rtl_tcp)
+        return dev->rtl_tcp_rate;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev)
         return (int)SoapySDRDevice_getSampleRate(dev->soapy_dev, SOAPY_SDR_RX, 0);
