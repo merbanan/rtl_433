@@ -93,6 +93,15 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, i
 
     fprintf(stderr, "rtl_tcp input from %s port %s\n", host, port);
 
+#ifdef _WIN32
+    WSADATA wsa;
+
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+        perror("WSAStartup()");
+        return -1;
+    }
+#endif
+
     struct addrinfo hints, *res, *res0;
     int ret;
     SOCKET sock;
