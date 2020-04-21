@@ -78,17 +78,6 @@ mappings = {
         }
     },
 
-    "battery": {
-        "device_type": "binary_sensor",
-        "object_suffix": "battery",
-        "config": {
-            "device_class": "battery",
-            "name": "Battery",
-            "payload_on": "1",
-            "payload_off": "0"
-        }
-    },
-
     "humidity": {
         "device_type": "sensor",
         "object_suffix": "H",
