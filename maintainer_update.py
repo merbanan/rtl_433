@@ -2,7 +2,6 @@
 
 """rtl_433 maintainer updates to build files and docs."""
 
-from __future__ import print_function
 import os
 import subprocess
 import glob
@@ -52,7 +51,7 @@ def get_help_text(option):
 
     # trim help text
     help_text = re.sub(r'(?s).*Usage:', '', help_text)
-    help_text = re.sub(r'(?s).*option requires an argument -- .', '', help_text)
+    help_text = re.sub(r'(?s).*option requires an argument -- \'?.\'?', '', help_text)
     # help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'### \1', help_text)
     return help_text
 
