@@ -78,7 +78,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Use -d, -g, -R, -X, -F, -M, -r, -w, or -W without argument for more help
 
 
-R'
+
 		= Supported device protocols =
     [01]  Silvercrest Remote Control
     [02]  Rubicson Temperature Sensor
@@ -228,7 +228,7 @@ R'
 
 * Disabled by default, use -R n or -G
 
-d'
+
 		= Input device selection =
 	RTL-SDR device driver is available.
   [-d <RTL-SDR USB device index>] (default: 0)
@@ -241,14 +241,14 @@ d'
   [-d rtl_tcp[:[//]host[:port]] (default: localhost:1234)
 	Specify host/port to connect to with e.g. -d rtl_tcp:127.0.0.1:1234
 
-g'
+
 		= Gain option =
   [-g <gain>] (default: auto)
 	For RTL-SDR: gain in dB ("0" is auto).
 	For SoapySDR: gain in dB for automatic distribution ("" is auto), or string of gain elements.
 	E.g. "LNA=20,TIA=8,PGA=2" for LimeSDR.
 
-X'
+
 		= Flex decoder spec =
 Use -X <spec> to add a flexible general purpose decoder.
 
@@ -305,7 +305,7 @@ Available options are:
 E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repeats>=3"
 
 
-F'
+
 		= Output format option =
   [-F kv|json|csv|mqtt|influx|syslog|null] Produce decoded output in given format.
 	Without this option the default is KV output. Use "-F null" to remove the default.
@@ -326,7 +326,7 @@ F'
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
 	Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
 
-M'
+
 		= Meta information option =
   [-M time[:<options>]|protocol|level|stats|bits|oldmodel] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
@@ -346,7 +346,7 @@ M'
 	Use "bits" to add bit representation to code outputs (for debug).
 	Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 
-r'
+
 		= Read file option =
   [-r <filename>] Read data from input file instead of a receiver
 	Parameters are detected from the full path, file name, and extension.
@@ -369,7 +369,7 @@ r'
 	Reading from pipes also support format options.
 	E.g reading complex 32-bit float: CU32:-
 
-w'
+
 		= Write file option =
   [-w <filename>] Save data stream to output file (a '-' dumps samples to stdout)
   [-W <filename>] Save data stream to output file, overwrite existing file
