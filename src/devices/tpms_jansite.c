@@ -32,7 +32,6 @@ Data layout (nibbles):
 static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
@@ -42,7 +41,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int temperature;
     char code_str[7 * 2 + 1];
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
     b = packet_bits.bb[0];
 
     // TODO: validate checksum
@@ -80,17 +79,21 @@ static int tpms_jansite_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble_pattern[3] = {0xaa, 0xaa, 0xa9}; // after invert
 
     unsigned bitpos = 0;
+    int ret         = 0;
     int events      = 0;
 
     bitbuffer_invert(bitbuffer);
+
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24)) + 80 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_jansite_decode(decoder, bitbuffer, 0, bitpos + 24);
+        ret = tpms_jansite_decode(decoder, bitbuffer, 0, bitpos + 24);
+        if (ret > 0)
+            events += ret;
         bitpos += 2;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

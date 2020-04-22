@@ -21,7 +21,7 @@ Data layout:
 
 - F: 4 bit fixed message format
 - I: 8 bit device id
-- T: 12 bit temperature, offset 40 scale 10, i.e. 0.1C steps -40C
+- T: 12 bit temperature, offset 40 scale 10, i.e. 0.1C steps -40C (top 2 bits are sign, discard)
 - H: 8 bit humidity percent
 - S: 8 bit wind speed, 0.34m/s steps
 - G: 8 bit gust speed, 0.34m/s steps
@@ -119,7 +119,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int preamble;         // 7 or 8 preamble bits
 
     if (bitbuffer->num_rows != 1) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     if (bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
@@ -150,7 +150,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         br      = bbuf;
     }
     else {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     if (decoder->verbose) {
@@ -158,17 +158,17 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (br[0] != 0xff) {
-        return 0; // preamble missing
+        return DECODE_FAIL_SANITY; // preamble missing
     }
 
     if (sens_msg == 10) {
         if (crc8(br, 11, 0x31, 0xff)) { // init is 0 if we skip the preamble
-            return 0; // crc mismatch
+            return DECODE_FAIL_MIC; // crc mismatch
         }
     }
     else {
         if (crc8(br, 8, 0x31, 0xff)) { // init is 0 if we skip the preamble
-            return 0; // crc mismatch
+            return DECODE_FAIL_MIC; // crc mismatch
         }
     }
 
@@ -184,11 +184,11 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         // 0x03 is WH0530, Alecto WS-1200
         // 0x05 is Alecto WS-1200 DCF77
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     // GETTING WEATHER SENSORS DATA
-    int temp_raw      = ((br[2] & 0x0f) << 8) | br[3];
+    int temp_raw      = ((br[2] & 0x03) << 8) | br[3]; // only 10 bits, discard top bits
     float temperature = (temp_raw - 400) * 0.1;
     int humidity      = br[4];
     int direction_deg = wind_dir_degr[br[9] & 0x0f];
@@ -234,7 +234,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
-                "direction_deg",    "Wind degrees",     DATA_INT,       direction_deg,
+                _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
                 _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
                 _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
                 _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
@@ -283,7 +283,8 @@ static char *output_fields[] = {
         "battery",
         "temperature_C",
         "humidity",
-        "direction_deg",
+        "direction_deg", // TODO: remove this
+        "wind_dir_deg",
         "speed", // TODO: remove this
         "gust",  // TODO: remove this
         "wind_avg_km_h",
@@ -298,6 +299,7 @@ static char *output_fields[] = {
         "uv_index",
         "lux",
         "wm",
+        "mic",
         NULL,
 };
 

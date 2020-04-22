@@ -146,7 +146,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // discard short / unwanted bitbuffers
     if ((bitbuffer->num_rows < params->min_rows)
             || (params->max_rows && bitbuffer->num_rows > params->max_rows))
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
         if ((bitbuffer->bits_per_row[i] >= params->min_bits)
@@ -154,13 +154,13 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             match_count++;
     }
     if (!match_count)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // discard unless min_repeats, min_bits
     // TODO: check max_repeats, max_bits
     int r = bitbuffer_find_repeated_row(bitbuffer, params->min_repeats, params->min_bits);
     if (r < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
     // TODO: set match_count to count of repeated rows
 
     if (params->invert) {
@@ -188,7 +188,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
         if (!match_count)
-            return 0;
+            return DECODE_FAIL_SANITY;
     }
 
     // discard unless match, this should be an AND condition
@@ -210,7 +210,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
         if (!match_count)
-            return 0;
+            return DECODE_FAIL_SANITY;
     }
 
     if (decoder->verbose) {
@@ -429,7 +429,7 @@ const char *parse_map(const char *arg, struct flex_get *getter)
 
         // then parse a string
         const char *e = c;
-        while (*e != ' ' && *e != ']') e++;
+        while (*e && *e != ' ' && *e != ']') e++;
         val = malloc(e - c + 1);
         if (!val)
             WARN_MALLOC("parse_map()");

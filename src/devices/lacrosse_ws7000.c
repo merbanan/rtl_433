@@ -53,12 +53,12 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 8) + 8;
     if (start_pos >= bitbuffer->bits_per_row[0])
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     unsigned max_bits = MIN(14 * 5, bitbuffer->bits_per_row[0] - start_pos);
     unsigned len      = extract_nibbles_4b1s(bitbuffer->bb[0], start_pos, max_bits, b);
     if (len < 7) // at least type, addr, 3 data, xor, add nibbles needed
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     reflect_nibbles(b, len);
 
@@ -69,28 +69,28 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (type > 5) {
         if (decoder->verbose > 1)
             fprintf(stderr, "LaCrosse-WS7000: unhandled sensor type (%d)\n", type);
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     unsigned data_len = data_size[type];
     if (len < data_len) {
         if (decoder->verbose > 1)
             fprintf(stderr, "LaCrosse-WS7000: short data (%u of %u)\n", len, data_len);
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // check xor sum
     if (xor_bytes(b, len - 1)) {
         if (decoder->verbose > 1)
             fprintf(stderr, "LaCrosse-WS7000: checksum error (xor)\n");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // check add sum (all nibbles + 5)
     if (((add_bytes(b, len - 1) + 5) & 0xf) != b[len - 1]) {
         if (decoder->verbose > 1)
             fprintf(stderr, "LaCrosse-WS7000: checksum error (add)\n");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     if (type == 0) {
@@ -214,7 +214,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0; // should not be reached
+    return DECODE_FAIL_SANITY; // should not be reached
 }
 
 static char *output_fields[] = {

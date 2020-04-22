@@ -72,7 +72,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "%s: wrong number of rows (%d)\n",
                     __func__, bitbuffer->num_rows);
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /* Correct bit length? */
@@ -81,7 +81,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "%s: wrong number of bits (%d)\n",
                     __func__, bitbuffer->bits_per_row[0]);
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     bb = bitbuffer->bb[0];
@@ -91,7 +91,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: wrong start nibble\n", __func__);
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /* Compare and combine the 3 repeated packets, with majority wins */
@@ -116,7 +116,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             fprintf(stderr, "%s: CRC failed, calculated %x\n",
                     __func__, c_crc);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /* Message validated, now parse the data */

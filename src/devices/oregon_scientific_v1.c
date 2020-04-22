@@ -27,7 +27,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != OSV1_BITS)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         cs = 0;
         for (i = 0; i < OSV1_BITS / 8; i++) {
@@ -40,8 +40,9 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 
         cs = (cs & 0xFF) + (cs >> 8);
         checksum = nibble[6] + (nibble[7] << 4);
-        if (checksum != cs)
-            continue;
+        /* reject 0x00 checksums to reduce false positives */
+        if (!checksum || (checksum != cs))
+            continue; // DECODE_FAIL_MIC
 
         sid      = nibble[0];
         channel  = ((nibble[1] >> 2) & 0x03) + 1;
@@ -62,7 +63,8 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 "channel",      "Channel",      DATA_INT,       channel,
                 "battery",      "Battery",      DATA_STRING,    battery ? "LOW" : "OK",
                 "temperature_C","Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
-                NULL);
+                "mic",          "Integrity",    DATA_STRING,    "CHECKSUM",
+            NULL);
         decoder_output_data(decoder, data);
         ret++;
     }

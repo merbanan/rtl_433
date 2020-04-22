@@ -165,6 +165,9 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
+    if (num_values < 0) {
+      return NULL;
+    }
     data_array_t *array = calloc(1, sizeof(data_array_t));
     if (!array) {
         WARN_CALLOC("data_array()");
@@ -172,13 +175,15 @@ data_array_t *data_array(int num_values, data_type_t type, void *values)
     }
 
     int element_size = dmt[type].array_element_size;
-    array->values    = calloc(num_values, element_size);
-    if (!array->values) {
-        WARN_CALLOC("data_array()");
-        goto alloc_error;
+    if (num_values > 0) { // don't alloc empty arrays
+        array->values = calloc(num_values, element_size);
+        if (!array->values) {
+            WARN_CALLOC("data_array()");
+            goto alloc_error;
+        }
+        if (!import_values(array->values, values, num_values, type))
+            goto alloc_error;
     }
-    if (!import_values(array->values, values, num_values, type))
-        goto alloc_error;
 
     array->num_values = num_values;
     array->type       = type;
@@ -479,7 +484,7 @@ static void print_json_string(data_output_t *output, const char *str, char const
 {
     fprintf(output->file, "\"");
     while (*str) {
-        if (*str == '"')
+        if (*str == '"' || *str == '\\')
             fputc('\\', output->file);
         fputc(*str, output->file);
         ++str;

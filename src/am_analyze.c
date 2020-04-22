@@ -45,7 +45,7 @@ void am_analyze_skip(am_analyze_t *a, unsigned n_samples)
 void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g)
 {
     unsigned int i;
-    int32_t threshold = (*a->level_limit ? *a->level_limit : 8000);  // Does not support auto level. Use old default instead.
+    int threshold = (a->level_limit ? a->level_limit : 8000);  // Does not support auto level. Use old default instead.
 
     for (i = 0; i < n_samples; i++) {
         if (am_buf[i] > threshold) {

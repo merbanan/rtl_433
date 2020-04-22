@@ -14,6 +14,7 @@
 #define INCLUDE_BASEBAND_H_
 
 #include <stdint.h>
+#include <math.h>
 
 /** This will give a noisy envelope of OOK/ASK signals.
 
@@ -30,6 +31,18 @@ void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+
+#define AMP_TO_DB(x) (10.0f * ((x) > 0 ? log10f(x) : 0) - 42.1442f)  // 10*log10f(16384.0f)
+#define MAG_TO_DB(x) (20.0f * ((x) > 0 ? log10f(x) : 0) - 84.2884f)  // 20*log10f(16384.0f)
+#ifdef __exp10f
+#define _exp10f(x) __exp10f(x)
+#else
+#define _exp10f(x) powf(10, x)
+#endif
+#define DB_TO_AMP(x) ((int)(_exp10f(((x) + 42.1442f) / 10.0f)))  // 10*log10f(16384.0f)
+#define DB_TO_MAG(x) ((int)(_exp10f(((x) + 84.2884f) / 20.0f)))  // 20*log10f(16384.0f)
+#define DB_TO_AMP_F(x) ((int)(0.5 + _exp10f((x) / 10.0f)))
+#define DB_TO_MAG_F(x) ((int)(0.5 + _exp10f((x) / 20.0f)))
 
 #define FILTER_ORDER 1
 

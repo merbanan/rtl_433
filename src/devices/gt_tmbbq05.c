@@ -97,7 +97,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "gt_tmbbq05_decode: parity check failed (should be ODD)\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);

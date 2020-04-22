@@ -49,16 +49,16 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned int device, tmp;
     char *class, *alert;
 
-    // The device transmits many rows, check for 12 matching rows.
+    // The device transmits many rows, check for 4 matching rows.
     row = bitbuffer_find_repeated_row(bitbuffer, 4, 48);
     if (row < 0) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
     bytes = bitbuffer->bb[row];
 
 
     if (bitbuffer->bits_per_row[row] != 48)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     bitbuffer_invert(bitbuffer);
 
@@ -70,7 +70,7 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             bitbuffer_print(bitbuffer);
             fprintf(stderr, "honeywell_wdb: Parity check on row %d failed (%d)\n", row, parity);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     device = bytes[0] << 12 | bytes[1] << 4 | (bytes[2]&0xF);

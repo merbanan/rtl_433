@@ -141,6 +141,8 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device);
 /// @return number of events processed
 int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device);
 
+int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device);
+
 int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device);
 
 /// Simulate demodulation using a given signal code string.

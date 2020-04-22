@@ -87,7 +87,7 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //"battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-            "direction_deg",    "Wind direction",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, dir,
+            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_FORMAT, "%.01f",   DATA_DOUBLE, dir,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, speed,
             "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.01f",   DATA_DOUBLE, gust,
             "maybe_flags",      "Flags?",           DATA_FORMAT, "%02x",    DATA_INT,    flags,
@@ -106,7 +106,8 @@ static char *output_fields[] = {
         "battery",
         "temperature_C",
         "humidity",
-        "direction_deg",
+        "direction_deg", // TODO: remove this
+        "wind_dir_deg",
         "wind_avg_km_h",
         "wind_max_km_h",
         NULL,

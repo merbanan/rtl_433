@@ -55,7 +55,7 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     bitpos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &databits, 41);
 
     if (databits.bits_per_row[0] < 32 || databits.bits_per_row[0] > 40 || (databits.bb[0][4] & 0xfe) != 0)
-        return 0;
+        return 0; // TODO: fix calling code to handle negative return values
 
     b = databits.bb[0];
 

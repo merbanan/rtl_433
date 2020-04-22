@@ -170,7 +170,7 @@ typedef struct {
 static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
 static float humidity_factor[2] = { 0.1, 1 };
 
-static int consumed_bytes[8] = { 0, 1, 2, 3, 4, -1, 6, 8};
+static int consumed_bytes[8] = { -1, 1, 2, 3, 4, 4, 6, 8};
 
 static char* oms_temp[4][4] = {
 {"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
@@ -201,14 +201,17 @@ static char* oms_hum_el[4][4] = {
 };
 
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
-    int ret = consumed_bytes[dif_coding&0x03];
+    int ret = consumed_bytes[dif_coding&0x07];
+    float temp;
+    int state;
 
     switch (vif_linear) {
         case 0:
             switch(vif_uam>>2) {
                 case 0x19:
+                    temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
                     data = data_append(data,
-                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, (b[1]<<8|b[0])*record_factor[vif_uam&0x3],
+                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
                         NULL);
                     break;
                 default:
@@ -227,7 +230,11 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         case 0x7D:
             switch(vif_uam) {
                 case 0x1b:
-                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (b[0]==0x55) ? "open":"closed", NULL);
+                    // If tamper is triggered the bit 0 and 4 is set
+                    // Open  sets bits 2 and 6 to 1
+                    // Close sets bits 2 and 6 to 0
+                    state = b[0]&0x44;
+                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (state==0x44) ? "open":"closed", NULL);
                     break;
                 case 0x3a:
                     /* Only use 32 bits of 48 available */
@@ -294,6 +301,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 
         /* Parse VIF */
         vif = b[off];
+
         while (b[off]&0x80) {
             off++;
             vife_array[vife_cnt++] = b[off]&0x7F;
@@ -512,13 +520,13 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Find a Mode T or C data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_T, sizeof(PREAMBLE_T)*8);
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
     if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %d\n", bit_offset);
     bitbuffer_print(bitbuffer);
@@ -612,7 +620,7 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-
+// Untested code, signal samples missing
 static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
@@ -657,7 +665,7 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         return 0;
     }
 
-    m_bus_output_data(decoder, &data_out, &block1, "F");
+    //m_bus_output_data(decoder, &data_out, &block1, "F");
     return 1;
 }
 
@@ -671,7 +679,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Find a Mode S data package

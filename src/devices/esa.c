@@ -44,13 +44,13 @@ static int esa_cost_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float energy_total_val, energy_impulse_val;
 
     if (bitbuffer->bits_per_row[0] != 160 || bitbuffer->num_rows != 1)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // remove first two bytes?
     bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 160 - 16);
 
     if (decrypt_esa(b))
-        return 0; // checksum fail
+        return DECODE_FAIL_MIC; // checksum fail
 
     is_retry           = (b[0] >> 7);
     sequence_id        = (b[0] & 0x7f);

@@ -30,7 +30,7 @@
  * CC CC CC CC CC CC CC CC CC CC CC CC CC uu II  G GG DW WW    TT  T HH RR  R  t
  *
  * C = Check, inverted data of 13 byte further
- * u = unknown (data changes from packet to packet, but meaning is still unknown)
+ * uu = checksum (number/count of set bits within bytes 14-25)
  * I = station ID (maybe)
  * G = wind gust in 1/10 m/s, BCD coded, GGG = 123 => 12.3 m/s
  * D = wind direction 0..F = N..NNE..E..S..W..NNW
@@ -59,14 +59,14 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s bit_per_row %u out of range\n", __func__, bitbuffer->bits_per_row[0]);
         }
-        return 0; // Unrecognized data
+        return DECODE_ABORT_LENGTH; // Unrecognized data
     }
 
     unsigned start_pos = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof (preamble_pattern) * 8);
 
     if (start_pos == bitbuffer->bits_per_row[0]) {
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
     start_pos += sizeof (preamble_pattern) * 8;
     len = bitbuffer->bits_per_row[0] - start_pos;
@@ -74,7 +74,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s %u too short\n", __func__, len);
         }
-        return 0; // message too short
+        return DECODE_ABORT_LENGTH; // message too short
     }
     // truncate any excessive bits
     len = MIN(len, sizeof (msg) * 8);
@@ -87,7 +87,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1) {
                 fprintf(stderr, "%s Parity wrong at %u\n", __func__, col);
             }
-            return 0; // message isn't correct
+            return DECODE_FAIL_MIC; // message isn't correct
         }
     }
 

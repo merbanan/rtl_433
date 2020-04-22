@@ -45,17 +45,16 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int maybe_battery;
     int crc;
 
-    bitbuffer_invert(bitbuffer);
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
     b = packet_bits.bb[0];
 
     if (b[6] == 0 || b[7] == 0) {
-        return 0; // sanity check failed
+        return DECODE_ABORT_EARLY; // sanity check failed
     }
 
     crc = b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8]^b[9];
     if (crc != 0) {
-        return 0; // bad checksum
+        return DECODE_FAIL_MIC; // bad checksum
     }
 
     state = b[0]; // not covered by CRC
@@ -89,22 +88,26 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 /** @sa tpms_citroen_decode() */
 static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // full preamble is
-    // 0101 0101  0101 0101  0101 0101  0101 0110 = 55 55 55 56
-    uint8_t const preamble_pattern[2] = {0x55, 0x56};
+    // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
+    uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
     // full trailer is 01111110
 
     unsigned bitpos = 0;
-    int events = 0;
+    int ret         = 0;
+    int events      = 0;
+
+    bitbuffer_invert(bitbuffer);
 
     // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 16)) + 178 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        ret = tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        if (ret > 0)
+            events += ret;
         bitpos += 2;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

@@ -18,7 +18,7 @@
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
 
 typedef struct am_analyze {
-    int32_t *level_limit;
+    int level_limit;
     int override_short;
     int override_long;
     uint32_t *frequency;

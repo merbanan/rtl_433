@@ -17,6 +17,7 @@
 #include <math.h>
 
 #include "r_api.h"
+#include "r_util.h"
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
@@ -89,7 +90,9 @@ void r_init_cfg(r_cfg_t *cfg)
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
 
-    cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    cfg->demod->level_limit = 0.0;
+    cfg->demod->min_level = -12.1442;
+    cfg->demod->min_snr = 9.0;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -244,7 +247,7 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 1) { // amplitude (CU8)
+    if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
         pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);
@@ -413,6 +416,9 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
         case OOK_PULSE_PWM_OSV1:
             p_events += pulse_demod_osv1(pulse_data, r_dev);
             break;
+        case OOK_PULSE_NRZS:
+            p_events += pulse_demod_nrzs(pulse_data, r_dev);
+            break;
         // FSK decoders
         case FSK_PULSE_PCM:
         case FSK_PULSE_PWM:
@@ -444,6 +450,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
         case OOK_PULSE_PIWM_DC:
         case OOK_PULSE_DMC:
         case OOK_PULSE_PWM_OSV1:
+        case OOK_PULSE_NRZS:
             break;
         case FSK_PULSE_PCM:
             p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
@@ -893,6 +900,14 @@ void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 
 void close_dumpers(struct r_cfg *cfg)
 {
+    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t *dumper = *iter;
+        if (dumper->file && (dumper->file != stdout)) {
+            fclose(dumper->file);
+            dumper->file = NULL;
+        }
+    }
+
     char const *labels[] = {
             "FRAME", // probe1
             "ASK", // probe2

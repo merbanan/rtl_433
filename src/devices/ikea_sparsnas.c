@@ -97,7 +97,7 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
     for (k0=0;k0<0xFF;++k0) {
         d0 = b5 ^ k0;
         if (d0 > 0x0F) { //will result in sensor_id > 999999
-            continue;
+            continue; // DECODE_FAIL_SANITY
         }
         for (k1=0;k1<0xFF;++k1) {
             d1 = b6 ^ k1;
@@ -108,8 +108,8 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
                 battery_dec = battery_enc ^ k2;
                 dec_sensor_id = (unsigned)d0 << 24 | d1 << 16 | d2 << 8 | d3;
 
-                if (dec_sensor_id > 999999) {
-                    continue; //sensor id is at most 6 digits
+                if (dec_sensor_id > 999999) { //sensor id is at most 6 digits
+                    continue; // DECODE_FAIL_SANITY
                 }
 
                 for (k4=0;k4<0xFF;++k4) {
@@ -133,7 +133,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
             fprintf(stderr, "IKEA Sparsnäs: Too short or too long packet received. Expected %d, received %d\n", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // Look for preamble
@@ -144,7 +144,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
             fprintf(stderr, "IKEA Sparsnäs: malformed package, preamble not found. (Expected 0xAAAAD201)\n");
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     // extract message, discarding preamble
@@ -163,7 +163,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "IKEA Sparsnäs: CRC check failed (0x%X != 0x%X)\n", crc_calculated, crc_received);
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     //Decryption
@@ -232,14 +232,14 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte0=%X expected %X)\n", decrypted[0], 0x11);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
     if (decrypted[3] != 0x07) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
         if (decoder->verbose > 1) {
             fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte3=%X expected %X)\n", decrypted[0], 0x07);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     //Value extraction and interpretation

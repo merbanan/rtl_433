@@ -36,7 +36,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
     for (int row_index = 0; row_index < bitbuffer->num_rows; row_index++) {
         if (bitbuffer->bits_per_row[row_index] != 38) // expected length is 38 bit
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         msg = bitbuffer->bb[row_index];
         chk = msg[0] >> 4;
@@ -49,7 +49,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         if (sum != chk) {
             if (decoder->verbose > 1)
                 bitbuffer_printf(bitbuffer, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", chk, sum);
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         channel = b[0] >> 4;

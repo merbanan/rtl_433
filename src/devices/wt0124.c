@@ -41,7 +41,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t channel;
 
     if (bitbuffer->bits_per_row[1] !=49)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
 
     /* select row after preamble */
@@ -49,12 +49,12 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Validate constant */
     if (b[0]>>4 != 0x5) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /* Validate checksum */
     if ((b[0]^b[1]^b[2]^b[3]) != b[4])
-        return 0;
+        return DECODE_FAIL_MIC;
 
     /* Get rid */
     sensor_rid = (b[0]&0x0F)<<4 | (b[1]&0x0F);

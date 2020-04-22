@@ -76,9 +76,9 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",         "",              DATA_STRING, is_envir ? "CurrentCost-EnviR" : _X("CurrentCost-TX","CurrentCost TX"), //TODO: it may have different CC Model ? any ref ?
                 //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
                 _X("id","dev_id"),       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
-                "power0",       "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
-                "power1",       "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
-                "power2",       "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
+                _X("power0_W","power0"),       "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
+                _X("power1_W","power1"),       "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
+                _X("power2_W","power2"),       "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
                 //"battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK", //TODO is there some low battery indicator ?
                 NULL);
         /* clang-format on */
@@ -113,9 +113,12 @@ static char *output_fields[] = {
         "id",
         "sensor_type", // TODO: delete this
         "subtype",
-        "power0",
-        "power1",
-        "power2",
+        "power0", // TODO: delete this
+        "power1", // TODO: delete this
+        "power2", // TODO: delete this
+        "power0_W",
+        "power1_W",
+        "power2_W",
         NULL,
 };
 

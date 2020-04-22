@@ -38,11 +38,11 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         /* looking for five bytes */
         if (bitbuffer->bits_per_row[r] < 40)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         /* validate what we received */
         if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff)
-            continue;
+            continue; // DECODE_FAIL_SANITY
 
         /* set event_str based on code received */
         switch (b[2]) {
@@ -101,7 +101,8 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    // TODO: improve decode logging with earlier returns
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

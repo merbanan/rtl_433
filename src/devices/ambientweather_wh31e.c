@@ -130,8 +130,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         // Validate message and reject it as fast as possible : check for preamble
         unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 24);
+        // no preamble detected, move to the next row
         if (start_pos == bitbuffer->bits_per_row[row])
-            continue; // no preamble detected, move to the next row
+            continue; // DECODE_ABORT_EARLY
         if (decoder->verbose)
             fprintf(stderr, "%s: WH31E/WH40 detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
 
@@ -144,13 +145,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (c_crc) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH31E bad CRC\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
             if (c_sum) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH31E bad SUM\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
 
             msg_type   = b[0]; // fixed 0x30
@@ -184,13 +185,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (c_crc) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH40 bad CRC\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 8) - b[8];
             if (c_sum) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH40 bad SUM\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
 
             msg_type   = b[0]; // fixed 0x40
@@ -221,13 +222,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (c_crc) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH68 bad CRC\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 15) - b[15];
             if (c_sum) {
                 if (decoder->verbose)
                     fprintf(stderr, "%s: WH68 bad SUM\n", __func__);
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
 
             msg_type   = b[0]; // fixed 0x68

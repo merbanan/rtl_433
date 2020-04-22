@@ -12,8 +12,10 @@
 #include "pulse_detect.h"
 #include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
+#include "baseband.h"
 #include "util.h"
-#include "decoder.h"
+#include "r_device.h"
+#include "r_util.h"
 #include "fatal.h"
 #include <limits.h>
 #include <stdio.h>
@@ -167,9 +169,14 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
         chk_ret(fprintf(file, ";freq2 %.0f\n", data->freq2_hz));
     }
     else {
-        chk_ret(fprintf(file, ";ook %d pulses\n", data->num_pulses));
+        chk_ret(fprintf(file, ";ook %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
     }
+    chk_ret(fprintf(file, ";samplerate %u Hz\n", data->sample_rate));
+    chk_ret(fprintf(file, ";rssi %.1f dB\n", data->rssi_db));
+    chk_ret(fprintf(file, ";snr %.1f dB\n", data->snr_db));
+    chk_ret(fprintf(file, ";noise %.1f dB\n", data->noise_db));
+
     double to_us = 1e6 / data->sample_rate;
     for (unsigned i = 0; i < data->num_pulses; ++i) {
         chk_ret(fprintf(file, "%.0f %.0f\n", data->pulse[i] * to_us, data->gap[i] * to_us));
@@ -178,15 +185,17 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 }
 
 // OOK adaptive level estimator constants
-#define OOK_HIGH_LOW_RATIO  8           // Default ratio between high and low (noise) level
-#define OOK_MIN_HIGH_LEVEL  1000        // Minimum estimate of high level
-#define OOK_MAX_HIGH_LEVEL  (128*128)   // Maximum estimate for high level (A unit phasor is 128, anything above is overdrive)
-#define OOK_MAX_LOW_LEVEL   (OOK_MAX_HIGH_LEVEL/2)    // Maximum estimate for low level
+#define OOK_MAX_HIGH_LEVEL  DB_TO_AMP(0)   // Maximum estimate for high level (-0 dB)
+#define OOK_MAX_LOW_LEVEL   DB_TO_AMP(-15) // Maximum estimate for low level
 #define OOK_EST_HIGH_RATIO  64          // Constant for slowness of OOK high level estimator
 #define OOK_EST_LOW_RATIO   1024        // Constant for slowness of OOK low level (noise) estimator (very slow)
 
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
+    int ook_fixed_high_level; ///< Manual detection level override, 0 = auto.
+    int ook_min_high_level;   ///< Minimum estimate of high level (-12 dB: 1000 amp, 4000 mag).
+    int ook_high_low_ratio;   ///< Default ratio between high and low (noise) level (9 dB: x8 amp, 11 dB: x3.6 mag).
+
     enum {
         PD_OOK_STATE_IDLE      = 0,
         PD_OOK_STATE_PULSE     = 1,
@@ -208,8 +217,13 @@ struct pulse_detect {
 pulse_detect_t *pulse_detect_create()
 {
     pulse_detect_t *pulse_detect = calloc(1, sizeof(pulse_detect_t));
-    if (!pulse_detect)
+    if (!pulse_detect) {
         WARN_CALLOC("pulse_detect_create()");
+        return NULL;
+    }
+
+    pulse_detect_set_levels(pulse_detect, 0, 0.0, -12.1442, 9.0);
+
     return pulse_detect;
 }
 
@@ -218,12 +232,31 @@ void pulse_detect_free(pulse_detect_t *pulse_detect)
     free(pulse_detect);
 }
 
+void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio)
+{
+    if (use_mag_est) {
+        pulse_detect->ook_fixed_high_level = fixed_high_level < 0.0 ? DB_TO_MAG(fixed_high_level) : 0;
+        pulse_detect->ook_min_high_level   = DB_TO_MAG(min_high_level);
+        pulse_detect->ook_high_low_ratio = DB_TO_MAG_F(high_low_ratio);
+    }
+    else { // amp est
+        pulse_detect->ook_fixed_high_level = fixed_high_level < 0.0 ? DB_TO_AMP(fixed_high_level) : 0;
+        pulse_detect->ook_min_high_level   = DB_TO_AMP(min_high_level);
+        pulse_detect->ook_high_low_ratio = DB_TO_AMP_F(high_low_ratio);
+    }
+
+    //fprintf(stderr, "fixed_high_level %.1f (%d), min_high_level %.1f (%d), high_low_ratio %.1f (%d)\n",
+    //        fixed_high_level, pulse_detect->ook_fixed_high_level,
+    //        min_high_level, pulse_detect->ook_min_high_level,
+    //        high_low_ratio, pulse_detect->ook_high_low_ratio);
+}
+
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm)
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm)
 {
     int const samples_per_ms = samp_rate / 1000;
     pulse_detect_t *s = pulse_detect;
-    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);    // Be sure to set initial minimum level
+    s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);    // Be sure to set initial minimum level
 
     if (s->data_counter == 0) {
         // age the pulse_data if this is a fresh buffer
@@ -235,9 +268,9 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
     while (s->data_counter < len) {
         // Calculate OOK detection threshold and hysteresis
         int16_t const am_n    = envelope_data[s->data_counter];
-        int16_t ook_threshold = s->ook_low_estimate + (s->ook_high_estimate - s->ook_low_estimate) / 2;
-        if (level_limit != 0)
-            ook_threshold = level_limit;                  // Manual override
+        int16_t ook_threshold = (s->ook_low_estimate + s->ook_high_estimate) / 2;
+        if (pulse_detect->ook_fixed_high_level != 0)
+            ook_threshold = pulse_detect->ook_fixed_high_level; // Manual override
         int16_t const ook_hysteresis = ook_threshold / 8; // ±12%
 
         // OOK State machine
@@ -268,8 +301,8 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                     s->ook_low_estimate += ook_low_delta / OOK_EST_LOW_RATIO;
                     s->ook_low_estimate += ((ook_low_delta > 0) ? 1 : -1);    // Hack to compensate for lack of fixed-point scaling
                     // Calculate default OOK high level estimate
-                    s->ook_high_estimate = OOK_HIGH_LOW_RATIO * s->ook_low_estimate;    // Default is a ratio of low level
-                    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+                    s->ook_high_estimate = pulse_detect->ook_high_low_ratio * s->ook_low_estimate; // Default is a ratio of low level
+                    s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);
                     s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     if (s->lead_in_counter <= OOK_EST_LOW_RATIO) s->lead_in_counter++;        // Allow initial estimate to settle
                 }
@@ -294,7 +327,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
                 else {
                     // Calculate OOK high level estimate
                     s->ook_high_estimate += am_n / OOK_EST_HIGH_RATIO - s->ook_high_estimate / OOK_EST_HIGH_RATIO;
-                    s->ook_high_estimate = MAX(s->ook_high_estimate, OOK_MIN_HIGH_LEVEL);
+                    s->ook_high_estimate = MAX(s->ook_high_estimate, pulse_detect->ook_min_high_level);
                     s->ook_high_estimate = MIN(s->ook_high_estimate, OOK_MAX_HIGH_LEVEL);
                     // Estimate pulse carrier frequency
                     pulses->fsk_f1_est += fm_data[s->data_counter] / OOK_EST_HIGH_RATIO - pulses->fsk_f1_est / OOK_EST_HIGH_RATIO;

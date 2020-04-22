@@ -155,7 +155,10 @@
     DECL(ws2032) \
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
-    DECL(dsc_security_ws4945)
+    DECL(dsc_security_ws4945) \
+    DECL(ert_amr) \
+    DECL(klimalogg) \
+    DECL(visonic_powercode)
 
     /* Add new decoders here. */
 

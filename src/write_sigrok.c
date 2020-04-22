@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -18,14 +19,15 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #endif
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
+#include "fatal.h"
 #include "write_sigrok.h"
 
 void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, unsigned analogs, char const *labels[])
 {
-#ifdef _WIN32
-    fprintf(stderr, "Writing Sigrok not implemented for win32\n");
-#else
     // e.g. uses channels
     // U8:LOGIC:logic-1-1
     // F32:I:analog-1-4-1
@@ -81,6 +83,70 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     // EOF
     fclose(fp);
 
+#ifdef _WIN32
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
+    char cmd_line[MAX_PATH] = "";
+    strcat_s(cmd_line, MAX_PATH, "7z.exe");
+    strcat_s(cmd_line, MAX_PATH, " a");
+    strcat_s(cmd_line, MAX_PATH, " -bb0 ");
+    strcat_s(cmd_line, MAX_PATH, " -sdel ");
+    strcat_s(cmd_line, MAX_PATH, " -tzip ");
+    strcat_s(cmd_line, MAX_PATH, filename);
+    strcat_s(cmd_line, MAX_PATH, " version");
+    strcat_s(cmd_line, MAX_PATH, " metadata");
+
+    if (probes) {
+        strcat_s(cmd_line, MAX_PATH, " logic-1-1");
+    }
+
+    char str_buf[64];
+    for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
+        snprintf(str_buf, 64, " analog-1-%u-1", i);
+        strcat_s(cmd_line, MAX_PATH, str_buf);
+    }
+
+    // Start the child process.
+    if (CreateProcess(NULL,  // No module name (use command line)
+                cmd_line,     // Command line
+                NULL,        // Process handle not inheritable
+                NULL,        // Thread handle not inheritable
+                FALSE,       // Set handle inheritance to FALSE
+                0,           // No creation flags
+                NULL,        // Use parent's environment block
+                NULL,        // Use parent's starting directory
+                &si,         // Pointer to STARTUPINFO structure
+                &pi)         // Pointer to PROCESS_INFORMATION structure
+    ) {
+        // Wait until child process exits.
+        WaitForSingleObject(pi.hProcess, INFINITE);
+
+        DWORD exit_code;
+
+        if (FALSE == GetExitCodeProcess(pi.hProcess, &exit_code)) {
+            perror("GetExitCodeProcess() failure");
+        }
+
+        // Close process and thread handles.
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        if (exit_code != 0) {
+            perror("7z.exe execution failed");
+            return;
+        }
+    }
+    else {
+        perror("CreateProcess for 7z.exe failed.");
+        return;
+    }
+
+#else
     char *argv[30] = {0};
     int arg        = 0;
     argv[arg++]    = "zip";
@@ -93,8 +159,14 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     }
 
     char **argv_analog = &argv[arg];
+    char str_buf[64];
     for (unsigned i = probes + 1; i <= probes + analogs; ++i) {
-        (void)asprintf(&argv[arg++], "analog-1-%u-1", i);
+        snprintf(str_buf, sizeof(str_buf), "analog-1-%u-1", i);
+        char* dup = strdup(str_buf);
+        if (!dup) {
+          FATAL_STRDUP("write_sigrok()");
+        }
+        argv[arg++] = dup;
     }
 
     int status = 0;
@@ -142,7 +214,7 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
         }
         free(argv_analog[i]);
     }
-#endif
+#endif // !_WIN32
 }
 
 void open_pulseview(char const *filename)

@@ -29,18 +29,18 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // 224 bits data + 12 bits preamble
     if (bitbuffer->num_rows != 1 || bitbuffer->bits_per_row[0] < 232 || bitbuffer->bits_per_row[0] > 250) {
-        return 0; // Unrecognized data
+        return DECODE_ABORT_LENGTH; // Unrecognized data
     }
 
     pos = bitbuffer_search(bitbuffer, 0, 0, &search, 8);
     if (pos > 26) {
-        return 0; // short buffer or preamble not found
+        return DECODE_ABORT_EARLY; // short buffer or preamble not found
     }
     pos += 8; // skip preamble
     len = bitbuffer->bits_per_row[0] - pos;
     // we want 28 bytes (224 bits)
     if (len < 224) {
-        return 0; // short buffer
+        return DECODE_ABORT_LENGTH; // short buffer
     }
     len = 224; // cut the last pulse
 
@@ -49,7 +49,7 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     crc_calculated = crc16(msg, 26, 0x8005, 0x0000);
     crc = (msg[26] << 8) | msg[27];
     if (crc != crc_calculated) {
-        return 0; // bad crc
+        return DECODE_FAIL_MIC; // bad crc
     }
 
     id = ((msg[5]&0x0f) << 12) | (msg[6] << 4) | ((msg[7]&0xf0) >> 4);

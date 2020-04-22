@@ -89,7 +89,6 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
     }
-    return 0;
     */
 
     int device_id     = (b[9] << 8) | b[10];
@@ -109,7 +108,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            "direction_deg",    "Wind degrees",     DATA_INT,    direction_deg,
+            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
             NULL);
     /* clang-format on */
 
@@ -124,7 +123,8 @@ static char *output_fields[] = {
         "humidity",
         "rain_mm",
         "wind_avg_km_h",
-        "direction_deg",
+        "direction_deg", // TODO: remove this
+        "wind_dir_deg", // TODO: remove this
         NULL,
 };
 
@@ -165,17 +165,17 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // only if we have a valid row to process.
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 96);
     if (r < 0 || bitbuffer->bits_per_row[r] != 96)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[r];
 
     // Test for preamble / device code
     if (memcmp(b, preamble, 3))
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Test Checksum.
     if ((xor_bytes(b, 11) & 0xF) ^ 0xF)
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // Invert data for processing
     bitbuffer_invert(bitbuffer);
@@ -198,7 +198,7 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            "direction_deg",    "Wind degrees",     DATA_INT,    (int)(wind_dir * 22.5),
+            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, (int)(wind_dir * 22.5),
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

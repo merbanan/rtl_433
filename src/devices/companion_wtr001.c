@@ -56,7 +56,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     r = bitbuffer_find_repeated_row(bitbuffer, MYDEVICE_MINREPEATS, MYDEVICE_BITLEN);
     if (r < 0 || bitbuffer->bits_per_row[r] != 14) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     bitbuffer_extract_bytes(bitbuffer, r, 0, b, 14);
@@ -70,7 +70,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Fixed Bit set (and it shouldn't be)\n");
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     /* Parity check (must be ODD) */
@@ -78,7 +78,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: parity check failed (should be ODD)\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Get the tenth of a degree C as bits 0,1,2,3,4 reversed, minus 0x0a
@@ -90,7 +90,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Temperature Degree Tenth too low (%d - 10 is less than 0\n", temp_tenth_raw);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     if (temp_tenth_raw > 0x13) {
@@ -98,7 +98,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Temperature Degree Tenth too high (%d - 10 is greater than 9\n", temp_tenth_raw);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     temp_tenth_raw -= 0x0a;
@@ -112,7 +112,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Whole part of Temperature is too low (%d - 41 is less than -30)\n", temp_whole_raw);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     if (temp_whole_raw > 111) {
@@ -120,7 +120,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose > 1) {
             fprintf(stderr, "companion_wtr001: Whole part of Temperature is too high (%d - 41 is greater than 70)\n", temp_whole_raw);
         }
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     // Add whole temperature part to (tenth temperature part / 10), then subtract 41 for final (float) temperature reading
@@ -130,7 +130,7 @@ static int companion_wtr001_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",         "",            DATA_STRING, "Companion-WTR001",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
-            "mic",           "",            DATA_STRING, "PARITY",
+            "mic",           "Integrity",   DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 

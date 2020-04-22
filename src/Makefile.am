@@ -28,6 +28,7 @@ rtl_433_SOURCES      = abuf.c \
                        sdr.c \
                        term_ctl.c \
                        util.c \
+                       write_sigrok.c \
                        devices/acurite.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
@@ -58,6 +59,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
+                       devices/ert.c \
                        devices/esa.c \
                        devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
@@ -91,6 +93,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/intertechno.c \
                        devices/kedsum.c \
                        devices/kerui.c \
+                       devices/klimalogg.c \
                        devices/lacrosse.c \
                        devices/lacrosse_tx141x.c \
                        devices/lacrosse_tx35.c \
@@ -145,6 +148,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ts_ft002.c \
                        devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
+                       devices/visonic_powercode.c \
                        devices/waveman.c \
                        devices/wg_pb12v1.c \
                        devices/ws2032.c \

@@ -114,11 +114,11 @@ static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
                         "LaCrosse TX Checksum/Parity error: Comp. %d != Recv. %d, Parity %d\n",
                         checksum, msg_nybbles[10], parity);
             }
-            return 0;
+            return DECODE_FAIL_MIC;
         }
     }
 
-    return 0;
+    return DECODE_ABORT_LENGTH;
 }
 
 // LaCrosse TX-6u, TX-7u,  Temperature and Humidity Sensors
@@ -132,8 +132,8 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         // break out the message nybbles into separate bytes
-        if (!lacrossetx_detect(decoder, bb[row], msg_nybbles, bitbuffer->bits_per_row[row])) {
-            continue;
+        if (lacrossetx_detect(decoder, bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0) {
+            continue; // DECODE_ABORT_EARLY
         }
 
         uint8_t msg_len      = msg_nybbles[1];
@@ -153,7 +153,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
                         sensor_id, msg_type, msg_value, msg_value_int);
             }
-            continue;
+            continue; // DECODE_FAIL_SANITY
         }
 
         if (msg_type == 0x00) {

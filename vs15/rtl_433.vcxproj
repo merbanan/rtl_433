@@ -55,14 +55,18 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\..\rtl-sdr\x64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;rtlsdr.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\libusb\MS64\dll;..\..\rtl-sdr\x64\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;rtlsdr.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>COPY ..\..\rtl-sdr\x64\rtlsdr.dll $(TargetDir)
+COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -73,16 +77,20 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\..\rtl-sdr\x64\</AdditionalLibraryDirectories>
-      <AdditionalDependencies>ws2_32.lib;rtlsdr.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>..\..\libusb\MS64\dll;..\..\rtl-sdr\x64\</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;rtlsdr.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;libusb-1.0.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>COPY ..\..\rtl-sdr\x64\rtlsdr.dll $(TargetDir)
+COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\abuf.h" />
@@ -175,6 +183,7 @@
     <ClCompile Include="..\src\devices\elro_db286a.c" />
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
+    <ClCompile Include="..\src\devices\ert.c" />
     <ClCompile Include="..\src\devices\esa.c" />
     <ClCompile Include="..\src\devices\esic_emt7110.c" />
     <ClCompile Include="..\src\devices\esperanza_ews.c" />
@@ -208,6 +217,7 @@
     <ClCompile Include="..\src\devices\intertechno.c" />
     <ClCompile Include="..\src\devices\kedsum.c" />
     <ClCompile Include="..\src\devices\kerui.c" />
+    <ClCompile Include="..\src\devices\klimalogg.c" />
     <ClCompile Include="..\src\devices\lacrosse.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx141x.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />

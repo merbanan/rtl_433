@@ -14,7 +14,6 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "r_util.h"
 
 #define PD_MAX_PULSES 1200      // Maximum number of pulses before forcing End Of Package
 #define PD_MIN_PULSES 16        // Minimum number of pulses before declaring a proper package
@@ -101,6 +100,14 @@ pulse_detect_t *pulse_detect_create(void);
 
 void pulse_detect_free(pulse_detect_t *pulse_detect);
 
+/// Set pulse detector level values.
+///
+/// @param pulse_detect The pulse_detect instance
+/// @param fixed_high_level Manual high level override, default is 0 (auto)
+/// @param min_high_level Minimum high level, default is -12 dB
+/// @param high_low_ratio Minimum signal noise ratio, default is 9 dB
+void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio);
+
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
 ///
 /// Function is stateful and can be called with chunks of input data.
@@ -109,7 +116,6 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// @param envelope_data Samples with amplitude envelope of carrier
 /// @param fm_data Samples with frequency offset from center frequency
 /// @param len Number of samples in input buffers
-/// @param level_limit Manual level override
 /// @param samp_rate Sample rate in samples per second
 /// @param sample_offset Offset tracking for ringbuffer
 /// @param[in,out] pulses Will return a pulse_data_t structure
@@ -118,7 +124,7 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// @return 0 if all input sample data is processed
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
-int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, int16_t level_limit, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
+int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
 
 /// Analyze and print result.
 void pulse_analyzer(pulse_data_t *data, int package_type);

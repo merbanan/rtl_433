@@ -159,7 +159,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         if (bitbuffer->bits_per_row[brow] != 40) {
-           continue;
+           continue; // DECODE_ABORT_LENGTH
         }
 
         bb = bitbuffer->bb[brow];
@@ -167,7 +167,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         cksum = (bb[0] + bb[1] + bb[2] + bb[3]);
 
         if (cksum == 0 || ((cksum & 0xff) != bb[4])) {
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         // Temperature in Celsius is encoded as a 12 bit integer value
@@ -188,6 +188,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_INT,    humidity,
                 "status",           "",             DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
 
@@ -220,7 +221,7 @@ Somewhat similar to 592TXR and 5-n-1 weather stations.
 Same pulse characteristics. checksum, and parity checking on data bytes.
 
     0   1   2   3   4   5   6   7   8
-    CI II  BB  HH  ST  TT  LL  DD? KK
+    CI II  BB  HH  ST  TT  LL  DD  KK
 
 - C = Channel
 - I = ID
@@ -264,25 +265,20 @@ Byte 5 - Temperature LSB (7 bits, 8th is parity)
 - 0x80 - even parity
 - 0x7F - Temperature least significant 7 bits
 
-Byte 6 - Lightning Strike count (7 bits, 8th is parity)
+Byte 6 - Lightning Strike count (7 of 8 bit, 8th is parity)
 - 0x80 - even parity
-- 0x7F - strike count (wraps at 127)
-   Stored in EEPROM (or something non-volatile)
-   @todo Does it go from 127 to 1, or to 0?
+- 0x7F - strike count (upper 7 bits) wraps at 255 -> 0
 
-Byte 7 - Edge of Storm Distance Approximation
-- Bits PSSDDDDD  (P = Parity, S = Status, D = Distance
+
+Byte 7 - Edge of Storm Distance Approximation & other bits
+- Bits PLRDDDDD  (P = Parity, S = Status, D = Distance
 - 0x80 - even parity
-- 0x40 - USSB1 (unknown strike status bit) - (possible activity?)
-   currently decoded into "ussb1" output field
-   @todo needs understanding
+- 0x40 - LSB of 8 bit strike counter
 - 0x20 - RFI (radio frequency interference)
-   @todo needs cross-checking with light and/or console
 - 0x1F - distance to edge of storm (theory)
    value 0x1f is possible invalid value indication (value at power up)
-   @todo determine if miles, km, or something else
-   Note: Distance sometimes goes to 0 right after strike counter increment.
-         Status bits might indicate validity of distance.
+   @todo determine mapping function/table.
+
 
 Byte 8 - checksum. 8 bits, no parity.
 
@@ -293,14 +289,14 @@ Data fields:
     Somewhat correlates with the Yellow LED, but stays set longer
     Short periods of RFI on is normal
     long periods of RFI means interference, solid yellow, relocate sensor
-- Strike count - count of detection events, 7 bits, non-volatile
+- Strike count - count of detection events, 8 bits, non-volatile
+    counts up to 255, wraps back to 0.
+    Stored in EEPROM (or something non-volatile), doesn't reset at power up
 - Distance to edge of storm - See AS3935 documentation.
     sensor will make a distance estimate with each strike event.
     Units unknown, data needed from people with Acurite consoles
     0x1f (31) is invalid/undefined value, consumers should check for this.
-- USSB1 - Unknown Strike Status Bit
-    May indicate validity of distance estimate, cleared after sensor beeps
-    Might need to also correlate against RFI bit.
+    Only 5 bits available, needs to cover range of 25 miles/40 KM per spec.
 - exception - bits that were invariant for me have changed.
     save raw_msg for further examination.
 
@@ -343,10 +339,11 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // Available range given encoding with 12 bits -150.0 F to +259.6 F
     int temp_raw = ((bb[4] & 0x1F) << 7) | (bb[5] & 0x7F);
     tempf = (temp_raw - 1500) * 0.1;
-    strike_count = bb[6] & 0x7f;
+
+    // Strike count is 8 bits, LSB in following byte
+    strike_count = ((bb[6] & 0x7f) << 1) | ((bb[7] & 0x40) >> 6);
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
-    ussb1 = (bb[7] & 0x40) == 0x40;
     l_status = (bb[7] & 0x60) >> 5;
 
     /*
@@ -395,7 +392,6 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "storm_dist",       "storm_distance",   DATA_INT,    strike_distance,
             "active",           "active_mode",      DATA_INT,    active,    // @todo convert to bool
             "rfi",              "rfi_detect",       DATA_INT,    rfi_detect,     // @todo convert to bool
-            "ussb1",            "unk_status1",      DATA_INT,    ussb1,    // @todo convert to bool
             "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
             "raw_msg",          "raw_message",      DATA_STRING, raw_str,
             NULL);
@@ -450,7 +446,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer->bits_per_row[brow] != ACURITE_6045_BITLEN) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr, "%s: skipping wrong len\n", __func__);
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         }
 
         // There will be 1 extra false zero bit added by the demod.
@@ -464,7 +460,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (sum == 0 || (sum & 0xff) != bb[browlen - 1]) {
             if (decoder->verbose)
                 bitrow_printf(bb, bitbuffer->bits_per_row[brow], "%s: bad checksum: ", __func__);
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         if (decoder->verbose) {
@@ -511,6 +507,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_INT,    humidity,
+                    "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
 
@@ -569,6 +566,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
                         _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -595,6 +593,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -623,6 +622,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%d",   DATA_INT,   humidity,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -642,6 +642,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
                         "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
+                        "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
 
@@ -723,7 +724,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer->bits_per_row[brow] > 43 ) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr,"%s: skipping wrong len\n", __func__);
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         }
         bb = bitbuffer->bb[brow];
 
@@ -731,7 +732,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // may eliminate these with a better PPM (precise?) demod.
         if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
                 (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         // Reverse the bits, msg sent LSB first
@@ -767,7 +768,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     fprintf(stderr, "%s: CRC fix %02x - %02x\n", __func__, crc, crcc);
             }
             else {
-                continue;
+                continue; // DECODE_FAIL_MIC
             }
         }
 
@@ -786,6 +787,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
+                "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
 
@@ -812,19 +814,19 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 33)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (b[4] != 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // reject all blank messages
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     if (decoder->verbose > 1)
         bitbuffer_printf(bitbuffer, "%s: ", __func__);
@@ -832,7 +834,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // calculate the checksum and only continue if we have a matching checksum
     uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
     if (chk != b[3])
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // Processing the temperature:
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
@@ -874,8 +876,10 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  This sensor repeats signal three times.  Store each copy.
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
-        if (bitbuffer->bits_per_row[brow] != 88) continue;
-        if (nsignal>=3) continue;
+        if (bitbuffer->bits_per_row[brow] != 88)
+          continue; // DECODE_ABORT_LENGTH
+        if (nsignal>=3)
+          continue; // DECODE_ABORT_EARLY
         memcpy(signal[nsignal], bitbuffer->bb[brow], 11);
         if (decoder->verbose)
             bitrow_printf(signal[nsignal], 11 * 8, "%s: ", __func__);
@@ -993,6 +997,7 @@ static char *acurite_th_output_fields[] = {
     "temperature_C",
     "humidity",
     "status",
+    "mic",
     NULL,
 };
 

@@ -157,8 +157,8 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r; // a row index
     uint16_t bitpos;
-    int result;
-    int events = 0;
+    int ret      = 0;
+    int events   = 0;
     data_t *data = NULL;
 
     // Only for simulating initial package level deciphering / debug.
@@ -183,7 +183,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                         "Bad message need %d bits got %d <- XC0324:vv row %d bit %d",
                         XC0324_MESSAGE_BITLEN, bitbuffer->bits_per_row[r], r, 0);
             }
-            continue; // to the next row
+            continue; // DECODE_ABORT_LENGTH
         }
         // We have enough bits so search for a message preamble followed by
         // enough bits that it could be a complete message.
@@ -192,11 +192,13 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                         (const uint8_t *)&preamble_pattern, 8)) +
                         XC0324_MESSAGE_BITLEN <=
                 bitbuffer->bits_per_row[r]) {
-            events += result = decode_xc0324_message(decoder, bitbuffer,
+            ret = decode_xc0324_message(decoder, bitbuffer,
                     r, bitpos, events, &data);
+            if (ret > 0)
+                events += ret;
             // Keep production output (decoder->verbose == 0) separate from
             // (simulated) development stage output (decoder->verbose > 0)
-            if (result && !decoder->verbose) { // Production output
+            if (events > 0 && !decoder->verbose) { // Production output
                 data_append(data,
                         "message_num", "Message repeat count", DATA_INT, events, NULL);
                 decoder_output_data(decoder, data);
@@ -209,7 +211,7 @@ static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if ((decoder->verbose == 3) & (events == 0)) {
         decoder_output_messagef(decoder, "XC0324:vvvv Reference -> Bad transmission");
     }
-    return events;
+    return events > 0 ? events : ret;
 }
 
 r_device digitech_xc0324 = {

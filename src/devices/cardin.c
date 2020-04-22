@@ -25,8 +25,11 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char *rbutton[4] = { "11R", "10R", "01R", "00L?" };
     data_t *data;
 
+    if (bitbuffer->bits_per_row[0] != 24)
+      return DECODE_ABORT_LENGTH;
+
     // validate message as we can
-    if ((bb[0][2] & 48) == 0 && bitbuffer->bits_per_row[0] == 24 && (
+    if ((bb[0][2] & 48) == 0 && (
                 (bb[0][2] & 0x0f) == 3 ||
                 (bb[0][2] & 0x0f) == 9 ||
                 (bb[0][2] & 0x0f) == 12 ||
@@ -113,7 +116,7 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         return 1;
     }
-    return 0;
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

@@ -35,34 +35,31 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitrow_t *bb = bitbuffer->bb;
     data_t *data;
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr,"Possible Nexus: ");
-        bitbuffer_print(bitbuffer);
-    }
-
     uint8_t id;
     uint8_t battery;
     uint8_t channel;
     int16_t temp;
     uint8_t humidity;
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
+    if (r < 0)
+      return DECODE_ABORT_EARLY;
+
+    // we expect 36 bits but there might be a trailing 0 bit
+    if (bitbuffer->bits_per_row[r] > 37)
+      return DECODE_ABORT_LENGTH;
 
     /* The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
      * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
      * So less then 0.5% which should be acceptable.
      */
-    if (r >= 0 &&
-        bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
-        bb[r][0] != 0 &&
+     if (bb[r][0] != 0 &&
         bb[r][2] != 0 &&
         bb[r][3] != 0 &&
         !rubicson_crc_check(bb)) {
 
         /* if const is not 1111 then abort */
         if ((bb[r][3]&0xF0) != 0xF0)
-            return 0;
-
-        /* Get time now */
+            return DECODE_ABORT_EARLY;
 
         /* Nibble 0,1 contains id */
         id = bb[r][0];
@@ -104,7 +101,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         return 1;
     }
-    return 0;
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

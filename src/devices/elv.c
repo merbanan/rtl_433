@@ -34,7 +34,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (bb[1][i] == bb[2][i])
             bb_p[i] = bb[1][i];
         else
-            return 0;
+            return DECODE_ABORT_EARLY;
     }
 
     // read 9 bytes with stopbit ...
@@ -45,7 +45,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bit += 1;
         if (!stopbit) {
 //            fprintf(stderr, "!stopbit: %i\n", i);
-            return 0;
+            return DECODE_ABORT_EARLY;
         }
         checksum_calculated ^= dec[i];
         bytes++;
@@ -55,7 +55,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
 //        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
 //for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
@@ -125,7 +125,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!stopbit) {
         if (decoder->verbose)
             fprintf(stderr, "!stopbit\n");
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
     check_calculated ^= dec[0];
     sum_calculated   += dec[0];
@@ -137,7 +137,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (!stopbit) {
             if (decoder->verbose)
                 fprintf(stderr, "!stopbit %i\n", bit);
-            return 0;
+            return DECODE_ABORT_EARLY;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
@@ -150,7 +150,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (check_calculated) {
         if (decoder->verbose)
             fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Read sum
@@ -160,7 +160,7 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (sum_received != sum_calculated) {
         if (decoder->verbose)
             fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     char *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";

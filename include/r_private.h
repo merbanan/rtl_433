@@ -17,7 +17,11 @@
 #include "compat_time.h"
 
 struct dm_state {
-    int32_t level_limit;
+    float level_limit;
+    float min_level;
+    float min_snr;
+    int use_mag_est;
+
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
     union {
         // These buffers aren't used at the same time, so let's use a union to save some memory

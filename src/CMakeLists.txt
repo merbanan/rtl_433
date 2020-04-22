@@ -60,6 +60,7 @@ add_library(r_433 STATIC
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c
+    devices/ert.c
     devices/esa.c
     devices/esic_emt7110.c
     devices/esperanza_ews.c
@@ -93,6 +94,7 @@ add_library(r_433 STATIC
     devices/intertechno.c
     devices/kedsum.c
     devices/kerui.c
+    devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
@@ -147,6 +149,7 @@ add_library(r_433 STATIC
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
+    devices/visonic_powercode.c
     devices/waveman.c
     devices/wg_pb12v1.c
     devices/ws2032.c
@@ -158,10 +161,10 @@ add_library(r_433 STATIC
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format -Wno-format-security")
 endif()
 if("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
-    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-large-by-value-copy")
+    set_source_files_properties(mongoose.c PROPERTIES COMPILE_FLAGS "-Wno-format-pedantic -Wno-format-security -Wno-large-by-value-copy")
 endif()
 
 add_executable(rtl_433 rtl_433.c)

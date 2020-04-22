@@ -41,33 +41,32 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float temp_c;
 
     if (!(bits == 36))
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
-    if (rubicson_crc_check(bb)) {
+    if (!rubicson_crc_check(bb))
+      return DECODE_FAIL_MIC;
 
-        /* Nibble 3,4,5 contains 12 bits of temperature
-         * The temperature is signed and scaled by 10 */
-        temp = (int16_t)((uint16_t)(bb[0][1] << 12) | (bb[0][2] << 4));
-        temp = temp >> 4;
+    /* Nibble 3,4,5 contains 12 bits of temperature
+     * The temperature is signed and scaled by 10 */
+    temp = (int16_t)((uint16_t)(bb[0][1] << 12) | (bb[0][2] << 4));
+    temp = temp >> 4;
 
-        channel = ((bb[0][1]&0x30)>>4)+1;
-        battery = (bb[0][1]&0x80);
-        sensor_id = bb[0][0];
-        temp_c = (float) temp / 10.0;
+    channel = ((bb[0][1]&0x30)>>4)+1;
+    battery = (bb[0][1]&0x80);
+    sensor_id = bb[0][0];
+    temp_c = (float) temp / 10.0;
 
-        data = data_make(
-                        "model",         "",            DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
-                        "id",            "House Code",  DATA_INT,    sensor_id,
-                        "channel",       "Channel",     DATA_INT,    channel,
-                        "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                        "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-                        "mic",           "Integrity",   DATA_STRING, "CRC",
-                        NULL);
-        decoder_output_data(decoder, data);
+    data = data_make(
+                    "model",         "",            DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
+                    "id",            "House Code",  DATA_INT,    sensor_id,
+                    "channel",       "Channel",     DATA_INT,    channel,
+                    "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "mic",           "Integrity",   DATA_STRING, "CRC",
+                    NULL);
+    decoder_output_data(decoder, data);
 
-        return 1;
-    }
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {

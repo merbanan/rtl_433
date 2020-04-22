@@ -36,11 +36,11 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 36 && bitbuffer->bits_per_row[row] != 37)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
         b = bitbuffer->bb[row];
         tmpData = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
         if (tmpData == 0xffffffff)
-            continue; // prevent false positive checksum
+            continue; // DECODE_ABORT_EARLY
         if (tmpData == savData)
             continue;
         savData = tmpData;
@@ -48,7 +48,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         chk = xor_bytes(b, 4); // sum nibble 0-7
         chk = (chk >> 4) ^ (chk & 0x0f); // fold to nibble
         if (chk != 0)
-            continue;
+            continue; // DECODE_FAIL_MIC
 
         sid      = (b[0]);
         battery  = (b[1] >> 7) & 1;

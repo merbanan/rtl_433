@@ -50,6 +50,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     uint8_t *bytes;
     unsigned int device;
     data_t *data;
+    uint8_t ic;
 
     // The device transmits 16 rows, let's check for 3 matching.
     // (Really 17 rows, but the last one doesn't match because it's missing a trailing 1.)
@@ -59,33 +60,27 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
             (bitbuffer->num_rows > 5) ? 5 : 2,
             40);
     if (row < 0) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     bytes = bitbuffer->bb[row];
     if (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3]) {
-        return 0; // reduce false positives
+        return DECODE_ABORT_EARLY; // reduce false positives
     }
 
     if (bitbuffer->bits_per_row[row] != 41)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
+    ic = lfsr_digest8_reflect(bytes, 4, 0x51, 0x04);
+    if (ic != bytes[4]) {
+        return DECODE_FAIL_MIC;
+    }
     // Note: the device ID changes randomly each time you replace the battery, so we can't early out based on it.
     // This is probably to allow multiple devices to be used at once.  When you replace the receiver batteries
     // or long-press its power button, it pairs with the first device ID it hears.
     device = bytes[0];
 
-    if (decoder->verbose) {
-        // There is a mysterious checksum in bytes[4].  It may be the same as the checksum used by the TP-11,
-        // which consisted of a lookup table containing, for each bit in the message, a byte to be xor-ed into
-        // the checksum if the message bit was 1.  It should be possible to solve for that table using Gaussian
-        // elimination, so dump some data so we can try this.
 
-        // This format is easily usable by bruteforce-crc, after piping through | grep raw_data | cut -d':' -f2
-        // bruteforce-crc didn't find anything, though - this may not be a CRC algorithm specifically.
-        fprintf(stderr,"thermopro_tp12_raw_data:");
-        bitrow_print(bytes, 40);
-    }
 
     temp1_raw = ((bytes[2] & 0xf0) << 4) | bytes[1];
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
@@ -98,6 +93,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
             "id",               "Id",          DATA_INT,    device,
             "temperature_1_C",  "Temperature 1 (Food)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2 (Barbecue)", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
+            "mic",              "Integrity",   DATA_STRING, "CRC",
             NULL);
     decoder_output_data(decoder, data);
     return 1;
@@ -108,6 +104,7 @@ static char *output_fields[] = {
     "id",
     "temperature_1_C",
     "temperature_2_C",
+    "mic",
     NULL
 };
 

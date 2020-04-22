@@ -139,7 +139,7 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (double)humidity,
             "button",           "Button",       DATA_INT,    button_pressed,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 

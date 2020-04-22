@@ -49,6 +49,33 @@ char *arg_param(char *arg)
         return p;
 }
 
+double arg_float(const char *str, const char *error_hint)
+{
+    if (!str) {
+        fprintf(stderr, "%smissing number argument\n", error_hint);
+        exit(1);
+    }
+
+    if (!*str) {
+        fprintf(stderr, "%sempty number argument\n", error_hint);
+        exit(1);
+    }
+
+    // allow whitespace and equals char
+    while (*str == ' ' || *str == '=')
+        ++str;
+
+    char *endptr;
+    double val = strtod(str, &endptr);
+
+    if (str == endptr) {
+        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    return val;
+}
+
 char *hostport_param(char *param, char **host, char **port)
 {
     if (param && *param) {
@@ -137,7 +164,8 @@ uint32_t atouint32_metric(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    val += 1e-5; // rounding (e.g. 4123456789.99999)
+    if (val - (uint32_t)val > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget k, M, or G suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -232,7 +260,13 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    if (val < 0) {
+        val -= 1e-5; // rounding (e.g. -4123456789.99999)
+    }
+    else {
+        val += 1e-5; // rounding (e.g. 4123456789.99999)
+    }
+    if (val - (int)(val) > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget m, or h suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -294,7 +328,16 @@ char *remove_ws(char *str)
 
 // Unit testing
 #ifdef _TEST
-#define ASSERT_EQUALS(a,b) if ((a) == (b)) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); }
+#define ASSERT_EQUALS(a,b)                                  \
+    do {                                                    \
+        if ((a) == (b))                                     \
+            ++passed;                                       \
+        else {                                              \
+            ++failed;                                       \
+            fprintf(stderr, "FAIL: %d <> %d\n", (a), (b));  \
+        }                                                   \
+    } while (0)
+
 int main(int argc, char **argv)
 {
     unsigned passed = 0;
@@ -306,7 +349,8 @@ int main(int argc, char **argv)
     ASSERT_EQUALS(atouint32_metric("0.0", ""), 0);
     ASSERT_EQUALS(atouint32_metric("1.0", ""), 1);
     ASSERT_EQUALS(atouint32_metric("1.024k", ""), 1024);
-    ASSERT_EQUALS(atouint32_metric("433.92MHz", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.92M", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.94M", ""), 433940000);
     ASSERT_EQUALS(atouint32_metric(" +1 G ", ""), 1000000000);
 
     fprintf(stderr, "optparse:: atoi_time\n");

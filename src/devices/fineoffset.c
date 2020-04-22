@@ -394,7 +394,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT,    id,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -502,7 +502,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -649,7 +649,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 63 // Match exact length to avoid false positives
             || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
             || (bb[0][1] >> 5) != 0x3)   // Check message type (4 bits)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
 
@@ -658,7 +658,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
@@ -721,7 +721,7 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     if (bitbuffer->bits_per_row[0] != 95 // Match exact length to avoid false positives
             || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
             || (bb[0][1] >> 1) != 0x52)   // Check message type (8 bits)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
 
@@ -730,14 +730,14 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     if (crc) {
         //if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 10) - b[10];
     if (sum & 0xff) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id          = (b[1]);
@@ -813,14 +813,14 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 7) - b[7];
     if (sum & 0xff) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
