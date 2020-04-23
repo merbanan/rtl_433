@@ -51,9 +51,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
-  [-l <level>] Change detection level used to determine pulses (0-16384) (0=auto) (default: 0)
-  [-z <value>] Override short value in data decoder
-  [-x <value>] Override long value in data decoder
+  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)
   [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
   [-Y auto | classic | minmax] FSK pulse detector mode.
 		= Analyze/Debug options =
@@ -224,9 +222,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [146]  Auriol AFW2A1 temperature/humidity sensor
     [147]  TFA Drop Rain Gauge 30.3233.01
     [148]  DSC Security Contact (WS4945)
-    [149]  ERT SCM
-    [150]* Klimalogg/30.3180.IT (-f 868950000 -s 2400000)
-
+    [149]  ERT
+    [150]* Klimalogg
+    [151]  Visonic powercode
 
 * Disabled by default, use -R n or -G
 

@@ -36,7 +36,7 @@ Powercode packet structure is 37 bits. 4 examples follow
 
 Checksum is a londitudinal redundancy check of the 4 bytes containing the device ID and data.
 Bytes are split into nibbles. 1st bit of each nibble is XORed and result is 1st bit of checksum,
-then the same for the 2nd, 3rd and 4th bits. To be implemented.
+then the same for the 2nd, 3rd and 4th bits.
 
 Protocol cribbed from:
  * Visonic MCR-300 UART Manual http://www.el-sys.com.ua/wp-content/uploads/MCR-300_UART_DE3140U0.pdf
@@ -52,8 +52,9 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg[32];
     data_t *data;
     char id[7];
+    uint8_t lrc;
 
-    // 37 bits expected, 6 packet repetitions, accept 4 
+    // 37 bits expected, 6 packet repetitions, accept 4
     int row = bitbuffer_find_repeated_row(bitbuffer, 4, 37);
 
     // exit if anything other than one row returned (-1 if failed)
@@ -61,21 +62,22 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     // exit if incorrect number of bits in row or none
-    if (bitbuffer->bits_per_row[row] !=37)
+    if (bitbuffer->bits_per_row[row] != 37)
         return DECODE_ABORT_LENGTH;
 
-    // extract message, drop leading start bit and trailing LRC nibble
-    bitbuffer_extract_bytes(bitbuffer, 0, 1, msg, 32);
-
-    // TODO: validate checksum here using LRC nibble
+    // extract message, drop leading start bit, include trailing LRC nibble
+    bitbuffer_extract_bytes(bitbuffer, row, 1, msg, 36);
+    lrc = xor_bytes(msg, 5);
+    if (((lrc >> 4) ^ (lrc & 0xf)) != 0)
+       return DECODE_FAIL_MIC;
 
     // debug
     if (decoder->verbose > 1) {
-        fprintf(stderr, "%s: data byte is %02x\n",__func__,msg[3]);
+        fprintf(stderr, "%s: data byte is %02x\n", __func__, msg[3]);
     }
 
     // format device id
-    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]); 
+    sprintf(id, "%02x%02x%02x", msg[0], msg[1], msg[2]);
 
     // populate data byte fields
     /* clang-format off */
@@ -90,6 +92,7 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "supervised", "Supervised" , DATA_INT, ((0x04 & msg[3]) == 0x04) ? 1 : 0,
             "spidernet", "Spidernet"   , DATA_INT, ((0x02 & msg[3]) == 0x02) ? 1 : 0,
             "repeater", "Repeater"     , DATA_INT, ((0x01 & msg[3]) == 0x01) ? 1 : 0,
+            "mic",        "Integrity"  , DATA_STRING, "LRC",
             NULL);
     /* clang-format on */
 
@@ -109,6 +112,7 @@ static char *output_fields[] = {
         "supervised",
         "spidernet",
         "repeater",
+        "mic",
         NULL,
 };
 
@@ -120,6 +124,6 @@ r_device visonic_powercode = {
         .gap_limit   = 900,
         .reset_limit = 5000,
         .decode_fn   = &visonic_powercode_decode,
-        .disabled    = 1,
+        .disabled    = 0,
         .fields      = output_fields,
 };

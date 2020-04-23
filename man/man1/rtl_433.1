@@ -80,14 +80,8 @@ Enable blacklisted device decoding protocols, for testing only.
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-l\fI <level>\fP ]
-Change detection level used to determine pulses (0\-16384) (0=auto) (default: 0)
-.TP
-[ \fB\-z\fI <value>\fP ]
-Override short value in data decoder
-.TP
-[ \fB\-x\fI <value>\fP ]
-Override long value in data decoder
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
 .TP
 [ \fB\-n\fI <value>\fP ]
 Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
@@ -573,11 +567,13 @@ TFA Drop Rain Gauge 30.3233.01
 DSC Security Contact (WS4945)
 .TP
 [ \fB149\fI\fP ]
-ERT SCM
+ERT
 .TP
-[ \fB149\fI\fP ]
-Klimalogg/30.3180.IT
-
+[ \fB150\fI\fP ]
+* Klimalogg
+.TP
+[ \fB151\fI\fP ]
+Visonic powercode
 
 * Disabled by default, use \-R n or \-G
 .SS "Input device selection"
