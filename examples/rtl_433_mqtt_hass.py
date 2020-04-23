@@ -33,7 +33,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value_json.temperature_C }}"
+            "value_template": "{{ value }}"
         }
     },
     "temperature_1_C": {
@@ -43,7 +43,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 1",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value_json.temperature_1_C }}"
+            "value_template": "{{ value }}"
         }
     },
     "temperature_2_C": {
@@ -53,7 +53,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 2",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value_json.temperature_2_C }}"
+            "value_template": "{{ value }}"
         }
     },
     "temperature_F": {
@@ -63,7 +63,7 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°F",
-            "value_template": "{{ value_json.temperature_F }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -74,18 +74,7 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value_json.battery_ok) * 99 + 1 }}"
-        }
-    },
-
-    "battery": {
-        "device_type": "binary_sensor",
-        "object_suffix": "battery",
-        "config": {
-            "device_class": "battery",
-            "name": "Battery",
-            "payload_on": "1",
-            "payload_off": "0"
+            "value_template": "{{ float(value) * 99 + 1 }}"
         }
     },
 
@@ -96,7 +85,7 @@ mappings = {
             "device_class": "humidity",
             "name": "Humidity",
             "unit_of_measurement": "%",
-            "value_template": "{{ value_json.humidity }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -107,7 +96,7 @@ mappings = {
             "device_class": "moisture",
             "name": "Moisture",
             "unit_of_measurement": "%",
-            "value_template": "{{ value_json.moisture }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -118,7 +107,7 @@ mappings = {
             "device_class": "pressure",
             "name": "Pressure",
             "unit_of_measurement": "hPa",
-            "value_template": "{{ value_json.pressure_hPa }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -129,7 +118,7 @@ mappings = {
             "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ value_json.wind_speed_km_h }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -140,7 +129,7 @@ mappings = {
             "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value_json.wind_speed_m_s) * 3.6 }}"
+            "value_template": "{{ float(value) * 3.6 }}"
         }
     },
 
@@ -151,7 +140,7 @@ mappings = {
             "device_class": "weather",
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ value_json.gust_speed_km_h }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -162,7 +151,7 @@ mappings = {
             "device_class": "weather",
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value_json.gust_speed_m_s) * 3.6 }}"
+            "value_template": "{{ float(value) * 3.6 }}"
         }
     },
 
@@ -173,7 +162,7 @@ mappings = {
             "device_class": "weather",
             "name": "Wind Direction",
             "unit_of_measurement": "°",
-            "value_template": "{{ value_json.wind_dir_deg }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -184,7 +173,7 @@ mappings = {
             "device_class": "weather",
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ value_json.rain_mm }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -195,7 +184,7 @@ mappings = {
             "device_class": "weather",
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
-            "value_template": "{{ value_json.rain_mm_h }}"
+            "value_template": "{{ value }}"
         }
     },
 
@@ -256,7 +245,7 @@ mappings = {
             "device_class": "depth",
             "name": "Depth",
             "unit_of_measurement": "cm",
-            "value_template": "{{ value_json.depth_cm }}"
+            "value_template": "{{ value }}"
         }
     },
 
