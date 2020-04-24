@@ -53,6 +53,11 @@
     #define closesocket(x)  close(x)
 #endif
 
+#ifdef __FreeBSD__
+  #define __BSD_VISIBLE 1
+  #include <sys/socket.h>
+#endif
+
 #include <time.h>
 
 #include "term_ctl.h"

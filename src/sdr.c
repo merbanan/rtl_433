@@ -63,6 +63,11 @@
     #define closesocket(x)  close(x)
 #endif
 
+#ifdef __FreeBSD__
+  #define __BSD_VISIBLE 1
+  #include <sys/socket.h>
+#endif
+
 struct sdr_dev {
     SOCKET rtl_tcp;
     uint32_t rtl_tcp_freq; ///< last known center frequency, rtl_tcp only.
