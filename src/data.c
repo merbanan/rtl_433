@@ -35,19 +35,22 @@
 #endif
 
 #ifdef _WIN32
-  #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
-  #undef _WIN32_WINNT
-  #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
-  #endif
+    #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+    #undef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
+    #endif
 
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
 #else
-  #include <netdb.h>
-  #include <netinet/in.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netdb.h>
+    #include <netinet/in.h>
 
-  #define SOCKET          int
-  #define INVALID_SOCKET  -1
+    #define SOCKET          int
+    #define INVALID_SOCKET  (-1)
+    #define closesocket(x)  close(x)
 #endif
 
 #include <time.h>
@@ -59,17 +62,15 @@
 #include "data.h"
 
 #ifdef _WIN32
-  #define _POSIX_HOST_NAME_MAX  128
-  #undef  close   /* We only work with sockets here */
-  #define close(s)              closesocket (s)
-  #define perror(str)           ws2_perror (str)
+    #define _POSIX_HOST_NAME_MAX  128
+    #define perror(str)           ws2_perror(str)
 
-  static void ws2_perror (const char *str)
-  {
-    if (str && *str)
-       fprintf (stderr, "%s: ", str);
-    fprintf (stderr, "Winsock error %d.\n", WSAGetLastError());
-  }
+    static void ws2_perror (const char *str)
+    {
+        if (str && *str)
+            fprintf(stderr, "%s: ", str);
+        fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
+    }
 #endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
@@ -1065,7 +1066,7 @@ static void datagram_client_close(datagram_client_t *client)
         return;
 
     if (client->sock != INVALID_SOCKET) {
-        close(client->sock);
+        closesocket(client->sock);
         client->sock = INVALID_SOCKET;
     }
 
