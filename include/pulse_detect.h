@@ -103,6 +103,7 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// Set pulse detector level values.
 ///
 /// @param pulse_detect The pulse_detect instance
+/// @param use_mag_est Use magnitude instead of amplitude
 /// @param fixed_high_level Manual high level override, default is 0 (auto)
 /// @param min_high_level Minimum high level, default is -12 dB
 /// @param high_low_ratio Minimum signal noise ratio, default is 9 dB
