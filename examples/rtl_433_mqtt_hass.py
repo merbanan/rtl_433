@@ -193,6 +193,7 @@ mappings = {
         "object_suffix": "tamper",
         "config": {
             "device_class": "safety",
+            "force_update": "true",
             "payload_on": "1",
             "payload_off": "0"
         }
@@ -203,6 +204,7 @@ mappings = {
         "object_suffix": "alarm",
         "config": {
             "device_class": "safety",
+            "force_update": "true",
             "payload_on": "1",
             "payload_off": "0"
         }
