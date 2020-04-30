@@ -1,7 +1,7 @@
 /** @file
     Fine Offset WH1080/WH3080 Weather Station
 */
-/** \fn int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+/** @fn int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 This module is based on Stanisław Pitucha ('viraptor' https://github.com/viraptor) code stub for the Digitech XC0348
 Weather Station, which seems to be a rebranded Fine Offset WH1080 Weather Station.
 

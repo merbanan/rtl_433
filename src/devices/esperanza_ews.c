@@ -11,7 +11,7 @@
 */
 /**
 Largely the same as kedsum, s3318p.
-\sa kedsum.c s3318p.c
+@sa kedsum.c s3318p.c
 
 Frame structure:
 

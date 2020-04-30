@@ -13,7 +13,7 @@
 */
 /**
 Largely the same as esperanza_ews, s3318p.
-\sa esperanza_ews.c s3318p.c
+@sa esperanza_ews.c s3318p.c
 
 Frame structure:
 

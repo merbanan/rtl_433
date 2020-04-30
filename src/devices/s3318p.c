@@ -11,7 +11,7 @@
 */
 /**
 Largely the same as esperanza_ews, kedsum.
-\sa esperanza_ews.c kedsum.c
+@sa esperanza_ews.c kedsum.c
 
 Also NC-5849-913 from Pearl (for FWS-310 station).
 
