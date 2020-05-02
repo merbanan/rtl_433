@@ -17,6 +17,8 @@ class rtl_433(object):
 	_ID_FIELDS = [
 		("brand", str),
 		("model", str),
+		("type", str),
+		("subtype", str),
 		("channel", int),
 		("id", int),
 	]
