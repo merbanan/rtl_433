@@ -1,14 +1,36 @@
 #!/usr/bin/env python3
 
+"""
+Prometheus/OpenMetrics relay for rtl_433.
+
+Can either take in JSON from stdin:
+
+rtl_433 ... -F json | examples/rtl_433_prometheus_relay.py
+
+or through syslog:
+
+rtl_433 ... -F syslog:0:4433
+examples/rtl_433_prometheus_relay.py 4433
+
+Then have Prometheus scrape it on port 30584, or change _SRV_PORT below.
+
+Built for and tested with Oregon Scientific weather sensors, but *should*
+work for other kinds (but only for numeric data).
+"""
+
 import collections
 import json
 import os
+import socket
 import sys
 import threading
 import time
 
 import dateutil.parser
 import http.server
+
+## 0x77 w 0x78 x → port 30584
+_SRV_PORT = 0x7778
 
 
 class rtl_433(object):
@@ -28,19 +50,19 @@ class rtl_433(object):
 	_MAX_AGE_SECS = 300  # Used for gc, and max age to show *anything* for given id
 	_BACKLOG_SECS = 60   # If multiple samples within this timestamp, share them all
 
-	_LOG_CLEAN_INTERVAL = 5000  # Number of iterations
+	_LOG_CLEAN_INTERVAL = 1000  # Number of iterations
 
 	log = []  # [(timestamp, id_fields, variable name, value), ...]
 
 	def __init__(self, stream):
 		self.stream = stream
 
-	def run(self):
+	def loop(self):
 		n = 0
 		last = {}
 		for line in self.stream:
 			now = time.time()
-			print(line, end="")
+			print(line.strip())
 			try:
 				pkt = json.loads(line)
 			except json.decoder.JSONDecodeError as e:
@@ -111,19 +133,35 @@ class rtl_433(object):
 	def clean_log(self):
 		if not self.log:
 			return
+		if self.log[0][0] - self.log[-1][0] > 60:
+			# Time has gone the wrong way by a long time. Drop the table.
+			self.log = []
+			return
 		
 		min_ts = time.time() - self._MAX_AGE_SECS
 		for i, e in enumerate(self.log):
 			if e[0] >= min_ts:
 				break
 		
-		print("clean_log: %d" % i)
 		# I think this should be safe even if we're serving /metrics since
 		# I'm replacing not modifying the log.
 		self.log = self.log[i:]
 
 
-r = rtl_433(sys.stdin)
+def syslog_reader(port):
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	sock.bind(("0.0.0.0", port))
+	while True:
+		pkt, _ = sock.recvfrom(4096)
+		bits = pkt.split(None, 7)
+		if len(bits) == 8:
+			yield str(bits[7], "utf-8")
+
+
+if len(sys.argv) == 1:
+	r = rtl_433(sys.stdin)
+else:
+	r = rtl_433(syslog_reader(int(sys.argv[1])))
 
 
 class MetricsHandler(http.server.BaseHTTPRequestHandler):
@@ -139,10 +177,9 @@ class MetricsServer(http.server.HTTPServer):
 		super().handle_error(req, addr)
 		os._exit(6)
 
-## 0x77 w 0x78 x
-https = MetricsServer(("0.0.0.0", 0x7778), MetricsHandler)
+https = MetricsServer(("0.0.0.0", _SRV_PORT), MetricsHandler)
 httpd = threading.Thread(name="httpd", target=https.serve_forever, daemon=True)
 httpd.start()
 
 
-r.run()  # (Note: Not actually a thread of its own.)
+r.loop()
