@@ -7,7 +7,7 @@ Can either take in JSON from stdin:
 
 rtl_433 ... -F json | examples/rtl_433_prometheus_relay.py
 
-or through syslog:
+or through UDP syslog packets:
 
 rtl_433 ... -F syslog:0:4433
 examples/rtl_433_prometheus_relay.py 4433
@@ -66,7 +66,7 @@ class rtl_433(object):
 			try:
 				pkt = json.loads(line)
 			except json.decoder.JSONDecodeError as e:
-				print("Parse error: " + e.msg)
+				print("Parse error: %s" % e.msg)
 				continue
 			if not isinstance(pkt, dict):
 				print("Not a dict/object: %r" % pkt)
@@ -90,7 +90,7 @@ class rtl_433(object):
 					try:
 						new.append((ts, id, k, float(v)))
 					except (ValueError, TypeError):
-						print("%s{%r} has non-numeric value %s", k, id, v)
+						print("%s{%r} has non-numeric value %s" % (k, id, v))
 						continue
 				self.log += new
 
