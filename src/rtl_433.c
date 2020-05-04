@@ -675,6 +675,7 @@ static void parse_conf_file(r_cfg_t *cfg, char const *path)
     char *conf = readconf(path);
     parse_conf_text(cfg, conf);
     //free(conf); // TODO: check no args are dangling, then use free
+    list_push(&cfg->confs, conf); // free on exit
 }
 
 static void parse_conf_try_default_files(r_cfg_t *cfg)
@@ -1141,6 +1142,12 @@ static void sighandler(int signum)
 }
 #endif
 
+static void cleanup(void)
+{
+    fprintf(stderr, "Exiting...\n");
+    r_free_cfg(&g_cfg);
+}
+
 int main(int argc, char **argv) {
 #ifndef _WIN32
     struct sigaction sigact;
@@ -1153,6 +1160,7 @@ int main(int argc, char **argv) {
 
     print_version(); // always print the version info
 
+    atexit(cleanup);
     r_init_cfg(cfg);
 
     setbuf(stdout, NULL);

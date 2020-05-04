@@ -136,6 +136,8 @@ void r_free_cfg(r_cfg_t *cfg)
 
     list_free_elems(&cfg->in_files, NULL);
 
+    list_free_elems(&cfg->confs, free);
+
     //free(cfg);
 }
 

@@ -42,6 +42,7 @@ typedef enum {
 } time_mode_t;
 
 typedef struct r_cfg {
+    list_t confs;
     char *dev_query;
     char *gain_str;
     char *settings_str;
