@@ -139,8 +139,6 @@ def run(run_as_daemon=False):
 
     # setup input and output
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    # allow multiple sockets to use the same PORT number
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     sock.bind((UDP_IP, UDP_PORT))
 
     # run, as daemon if requested
