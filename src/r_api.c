@@ -111,6 +111,9 @@ r_cfg_t *r_create_cfg(void)
 
 void r_free_cfg(r_cfg_t *cfg)
 {
+    if (!cfg)
+        return;
+
     if (cfg->dev) {
         sdr_deactivate(cfg->dev);
         sdr_close(cfg->dev);

@@ -1351,7 +1351,7 @@ int main(int argc, char **argv) {
             fclose(fp);
         }
 
-        r_free_cfg(cfg);
+        //r_free_cfg(cfg);
         exit(!r);
     }
     // Special case for string test data
@@ -1363,7 +1363,7 @@ int main(int argc, char **argv) {
                 fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
             r += pulse_demod_string(cfg->test_data, r_dev);
         }
-        r_free_cfg(cfg);
+        //r_free_cfg(cfg);
         exit(!r);
     }
 
@@ -1492,7 +1492,7 @@ int main(int argc, char **argv) {
         close_dumpers(cfg);
         free(test_mode_buf);
         free(test_mode_float_buf);
-        r_free_cfg(cfg);
+        //r_free_cfg(cfg);
         exit(0);
     }
 
@@ -1594,7 +1594,7 @@ int main(int argc, char **argv) {
     if (!cfg->do_exit)
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
 
-    r_free_cfg(cfg);
+    //r_free_cfg(cfg);
 
     return r >= 0 ? r : -r;
 }
