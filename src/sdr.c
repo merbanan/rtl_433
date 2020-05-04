@@ -571,6 +571,7 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char *gain_str, int verbos
                 fprintf(stderr, "%s=%g ", gains[i], gain);
             }
             fprintf(stderr, "\n");
+            SoapySDRStrings_clear(&gains, len);
         }
     }
 
@@ -662,6 +663,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
 
     native_stream_format = SoapySDRDevice_getNativeStreamFormat(dev, direction, channel, &fullScale);
     fprintf(stderr, "Found native stream format: %s (full scale: %.1f)\n", native_stream_format, fullScale);
+    free(native_stream_format);
 }
 
 static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
@@ -691,20 +693,27 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
     char *format = SoapySDRDevice_getNativeStreamFormat(dev->soapy_dev, SOAPY_SDR_RX, 0, &dev->fullScale);
     if (!strcmp(SOAPY_SDR_CU8, format)) {
         // actually not supported by SoapySDR
+        free(format);
+        format = SOAPY_SDR_CU8;
         *sample_size = sizeof(uint8_t); // CU8
     }
 //    else if (!strcmp(SOAPY_SDR_CS8, format)) {
 //        // TODO: CS8 needs conversion to CU8
 //        // e.g. RTL-SDR (8 bit), scale is 128.0
+//        free(format);
+//        format = SOAPY_SDR_CS8;
 //        *sample_size = sizeof(int8_t); // CS8
 //    }
     else if (!strcmp(SOAPY_SDR_CS16, format)) {
         // e.g. LimeSDR-mini (12 bit), native scale is 2048.0
         // e.g. SDRplay RSP1A (14 bit), native scale is 32767.0
+        free(format);
+        format = SOAPY_SDR_CS16;
         *sample_size = sizeof(int16_t); // CS16
     }
     else {
         // force CS16
+        free(format);
         format = SOAPY_SDR_CS16;
         *sample_size = sizeof(int16_t); // CS16
         dev->fullScale = 32768.0; // assume max for SOAPY_SDR_CS16
