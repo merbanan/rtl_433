@@ -46,7 +46,7 @@ class rtl_433(object):
 	]
 	_MIN_REPEAT_SECS = 3600  # See a device at least twice in this timespan before sharing it.
 	_EXPORT_TIMESTAMPS = True
-	
+
 	_MAX_AGE_SECS = 300  # Used for gc, and max age to show *anything* for given id
 	_BACKLOG_SECS = 60   # If multiple samples within this timestamp, share them all
 
@@ -137,20 +137,20 @@ class rtl_433(object):
 			# Time has gone the wrong way by a long time. Drop the table.
 			self.log = []
 			return
-		
+
 		min_ts = time.time() - self._MAX_AGE_SECS
 		for i, e in enumerate(self.log):
 			if e[0] >= min_ts:
 				break
-		
+
 		# I think this should be safe even if we're serving /metrics since
 		# I'm replacing not modifying the log.
 		self.log = self.log[i:]
 
 
-def syslog_reader(port):
+def syslog_reader(udp_port, udp_ip="0.0.0.0"):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-	sock.bind(("0.0.0.0", port))
+	sock.bind((udp_ip, udp_port))
 	while True:
 		pkt, _ = sock.recvfrom(4096)
 		bits = pkt.split(None, 7)
