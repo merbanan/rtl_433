@@ -58,6 +58,11 @@
   #include <sys/socket.h>
 #endif
 
+#ifdef __FreeBSD__
+  #define __BSD_VISIBLE 1
+  #include <sys/socket.h>
+#endif
+
 #include <time.h>
 
 #include "term_ctl.h"
