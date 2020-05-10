@@ -206,6 +206,8 @@
     DECL(atech_ws308) \
     DECL(acurite_01185m) \
     DECL(enocean_erp1) \
+    DECL(switchdoclabs_FT020T) \
+
 
     /* Add new decoders here. */
 
