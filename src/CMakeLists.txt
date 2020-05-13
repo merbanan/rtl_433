@@ -57,6 +57,7 @@ add_library(r_433 STATIC
     devices/ecowitt.c
     devices/efergy_e2_classic.c
     devices/efergy_optical.c
+    devices/efth800.c
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c

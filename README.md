@@ -225,6 +225,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [149]  ERT
     [150]* Klimalogg
     [151]  Visonic powercode
+    [152]  Eurochron EFTH-800 temperature and humidity sensor
 
 * Disabled by default, use -R n or -G
 

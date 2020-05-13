@@ -159,6 +159,7 @@
     DECL(ert_amr) \
     DECL(klimalogg) \
     DECL(visonic_powercode) \
+    DECL(eurochron_efth800) \
 
     /* Add new decoders here. */
 
