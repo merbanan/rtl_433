@@ -39,43 +39,32 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
     if (r < 0)
-      return DECODE_ABORT_EARLY;
+        return DECODE_ABORT_EARLY;
 
     b = bitbuffer->bb[r];
 
     // we expect 36 bits but there might be a trailing 0 bit
     if (bitbuffer->bits_per_row[r] > 37)
-      return DECODE_ABORT_LENGTH;
+        return DECODE_ABORT_LENGTH;
 
-    /* The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
-     * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
-     * So less then 0.5% which should be acceptable.
-     */
-     if (b[0] == 0 || b[2] == 0 || b[3] == 0
+    if ((b[3] & 0xf0) != 0xf0)
+        return DECODE_ABORT_EARLY; // const not 1111
+
+    // The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
+    // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
+    // So less then 0.5% which should be acceptable.
+    if (b[0] == 0 || b[2] == 0 || b[3] == 0
             || rubicson_crc_check(bitbuffer->bb[r + 1]))
         return DECODE_ABORT_EARLY;
 
-    /* if const is not 1111 then abort */
-    if ((b[3] & 0xF0) != 0xF0)
-        return DECODE_ABORT_EARLY;
-
-    /* Nibble 0,1 contains id */
-    id = b[0];
-
-    /* Nibble 2 is battery and channel */
-    battery = b[1] & 0x80;
-    channel = ((b[1] & 0x30) >> 4) + 1;
-
-    /* Nibble 3,4,5 contains 12 bits of temperature
-     * The temperature is signed and scaled by 10 */
-    temp_raw = (int16_t)((uint16_t)(b[1] << 12) | (b[2] << 4));
-    temp_c = (temp_raw >> 4) * 0.1;
-
-    /* Nibble 6,7 is humidity */
+    id       = b[0];
+    battery  = b[1] & 0x80;
+    channel  = ((b[1] & 0x30) >> 4) + 1;
+    temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    temp_c   = (temp_raw >> 4) * 0.1;
     humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
 
-    // Thermo
-    if (humidity == 0x00) {
+    if (humidity == 0x00) { // Thermo
         /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
@@ -86,8 +75,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 NULL);
         /* clang-format on */
     }
-    // Thermo/Hygro
-    else {
+    else { // Thermo/Hygro
         /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
