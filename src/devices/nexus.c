@@ -54,7 +54,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
     // So less then 0.5% which should be acceptable.
     if (b[0] == 0 || b[2] == 0 || b[3] == 0
-            || rubicson_crc_check(bitbuffer->bb[r + 1]))
+            || rubicson_crc_check(b))
         return DECODE_ABORT_EARLY;
 
     id       = b[0];

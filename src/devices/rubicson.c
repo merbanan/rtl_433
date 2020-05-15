@@ -51,7 +51,10 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bitbuffer->bits_per_row[r] != 36)
         return DECODE_ABORT_LENGTH;
 
-    if (!rubicson_crc_check(bitbuffer->bb[1]))
+    if ((b[3] & 0xf0) != 0xf0)
+        return DECODE_ABORT_EARLY; // const not 1111
+
+    if (!rubicson_crc_check(b))
         return DECODE_FAIL_MIC;
 
     id       = b[0];
