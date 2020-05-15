@@ -47,6 +47,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/cardin.c \
                        devices/chuango.c \
                        devices/companion_wtr001.c \
+                       devices/cotech_36_7959.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
                        devices/digitech_xc0324.c \
