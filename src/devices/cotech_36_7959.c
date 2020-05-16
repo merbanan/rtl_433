@@ -25,9 +25,9 @@ Message layout
 0 = 4 bit: ?? Type code? part of id?, never seems to change
 1 = 8 bit: Id, changes when reset
 2 = 1 bit: Battery indicator 0 = Ok, 1 = Battery low
-3 = 1 bit: 1 = Wind direction value is max byte value (255) + value given by the wind direction byte
-4 = 1 bit: 1 = Gust value is max byte value (255) + value given by the gust byte
-5 = 1 bit: 1 = Wind value is max byte value (255) + value given by the wind byte
+3 = 1 bit: 1 = Wind direction value is max byte value (256) + value given by the wind direction byte
+4 = 1 bit: 1 = Gust value is max byte value (256) + value given by the gust byte
+5 = 1 bit: 1 = Wind value is max byte value (256) + value given by the wind byte
 6 = 8 bit: Average wind. Calculated with value from byte / 10.0f
 7 = 8 bit: Gust. Calculated with value from byte / 10.0f
 8 = 8 bit: Wind direction in degrees.
@@ -167,9 +167,9 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer){
         "temperature_F",                        "Temperature",      DATA_FORMAT, "%.1f", DATA_DOUBLE, ((temp_raw - 400) / 10.0f),
         "humidity",                             "Humidity",         DATA_INT, humidity,
         _X("rain_mm", "rain"),                  "Rain",             DATA_FORMAT, "%.1f", DATA_DOUBLE, rain / 10.0f,
-        _X("wind_dir_deg", "wind_direction"),   "Wind direction",   DATA_INT, deg_loop?255+wind_dir:wind_dir,
-        _X("wind_avg_m_s", "wind_speed_ms"),    "Wind",             DATA_FORMAT, "%.1f", DATA_DOUBLE, (wind_loop?255+wind:wind) / 10.0f,
-        _X("wind_max_m_s", "gust_speed_ms"),    "Gust",             DATA_FORMAT, "%.1f", DATA_DOUBLE, (gust_loop?255+gust:gust) / 10.0f,
+        _X("wind_dir_deg", "wind_direction"),   "Wind direction",   DATA_INT, deg_loop?256+wind_dir:wind_dir,
+        _X("wind_avg_m_s", "wind_speed_ms"),    "Wind",             DATA_FORMAT, "%.1f", DATA_DOUBLE, (wind_loop?256+wind:wind) / 10.0f,
+        _X("wind_max_m_s", "gust_speed_ms"),    "Gust",             DATA_FORMAT, "%.1f", DATA_DOUBLE, (gust_loop?256+gust:gust) / 10.0f,
         "mic",                                  "Integrity",        DATA_STRING, "CRC",
         NULL);
 
