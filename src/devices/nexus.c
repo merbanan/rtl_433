@@ -61,7 +61,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery  = b[1] & 0x80;
     channel  = ((b[1] & 0x30) >> 4) + 1;
     temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
-    temp_c   = (temp_raw >> 4) * 0.1;
+    temp_c   = (temp_raw >> 4) * 0.1f;
     humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
 
     if (humidity == 0x00) { // Thermo

@@ -74,7 +74,7 @@ static int fineoffset_ws2032_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float dir         = (b[4] >> 4) * 22.5f;
     int temp_sign     = (b[4] & 0x08) ? -1 : 1;
     int temp_raw      = ((b[4] & 0x07) << 8) | b[5];
-    float temperature = temp_sign * temp_raw * 0.1;
+    float temperature = temp_sign * temp_raw * 0.1f;
     int humidity      = b[6];
     float speed       = (b[7] * 0.43f) * 3.6f; // m/s -> km/h
     float gust        = (b[8] * 0.43f) * 3.6f; // m/s -> km/h

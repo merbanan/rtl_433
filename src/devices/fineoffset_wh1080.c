@@ -189,7 +189,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // GETTING WEATHER SENSORS DATA
     int temp_raw      = ((br[2] & 0x03) << 8) | br[3]; // only 10 bits, discard top bits
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int humidity      = br[4];
     int direction_deg = wind_dir_degr[br[9] & 0x0f];
     float speed       = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
@@ -205,13 +205,13 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int uv_index     = br[2] & 0x0F;
 
     // GETTING LIGHT DATA
-    float light = (br[4] << 16) | (br[5] << 8) | br[6];
-    float lux   = light * 0.1;
+    int light = (br[4] << 16) | (br[5] << 8) | br[6];
+    double lux = light * 0.1;
     float wm;
     if (preamble == SPB)
         wm = (light * 0.00079);
     else //EPB
-        wm = (light / 6830);
+        wm = (light / 6830.0);
 
     // GETTING TIME DATA
     int signal_type       = ((br[2] & 0x0F) == 10);

@@ -126,7 +126,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // The temperature is unsigned offset by 40 C and scaled by 10
         temp -= 400;
     }
-    temperature = temp * 0.1;
+    temperature = temp * 0.1f;
 
     // Nibble 8,9 contains humidity
     humidity = b[3];
@@ -260,7 +260,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir        = b[2] | (b[3] & 0x80) << 1; // range 0-359 deg, 0x1ff if invalid
     int low_battery     = (b[3] & 0x08) >> 3;
     int temp_raw        = (b[3] & 0x07) << 8 | b[4]; // 0x7ff if invalid
-    float temperature   = (temp_raw - 400) * 0.1; // range -40.0-60.0 C
+    float temperature   = (temp_raw - 400) * 0.1f; // range -40.0-60.0 C
     int humidity        = b[5];                      // 0xff if invalid
     int wind_speed_raw  = b[6] | (b[3] & 0x10) << 4; // 0x1ff if invalid
     float wind_speed_factor, rain_cup_count;
@@ -282,7 +282,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall_mm   = rainfall_raw * rain_cup_count; // each tip is 0.3mm / 0.254mm
     int uv_raw          = b[10] << 8 | b[11];               // range 0-20000, 0xffff if invalid
     int light_raw       = b[12] << 16 | b[13] << 8 | b[14]; // 0xffffff if invalid
-    float light_lux     = light_raw * 0.1; // range 0.0-300000.0lux
+    double light_lux     = light_raw * 0.1; // range 0.0-300000.0lux
     // Light = value/10 ; Watts/m Sqr. = Light/683 ;  Lux to W/m2 = Lux/126
 
     // UV value   UVI
@@ -490,9 +490,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int low_battery   = (b[1] & 0x08) >> 3;
     int invalid_flag  = (b[1] & 0x04) >> 2;
     int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
-    float temperature = (temp_raw - 400) * 0.1;    // range -40.0-60.0 C
+    float temperature = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
-    float pressure    = (b[4] << 8 | b[5]) * 0.1;
+    float pressure    = (b[4] << 8 | b[5]) * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -664,7 +664,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
@@ -826,7 +826,7 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
@@ -900,7 +900,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 

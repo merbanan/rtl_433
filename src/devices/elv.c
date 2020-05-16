@@ -165,8 +165,8 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";
     int code       = dec[1] & 7;
-    float temp     = ((dec[1] & 8) ? -1.0 : 1.0) * (dec[4] * 10 + dec[3] + dec[2] * 0.1);
-    float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1;
+    float temp     = ((dec[1] & 8) ? -1.0f : 1.0f) * (dec[4] * 10 + dec[3] + dec[2] * 0.1f);
+    float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1f;
     int pressure   = 0;
     if (dec[0]==4) {
         pressure = 200 + dec[10] * 100 + dec[9] * 10 + dec[8];

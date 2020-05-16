@@ -64,7 +64,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     id          = ((b[0] & 0x0f) << 8) | b[1];
     battery_low = b[2] >> 7;
     temp_raw    = (int16_t)((b[2] & 0x3f) << 10) | ((b[3] & 0xf0) << 2); // sign-extend
-    temp_c      = (float)(temp_raw >> 6) * 0.1;
+    temp_c      = (temp_raw >> 6) * 0.1f;
     humidity    = (b[4] >> 4) * 10 + (b[4] & 0xf); // BCD
 
     /* clang-format off */

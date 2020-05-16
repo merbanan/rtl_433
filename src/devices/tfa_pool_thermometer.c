@@ -60,7 +60,7 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
     device      = ((b[0] & 0x0F) << 4) + ((b[1] & 0xF0) >> 4);
     temp_raw    = ((b[1] & 0x0F) << 8) + b[2];
-    temp_f      = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) * 0.1;
+    temp_f      = (temp_raw > 2048 ? temp_raw - 4096 : temp_raw) * 0.1f;
     channel     = ((b[3] & 0xC0) >> 6);
     battery     = ((b[3] & 0x20) >> 5);
 

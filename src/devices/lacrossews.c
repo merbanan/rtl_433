@@ -113,9 +113,9 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         case 0: // Temperature
             if (ws_id == 0x6)
-                temp_c = (msg_value_bcd - 400.0) * 0.1;
+                temp_c = (msg_value_bcd - 400.0) * 0.1f;
             else
-                temp_c = (msg_value_bcd - 300.0) * 0.1;
+                temp_c = (msg_value_bcd - 300.0) * 0.1f;
 
             /* clang-format off */
             data = data_make(

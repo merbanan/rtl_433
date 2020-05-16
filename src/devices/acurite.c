@@ -174,7 +174,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // multiplied by 10 using the 4th - 6th nybbles (bytes 1 & 2)
         // negative values are recovered by sign extend from int16_t.
         int temp_raw = (int16_t)(((bb[1] & 0x0f) << 12) | (bb[2] << 4));
-        tempc        = (temp_raw >> 4) * 0.1;
+        tempc        = (temp_raw >> 4) * 0.1f;
         id           = bb[0];
         status       = (bb[1] & 0xf0) >> 4;
         battery_low  = status & 0x8;
@@ -338,7 +338,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // Device Specification: -40 to 158 F  / -40 to 70 C
     // Available range given encoding with 12 bits -150.0 F to +259.6 F
     int temp_raw = ((bb[4] & 0x1F) << 7) | (bb[5] & 0x7F);
-    tempf = (temp_raw - 1500) * 0.1;
+    tempf = (temp_raw - 1500) * 0.1f;
 
     // Strike count is 8 bits, LSB in following byte
     strike_count = ((bb[6] & 0x7f) << 1) | ((bb[7] & 0x40) >> 6);
@@ -578,7 +578,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 // range -40 to 158 F
                 int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
-                tempf = (temp_raw - 400) * 0.1;
+                tempf = (temp_raw - 400) * 0.1f;
 
                 humidity = (bb[6] & 0x7f); // 1-99 %rH
 
@@ -607,7 +607,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 // note the 3n1 seems to have one more high bit than 5n1
                 int temp_raw = (bb[4] & 0x1F) << 7 | (bb[5] & 0x7F);
-                tempf        = (temp_raw - 1480) * 0.1; // regression yields (rawtemp-1480)*0.1
+                tempf        = (temp_raw - 1480) * 0.1f; // regression yields (rawtemp-1480)*0.1
 
                 wind_speed_mph = bb[6] & 0x7f; // seems to be plain MPH
 
@@ -843,7 +843,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     battery   = (b[1] & 0x80) >> 7;
     temp_raw  = (int16_t)((b[1] << 12) | (b[2] << 4));
     temp_raw  = temp_raw >> 4;
-    temp_c    = temp_raw * 0.1;
+    temp_c    = temp_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(

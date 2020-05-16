@@ -65,7 +65,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // GETTING WEATHER SENSORS DATA
     int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h

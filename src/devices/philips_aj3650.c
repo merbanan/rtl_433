@@ -130,7 +130,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Temperature */
     temp_raw = (packet[1] << 2) | (packet[2] >> 6);
-    temperature = (temp_raw - 500) * 0.1;
+    temperature = (temp_raw - 500) * 0.1f;
 
     /* Battery status */
     battery_status = packet[PHILIPS_PACKETLEN - 1] & 0x40;

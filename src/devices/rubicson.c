@@ -4,6 +4,8 @@
 /** @fn int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Rubicson temperature sensor.
 
+Also older TFA 30.3197 sensors.
+
 The sensor sends 12 packets of  36 bits pwm modulated data.
 
 data is grouped into 9 nibbles
@@ -61,7 +63,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     battery  = (b[1] & 0x80);
     channel  = ((b[1] & 0x30) >> 4) + 1;
     temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
-    temp_c   = (temp_raw >> 4) * 0.1;
+    temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(

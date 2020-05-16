@@ -68,7 +68,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int channel  = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
     int humidity = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
-    float temp_f = (temp_raw - 900) * 0.1;
+    float temp_f = (temp_raw - 900) * 0.1f;
 
     char *battery_str = battery == 2 ? "OK" : battery == 1 ? "WEAK" : "LOW";
 

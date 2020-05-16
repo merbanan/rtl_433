@@ -16,6 +16,7 @@ So far these were identified (mostly sold in central/eastern europe)
 - Solight TE66
 - EMOS E0107T
 - NX-6876-917 from Pearl (for FWS-70 station).
+- newer TFA 30.3197
 
 Rated -50 C to 70 C, frequency 433,92 MHz, three selectable channels.
 
@@ -64,7 +65,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery  = (b[1] & 0x80);
     channel  = ((b[1] & 0x30) >> 4);
     temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
-    temp_c   = (temp_raw >> 4) * 0.1;
+    temp_c   = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(

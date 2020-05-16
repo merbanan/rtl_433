@@ -85,8 +85,8 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     temp1_raw = ((bytes[2] & 0xf0) << 4) | bytes[1];
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
-    temp1_c = (temp1_raw - 200) * 0.1;
-    temp2_c = (temp2_raw - 200) * 0.1;
+    temp1_c = (temp1_raw - 200) * 0.1f;
+    temp2_c = (temp2_raw - 200) * 0.1f;
 
     data = data_make(
             "model",            "",            DATA_STRING, _X("Thermopro-TP12","Thermopro TP12 Thermometer"),
