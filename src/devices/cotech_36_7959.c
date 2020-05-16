@@ -1,17 +1,48 @@
+/** @file
+    Cotech 36-7959 Weatherstation.
+
+    Copyright (C) 2020 Andreas Holmberg <andreas@burken.se>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+/**
+Cotech 36-7959 Weatherstation, 433Mhz
+
+OOK modulated with Manchester zerobit encoding
+Message length is 112 bit, every second time it will transmit two identical messages and every second it will transmit one. 
+Example raw message: {112}c6880000e80000846d20fffbfb39
+
+Integrity check is done using CRC8 using poly=0x31  init=0xc0
+
+Message layout
+
+0000 11111111 2 3 4 5 66666666 77777777 88888888 9999 AAAAAAAAAAAA BBBB CCCCCCCCCCCC DDDDDDDD EEEEEEEEEEEEEEEEEEEEEEEE FFFFFFFF
+
+0 = 4 bit: ?? Type code? part of id?, never seems to change
+1 = 8 bit: Id, changes when reset
+2 = 1 bit: Battery indicator 0 = Ok, 1 = Battery low
+3 = 1 bit: 1 = Wind direction value is max byte value (255) + value given by the wind direction byte
+4 = 1 bit: 1 = Gust value is max byte value (255) + value given by the gust byte
+5 = 1 bit: 1 = Wind value is max byte value (255) + value given by the wind byte
+6 = 8 bit: Average wind. Calculated with value from byte / 10.0f
+7 = 8 bit: Gust. Calculated with value from byte / 10.0f
+8 = 8 bit: Wind direction in degrees.
+9 = 4 bit: ? Might belong to the rain value
+A = 12 bit: Total rain in mm. Calculated with value from bits / 10.f
+B = 4 bit: ?, always the same sequence: 1000
+C = 12 bit: Temperature. Value - 400 / 10.0f = Temperature in fahrenheit
+D = 8 bit: Humidity
+E = 24 bit: ? Always the same, might be some padding for the CRC-calculation
+F = 8 bit: CRC
+*/
+
 #include "decoder.h"
 
 #define NUM_BITS 112
-
-static unsigned parse_bits(const char *code, bitrow_t bitrow)
-{
-    bitbuffer_t bits = {0};
-    bitbuffer_parse(&bits, code);
-    if (bits.num_rows != 1) {
-        fprintf(stderr, "Bad flex spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
-    }
-    memcpy(bitrow, bits.bb[0], sizeof(bitrow_t));
-    return bits.bits_per_row[0];
-}
 
 /// extract a number up to 32/64 bits from given offset with given bit length
 static unsigned long extract_number(uint8_t *data, unsigned bit_offset, unsigned bit_count)
@@ -60,22 +91,11 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer){
     int r = -1;
     bitrow_t tmp;
     data_t *data;
-    char *preamble = "{12}014";
-    bitrow_t preamble_bits;
-    unsigned preamble_len;
-
-    preamble_len = parse_bits(preamble, preamble_bits);
-
-    // for(i = 0; i < preamble_bits; i++){
-    //     fprintf(stderr, "%u", preamble_bits[i]);
-    // }
-
-    // int r = bitbuffer_find_repeated_row(bitbuffer, 0, 0);
+    uint8_t preamble_bits[] = { 0x01, 0x40 };
+    unsigned preamble_len = 12;
 
     if (decoder->verbose > 1) {
         fprintf(stderr, "%s: Nr. of repeated rows: %d\n", __func__, r);
-        fprintf(stderr, "%s: preamble len: %d\n", __func__, preamble_len);
-        // fprintf(stderr, "%s: preamble_bits: %x\n", __func__, preamble_bits);
     }
 
     for (i = 0; i < bitbuffer->num_rows; i++) {
@@ -122,7 +142,6 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer){
         return DECODE_FAIL_MIC;
     }
 
-    // bitrow_t row = bitbuffer->bb[0];
     //Extract data from buffer
     //int type_code = extract_number(bitbuffer->bb[0], 0, 4); //Not sure about this
     int id = extract_number(bitbuffer->bb[0], 4, 8); //Not sure about this, changes on battery change or when reset
