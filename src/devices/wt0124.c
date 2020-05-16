@@ -60,7 +60,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sensor_rid = (b[0]&0x0F)<<4 | (b[1]&0x0F);
 
     /* Get temperature */
-    temp_c = (float) ((((b[1]&0xF)<<8) | b[2])-0x990) / 10.0;
+    temp_c = ((((b[1] & 0xF) << 8) | b[2]) - 0x990) * 0.1f;
 
     /* Get channel */
     channel = ((b[3]>>4) & 0x3);

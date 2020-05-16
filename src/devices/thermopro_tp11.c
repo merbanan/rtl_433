@@ -44,7 +44,7 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     device = value >> 12;
 
     temp_raw = value & 0xfff;
-    temp_c = (temp_raw - 200) / 10.;
+    temp_c = (temp_raw - 200) * 0.1f;
 
     data = data_make(
             "model",         "",            DATA_STRING, _X("Thermopro-TP11","Thermopro TP11 Thermometer"),

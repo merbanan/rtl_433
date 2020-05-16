@@ -168,7 +168,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         case 7: // Gust
             wind_dir = msg_nybbles[9] * 22.5;
-            wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8]) / 10.0;
+            wind_spd = (msg_nybbles[7] * 16 + msg_nybbles[8]) * 0.1f;
             if (msg_nybbles[7] == 0xF && msg_nybbles[8] == 0xE) {
                 if (decoder->verbose) {
                     fprintf(stderr, "LaCrosse WS %02X-%02X: %s Not Connected\n",

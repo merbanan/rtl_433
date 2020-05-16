@@ -106,8 +106,8 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // Decode temperature (b[2]), plus 1st 4 bits b[3], LSB first order!
     // Tenths of degrees C, offset from the minimum possible (-40.0 degrees)
-    uint16_t temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]);
-    temperature   = (temp / 10.0) - 40.0;
+    int temp = ((uint16_t)(reverse8(b[3]) & 0x0f) << 8) | reverse8(b[2]);
+    temperature   = (temp - 400) * 0.1f;
 
     //Unknown byte, constant as 0x80 in all my data
     // ??maybe battery status??

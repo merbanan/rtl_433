@@ -41,7 +41,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     isBatteryLow = (b[2] & 0x80) != 0; // if not zero, battery is low
     channel = ((b[2] & 0x70) >> 4) + 1;
     int temp_f = ((b[2] & 0x0f) << 8) | b[3];
-    temperature = (temp_f - 400) / 10.0f;
+    temperature = (temp_f - 400) * 0.1f;
     humidity = b[4];
 
     data = data_make(
