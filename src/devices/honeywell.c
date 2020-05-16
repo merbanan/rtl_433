@@ -95,7 +95,8 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     event = b[3];
     // decoded event bits: AATABHUU
     // NOTE: not sure if these apply to all device types
-    state       = (event & 0x80) >> 7;
+    // NOTE: contact switch state is in bit 7 and reed switch state is in bit 5
+    state       = (event & 0x80) && (event & 0x20);
     alarm       = (event & 0xb0) >> 4;
     tamper      = (event & 0x40) >> 6;
     battery_low = (event & 0x08) >> 3;
