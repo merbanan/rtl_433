@@ -94,13 +94,13 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // Not a valid packet
 
     event = b[3];
-    // decoded event bits: AATABHUU
+    // decoded event bits: CATRBHUU
     // NOTE: not sure if these apply to all device types
     // NOTE: contact switch state is in bit 7 and reed switch state is in bit 5
     contact     = (event & 0x80) >> 7;
     tamper      = (event & 0x40) >> 6;
     reed        = (event & 0x20) >> 5;
-    alarm       = (event & 0xb0) >> 4;
+    alarm       = (event & 0x10) >> 4;
     battery_low = (event & 0x08) >> 3;
     heartbeat   = (event & 0x04) >> 2;
 
