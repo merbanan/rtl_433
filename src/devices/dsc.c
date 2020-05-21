@@ -174,7 +174,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         switch (subtype) {
         case 0x6: subtype_str = "WS4939 key fob"; break;
-        case 0x2: subtype_str = "DW4917 door/window sensor"; break;
+        case 0x3: subtype_str = "WS4904P Pet immune pir detector"; break;
+        case 0x2: subtype_str = "DW4917/WS4945 door/window sensor"; break;
         default: subtype_str = "unknown"; break;
         }
 
