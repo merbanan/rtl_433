@@ -160,6 +160,7 @@
     DECL(klimalogg) \
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
+    DECL(cotech_36_7959) \
 
     /* Add new decoders here. */
 
