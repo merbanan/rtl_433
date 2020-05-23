@@ -226,6 +226,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [150]* Klimalogg
     [151]  Visonic powercode
     [152]  Eurochron EFTH-800 temperature and humidity sensor
+    [153]  Cotech 36-7959 wireless weather station with USB
 
 * Disabled by default, use -R n or -G
 

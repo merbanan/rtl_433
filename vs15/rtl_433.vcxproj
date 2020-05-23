@@ -171,6 +171,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\cardin.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
+    <ClCompile Include="..\src\devices\cotech_36_7959.c" />
     <ClCompile Include="..\src\devices\current_cost.c" />
     <ClCompile Include="..\src\devices\danfoss.c" />
     <ClCompile Include="..\src\devices\digitech_xc0324.c" />

@@ -250,6 +250,9 @@
     <ClCompile Include="..\src\devices\companion_wtr001.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\cotech_36_7959.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\current_cost.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
