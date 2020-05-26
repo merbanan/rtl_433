@@ -20,8 +20,9 @@ import paho.mqtt.client as mqtt
 MQTT_HOST = "127.0.0.1"
 MQTT_PORT = 1883
 MQTT_TOPIC = "rtl_433/+/events"
-MQTT_USERNAME = "username"
-MQTT_PASSWORD = "password"
+# When MQTT_USERNAME is set to None it will disable username and password for mqtt
+MQTT_USERNAME = None
+MQTT_PASSWORD = None
 DISCOVERY_PREFIX = "homeassistant"
 DISCOVERY_INTERVAL = 600  # Seconds before refreshing the discovery
 
@@ -405,7 +406,8 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
     mqttc = mqtt.Client()
-    mqttc.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    if MQTT_USERNAME is not None:
+        mqttc.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
