@@ -46,8 +46,17 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         /* set event_str based on code received */
         switch (b[2]) {
+            case 0x00:
+                event_str = "DS10A DOOR/WINDOW OPEN/DELAY";
+                break;
+            case 0x01:
+                event_str = "DS10A DOOR/WINDOW OPEN/DELAY - BATTERY LOW";
+                break;
             case 0x04:
                 event_str = "DS10A DOOR/WINDOW OPEN";
+                break;
+            case 0x05:
+                event_str = "DS10A DOOR/WINDOW OPEN - BATTERY LOW";
                 break;
             case 0x06:
                 event_str = "KR10A KEY-FOB ARM";
@@ -58,11 +67,20 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             case 0x46:
                 event_str = "KR10A KEY-FOB LIGHTS-ON";
                 break;
+            case 0x80:
+                event_str = "DS10A DOOR/WINDOW CLOSED/DELAY";
+                break;
+            case 0x81:
+                event_str = "DS10A DOOR/WINDOW CLOSED/DELAY - BATTERY LOW";
+                break;
             case 0x82:
                 event_str = "SH624 SEC-REMOTE DISARM";
                 break;
             case 0x84:
                 event_str = "DS10A DOOR/WINDOW CLOSED";
+                break;
+            case 0x85:
+                event_str = "DS10A DOOR/WINDOW CLOSED - BATTERY LOW ";
                 break;
             case 0x86:
                 event_str = "KR10A KEY-FOB DISARM";
