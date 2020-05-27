@@ -96,6 +96,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     event = b[3];
     // decoded event bits: CTRMBHUU
     // NOTE: not sure if these apply to all device types
+    // NOTE: contact switch state is in bit 7 and reed switch state is in bit 5
     contact     = (event & 0x80) >> 7;
     tamper      = (event & 0x40) >> 6;
     reed        = (event & 0x20) >> 5;
@@ -105,16 +106,16 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",          "", DATA_STRING, _X("Honeywell-Security","Honeywell Door/Window Sensor"),
-            "id",             "", DATA_FORMAT, "%05x", DATA_INT, device_id,
-            "channel",        "", DATA_INT,    channel,
-            "event",          "", DATA_FORMAT, "%02x", DATA_INT, event,
-            "contact_open_E", "", DATA_INT,    contact,
-            "reed_open_E",    "", DATA_INT,    reed,
-            "motion_E",       "", DATA_INT,    motion,
-            "tamper_E",       "", DATA_INT,    tamper,
-            "battery_low_E",  "", DATA_INT,    battery_low,
-            "heartbeat_E",    "", DATA_INT,    heartbeat,
+            "model",        "", DATA_STRING, _X("Honeywell-Security","Honeywell Door/Window Sensor"),
+            "id",           "", DATA_FORMAT, "%05x", DATA_INT, device_id,
+            "channel",      "", DATA_INT,    channel,
+            "event",        "", DATA_FORMAT, "%02x", DATA_INT, event,
+            "contact_open", "", DATA_INT,    contact,
+            "reed_open",    "", DATA_INT,    reed,
+            "motion",       "", DATA_INT,    motion,
+            "tamper",       "", DATA_INT,    tamper,
+            "battery_ok",   "", DATA_INT,    !battery_low,
+            "heartbeat",    "", DATA_INT,    heartbeat,
             NULL);
     /* clang-format on */
 
@@ -127,12 +128,11 @@ static char *output_fields[] = {
         "id",
         "channel",
         "event",
-        "contact_open_E",
-        "reed_open_E",
-        "motion_E",
-        "tamper_E",
-        "battery_low_E",
-        "heartbeat_E",
+        "state",
+        "alarm",
+        "tamper",
+        "battery_ok",
+        "heartbeat",
         NULL,
 };
 
