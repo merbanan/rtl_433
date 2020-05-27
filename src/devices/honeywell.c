@@ -96,7 +96,6 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     event = b[3];
     // decoded event bits: CATRBHUU
     // NOTE: not sure if these apply to all device types
-    // NOTE: contact switch state is in bit 7 and reed switch state is in bit 5
     contact     = (event & 0x80) >> 7;
     tamper      = (event & 0x40) >> 6;
     reed        = (event & 0x20) >> 5;
@@ -110,6 +109,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",           "", DATA_FORMAT, "%05x", DATA_INT, device_id,
             "channel",      "", DATA_INT,    channel,
             "event",        "", DATA_FORMAT, "%02x", DATA_INT, event,
+            "state",        "", DATA_STRING, contact ? "open" : "closed", // Ignore the reed switch legacy.
             "contact_open", "", DATA_INT,    contact,
             "reed_open",    "", DATA_INT,    reed,
             "alarm",        "", DATA_INT,    alarm,
@@ -129,6 +129,8 @@ static char *output_fields[] = {
         "channel",
         "event",
         "state",
+        "contact_open",
+        "reed_open",
         "alarm",
         "tamper",
         "battery_ok",
