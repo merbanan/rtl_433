@@ -94,7 +94,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC; // Not a valid packet
 
     event = b[3];
-    // decoded event bits: CATRBHUU
+    // decoded event bits: CTRABHUU
     // NOTE: not sure if these apply to all device types
     contact     = (event & 0x80) >> 7;
     tamper      = (event & 0x40) >> 6;
