@@ -553,11 +553,6 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[14];
     unsigned bit_offset;
 
-    // Validate package
-    if (bitbuffer->bits_per_row[0] < 136) {  // Minimum length 14 bytes data + 3 bytes preamble
-        return DECODE_ABORT_LENGTH;
-    }
-
     // Find a data package and extract data payload
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
