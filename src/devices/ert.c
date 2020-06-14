@@ -64,9 +64,6 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      * CRC and extract the parameters from the back */
 
     /* Extract parameters */
-    physical_tamper = (b[3]&0xC0) >> 6;
-    /* endpoint type is 4 bits and starts at position 26.
-     * xref https://github.com/bemasher/rtlamr/wiki/Protocol */
     ert_type = (b[3]>>2) & 0x0F;
     encoder_tamper = b[3]&0x03;
     consumption_data = (b[4]<<16) | (b[5]<<8) | b[6];
