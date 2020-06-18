@@ -1469,6 +1469,9 @@ int main(int argc, char **argv) {
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
+#ifndef _WIN32
+            alarm(0); // cancel the watchdog timer
+#endif
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
