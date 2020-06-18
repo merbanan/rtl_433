@@ -1,3 +1,13 @@
+/** @file
+    Kerui PIR / Contact Sensor.
+
+    Copyright (C) 2016 Karl Lattimer
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 /**
 Kerui PIR / Contact Sensor.
 
@@ -5,11 +15,16 @@ Such as
 http://www.ebay.co.uk/sch/i.html?_from=R40&_trksid=p2050601.m570.l1313.TR0.TRC0.H0.Xkerui+pir.TRS0&_nkw=kerui+pir&_sacat=0
 
 also tested with:
-  KERUI D026 Window Door Magnet Sensor Detector (433MHz) https://fccid.io/2AGNGKR-D026
+- KERUI D026 Window Door Magnet Sensor Detector (433MHz) https://fccid.io/2AGNGKR-D026
   events: open / close / tamper / battery low (below 5V of 12V battery)
+- Water leak sensor WD51
+- Mini Pir P831
 
 Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
 There is a leading sync bit with a wide gap which runs into the preceeding packet, it's ignored as 25th data bit.
+
+There are slight timing differences between the older sensors and new ones like Water leak sensor WD51 and Mini Pir P831.
+Long: 860-1016 us, short: 304-560 us, older sync: 480 us, newer sync: 340 us,
 */
 
 #include "decoder.h"
@@ -71,7 +86,7 @@ static char *output_fields[] = {
 r_device kerui = {
         .name        = "Kerui PIR / Contact Sensor",
         .modulation  = OOK_PULSE_PWM,
-        .short_width = 400,
+        .short_width = 420,
         .long_width  = 960,
         .gap_limit   = 1100,
         .reset_limit = 9900,
