@@ -80,14 +80,8 @@ Enable blacklisted device decoding protocols, for testing only.
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-l\fI <level>\fP ]
-Change detection level used to determine pulses (0\-16384) (0=auto) (default: 0)
-.TP
-[ \fB\-z\fI <value>\fP ]
-Override short value in data decoder
-.TP
-[ \fB\-x\fI <value>\fP ]
-Override long value in data decoder
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
 .TP
 [ \fB\-n\fI <value>\fP ]
 Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
@@ -516,7 +510,7 @@ DirecTV RC66RX Remote Control
 * Eurochron temperature and humidity sensor
 .TP
 [ \fB130\fI\fP ]
-* IKEA Sparsnäs Energy Meter Monitor
+IKEA Sparsnäs Energy Meter Monitor
 .TP
 [ \fB131\fI\fP ]
 Microchip HCS200 KeeLoq Hopping Encoder based remotes
@@ -571,6 +565,21 @@ TFA Drop Rain Gauge 30.3233.01
 .TP
 [ \fB148\fI\fP ]
 DSC Security Contact (WS4945)
+.TP
+[ \fB149\fI\fP ]
+ERT
+.TP
+[ \fB150\fI\fP ]
+* Klimalogg
+.TP
+[ \fB151\fI\fP ]
+Visonic powercode
+.TP
+[ \fB152\fI\fP ]
+Eurochron EFTH\-800 temperature and humidity sensor
+.TP
+[ \fB153\fI\fP ]
+Cotech 36\-7959 wireless weather station with USB
 
 * Disabled by default, use \-R n or \-G
 .SS "Input device selection"
@@ -766,6 +775,12 @@ The topic string will expand keys like [/model]
 .RE
 .RS
 E.g. \-F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+.RE
+.RS
+With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client\-ID is computed from the driver string.
+.RE
+.RS
+If you use multiple RTL\-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
 .RE
 .RS
 Specify InfluxDB 2.0 server with e.g. \-F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"

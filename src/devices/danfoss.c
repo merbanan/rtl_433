@@ -81,7 +81,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 fprintf(stderr, "Danfoss: short package. Header index: %u\n", bit_offset);
                 bitbuffer_print(bitbuffer);
             }
-            return 0;
+            return DECODE_ABORT_LENGTH;
         }
         bit_offset += 6;    // Skip first nibble 0xE to get byte alignment and remove from CRC calculation
 
@@ -94,7 +94,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     fprintf(stderr, "Danfoss: 6b/4b decoding error\n");
                     bitbuffer_print(bitbuffer);
                 }
-                return 0;
+                return DECODE_FAIL_SANITY;
             }
             bytes[n] = (nibble_h << 4) | nibble_l;
         }
@@ -114,7 +114,7 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
          || crc_calc != (((uint16_t)bytes[8] << 8) | bytes[9])
         ) {
             if (decoder->verbose) fprintf(stderr, "Danfoss: Prefix or CRC error.\n");
-            return 0;
+            return DECODE_FAIL_MIC;
         }
 
         // Decode data
@@ -144,7 +144,8 @@ static int danfoss_cfr_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         return 1;
     }
-    return 0;
+    // TODO: move up instead of putting at bottom
+    return DECODE_ABORT_LENGTH;
 }
 
 

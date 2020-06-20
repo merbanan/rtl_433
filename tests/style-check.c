@@ -87,6 +87,7 @@ static int style_check(char *path)
             need_cond++;
         }
     }
+    fclose(fp);
     if (leading_tabs && leading_spcs) {
         tabs_errors = leading_tabs > leading_spcs ? leading_spcs : leading_tabs;
     }

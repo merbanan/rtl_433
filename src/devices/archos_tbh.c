@@ -173,7 +173,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (type == 2) {
         // temp and humidity
         int temp_raw = (payload[6] << 8 | payload[5]) - 2732;
-        float temp_c = temp_raw * 0.1;
+        float temp_c = temp_raw * 0.1f;
         int humidity = payload[7];
 
         /* clang-format off */
@@ -220,7 +220,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         if (decoder->verbose)
             fprintf(stderr, "%s: unknown frame received\n", __func__);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 }
 

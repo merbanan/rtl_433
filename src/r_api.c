@@ -17,6 +17,7 @@
 #include <math.h>
 
 #include "r_api.h"
+#include "r_util.h"
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
@@ -28,6 +29,7 @@
 #include "optparse.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
+#include "write_sigrok.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -88,7 +90,9 @@ void r_init_cfg(r_cfg_t *cfg)
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
 
-    cfg->demod->level_limit = DEFAULT_LEVEL_LIMIT;
+    cfg->demod->level_limit = 0.0;
+    cfg->demod->min_level = -12.1442;
+    cfg->demod->min_snr = 9.0;
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -149,6 +153,17 @@ void update_protocol(r_cfg_t *cfg, r_device *r_dev)
     r_dev->s_gap_limit   = r_dev->gap_limit * samples_per_us;
     r_dev->s_sync_width  = r_dev->sync_width * samples_per_us;
     r_dev->s_tolerance   = r_dev->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((r_dev->short_width > 0 && r_dev->s_short_width <= 0)
+            || (r_dev->long_width > 0 && r_dev->s_long_width <= 0)
+            || (r_dev->reset_limit > 0 && r_dev->s_reset_limit <= 0)
+            || (r_dev->gap_limit > 0 && r_dev->s_gap_limit <= 0)
+            || (r_dev->sync_width > 0 && r_dev->s_sync_width <= 0)
+            || (r_dev->tolerance > 0 && r_dev->s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", r_dev->protocol_num, r_dev->name);
+        exit(1);
+    }
 
     r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     r_dev->verbose_bits = cfg->verbose_bits;
@@ -232,7 +247,7 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 1) { // amplitude (CU8)
+    if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
         pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->snr_db  = 10.0f * log10f(asnr);
@@ -401,6 +416,9 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
         case OOK_PULSE_PWM_OSV1:
             p_events += pulse_demod_osv1(pulse_data, r_dev);
             break;
+        case OOK_PULSE_NRZS:
+            p_events += pulse_demod_nrzs(pulse_data, r_dev);
+            break;
         // FSK decoders
         case FSK_PULSE_PCM:
         case FSK_PULSE_PWM:
@@ -432,6 +450,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
         case OOK_PULSE_PIWM_DC:
         case OOK_PULSE_DMC:
         case OOK_PULSE_PWM_OSV1:
+        case OOK_PULSE_NRZS:
             break;
         case FSK_PULSE_PCM:
             p_events += pulse_demod_pcm(fsk_pulse_data, r_dev);
@@ -867,8 +886,53 @@ void add_null_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, NULL);
 }
 
+void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
+{
+    // create channels
+    add_dumper(cfg, "U8:LOGIC:logic-1-1", overwrite);
+    add_dumper(cfg, "F32:I:analog-1-4-1", overwrite);
+    add_dumper(cfg, "F32:Q:analog-1-5-1", overwrite);
+    add_dumper(cfg, "F32:AM:analog-1-6-1", overwrite);
+    add_dumper(cfg, "F32:FM:analog-1-7-1", overwrite);
+    cfg->sr_filename = spec;
+    cfg->sr_execopen = overwrite;
+}
+
+void close_dumpers(struct r_cfg *cfg)
+{
+    for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
+        file_info_t *dumper = *iter;
+        if (dumper->file && (dumper->file != stdout)) {
+            fclose(dumper->file);
+            dumper->file = NULL;
+        }
+    }
+
+    char const *labels[] = {
+            "FRAME", // probe1
+            "ASK", // probe2
+            "FSK", // probe3
+            "I", // analog4
+            "Q", // analog5
+            "AM", // analog6
+            "FM", // analog7
+    };
+    if (cfg->sr_filename) {
+        write_sigrok(cfg->sr_filename, cfg->samp_rate, 3, 4, labels);
+    }
+    if (cfg->sr_execopen) {
+        open_pulseview(cfg->sr_filename);
+    }
+}
+
 void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 {
+    size_t spec_len = strlen(spec);
+    if (spec_len >= 3 && !strcmp(&spec[spec_len - 3], ".sr")) {
+        add_sr_dumper(cfg, spec, overwrite);
+        return;
+    }
+
     file_info_t *dumper = calloc(1, sizeof(*dumper));
     if (!dumper)
         FATAL_CALLOC("add_dumper()");

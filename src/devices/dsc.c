@@ -1,70 +1,65 @@
-/* DSC sensor
- *
- *
- * Decode DSC security contact messages
- *
- * Copyright (C) 2015 Tommy Vestermark
- * Copyright (C) 2015 Robert C. Terzi
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * DSC - Digital Security Controls 433 Mhz Wireless Security Contacts
- *       doors, windows, smoke, CO2, water,
- *
- * Protocol Description available in this FCC Report for FCC ID F5300NB912
- *  https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=100988
- *
- * General Packet Description
- * - Packets are 26.5 mS long
- * - Packets start with 2.5 mS of constant modulation for most sensors
- *   Smoke/CO2/Fire sensors start with 5.6 mS of constant modulation
- * - The length of a bit is 500 uS, broken into two 250 uS segments.
- *    A logic 0 is 500 uS (2 x 250 uS) of no signal.
- *    A logic 1 is 250 uS of no signal followed by 250 uS of signal/keying
- * - Then there are 4 sync logic 1 bits.
- * - There is a sync/start 1 bit in between every 8 bits.
- * - A zero byte would be 8 x 500 uS of no signal (plus the 250 uS of
- *   silence for the first half of the next 1 bit) for a maximum total
- *   of 4,250 uS (4.25 mS) of silence.
- * - The last byte is a CRC with nothing after it, no stop/sync bit, so
- *   if there was a CRC byte of 0, the packet would wind up being short
- *   by 4 mS and up to 8 bits (48 bits total).
- *
- * There are 48 bits in the packet including the leading 4 sync 1 bits.
- * This makes the packet 48 x 500 uS bits long plus the 2.5 mS preamble
- * for a total packet length of 26.5 ms.  (smoke will be 3.1 ms longer)
- *
- * Packet Decoding
- *    Check intermessage start / sync bits, every 8 bits
- *    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5
- *    vvvv         v         v         v         v
- *    SSSSdddd ddddSddd dddddSdd ddddddSd dddddddS cccccccc  Sync,data,crc
- *    01234567 89012345 67890123 45678901 23456789 01234567  Received Bit No.
- *    84218421 84218421 84218421 84218421 84218421 84218421  Received Bit Pos.
- *
- #    SSSS         S         S         S         S           Synb bit positions
- *        ssss ssss ttt teeee ee eeeeee e eeeeeee  cccccccc  type
- *        tttt tttt yyy y1111 22 223333 4 4445555  rrrrrrrr
- *
- *  Bits: 0,1,2,3,12,21,30,39 should == 1
- *
- *  Status (st) = 8 bits, open, closed, tamper, repeat
- *  Type (ty)   = 4 bits, Sensor type, really first nybble of ESN
- *  ESN (e1-5)  = 20 bits, Electronic Serial Number: Sensor ID.
- *  CRC (cr)    = 8 bits, CRC, type/polynom to be determined
- *
- * The ESN in practice is 24 bits, The type + remaining 5 nybbles,
- *
- * The CRC is 8 bit, reflected (lsb first), Polynomial 0xf5, Initial value 0x3d
- *
- * CRC algorithm found with CRC reveng (reveng.sourceforge.net)
- *
- * CRC Model Parameters:
- * width=8  poly=0xf5  init=0x3d  refin=true  refout=true  xorout=0x00  check=0xfd  name=(none)
- *
- */
+/** @file
+    DSC security contact sensors.
+
+    Copyright (C) 2015 Tommy Vestermark
+    Copyright (C) 2015 Robert C. Terzi
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+DSC - Digital Security Controls 433 Mhz Wireless Security Contacts
+doors, windows, smoke, CO2, water.
+
+Protocol Description available in this FCC Report for FCC ID F5300NB912
+https://apps.fcc.gov/eas/GetApplicationAttachment.html?id=100988
+
+General Packet Description
+- Packets are 26.5 mS long
+- Packets start with 2.5 mS of constant modulation for most sensors
+  Smoke/CO2/Fire sensors start with 5.6 mS of constant modulation
+- The length of a bit is 500 uS, broken into two 250 uS segments.
+   A logic 0 is 500 uS (2 x 250 uS) of no signal.
+   A logic 1 is 250 uS of no signal followed by 250 uS of signal/keying
+- Then there are 4 sync logic 1 bits.
+- There is a sync/start 1 bit in between every 8 bits.
+- A zero byte would be 8 x 500 uS of no signal (plus the 250 uS of
+  silence for the first half of the next 1 bit) for a maximum total
+  of 4,250 uS (4.25 mS) of silence.
+- The last byte is a CRC with nothing after it, no stop/sync bit, so
+  if there was a CRC byte of 0, the packet would wind up being short
+  by 4 mS and up to 8 bits (48 bits total).
+
+There are 48 bits in the packet including the leading 4 sync 1 bits.
+This makes the packet 48 x 500 uS bits long plus the 2.5 mS preamble
+for a total packet length of 26.5 ms.  (smoke will be 3.1 ms longer)
+
+Packet Decoding
+
+    Check intermessage start / sync bits, every 8 bits
+    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5
+    vvvv         v         v         v         v
+    SSSSdddd ddddSddd dddddSdd ddddddSd dddddddS cccccccc  Sync,data,crc
+    01234567 89012345 67890123 45678901 23456789 01234567  Received Bit No.
+    84218421 84218421 84218421 84218421 84218421 84218421  Received Bit Pos.
+
+    SSSS         S         S         S         S           Synb bit positions
+        ssss ssss ttt teeee ee eeeeee e eeeeeee  cccccccc  type
+        tttt tttt yyy y1111 22 223333 4 4445555  rrrrrrrr
+
+- Bits: 0,1,2,3,12,21,30,39 should == 1
+
+- Status (st) = 8 bits, open, closed, tamper, repeat
+- Type (ty)   = 4 bits, Sensor type, really first nybble of ESN
+- ESN (e1-5)  = 20 bits, Electronic Serial Number: Sensor ID.
+- CRC (cr)    = 8 bits, CRC, type/polynom to be determined
+
+The ESN in practice is 24 bits, The type + remaining 5 nybbles.
+
+The CRC is 8 bit, reflected (lsb first), Polynomial 0xf5, Initial value 0x3d
+*/
 
 #include "decoder.h"
 
@@ -77,7 +72,9 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int valid_cnt = 0;
     uint8_t bytes[5];
     uint8_t status, crc;
+    int subtype;
     uint32_t esn;
+    char *subtype_str;
     char status_str[3];
     char esn_str[7];
     int s_closed, s_event, s_tamper, s_battery_low;
@@ -104,10 +101,10 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-            fprintf(stderr,"DSC row %d invalid bit count %d\n",
-                row, bitbuffer->bits_per_row[row]);
+                fprintf(stderr,"DSC row %d invalid bit count %d\n",
+                        row, bitbuffer->bits_per_row[row]);
             }
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         b = bitbuffer->bb[row];
@@ -120,7 +117,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1) {
                 bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
             }
-            continue;
+            continue; // DECODE_ABORT_EARLY
         }
 
         bytes[0] = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
@@ -134,6 +131,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         status = bytes[0];
+        subtype = bytes[1] >> 4; // maybe full byte?
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 
@@ -141,7 +139,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose)
                 fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
                         esn, status, crc);
-            continue;
+            continue; // DECODE_FAIL_MIC
         }
 
         // Decode status bits:
@@ -174,25 +172,33 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
+        switch (subtype) {
+        case 0x6: subtype_str = "WS4939 key fob"; break;
+        case 0x2: subtype_str = "DW4917 door/window sensor"; break;
+        default: subtype_str = "unknown"; break;
+        }
 
+        /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, _X("DSC-Security","DSC Contact"),
-                "id", "", DATA_INT, esn,
-                "closed", "", DATA_INT, s_closed, // @todo make bool
-                "event", "", DATA_INT, s_event, // @todo make bool
-                "tamper", "", DATA_INT, s_tamper, // @todo make bool
+                "model",        "",             DATA_STRING, _X("DSC-Security","DSC Contact"),
+                "subtype",      "Device Type",  DATA_STRING, subtype_str,
+                "id",           "",             DATA_INT,    esn,
+                "closed",       "",             DATA_INT,    s_closed, // @todo make bool
+                "event",        "",             DATA_INT,    s_event, // @todo make bool
+                "tamper",       "",             DATA_INT,    s_tamper, // @todo make bool
                 _X("battery_ok","battery_low"), "", DATA_INT, _X(!s_battery_low,s_battery_low),
-                "xactivity", "", DATA_INT, s_xactivity, // @todo make bool
+                "xactivity",    "",             DATA_INT,    s_xactivity, // @todo make bool
 
                 // Note: the following may change or be removed
-                "xtamper1", "", DATA_INT, s_xtamper1, // @todo make bool
-                "xtamper2", "", DATA_INT, s_xtamper2, // @todo make bool
-                "exception", "", DATA_INT, s_exception, // @todo make bool
-                "esn", "", DATA_STRING, esn_str, // to be removed - transitional
-                "status", "", DATA_INT, status,
-                "status_hex", "", DATA_STRING, status_str, // to be removed - once bits are output
-                "mic", "", DATA_STRING, "CRC",
+                "xtamper1",     "",             DATA_INT,    s_xtamper1, // @todo make bool
+                "xtamper2",     "",             DATA_INT,    s_xtamper2, // @todo make bool
+                "exception",    "",             DATA_INT,    s_exception, // @todo make bool
+                "esn",          "",             DATA_STRING, esn_str, // to be removed - transitional
+                "status",       "",             DATA_INT,    status,
+                "status_hex",   "",             DATA_STRING, status_str, // to be removed - once bits are output
+                "mic",          "Integrity",    DATA_STRING, "CRC",
                 NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
 
         valid_cnt++; // Have a valid packet.
@@ -206,32 +212,33 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "status",
-    "battery_ok",
-    "mic",
-    NULL,
+        "model",
+        "subtype",
+        "id",
+        "status",
+        "battery_ok",
+        "mic",
+        NULL,
 };
 
 r_device dsc_security = {
-    .name          = "DSC Security Contact",
-    .modulation    = OOK_PULSE_PCM_RZ,
-    .short_width   = 250,    // Pulse length, 250 µs
-    .long_width    = 500,    // Bit period, 500 µs
-    .reset_limit   = 5000,   // Max gap,
-    .decode_fn     = &dsc_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "DSC Security Contact",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 250,  // Pulse length, 250 µs
+        .long_width  = 500,  // Bit period, 500 µs
+        .reset_limit = 5000, // Max gap,
+        .decode_fn   = &dsc_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
 
 r_device dsc_security_ws4945 = {
-    .name          = "DSC Security Contact (WS4945)",
-    .modulation    = OOK_PULSE_PCM_RZ,
-    .short_width   = 536,    // Pulse length, 536 µs
-    .long_width    = 1072,   // Bit period, 1072 µs
-    .reset_limit   = 6000,   // Max gap,
-    .decode_fn     = &dsc_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "DSC Security Contact (WS4945)",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 536,  // Pulse length, 536 µs
+        .long_width  = 1072, // Bit period, 1072 µs
+        .reset_limit = 6000, // Max gap,
+        .decode_fn   = &dsc_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

@@ -29,7 +29,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
-        return 0;
+        return DECODE_ABORT_LENGTH;
     b = bitbuffer->bb[0];
 
     b[0] = ~b[0];
@@ -39,7 +39,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // Validate package
     if (!(b[3] & 0x80)    // Last bit (MSB here) is always 1
         || !b[0] || !b[1] || !(b[2] & 0xF0))    // Reduce false positives. ID 0x00000 not supported
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     id = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4); // ID is 20 bits (Ad: "1 Million combinations" :-)
     cmd = b[2] & 0x0F;

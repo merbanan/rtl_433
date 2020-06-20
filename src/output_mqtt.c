@@ -149,6 +149,7 @@ static void mqtt_client_free(struct mg_mgr *mgr)
     free(mgr->user_data);
     mgr->user_data = NULL;
     mg_mgr_free(mgr);
+    free(mgr);
 }
 
 /* Helper */

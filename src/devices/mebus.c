@@ -11,6 +11,8 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t unknown2;
     data_t *data;
 
+    // TODO: missing packet length validation
+
     if (bb[0][0] == 0 && bb[1][4] !=0 && (bb[1][0] & 0x60) && bb[1][3]==bb[5][3] && bb[1][4] == bb[12][4]) {
 
         address = bb[1][0] & 0x1f;
@@ -38,7 +40,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "unknown1",      "Unknown 1",   DATA_INT, unknown1,
                 "unknown2",      "Unknown 2",   DATA_INT, unknown2,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp / 10.0,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
                 NULL);
         decoder_output_data(decoder, data);
@@ -46,7 +48,7 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         return 1;
     }
-    return 0;
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

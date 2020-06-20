@@ -35,7 +35,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     if (num_bits < 64 || num_bits > 80) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // The bit buffer isn't always aligned to the transmitted data, so
@@ -45,7 +45,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     while ((bytes[0] & 0xf0) != 0xf0 && (bytes[0] & 0xf0) != 0x00) {
         num_bits -= 1;
         if (num_bits < 64) {
-            return 0;
+            return DECODE_FAIL_SANITY;
         }
 
         for (unsigned i = 0; i < (num_bits + 7) / 8; ++i) {
@@ -64,10 +64,10 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned checksum = add_bytes(bytes, 7);
     if (checksum == 0) {
-        return 0; // reduce false positives
+        return DECODE_FAIL_SANITY; // reduce false positives
     }
     if ((checksum & 0xff) != bytes[7]) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     uint16_t address = bytes[2] << 8 | bytes[1];
@@ -76,7 +76,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t battery  = (bytes[3] & 0x40) >> 6;
     uint8_t fact     = -(int8_t)bytes[6] + 15;
     if (fact < 9 || fact > 20) // full range unknown so far
-        return 0; // invalid exponent
+        return DECODE_FAIL_SANITY; // invalid exponent
     float current_adc = (float)(bytes[4] << 8 | bytes[5]) / (1 << fact);
 
     /* clang-format off */

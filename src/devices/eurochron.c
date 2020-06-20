@@ -46,21 +46,21 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
 
     if (row < 0) // repeated rows?
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 36) // 36 bits per row?
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (b[1] & 0x0F) // is lower nibble of second byte zero?
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     /* Extract data */
     device = b[0];
 
-    temp_raw = (int16_t)((b[3] << 8) | (b[4] & 0xf0)) >> 4;
-    temp_c  = (float)temp_raw * 0.1;
+    temp_raw = (int16_t)((b[3] << 8) | (b[4] & 0xf0));
+    temp_c  = (temp_raw >> 4) * 0.1f;
 
     humidity = b[2];
 

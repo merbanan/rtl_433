@@ -28,6 +28,7 @@ rtl_433_SOURCES      = abuf.c \
                        sdr.c \
                        term_ctl.c \
                        util.c \
+                       write_sigrok.c \
                        devices/acurite.c \
                        devices/akhan_100F14.c \
                        devices/alecto.c \
@@ -46,6 +47,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/cardin.c \
                        devices/chuango.c \
                        devices/companion_wtr001.c \
+                       devices/cotech_36_7959.c \
                        devices/current_cost.c \
                        devices/danfoss.c \
                        devices/digitech_xc0324.c \
@@ -55,9 +57,11 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ecowitt.c \
                        devices/efergy_e2_classic.c \
                        devices/efergy_optical.c \
+                       devices/efth800.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
+                       devices/ert.c \
                        devices/esa.c \
                        devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
@@ -91,6 +95,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/intertechno.c \
                        devices/kedsum.c \
                        devices/kerui.c \
+                       devices/klimalogg.c \
                        devices/lacrosse.c \
                        devices/lacrosse_tx141x.c \
                        devices/lacrosse_tx35.c \
@@ -145,6 +150,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ts_ft002.c \
                        devices/ttx201.c \
                        devices/vaillant_vrt340f.c \
+                       devices/visonic_powercode.c \
                        devices/waveman.c \
                        devices/wg_pb12v1.c \
                        devices/ws2032.c \

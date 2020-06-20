@@ -46,11 +46,11 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         //Length must be 72 bits to be considered a valid packet
         if (bitbuffer->bits_per_row[i] != 72)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         //Valid preamble? (Note, the data is still wrong order at this point. Correct pre-amble: 0x00 0x00 0x01)
         if (bb[i][0] != 0x00 || bb[i][1] != 0x00 || bb[i][2] != 0x7f)
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         //Preamble
         preAmble = ~reverse8(bb[i][2]);
@@ -72,7 +72,7 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         payload_checksum = ~reverse8(bb[i][8]);
         calculated_checksum = preAmble + ID1 + ID2 + p1 + tempFahrenheit + tmpbattery_mV;
         if (payload_checksum != calculated_checksum)
-            continue;
+            continue; // DECODE_FAIL_MIC
 
         sensorID = (ID1 << 8) + ID2;
         sprintf(sensorIDhex, "0x%04x", sensorID);
@@ -94,7 +94,8 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     //Was not a Steelmate TPMS after all
-    return 0;
+    // TODO: improve return codes by aborting early
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

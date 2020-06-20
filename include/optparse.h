@@ -35,6 +35,15 @@ int atoiv(char *arg, int def);
 /// otherwise string after colon if found, NULL otherwise.
 char *arg_param(char *arg);
 
+/// Convert a string with optional leading equals char to a double.
+///
+/// Parse errors will fprintf(stderr, ...) and exit(1).
+///
+/// @param str character string to parse
+/// @param error_hint prepended to error output
+/// @return parsed number value
+double arg_float(const char *str, const char *error_hint);
+
 /// Parse param string to host and port.
 /// E.g. ":514", "localhost", "[::1]", "127.0.0.1:514", "[::1]:514",
 /// also "//localhost", "//localhost:514", "//:514".

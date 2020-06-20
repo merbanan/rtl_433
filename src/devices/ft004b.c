@@ -39,7 +39,7 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     if (bitbuffer->bits_per_row[0] != 137 && bitbuffer->bits_per_row[0] != 138) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     /* take the majority of all 46 bits (pattern is sent 3 times) and reverse them */
@@ -52,7 +52,7 @@ ft004b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (msg[0] != 0xf4)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     int temp_raw = ((msg[4] & 0x7) << 8) | msg[3];
     temperature = (temp_raw * 0.05f) - 40.0f;

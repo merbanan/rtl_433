@@ -49,7 +49,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     else if (unstuffed_len == 8)
         sensortype = HIDEKI_TEMP;
     else
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // Invert all bits
     bitbuffer_invert(bitbuffer);
@@ -64,7 +64,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (parity != parity8(packet[i])) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: Parity error at %d\n", __func__, i);
-            return 0;
+            return DECODE_FAIL_MIC;
         }
     }
 
@@ -73,14 +73,14 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (chk) {
         if (decoder->verbose)
             fprintf(stderr, "%s: XOR error\n", __func__);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // CRC-8 poly=0x07 init=0x00
     if (crc8(&packet[1], unstuffed_len - 1, 0x07, 0x00)) {
         if (decoder->verbose)
             fprintf(stderr, "%s: CRC error\n", __func__);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     // Reflect LSB first to LSB last
@@ -88,11 +88,11 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // Parse data
     if (packet[0] != 0x9f) // NOTE: other valid ids might exist
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     int pkt_len  = (packet[2] >> 1) & 0x1f;
-    int pkt_seq  = packet[3] >> 6;
-    int pkt_type = packet[3] & 0x1f;
+    //int pkt_seq  = packet[3] >> 6;
+    //int pkt_type = packet[3] & 0x1f;
     // 0x0C Anemometer
     // 0x0D UV sensor
     // 0x0E Rain level meter
@@ -101,7 +101,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (pkt_len +3 != unstuffed_len) {
         if (decoder->verbose)
             fprintf(stderr, "%s: LEN error\n", __func__);
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     channel = (packet[1] >> 5) & 0x0F;
@@ -122,7 +122,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                "mic",              "MIC",              DATA_STRING, "CRC",
+                "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -145,7 +145,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 _X("wind_max_mi_h","gust_speed_mph"),   "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
                 "wind_approach",    "Wind Approach",    DATA_INT, wind_approach,
                 _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction * 0.1f,
-                "mic",              "MIC",              DATA_STRING, "CRC",
+                "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -157,7 +157,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
-                "mic",              "MIC",              DATA_STRING, "CRC",
+                "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -172,12 +172,13 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
                 "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
-                "mic",              "MIC",              DATA_STRING, "CRC",
+                "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    // unknown sensor type
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {

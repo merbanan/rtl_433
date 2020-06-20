@@ -193,7 +193,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         else if (type == 2) {
             // Wind
-            speed_kmh = temp_raw * 0.1;
+            speed_kmh = temp_raw * 0.1f;
             // wind direction is in humidity field
 
             /* clang-format off */

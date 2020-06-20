@@ -51,7 +51,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char code_str[7];
 
     if (bitbuffer->num_rows < 3)
-        return 0; // truncated transmission
+        return DECODE_ABORT_EARLY; // truncated transmission
 
     bitbuffer_invert(bitbuffer);
 
@@ -74,12 +74,12 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
 
     if (r < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     b = bitbuffer->bb[r];
 
     // if ((b[2] & 0x0f) != 0x03)
-    //     return 0; // last nibble is always 0x3?
+    //     return DECODE_ABORT_EARLY; // last nibble is always 0x3?
 
     b[0] = reverse8(b[0]);
     b[1] = reverse8(b[1]);
@@ -89,7 +89,7 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     id = ((b[2] & 0x0f) << 11) | (b[1] << 3) | (b[0] >> 5); // 15 bits
 
     if (id == 0 || id == 0x7fff)
-         return 0; // reject min/max to reduce false positives
+         return DECODE_FAIL_SANITY; // reject min/max to reduce false positives
 
     sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
 

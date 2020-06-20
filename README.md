@@ -24,7 +24,7 @@ On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros 
 
 ## How to add support for unsupported sensors
 
-Read the Test Data section at the bottom.
+See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
 
 ## Running
 
@@ -51,9 +51,7 @@ Read the Test Data section at the bottom.
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
-  [-l <level>] Change detection level used to determine pulses (0-16384) (0=auto) (default: 0)
-  [-z <value>] Override short value in data decoder
-  [-x <value>] Override long value in data decoder
+  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)
   [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
   [-Y auto | classic | minmax] FSK pulse detector mode.
 		= Analyze/Debug options =
@@ -205,7 +203,7 @@ Read the Test Data section at the bottom.
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
-    [130]* IKEA Sparsnäs Energy Meter Monitor
+    [130]  IKEA Sparsnäs Energy Meter Monitor
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
@@ -224,6 +222,11 @@ Read the Test Data section at the bottom.
     [146]  Auriol AFW2A1 temperature/humidity sensor
     [147]  TFA Drop Rain Gauge 30.3233.01
     [148]  DSC Security Contact (WS4945)
+    [149]  ERT
+    [150]* Klimalogg
+    [151]  Visonic powercode
+    [152]  Eurochron EFTH-800 temperature and humidity sensor
+    [153]  Cotech 36-7959 wireless weather station with USB
 
 * Disabled by default, use -R n or -G
 
@@ -318,6 +321,8 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	  devices: posts device and sensor info in nested topics
 	The topic string will expand keys like [/model]
 	E.g. -F "mqtt://localhost:1883,user=USERNAME,pass=PASSWORD,retain=0,devices=rtl_433[/id]"
+	With MQTT each rtl_433 instance needs a distinct driver selection. The MQTT Client-ID is computed from the driver string.
+	If you use multiple RTL-SDR, perhaps set a serial and select by that (helps not to get the wrong antenna).
 	Specify InfluxDB 2.0 server with e.g. -F "influx://localhost:9999/api/v2/write?org=<org>&bucket=<bucket>,token=<authtoken>"
 	Specify InfluxDB 1.x server with e.g. -F "influx://localhost:8086/write?db=<db>&p=<password>&u=<user>"
 	  Additional parameter -M time:unix:usec:utc for correct timestamps in InfluxDB recommended
@@ -400,43 +405,6 @@ Some examples:
 | `rtl_433 -K FILE -r file_name` | Read a saved data file instead of receiving live data. Tag output with filenames.
 | `rtl_433 -F json -M utc \| mosquitto_pub -t home/rtl_433 -l` | Will pipe the output to network as JSON formatted MQTT messages. A test MQTT client can be found in `examples/mqtt_rtl_433_test_client.py`.
 | `rtl_433 -f 433.53M -f 434.02M -H 15` | Will poll two frequencies with 15 seconds hop interval.
-
-
-## Supporting Additional Devices and Test Data
-
-Some device protocol decoders are disabled by default. When testing to see if your device
-is decoded by rtl_433, use `-G` to enable all device protocols.
-This will likely produce false positives, use with caution.
-
-The first step in decoding new devices is to record the signals using `-S all`.
-The signals will be stored individually in files named g**NNN**\_**FFF**M\_**RRR**k.cu8 :
-
-| Parameter | Description
-|---------|------------
-| **NNN** | signal grabbed number
-| **FFF** | frequency
-| **RRR** | sample rate   
-
-This file can be played back with `rtl_433 -r gNNN_FFFM_RRRk.cu8`.
-
-These files are vital for understanding the signal format as well as the message data.  Use both analyzers
-`-a` and `-A` to look at the recorded signal and determine the pulse characteristics, e.g. `rtl_433 -r gNNN_FFFM_RRRk.cu8 -a -A`.
-
-Make sure you have recorded a proper set of test signals representing different conditions together
-with any and all information about the values that the signal should represent. For example, make a
-note of what temperature and/or humidity is the signal encoding. Ideally, capture a range of data
-values, such a different temperatures, to make it easy to spot what part of the message is changing.
-
-Add the data files, a text file describing the captured signals, pictures of the device and/or
-a link the manufacturer's page (ideally with specifications) to the rtl_433_tests
-github repository. Follow the existing structure as best as possible and send a pull request.
-
-https://github.com/merbanan/rtl_433_tests
-
-Please don't open a new github issue for device support or request decoding help from others
-until you've added test signals and the description to the repository.
-
-The rtl_433_test repository is also used to help test that changes to rtl_433 haven't caused any regressions.
 
 ## Google Group
 

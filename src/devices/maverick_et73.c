@@ -52,16 +52,16 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     // The device transmits many rows, let's check for 3 matching.
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 48);
     if (row < 0) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     bytes = bitbuffer->bb[row];
     if (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3]) {
-        return 0; // reduce false positives
+        return DECODE_ABORT_EARLY; // reduce false positives
     }
 
     if (bitbuffer->bits_per_row[row] != 48)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     device = bytes[0];
 
@@ -73,8 +73,8 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     temp1_raw = (bytes[1] << 4) | ((bytes[2] & 0xf0) );
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
-    temp1_c = temp1_raw * 0.1;
-    temp2_c = temp2_raw * 0.1;
+    temp1_c = temp1_raw * 0.1f;
+    temp2_c = temp2_raw * 0.1f;
 
     data = data_make(
             "model",            "",                 DATA_STRING, _X("Maverick-ET73","Maverick ET73"),
@@ -100,8 +100,8 @@ r_device maverick_et73 = {
     .modulation    = OOK_PULSE_PPM,
     .short_width   = 1050,
     .long_width    = 2050,
-    .gap_limit     = 2070,
-    .reset_limit   = 4040,
+    .gap_limit     = 2200,
+    .reset_limit   = 4400, // 4050 us nominal packet gap
     .decode_fn     = &maverick_et73_sensor_callback,
     .disabled      = 0,
     .fields        = output_fields,

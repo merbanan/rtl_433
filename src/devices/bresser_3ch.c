@@ -58,7 +58,7 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     temp_raw = ((b[1] & 0x0F) << 8) + b[2];
     // 12 bits allows for values -90.0 F - 319.6 F (-67 C - 159 C)
-    temp_f = (temp_raw - 900) / 10.0;
+    temp_f = (temp_raw - 900) * 0.1f;
 
     humidity = b[3];
 

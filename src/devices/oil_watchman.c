@@ -40,16 +40,16 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         bitpos = bitbuffer_manchester_decode(bitbuffer, 0, bitpos, &databits, 64);
         if (databits.bits_per_row[0] != 64)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         b = databits.bb[0];
 
         // Check for postamble, depending on last data bit
         if (bitbuffer_search(bitbuffer, 0, bitpos, &postamble_pattern[b[7] & 1], 2) != bitpos)
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         if (b[7] != crc8le(b, 7, 0x31, 0))
-            continue;
+            continue; // DECODE_FAIL_MIC
 
         // The unit ID changes when you rebind by holding a magnet to the
         // sensor for long enough; it seems to be time-based.

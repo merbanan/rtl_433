@@ -42,14 +42,14 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Reject wrong amount of bits */
     if (bitbuffer->bits_per_row[0] != 68)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* Shift the buffer 4 bits to remove the sync bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 4, b, 64);
 
     /* Calculate the crc */
     if (b[7] != crc8(b, 7, 0x07, 0xf0)) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /* Get data */
@@ -104,7 +104,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 120)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* Discard the first 40 bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
@@ -112,7 +112,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
     /* Calculate the checksum */
     checksum = add_bytes(b, 9) & 0xff;
     if (checksum != b[9]) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /* Get data */

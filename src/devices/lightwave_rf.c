@@ -51,7 +51,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Pulse 72 (delimiting "1" is not demodulated, as gap becomes End-Of-Message - thus expected length is 71
     if (bitbuffer->bits_per_row[0] != 71
             || bitbuffer->num_rows != 1) // There should be only one message (and we use the rest...)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // Polarity is inverted
     bitbuffer_invert(bitbuffer);
@@ -71,13 +71,13 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Check length is correct
     // Due to encoding there will be two "0"s per byte, thus message grows to 91 bits
     if (bitbuffer->bits_per_row[1] != 91)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // Check initial delimiter bit is "1"
     unsigned bit_idx = 0;
     uint8_t delimiter_bit = bitrow_get_bit(bb[1], bit_idx++);
     if (delimiter_bit == 0)
-        return 0; // Decode error
+        return DECODE_ABORT_EARLY; // Decode error
 
     // Strip delimiter bits
     // row_in = 1, row_out = 2
@@ -85,7 +85,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (unsigned n = 0; n < 10; ++n) { // We have 10 bytes
         delimiter_bit = bitrow_get_bit(bb[1], bit_idx++);
         if (delimiter_bit == 0)
-            return 0; // Decode error
+            return DECODE_ABORT_EARLY; // Decode error
 
         for (unsigned m = 0; m < 8; ++m) {
             bitbuffer_add_bit(bitbuffer, bitrow_get_bit(bb[1], bit_idx++));
@@ -103,7 +103,7 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 fprintf(stderr, "LightwaveRF. Nibble decode error %X, idx: %u\n", bb[2][n], n);
                 bitbuffer_print(bitbuffer);
             }
-            return 0; // Decode error
+            return DECODE_FAIL_SANITY; // Decode error
         }
         for (unsigned m=0; m<4; ++m) { // Add nibble one bit at a time...
             bitbuffer_add_bit(bitbuffer, (nibble & (8 >> m)) >> (3-m));

@@ -17,7 +17,7 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char *cmd_str;
 
     if (bitbuffer->bits_per_row[0] != 25)
-        return 0;
+        return DECODE_ABORT_LENGTH;
     b = bitbuffer->bb[0];
 
     //invert bits, short pulse is 0, long pulse is 1
@@ -36,7 +36,7 @@ static int akhan_rke_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     if (!cmd_str)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     data = data_make(
             "model",    "",             DATA_STRING, _X("Akhan-100F14","Akhan 100F14 remote keyless entry"),

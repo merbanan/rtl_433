@@ -181,16 +181,20 @@ static int
 ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row;
+    int ret    = 0;
     int events = 0;
 
     if (MSG_MIN_ROWS <= bitbuffer->num_rows && bitbuffer->num_rows <= MSG_MAX_ROWS) {
         for (row = 0; row < bitbuffer->num_rows; ++row) {
-            events += ttx201_decode(decoder, bitbuffer, row, 0);
-            if (events && !decoder->verbose) return events; // for now, break after first successful message
+            ret = ttx201_decode(decoder, bitbuffer, row, 0);
+            if (ret > 0)
+                events += ret;
+            if (events && !decoder->verbose)
+                return events; // for now, break after first successful message
         }
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

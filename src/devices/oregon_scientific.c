@@ -177,12 +177,10 @@ static int validate_os_v2_message(r_device *decoder, unsigned char *msg, int bit
     if (bits_expected == msg_bits) {
         return validate_os_checksum(decoder, msg, nibbles_in_checksum);
     }
-    else {
-        if (decoder->verbose) {
-            bitrow_printf(msg, msg_bits, "Bit validation error on Oregon Scientific message. Expected %d bits, Message: ", bits_expected);
-        }
-        return 1;
+    if (decoder->verbose) {
+        bitrow_printf(msg, msg_bits, "Bit validation error on Oregon Scientific message. Expected %d bits, Message: ", bits_expected);
     }
+    return 1;
 }
 
 static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -197,7 +195,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
             if (decoder->verbose)
                 bitrow_printf(b, bitbuffer->bits_per_row[0], "Badly formatted OS v2.1 message: ");
         }
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     bitbuffer_t databits = {0};
@@ -217,7 +215,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
         if (((sync_test_val & mask) != pattern)
                 && ((sync_test_val & mask) != pattern2))
-            continue;
+            continue; // DECODE_ABORT_EARLY
 
         // Found sync byte - start working on decoding the stream data.
         // pattern_index indicates    where sync nibble starts, so now we can find the start of the payload
@@ -275,16 +273,16 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
     else if (sensor_id == ID_BHTR968) {
         if (validate_os_v2_message(decoder, msg, 92, msg_bits, 19) != 0)
             return 0;
-        unsigned int comfort = msg[7] >> 4;
-        char *comfort_str = "Normal";
-        if (comfort == 4) comfort_str = "Comfortable";
-        else if (comfort == 8) comfort_str = "Dry";
-        else if (comfort == 0xc) comfort_str = "Humid";
-        unsigned int forecast = msg[9] >> 4;
-        char *forecast_str = "Cloudy";
-        if (forecast == 3) forecast_str = "Rainy";
-        else if (forecast == 6) forecast_str = "Partly Cloudy";
-        else if (forecast == 0xc) forecast_str = "Sunny";
+        //unsigned int comfort = msg[7] >> 4;
+        //char *comfort_str = "Normal";
+        //if (comfort == 4) comfort_str = "Comfortable";
+        //else if (comfort == 8) comfort_str = "Dry";
+        //else if (comfort == 0xc) comfort_str = "Humid";
+        //unsigned int forecast = msg[9] >> 4;
+        //char *forecast_str = "Cloudy";
+        //if (forecast == 3) forecast_str = "Rainy";
+        //else if (forecast == 6) forecast_str = "Partly Cloudy";
+        //else if (forecast == 0xc) forecast_str = "Sunny";
         float temp_c = get_os_temperature(msg);
         float pressure = ((msg[7] & 0x0f) | (msg[8] & 0xf0)) + 856;
         // fprintf(stderr,"Weather Sensor BHTR968    Indoor        Temp: %3.1fC    %3.1fF     Humidity: %d%%", temp_c, ((temp_c*9)/5)+32, get_os_humidity(msg));
@@ -386,7 +384,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
 
         int year    = ((msg[9] & 0x0F) * 10) + ((msg[9] & 0xF0) >> 4) + 2000;
         int month   = ((msg[8] & 0xF0) >> 4);
-        int weekday = ((msg[8] & 0x0F));
+        //int weekday = ((msg[8] & 0x0F));
         int day     = ((msg[7] & 0x0F) * 10) + ((msg[7] & 0xF0) >> 4);
         int hours   = ((msg[6] & 0x0F) * 10) + ((msg[6] & 0xF0) >> 4);
         int minutes = ((msg[5] & 0x0F) * 10) + ((msg[5] & 0xF0) >> 4);
@@ -570,7 +568,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     int sensor_id = (msg[0] << 8) | msg[1];
     if (sensor_id == ID_THGR810 || sensor_id == ID_THGR810a) {
         if (validate_os_checksum(decoder, msg, 15) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float temp_c = get_os_temperature(msg);
         int humidity = get_os_humidity(msg);
         data = data_make(
@@ -587,7 +585,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if (sensor_id == ID_THN802) {
         if (validate_os_checksum(decoder, msg, 12) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float temp_c = get_os_temperature(msg);
         data = data_make(
                 "brand",                    "",                     DATA_STRING, "OS",
@@ -602,7 +600,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if (sensor_id == ID_UV800) {
         if (validate_os_checksum(decoder, msg, 13) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         int uvidx = get_os_uv(msg);
         data = data_make(
                 "brand",                    "",                     DATA_STRING, "OS",
@@ -617,7 +615,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if (sensor_id == ID_PCR800) {
         if (validate_os_checksum(decoder, msg, 18) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float rain_rate = get_os_rain_rate(msg);
         float total_rain = get_os_total_rain(msg);
         data = data_make(
@@ -634,7 +632,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if (sensor_id == ID_PCR800a) {
         if (validate_os_checksum(decoder, msg, 18) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float rain_rate = get_os_rain_rate(msg);
         float total_rain = get_os_total_rain(msg);
         data = data_make(
@@ -651,7 +649,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     }
     else if (sensor_id == ID_WGR800 || sensor_id == ID_WGR800a) {
         if (validate_os_checksum(decoder, msg, 17) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float gustWindspeed = (msg[5]&0x0f) /10.0F + ((msg[6]>>4)&0x0f) *1.0F + (msg[6]&0x0f) * 10.0F;
         float avgWindspeed = ((msg[7]>>4)&0x0f) / 10.0F + (msg[7]&0x0f) *1.0F + ((msg[8]>>4)&0x0f) * 10.0F;
         float quadrant = (0x0f&(msg[4]>>4))*22.5F;
@@ -671,7 +669,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     else if ((msg[0] == 0x20) || (msg[0] == 0x21) || (msg[0] == 0x22) || (msg[0] == 0x23) || (msg[0] == 0x24)) { // Owl CM160 Readings
         msg[0] = msg[0] & 0x0f;
         if (validate_os_checksum(decoder, msg, 22) != 0)
-            return 0;
+            return DECODE_FAIL_MIC;
         float rawAmp = (msg[4] >> 4 << 8 | (msg[3] & 0x0f )<< 4 | msg[3] >> 4);
         unsigned short int ipower = (rawAmp /(0.27*230)*1000);
         data = data_make(
@@ -689,6 +687,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
         for (int k = 0; k < BITBUF_COLS; k++) { // Reverse nibbles
             msg[k] = (msg[k] & 0xF0) >> 4 | (msg[k] & 0x0F) << 4;
         }
+        // TODO: should we return if valid == 0?
 
         int sequence = msg[1] & 0x0F;
         int id       = msg[2] << 8 | (msg[1] & 0xF0);
@@ -736,7 +735,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
             bitrow_printf(b, bitbuffer->bits_per_row[0], "Raw Data: ");
         }
     }
-    return 0;
+    return DECODE_FAIL_SANITY;
 }
 
 static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)

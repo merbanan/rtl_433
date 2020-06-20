@@ -57,7 +57,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             uint8_t b[sizeof(struct emontx)];
         } pkt;
         uint16_t words[14];
-        double vrms;
+        float vrms;
         unsigned i;
 
         bitpos += 22;
@@ -80,7 +80,7 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             pkt_pos = bitbuffer_search(bitbuffer, 0, bitpos,
                            pkt_hdr_inverted, 11);
             if (pkt_pos > bitpos + 5)
-                continue;
+                continue; // DECODE_ABORT_EARLY
             inverted = 1;
         }
 
@@ -98,16 +98,16 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 pkt.b[i] ^= 0xff;
         }
         if (pkt.p.len != 0x1a || pkt.p.postamble != 0xaa)
-            continue;
+            continue; // DECODE_ABORT_EARLY
         crc = crc16lsb((uint8_t *)&pkt.p.group, 0x1d, 0xa001, 0xffff);
 
         // Ick. If we could just do le16_to_cpu(pkt.p.ct1) we wouldn't need this.
         for (i=0; i<14; i++)
             words[i] = pkt.b[4 + (i * 2)] | (pkt.b[5 + i * 2] << 8);
         if (crc != words[13])
-            continue;
+            continue; // DECODE_FAIL_MIC
 
-        vrms = (double)words[4] / 100.0;
+        vrms = (float)words[4] / 100.0;
 
         data = data_make(
                  "model", "", DATA_STRING, _X("emonTx-Energy","emonTx"),
@@ -119,12 +119,13 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                  _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
                  "pulse", "", DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
                  // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
-                 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[5] / 10.0,
-                 words[6] == 3000 ? NULL : "temp2_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[6] / 10.0,
-                 words[7] == 3000 ? NULL : "temp3_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[7] / 10.0,
-                 words[8] == 3000 ? NULL : "temp4_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[8] / 10.0,
-                 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[9] / 10.0,
-                 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, (double)words[10] / 10.0,
+                 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[5] * 0.1f,
+                 words[6] == 3000 ? NULL : "temp2_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[6] * 0.1f,
+                 words[7] == 3000 ? NULL : "temp3_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[7] * 0.1f,
+                 words[8] == 3000 ? NULL : "temp4_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[8] * 0.1f,
+                 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[9] * 0.1f,
+                 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[10] * 0.1f,
+                 "mic",           "Integrity",   DATA_STRING, "CRC",
                  NULL);
         decoder_output_data(decoder, data);
         events++;

@@ -1,25 +1,29 @@
-/* FSK 8 byte Manchester encoded TPMS with simple checksum.
- * Seen on Ford Fiesta, Focus, ...
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Packet nibbles:  IIIIIIII PP TT FF CC
- * I = ID
- * P = likely Pressure
- * T = likely Temperature
- * F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
- * C = Checksum, SUM bytes 0 to 6 = byte 7
+/** @file
+    FSK 8 byte Manchester encoded TPMS with simple checksum.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+FSK 8 byte Manchester encoded TPMS with simple checksum.
+Seen on Ford Fiesta, Focus, ...
+
+Packet nibbles:
+
+    IIIIIIII PP TT FF CC
+
+- I = ID
+- P = likely Pressure
+- T = likely Temperature
+- F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
+- C = Checksum, SUM bytes 0 to 6 = byte 7
 */
 
 #include "decoder.h"
-
-// full preamble is 55 55 55 56 (inverted: aa aa aa a9)
-static const uint8_t preamble_pattern[2] = { 0xaa, 0xa9 }; // 16 bits
 
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -61,9 +65,15 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     return 1;
 }
 
-static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/** @sa tpms_ford_decode() */
+static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
+    uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
+
     int row;
     unsigned bitpos;
+    int ret    = 0;
     int events = 0;
 
     bitbuffer_invert(bitbuffer);
@@ -72,14 +82,16 @@ static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                (const uint8_t *)&preamble_pattern, 16)) + 144 <=
+                preamble_pattern, 16)) + 144 <=
                 bitbuffer->bits_per_row[row]) {
-            events += tpms_ford_decode(decoder, bitbuffer, row, bitpos + 16);
+            ret = tpms_ford_decode(decoder, bitbuffer, row, bitpos + 16);
+            if (ret > 0)
+                events += ret;
             bitpos += 15;
         }
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {
@@ -88,7 +100,7 @@ static char *output_fields[] = {
     "id",
     "code",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device tpms_ford = {

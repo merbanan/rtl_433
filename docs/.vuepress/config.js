@@ -13,6 +13,7 @@ module.exports = {
       'BUILDING',
       'VS15',
       'CHANGELOG',
+      'CONTRIBUTING',
       'PRIMER',
       'OPERATION',
       'DATA_FORMAT',

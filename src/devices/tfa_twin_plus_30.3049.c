@@ -55,15 +55,15 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     row = bitbuffer_find_repeated_row(bitbuffer, 2, 36);
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] != 36)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
     if (!(b[0] || b[1] || b[2] || b[3] || b[4])) /* exclude all zeros */
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     // reverse bit order
     uint8_t rb[5] = { reverse8(b[0]), reverse8(b[1]), reverse8(b[2]),
@@ -77,7 +77,7 @@ static int tfa_twin_plus_303049_callback(r_device *decoder, bitbuffer_t *bitbuff
 
     int checksum = rb[4] & 0x0F;  // just make sure the 10th nibble does not contain junk
     if (checksum != (sum_nibbles & 0xF))
-        return 0; // wrong checksum
+        return DECODE_FAIL_MIC; // wrong checksum
 
   /* IIIICCII B???TTTT TTTTTSSS HHHHHHH1 XXXX */
     int negative_sign = (b[2] & 7);

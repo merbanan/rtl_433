@@ -126,7 +126,7 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // The temperature is unsigned offset by 40 C and scaled by 10
         temp -= 400;
     }
-    temperature = temp * 0.1;
+    temperature = temp * 0.1f;
 
     // Nibble 8,9 contains humidity
     humidity = b[3];
@@ -260,7 +260,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int wind_dir        = b[2] | (b[3] & 0x80) << 1; // range 0-359 deg, 0x1ff if invalid
     int low_battery     = (b[3] & 0x08) >> 3;
     int temp_raw        = (b[3] & 0x07) << 8 | b[4]; // 0x7ff if invalid
-    float temperature   = (temp_raw - 400) * 0.1; // range -40.0-60.0 C
+    float temperature   = (temp_raw - 400) * 0.1f; // range -40.0-60.0 C
     int humidity        = b[5];                      // 0xff if invalid
     int wind_speed_raw  = b[6] | (b[3] & 0x10) << 4; // 0x1ff if invalid
     float wind_speed_factor, rain_cup_count;
@@ -282,7 +282,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float rainfall_mm   = rainfall_raw * rain_cup_count; // each tip is 0.3mm / 0.254mm
     int uv_raw          = b[10] << 8 | b[11];               // range 0-20000, 0xffff if invalid
     int light_raw       = b[12] << 16 | b[13] << 8 | b[14]; // 0xffffff if invalid
-    float light_lux     = light_raw * 0.1; // range 0.0-300000.0lux
+    double light_lux     = light_raw * 0.1; // range 0.0-300000.0lux
     // Light = value/10 ; Watts/m Sqr. = Light/683 ;  Lux to W/m2 = Lux/126
 
     // UV value   UVI
@@ -394,7 +394,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT,    id,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -490,9 +490,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int low_battery   = (b[1] & 0x08) >> 3;
     int invalid_flag  = (b[1] & 0x04) >> 2;
     int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
-    float temperature = (temp_raw - 400) * 0.1;    // range -40.0-60.0 C
+    float temperature = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
-    float pressure    = (b[4] << 8 | b[5]) * 0.1;
+    float pressure    = (b[4] << 8 | b[5]) * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -502,7 +502,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -649,7 +649,7 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 63 // Match exact length to avoid false positives
             || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
             || (bb[0][1] >> 5) != 0x3)   // Check message type (4 bits)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
 
@@ -658,13 +658,13 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v1.0: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
@@ -721,7 +721,7 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     if (bitbuffer->bits_per_row[0] != 95 // Match exact length to avoid false positives
             || (bb[0][0] >> 1) != 0x7F   // Check preamble (7 bits)
             || (bb[0][1] >> 1) != 0x52)   // Check message type (8 bits)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     bitbuffer_extract_bytes(bitbuffer, 0, 7, b, sizeof (b) * 8); // Skip first 7 bits
 
@@ -730,14 +730,14 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     if (crc) {
         //if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 10) - b[10];
     if (sum & 0xff) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0 DCF77: Checksum error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id          = (b[1]);
@@ -813,20 +813,20 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (crc) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: CRC error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
     // Verify checksum
     int sum = add_bytes(b, 7) - b[7];
     if (sum & 0xff) {
         if (decoder->verbose)
             bitrow_printf(b, sizeof (b) * 8, "Alecto WS-1200 v2.0: Checksum error ");
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 
@@ -900,7 +900,7 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int id            = ((b[0] & 0x0f) << 4) | (b[1] >> 4);
     int battery_low   = (b[1] >> 3) & 0x1;
     int temp_raw      = (b[1] & 0x7) << 8 | b[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int rainfall_raw  = b[4] << 8 | b[3];   // rain tip counter
     float rainfall    = rainfall_raw * 0.3; // each tip is 0.3mm
 

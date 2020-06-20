@@ -123,7 +123,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int impulse_gap;
     uint64_t impulses;
     int low_battery;
-    int maybe_overflow;
+    //int maybe_overflow;
     int checksum;
     int calc_chk;
 
@@ -192,7 +192,7 @@ static int norgo_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         impulses = (b[2] >> 4) | (b[3] << 4) | (b[4] << 12) | (b[5] << 20) | (((uint64_t)b[6] & 0x3F) << 28);
 
         low_battery    = (b[6] & 0x40) >> 6;
-        maybe_overflow = (b[6] & 0x80) >> 7;
+        //maybe_overflow = (b[6] & 0x80) >> 7;
 
         // Pulse count is totally 34 bits but we report only 32 bits,
         // should be enough for the duration of battery.

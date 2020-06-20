@@ -243,7 +243,7 @@ other styles are detected but discouraged, e.g.:
 */
 int parse_file_info(char const *filename, file_info_t *info)
 {
-    if (!filename || !*filename) {
+    if (!filename) {
         return 0;
     }
 

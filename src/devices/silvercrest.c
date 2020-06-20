@@ -19,7 +19,7 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
 
     if (bitbuffer->bits_per_row[1] !=33)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* select second row, first might be bad */
     b = bitbuffer->bb[1];
@@ -27,7 +27,7 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         cmd = b[2] & 0xF;
         // Validate button
         if ((b[3]&0xF) != cmd_lu_tab[cmd])
-            return 0;
+            return DECODE_ABORT_EARLY;
 
 
         data = data_make(
@@ -39,7 +39,7 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
         return 1;
     }
-    return 0;
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {

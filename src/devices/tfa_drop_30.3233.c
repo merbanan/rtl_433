@@ -117,8 +117,7 @@ Afterwards, messages are sent every 45s.
 #define TFA_DROP_STARTBYTE 0x3 /* Inverted already */
 #define TFA_DROP_MINREPEATS 2
 
-static int tfa_drop_303233_decode(r_device *decoder,
-        bitbuffer_t *bitbuffer)
+static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int row_index;
@@ -136,7 +135,7 @@ static int tfa_drop_303233_decode(r_device *decoder,
     row_index = bitbuffer_find_repeated_row(bitbuffer, TFA_DROP_MINREPEATS,
             TFA_DROP_BITLEN);
     if (row_index < 0 || bitbuffer->bits_per_row[row_index] > TFA_DROP_BITLEN + 16) {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     row_data = bitbuffer->bb[row_index];
@@ -145,7 +144,7 @@ static int tfa_drop_303233_decode(r_device *decoder,
      * Reject rows that don't start with the correct start byte.
      */
     if ((row_data[0] & 0xf0) != (TFA_DROP_STARTBYTE << 4)) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /*
@@ -154,7 +153,7 @@ static int tfa_drop_303233_decode(r_device *decoder,
     observed_checksum = row_data[7];
     computed_checksum = lfsr_digest8_reflect(row_data, 7, 0x31, 0xf4);
     if (observed_checksum != computed_checksum) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /*

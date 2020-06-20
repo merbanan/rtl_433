@@ -28,83 +28,68 @@ The sensors can be bought at Clas Ohlsen (Nexus) and Pearl (infactory/FreeTec).
 #include "decoder.h"
 
 // NOTE: this should really not be here
-int rubicson_crc_check(bitrow_t *bb);
+int rubicson_crc_check(uint8_t *b);
 
-static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
-    bitrow_t *bb = bitbuffer->bb;
+static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
+    uint8_t *b;
+    int id, battery, channel, temp_raw, humidity;
+    float temp_c;
 
-
-    if (decoder->verbose > 1) {
-        fprintf(stderr,"Possible Nexus: ");
-        bitbuffer_print(bitbuffer);
-    }
-
-    uint8_t id;
-    uint8_t battery;
-    uint8_t channel;
-    int16_t temp;
-    uint8_t humidity;
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
+    if (r < 0)
+        return DECODE_ABORT_EARLY;
 
-    /** The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
-     * it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
-     * So less then 0.5% which should be acceptable.
-     */
-    if (r >= 0 &&
-        bitbuffer->bits_per_row[r] <= 37 && // we expect 36 bits but there might be a trailing 0 bit
-        bb[r][0] != 0 &&
-        bb[r][2] != 0 &&
-        bb[r][3] != 0 &&
-        !rubicson_crc_check(bb)) {
+    b = bitbuffer->bb[r];
 
-        /* if const is not 1111 then abort */
-        if ((bb[r][3]&0xF0) != 0xF0)
-            return 0;
+    // we expect 36 bits but there might be a trailing 0 bit
+    if (bitbuffer->bits_per_row[r] > 37)
+        return DECODE_ABORT_LENGTH;
 
-        /* Get time now */
+    if ((b[3] & 0xf0) != 0xf0)
+        return DECODE_ABORT_EARLY; // const not 1111
 
-        /* Nibble 0,1 contains id */
-        id = bb[r][0];
+    // The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
+    // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
+    // So less then 0.5% which should be acceptable.
+    if (b[0] == 0 || b[2] == 0 || b[3] == 0
+            || rubicson_crc_check(b))
+        return DECODE_ABORT_EARLY;
 
-        /* Nibble 2 is battery and channel */
-        battery = bb[r][1]&0x80;
-        channel = ((bb[r][1]&0x30) >> 4) + 1;
+    id       = b[0];
+    battery  = b[1] & 0x80;
+    channel  = ((b[1] & 0x30) >> 4) + 1;
+    temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
+    temp_c   = (temp_raw >> 4) * 0.1f;
+    humidity = (((b[3] & 0x0F) << 4) | (b[4] >> 4));
 
-        /* Nibble 3,4,5 contains 12 bits of temperature
-         * The temperature is signed and scaled by 10 */
-        temp = (int16_t)((uint16_t)(bb[r][1] << 12) | (bb[r][2] << 4));
-        temp = temp >> 4;
-
-        /* Nibble 6,7 is humidity */
-        humidity = (uint8_t)(((bb[r][3]&0x0F)<<4)|(bb[r][4]>>4));
-
-        // Thermo
-        if (humidity == 0x00) {
+    if (humidity == 0x00) { // Thermo
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
                 "id",            "House Code",  DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
-        decoder_output_data(decoder, data);
-        }
-        // Thermo/Hygro
-        else {
+        /* clang-format on */
+    }
+    else { // Thermo/Hygro
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
                 "id",            "House Code",  DATA_INT, id,
                 "channel",       "Channel",     DATA_INT, channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp/10.0,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
-        decoder_output_data(decoder, data);
-        }
-        return 1;
+        /* clang-format on */
     }
-    return 0;
+
+    decoder_output_data(decoder, data);
+    return 1;
 }
 
 static char *output_fields[] = {
@@ -125,6 +110,5 @@ r_device nexus = {
         .gap_limit   = 3000,
         .reset_limit = 5000,
         .decode_fn   = &nexus_callback,
-        .disabled    = 0,
         .fields      = output_fields,
 };

@@ -46,24 +46,25 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t humidity;
 
     if (bitbuffer->bits_per_row[0] <= 8 && bitbuffer->bits_per_row[0] != 0)
-        return 0; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
+        return DECODE_ABORT_EARLY; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 4, 36); // only 3 repeats will give false positives for Alecto/Auriol-v2
     if (r < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[r] > 37) // we expect 36 bits but there might be a trailing 0 bit
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[r];
 
     if ((b[0] & 0xF0) != 0x90 && (b[0] & 0xF0) != 0x50)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     /* Check for Alecto collision */
     ret = alecto_checksum(decoder, bitbuffer->bb);
-    if (ret)
-        return 0;
+    // if the checksum is correct, it's not prologue
+    if (ret > 0)
+        return DECODE_FAIL_SANITY;
 
     /* Prologue sensor */
     type     = b[0] >> 4;

@@ -11,7 +11,7 @@
 */
 /**
 Largely the same as kedsum, s3318p.
-\sa kedsum.c s3318p.c
+@sa kedsum.c s3318p.c
 
 Frame structure:
 
@@ -57,15 +57,15 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // require two leading sync pulses
     if (bitbuffer->bits_per_row[0] != 0 || bitbuffer->bits_per_row[1] != 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     if (bitbuffer->num_rows != 14)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     for (int row = 2; row < bitbuffer->num_rows - 3; row += 2) {
         if (memcmp(bitbuffer->bb[row], bitbuffer->bb[row + 2], sizeof(bitbuffer->bb[row])) != 0
                 || bitbuffer->bits_per_row[row] != 42)
-            return 0;
+            return DECODE_FAIL_SANITY;
     }
     int r = 2;
 
@@ -75,12 +75,12 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw  = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    float temp_f  = (temp_raw - 900) * 0.1;
+    float temp_f  = (temp_raw - 900) * 0.1f;
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
     data = data_make(

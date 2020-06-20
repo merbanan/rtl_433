@@ -23,25 +23,26 @@
 static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
     uint8_t *b = bitbuffer->bb[1];
-    int i, device, battery;
+    int i, device, battery, temp_raw;
     float temp_f;
 
     for (i = 1; i < 10; i++) {
         if (bitbuffer->bits_per_row[i] != 24) {
             /*10 24 bits frame*/
-            return 0;
+            return DECODE_ABORT_LENGTH;
         }
     }
 
     // reduce false positives
     if ((b[0] == 0 && b[1] == 0 && b[2] == 0)
             || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     device  = (b[0]);
     battery = (b[1] & 0xF0) >> 4;
-    temp_f  = (float)((signed short)(((b[1] & 0x3f) * 256 + b[2]) << 2)) / 160.0;
+    temp_raw = (int16_t)(((b[1] & 0x3f) << 10) | (b[2] << 2));
+    temp_f  = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */
     data = data_make(

@@ -68,7 +68,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
     if (74 != bitbuffer->bits_per_row[0]) {
         if (decoder->verbose > 1)
             fprintf(stderr, "AmbientWeather-TX8300: wrong size (%i bits)\n", bitbuffer->bits_per_row[0]);
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     /* dropping 2 bit preamble */
@@ -88,11 +88,11 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
 
     // check bit-wise parity
     if (b[0] != b[4] || b[1] != b[5] || b[2] != b[6] || b[3] != b[7])
-        return 0;
+        return DECODE_FAIL_MIC;
 
     // verify checksum
     if (tx8300_chk(b) ^ b[8])
-        return 0;
+        return DECODE_FAIL_MIC;
 
     float temp      = (b[2] & 0x0f) * 10 + ((b[3] & 0xf0) >> 4) + (b[3] & 0x0f) * 0.1F;
     int channel     = (b[1] & 0x30) >> 4;

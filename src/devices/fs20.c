@@ -80,13 +80,13 @@ static int fs20_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 58) {
         // check extended length (never tested!)
         if (bitbuffer->bits_per_row[0] != 67)
-            return 0;
+            return DECODE_ABORT_LENGTH;
     }
 
     b = bitbuffer->bb[0];
     // check preamble first 13 bits '0000 0000 0000 1'
     if ((b[0] != 0x00) || ((b[1] & 0xf8) != 0x08))
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // parse values from buffer
     hc1     = (b[1] << 5) | (b[2] >> 3);

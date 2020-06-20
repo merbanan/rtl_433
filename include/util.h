@@ -52,7 +52,17 @@ void reflect_nibbles(uint8_t message[], unsigned num_bytes);
 /// @param offset_bits start offset of message in bits
 /// @param num_bits message length in bits
 /// @param dst target buffer for extracted nibbles, at least num_bits/5 size
+/// @return number of successfully unstuffed nibbles.
 unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
+
+/// UART "8n1" (10-to-8) decoder with 1 start bit (0), no parity, 1 stop bit (1), LSB-first bit-order.
+///
+/// @param message bytes of message data
+/// @param offset_bits start offset of message in bits
+/// @param num_bits message length in bits
+/// @param dst target buffer for extracted bytes, at least num_bits/10 size
+/// @return number of successful decoded bytes
+unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst);
 
 /// CRC-4.
 ///

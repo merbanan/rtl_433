@@ -13,9 +13,6 @@
 #define RH_ASK_HEADER_LEN 4
 #define RH_ASK_MAX_MESSAGE_LEN (RH_ASK_MAX_PAYLOAD_LEN - RH_ASK_HEADER_LEN - 3)
 
-uint8_t rh_payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
-int rh_data_payload[RH_ASK_MAX_MESSAGE_LEN];
-
 // Note: all the "4to6 code" came from RadioHead source code.
 // see: http://www.airspayce.com/mikem/arduino/RadioHead/index.html
 
@@ -55,7 +52,7 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
     uint16_t crc, crc_recompute;
 
     // Looking for preamble
-    uint8_t init_pattern[] = {
+    uint8_t const init_pattern[] = {
             0x55, // 8
             0x55, // 16
             0x55, // 24
@@ -102,6 +99,10 @@ static int radiohead_ask_extract(r_device *decoder, bitbuffer_t *bitbuffer, uint
         payload[nb_bytes] = byte;
         if (nb_bytes == 0) {
             msg_len = byte;
+            // abort on invalid message length byte
+            if (msg_len < 2 || msg_len > RH_ASK_MAX_MESSAGE_LEN) {
+                break;
+            }
         }
         nb_bytes++;
     }
@@ -140,11 +141,16 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t row = 0; // we are considering only first row
     int msg_len, data_len, header_to, header_from, header_id, header_flags;
 
+    uint8_t rh_payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
+    int rh_data_payload[RH_ASK_MAX_MESSAGE_LEN];
+
     msg_len = radiohead_ask_extract(decoder, bitbuffer, row, rh_payload);
     if (msg_len <= 0) {
         return msg_len; // pass error code on
     }
     data_len = msg_len - RH_ASK_HEADER_LEN - 3;
+    if (data_len <= 0)
+      return DECODE_FAIL_SANITY;
 
     header_to = rh_payload[1];
     header_from = rh_payload[2];
@@ -155,6 +161,7 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int j = 0; j < msg_len; j++) {
         rh_data_payload[j] = (int)rh_payload[5 + j];
     }
+    /* clang-format off */
     data = data_make(
             "model",        "",             DATA_STRING, _X("RadioHead-ASK","RadioHead ASK"),
             "len",          "Data len",     DATA_INT, data_len,
@@ -165,8 +172,9 @@ static int radiohead_ask_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "payload",      "Payload",      DATA_ARRAY, data_array(data_len, DATA_INT, rh_data_payload),
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -176,6 +184,8 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t row = 0; // we are considering only first row
     int msg_len, house_id, sensor_type, sensor_count, alarms;
     int module_id, sensor_value, battery_voltage;
+
+    uint8_t rh_payload[RH_ASK_MAX_PAYLOAD_LEN] = {0};
 
     msg_len = radiohead_ask_extract(decoder, bitbuffer, row, rh_payload);
     if (msg_len <= 0) {
@@ -190,6 +200,7 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sensor_value = (rh_payload[7] << 8) | rh_payload[8];
     battery_voltage = (rh_payload[9] << 8) | rh_payload[10];
 
+    /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING,  _X("SensibleLiving-Moisture","Sensible Living Plant Moisture"),
             "house_id",         "House ID",         DATA_INT,     house_id,
@@ -201,8 +212,9 @@ static int sensible_living_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _X("battery_mV","battery_voltage"),       "Battery Voltage",  DATA_INT,     _X(battery_voltage * 10, battery_voltage),
             "mic",              "Integrity",        DATA_STRING,  "CRC",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -215,7 +227,7 @@ static char *radiohead_ask_output_fields[] = {
     "flags",
     "payload",
     "mic",
-    NULL
+    NULL,
 };
 
 static char *sensible_living_output_fields[] = {
@@ -229,7 +241,7 @@ static char *sensible_living_output_fields[] = {
     "battery_voltage", // TODO: remove this
     "battery_mV",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device radiohead_ask = {

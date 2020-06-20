@@ -69,7 +69,7 @@ Format for Winddirection & Windgust:
 
 #include "decoder.h"
 
-/* return 1 if the checksum passes and 0 if it fails */
+/* return 1 if the checksum passes and DECODE_FAIL_MIC if it fails */
 int alecto_checksum(r_device *decoder, bitrow_t *bb)
 {
     int i, csum = 0, csum2 = 0;
@@ -91,7 +91,7 @@ int alecto_checksum(r_device *decoder, bitrow_t *bb)
         if (decoder->verbose) {
             fprintf(stderr, "AlectoV1 Checksum/Parity error\n");
         }
-        return 0;
+        return DECODE_FAIL_MIC;
     } //Invalid checksum
     if (decoder->verbose) {
         fprintf(stderr, "Checksum      = %01x (calculated %01x)\n", bb[1][4] >> 4, csum);
@@ -99,7 +99,6 @@ int alecto_checksum(r_device *decoder, bitrow_t *bb)
 
     return 1;
 }
-
 
 static uint8_t bcd_decode8(uint8_t x)
 {
@@ -110,24 +109,21 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     bitrow_t *bb = bitbuffer->bb;
     uint8_t *b = bitbuffer->bb[1];
-    int16_t temp;
-    uint8_t humidity;
-    int ret;
-
+    int temp_raw, humidity;
+    float temp_c;
     data_t *data;
     unsigned bits = bitbuffer->bits_per_row[1];
 
     if (bits != 36)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     if (bb[1][0] != bb[5][0] || bb[2][0] != bb[6][0]
             || (bb[1][4] & 0xf) != 0 || (bb[5][4] & 0xf) != 0
             || bb[5][0] == 0 || bb[5][1] == 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
-    ret = alecto_checksum(decoder, bb);
-    if (!ret)
-        return 0;
+    if (alecto_checksum(decoder, bb) <= 0)
+        return DECODE_FAIL_MIC;
 
     int battery_low = (b[1] & 0x80) >> 7;
     int msg_type    = (b[1] & 0x60) >> 5;
@@ -155,6 +151,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             double gust = reverse8(bb[5 + skip][3]);
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
+            /* clang-format off */
             data = data_make(
                     "model",          "",           DATA_STRING, _X("AlectoV1-Wind","AlectoV1 Wind Sensor"),
                     "id",             "House Code", DATA_INT,    sensor_id,
@@ -162,9 +159,10 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
                     _X("wind_avg_m_s","wind_speed"),     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
                     _X("wind_max_m_s","wind_gust"),      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
-                    "wind_direction", "Direction",  DATA_INT,    direction,
+                    _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_INT, direction,
                     "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                     NULL);
+            /* clang-format on */
             decoder_output_data(decoder, data);
             return 1;
         }
@@ -174,6 +172,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Rain sensor
         double rain_mm = ((reverse8(b[3]) << 8) | reverse8(b[2])) * 0.25F;
 
+        /* clang-format off */
         data = data_make(
                 "model",         "",           DATA_STRING, _X("AlectoV1-Rain","AlectoV1 Rain Sensor"),
                 "id",            "House Code", DATA_INT,    sensor_id,
@@ -182,6 +181,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("rain_mm","rain_total"),    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
                 "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
                 NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
     }
@@ -191,28 +191,28 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             && bb[4][0] == bb[5][0] && bb[5][0] == bb[6][0]
             && (bb[3][4] & 0xf) == 0 && (bb[5][4] & 0xf) == 0) {
         //static char * temp_states[4] = {"stable", "increasing", "decreasing", "invalid"};
-        temp = (int16_t) ((uint16_t) (reverse8(b[1]) >> 4) | (reverse8(b[2]) << 4));
-        if ((temp & 0x800) != 0) {
-            temp |= 0xf000;
-        }
+        temp_raw = (int16_t)((reverse8(b[1]) & 0xf0) | (reverse8(b[2]) << 8)); // sign-extend
+        temp_c   = (temp_raw >> 4) * 0.1f;
         humidity = bcd_decode8(reverse8(b[3]));
-        if (humidity>100)
-            return 0;//extra detection false positive!! prologue is also 36bits and sometimes detected as alecto
+        if (humidity > 100)
+            return DECODE_FAIL_SANITY; // detect false positive, prologue is also 36bits and sometimes detected as alecto
 
+        /* clang-format off */
         data = data_make(
                 "model",         "",            DATA_STRING, _X("AlectoV1-Temperature","AlectoV1 Temperature Sensor"),
                 "id",            "House Code",  DATA_INT,    sensor_id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, (float) temp / 10.0F,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
                 "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                 NULL);
+        /* clang-format on */
         decoder_output_data(decoder, data);
         return 1;
     }
 
-    return 0;
+    return DECODE_FAIL_SANITY;
 }
 
 static char *output_fields[] = {
@@ -231,7 +231,7 @@ static char *output_fields[] = {
     "wind_max_km_h",
     "wind_dir_deg",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device alectov1 = {
@@ -242,6 +242,5 @@ r_device alectov1 = {
     .gap_limit      = 7000,
     .reset_limit    = 10000,
     .decode_fn      = &alectov1_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

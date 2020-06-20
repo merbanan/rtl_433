@@ -28,13 +28,13 @@ static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // expect {1} {9} {1} preamble
     for (int i = 3; i < bitbuffer->num_rows; i++) {
         if (bitbuffer->bits_per_row[i] < 78) {
-            continue; // not a data row
+            continue; // DECODE_ABORT_LENGTH
         }
 
         // Validate preamble
         if (bitbuffer->bits_per_row[i - 3] != 1 || bitbuffer->bits_per_row[i - 1] != 1
                 || bitbuffer->bits_per_row[i - 2] != 9 || bitbuffer->bb[i - 2][0] != 0) {
-            continue; // no valid preamble
+            continue; // DECODE_ABORT_EARLY
         }
 
         if (decoder->verbose) {

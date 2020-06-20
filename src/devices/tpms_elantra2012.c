@@ -1,4 +1,4 @@
-/* @file
+/** @file
     TPMS for Hyundai Elantra, Honda Civic.
 
     Copyright (C) 2019 Kumar Vivek <kv2000in@gmail.com>
@@ -106,6 +106,7 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     return 1;
 }
 
+/** @sa tpms_elantra2012_decode() */
 static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // Note that there is a (de)sync preamble of long/short, short/short, triple/triple,
@@ -115,25 +116,23 @@ static int tpms_elantra2012_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int row;
     unsigned bitpos;
+    int ret    = 0;
     int events = 0;
 
     for (row = 0; row < bitbuffer->num_rows; ++row) {
         bitpos = 0;
         // Find a preamble with enough bits after it that it could be a complete packet
         while ((bitpos = bitbuffer_search(bitbuffer, row, bitpos,
-                        (const uint8_t *)&preamble_pattern, 16)) + 128 <=
+                        preamble_pattern, 16)) + 128 <=
                 bitbuffer->bits_per_row[row]) {
-            int event = tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
-            if (event > 0) {
-                // not very clean, we ideally want the event to bubble up for accounting.
-                // however, by adding them all together the accounting is wrong too.
-                events += event;
-            }
+            ret = tpms_elantra2012_decode(decoder, bitbuffer, row, bitpos + 16);
+            if (ret > 0)
+                events += ret;
             bitpos += 15;
         }
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {

@@ -29,7 +29,7 @@ static int elro_db286a_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int row = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
 
     if (row < 0 || bitbuffer->bits_per_row[row] != 33)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 

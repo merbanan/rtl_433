@@ -34,6 +34,8 @@ Data Layout:
 - E: (14 bit) byte 9 bit 5-0, byte 10 Energyusage, total, in 10 Wh (0.01 kWh)
 - X: (8 bit) byte 11: Sum of all 11 data bytes plus CHK is 0 (mod 256)
 
+A message is ca 131-132 bits including preamble.
+
 */
 
 #include "decoder.h"
@@ -47,7 +49,7 @@ static int esic_emt7110_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
-    if (bitbuffer->bits_per_row[0] < 120)
+    if ((bitbuffer->bits_per_row[0] < 120) || (bitbuffer->bits_per_row[0] > 140))
         return DECODE_ABORT_LENGTH;
 
     unsigned offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof (preamble) * 8);

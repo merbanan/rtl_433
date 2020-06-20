@@ -11,7 +11,7 @@
 */
 /**
 Largely the same as esperanza_ews, kedsum.
-\sa esperanza_ews.c kedsum.c
+@sa esperanza_ews.c kedsum.c
 
 Also NC-5849-913 from Pearl (for FWS-310 station).
 
@@ -63,13 +63,13 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // ignore if two leading sync pulses (Esperanza EWS)
     if (bitbuffer->bits_per_row[0] == 0 && bitbuffer->bits_per_row[1] == 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     // the signal should have 6 repeats with a sync pulse between
     // require at least 4 received repeats
     int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
     if (r < 0 || bitbuffer->bits_per_row[r] != 42)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // remove the two leading 0-bits and align the data
     bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
@@ -77,12 +77,12 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     int id          = b[0];
     int channel     = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw    = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    float temp_f    = (temp_raw - 900) * 0.1;
+    float temp_f    = (temp_raw - 900) * 0.1f;
     int humidity    = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
     int button      = b[4] >> 7;
     int battery_low = (b[4] & 0x40) >> 6;

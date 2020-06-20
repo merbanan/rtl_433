@@ -35,19 +35,22 @@
 #endif
 
 #ifdef _WIN32
-  #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
-  #undef _WIN32_WINNT
-  #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
-  #endif
+    #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+    #undef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
+    #endif
 
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
 #else
-  #include <netdb.h>
-  #include <netinet/in.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netdb.h>
+    #include <netinet/in.h>
 
-  #define SOCKET          int
-  #define INVALID_SOCKET  -1
+    #define SOCKET          int
+    #define INVALID_SOCKET  (-1)
+    #define closesocket(x)  close(x)
 #endif
 
 #include <time.h>
@@ -59,17 +62,15 @@
 #include "data.h"
 
 #ifdef _WIN32
-  #define _POSIX_HOST_NAME_MAX  128
-  #undef  close   /* We only work with sockets here */
-  #define close(s)              closesocket (s)
-  #define perror(str)           ws2_perror (str)
+    #define _POSIX_HOST_NAME_MAX  128
+    #define perror(str)           ws2_perror(str)
 
-  static void ws2_perror (const char *str)
-  {
-    if (str && *str)
-       fprintf (stderr, "%s: ", str);
-    fprintf (stderr, "Winsock error %d.\n", WSAGetLastError());
-  }
+    static void ws2_perror (const char *str)
+    {
+        if (str && *str)
+            fprintf(stderr, "%s: ", str);
+        fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
+    }
 #endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
@@ -165,6 +166,9 @@ static bool import_values(void *dst, void *src, int num_values, data_type_t type
 
 data_array_t *data_array(int num_values, data_type_t type, void *values)
 {
+    if (num_values < 0) {
+      return NULL;
+    }
     data_array_t *array = calloc(1, sizeof(data_array_t));
     if (!array) {
         WARN_CALLOC("data_array()");
@@ -172,13 +176,15 @@ data_array_t *data_array(int num_values, data_type_t type, void *values)
     }
 
     int element_size = dmt[type].array_element_size;
-    array->values    = calloc(num_values, element_size);
-    if (!array->values) {
-        WARN_CALLOC("data_array()");
-        goto alloc_error;
+    if (num_values > 0) { // don't alloc empty arrays
+        array->values = calloc(num_values, element_size);
+        if (!array->values) {
+            WARN_CALLOC("data_array()");
+            goto alloc_error;
+        }
+        if (!import_values(array->values, values, num_values, type))
+            goto alloc_error;
     }
-    if (!import_values(array->values, values, num_values, type))
-        goto alloc_error;
 
     array->num_values = num_values;
     array->type       = type;
@@ -479,7 +485,7 @@ static void print_json_string(data_output_t *output, const char *str, char const
 {
     fprintf(output->file, "\"");
     while (*str) {
-        if (*str == '"')
+        if (*str == '"' || *str == '\\')
             fputc('\\', output->file);
         fputc(*str, output->file);
         ++str;
@@ -1060,7 +1066,7 @@ static void datagram_client_close(datagram_client_t *client)
         return;
 
     if (client->sock != INVALID_SOCKET) {
-        close(client->sock);
+        closesocket(client->sock);
         client->sock = INVALID_SOCKET;
     }
 
