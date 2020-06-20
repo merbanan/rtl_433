@@ -161,7 +161,7 @@
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
-
+    DECL(acurite_rne590A1tx) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

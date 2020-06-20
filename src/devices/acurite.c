@@ -859,6 +859,95 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+ 
+
+static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    uint8_t *b;
+    int row;
+    uint8_t identify_id,humidity;  
+    int16_t temp_raw; // temperature as read from the data packet
+    float temp_c;     // temperature in C
+    int battery;      // the battery status: 1 is good, 0 is low
+    int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
+
+
+    //if (decoder->verbose >1)
+    //  bitbuffer_printf(bitbuffer, "%s: ", __func__);
+
+    row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
+    if (row < 0)
+        return DECODE_ABORT_EARLY;
+
+    if (decoder->verbose > 1)
+        bitbuffer_printf(bitbuffer, "%s: ", __func__);
+
+    if (bitbuffer->bits_per_row[row] > 25)
+        return DECODE_ABORT_LENGTH;
+
+    b = bitbuffer->bb[row];
+
+    if (b[4] != 0) //last byte should be zero
+        return DECODE_FAIL_SANITY;
+
+    // reject all blank messages
+    if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
+        return DECODE_FAIL_SANITY;
+
+    
+    //TODO: calculate the checksum and only continue if we have a matching checksum
+    //uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
+    //if (chk != b[3])
+    //    return DECODE_FAIL_MIC;
+
+    // Processing the temperature:
+    // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
+    // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
+    sensor_id = b[0] & 0xFE; //first 6 bits and it changes each time it resets or change the battery
+    battery   = (b[0] & 0x01); //1=ok, 0=low battery
+    //next 2 bits are checksum
+    //next two bits are identify ID (maybe channel ?)
+    identify_id = (uint8_t)((b[1]>>4) & 0x03);
+    if ( (b[1] & 0x0F)==0 && b[2]<=100) //MFD: I see no other way to diferentiate humidity from temperature
+    {
+     humidity = b[2];
+     /* clang-format off */
+     data = data_make(
+            "model",            "",             DATA_STRING, "Acurite-RNE590A1TX",
+            "id",               "",             DATA_INT, sensor_id,
+            "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "identifyID",       "Identify ID",  DATA_INT, identify_id,
+            "humidity",         "Humidity",     DATA_INT, humidity,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
+
+    }else
+    {
+
+    temp_raw  = (int16_t)( ((b[1] &0x0F) << 12) | (b[2] << 4));
+    temp_raw  = temp_raw >> 4;
+    temp_c    = temp_raw * 0.1f - 50; //MFD: seems to be a 50 degree offset maybe to be able to go negative
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Acurite-RNE590A1TX",
+            "id",               "",             DATA_INT, sensor_id,
+            "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "identifyID",       "Identify ID",  DATA_INT, identify_id,
+	    "temperature_C",    "Temperature C",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
+            "temperature_F",    "Temperature F",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c*1.8+32,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
+    }
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int crc, battery_low, id, model_flag, valid = 0;
@@ -1103,6 +1192,20 @@ static char *acurite_606_output_fields[] = {
     NULL,
 };
 
+
+static char *acurite_590_output_fields[] = {
+    "model",
+    "id",
+    "bat",
+    "identify_id",
+    "temperature_C",
+    "temperature_F",
+    "humidity",
+    "mic",
+    NULL,
+};
+
+
 r_device acurite_606 = {
     .name           = "Acurite 606TX Temperature Sensor",
     // actually tests/acurite/02/gfile002.cu8, check this
@@ -1149,4 +1252,18 @@ r_device acurite_00275rm = {
     .decode_fn      = &acurite_00275rm_decode,
     .disabled       = 0,
     .fields         = acurite_00275rm_output_fields,
+};
+
+
+r_device acurite_rne590A1tx = {
+    .name           = "Acurite RNE5901A1TX Temperature with optional Humidity",
+    .modulation     = OOK_PULSE_PPM,  //OOK_PULSE_PWM,
+    .short_width    = 500,  // short pulse is 232 us
+    .long_width     = 1500,  // long pulse is 420 us
+    .gap_limit      = 1484,  // long gap is 384 us, sync gap is 592 us
+    .reset_limit    = 3000,  // no packet gap, sync gap is 592 us
+    .sync_width     = 500,  // sync pulse is 632 us
+    .decode_fn      = &acurite_rne590_decode,
+    .disabled       = 0,
+    .fields         = acurite_590_output_fields,
 };
