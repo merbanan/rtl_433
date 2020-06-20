@@ -129,6 +129,7 @@ add_library(r_433 STATIC
     devices/rubicson_48659.c
     devices/s3318p.c
     devices/schraeder.c
+    devices/scmplus.c
     devices/silvercrest.c
     devices/simplisafe.c
     devices/smoke_gs558.c
