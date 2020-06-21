@@ -112,6 +112,7 @@ repl += get_help_text('-F') + '\n'
 repl += get_help_text('-M') + '\n'
 repl += get_help_text('-r') + '\n'
 repl += get_help_text('-w') + '\n'
+repl = repl.encode('utf-8')
 replace_block(r'```',
               r'```', repl, 'README.md')
 
