@@ -174,7 +174,6 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
             "id",       "Device ID",    DATA_STRING, x10_id_str,
             "code",     "Code",         DATA_STRING, x10_code_str,
             "event",    "Event",        DATA_STRING, event_str,
-            "mic",      "Integrity",    DATA_STRING, "CRC",
             NULL);
 
     /* append delay indicator if set */
@@ -195,6 +194,8 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "tamper",   "Tamper",   DATA_INT, tamper,
                 NULL);
     }
+    /* append mic so it is placed last */
+    data = data_append(data, "mic", "Integrity", DATA_STRING, "CRC", NULL);
 
     decoder_output_data(decoder, data);
     return 1;
@@ -205,10 +206,10 @@ static char *output_fields[] = {
     "id",
     "code",
     "event",
-    "mic",
     "delay",
     "battery_ok",
     "tamper",
+    "mic",
     NULL
 };
 
@@ -216,8 +217,8 @@ static char *output_fields[] = {
 r_device x10_sec = {
     .name           = "X10 Security",
     .modulation     = OOK_PULSE_PPM,
-    .short_width    = 562,  // Short gap 562µs
-    .long_width     = 1687, // Long gap 1687µs
+    .short_width    = 562,  // Short gap 562us
+    .long_width     = 1687, // Long gap 1687us
     .gap_limit      = 2200, // Gap after sync is 4.5ms (1125)
     .reset_limit    = 6000,
     .decode_fn      = &x10_sec_callback,
