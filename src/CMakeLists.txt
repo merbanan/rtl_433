@@ -160,6 +160,7 @@ add_library(r_433 STATIC
     devices/wt450.c
     devices/x10_rf.c
     devices/x10_sec.c
+    devices/idm.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
