@@ -22,7 +22,7 @@
 
 #define ACURITE_TXR_BITLEN        56
 #define ACURITE_5N1_BITLEN        64
-#define ACURITE_6045_BITLEN        72
+#define ACURITE_6045_BITLEN       72
 #define ACURITE_ATLAS_BITLEN      80
 
 // ** Acurite known message types
@@ -35,6 +35,13 @@
 #define ACURITE_MSGTYPE_ATLAS_WINDSPEED_TEMP_HUMIDITY   0x25
 #define ACURITE_MSGTYPE_ATLAS_WINDSPEED_RAINFALL        0x26
 #define ACURITE_MSGTYPE_ATLAS_WINDSPEED_UV_LUX          0x27
+
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM           0x05
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN               0x06
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX             0x07
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG      0x25
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG          0x26
+#define ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG        0x27
 
 // Acurite 5n1 Wind direction values.
 // There are seem to be conflicting decodings.
@@ -441,14 +448,14 @@ Acurite Atlas Message Type Format:
 Message Type 0x25 (Wind Speed, Temperature, Relative Humidity, ???)
 
     Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8   Byte 9   Byte 10
-    cc??ssdd dddddddd pb011011 pWWWWWWW pWTTTTTT pTTTTTTT pHHHHHHH pXXXXXXX pXXXXXXX kkkkkkkkk
+    cc??ssdd dddddddd pb011011 pWWWWWWW pWTTTTTT pTTTTTTT pHHHHHHH pCCCCCCC pCCDDDDD kkkkkkkkk
 
 Note: 13 bits for Temp is too much, should only be 11 bits.
 
 Message Type 0x26 (Wind Speed, Wind Vector, Rain Counter, ???)
 
     Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8   Byte 9   Byte 10
-    cc??ssdd dddddddd pb011100 pWWWWWWW pW?VVVVV pVVVVV?? pRRRRRRR pXXXXXXX pXXXXXXX kkkkkkkkk
+    cc??ssdd dddddddd pb011100 pWWWWWWW pW?VVVVV pVVVVVRR pRRRRRRR pCCCCCCC pCCDDDDD kkkkkkkkk
 
     CHANNEL:2b xx ~SEQ:2d ~DEVICE:10d xx ~TYPE:6h SPEED:x~7bx~1b DIR:x~5bx~5bxx x~7b x~7b x~7b CHK:8h
 
@@ -458,9 +465,11 @@ Note: 7 bits for Rain not enough, should reasonably be 10 bits.
 Message Type 0x27 (Wind Speed, UV and Lux data)
 
     Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8   Byte 9   Byte 10
-    cc??ssdd dddddddd pb011101 pWWWWWWW pWUUUUUU pLLLLLLL pLLLLLLL pXXXXXXX pXXXXXXX kkkkkkkkk
+    cc??ssdd dddddddd pb011101 pWWWWWWW pW??UUUU pLLLLLLL pLLLLLLL pCCCCCCC pCCDDDDD kkkkkkkkk
 
 Note: 6 bits for UV is too much, should only be 4 bits.
+JRH - Definitely only 4 bits, seeing the occasional value of 32 or 34. No idea what the 2 bits between
+      wind speed and UV are.
 
     CHANNEL:2b xx ~SEQ:2d ~DEVICE:10d xx ~TYPE:6h SPEED:x~7bx~1b UV:~6d LUX:x~7bx~7b x~7b x~7b CHK:8h
 
@@ -481,7 +490,8 @@ Lux needs to multiplied by 10.
 - W = Wind speed (miles per hour)
 - U = UV Index
 - L = Lux
-- X = Lightning Strike ?
+- C = lightning strike Count
+- D = lightning Distance (miles)
 
 */
 static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -585,7 +595,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // The 5-n-1 weather sensor messages are 8 bytes.
-        else if (browlen == ACURITE_5N1_BITLEN / 8) {
+        else if (message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL || 
+                 message_type == ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY || 
+                 message_type == ACURITE_MSGTYPE_3N1_WINDSPEED_TEMP_HUMIDITY || 
+                 message_type == ACURITE_MSGTYPE_RAINFALL) {
             if (decoder->verbose)
                 bitrow_printf(bb, bitbuffer->bits_per_row[brow], "%s: Acurite 5n1 raw msg: ", __func__);
             channel = acurite_getChannel(bb[0]);
@@ -731,7 +744,12 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             valid += acurite_6045_decode(decoder, bitbuffer, brow);
         }
 
-        else if (browlen == ACURITE_ATLAS_BITLEN / 8) {
+        else if ((message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM || 
+                  message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN || 
+                  message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX ||
+                  message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG || 
+                  message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG || 
+                  message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
             // {80} 82 f3 65 00 88 72 22 00 9f 95  {80} 86 f3 65 00 88 72 22 00 9f 99  {80} 8a f3 65 00 88 72 22 00 9f 9d
             // {80} 82 f3 66 00 05 e4 81 00 9f e4  {80} 86 f3 66 00 05 e4 81 00 9f e8  {80} 8a f3 66 00 05 e4 81 00 9f ec
             // {80} 82 f3 e7 00 00 00 96 00 9f 91  {80} 86 f3 e7 00 00 00 96 00 9f 95  {80} 8a f3 e7 00 00 00 96 00 9f 99
@@ -769,7 +787,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     NULL);
             /* clang-format on */
 
-            if (message_type == ACURITE_MSGTYPE_ATLAS_WINDSPEED_TEMP_HUMIDITY) {
+            if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM || 
+                message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG) {
                 // Wind speed, temperature and humidity
 
                 // range -40 to 160 F
@@ -787,12 +806,13 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format on */
             }
 
-            if (message_type == ACURITE_MSGTYPE_ATLAS_WINDSPEED_RAINFALL) {
+            if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN || 
+                message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG) {
                 // Wind speed, wind direction, and rain fall
                 wind_dir = ((bb[4] & 0x1f) << 5) | ((bb[5] & 0x7c) >> 2);
 
-                // range: 0 to 99.99 in, 0.01 inch increments, accumulated
-                // FIXME: are there really only 7 bits? use 9 for now.
+                // range: 0 to 5.11 in, 0.01 inch increments, accumulated
+                // JRH: Confirmed 9 bits, counter rolls over after 5.11 inches
                 raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
 
                 /* clang-format off */
@@ -803,9 +823,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format on */
             }
 
-            if (message_type == ACURITE_MSGTYPE_ATLAS_WINDSPEED_UV_LUX) {
+            if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX ||
+                message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG) {
                 // Wind speed, UV Index, Light Intensity, Lightning?
-                int uv = (bb[4] & 0x3f);
+                int uv = (bb[4] & 0x0f);
                 int lux = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
 
                 /* clang-format off */
@@ -816,18 +837,21 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format on */
             }
 
-            int byte8  = (bb[7] & 0x7f);
-            int byte9  = (bb[8] & 0x7f);
-            int byte89 = ((bb[7] & 0x7f) << 7) | (bb[8] & 0x7F);
+            if ((message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG || 
+                 message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG || 
+                 message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
+                
+                int strike_count = ((bb[7] & 0x7f) << 2) | ((bb[8] & 0x60) >> 5);
+                int strike_distance = bb[8] & 0x1f;
 
-            /* clang-format off */
-            data = data_append(data,
-                    "byte8",                NULL,           DATA_INT, byte8,
-                    "byte9",                NULL,           DATA_INT, byte9,
-                    "byte89",               NULL,           DATA_INT, byte89,
-                    NULL);
-            /* clang-format on */
-
+                /* clang-format off */
+                data = data_append(data,
+                        "strike_count",         NULL,           DATA_INT, strike_count,
+                        "strike_distance",      NULL,           DATA_INT, strike_distance,
+                        NULL);
+                /* clang-format on */
+            }
+                
             decoder_output_data(decoder, data);
             valid++;
         }
