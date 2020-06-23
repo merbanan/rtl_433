@@ -9,8 +9,7 @@
     (at your option) any later version.
 */
 
-#include <arpa/inet.h>
-#include <endian.h>
+// #include <arpa/inet.h>
 #include "decoder.h"
 
 /**
@@ -57,12 +56,14 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 16 * 8);
 
 
-    uint32_t t_16; // temp vars
-    uint32_t t_32;
+    // uint32_t t_16; // temp vars
+    // uint32_t t_32;
 
     uint16_t crc, pkt_checksum;
-    memcpy(&t_16, &b[14], 2);
-    pkt_checksum = ntohs(t_16);
+    // memcpy(&t_16, &b[14], 2);
+    // pkt_checksum = ntohs(t_16);
+    pkt_checksum = (b[14] << 8 | b[15]);
+
 
     crc = crc16(&b[2], 12, 0x1021, 0x0971);
     // fprintf(stderr, "CRC = %d %04X == %d %04X\n", pkt_checksum,pkt_checksum,  crc, crc);
@@ -91,15 +92,18 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // endpoint_type = b[3];
     snprintf(endpoint_type_str, sizeof(endpoint_type_str), "0x%02X", b[3]); // endpoint_type);  // b[3]
 
-    memcpy(&t_32, &b[4], 4);
-    endpoint_id = ntohl(t_32);
+    // memcpy(&t_32, &b[4], 4);
+    // endpoint_id = ntohl(t_32);
+    endpoint_id = ((uint32_t)b[4] << 24) | (b[5] << 16) | (b[6] << 8) | (b[7]);
 
-    memcpy(&t_32, &b[8], 4);
-    consumption_data = ntohl(t_32);
-    //  consumption_data = ((uint32_t)b[8] << 24) | (b[9] << 16) | (b[10] << 8) | (b[11]);
+    // memcpy(&t_32, &b[8], 4);
+    // consumption_data = ntohl(t_32);
+    consumption_data = ((uint32_t)b[8] << 24) | (b[9] << 16) | (b[10] << 8) | (b[11]);
 
-    memcpy(&t_16, &b[12], 2);
-    physical_tamper = ntohs(t_16);
+    // memcpy(&t_16, &b[12], 2);
+    // physical_tamper = ntohs(t_16);
+    // physical_tamper = ((t_16 & 0xFF00) >> 8 | (t_16 & 0x00FF) << 8);
+    physical_tamper = (b[12] << 8 | b[13]);
     snprintf(physical_tamper_str, sizeof(physical_tamper_str), "0x%04X", physical_tamper);
 
     snprintf(crc_str, sizeof(crc_str), "0x%04X", crc);
