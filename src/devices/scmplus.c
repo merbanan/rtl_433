@@ -10,6 +10,7 @@
 */
 
 #include <arpa/inet.h>
+#include <endian.h>
 #include "decoder.h"
 
 /**
@@ -21,7 +22,8 @@ Random information:
 https://github.com/bemasher/rtlamr/wiki/Protocol
 http://www.gridinsight.com/community/documentation/itron-ert-technology/
 
- Units: Some meter types transmit consumption in 1 kWh units, while others use more granular 10 Wh units
+Units: "Some meter types transmit consumption in 1 kWh units, while others use more granular 10 Wh units"
+
 
 */
 
@@ -47,21 +49,13 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (decoder->verbose) {
-        (void)fprintf(stderr, "%s: row len=%hu\n", __func__, bitbuffer->bits_per_row[0]);
-        (void)fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: row len=%hu\n", __func__, bitbuffer->bits_per_row[0]);
+        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
     }
 
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 16 * 8);
 
-    if (decoder->verbose) { // print bytes with aligned offset
-        char payload[64] = {0};
-        char *p          = payload;
-        for (int j = 0; j < 16; j++) {
-            p += sprintf(p, "%02X ", b[j]);
-        }
-        (void)fprintf(stderr, "%s: %s\n", __func__, payload);
-    }
 
     uint32_t t_16; // temp vars
     uint32_t t_32;
@@ -71,9 +65,13 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     pkt_checksum = ntohs(t_16);
 
     crc = crc16(&b[2], 12, 0x1021, 0x0971);
-    // (void)fprintf(stderr, "CRC = %d %04X == %d %04X\n", pkt_checksum,pkt_checksum,  crc, crc);
+    // fprintf(stderr, "CRC = %d %04X == %d %04X\n", pkt_checksum,pkt_checksum,  crc, crc);
     if (crc != pkt_checksum) {
         return DECODE_FAIL_MIC;
+    }
+
+    if (decoder->verbose) { // print bytes with aligned offset
+        bitrow_printf(b, 16 * 8, "%s bitrow_printf", __func__);
     }
 
     // uint8_t protocol_id;
@@ -108,13 +106,13 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /*
     if (decoder->verbose && 0) {
-        (void)fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
+        fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
         bitrow_printf(&b[3], 8, "%s\t%2d\t%02X\t", "endpoint_type   ", endpoint_type, endpoint_type);
         bitrow_printf(&b[4], 32, "%s\t%2d\t%02X\t", "endpoint_id    ", endpoint_id, endpoint_id);
         bitrow_printf(&b[8], 32, "%s\t%2d\t%02X\t", "consumption_data", consumption_data, consumption_data);
-        // (void)fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
-        (void)fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
-        (void)fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
+        // fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
+        fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
+        fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
     }
     */
 
@@ -141,7 +139,7 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             meter_type = "unknown";
             break;
     }
-    // (void)fprintf(stderr, "meter_type = %s\n", meter_type);
+    // fprintf(stderr, "meter_type = %s\n", meter_type);
 
     /* 
         Field key names and format set to  match rtlamr field names 
@@ -186,7 +184,7 @@ static char *output_fields[] = {
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
 r_device scmplus = {
-        .name        = "Standard Consumption Message Plus (SCM+)",
+        .name        = "Standard Consumption Message Plus (SCMplus)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
