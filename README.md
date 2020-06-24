@@ -227,6 +227,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [151]  Visonic powercode
     [152]  Eurochron EFTH-800 temperature and humidity sensor
     [153]  Cotech 36-7959 wireless weather station with USB
+    [154]  Standard Consumption Message Plus (SCMplus)
 
 * Disabled by default, use -R n or -G
 

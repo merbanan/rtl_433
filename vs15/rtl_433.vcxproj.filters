@@ -493,6 +493,9 @@
     <ClCompile Include="..\src\devices\schraeder.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\scmplus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\silvercrest.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
