@@ -65,7 +65,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Extract parameters */
     physical_tamper = (b[3]&0xC0) >> 6;
-    ert_type = (b[3]&0x60) >> 2;
+    ert_type = (b[3]>>2) & 0x0F;
     encoder_tamper = b[3]&0x03;
     consumption_data = (b[4]<<16) | (b[5]<<8) | b[6];
     ert_id = ((b[2]&0x06)<<23) | (b[7]<<16) | (b[8]<<8) | b[9];
