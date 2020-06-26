@@ -1,5 +1,5 @@
 /** @file
-    Template decoder for Insteon, tested with BRAND, BRAND.
+    Insteon RF decoder
 
     Copyright (C) 2020 Peter Shipley
 
@@ -9,7 +9,18 @@
     (at your option) any later version.
 **/
 
-/**
+/** @fn int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+
+Insteon RF decoder
+
+    "Insteon is a home automation (domotics) technology that enables
+    light switches, lights, thermostats, leak sensors, remote controls,
+    motion sensors, and other electrically powered devices to interoperate
+    through power lines, radio frequency (RF) communications, or both
+    [ from wikipedia ]
+
+the Insteon RF protocol is a series of 28 bit packets containing one byte of data
+
 
 Each byte (X) is encoded as 28 bits:
 >     '11' followed by
@@ -44,29 +55,17 @@ all following bytes are transmitted with a decrementing index count with the fin
 **/
 
 #include "decoder.h"
-#include <stdio.h>
-#include <stdlib.h>
 
-//  0011000101010101
 // 1100111010101010
-const uint8_t insteon_preamble[] = {0xCE, 0xAA};
-// const uint8_t insteon_preamble_i[] = {0x31, 0x55};
+static const uint8_t insteon_preamble[] = {0xCE, 0xAA};
 
 #define INSTEON_PACKET_MIN 10
 #define INSTEON_PACKET_MAX 13
 #define INSTEON_PACKET_MIN_EXT 23
 #define INSTEON_PACKET_MAX_EXT 32
 #define INSTEON_BITLEN_MIN (INSTEON_PACKET_MIN * 28) + sizeof(insteon_preamble)
-// #define INSTEON_BITLEN_MAX (INSTEON_PACKET_MIN_EXT * 28) + sizeof(insteon_preamble)
-#define INSTEON_PREAMBLE insteon_preamble
-// #define INSTEON_PREAMBLE_I insteon_preamble_i
 #define INSTEON_PREAMBLE_LEN 16
 
-// #define INSTEON_STARTBYTE   0xAA
-// #define INSTEON_MINREPEATS  3
-// #define INSTEON_MSG_TYPE    0x10
-// #define INSTEON_CRC_POLY    0x07
-// #define INSTEON_CRC_INIT    0x00
 
 /*
     calc checksum of extended packet data
@@ -217,6 +216,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
         the resulting 13bits contains 5bit of packet index
         and 8bits of data
     */
+    uint8_t prev_i=33;
     for (int j = 1; j < max_pkt_len; j++) {
         unsigned y;
         start_pos += 28;
@@ -228,7 +228,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
         y = (next_pos - start_pos);
         if (y != 26) {
             if (decoder->verbose)
-                (void)fprintf(stderr, "%s: stop %d != 26\n", __func__, y);
+                fprintf(stderr, "%s: stop %d != 26\n", __func__, y);
             break;
         }
 
@@ -248,18 +248,25 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
                     __func__, pkt_i, pkt_d, next_pos, (next_pos - start_pos), j);
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
+
+        // packet index should decrement 
+        if (pkt_i < prev_i) {
+            prev_i = pkt_i;
+        } else {
+            return(DECODE_ABORT_EARLY);
+        }
     }
 
     // if (decoder->verbose > 1) {
     //     for(int j=0; j < results_len; j++) {
-    //         (void) printf("%d:%02X ", j,  results[j]);
+    //          printf("%d:%02X ", j,  results[j]);
     //     }
     //     puts("\n");
     // }
 
     if (results_len < min_pkt_len) {
         if (decoder->verbose > 1)
-            (void)fprintf(stderr, "%s: fail: short packet %d < 9\n", __func__, results_len);
+            fprintf(stderr, "%s: fail: short packet %d < 9\n", __func__, results_len);
         return (0);
     }
 
@@ -273,7 +280,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
 
     if (results[min_pkt_len - 1] != crc_val) {
         if (decoder->verbose > 1)
-            (void)fprintf(stderr, "%s: fail: bad CRC %02X != %02X %s\n", __func__, results[min_pkt_len], crc_val,
+            fprintf(stderr, "%s: fail: bad CRC %02X != %02X %s\n", __func__, results[min_pkt_len], crc_val,
                     (extended ? "extended" : ""));
         return (DECODE_FAIL_MIC);
     }
@@ -283,9 +290,9 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     char pkt_formatted[256] = {0};
     char cmd_str[92]        = {0};
 
-    (void)snprintf(pkt_to_addr, sizeof(pkt_to_addr), "%02X%02X%02X",
+    snprintf(pkt_to_addr, sizeof(pkt_to_addr), "%02X%02X%02X",
             results[3], results[2], results[1]);
-    (void)snprintf(pkt_from_addr, sizeof(pkt_from_addr), "%02X%02X%02X",
+    snprintf(pkt_from_addr, sizeof(pkt_from_addr), "%02X%02X%02X",
             results[6], results[5], results[4]);
 
     char *p = cmd_str;
@@ -320,11 +327,11 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     int hopsleft = (results[0] >> 2) & 0x03;
 
     // char hops_str[8] = {0};
-    // (void)snprintf(hops_str, sizeof(hops_str), "%d / %d",
+    // snprintf(hops_str, sizeof(hops_str), "%d / %d",
     //         (results[0] & 0x03),
     //         (results[0] >> 2) & 0x03);
 
-    int pkt_type = (results[0] >> 5) & 0x03;
+    int pkt_type = (results[0] >> 5) & 0x07;
     char *messsage_text[8] = {
             "Direct Message",                         // 000
             "ACK of Direct Message",                  // 001
@@ -337,11 +344,12 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
 
     char *pkt_type_str = messsage_text[pkt_type];
     // bitrow_printf(results, 8, "%s\tFlag", __func__);
+    //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {
-        (void)printf("type %s\n", pkt_type_str);
+        printf("type %s\n", pkt_type_str);
         for (int j = 0; j < min_pkt_len; j++) {
-            (void)printf("%d:%02X ", j, results[j]);
+            printf("%d:%02X ", j, results[j]);
         }
         puts("\n");
     }
@@ -397,7 +405,7 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // if (decoder->verbose > 1) fprintf(stderr, "row complete row / bit_index : %d, %d\n", row, bit_index);
 
     if (decoder->verbose > 1)
-        (void)fprintf(stderr, "%s: new buffer %hu rows\n", __func__, bitbuffer->num_rows);
+        fprintf(stderr, "%s: new buffer %hu rows\n", __func__, bitbuffer->num_rows);
 
     bitbuffer_invert(bitbuffer);
 
@@ -410,42 +418,42 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (bitbuffer->bits_per_row[row] < INSTEON_BITLEN_MIN) {
             // if (decoder->verbose )
-            //      (void)fprintf(stderr, "%s: short row row=%hu len=%hu\n", __func__, row, bitbuffer->bits_per_row[row]);
+            //      fprintf(stderr, "%s: short row row=%hu len=%hu\n", __func__, row, bitbuffer->bits_per_row[row]);
             fail_value = DECODE_ABORT_LENGTH;
             continue;
         }
         // if (decoder->verbose)
-        //     (void) fprintf(stderr, "%s: New row=%d len=%d\n", __func__,  row, bitbuffer->bits_per_row[row]);
+        //      fprintf(stderr, "%s: New row=%d len=%d\n", __func__,  row, bitbuffer->bits_per_row[row]);
 
         while (1) {
             unsigned search_index = bit_index;
             int ret;
 
             if ((bitbuffer->bits_per_row[row] - bit_index) < INSTEON_BITLEN_MIN) {
-                 // (void)fprintf(stderr, "%s: short remainder\n", __func__);
+                 // fprintf(stderr, "%s: short remainder\n", __func__);
                  break;
              }
 
             if (decoder->verbose > 1)
-                (void) fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %d %d (%d)\n",
+                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %d %d (%d)\n",
                      __func__, row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
-            search_index = bitbuffer_search(bitbuffer, row, search_index, INSTEON_PREAMBLE, INSTEON_PREAMBLE_LEN);
+            search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
             if (search_index >= bitbuffer->bits_per_row[row]) {
                 if (decoder->verbose > 1 && bit_index == 0)
-                    (void)fprintf(stderr, "%s: INSTEON_PREAMBLE not found %d %d %d\n", __func__,
+                    fprintf(stderr, "%s: insteon_preamble not found %d %d %d\n", __func__,
                         search_index, bit_index, bitbuffer->bits_per_row[row]);
                 break;
             }
 
             if (decoder->verbose)
-                (void)fprintf(stderr, "%s: parse_insteon_pkt at: row / search_index : %hu, %u (%hu)\n",
+                fprintf(stderr, "%s: parse_insteon_pkt at: row / search_index : %hu, %u (%hu)\n",
                         __func__, row, search_index, bitbuffer->bits_per_row[row]);
 
             ret = parse_insteon_pkt(decoder, bitbuffer, row, search_index);
 
-            // if (decoder->verbose) (void) fprintf(stderr, "%s: parse_insteon_pkt ret value %d\n", __func__,  ret_value);
+            // if (decoder->verbose) tf(stderr, "%s: parse_insteon_pkt ret value %d\n", __func__,  ret_value);
             if (ret > 0) { // preamble good, decode good
                 ret_value += ret;
                 bit_index = search_index + INSTEON_BITLEN_MIN; // move a full packet length
