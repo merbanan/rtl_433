@@ -161,7 +161,9 @@
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
+    DECL(scmplus) \
     DECL(idm) \
+    DECL(netidm) \
 
     /* Add new decoders here. */
 

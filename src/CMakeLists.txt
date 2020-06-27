@@ -89,6 +89,7 @@ add_library(r_433 STATIC
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
+    devices/idm.c
     devices/ikea_sparsnas.c
     devices/infactory.c
     devices/inovalley-kw9015b.c
@@ -107,6 +108,7 @@ add_library(r_433 STATIC
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
+    devices/netidm.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
@@ -129,6 +131,7 @@ add_library(r_433 STATIC
     devices/rubicson_48659.c
     devices/s3318p.c
     devices/schraeder.c
+    devices/scmplus.c
     devices/silvercrest.c
     devices/simplisafe.c
     devices/smoke_gs558.c
@@ -160,7 +163,6 @@ add_library(r_433 STATIC
     devices/wt450.c
     devices/x10_rf.c
     devices/x10_sec.c
-    devices/idm.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")

@@ -88,6 +88,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/honeywell_wdb.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
+                       devices/idm.c \
                        devices/ikea_sparsnas.c \
                        devices/infactory.c \
                        devices/inovalley-kw9015b.c \
@@ -106,6 +107,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/maverick_et73.c \
                        devices/maverick_et73x.c \
                        devices/mebus.c \
+                       devices/netidm.c \
                        devices/new_template.c \
                        devices/newkaku.c \
                        devices/nexa.c \
@@ -128,6 +130,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/rubicson_48659.c \
                        devices/s3318p.c \
                        devices/schraeder.c \
+                       devices/scmplus.c \
                        devices/silvercrest.c \
                        devices/simplisafe.c \
                        devices/smoke_gs558.c \
@@ -158,7 +161,6 @@ rtl_433_SOURCES      = abuf.c \
                        devices/wt0124.c \
                        devices/wt450.c \
                        devices/x10_rf.c \
-                       devices/x10_sec.c \
-                       devices/idm.c
+                       devices/x10_sec.c
 
 rtl_433_LDADD        = $(LIBRTLSDR) $(LIBM)
