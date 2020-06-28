@@ -244,6 +244,16 @@ data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
             data = data_append(data, "state", "", DATA_DOUBLE, msg->payload[1] / 200.0 /* 0xC8 */, NULL);
             break;
         }
+        case 0x30C9: {
+          size_t num_zones = msg->payload_length/3;
+          for (size_t i=0; i < num_zones; i++) {
+            char name[256];
+            snprintf(name, sizeof(name), "temperature (zone %u)", msg->payload[3*i]);
+            int16_t temp = msg->payload[3*i+1] << 8 | msg->payload[3*i+1];
+            data = data_append(data, name, "", DATA_DOUBLE, temp/100.0, NULL);
+          }
+          break;
+        }
         default: /* Unknown command */
             UNKNOWN_IF(1);
     }
@@ -272,7 +282,12 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
 
     msg->header = next(bb, &ipos, num_bytes);
 
-    msg->num_device_ids = (msg->header >> 2) & 0x03; // total speculation.
+    msg->num_device_ids = msg->header == 0x14 ? 1 :
+                          msg->header == 0x18 ? 2 :
+                          msg->header == 0x1c ? 2 :
+                          msg->header == 0x10 ? 2 :
+                          msg->header == 0x3c ? 2 :
+			  (msg->header >> 2) & 0x03; // total speculation.
 
     for (unsigned i = 0; i < msg->num_device_ids; i++)
         for (unsigned j = 0; j < 3; j++)
