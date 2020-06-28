@@ -255,6 +255,7 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
         return DECODE_ABORT_LENGTH;
 
     unsigned num_bytes = bmsg->bits_per_row[0]/8;
+    unsigned num_bits = bmsg->bits_per_row[0];
     unsigned ipos = 0;
     const uint8_t *bb = bmsg->bb[row];
     memset(msg, 0, sizeof(message_t));
@@ -283,10 +284,13 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
     for (unsigned i = 0; i < msg->payload_length; i++)
         msg->payload[i] = next(bb, &ipos, num_bytes);
 
-    unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
-    msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
-    if (msg->unparsed_length != 0)
-        bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
+    if (ipos < num_bits - 8)
+    {
+      unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
+      msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
+      if (msg->unparsed_length != 0)
+          bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
+    }
 
     return ipos;
 }
