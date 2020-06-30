@@ -1,5 +1,5 @@
 /** @file
-    ERT IDM sensors.
+    ERT Interval Data Message (IDM)
 
     Copyright (C) 2020 Peter Shipley <peter.shipley@gmail.com>
 
@@ -9,9 +9,6 @@
     (at your option) any later version.
 */
 
-#include <arpa/inet.h>
-#include <byteswap.h>
-#include <endian.h>
 #include "decoder.h"
 
 /**
@@ -23,12 +20,34 @@ Random information:
 https://github.com/bemasher/rtlamr/wiki/Protocol
 http://www.gridinsight.com/community/documentation/itron-ert-technology/
 
- Units: Some meter types transmit consumption in 1 kWh units, while others use more granular 10 Wh units
+
+        field                length     Offset/byte index
+
+        pream                   2
+        Sync Word       	2	0
+        Packet Type	        1	2
+        Packet Length	        1	3
+        Hamming Code	        1	4
+        Application Version	1       5
+        Endpoint Type	        1	6
+        Endpoint ID	        4       7
+        Consumption Interval	1	11
+        Mod Programming State	1       12
+        Tamper Count    	6       13
+        Async Count     	2       19
+        Power Outage Flags	6       21
+        Last Consumption	4	27
+        Diff Consumption	53	31
+        Transmit Time Offset	2	84
+        Meter ID Checksum	2	86
+        Packet Checksum   	2	88
+
 
 */
 
 #define IDM_PACKET_BYTES 92
-#define IDM_PACKET_BITLEN 92 * 8
+#define IDM_PACKET_BITLEN 720
+// 92 * 8
 
 static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -38,108 +57,114 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     const uint8_t idm_frame_sync[] = {0x16, 0xA3, 0x1C};
 
     uint8_t PacketTypeID;
-    char    PacketTypeID_str[5];
+    char PacketTypeID_str[5];
     uint8_t PacketLength;
-    char    PacketLength_str[5];
+    // char    PacketLength_str[5];
     uint8_t HammingCode;
-    char    HammingCode_str[5];
+    // char    HammingCode_str[5];
     uint8_t ApplicationVersion;
-    char    ApplicationVersion_str[5];
+    // char    ApplicationVersion_str[5];
     uint8_t ERTType;
-    char    ERTType_str[5];
+    // char    ERTType_str[5];
     uint32_t ERTSerialNumber;
     uint8_t ConsumptionIntervalCount;
     uint8_t ModuleProgrammingState;
-    char  ModuleProgrammingState_str[5];
-    uint64_t TamperCounters = 0;  // 6 bytes
+    // char  ModuleProgrammingState_str[5];
+    // uint64_t TamperCounters = 0;  // 6 bytes
     char TamperCounters_str[16];
     uint16_t AsynchronousCounters;
-    char AsynchronousCounters_str[8];
-    uint64_t PowerOutageFlags = 0;  // 6 bytes
-    char  PowerOutageFlags_str[16];
+    // char AsynchronousCounters_str[8];
+    uint64_t PowerOutageFlags = 0; // 6 bytes
+    char PowerOutageFlags_str[16];
     uint32_t LastConsumptionCount;
-    uint32_t DifferentialConsumptionIntervals[47] ={0};   // 47 intervals of 9-bit unsigned integers
+    uint32_t DifferentialConsumptionIntervals[47] = {0}; // 47 intervals of 9-bit unsigned integers
     uint16_t TransmitTimeOffset;
-    uint16_t SerialNumberCRC;
-    char  SerialNumberCRC_str[8];
+    uint16_t MeterIdCRC;
+    // char  MeterIdCRC_str[8];
     uint16_t PacketCRC;
-    char  PacketCRC_str[8];
+    // char  PacketCRC_str[8];
 
-    (void)fprintf(stderr, "\n\n%s: rows=%d, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+    if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
+        fprintf(stderr, "\n\n%s: rows=%hu, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+    }
 
     if (bitbuffer->bits_per_row[0] < IDM_PACKET_BITLEN) {
-        if (decoder->verbose) 
-            (void)fprintf(stderr, "%s: %s, row len=%hu < %hu\n", __func__, "DECODE_ABORT_LENGTH",
-                bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-        fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %d < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-        bitbuffer_print(bitbuffer);
+
+        // to be removed later
+        if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
+            fprintf(stderr, "%s: %s, row len=%hu < %hu\n", __func__, "DECODE_ABORT_LENGTH",
+                    bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %hu < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
+            bitbuffer_print(bitbuffer);
+        }
         return (DECODE_ABORT_LENGTH);
     }
 
     sync_index = bitbuffer_search(bitbuffer, 0, 0, idm_frame_sync, 24);
 
     if (decoder->verbose) {
-        (void)fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
     }
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
-        fprintf(stderr, "%s: DECODE_ABORT_EARLY s > l\n", __func__);
-        bitbuffer_print(bitbuffer);
+
+        // to be removed later
+        if (decoder->verbose) {
+            fprintf(stderr, "%s: DECODE_ABORT_EARLY s > l\n", __func__);
+            bitbuffer_print(bitbuffer);
+        }
         return DECODE_ABORT_EARLY;
     }
 
-    if ( (bitbuffer->bits_per_row[0] - sync_index) < IDM_PACKET_BITLEN) {
-        fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %d < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
-        //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
-        bitbuffer_print(bitbuffer);
+    if ((bitbuffer->bits_per_row[0] - sync_index) < IDM_PACKET_BITLEN) {
+
+        // to be removed later
+        if (decoder->verbose) {
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %d < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
+            //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
+            bitbuffer_print(bitbuffer);
+        }
         return DECODE_ABORT_LENGTH;
     }
 
-
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, IDM_PACKET_BITLEN);
-
-    if (decoder->verbose) { // print bytes with aligned offset
-        char payload[320] = {0};
-        char *p          = payload;
-        for (int j = 0; j < sizeof(b); j++) {
-            p += sprintf(p, "%02X ", b[j]);
-        }
-        (void)fprintf(stderr, "%s: %s\n", __func__, payload);
+    if (decoder->verbose) {
+        bitrow_printf(b, IDM_PACKET_BITLEN, "%s bitrow_printf", __func__);
     }
 
-    uint32_t t_16; // temp vars
-    uint32_t t_32;
-    uint64_t t_64;
+    // uint32_t t_16; // temp vars
+    // uint32_t t_32;
+    // uint64_t t_64;
     char *p;
 
-    uint16_t crc, pkt_checksum;
+    uint16_t crc;
     // memcpy(&t_16, &b[88], 2);
     // pkt_checksum = ntohs(t_16);
-    pkt_checksum = (b[88] << 8 | b[89]);
-
+    // pkt_checksum = (b[88] << 8 | b[89]);
+    PacketCRC = (b[88] << 8 | b[89]);
 
     crc = crc16(&b[2], 86, 0x1021, 0xD895);
-    if (crc != pkt_checksum) {
+    if (crc != PacketCRC) {
         return DECODE_FAIL_MIC;
     }
 
     // snprintf(XX_str, sizeof(XX_str), "0x%02X", XX);
 
-
     PacketTypeID = b[2];
     snprintf(PacketTypeID_str, sizeof(PacketTypeID_str), "0x%02X", PacketTypeID);
 
     PacketLength = b[3];
-    snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
+    // snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
 
     HammingCode = b[4];
-    snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
+    // snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
 
     ApplicationVersion = b[5];
-    snprintf(ApplicationVersion_str, sizeof(ApplicationVersion_str), "0x%02X", ApplicationVersion);
-    ERTType = b[6];
-    snprintf(ERTType_str, sizeof(ERTType_str), "0x%02X", ERTType);
+    // snprintf(ApplicationVersion_str, sizeof(ApplicationVersion_str), "0x%02X", ApplicationVersion);
+
+    ERTType = b[6]; // & 0x0F;
+    // snprintf(ERTType_str, sizeof(ERTType_str), "0x%02X", ERTType);
 
     // memcpy(&t_32, &b[7], 4);
     // ERTSerialNumber = ntohl(t_32);
@@ -148,178 +173,131 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     ConsumptionIntervalCount = b[11];
 
     ModuleProgrammingState = b[12];
-    snprintf(ModuleProgrammingState_str, sizeof(ModuleProgrammingState_str), "0x%02X", ModuleProgrammingState);
+    // snprintf(ModuleProgrammingState_str, sizeof(ModuleProgrammingState_str), "0x%02X", ModuleProgrammingState);
 
-
+    /*
+    http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
+    SCM1 Counter1 Meter has been inverted
+    SCM1 Counter2 Meter has been removed
+    SCM2 Counter3 Meter detected a button–press demand reset
+    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM3 Counter5 Meter has an error or a warning that can affect billing
+    SCM3 Counter6 Meter has a warning that may or may not require a site visit,
+    */
     p = TamperCounters_str;
-    for(int j=0;j<6;j++){
-        p += sprintf(p, "%02X", b[13+j]);
+    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    p += 2;
+    for (int j = 0; j < 6; j++) {
+        p += sprintf(p, "%02X", b[13 + j]);
     }
-    // (void)fprintf(stderr, "TamperCounters_str = %s\n",  TamperCounters_str);
-    bitrow_printf(&b[13], 6*8, "TamperCounters_str   %s\t", TamperCounters_str);
+    if (decoder->verbose > 1)
+        bitrow_printf(&b[13], 6 * 8, "%s TamperCounters_str   %s\t", __func__, TamperCounters_str);
 
-    // memcpy(&t_16, &b[19], 2);
-    // AsynchronousCounters = ntohs(t_16);
     AsynchronousCounters = (b[19] << 8 | b[20]);
-    snprintf(AsynchronousCounters_str, sizeof(AsynchronousCounters_str), "0x%04X", AsynchronousCounters);
+    // snprintf(AsynchronousCounters_str, sizeof(AsynchronousCounters_str), "0x%04X", AsynchronousCounters);
 
     p = PowerOutageFlags_str;
-    for(int j=0;j<6;j++){
-        p += sprintf(p, "%02X", b[21+j]);
+    strncpy(p, "0x", sizeof(PowerOutageFlags_str) - 1);
+    p += 2;
+    for (int j = 0; j < 6; j++) {
+        p += sprintf(p, "%02X", b[21 + j]);
     }
-    bitrow_printf(&b[21], 6*8, "PowerOutageFlags_str %s\t", PowerOutageFlags_str);
+    if (decoder->verbose > 1)
+        bitrow_printf(&b[21], 6 * 8, "%s PowerOutageFlags_str %s\t", __func__, PowerOutageFlags_str);
 
-    memcpy(&t_32, &b[27], 4);
-    LastConsumptionCount = bswap_32(t_32);
-    // DifferentialConsumptionIntervals
-    bitrow_printf(&b[27], 4*8, "%s\t%2d %02X : %2d %02X\t", "LastConsumptionCount 4b",
-        LastConsumptionCount, LastConsumptionCount, t_32, t_32);
+    LastConsumptionCount = ((uint32_t)b[27] << 24) | (b[28] << 16) | (b[29] << 8) | (b[30]);
+    if (decoder->verbose)
+        bitrow_printf(&b[27], 32, "%s LastConsumptionCount %d\t", __func__, LastConsumptionCount);
 
-    unsigned pos = sync_index + (31 * 8) ;
-    // uint16_t *dci = DifferentialConsumptionIntervals;
-    bitrow_printf(&b[31], 423, "DifferentialConsumptionIntervals");
-    uint16_t tt;
-    for(int j=0;j<47;j++) {
+    // DifferentialConsumptionIntervals : 47 intervals of 9-bit unsigned integers
+    if (decoder->verbose > 1)
+        bitrow_printf(&b[31], 423, "%s DifferentialConsumptionIntervals", __func__);
+    unsigned pos = sync_index + (31 * 8);
+    for (int j = 0; j < 47; j++) {
         uint8_t buffy[4] = {0};
 
-        // bitbuffer_extract_bytes(bitbuffer, 0, pos, (uint8_t*) &tt , 9);
-        // (void)fprintf(stderr, "tt =  %d %02X\n",  tt, tt);
-        // tt = bswap_16(tt);
-        // tt = tt >> 7;
-        // (void)fprintf(stderr, "TT =  %d %02X\n",  tt, tt);
         bitbuffer_extract_bytes(bitbuffer, 0, pos, buffy, 9);
-        // memcpy(&t_16, buffy, 2);
-        tt = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
-        DifferentialConsumptionIntervals[j]=tt;
-        /*
-        bitrow_printf(buffy, 9, "Diff %d : %d %02X : %d %02X : %d %02X : %d %02X :  %d %02X", j,
-            t_16, t_16, 
-            DifferentialConsumptionIntervals[j], DifferentialConsumptionIntervals[j],
-            tt, tt,
-            buffy[0], buffy[1],
-            (buffy[0] << 1), ( buffy[1] >> 7)
-            );
-        */
-        // dci++;
+        DifferentialConsumptionIntervals[j] = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
         pos += 9;
     }
-    (void)fprintf(stderr, "DifferentialConsumptionIntervals:\n\t");
-    for(int j=0;j<47;j++) {
-        (void)fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
+    if (decoder->verbose > 1) {
+        fprintf(stderr, "%s DifferentialConsumptionIntervals:\n\t", __func__);
+        for (int j = 0; j < 47; j++) {
+            fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
+        }
+        fprintf(stderr, "\n\n");
     }
-    (void)fprintf(stderr, "\n\n");
-    
 
-    memcpy(&t_16, &b[84], 2);
-    TransmitTimeOffset = bswap_16(t_16);
+    TransmitTimeOffset = (b[84] << 8 | b[85]);
 
-    memcpy(&t_16, &b[86], 2);
-    SerialNumberCRC = bswap_16(t_16);
-    snprintf(SerialNumberCRC_str, sizeof(SerialNumberCRC_str), "0x%04X", SerialNumberCRC);
+    MeterIdCRC = (b[86] << 8 | b[87]);
+    // snprintf(SerialNumberCRC_str, sizeof(MeterIdCRC_str), "0x%04X", MeterIdCRC);
 
-    memcpy(&t_16, &b[88], 2);
-    PacketCRC = bswap_16(t_16);
-    snprintf(PacketCRC_str, sizeof(PacketCRC_str), "0x%04X", PacketCRC);
-
-
-    /* 
-    char crc_str[8];
-    char protocol_id_str[5];
-    char endpoint_type_str[5];
-    char physical_tamper_str[8];
-    */
-
-    // protocol_id = b[2];
-    // snprintf(protocol_id_str, sizeof(protocol_id_str), "0x%02X", b[2]); // protocol_id);  // b[2]
-
-    // endpoint_type = b[3];
-    // snprintf(endpoint_type_str, sizeof(endpoint_type_str), "0x%02X", b[3]); // endpoint_type);  // b[3]
-
-
-    //  consumption_data = ((uint32_t)b[8] << 24) | (b[9] << 16) | (b[10] << 8) | (b[11]);
-
-    /*
-    memcpy(&t_16, &b[12], 2);
-    physical_tamper = ntohs(t_16);
-    snprintf(physical_tamper_str, sizeof(physical_tamper_str), "0x%04X", physical_tamper);
-
-    snprintf(crc_str, sizeof(crc_str), "0x%04X", crc);
-    */
-
-    /*
-    if (decoder->verbose && 0) {
-        (void)fprintf(stderr, "protocol_id = %d %02X\n", protocol_id,protocol_id);
-        bitrow_printf(&b[3], 8, "%s\t%2d\t%02X\t", "endpoint_type   ", endpoint_type, endpoint_type);
-        bitrow_printf(&b[4], 32, "%s\t%2d\t%02X\t", "endpoint_id    ", endpoint_id, endpoint_id);
-        bitrow_printf(&b[8], 32, "%s\t%2d\t%02X\t", "consumption_data", consumption_data, consumption_data);
-        // (void)fprintf(stderr, "consumption_data = %d %08X\n", consumption_data,consumption_data);
-        (void)fprintf(stderr, "physical_tamper = %d %04X\n", physical_tamper,physical_tamper);
-        (void)fprintf(stderr, "pkt_checksum = %d %04X\n", pkt_checksum,pkt_checksum);
-    }
-    */
+    //  snprintf(PacketCRC_str, sizeof(PacketCRC_str), "0x%04X", PacketCRC);
 
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
     char *meter_type;
     switch (ERTType & 0x0f) {
-        case 4:
-        case 5:
-        case 7:
-        case 8:
-            meter_type = "Electric";
-            break;
-        case 2:
-        case 9:
-        case 12:
-            meter_type = "Gas";
-            break;
-        case 11:
-        case 13:
-            meter_type = "Water";
-            break;
-        default:
-            meter_type = "unknown";
-            break;
+    case 4:
+    case 5:
+    case 7:
+    case 8:
+        meter_type = "Electric";
+        break;
+    case 2:
+    case 9:
+    case 12:
+        meter_type = "Gas";
+        break;
+    case 11:
+    case 13:
+        meter_type = "Water";
+        break;
+    default:
+        meter_type = "unknown";
+        break;
     }
-    // (void)fprintf(stderr, "meter_type = %s\n", meter_type);
+    // fprintf(stderr, "meter_type = %s\n", meter_type);
 
-    /* 
-        Field key names and format set to  match rtlamr field names 
+    /*
+        Field key names and format set to  match rtlamr field names
 
-        {Time:2020-06-20T09:58:19.074 Offset:49152 Length:49152
-        SCM+:{ProtocolID:0x1E EndpointType:0xAB EndpointID:  68211547 Consumption:  6883 Tamper:0x4900 PacketCRC:0x39BE}}
+        {"Time":"2020-06-25T08:22:52.404629556-04:00","Offset":1835008,"Length":229376,"Type":"IDM","Message":
+        {"Preamble":1431639715,"PacketTypeID":28,"PacketLength":92,"HammingCode":198,"ApplicationVersion":4,"ERTType":7,"ERTSerialNumber":11278109,"ConsumptionIntervalCount":246,"ModuleProgrammingState":188,"TamperCounters":"QgUWry0H","AsynchronousCounters":0,"PowerOutageFlags":"QUgmCEEF","LastConsumptionCount":339972,"DifferentialConsumptionIntervals":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0],"TransmitTimeOffset":476,"SerialNumberCRC":60090,"PacketCRC":31799}}
     */
 
     /* clang-format off */
     data = data_make(
-            "model",           "",                 DATA_STRING, "IDM",
+            "model",                            "",    DATA_STRING, "IDM",
 
-            // "PacketTypeID",             "",             DATA_FORMAT, "0x%02x", DATA_INT, PacketTypeID,
-            "PacketTypeID",             "",             DATA_STRING,       PacketTypeID_str,    
-            "PacketLength",             "",             DATA_STRING,       PacketLength_str,
-            "HammingCode",              "",             DATA_STRING,       HammingCode_str,
-            "ApplicationVersion",               "",     DATA_STRING,       ApplicationVersion_str,
-            "ERTType",                          "",     DATA_STRING,       ERTType_str,
+            // "PacketTypeID",             "",             DATA_FORMAT, "0x%02X", DATA_INT, PacketTypeID,
+            "PacketTypeID",                     "",    DATA_STRING,       PacketTypeID_str,
+            "PacketLength",                     "",    DATA_INT,       PacketLength,
+            // "HammingCode",              "",             DATA_INT,          HammingCode,
+            "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
+            "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
+            // "ERTType",                          "",     DATA_INT,       ERTType,
             "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
-            // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02x", DATA_INT, ModuleProgrammingState,
-            "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
+            // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
+            "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
+            // "ModuleProgrammingState",           "",     DATA_INT,      ModuleProgrammingState,
             "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
-            // "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02x", DATA_INT, AsynchronousCounters,
-            "AsynchronousCounters",             "",     DATA_STRING,    AsynchronousCounters_str,
+            "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02X", DATA_INT, AsynchronousCounters,
+            // "AsynchronousCounters",             "",     DATA_INT,    AsynchronousCounters,
 
             "PowerOutageFlags",                 "",     DATA_STRING,       PowerOutageFlags_str ,
             "LastConsumptionCount",             "",     DATA_INT,       LastConsumptionCount,
             "DifferentialConsumptionIntervals", "",     DATA_ARRAY, data_array(47, DATA_INT, DifferentialConsumptionIntervals),
             "TransmitTimeOffset",               "",     DATA_INT,       TransmitTimeOffset,
-            "SerialNumberCRC",                  "",     DATA_STRING,       SerialNumberCRC_str,
-            "PacketCRC",                        "",     DATA_STRING,       PacketCRC_str,
+            "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
+            "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
 
-            "MeterType",       "Meter_Type",       DATA_STRING, meter_type,
-            "mic",             "Integrity",        DATA_STRING, "CRC",
+            "MeterType",                        "Meter_Type",       DATA_STRING, meter_type,
+            "mic",                              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
-
 
     decoder_output_data(decoder, data);
     return 1;
@@ -342,8 +320,9 @@ static char *output_fields[] = {
         "LastConsumptionCount",
         "DifferentialConsumptionIntervals",
         "TransmitTimeOffset",
-        "SerialNumberCRC",
+        "MeterIdCRC",
         "PacketCRC",
+        "FOOFOOFOO",
 
         "MeterType",
         "mic",
@@ -362,7 +341,7 @@ r_device idm = {
         .reset_limit = 20000,
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
-        .decode_fn   = &idm_callback,
-        .disabled    = 0,
-        .fields      = output_fields,
+        .decode_fn = &idm_callback,
+        .disabled  = 0,
+        .fields    = output_fields,
 };
