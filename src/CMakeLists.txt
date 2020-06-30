@@ -108,7 +108,6 @@ add_library(r_433 STATIC
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
-    devices/netidm.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c

@@ -12,7 +12,7 @@ def require_clean_work_tree():
     clean = not len(subprocess.check_output(["git", "diff", "--stat"]))
     if not clean:
         print("Please commit or stash your changes.")
-        # exit(1)
+        exit(1)
 
 
 def grep_lines(pattern, filepath):
@@ -113,8 +113,6 @@ repl += get_help_text('-M') + '\n'
 repl += get_help_text('-r') + '\n'
 repl += get_help_text('-w') + '\n'
 repl = repl.encode('utf-8')
-with open("repl.re", "w") as rfp:
-    rfp.write(str(repl))
 replace_block(r'```',
               r'```', repl, 'README.md')
 
