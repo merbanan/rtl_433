@@ -343,7 +343,12 @@ NetIDM layout:
         Endpoint ID     	4       7
         Consumption Interval    1	11	
         Programming State	1       12
-        Unknown_1       	13      13
+
+        Tamper Count    	6       13  - New
+        Unknown_1       	7       19  - New
+
+        Unknown_1       	13      13  - Old
+
         Last Generation Count	3	26
         Unknown_2       	3       29
         Last Consumption Count	4	32
@@ -389,7 +394,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char LastConsumptionCount_str[16];
 
     // uint64_t TamperCounters = 0;  // 6 bytes
-    // char TamperCounters_str[16];
+    char TamperCounters_str[16];
     // uint16_t AsynchronousCounters;
     // char AsynchronousCounters_str[8];
     // uint64_t PowerOutageFlags = 0;  // 6 bytes
@@ -490,16 +495,35 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     ModuleProgrammingState = b[12];
     // snprintf(ModuleProgrammingState_str, sizeof(ModuleProgrammingState_str), "0x%02X", ModuleProgrammingState);
 
+    /*
+    http://davestech.blogspot.com/2008/02/itron-remote-read-electric-meter.html
+    SCM1 Counter1 Meter has been inverted
+    SCM1 Counter2 Meter has been removed
+    SCM2 Counter3 Meter detected a button–press demand reset
+    SCM2 Counter4 Meter has a low-battery/end–of–calendar warning
+    SCM3 Counter5 Meter has an error or a warning that can affect billing
+    SCM3 Counter6 Meter has a warning that may or may not require a site visit,
+    */
+    p = TamperCounters_str;
+    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    p += 2;
+    for (int j = 0; j < 6; j++) {
+        p += sprintf(p, "%02X", b[13 + j]);
+    }
+    if (decoder->verbose > 1)
+        bitrow_printf(&b[13], 6 * 8, "%s TamperCounters_str   %s\t", __func__, TamperCounters_str);
+
+
     //  should this be included ?
     p = Unknown_field_1_str;
     strncpy(p, "0x", sizeof(Unknown_field_1_str) - 1);
     p += 2;
-    for (int j = 0; j < 13; j++) {
-        p += sprintf(p, "%02X", b[13 + j]);
+    for (int j = 0; j < 7; j++) {
+        p += sprintf(p, "%02X", b[19 + j]);
     }
     if (decoder->verbose) {
-        bitrow_printf(&b[13], 13 * 8, "%s Unknown_field_1 %s\t", __func__, Unknown_field_1_str);
-        bitrow_debug(&b[13], 13 * 8);
+        bitrow_printf(&b[19], 7 * 8, "%s Unknown_field_1 %s\t", __func__, Unknown_field_1_str);
+        bitrow_debug(&b[19], 7 * 8);
     }
 
     // 3 bytes
@@ -586,10 +610,10 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",                     "",                 DATA_STRING, "NETIDM",
+            "model",                            "",     DATA_STRING, "NETIDM",
 
-            "PacketTypeID",             "",             DATA_STRING,       PacketTypeID_str,
-            "PacketLength",             "",             DATA_INT,       PacketLength,
+            "PacketTypeID",                     "",     DATA_STRING,       PacketTypeID_str,
+            "PacketLength",                     "",     DATA_INT,       PacketLength,
             // "HammingCode",              "",             DATA_FORMAT, "0x%02X", DATA_INT, HammingCode,
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
 
@@ -598,7 +622,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
-            // "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
+            "TamperCounters",                   "",     DATA_STRING,       TamperCounters_str,
             // "AsynchronousCounters",             "",     DATA_FORMAT, "0x%02X", DATA_INT, AsynchronousCounters,
             "Unknown_field_1",                  "",     DATA_STRING,    Unknown_field_1_str,
             "LastGenerationCount",              "",     DATA_INT,       LastGenerationCount,
@@ -614,7 +638,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
 
             "MeterType",                        "",       DATA_STRING, meter_type,
-            "mic",             "Integrity",        DATA_STRING, "CRC",
+            "mic",                              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
