@@ -265,7 +265,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         DifferentialConsumptionIntervals[j] = ((uint16_t)buffy[0] << 1) | (buffy[1] >> 7);
         pos += 9;
     }
-    if (decoder->verbose > 1) {
+    if (decoder->verbose ) {
         fprintf(stderr, "%s DifferentialConsumptionIntervals:\n\t", __func__);
         for (int j = 0; j < 47; j++) {
             fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);

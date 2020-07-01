@@ -430,9 +430,6 @@
     <ClCompile Include="..\src\devices\mebus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\netidm.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\new_template.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
