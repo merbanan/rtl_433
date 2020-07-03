@@ -162,6 +162,7 @@
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
     DECL(scmplus) \
+    DECL(fineoffset_wh1080_fsk) \
 
     /* Add new decoders here. */
 
