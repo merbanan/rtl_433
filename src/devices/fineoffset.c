@@ -554,7 +554,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 184) { 
+    if (bitbuffer->bits_per_row[0] < 120) {
         return DECODE_ABORT_LENGTH;
     }
 
