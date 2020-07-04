@@ -228,6 +228,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [152]  Eurochron EFTH-800 temperature and humidity sensor
     [153]  Cotech 36-7959 wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
+    [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
 
 * Disabled by default, use -R n or -G
 
