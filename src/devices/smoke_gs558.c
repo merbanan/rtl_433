@@ -76,6 +76,9 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (r < 0)
         return DECODE_ABORT_EARLY;
 
+    if (bitbuffer->bits_per_row[r] > 4*8)
+        return DECODE_ABORT_LENGTH;
+
     b = bitbuffer->bb[r];
 
     // if ((b[2] & 0x0f) != 0x03)
