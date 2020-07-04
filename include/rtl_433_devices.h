@@ -163,6 +163,7 @@
     DECL(cotech_36_7959) \
     DECL(scmplus) \
     DECL(fineoffset_wh1080_fsk) \
+    DECL(tpms_abarth124) \
 
     /* Add new decoders here. */
 
