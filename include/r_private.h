@@ -21,6 +21,7 @@ struct dm_state {
     float min_level;
     float min_snr;
     int use_mag_est;
+    int detect_verbosity;
 
     int16_t am_buf[MAXIMAL_BUF_LENGTH];  // AM demodulated signal (for OOK decoding)
     union {

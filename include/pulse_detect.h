@@ -107,7 +107,8 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// @param fixed_high_level Manual high level override, default is 0 (auto)
 /// @param min_high_level Minimum high level, default is -12 dB
 /// @param high_low_ratio Minimum signal noise ratio, default is 9 dB
-void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio);
+/// @param verbosity Debug output verbosity, 0=None, 1=Levels, 2=Histograms
+void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio, int verbosity);
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
 ///

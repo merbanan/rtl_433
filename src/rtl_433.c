@@ -1058,6 +1058,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
             else if (!strncmp(p, "ampest", 6))
                 cfg->demod->use_mag_est = 0;
+            else if (!strncmp(p, "verbose", 7))
+                cfg->demod->detect_verbosity++;
             else if (!strncmp(p, "magest", 6))
                 cfg->demod->use_mag_est = 1;
             else if (!strncasecmp(p, "level", 5))
@@ -1195,7 +1197,7 @@ int main(int argc, char **argv) {
         add_infile(cfg, argv[optind++]);
     }
 
-    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr);
+    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
 
     if (demod->am_analyze) {
         demod->am_analyze->level_limit = DB_TO_AMP(demod->level_limit);
