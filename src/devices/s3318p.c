@@ -11,7 +11,9 @@
 */
 /**
 Largely the same as esperanza_ews, kedsum.
-\sa esperanza_ews.c kedsum.c
+@sa esperanza_ews.c kedsum.c
+
+Also NC-5849-913 from Pearl (for FWS-310 station).
 
 Transmit Interval: every ~50s.
 Message Format: 40 bits (10 nibbles).
@@ -61,13 +63,13 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // ignore if two leading sync pulses (Esperanza EWS)
     if (bitbuffer->bits_per_row[0] == 0 && bitbuffer->bits_per_row[1] == 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     // the signal should have 6 repeats with a sync pulse between
     // require at least 4 received repeats
     int r = bitbuffer_find_repeated_row(bitbuffer, 4, 42);
     if (r < 0 || bitbuffer->bits_per_row[r] != 42)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // remove the two leading 0-bits and align the data
     bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
@@ -75,26 +77,28 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     int id          = b[0];
     int channel     = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw    = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    float temp_f    = (temp_raw - 900) * 0.1;
+    float temp_f    = (temp_raw - 900) * 0.1f;
     int humidity    = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
     int button      = b[4] >> 7;
     int battery_low = (b[4] & 0x40) >> 6;
 
+    /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Conrad-S3318P","S3318P Temperature & Humidity Sensor"),
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "button",           "Button",       DATA_INT, button,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "button",           "Button",       DATA_INT, button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -109,11 +113,11 @@ static char *output_fields[] = {
     "temperature_F",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device s3318p = {
-    .name           = "Conrad S3318P Temperature & Humidity Sensor",
+    .name           = "Conrad S3318P, FreeTec NC-5849-913 temperature humidity sensor",
     .modulation     = OOK_PULSE_PPM,
     .short_width    = 1900,
     .long_width     = 3800,
@@ -121,5 +125,5 @@ r_device s3318p = {
     .reset_limit    = 9400,
     .decode_fn      = &s3318p_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

@@ -27,10 +27,9 @@ typedef void (*sdr_read_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
 */
 int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose);
 
-/** Close the device, optionally report status.
+/** Close the device.
 
     @param dev the device handle
-    @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
 int sdr_close(sdr_dev_t *dev);
@@ -38,7 +37,7 @@ int sdr_close(sdr_dev_t *dev);
 /** Set device frequency, optionally report status.
 
     @param dev the device handle
-    @param frequency in Hz
+    @param freq in Hz
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
@@ -54,7 +53,7 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev);
 /** Set the frequency correction value for the device, optionally report status.
 
     @param dev the device handle
-    @param ppm_error correction value in parts per million (ppm)
+    @param ppm correction value in parts per million (ppm)
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
@@ -80,7 +79,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose);
 /** Set device sample rate, optionally report status.
 
     @param dev the device handle
-    @param samp_rate in samples/second
+    @param rate in samples/second
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */

@@ -18,10 +18,10 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t b[5]; // 36 bits
 
-    for (uint8_t row = 0;row < bitbuffer->num_rows;row++){
+    for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (bitbuffer->bits_per_row[row] != 41 || // Length of packet is 41 (36+5)
                 (bitbuffer->bb[row][0] & 0xf8) != 0xa8) // Sync is 10101xxx (5 bits)
-        continue;
+        continue; // DECODE_ABORT_LENGTH
 
         // remove the 5 sync bits
         bitbuffer_extract_bytes(bitbuffer, row, 5, b, 36);
@@ -30,14 +30,14 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             (b[2] & 0x0c) != 0x08 && // AD10 always "open" on HT680
             (b[3] & 0x30) != 0x20 && // AD13 always "open" on HT680
             (b[4] & 0xf0) != 0xa0) // AD16, AD17 always "open" on HT680
-        continue; // not a HT680
+        continue; // DECODE_ABORT_EARLY
 
         // Tristate coding
         char tristate[21];
         char *p = tristate;
         for (int byte = 0; byte < 5; byte++) {
             for (int bit = 7; bit > 0; bit -= 2) {
-                switch ((b[byte] >> (bit-1)) & 0x03){
+                switch ((b[byte] >> (bit-1)) & 0x03) {
                     case 0x00: *p++ = '0'; break;
                     case 0x01: *p++ = 'X'; break; // Invalid code 01
                     case 0x02: *p++ = 'Z'; break; // Floating state Z is 10
@@ -56,17 +56,19 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         int button3 = (b[3]>>6) & 0x03;
         int button4 = (b[2]>>0) & 0x03;
 
+        /* clang-format off */
         data = data_make(
                 "model",    "",                 DATA_STRING, _X("HT680-Remote","HT680 Remote control"),
-                "tristate", "Tristate code",    DATA_STRING, tristate,
-                "address",  "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
+                _X("id","address"),  "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
                 "button1",  "Button 1",         DATA_STRING, button1 == 3 ? "PRESSED" : "",
                 "button2",  "Button 2",         DATA_STRING, button2 == 3 ? "PRESSED" : "",
                 "button3",  "Button 3",         DATA_STRING, button3 == 3 ? "PRESSED" : "",
                 "button4",  "Button 4",         DATA_STRING, button4 == 3 ? "PRESSED" : "",
+                "tristate", "Tristate code",    DATA_STRING, tristate,
                 NULL);
-        decoder_output_data(decoder, data);
+        /* clang-format on */
 
+        decoder_output_data(decoder, data);
         return 1;
     }
     return 0;
@@ -74,13 +76,14 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
     "model",
-    "tristate",
-    "address",
+    "id",
+    "address", // TODO: remove this
     "button1",
     "button2",
     "button3",
     "button4",
-    NULL
+    "tristate",
+    NULL,
 };
 
 r_device ht680 = {

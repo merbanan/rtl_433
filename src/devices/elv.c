@@ -29,18 +29,23 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // check and combine the 3 repetitions
     for (i = 0; i < 14; i++) {
-        if(bb[0][i]==bb[1][i] || bb[0][i]==bb[2][i]) bb_p[i]=bb[0][i];
-        else if(bb[1][i]==bb[2][i])                  bb_p[i]=bb[1][i];
-        else return 0;
+        if (bb[0][i] == bb[1][i] || bb[0][i] == bb[2][i])
+            bb_p[i] = bb[0][i];
+        else if (bb[1][i] == bb[2][i])
+            bb_p[i] = bb[1][i];
+        else
+            return DECODE_ABORT_EARLY;
     }
 
     // read 9 bytes with stopbit ...
     for (i = 0; i < 9; i++) {
-        dec[i] = AD_POP (bb_p, 8, bit); bit+=8;
-        stopbit=AD_POP (bb_p, 1, bit); bit+=1;
+        dec[i] = AD_POP(bb_p, 8, bit);
+        bit += 8;
+        stopbit = AD_POP(bb_p, 1, bit);
+        bit += 1;
         if (!stopbit) {
-//            fprintf(stdout, "!stopbit: %i\n", i);
-            return 0;
+//            fprintf(stderr, "!stopbit: %i\n", i);
+            return DECODE_ABORT_EARLY;
         }
         checksum_calculated ^= dec[i];
         bytes++;
@@ -49,11 +54,11 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Read checksum
     checksum_received = AD_POP (bb_p, 8, bit); bit+=8;
     if (checksum_received != checksum_calculated) {
-//        fprintf(stdout, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
-        return 0;
+//        fprintf(stderr, "checksum_received != checksum_calculated: %d %d\n", checksum_received, checksum_calculated);
+        return DECODE_FAIL_MIC;
     }
 
-//for (i = 0; i < bytes; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n");
+//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     // based on 15_CUL_EM.pm
     char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";
@@ -65,11 +70,11 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     data = data_make(
             "model",    "", DATA_STRING, "ELV-EM1000",
-            "id",       "", DATA_STRING, code,
+            "id",       "", DATA_INT, code,
             "seq",      "", DATA_INT, seqno,
-            "total",    "", DATA_STRING, total,
-            "current",  "", DATA_STRING, current,
-            "peak",     "", DATA_FORMAT, peak,
+            "total",    "", DATA_INT, total,
+            "current",  "", DATA_INT, current,
+            "peak",     "", DATA_INT, peak,
             NULL);
 
     decoder_output_data(decoder, data);
@@ -79,12 +84,12 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *elv_em1000_output_fields[] = {
     "model",
-    "id"
+    "id",
     "seq",
     "total",
     "current",
     "peak",
-    NULL
+    NULL,
 };
 
 r_device elv_em1000 = {
@@ -118,8 +123,9 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     dec[0] = AD_POP (bb[0], 4, bit); bit+=4;
     stopbit= AD_POP (bb[0], 1, bit); bit+=1;
     if (!stopbit) {
-        if(decoder->verbose) fprintf(stdout, "!stopbit\n");
-        return 0;
+        if (decoder->verbose)
+            fprintf(stderr, "!stopbit\n");
+        return DECODE_ABORT_EARLY;
     }
     check_calculated ^= dec[0];
     sum_calculated   += dec[0];
@@ -129,18 +135,22 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         dec[i] = AD_POP (bb[0], 4, bit); bit+=4;
         stopbit= AD_POP (bb[0], 1, bit); bit+=1;
         if (!stopbit) {
-            if(decoder->verbose) fprintf(stdout, "!stopbit %i\n", bit);
-            return 0;
+            if (decoder->verbose)
+                fprintf(stderr, "!stopbit %i\n", bit);
+            return DECODE_ABORT_EARLY;
         }
         check_calculated ^= dec[i];
         sum_calculated   += dec[i];
         nibbles++;
     }
-    if(decoder->verbose) { for (i = 0; i < nibbles; i++) fprintf(stdout, "%02X ", dec[i]); fprintf(stdout, "\n"); }
+    if (decoder->verbose) {
+        bitrow_print(dec, nibbles * 8);
+    }
 
     if (check_calculated) {
-        if(decoder->verbose) fprintf(stdout, "check_calculated (%d) != 0\n", check_calculated);
-        return 0;
+        if (decoder->verbose)
+            fprintf(stderr, "check_calculated (%d) != 0\n", check_calculated);
+        return DECODE_FAIL_MIC;
     }
 
     // Read sum
@@ -148,50 +158,52 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sum_calculated+=5;
     sum_calculated&=0xF;
     if (sum_received != sum_calculated) {
-        if(decoder->verbose) fprintf(stdout, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
-        return 0;
+        if (decoder->verbose)
+            fprintf(stderr, "sum_received (%d) != sum_calculated (%d) ", sum_received, sum_calculated);
+        return DECODE_FAIL_MIC;
     }
 
-    char *subtype  = dec[0] <= 7 ? types[dec[0]] : "?";
+    char *subtype  = (dec[0] <= 7) ? types[dec[0]] : "?";
     int code       = dec[1] & 7;
-    float temp     = (dec[1] & 8 ? -1.0 : 1.0) * (dec[4] * 10 + dec[3] + dec[2] * 0.1);
-    float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1;
+    float temp     = ((dec[1] & 8) ? -1.0f : 1.0f) * (dec[4] * 10 + dec[3] + dec[2] * 0.1f);
+    float humidity = dec[7] * 10 + dec[6] + dec[5] * 0.1f;
     int pressure   = 0;
     if (dec[0]==4) {
         pressure = 200 + dec[10] * 100 + dec[9] * 10 + dec[8];
     }
 
+    /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, "ELV-WS2000",
-            "id",           "", DATA_INT, code,
-            "subtype",      "", DATA_STRING, subtype,
-            "temperature",  "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
-            "humidity",     "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
-            "pressure",     "", DATA_INT, pressure,
+            "model",            "", DATA_STRING, "ELV-WS2000",
+            "subtype",          "", DATA_STRING, subtype,
+            "id",               "", DATA_INT,    code,
+            "temperature_C",    "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
+            "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
+            "pressure_hPa",     "", DATA_FORMAT, "%d hPa", DATA_INT, pressure,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *elv_ws2000_output_fields[] = {
-    "model",
-    "id"
-    "subtype",
-    "temperature",
-    "humidity",
-    "pressure",
-    NULL
+        "model",
+        "id",
+        "subtype",
+        "temperature_C",
+        "humidity",
+        "pressure_hPa",
+        NULL,
 };
 
 r_device elv_ws2000 = {
-    .name           = "ELV WS 2000",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 366,  // 0 => 854us, 1 => 366us according to link in top
-    .long_width     = 854,  // no repetitions
-    .reset_limit    = 1000, // Longest pause is 854us according to link
-    .decode_fn      = &ws2000_callback,
-    .disabled       = 1,
-    .fields         = elv_ws2000_output_fields,
+        .name        = "ELV WS 2000",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 366,  // 0 => 854us, 1 => 366us according to link in top
+        .long_width  = 854,  // no repetitions
+        .reset_limit = 1000, // Longest pause is 854us according to link
+        .decode_fn   = &ws2000_callback,
+        .disabled    = 1,
+        .fields      = elv_ws2000_output_fields,
 };

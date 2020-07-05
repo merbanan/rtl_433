@@ -25,23 +25,25 @@
 #endif
 
 #include "samp_grab.h"
+#include "fatal.h"
 
 samp_grab_t *samp_grab_create(unsigned size)
 {
     samp_grab_t *g;
     g = calloc(1, sizeof(*g));
     if (!g) {
-        return NULL;
+        WARN_CALLOC("samp_grab_create()");
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    g->sg_buf  = malloc(size);
     g->sg_size = size;
-
     g->sg_counter = 1;
 
+    g->sg_buf = malloc(size);
     if (!g->sg_buf) {
+        WARN_MALLOC("samp_grab_create()");
         free(g);
-        return NULL;
+        return NULL; // NOTE: returns NULL on alloc failure.
     }
 
     return g;

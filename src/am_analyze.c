@@ -15,6 +15,7 @@
 
 #include "bitbuffer.h"
 #include "samp_grab.h"
+#include "fatal.h"
 
 #include "am_analyze.h"
 
@@ -25,7 +26,9 @@ am_analyze_t *am_analyze_create(void)
 {
     am_analyze_t *a;
     a = calloc(1, sizeof(am_analyze_t));
-    return a;
+    if (!a)
+        WARN_CALLOC("am_analyze_create()");
+    return a; // NOTE: returns NULL on alloc failure.
 }
 
 void am_analyze_free(am_analyze_t *a)
@@ -42,7 +45,7 @@ void am_analyze_skip(am_analyze_t *a, unsigned n_samples)
 void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_output, samp_grab_t *g)
 {
     unsigned int i;
-    int32_t threshold = (*a->level_limit ? *a->level_limit : 8000);  // Does not support auto level. Use old default instead.
+    int threshold = (a->level_limit ? a->level_limit : 8000);  // Does not support auto level. Use old default instead.
 
     for (i = 0; i < n_samples; i++) {
         if (am_buf[i] > threshold) {
@@ -54,9 +57,11 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_data[a->signal_pulse_counter][0] = a->counter;
                 a->signal_pulse_data[a->signal_pulse_counter][1] = -1;
                 a->signal_pulse_data[a->signal_pulse_counter][2] = -1;
-                if (debug_output) fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
-                if (debug_output) fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
-                if (debug_output) fprintf(stderr, "pulse_start[%d] found at sample %d, value = %d\n", a->pulses_found, a->counter, am_buf[i]);
+                if (debug_output) {
+                    fprintf(stderr, "pulse_distance %d\n", a->counter - a->pulse_end);
+                    fprintf(stderr, "pulse_start distance %d\n", a->pulse_start - a->prev_pulse_start);
+                    fprintf(stderr, "pulse_start[%u] found at sample %u, value = %d\n", a->pulses_found, a->counter, am_buf[i]);
+                }
                 a->prev_pulse_start = a->pulse_start;
                 a->print = 0;
                 a->print2 = 1;
@@ -66,8 +71,10 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
         if (am_buf[i] < threshold) {
             if (a->print2) {
                 a->pulse_avg += a->counter - a->pulse_start;
-                if (debug_output) fprintf(stderr, "pulse_end  [%d] found at sample %d, pulse length = %d, pulse avg length = %d\n",
-                        a->pulses_found, a->counter, a->counter - a->pulse_start, (a->pulses_found) ? (a->pulse_avg / a->pulses_found) : 0);
+                if (debug_output) {
+                    fprintf(stderr, "pulse_end  [%u] found at sample %u, pulse length = %u, pulse avg length = %u\n",
+                            a->pulses_found, a->counter, a->counter - a->pulse_start, (a->pulses_found) ? (a->pulse_avg / a->pulses_found) : 0);
+                }
                 a->pulse_end = a->counter;
                 a->print2 = 0;
                 a->signal_pulse_data[a->signal_pulse_counter][1] = a->counter;
@@ -75,7 +82,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 a->signal_pulse_counter++;
                 if (a->signal_pulse_counter >= PULSE_DATA_SIZE) {
                     a->signal_pulse_counter = 0;
-                    fprintf(stderr, "To many pulses detected, probably bad input data or input parameters\n");
+                    fprintf(stderr, "Too many pulses detected, probably bad input data or input parameters\n");
                     return;
                 }
             }
@@ -84,7 +91,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
                 unsigned padded_start = a->signal_start - FRAME_PAD;
                 unsigned padded_end   = a->counter - FRAME_END_MIN + FRAME_PAD;
                 unsigned padded_len   = padded_end - padded_start;
-                fprintf(stderr, "*** signal_start = %d, signal_end = %d, signal_len = %d, pulses_found = %d\n",
+                fprintf(stderr, "*** signal_start = %u, signal_end = %u, signal_len = %u, pulses_found = %u\n",
                         padded_start, padded_end, padded_len, a->pulses_found);
 
                 am_analyze_classify(a); // clears signal_pulse_data
@@ -103,7 +110,7 @@ void am_analyze(am_analyze_t *a, int16_t *am_buf, unsigned n_samples, int debug_
 void am_analyze_classify(am_analyze_t *aa)
 {
     unsigned int i, k, max = 0, min = 1000000, t;
-    unsigned int delta, count_min, count_max, min_new, max_new, p_limit;
+    unsigned int delta, p_limit;
     unsigned int a[3], b[2], a_cnt[3], a_new[3];
     unsigned int signal_distance_data[PULSE_DATA_SIZE] = {0};
     bitbuffer_t bits = {0};
@@ -131,10 +138,10 @@ void am_analyze_classify(am_analyze_t *aa)
     //TODO use Lloyd-Max quantizer instead
     k = 1;
     while ((k < 10) && (delta > 0)) {
-        min_new = 0;
-        count_min = 0;
-        max_new = 0;
-        count_max = 0;
+        unsigned min_new = 0;
+        unsigned count_min = 0;
+        unsigned max_new = 0;
+        unsigned count_max = 0;
 
         for (i = 0; i < aa->signal_pulse_counter; i++) {
             if (aa->signal_pulse_data[i][0] > 0) {
@@ -157,7 +164,7 @@ void am_analyze_classify(am_analyze_t *aa)
         max = max_new;
         t = (min + max) / 2;
 
-        fprintf(stderr, "Iteration %d. t: %d    min: %d (%d)    max: %d (%d)    delta %d\n", k, t, min, count_min, max, count_max, delta);
+        fprintf(stderr, "Iteration %u. t: %u    min: %u (%u)    max: %u (%u)    delta %u\n", k, t, min, count_min, max, count_max, delta);
         k++;
     }
 
@@ -168,7 +175,7 @@ void am_analyze_classify(am_analyze_t *aa)
     }
     /* 50% decision limit */
     if (min != 0 && max / min > 1) {
-        fprintf(stderr, "Pulse coding: Short pulse length %d - Long pulse length %d\n", min, max);
+        fprintf(stderr, "Pulse coding: Short pulse length %u - Long pulse length %u\n", min, max);
         signal_type = 2;
     } else {
         fprintf(stderr, "Distance coding: Pulse length %d\n", (min + max) / 2);
@@ -268,8 +275,8 @@ void am_analyze_classify(am_analyze_t *aa)
         a[1] = aa->override_long;
     }
 
-    fprintf(stderr, "\nShort distance: %d, long distance: %d, packet distance: %d\n", a[0], a[1], a[2]);
-    fprintf(stderr, "\np_limit: %d\n", p_limit);
+    fprintf(stderr, "\nShort distance: %u, long distance: %u, packet distance: %u\n", a[0], a[1], a[2]);
+    fprintf(stderr, "\np_limit: %u\n", p_limit);
 
     bitbuffer_clear(&bits);
     if (signal_type == 1) {

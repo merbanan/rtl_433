@@ -1,8 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """rtl_433 maintainer updates to build files and docs."""
 
-from __future__ import print_function
 import os
 import subprocess
 import glob
@@ -46,14 +45,29 @@ def replace_block(from_pattern, to_pattern, repl, filepath):
 def get_help_text(option):
     try:
         help_text = subprocess.check_output(
-            ["./build/src/rtl_433", "-c", "0", option], stderr=subprocess.STDOUT)
+            ["./build/src/rtl_433", "-c", "0", option], stderr=subprocess.STDOUT).decode('utf-8')
     except subprocess.CalledProcessError as e:
-        help_text = e.output
+        help_text = e.output.decode('utf-8')
 
     # trim help text
-    help_text = re.sub(r'(?s).*Usage:', 'Usage:', help_text)
-    help_text = re.sub(r'(?s).*option requires an argument -- .',
-                       'Option ' + option + ':', help_text)
+    help_text = re.sub(r'(?s).*Usage:', '', help_text)
+    help_text = re.sub(r'(?s).*option requires an argument -- \'?.\'?', '', help_text)
+    # help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'### \1', help_text)
+    return help_text
+
+
+def markup_man_text(help_text):
+    # sub section headings
+    help_text = re.sub(r'(?m)^\s*=\s+(.*)\s+=\s*$', r'.SS "\1"', help_text)
+    # indented lines
+    help_text = re.sub(r'(?m)^\t(.*)$', r'.RS\n\1\n.RE', help_text)
+    # options
+    help_text = re.sub(r'(?m)^\s*\[(\S*)(.*)\]\s*(.*)$',
+                       r'.TP\n[ \\\\fB\1\\\\fI\2\\\\fP ]\n\3', help_text)
+    # fix hyphens
+    help_text = re.sub(r'-', '\\-', help_text)
+    # fix quotes
+    help_text = re.sub(r'(?m)^\'', ' \'', help_text)
     return help_text
 
 
@@ -84,7 +98,7 @@ r_devices = [grep_lines(r'(?m)^r_device\s*(.*?)\s*=.*',
 r_devices = [item for sublist in r_devices for item in sublist]
 print("r_devices =", r_devices)
 
-# count r_devices, correct for 'template' being used six times
+# count r_devices, correct for 'new_template' being used six times
 r_devices_used = len(r_devices) + 5
 
 # README.md
@@ -98,13 +112,20 @@ repl += get_help_text('-F') + '\n'
 repl += get_help_text('-M') + '\n'
 repl += get_help_text('-r') + '\n'
 repl += get_help_text('-w') + '\n'
+repl = repl.encode('utf-8')
 replace_block(r'```',
               r'```', repl, 'README.md')
 
+# MAN pages
+repl = markup_man_text(repl)
+replace_block(r'\.\\" body',
+              r'\.\\" end', '\n'+repl, 'man/man1/rtl_433.1')
+
 # src/CMakeLists.txt
 repl = src_files + device_files
-repl = '\n\t' + ('\n\t'.join(repl)) + '\n'
-replace_block(r'add_executable\(rtl_433$',
+repl.remove('rtl_433.c') # exclude apps from lib sources
+repl = '\n    ' + ('\n    '.join(repl)) + '\n'
+replace_block(r'add_library\(r_433 STATIC$',
               r'^\)', repl, 'src/CMakeLists.txt')
 
 # src/Makefile.am

@@ -24,8 +24,21 @@ int atobv(char *arg, int def)
     return atoi(arg);
 }
 
+int atoiv(char *arg, int def)
+{
+    if (!arg)
+        return def;
+    char *endptr;
+    int val = strtol(arg, &endptr, 10);
+    if (arg == endptr)
+        return def;
+    return val;
+}
+
 char *arg_param(char *arg)
 {
+    if (!arg)
+        return NULL;
     char *p = strchr(arg, ':');
     char *c = strchr(arg, ',');
     if (p && (!c || p < c))
@@ -34,6 +47,33 @@ char *arg_param(char *arg)
         return c;
     else
         return p;
+}
+
+double arg_float(const char *str, const char *error_hint)
+{
+    if (!str) {
+        fprintf(stderr, "%smissing number argument\n", error_hint);
+        exit(1);
+    }
+
+    if (!*str) {
+        fprintf(stderr, "%sempty number argument\n", error_hint);
+        exit(1);
+    }
+
+    // allow whitespace and equals char
+    while (*str == ' ' || *str == '=')
+        ++str;
+
+    char *endptr;
+    double val = strtod(str, &endptr);
+
+    if (str == endptr) {
+        fprintf(stderr, "%sinvalid number argument (%s)\n", error_hint, str);
+        exit(1);
+    }
+
+    return val;
 }
 
 char *hostport_param(char *param, char **host, char **port)
@@ -124,7 +164,8 @@ uint32_t atouint32_metric(const char *str, const char *error_hint)
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    val += 1e-5; // rounding (e.g. 4123456789.99999)
+    if (val - (uint32_t)val > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget k, M, or G suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -143,43 +184,89 @@ int atoi_time(const char *str, const char *error_hint)
         exit(1);
     }
 
-    char *endptr;
-    double val = strtod(str, &endptr);
+    char *endptr    = NULL;
+    double val      = 0.0;
+    unsigned colons = 0;
 
-    if (str == endptr) {
-        fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
-        exit(1);
-    }
+    do {
+        double num = strtod(str, &endptr);
 
-    // allow whitespace before suffix
-    while (*endptr == ' ' || *endptr == '\t')
-        ++endptr;
+        if (!endptr || str == endptr) {
+            fprintf(stderr, "%sinvalid time argument (%s)\n", error_hint, str);
+            exit(1);
+        }
 
-    switch (*endptr) {
+        // allow whitespace before suffix
+        while (*endptr == ' ' || *endptr == '\t')
+            ++endptr;
+
+        switch (*endptr) {
         case '\0':
+            if (colons == 0) {
+                // assume seconds
+                val += num;
+                break;
+            }
+            // intentional fallthrough
+        case ':':
+            ++colons;
+            if (colons == 1)
+                val += num * 60 * 60;
+            else if (colons == 2)
+                val += num * 60;
+            else if (colons == 3)
+                val += num;
+            else {
+                fprintf(stderr, "%stoo many colons (use HH:MM[:SS]))\n", error_hint);
+                exit(1);
+            }
+            if (*endptr)
+                ++endptr;
             break;
         case 's':
         case 'S':
+            val += num;
+            ++endptr;
             break;
         case 'm':
         case 'M':
-            val *= 60;
+            val += num * 60;
+            ++endptr;
             break;
         case 'h':
         case 'H':
-            val *= 60 * 60;
+            val += num * 60 * 60;
+            ++endptr;
+            break;
+        case 'd':
+        case 'D':
+            val += num * 60 * 60 * 24;
+            ++endptr;
             break;
         default:
             fprintf(stderr, "%sunknown time suffix (%s)\n", error_hint, endptr);
             exit(1);
-    }
+        }
+
+        // chew up any remaining whitespace
+        while (*endptr == ' ' || *endptr == '\t')
+            ++endptr;
+        str = endptr;
+
+    } while (*endptr);
 
     if (val > INT_MAX || val < INT_MIN) {
         fprintf(stderr, "%stime argument too big (%f)\n", error_hint, val);
         exit(1);
     }
 
-    if ((uint32_t)((val - (uint32_t)val) * 1e6) != 0) {
+    if (val < 0) {
+        val -= 1e-5; // rounding (e.g. -4123456789.99999)
+    }
+    else {
+        val += 1e-5; // rounding (e.g. 4123456789.99999)
+    }
+    if (val - (int)(val) > 2e-5) {
         fprintf(stderr, "%sdecimal fraction (%f) did you forget m, or h suffix?\n", error_hint, val - (uint32_t)val);
     }
 
@@ -241,7 +328,16 @@ char *remove_ws(char *str)
 
 // Unit testing
 #ifdef _TEST
-#define ASSERT_EQUALS(a,b) if ((a) == (b)) { ++passed; } else { ++failed; fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); }
+#define ASSERT_EQUALS(a,b)                                  \
+    do {                                                    \
+        if ((a) == (b))                                     \
+            ++passed;                                       \
+        else {                                              \
+            ++failed;                                       \
+            fprintf(stderr, "FAIL: %d <> %d\n", (a), (b));  \
+        }                                                   \
+    } while (0)
+
 int main(int argc, char **argv)
 {
     unsigned passed = 0;
@@ -253,7 +349,8 @@ int main(int argc, char **argv)
     ASSERT_EQUALS(atouint32_metric("0.0", ""), 0);
     ASSERT_EQUALS(atouint32_metric("1.0", ""), 1);
     ASSERT_EQUALS(atouint32_metric("1.024k", ""), 1024);
-    ASSERT_EQUALS(atouint32_metric("433.92MHz", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.92M", ""), 433920000);
+    ASSERT_EQUALS(atouint32_metric("433.94M", ""), 433940000);
     ASSERT_EQUALS(atouint32_metric(" +1 G ", ""), 1000000000);
 
     fprintf(stderr, "optparse:: atoi_time\n");
@@ -262,8 +359,29 @@ int main(int argc, char **argv)
     ASSERT_EQUALS(atoi_time("0.0", ""), 0);
     ASSERT_EQUALS(atoi_time("1.0", ""), 1);
     ASSERT_EQUALS(atoi_time("1s", ""), 1);
-    ASSERT_EQUALS(atoi_time("2h", ""), 2*60*60);
-    ASSERT_EQUALS(atoi_time(" -1 M ", ""), -60);
+    ASSERT_EQUALS(atoi_time("2d", ""), 2 * 60 * 60 * 24);
+    ASSERT_EQUALS(atoi_time("2h", ""), 2 * 60 * 60);
+    ASSERT_EQUALS(atoi_time("2m", ""), 2 * 60);
+    ASSERT_EQUALS(atoi_time("2s", ""), 2);
+    ASSERT_EQUALS(atoi_time("2D", ""), 2 * 60 * 60 * 24);
+    ASSERT_EQUALS(atoi_time("2H", ""), 2 * 60 * 60);
+    ASSERT_EQUALS(atoi_time("2M", ""), 2 * 60);
+    ASSERT_EQUALS(atoi_time("2S", ""), 2);
+    ASSERT_EQUALS(atoi_time("2h3m4s", ""), 2 * 60 * 60 + 3 * 60 + 4);
+    ASSERT_EQUALS(atoi_time("2h 3m 4s", ""), 2 * 60 * 60 + 3 * 60 + 4);
+    ASSERT_EQUALS(atoi_time("2h3h 3m 4s 5", ""), 5 * 60 * 60 + 3 * 60 + 9);
+    ASSERT_EQUALS(atoi_time(" 2m ", ""), 2 * 60);
+    ASSERT_EQUALS(atoi_time("2 m", ""), 2 * 60);
+    ASSERT_EQUALS(atoi_time("  2  m  ", ""), 2 * 60);
+    ASSERT_EQUALS(atoi_time("-1m", ""), -60);
+    ASSERT_EQUALS(atoi_time("1h-15m", ""), 45 * 60);
+
+    ASSERT_EQUALS(atoi_time("2:3", ""), 2 * 60 * 60 + 3 * 60);
+    ASSERT_EQUALS(atoi_time("2:3:4", ""), 2 * 60 * 60 + 3 * 60 + 4);
+    ASSERT_EQUALS(atoi_time("02:03", ""), 2 * 60 * 60 + 3 * 60);
+    ASSERT_EQUALS(atoi_time("02:03:04", ""), 2 * 60 * 60 + 3 * 60 + 4);
+    ASSERT_EQUALS(atoi_time(" 2 : 3 ", ""), 2 * 60 * 60 + 3 * 60);
+    ASSERT_EQUALS(atoi_time(" 2 : 3 : 4 ", ""), 2 * 60 * 60 + 3 * 60 + 4);
 
     fprintf(stderr, "optparse:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
 

@@ -68,6 +68,12 @@ cd ..
 export CMAKE_SYSROOT=$sysroot32 ; echo $CMAKE_SYSROOT
 mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
 rm -rf build-tmp
+# Non-static 32-bit binary from w64 compiler is broken with
+# missing libgcc_s_sjlj-1.dll, libwinpthread-1.dll
+# neither CMAKE_EXE_LINKER_FLAGS="-static-libgcc"
+# nor target_link_libraries(rtl_433 -static-libgcc)
+# fix this. Ideas welcome.
+mv $sysroot32/usr/bin/rtl_433.exe $sysroot32/usr/bin/rtl_433_32bit_nonstatic_broken.exe
 
 export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
 mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..

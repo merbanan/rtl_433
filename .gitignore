@@ -26,6 +26,7 @@ stamp-h1
 libtool
 Doxyfile
 .dirstamp
+tags
 
 .tarball-version
 .version
@@ -56,3 +57,8 @@ build*/
 _*/
 
 rtl_433_tests
+
+.idea
+cmake-build-debug/
+
+.DS_Store

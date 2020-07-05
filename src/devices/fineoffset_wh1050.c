@@ -33,7 +33,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t br[9];
 
     if (bitbuffer->num_rows != 1) {
-        return 0;
+        return DECODE_ABORT_EARLY;
     }
 
     /* The normal preamble for WH1050 is 8 1s (0xFF) followed by 4 0s
@@ -53,19 +53,19 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (bits == 80 && preamble_byte == 0xff) {
         bitbuffer_extract_bytes(bitbuffer, 0, 8, br, 72);
     } else {
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     // If you calculate the CRC over all 10 bytes including the preamble
     // byte (always 0xFF), then CRC_INIT is 0xFF. But we compare the preamble
     // byte and then discard it.
     if (crc8(br, 9, 0x31, 0x00)) {
-        return 0; // crc mismatch
+        return DECODE_FAIL_MIC; // crc mismatch
     }
 
     // GETTING WEATHER SENSORS DATA
     int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
@@ -74,18 +74,20 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int device_id     = (br[0] << 4 & 0xf0) | (br[1] >> 4);
     int battery_low   = br[1] & 0x04; // Unsure about Battery byte...
 
-    // PRESENTING DATA
+    /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, _X("Fineoffset-WH1050","Fine Offset WH1050 weather station"),
             "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
+            "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-            "speed",            "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
-            "gust",             "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
-            "rain",             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
-            "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
+            _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
+            _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
+            _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }
@@ -93,13 +95,17 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
+    "battery",
     "temperature_C",
     "humidity",
-    "speed",
-    "gust",
-    "rain",
-    "battery",
-    NULL
+    "speed", // TODO: remove this
+    "gust", // TODO: remove this
+    "wind_avg_km_h",
+    "wind_max_km_h",
+    "rain", // TODO: delete this
+    "rain_mm",
+    "mic",
+    NULL,
 };
 
 r_device fineoffset_wh1050 = {

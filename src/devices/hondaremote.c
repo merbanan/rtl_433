@@ -35,9 +35,9 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         b = bitbuffer->bb[row];
         // Validate package
-        if (((bitbuffer->bits_per_row[row] <= 385) || (bitbuffer->bits_per_row[row] > 394)) ||
+        if (((bitbuffer->bits_per_row[row] < 385) || (bitbuffer->bits_per_row[row] > 394)) ||
                 ((b[0] != 0xFF ) || (b[38] != 0xFF)))
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         code = get_command_codes(b);
         device_id = b[44]<<8 | b[45];
@@ -69,6 +69,6 @@ r_device hondaremote = {
     .long_width     = 500,
     .reset_limit    = 2000,
     .decode_fn      = &hondaremote_callback,
-    .disabled       = 0,
+    .disabled       = 1, // no MIC, weak sanity checks
     .fields         = output_fields
 };

@@ -13,6 +13,12 @@
  * on limited observations, doesn't take into account bits that might
  * be set to indicate something like a low battery condition.
  *
+ * DS10A door/window sensor bitmask : CUUUUDUB
+ *      C = Door/window closed flag.
+ *      U = Unknown. Cleared in all samples.
+ *      D = Delay setting. Min=1. Max=0.
+ *      B = Battery low flag.
+ *
  * Copyright (C) 2018 Anthony Kava
  * Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
  *
@@ -32,22 +38,33 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     char *event_str = "UNKNOWN";         /* human-readable event     */
     char x10_id_str[12] = "";            /* string showing hex value */
     char x10_code_str[5] = "";           /* string showing hex value */
+    int battery_low = 0;                 /* battery indicator (DS10A) */
+    int delay = 0;                       /* delay setting (DS10A) */
 
     for (r=0; r < bitbuffer->num_rows; ++r) {
         b = bitbuffer->bb[r];
 
         /* looking for five bytes */
         if (bitbuffer->bits_per_row[r] < 40)
-            continue;
+            continue; // DECODE_ABORT_LENGTH
 
         /* validate what we received */
         if ((b[0] ^ b[1]) != 0x0f || (b[2] ^ b[3]) != 0xff)
-            continue;
+            continue; // DECODE_FAIL_SANITY
+
+        battery_low = b[2] & 0x01;
 
         /* set event_str based on code received */
-        switch (b[2]) {
+        switch (b[2] & 0xfe) {
+            case 0x00:
             case 0x04:
                 event_str = "DS10A DOOR/WINDOW OPEN";
+                delay = !(b[2] & 0x04);
+                break;
+            case 0x80:
+            case 0x84:
+                event_str = "DS10A DOOR/WINDOW CLOSED";
+                delay = !(b[2] & 0x04);
                 break;
             case 0x06:
                 event_str = "KR10A KEY-FOB ARM";
@@ -60,9 +77,6 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 break;
             case 0x82:
                 event_str = "SH624 SEC-REMOTE DISARM";
-                break;
-            case 0x84:
-                event_str = "DS10A DOOR/WINDOW CLOSED";
                 break;
             case 0x86:
                 event_str = "KR10A KEY-FOB DISARM";
@@ -98,10 +112,25 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
                 "code",     "Code",         DATA_STRING, x10_code_str,
                 "event",    "Event",        DATA_STRING, event_str,
                 NULL);
+
+        /* append delay indicator if set */
+        if (delay) {
+            data = data_append(data,
+                    "delay",        "Delay",        DATA_INT, delay,
+                    NULL);
+        }
+        /* append battery indicator if set */
+        if (battery_low) {
+            data = data_append(data,
+                    "battery_ok",   "Battery OK",   DATA_INT, !battery_low,
+                    NULL);
+        }
+
         decoder_output_data(decoder, data);
         return 1;
     }
-    return 0;
+    // TODO: improve decode logging with earlier returns
+    return DECODE_ABORT_EARLY;
 }
 
 static char *output_fields[] = {
@@ -109,6 +138,8 @@ static char *output_fields[] = {
     "id",
     "code",
     "event",
+    "delay"
+    "battery_ok",
     NULL
 };
 

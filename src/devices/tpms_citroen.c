@@ -1,30 +1,32 @@
-/* Citroen FSK 10 byte Manchester encoded checksummed TPMS data
- * also Peugeot and likely Fiat, Mitsubishi, VDO-types.
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Packet nibbles:  UU  IIIIIIII FR  PP TT BB  CC
- * U = state, decoding unknown, not included in checksum
- * I = id
- * F = flags, (seen: 0: 69.4% 1: 0.8% 6: 0.4% 8: 1.1% b: 1.9% c: 25.8% e: 0.8%)
- * R = repeat counter (seen: 0,1,2,3)
- * P = Pressure (kPa in 1.364 steps, about fifth PSI?)
- * T = Temperature (deg C offset by 50)
- * B = Battery?
- * C = Checksum, XOR bytes 1 to 9 = 0
- */
+/** @file
+    Citroen FSK 10 byte Manchester encoded checksummed TPMS data.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Citroen FSK 10 byte Manchester encoded checksummed TPMS data
+also Peugeot and likely Fiat, Mitsubishi, VDO-types.
+
+Packet nibbles:
+
+    UU  IIIIIIII FR  PP TT BB  CC
+
+- U = state, decoding unknown, not included in checksum
+- I = id
+- F = flags, (seen: 0: 69.4% 1: 0.8% 6: 0.4% 8: 1.1% b: 1.9% c: 25.8% e: 0.8%)
+- R = repeat counter (seen: 0,1,2,3)
+- P = Pressure (kPa in 1.364 steps, about fifth PSI?)
+- T = Temperature (deg C offset by 50)
+- B = Battery?
+- C = Checksum, XOR bytes 1 to 9 = 0
+*/
 
 #include "decoder.h"
-
-// full preamble is
-// 0101 0101  0101 0101  0101 0101  0101 0110 = 55 55 55 56
-static const unsigned char preamble_pattern[2] = { 0x55, 0x56 };
-// full trailer is 01111110
 
 static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -43,17 +45,16 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int maybe_battery;
     int crc;
 
-    bitbuffer_invert(bitbuffer);
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
     b = packet_bits.bb[0];
 
     if (b[6] == 0 || b[7] == 0) {
-        return 0; // sanity check failed
+        return DECODE_ABORT_EARLY; // sanity check failed
     }
 
     crc = b[1]^b[2]^b[3]^b[4]^b[5]^b[6]^b[7]^b[8]^b[9];
     if (crc != 0) {
-        return 0; // bad checksum
+        return DECODE_FAIL_MIC; // bad checksum
     }
 
     state = b[0]; // not covered by CRC
@@ -84,18 +85,29 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1;
 }
 
-static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/** @sa tpms_citroen_decode() */
+static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
+    uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
+    // full trailer is 01111110
+
     unsigned bitpos = 0;
-    int events = 0;
+    int ret         = 0;
+    int events      = 0;
+
+    bitbuffer_invert(bitbuffer);
 
     // Find a preamble with enough bits after it that it could be a complete packet
-    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 16)) + 178 <=
+    while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 16)) + 178 <=
             bitbuffer->bits_per_row[0]) {
-        events += tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        ret = tpms_citroen_decode(decoder, bitbuffer, 0, bitpos + 16);
+        if (ret > 0)
+            events += ret;
         bitpos += 2;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {
@@ -111,7 +123,7 @@ static char *output_fields[] = {
     "maybe_battery",
     "code",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device tpms_citroen = {

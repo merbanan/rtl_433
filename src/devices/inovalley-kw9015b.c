@@ -21,10 +21,10 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
     if (row < 0)
-        return 0;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer->bits_per_row[row] > 36)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[row];
 
@@ -44,21 +44,17 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             (reverse8(b[3])>>4)+(reverse8(b[3])&0x0F));
 
     if (decoder->verbose) {
-        fprintf(stdout, "\nSensor        = Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)\n");
-        fprintf(stdout, "Device        = %d\n", device);
-        fprintf(stdout, "Temp          = %f\n", temp_c);
-        fprintf(stdout, "Rain          = %d\n", rain);
-        fprintf(stdout, "checksum      = %02x==%02x\n", chksum&0xF, reverse8(b[4]));
-        fprintf(stdout, "Received Data = %02X %02X %02X %02X %02X\n",
-        reverse8(b[0]),
-        reverse8(b[1]),
-        reverse8(b[2]),
-        reverse8(b[3]),
-        reverse8(b[4]));
+        fprintf(stderr, "\nSensor        = Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)\n");
+        fprintf(stderr, "Device        = %d\n", device);
+        fprintf(stderr, "Temp          = %f\n", temp_c);
+        fprintf(stderr, "Rain          = %d\n", rain);
+        fprintf(stderr, "checksum      = %02x==%02x\n", chksum&0xF, reverse8(b[4]));
+        fprintf(stderr, "Received Data = %02X %02X %02X %02X %02X\n",
+                reverse8(b[0]), reverse8(b[1]), reverse8(b[2]), reverse8(b[3]), reverse8(b[4]));
     }
 
     if ((chksum&0x0F) != (reverse8(b[4]) & 0x0F))
-        return 0;
+        return DECODE_FAIL_MIC;
 
     data = data_make(
             "model", "", DATA_STRING, _X("Inovalley-kw9015b","Inovalley kw9015b"),

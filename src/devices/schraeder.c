@@ -42,14 +42,14 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Reject wrong amount of bits */
     if (bitbuffer->bits_per_row[0] != 68)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* Shift the buffer 4 bits to remove the sync bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 4, b, 64);
 
     /* Calculate the crc */
     if (b[7] != crc8(b, 7, 0x07, 0xf0)) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /* Get data */
@@ -78,6 +78,8 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 TPMS Model: Schrader Electronics EG53MA4.
 Contributed by: Leonardo Hamada (hkazu).
 
+Also Schrader PA66-GF35 (OPEL OEM 13348393) TPMS Sensor.
+
 Probable packet payload:
 
     SSSSSSSSSS ???????? IIIIII TT PP CC
@@ -102,15 +104,15 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 120)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     /* Discard the first 40 bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
 
     /* Calculate the checksum */
-    checksum = (b[0]+b[1]+b[2]+b[3]+b[4]+b[5]+b[6]+b[7]+b[8]) & 0xff;
+    checksum = add_bytes(b, 9) & 0xff;
     if (checksum != b[9]) {
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     /* Get data */
@@ -122,7 +124,7 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
     sprintf(flags_str, "%08x", flags);
 
     data = data_make(
-            "model",            "",             DATA_STRING, "Schrader Electronics EG53MA4",
+            "model",            "",             DATA_STRING, "Schrader-EG53MA4",
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
@@ -136,45 +138,45 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "flags",
-    "pressure_kPa",
-    "temperature_C",
-    "mic",
-    NULL
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 static char *output_fields_EG53MA4[] = {
-    "model",
-    "type",
-    "id",
-    "flags",
-    "pressure_kPa",
-    "temperature_F",
-    "mic",
-    NULL
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_kPa",
+        "temperature_F",
+        "mic",
+        NULL,
 };
 
 r_device schraeder = {
-    .name           = "Schrader TPMS",
-    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = 120,
-    .long_width     = 0,
-    .reset_limit    = 480,
-    .decode_fn      = &schraeder_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Schrader TPMS",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 120,
+        .long_width  = 0,
+        .reset_limit = 480,
+        .decode_fn   = &schraeder_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
 
 r_device schrader_EG53MA4 = {
-    .name           = "Schrader TPMS EG53MA4",
-    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = 123,
-    .long_width     = 0,
-    .reset_limit    = 236,
-    .decode_fn      = &schrader_EG53MA4_callback,
-    .disabled       = 0,
-    .fields         = output_fields_EG53MA4,
+        .name        = "Schrader TPMS EG53MA4, PA66GF35",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 123,
+        .long_width  = 0,
+        .reset_limit = 300,
+        .decode_fn   = &schrader_EG53MA4_callback,
+        .disabled    = 0,
+        .fields      = output_fields_EG53MA4,
 };

@@ -25,7 +25,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bitbuffer->bits_per_row[1] != 32 // Don't waste time on a short package
             //|| (b[0] ^ b[1]) != 0xff // Check integrity - apparently some chips may use both bytes..
             || (b[2] ^ b[3]) != 0xff) // Check integrity
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     unsigned code = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
 
@@ -38,7 +38,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     if (bKnownConstFlag != 1) // If constant bits are appropriately set
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     uint8_t bHouseCode  = 0;
     uint8_t bDeviceCode = 0;
@@ -69,8 +69,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     data = data_make(
             "model",    "", DATA_STRING, "X10-RF",
-            "houseid",  "", DATA_STRING, housecode,
-            "deviceid", "", DATA_INT, bDeviceCode + 1,
+            _X("id", "deviceid"), "", DATA_INT, bDeviceCode + 1,
+            _X("channel", "houseid"),  "", DATA_STRING, housecode,
             "state",    "", DATA_STRING, state ? "ON" : "OFF",
             "data",     "", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
@@ -82,8 +82,10 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
 static char *output_fields[] = {
     "model",
-    "houseid"
-    "deviceid",
+    "channel",
+    "id",
+    "houseid", // TODO: remove ??
+    "deviceid", // TODO: remove ??
     "state",
     "data",
     NULL

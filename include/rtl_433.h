@@ -14,18 +14,14 @@
 #define DEFAULT_HOP_TIME        (60*10)
 #define DEFAULT_ASYNC_BUF_NUMBER    0 // Force use of default value (librtlsdr default: 15)
 #define DEFAULT_BUF_LENGTH      (16 * 32 * 512) // librtlsdr default
-
-/*
- * Theoretical high level at I/Q saturation is 128x128 = 16384 (above is ripple)
- * 0 = automatic adaptive level limit, else fixed level limit
- * 8000 = previous fixed default
- */
-#define DEFAULT_LEVEL_LIMIT     0
+#define FSK_PULSE_DETECTOR_LIMIT 800000000
 
 #define MINIMAL_BUF_LENGTH      512
 #define MAXIMAL_BUF_LENGTH      (256 * 16384)
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
+
+#define INPUT_LINE_MAX 8192 /**< enough for a complete textual bitbuffer (25*256) */
 
 struct sdr_dev;
 struct r_device;
@@ -40,6 +36,8 @@ typedef enum {
     REPORT_TIME_DEFAULT,
     REPORT_TIME_DATE,
     REPORT_TIME_SAMPLES,
+    REPORT_TIME_UNIX,
+    REPORT_TIME_ISO,
     REPORT_TIME_OFF,
 } time_mode_t;
 
@@ -58,10 +56,13 @@ typedef struct r_cfg {
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
     uint32_t center_frequency;
-    time_t rawtime_old;
+    int fsk_pulse_detect_mode;
+    int hop_times;
+    int hop_time[MAX_FREQS];
+    time_t hop_start_time;
     int duration;
     time_t stop_time;
-    int stop_after_successful_events_flag;
+    int after_successful_events_flag;
     uint32_t samp_rate;
     uint64_t input_pos;
     uint32_t bytes_to_read;
@@ -74,15 +75,26 @@ typedef struct r_cfg {
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
+    int report_time_tz;
     int report_time_utc;
     int report_description;
+    int report_stats;
+    int stats_interval;
+    int stats_now;
+    time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
     uint16_t num_r_devices;
     char *output_tag;
     list_t output_handler;
     struct dm_state *demod;
-    int new_model_keys;
+    char const *sr_filename;
+    int sr_execopen;
+    int old_model_keys;
+    /* stats*/
+    unsigned frames_count; ///< stats counter for interval
+    unsigned frames_fsk; ///< stats counter for interval
+    unsigned frames_events; ///< stats counter for interval
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

@@ -20,7 +20,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
 ########################################################################
 # Get version info from Git
@@ -54,8 +54,9 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
-    # for strdup, setenv
-    ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809)
+    # for strdup, setenv, use either
+    #ADD_DEFINITIONS(-D_POSIX_C_SOURCE=200809) # does not work with uClibc
+    ADD_DEFINITIONS(-D_GNU_SOURCE)
     #http://gcc.gnu.org/wiki/Visibility
     add_definitions(-fvisibility=hidden)
 
@@ -86,7 +87,7 @@ endif()
 ########################################################################
 # Find build dependencies
 ########################################################################
-set(ENABLE_RTLSDR AUTO CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
+set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_RTLSDR) # AUTO / ON
 
@@ -152,14 +153,14 @@ endif()
 ########################################################################
 include_directories(
     BEFORE
-    ${CMAKE_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include
 )
 
 ########################################################################
 # Create uninstall target
 ########################################################################
 configure_file(
-    ${CMAKE_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
+    ${PROJECT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
 @ONLY)
 
@@ -181,6 +182,11 @@ if(BUILD_DOCUMENTATION)
 
     set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
     set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+    if(DOXYGEN_DOT_FOUND)
+        set(HAVE_DOT "YES")
+    else()
+        set(HAVE_DOT "NO")
+    endif()
 
     configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
     message(STATUS "Doxygen build started")
@@ -195,6 +201,12 @@ if(BUILD_DOCUMENTATION)
 endif()
 
 ########################################################################
+# Build tests with analyzer
+########################################################################
+option(BUILD_TESTING_ANALYZER "Build the testing tree with static
+analyzer (requires Clang)" OFF)
+
+########################################################################
 # Build tests
 ########################################################################
 include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
@@ -202,7 +214,7 @@ include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
 ########################################################################
 # Configure CI deploy
 ########################################################################
-configure_file(${CMAKE_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
+configure_file(${PROJECT_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
 
 ########################################################################
 # Add subdirectories
@@ -233,3 +245,7 @@ INSTALL(
     FILES
     DESTINATION lib/pkgconfig
 )
+
+install(DIRECTORY man
+    DESTINATION share
+    PATTERN ".md" EXCLUDE)

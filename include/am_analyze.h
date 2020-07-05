@@ -13,11 +13,12 @@
 #define INCLUDE_AM_ANALYZE_H_
 
 #include <stdint.h>
+#include "samp_grab.h"
 
 #define PULSE_DATA_SIZE 4000 /* maximum number of pulses */
 
 typedef struct am_analyze {
-    int32_t *level_limit;
+    int level_limit;
     int override_short;
     int override_long;
     uint32_t *frequency;
@@ -38,6 +39,7 @@ typedef struct am_analyze {
     unsigned signal_pulse_data[4000][3];
 } am_analyze_t;
 
+/// Create an AM-Analyzer. Might fail and return NULL.
 am_analyze_t *am_analyze_create(void);
 
 void am_analyze_free(am_analyze_t *a);

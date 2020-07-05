@@ -1,0 +1,14 @@
+{
+  "name": "rtl_433-docs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "docs:dev": "vuepress dev",
+    "docs:build": "vuepress build"
+  },
+  "devDependencies": {
+    "vuepress": "^1.0.0",
+    "@vuepress/plugin-back-to-top": "^1.0.0",
+    "@vuepress/plugin-medium-zoom": "^1.0.0"
+  }
+}

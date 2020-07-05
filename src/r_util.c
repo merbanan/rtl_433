@@ -10,6 +10,7 @@
 */
 
 #include "r_util.h"
+#include "fatal.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -21,7 +22,7 @@ void get_time_now(struct timeval *tv)
         perror("gettimeofday");
 }
 
-char *local_time_str(time_t time_secs, char *buf)
+char *format_time_str(char *buf, char const *format, int with_tz, time_t time_secs)
 {
     time_t etime;
     struct tm tm_info;
@@ -39,14 +40,22 @@ char *local_time_str(time_t time_secs, char *buf)
     localtime_r(&etime, &tm_info); // thread-safe
 #endif
 
-    strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", &tm_info);
+    if (!format || !*format)
+        format = "%Y-%m-%d %H:%M:%S";
+
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
+    if (with_tz) {
+        strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
+        if (!strcmp(buf + l, "+0000"))
+            strcpy(buf + l, "Z");
+    }
     return buf;
 }
 
-char *usecs_time_str(struct timeval *tv, char *buf)
+char *usecs_time_str(char *buf, char const *format, int with_tz, struct timeval *tv)
 {
     struct timeval now;
-    struct tm *tm_info;
+    struct tm tm_info;
 
     if (!tv) {
         tv = &now;
@@ -54,10 +63,22 @@ char *usecs_time_str(struct timeval *tv, char *buf)
     }
 
     time_t t_secs = tv->tv_sec;
-    tm_info = localtime(&t_secs); // note: win32 doesn't have localtime_r()
+#ifdef _WIN32 /* MinGW might have localtime_r but apparently not MinGW64 */
+    localtime_s(&tm_info, &t_secs); // win32 doesn't have localtime_r()
+#else
+    localtime_r(&t_secs, &tm_info); // thread-safe
+#endif
 
-    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, "%Y-%m-%d %H:%M:%S", tm_info);
-    snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
+    if (!format || !*format)
+        format = "%Y-%m-%d %H:%M:%S";
+
+    size_t l = strftime(buf, LOCAL_TIME_BUFLEN, format, &tm_info);
+    l += snprintf(buf + l, LOCAL_TIME_BUFLEN - l, ".%06ld", (long)tv->tv_usec);
+    if (with_tz) {
+        strftime(buf + l, LOCAL_TIME_BUFLEN - l, "%z", &tm_info);
+        if (!strcmp(buf + l, "+0000"))
+            strcpy(buf + l, "Z");
+    }
     return buf;
 }
 
@@ -69,61 +90,61 @@ char *sample_pos_str(float sample_file_pos, char *buf)
 
 float celsius2fahrenheit(float celsius)
 {
-  return celsius * 9 / 5 + 32;
+  return celsius * (9.0f / 5.0f) + 32;
 }
 
 
 float fahrenheit2celsius(float fahrenheit)
 {
-    return (fahrenheit - 32) / 1.8;
+    return (fahrenheit - 32) * (5.0f / 9.0f);
 }
 
 
 float kmph2mph(float kmph)
 {
-    return kmph / 1.609344;
+    return kmph * (1.0f / 1.609344f);
 }
 
 float mph2kmph(float mph)
 {
-    return mph * 1.609344;
+    return mph * 1.609344f;
 }
 
 
 float mm2inch(float mm)
 {
-    return mm * 0.039370;
+    return mm * 0.039370f;
 }
 
 float inch2mm(float inch)
 {
-    return inch / 0.039370;
+    return inch * 25.4f;
 }
 
 
 float kpa2psi(float kpa)
 {
-    return kpa / 6.89475729;
+    return kpa * (1.0f / 6.89475729f);
 }
 
 float psi2kpa(float psi)
 {
-    return psi * 6.89475729;
+    return psi * 6.89475729f;
 }
 
 
 float hpa2inhg(float hpa)
 {
-    return hpa / 33.8639;
+    return hpa * (1.0f / 33.8639f);
 }
 
 float inhg2hpa(float inhg)
 {
-    return inhg * 33.8639;
+    return inhg * 33.8639f;
 }
 
 
-bool str_endswith(const char *restrict str, const char *restrict suffix)
+bool str_endswith(char const *restrict str, char const *restrict suffix)
 {
     int str_len = strlen(str);
     int suffix_len = strlen(suffix);
@@ -136,10 +157,10 @@ bool str_endswith(const char *restrict str, const char *restrict suffix)
 // https://stackoverflow.com/questions/779875/what-is-the-function-to-replace-string-in-c/779960#779960
 //
 // You must free the result if result is non-NULL.
-char *str_replace(char *orig, char *rep, char *with)
+char *str_replace(char const *orig, char const *rep, char const *with)
 {
     char *result;  // the return string
-    char *ins;     // the next insert point
+    char const *ins; // the next insert point
     char *tmp;     // varies
     int len_rep;   // length of rep (the string to remove)
     int len_with;  // length of with (the string to replace rep with)
@@ -162,10 +183,11 @@ char *str_replace(char *orig, char *rep, char *with)
         ins = tmp + len_rep;
     }
 
-    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result)
-        return NULL;
+    tmp = result = malloc(strlen(orig) + (len_with - len_rep) * (size_t)count + 1);
+    if (!result) {
+        WARN_MALLOC("str_replace()");
+        return NULL; // NOTE: returns NULL on alloc failure.
+    }
 
     // first time through the loop, all the variables are set correctly
     // from here on,
@@ -184,7 +206,7 @@ char *str_replace(char *orig, char *rep, char *with)
 }
 
 // Make a more readable string for a frequency.
-const char *nice_freq (double freq)
+char const *nice_freq (double freq)
 {
   static char buf[30];
 

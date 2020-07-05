@@ -38,16 +38,16 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     bitbuffer_t mc = {0};
 
-    if(bitbuffer->num_rows != 1)
-        return 0;
+    if (bitbuffer->num_rows != 1)
+        return DECODE_ABORT_EARLY;
 
     //check correct data length
-    if(bitbuffer->bits_per_row[0] != 104) // 104 raw half-bits, 52 bits payload
-        return 0;
+    if (bitbuffer->bits_per_row[0] != 104) // 104 raw half-bits, 52 bits payload
+        return DECODE_ABORT_LENGTH;
 
     //check for correct preamble (0x55666a)
-    if((bitbuffer->bb[0][0] != 0x55 ) || bitbuffer->bb[0][1] != 0x66 || bitbuffer->bb[0][2] != 0x6a)
-        return 0; // preamble missing
+    if ((bitbuffer->bb[0][0] != 0x55 ) || bitbuffer->bb[0][1] != 0x66 || bitbuffer->bb[0][2] != 0x6a)
+        return DECODE_ABORT_EARLY; // preamble missing
 
     // decode the inner manchester encoding
     bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);

@@ -33,7 +33,7 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             || (b[3] & 0x80) == 0 // Last bit (MSB here) is always 1
             || (b[0] == 0 && b[1] == 0) // Reduce false positives. ID 0x0000 not supported
             || (b[2] == 0)) // Reduce false positives. CMD 0x00 not supported
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     int id_16b = b[0] << 8 | b[1];
     int cmd_8b = b[2];

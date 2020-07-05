@@ -12,12 +12,12 @@
     DECL(rubicson) \
     DECL(prologue) \
     DECL(waveman) \
-    DECL(template) \
+    DECL(new_template) \
     DECL(elv_em1000) \
     DECL(elv_ws2000) \
     DECL(lacrossetx) \
-    DECL(template) \
-    DECL(acurite_rain_gauge) \
+    DECL(new_template) \
+    DECL(acurite_rain_896) \
     DECL(acurite_th) \
     DECL(oregon_scientific) \
     DECL(mebus433) \
@@ -30,12 +30,12 @@
     DECL(ambient_weather) \
     DECL(calibeur_RF104) \
     DECL(X10_RF) \
-    DECL(DSC) \
+    DECL(dsc_security) \
     DECL(brennenstuhl_rcs_2044) \
     DECL(gt_wt_02) \
     DECL(danfoss_CFR) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(chuango) \
     DECL(generic_remote) \
     DECL(tfa_twin_plus_303049) \
@@ -72,15 +72,15 @@
     DECL(elro_db286a) \
     DECL(efergy_optical) \
     DECL(hondaremote) \
-    DECL(template) \
-    DECL(template) \
+    DECL(new_template) \
+    DECL(new_template) \
     DECL(radiohead_ask) \
     DECL(kerui) \
     DECL(fineoffset_wh1050) \
     DECL(honeywell) \
     DECL(maverick_et73x) \
     DECL(rftech) \
-    DECL(lacrosse_TX141TH_Bv2) \
+    DECL(lacrosse_tx141x) \
     DECL(acurite_00275rm) \
     DECL(lacrosse_tx35) \
     DECL(lacrosse_tx29) \
@@ -101,7 +101,7 @@
     DECL(infactory) \
     DECL(ft004b) \
     DECL(fordremote) \
-    DECL(philips) \
+    DECL(philips_aj3650) \
     DECL(schrader_EG53MA4) \
     DECL(nexa) \
     DECL(thermopro_tp12) \
@@ -124,12 +124,47 @@
     DECL(maverick_et73) \
     DECL(honeywell_wdb) \
     DECL(honeywell_wdb_fsk) \
-    DECL(esa) \
+    DECL(esa_energy) \
     DECL(bt_rain) \
     DECL(bresser_5in1) \
     DECL(digitech_xc0324) \
     DECL(opus_xt300) \
     DECL(fs20) \
+    DECL(tpms_jansite) \
+    DECL(lacrosse_ws7000) \
+    DECL(ts_ft002) \
+    DECL(companion_wtr001) \
+    DECL(ecowitt) \
+    DECL(directv) \
+    DECL(eurochron) \
+    DECL(ikea_sparsnas) \
+    DECL(hcs200) \
+    DECL(tfa_303196) \
+    DECL(rubicson_48659) \
+    DECL(holman_ws5029pcm) \
+    DECL(philips_aj7010) \
+    DECL(esic_emt7110) \
+    DECL(gt_tmbbq05) \
+    DECL(gt_wt_03) \
+    DECL(norgo) \
+    DECL(tpms_elantra2012) \
+    DECL(auriol_hg02832) \
+    DECL(fineoffset_WH51) \
+    DECL(holman_ws5029pwm) \
+    DECL(archos_tbh) \
+    DECL(ws2032) \
+    DECL(auriol_afw2a1) \
+    DECL(tfa_drop_303233) \
+    DECL(dsc_security_ws4945) \
+    DECL(ert_amr) \
+    DECL(klimalogg) \
+    DECL(visonic_powercode) \
+    DECL(eurochron_efth800) \
+    DECL(cotech_36_7959) \
+    DECL(scmplus) \
+    DECL(fineoffset_wh1080_fsk) \
+    DECL(tpms_abarth124) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

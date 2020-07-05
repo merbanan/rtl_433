@@ -63,7 +63,7 @@ Data layout:
 #define MYDEVICE_CRC_POLY    0x07
 #define MYDEVICE_CRC_INIT    0x00
 
-static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int new_template_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int r; // a row index
@@ -77,14 +77,13 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /*
      * Early debugging aid to see demodulated bits in buffer and
      * to determine if your limit settings are matched and firing
-     * this callback.
+     * this decode callback.
      *
-     * 1. Enable with -D -D (debug level of 2)
+     * 1. Enable with -vvv (debug decoders)
      * 2. Delete this block when your decoder is working
      */
     //    if (decoder->verbose > 1) {
-    //        fprintf(stderr,"new_tmplate callback:\n");
-    //        bitbuffer_print(bitbuffer);
+    //        bitbuffer_printf(bitbuffer, "%s: ", __func__);
     //    }
 
     /*
@@ -157,7 +156,19 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      */
 
     /*
+     * Several tools are available to reverse engineer a message integrity
+     * check:
+     *
+     * - reveng for CRC: http://reveng.sourceforge.net/
+     *   - Guide: https://hackaday.com/2019/06/27/reverse-engineering-cyclic-redundancy-codes/
+     * - revdgst: https://github.com/triq-org/revdgst/
+     * - trial and error, e.g. via online calculators:
+     *   - https://www.scadacore.com/tools/programming-calculators/online-checksum-calculator/
+     */
+
+    /*
      * Check message integrity (Parity example)
+     *
      */
     // parity check: odd parity on bits [0 .. 67]
     // i.e. 8 bytes and a nibble.
@@ -168,8 +179,9 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
     if (!parity) {
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "new_template parity check failed\n");
+            fprintf(stderr, "%s: parity check failed\n", __func__);
         }
         return 0;
     }
@@ -178,8 +190,9 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      * Check message integrity (Checksum example)
      */
     if (((b[0] + b[1] + b[2] + b[3] - b[4]) & 0xFF) != 0) {
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "new_template checksum error\n");
+            fprintf(stderr, "%s: checksum error\n", __func__);
         }
         return 0;
     }
@@ -192,10 +205,10 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     r_crc = b[7];
     c_crc = crc8(b, MYDEVICE_BITLEN / 8, MYDEVICE_CRC_POLY, MYDEVICE_CRC_INIT);
     if (r_crc != c_crc) {
-        // example debugging output
+        //Enable with -vv (verbose decoders)
         if (decoder->verbose) {
-            fprintf(stderr, "new_template bad CRC: calculated %02x, received %02x\n",
-                    c_crc, r_crc);
+            fprintf(stderr, "%s: bad CRC: calculated %02x, received %02x\n",
+                    __func__, c_crc, r_crc);
         }
 
         // reject row
@@ -219,14 +232,14 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 0;
     }
 
-
+    /* clang-format off */
     data = data_make(
             "model", "", DATA_STRING, "New Template",
             "id",    "", DATA_INT,    sensor_id,
             "data",  "", DATA_INT,    value,
             "mic",   "", DATA_STRING, "CHECKSUM", // CRC, CHECKSUM, or PARITY
             NULL);
-
+    /* clang-format on */
     decoder_output_data(decoder, data);
 
     // Return 1 if message successfully decoded
@@ -241,11 +254,11 @@ static int template_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-    "model",
-    "id",
-    "data",
-    "mic", // remove if not applicable
-    NULL
+        "model",
+        "id",
+        "data",
+        "mic", // remove if not applicable
+        NULL,
 };
 
 /*
@@ -265,15 +278,19 @@ static char *output_fields[] = {
  * - r_device.h for the list of defined names
  *
  * This device is disabled and hidden, it can not be enabled.
+ *
+ * To enable your device, add it to the list in include/rtl_433_devices.h
+ * and to src/CMakeLists.txt and src/Makefile.am or run ./maintainer_update.py
+ *
  */
-r_device template = {
-    .name          = "Template decoder",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 132, // short gap is 132 us
-    .long_width    = 224, // long gap is 224 us
-    .gap_limit     = 300, // some distance above long
-    .reset_limit   = 1000, // a bit longer than packet gap
-    .decode_fn     = &template_callback,
-    .disabled      = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
-    .fields        = output_fields,
+r_device new_template = {
+        .name        = "Template decoder",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 132,  // short gap is 132 us
+        .long_width  = 224,  // long gap is 224 us
+        .gap_limit   = 300,  // some distance above long
+        .reset_limit = 1000, // a bit longer than packet gap
+        .decode_fn   = &new_template_decode,
+        .disabled    = 3, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
+        .fields      = output_fields,
 };

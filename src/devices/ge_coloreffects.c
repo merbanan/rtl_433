@@ -61,20 +61,6 @@ unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned
     return ipos;
 }
 
-char *ge_command_name(uint8_t command) {
-    char *out = "0xxx";
-
-    switch(command) {
-        case 0x5a:  return "change";  break;
-        case 0xaa:  return "on";      break;
-        case 0x55:  return "off";     break;
-        default:
-            sprintf(out, "0x%x", command);
-            return out;
-            break;
-    }
-}
-
 static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned start_pos)
 {
     data_t *data;
@@ -96,15 +82,15 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     // Frame should be 17 decoded bits (not including preamble)
     if (packet_bits.bits_per_row[0] != 17)
-        return 0;
+        return DECODE_ABORT_LENGTH;
 
     // First two bits must be 0
     if (*packet_bits.bb[0] & 0xc0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Last bit must be 0
     if (bit(packet_bits.bb[0], 16) != 0)
-        return 0;
+        return DECODE_FAIL_SANITY;
 
     // Extract device ID
     // We want bits [2..8]. Since the first two bits are zero, we'll just take the entire first byte
@@ -113,11 +99,21 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     // Extract command from the second byte
     bitbuffer_extract_bytes(&packet_bits, 0, 8, &command, 8);
 
+    char cmd[7];
+    switch(command) {
+        case 0x5a:  snprintf(cmd, sizeof(cmd), "change");  break;
+        case 0xaa:  snprintf(cmd, sizeof(cmd), "on");      break;
+        case 0x55:  snprintf(cmd, sizeof(cmd), "off");     break;
+        default:
+            snprintf(cmd, sizeof(cmd), "0x%x", command);
+            break;
+    }
+
     // Format data
     data = data_make(
         "model",         "",     DATA_STRING, _X("GE-ColorEffects","GE Color Effects Remote"),
         "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
-        "command",       "",     DATA_STRING, ge_command_name(command),
+        "command",       "",     DATA_STRING, cmd,
         NULL);
 
     decoder_output_data(decoder, data);
@@ -127,17 +123,20 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
 static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     unsigned bitpos = 0;
-    int events = 0;
+    int ret         = 0;
+    int events      = 0;
 
     // Find a preamble with enough bits after it that it could be a complete packet
     // (if the device id and command were all zeros)
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, (uint8_t *)&preamble_pattern, 24)) + 57 <=
             bitbuffer->bits_per_row[0]) {
-        events += ge_coloreffects_decode(decoder, bitbuffer, 0, bitpos + 24);
+        ret = ge_coloreffects_decode(decoder, bitbuffer, 0, bitpos + 24);
+        if (ret > 0)
+            events += ret;
         bitpos++;
     }
 
-    return events;
+    return events > 0 ? events : ret;
 }
 
 static char *output_fields[] = {
