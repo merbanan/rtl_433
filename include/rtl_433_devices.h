@@ -164,6 +164,7 @@
     DECL(scmplus) \
     DECL(fineoffset_wh1080_fsk) \
     DECL(tpms_abarth124) \
+    DECL(tfa_30_3221) \
 
     /* Add new decoders here. */
 
