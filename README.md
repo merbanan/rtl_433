@@ -230,6 +230,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
     [156]  Abarth 124 / VDO TG1C TPMS Sensor
+    [157]  Missil ML0757 weather station
 
 * Disabled by default, use -R n or -G
 
