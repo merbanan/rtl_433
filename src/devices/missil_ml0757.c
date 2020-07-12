@@ -9,6 +9,8 @@
     (at your option) any later version.
 */
 /**
+Missil ML0757 weather station with temperature, wind and rain sensor.
+
 The unit sends two different alternating packets, one for temperature and one
 for rainfall and wind. All packets are 40 bits and are transferred 9 times.
 Packet structure appears to be as follows:
@@ -106,7 +108,6 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "subtype",          "Sensor(s)",    DATA_STRING, "RainfallWind",
                 "id",               "ID",           DATA_INT, id,
                 "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
                 "rain_mm",          "Total rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rainfall,
@@ -118,7 +119,6 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "subtype",          "Sensor(s)",    DATA_STRING, "Temperature",
                 "id",               "ID",           DATA_INT, id,
                 "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
@@ -132,7 +132,6 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "subtype",
         "id",
         "battery_ok"
         "temperature_C",
