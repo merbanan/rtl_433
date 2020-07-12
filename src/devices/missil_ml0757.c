@@ -105,7 +105,8 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (flag_rwp) { // Rainwall and wind
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("ML0757-RainWind","Missil 0757 Rain/Wind"),
+                "model",            "",             DATA_STRING, "Missil-ML0757",
+                "subtype",          "Sensor(s)",    DATA_STRING, "RainfallWind",
                 "id",               "ID",           DATA_INT, id,
                 "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
                 "rain_mm",          "Total rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rainfall,
@@ -116,7 +117,8 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else { // Temperature
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("ML0757-Temp","Missil ML0757 Temperature"),
+                "model",            "",             DATA_STRING, "Missil-ML0757",
+                "subtype",          "Sensor(s)",    DATA_STRING, "Temperature",
                 "id",               "ID",           DATA_INT, id,
                 "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
@@ -130,6 +132,7 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+        "subtype",
         "id",
         "battery_ok"
         "temperature_C",
