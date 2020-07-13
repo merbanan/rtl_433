@@ -462,7 +462,11 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify type code
     int msg_type = b[0] & 0xf0;
-    if (msg_type != 0xe0) {
+    if (type == 32 && msg_type == 0xd0) {
+        // this is an older "WH32"
+        type = 31;
+    }
+    else if (msg_type != 0xe0) {
         if (decoder->verbose)
             fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
         return DECODE_ABORT_EARLY;
@@ -496,7 +500,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "model",            "",             DATA_STRING, type == 31 ? "Fineoffset-WH32" : type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -554,7 +558,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 136) {  // Minimum length 14 bytes data + 3 bytes preamble
+    if (bitbuffer->bits_per_row[0] < 120) {
         return DECODE_ABORT_LENGTH;
     }
 

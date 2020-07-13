@@ -22,6 +22,13 @@
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
+/// Reverse (reflect) the bits in an 32 bit byte.
+///
+/// @param x input byte
+/// @return bit reversed byte
+uint32_t reverse32(uint32_t x);
+
+
 /// Reverse (reflect) the bits in an 8 bit byte.
 ///
 /// @param x input byte

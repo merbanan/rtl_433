@@ -228,8 +228,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [152]  Eurochron EFTH-800 temperature and humidity sensor
     [153]  Cotech 36-7959 wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
+<<<<<<< HEAD
     [155]  Interval Data Message (IDM)
     [156]  Interval Data Message (IDM) for Net Meters
+=======
+    [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
+    [156]  Abarth 124 / VDO TG1C TPMS Sensor
+>>>>>>> upstream/master
 
 * Disabled by default, use -R n or -G
 
