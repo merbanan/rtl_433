@@ -1,11 +1,15 @@
-/* Decoder for Sharp SPC775 weather station
- *
- * Copyright (C) 2020 Daniel Drown
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+/** @file
+    Decoder for Sharp SPC775 weather station
+
+    Copyright (C) 2020 Daniel Drown
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Sharp SPC775 weather station
 
 - Modulation: FSK PWM
 - Frequency: 917.2 MHz
@@ -45,9 +49,9 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xa5};
 
     data_t *data;
-    uint8_t *b;
+    uint8_t *b, crc_calc;
     uint16_t temp_raw;
-    int i, id, humidity, battery_low, crc, crc_calc, crc_expected;
+    int i, id, humidity, battery_low, crc, crc_expected;
     int r=-1, length_match=0, preamble_match=0;
     float temp_c;
     bitrow_t tmp;
@@ -90,12 +94,7 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (i = 0; i < 4; i++)
         crc_calc = crc_calc ^ b[i];
 
-    crc_expected = 0;
-    for (i = 0; i < 8; i++) {
-        if ((crc_calc >> i) & 1) {
-            crc_expected = crc_expected ^ crc_factors[i];
-        }
-    }
+    crc_expected = lfsr_digest8_reflect(&crc_calc, 1, 0x31, 0x31);
 
     if (crc_expected != crc)
         return DECODE_FAIL_MIC;
@@ -107,7 +106,7 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_ok",       "",                 DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
-            "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
