@@ -75,7 +75,7 @@ A count enables us to determine the quality of radio transmission.
 The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
 
 Changes:
-- Changed minimum bit length to 31 (tx141b is temperature only)
+- Changed minimum bit length to 32 (tx141b is temperature only)
 - LACROSSE_TX141_BITLEN is 37 instead of 40.
 - The humidity variable has been removed for TX141.
 - Battery check bit is inverse of TX141TH.
@@ -123,7 +123,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, 5, 31); // 31
+    r = bitbuffer_find_repeated_row(bitbuffer, 5, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
@@ -250,7 +250,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (device == LACROSSE_TX141B) {
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141-B sensor"),
+                "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141B sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
