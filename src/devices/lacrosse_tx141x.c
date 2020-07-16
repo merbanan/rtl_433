@@ -106,7 +106,7 @@ Addition of TX141W and TX145wsdth:
 #include "decoder.h"
 
 // Define the types of devices this file supports (uses expected bitlen)
-#define LACROSSE_TX141B 66
+#define LACROSSE_TX141B 32
 #define LACROSSE_TX141 37
 #define LACROSSE_TX141TH 40
 #define LACROSSE_TX141BV3 33
