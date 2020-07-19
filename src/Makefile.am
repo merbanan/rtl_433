@@ -130,6 +130,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/s3318p.c \
                        devices/schraeder.c \
                        devices/scmplus.c \
+                       devices/sharp_spc775.c \
                        devices/silvercrest.c \
                        devices/simplisafe.c \
                        devices/smoke_gs558.c \
