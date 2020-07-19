@@ -33,17 +33,6 @@ rtl_433 -f 917.2M -s 250k -R 0 -X n=sharp,m=FSK_PWM,s=225,l=425,y=4000,g=2900,r=
 
 #include "decoder.h"
 
-static uint8_t crc_factors[] = {
-    0x31,
-    0x62,
-    0xC4,
-    0xB9,
-    0x43,
-    0x86,
-    0x3D,
-    0x7A
-};
-
 static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0xa5};
