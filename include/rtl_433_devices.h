@@ -164,6 +164,7 @@
     DECL(scmplus) \
     DECL(fineoffset_wh1080_fsk) \
     DECL(tpms_abarth124) \
+    DECL(missil_ml0757) \
     DECL(sharp_spc775) \
 
     /* Add new decoders here. */
