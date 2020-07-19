@@ -231,6 +231,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
     [156]  Abarth 124 / VDO TG1C TPMS Sensor
     [157]  Missil ML0757 weather station
+    [158]  Sharp SPC775
 
 * Disabled by default, use -R n or -G
 
