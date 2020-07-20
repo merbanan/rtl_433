@@ -164,7 +164,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
-    [91]  inFactory, FreeTec NC-3982-913 temperature humidity sensor
+    [91]  inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor (type AJ3650)
@@ -229,9 +229,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [153]  Cotech 36-7959 wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
-    [156]  Abarth 124 / VDO TG1C TPMS Sensor
+    [156]  Abarth 124 Spider TPMS
     [157]  Missil ML0757 weather station
-    [158]  Sharp SPC775
+    [158]  Sharp SPC775 weather station
+    [159]  Auriol AFT 77 A1 temperature sensor
 
 * Disabled by default, use -R n or -G
 
