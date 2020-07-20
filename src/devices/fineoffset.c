@@ -463,7 +463,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify type code
     int msg_type = b[0] & 0xf0;
     if (type == 32 && msg_type == 0xd0) {
-        // this is an older "WH32"
+        // this is an older "WH32", does not have a barometric sensor
         type = 31;
     }
     else if (msg_type != 0xe0) {
@@ -496,16 +496,19 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
     float temperature = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
-    float pressure    = (b[4] << 8 | b[5]) * 0.1f;
+    int pressure_raw  = (b[4] << 8 | b[5]);
+    float pressure    = pressure_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, type == 31 ? "Fineoffset-WH32" : type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
+            "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
+            "model",            "",             DATA_COND, type == 25, DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
