@@ -55,7 +55,7 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);
     if (checksum != 0) {
-        return DECODE_FAIL_MIC;
+        return 0; //DECODE_FAIL_MIC;
     }
 
     sprintf(flags, "%02x", b[4]);

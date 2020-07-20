@@ -230,8 +230,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
     [156]  Abarth 124 Spider TPMS
-    [157]  Interval Data Message (IDM)
-    [158]  Interval Data Message (IDM) for Net Meters
+    [157]  Missil ML0757 weather station
+    [158]  Sharp SPC775 weather station
+    [159]  Auriol AFT 77 A1 temperature sensor
 
 * Disabled by default, use -R n or -G
 

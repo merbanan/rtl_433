@@ -231,6 +231,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
+    <ClCompile Include="..\src\devices\missil_ml0757.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
     <ClCompile Include="..\src\devices\newkaku.c" />
     <ClCompile Include="..\src\devices\nexa.c" />
@@ -254,6 +255,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\scmplus.c" />
+    <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
     <ClCompile Include="..\src\devices\simplisafe.c" />
     <ClCompile Include="..\src\devices\smoke_gs558.c" />

@@ -37,7 +37,8 @@ typedef enum {
     DATA_STRING, /**< pointer to a string is stored */
     DATA_ARRAY,  /**< pointer to an array of values is stored */
     DATA_COUNT,  /**< invalid */
-    DATA_FORMAT  /**< indicates the following value is formatted */
+    DATA_FORMAT, /**< indicates the following value is formatted */
+    DATA_COND,   /**< add data only if condition is true, skip otherwise */
 } data_type_t;
 
 typedef struct data_array {
