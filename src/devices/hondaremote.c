@@ -1,4 +1,5 @@
-/* Honda Car Key
+/** @file
+ * Honda Car Key
  *
  * Identifies button event, but does not attempt to decrypt rolling code...
  * Note that this is actually Manchester coded and should be changed.

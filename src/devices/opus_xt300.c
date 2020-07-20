@@ -1,4 +1,5 @@
-/* Opus/Imagintronix XT300 Soil Moisture Sensor
+/** @file
+ * Opus/Imagintronix XT300 Soil Moisture Sensor
  *
  * Also called XH300 sometimes, this seems to be the associated display name
  *

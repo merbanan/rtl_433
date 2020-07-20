@@ -1,4 +1,5 @@
-/* OSv1 protocol
+/** @file
+ * OSv1 protocol
  *
  * MC with nominal bit width of 2930 us.
  * Pulses are somewhat longer than nominal half-bit width, 1748 us / 3216 us,

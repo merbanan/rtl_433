@@ -1,4 +1,5 @@
-/* Steelmate TPMS FSK protocol
+/** @file
+ * Steelmate TPMS FSK protocol
  *
  * Copyright (C) 2016 Benjamin Larsson
  * Copyright (C) 2016 John Jore

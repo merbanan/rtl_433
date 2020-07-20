@@ -1,4 +1,5 @@
-/* Interlogix/GE/UTC Wireless Device Decoder
+/** @file
+ * Interlogix/GE/UTC Wireless Device Decoder
  *
  * Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
  *

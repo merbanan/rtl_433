@@ -1,4 +1,5 @@
-/* Quhwa
+/** @file
+ * Quhwa
  * HS1527
  *
  * Tested devices:

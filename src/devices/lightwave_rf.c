@@ -1,4 +1,5 @@
-/* LightwaveRF protocol
+/** @file
+ * LightwaveRF protocol
  *
  * Stub for decoding test data only
  *

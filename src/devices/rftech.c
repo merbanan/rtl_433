@@ -1,4 +1,5 @@
-/* RF-tech decoder
+/** @file
+ * RF-tech decoder
  * Also marked INFRA 217S34
  * Ewig Industries Macao
  *

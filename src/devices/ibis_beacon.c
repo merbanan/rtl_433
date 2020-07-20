@@ -1,4 +1,5 @@
-/* IBIS vehicle information beacon, used in public transportation.
+/** @file
+ * IBIS vehicle information beacon, used in public transportation.
  *
  * The packet is 28 manchester encoded bytes with a Preamble of 0xAAB and
  * 16-bit CRC, containing a company ID, vehicle ID, (door opening) counter,

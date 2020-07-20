@@ -1,4 +1,4 @@
-/*
+/** @file
  * X10 Security sensor decoder.
  *
  * Each packet starts with a sync pulse of 9000 us and 4500 us gap.

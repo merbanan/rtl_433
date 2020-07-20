@@ -1,4 +1,5 @@
-/* HT680 based Remote control (broadly similar to x1527 protocol)
+/** @file
+ * HT680 based Remote control (broadly similar to x1527 protocol)
  *
  * short is 850 us gap 260 us pulse
  * long is 434 us gap 663 us pulse

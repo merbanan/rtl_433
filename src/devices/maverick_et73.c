@@ -1,4 +1,5 @@
-/* Maverick ET-73
+/** @file
+ * Maverick ET-73
  *
  * Copyright (C) 2018 Benjamin Larsson
  *

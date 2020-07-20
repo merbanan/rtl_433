@@ -1,4 +1,5 @@
-/* Thermopro TP-12 Thermometer.
+/** @file
+ * Thermopro TP-12 Thermometer.
  *
  * Copyright (C) 2017 Google Inc.
  *

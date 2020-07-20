@@ -1,4 +1,5 @@
-/* Decoder for Bresser Weather Center 5-in-1.
+/** @file
+ * Decoder for Bresser Weather Center 5-in-1.
  *
  * Copyright (C) 2018 Daniel Krueger
  *

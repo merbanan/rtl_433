@@ -1,4 +1,5 @@
-/*
+/** @file
+ * 
  * Brennenstuhl RCS 2044 remote control on 433.92MHz
  * likely x1527
  *

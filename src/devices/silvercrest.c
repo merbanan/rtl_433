@@ -1,4 +1,5 @@
-/* Silvercrest remote decoder.
+/** @file
+ * Silvercrest remote decoder.
  *
  * Copyright (C) 2018 Benjamin Larsson
  *

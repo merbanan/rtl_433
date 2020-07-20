@@ -1,4 +1,5 @@
-/* Flexible general purpose decoder.
+/** @file
+ * Flexible general purpose decoder.
  *
  * Copyright (C) 2017 Christian Zuckschwerdt
  *

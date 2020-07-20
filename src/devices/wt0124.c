@@ -1,4 +1,5 @@
-/* WT0124 Pool Thermometer decoder.
+/** @file
+ * WT0124 Pool Thermometer decoder.
  *
  * Copyright (C) 2018 Benjamin Larsson
  *

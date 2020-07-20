@@ -1,4 +1,5 @@
-/* GE Color Effects Remote
+/** @file
+ * GE Color Effects Remote
  *
  * Previous work decoding this device:
  *    https://lukecyca.com/2013/g35-rf-remote.html

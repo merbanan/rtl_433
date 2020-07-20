@@ -1,4 +1,5 @@
-/* Hideki Temperature, Humidity, Wind, Rain sensor
+/** @file
+ * Hideki Temperature, Humidity, Wind, Rain sensor
  *
  * The received bits are inverted.
  * Every 8 bits are stuffed with a (even) parity bit.

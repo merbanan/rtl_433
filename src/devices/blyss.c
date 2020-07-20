@@ -1,4 +1,5 @@
-/* Generic remote Blyss DC5-UK-WH as sold by B&Q
+/** @file
+ * Generic remote Blyss DC5-UK-WH as sold by B&Q
  *
  * DC5-UK-WH pair with receivers, the codes used may be specific to a receiver - use with caution
  *

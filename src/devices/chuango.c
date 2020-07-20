@@ -1,4 +1,5 @@
-/* Chuango Security Technology Corporation
+/** @file
+ * Chuango Security Technology Corporation
  * likely based on HS1527 or compatible
  *
  * Tested devices:

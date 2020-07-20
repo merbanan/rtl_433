@@ -1,4 +1,5 @@
-/* Decoder for UHF Dish Remote Control 6.3, tested with genuine Dish remote.
+/** @file
+ *  Decoder for UHF Dish Remote Control 6.3, tested with genuine Dish remote.
  *
  * Copyright (C) 2018 David E. Tiller
  *

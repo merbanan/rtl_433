@@ -1,4 +1,5 @@
-/* Generic temperature sensor 1
+/** @file
+ * Generic temperature sensor 1
  *
  * Copyright (C) 2015 Alexandre Coffignal
  *

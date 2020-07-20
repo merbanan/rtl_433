@@ -1,4 +1,4 @@
-/*
+/* @file
  * Emos TTX201 Thermo Remote Sensor
  *
  * This program is free software; you can redistribute it and/or modify

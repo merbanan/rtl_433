@@ -1,4 +1,5 @@
-/**
+/** @file
+
 Springfield PreciseTemp Wireless Temperature and Soil Moisture Station.
 
 http://www.amazon.com/Springfield-Digital-Moisture-Meter-Freeze/dp/B0037BNHLS

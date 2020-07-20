@@ -1,4 +1,5 @@
-/* Thermopro TP-11 Thermometer.
+/* @file
+ * Thermopro TP-11 Thermometer.
  *
  * Copyright (C) 2017 Google Inc.
  *
@@ -11,7 +12,7 @@
 
 #include "decoder.h"
 
-/* normal sequence of bit rows:
+/** normal sequence of bit rows:
 [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [02] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1

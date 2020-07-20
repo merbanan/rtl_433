@@ -1,4 +1,5 @@
-/* RadioHead ASK (generic) protocol
+/** @file
+ * RadioHead ASK (generic) protocol
  *
  * Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
  * The symbol encoding ensures a maximum run (gap) of 4x bit-width.

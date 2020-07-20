@@ -1,4 +1,5 @@
-/* Example of a generic remote using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
+/** @file
+ * Example of a generic remote using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
  *
  * fixed bit width of 1445 us
  * short pulse is 357 us (1/4th)

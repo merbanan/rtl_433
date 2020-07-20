@@ -1,4 +1,5 @@
-/* Protocol of the SimpliSafe Sensors
+/** @file
+ * Protocol of the SimpliSafe Sensors
  *
  * The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
  *

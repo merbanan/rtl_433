@@ -1,4 +1,5 @@
-/* Akhan remote keyless entry system
+/** @file
+ * Akhan remote keyless entry system
  *
  *    This RKE system uses a HS1527 OTP encoder (http://sc-tech.cn/en/hs1527.pdf)
  *    Each message consists of a preamble, 20 bit id and 4 data bits.

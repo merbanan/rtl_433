@@ -1,4 +1,5 @@
-/* X10 sensor
+/** @file
+ * X10 sensor
  *
  * Stub for decoding test data only
  *

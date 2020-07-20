@@ -1,4 +1,5 @@
-/* Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
+/** @file
+ * Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
  *
  * Tested devices:
  * SC2260

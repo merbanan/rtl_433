@@ -1,4 +1,5 @@
-/* Maverick ET-73x BBQ Sensor
+/** @file
+ * Maverick ET-73x BBQ Sensor
  *
  * Copyright (C) 2016 gismo2004
  * Credits to all users of mentioned forum below!

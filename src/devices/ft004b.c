@@ -1,4 +1,4 @@
-/*
+/** @file
  * FT-004-B Temperature Sensor
  *
  * The sensor sends a packet every 60 seconds. Each frame of 46 bits
