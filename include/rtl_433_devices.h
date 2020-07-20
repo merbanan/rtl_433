@@ -166,6 +166,7 @@
     DECL(tpms_abarth124) \
     DECL(missil_ml0757) \
     DECL(sharp_spc775) \
+    DECL(insteon) \
 
     /* Add new decoders here. */
 
