@@ -89,6 +89,7 @@ add_library(r_433 STATIC
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
+    devices/idm.c
     devices/ikea_sparsnas.c
     devices/infactory.c
     devices/inovalley-kw9015b.c

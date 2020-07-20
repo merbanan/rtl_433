@@ -167,6 +167,8 @@
     DECL(missil_ml0757) \
     DECL(sharp_spc775) \
     DECL(insteon) \
+    DECL(idm) \
+    DECL(netidm) \
 
     /* Add new decoders here. */
 
