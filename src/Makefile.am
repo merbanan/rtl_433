@@ -92,6 +92,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ikea_sparsnas.c \
                        devices/infactory.c \
                        devices/inovalley-kw9015b.c \
+                       devices/insteon.c \
                        devices/interlogix.c \
                        devices/intertechno.c \
                        devices/kedsum.c \

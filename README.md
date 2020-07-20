@@ -232,7 +232,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [156]  Abarth 124 Spider TPMS
     [157]  Missil ML0757 weather station
     [158]  Sharp SPC775 weather station
-    [159]  Auriol AFT 77 A1 temperature sensor
+    [159]  Insteon
+    [160]  IDM
+    [161]  NetIDM
+
 
 * Disabled by default, use -R n or -G
 
