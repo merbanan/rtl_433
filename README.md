@@ -233,9 +233,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [157]  Missil ML0757 weather station
     [158]  Sharp SPC775 weather station
     [159]  Insteon
-    [160]  IDM
-    [161]  NetIDM
-
+    [160]  Interval Data Message (IDM)
+    [161]  Interval Data Message (IDM) for Net Meters
 
 * Disabled by default, use -R n or -G
 
