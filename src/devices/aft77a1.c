@@ -10,16 +10,18 @@
  *
  */
 /**
-42 byte frames
+42 byte frame
 
     {42} ba 01 78 02 2a 40 : 10111010 00000001 01111000 00000010 00101010 01
 
     10111010 00000001 01111000 00000010 00101010 01 =   37.6C
-    XXXXXXXX XXXXTTTT TTTTTTTT XXXXXXXX XXCCCCCC CC
+    IIIIIIII XXXXTTTT TTTTTTTT XXXXXXXX XXCCCCCC CC
 
-- X: unknown
-- T: 12 bit Temp stored as int / 10  376 = 37.6C
-- C: 8 bit checksum
+  I: Device ID
+  X: unknown
+  T: 12 bit Temp stored as int / 10  376 = 37.6C
+  C: 8 bit checksum
+
 */
 
 #include "decoder.h"
@@ -34,6 +36,8 @@ static int aft77a1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int16_t row;
 
+
+    uint8_t device_id;      // derived checksum
     uint8_t chk_sum;      // derived checksum
     uint8_t checksum_dat; // checksum from packet
 
@@ -82,12 +86,15 @@ static int aft77a1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return (DECODE_FAIL_MIC);
     }
 
+    bitbuffer_extract_bytes(bitbuffer, row, 0, buffy, 8);
+    device_id = buffy[0];
+
     temp_C = temp_raw / 10.0;
 
     /* clang-format off */
     data = data_make(
             "model",            "",               DATA_STRING,   _X("AFT77A1","Auriol AFT 77 A1 temperature sensor"),
-            // "id",               "Id",           DATA_INT,     device,
+            "id",               "Id",             DATA_INT,     device_id,
             // "battery",          "Battery?",     DATA_INT,     battery,
             "temperature_C",    "Temperature",    DATA_FORMAT,   "%.01f C",  DATA_DOUBLE,    temp_C,
              "mic",             "",               DATA_STRING,   "CHECKSUM",
@@ -100,7 +107,7 @@ static int aft77a1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        // "id",
+        "id",
         // "battery",
         "temperature_C",
         "mic",
