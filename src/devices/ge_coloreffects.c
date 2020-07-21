@@ -1,18 +1,20 @@
 /** @file
- * GE Color Effects Remote
- *
- * Previous work decoding this device:
- *    https://lukecyca.com/2013/g35-rf-remote.html
- *    http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
- *
- * Copyright (C) 2017 Luke Cyca <me@lukecyca.com>, Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+   GE Color Effects Remote
+  
+   Copyright (C) 2017 Luke Cyca <me@lukecyca.com>, Christian W. Zuckschwerdt <zany@triq.net>
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+GE Color Effects Remote
 
+Previous work decoding this device:
+ https://lukecyca.com/2013/g35-rf-remote.html
+ http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
+*/
 #include "decoder.h"
 
 // Frame preamble:

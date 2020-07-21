@@ -1,54 +1,59 @@
 /** @file
- * X10 Security sensor decoder.
- *
- * Each packet starts with a sync pulse of 9000 us and 4500 us gap.
- * The message is OOK PPM encoded with 562 us pulse and long gap (0 bit)
- * of 1687 us or short gap (1 bit) of 562 us. There are 41 bits, the
- * message is repeated 5 times with a packet gap of 40000 us.
- *
- * The protocol has a lot of similarities to the NEC IR protocol
- *
- * Bits 0-7 are first part of the device ID
- * Bits 8-11 should be identical to bits 0-3
- * Bits 12-15 should be the XOR function of bits 4-7
- * Bits 16-23 are the code/message sent
- * Bits 24-31 should be the XOR function of bits 16-23
- * Bits 32-39 are the second part of the device ID
- * Bit 40 is CRC checksum (even parity)
- *
- * Tested with American sensors operating at 310 MHz
- * e.g., rtl_433 -f 310.558M
- *
- * Tested with European/International sensors, DS18, KR18 and MS18 operating at 433 MHz
- * e.g., rtl_433
- *
- * American sensor names ends with an 'A', like DS18A, while European/International
- * sensor names ends with an 'E', like MS18E
- *
- * The byte value decoding is based on limited observations, and it is likely
- * that there are missing pieces.
- * 
- * DS10 & DS18 door/window sensor bitmask : CTUUUDUB
- *      C = Door/window closed flag.
- *      T = Tamper alarm. Set to 1 if lid is open. (Not supported on DS10)
- *      U = Unknown. Cleared in all samples.
- *      D = Delay setting. Min=1. Max=0.
- *      B = Battery low flag.
- *
- * DS18 has both a magnetic (reed) relay and an external input. The two inputs
- * are reported using two different ID's as if they were two separate sensors.
- *
- * MS10 does not support tamper alarm, while MS18 does
- *
- * Copyright (C) 2018 Anthony Kava
- * Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+    X10 Security sensor decoder.
+
+    Copyright (C) 2018 Anthony Kava
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+X10 Security sensor decoder.
+
+Each packet starts with a sync pulse of 9000 us and 4500 us gap.
+The message is OOK PPM encoded with 562 us pulse and long gap (0 bit)
+of 1687 us or short gap (1 bit) of 562 us. There are 41 bits, the
+message is repeated 5 times with a packet gap of 40000 us.
+
+The protocol has a lot of similarities to the NEC IR protocol
+
+Bits 0-7 are first part of the device ID
+Bits 8-11 should be identical to bits 0-3
+Bits 12-15 should be the XOR function of bits 4-7
+Bits 16-23 are the code/message sent
+Bits 24-31 should be the XOR function of bits 16-23
+Bits 32-39 are the second part of the device ID
+Bit 40 is CRC checksum (even parity)
+
+Tested with American sensors operating at 310 MHz
+e.g., rtl_433 -f 310.558M
+
+Tested with European/International sensors, DS18, KR18 and MS18 operating at 433 MHz
+e.g., rtl_433
+
+American sensor names ends with an 'A', like DS18A, while European/International
+sensor names ends with an 'E', like MS18E
+
+The byte value decoding is based on limited observations, and it is likely
+that there are missing pieces.
+
+DS10 & DS18 door/window sensor bitmask : CTUUUDUB
+     C = Door/window closed flag.
+     T = Tamper alarm. Set to 1 if lid is open. (Not supported on DS10)
+     U = Unknown. Cleared in all samples.
+     D = Delay setting. Min=1. Max=0.
+     B = Battery low flag.
+
+DS18 has both a magnetic (reed) relay and an external input. The two inputs
+are reported using two different ID's as if they were two separate sensors.
+
+MS10 does not support tamper alarm, while MS18 does
+
+Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
+
+*/
 
 #include "decoder.h"
 

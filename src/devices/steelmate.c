@@ -1,29 +1,34 @@
 /** @file
- * Steelmate TPMS FSK protocol
- *
- * Copyright (C) 2016 Benjamin Larsson
- * Copyright (C) 2016 John Jore
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Packet payload: 9 bytes.
- * Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
- *
- *                               0  1  2  3  4  5  6  7  8
- *                    [00] {72} 00 00 7f 3c f0 d7 ad 8e fa
- * After translating            00 00 01 c3 f0 14 4a 8e a0
- *                              SS SS AA II II PP TT BB CC
- * S = sync, (0x00)
- * A = preamble, (0x01)
- * I = id, 0xc3f0
- * P = Pressure as double the PSI, 0x14 = 10 PSI
- * T = Temperature in Fahrenheit, 0x4a = 74 'F
- * B = Battery as half the millivolt, 0x8e = 2.84 V
- * C = Checksum, adding bytes 2 to 7 modulo 256 = byte 8,(0x01+0xc3+0xf0+0x14+0x4a+0x8e) modulus 256 = 0xa0
- */
+   Steelmate TPMS FSK protocol
+  
+   Copyright (C) 2016 Benjamin Larsson
+   Copyright (C) 2016 John Jore
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Steelmate TPMS FSK protocol
+
+Packet payload: 9 bytes.
+
+Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
+
+                              0  1  2  3  4  5  6  7  8
+                   [00] {72} 00 00 7f 3c f0 d7 ad 8e fa
+After translating            00 00 01 c3 f0 14 4a 8e a0
+                             SS SS AA II II PP TT BB CC
+S = sync, (0x00)
+A = preamble, (0x01)
+I = id, 0xc3f0
+P = Pressure as double the PSI, 0x14 = 10 PSI
+T = Temperature in Fahrenheit, 0x4a = 74 'F
+B = Battery as half the millivolt, 0x8e = 2.84 V
+C = Checksum, adding bytes 2 to 7 modulo 256 = byte 8,(0x01+0xc3+0xf0+0x14+0x4a+0x8e) modulus 256 = 0xa0
+
+*/
 
 
 #include "decoder.h"
