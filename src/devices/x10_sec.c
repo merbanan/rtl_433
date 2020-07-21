@@ -169,59 +169,44 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     /* build and handle data set for normal output */
+    /* clang-format off */
     data = data_make(
-            "model",    "",             DATA_STRING, _X("X10-Security","X10 Security"),
-            "id",       "Device ID",    DATA_STRING, x10_id_str,
-            "code",     "Code",         DATA_STRING, x10_code_str,
-            "event",    "Event",        DATA_STRING, event_str,
+            "model",        "",             DATA_STRING, _X("X10-Security","X10 Security"),
+            "id",           "Device ID",    DATA_STRING, x10_id_str,
+            "code",         "Code",         DATA_STRING, x10_code_str,
+            "event",        "Event",        DATA_STRING, event_str,
+            "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
+            "battery_ok",   "Battery OK",   DATA_COND,   battery_low,   DATA_INT, !battery_low,
+            "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
-
-    /* append delay indicator if set */
-    if (delay) {
-        data = data_append(data,
-                "delay",        "Delay",        DATA_INT, delay,
-                NULL);
-    }
-    /* append battery indicator if set */
-    if (battery_low) {
-        data = data_append(data,
-                "battery_ok",   "Battery OK",   DATA_INT, !battery_low,
-                NULL);
-    }
-    /* append tamper alarm indicator if set */
-    if (tamper) {
-        data = data_append(data,
-                "tamper",   "Tamper",   DATA_INT, tamper,
-                NULL);
-    }
-    /* append mic so it is placed last */
-    data = data_append(data, "mic", "Integrity", DATA_STRING, "CRC", NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "code",
-    "event",
-    "delay",
-    "battery_ok",
-    "tamper",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "code",
+        "event",
+        "delay",
+        "battery_ok",
+        "tamper",
+        "mic",
+        NULL,
 };
 
 /* r_device definition */
 r_device x10_sec = {
-    .name           = "X10 Security",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 562,  // Short gap 562us
-    .long_width     = 1687, // Long gap 1687us
-    .gap_limit      = 2200, // Gap after sync is 4.5ms (1125)
-    .reset_limit    = 6000,
-    .decode_fn      = &x10_sec_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "X10 Security",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 562,  // Short gap 562us
+        .long_width  = 1687, // Long gap 1687us
+        .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
+        .reset_limit = 6000,
+        .decode_fn   = &x10_sec_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

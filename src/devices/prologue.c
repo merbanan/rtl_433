@@ -84,13 +84,9 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
+            "humidity",      "Humidity",    DATA_COND, humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",        "Button",      DATA_INT, button,
             NULL);
-
-    if (humidity != 0xcc) // 0xcc is "invalid"
-        data = data_append(data,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
