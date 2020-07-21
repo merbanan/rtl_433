@@ -1,5 +1,5 @@
 /** @file
-   Generic temperature sensor 1
+   Generic temperature sensor 1.
   
    Copyright (C) 2015 Alexandre Coffignal
   
@@ -10,7 +10,7 @@
   
 */
 /**
-Generic temperature sensor 1
+Generic temperature sensor 1.
 
 10 24 bits frames
 

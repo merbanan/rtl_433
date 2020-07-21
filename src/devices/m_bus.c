@@ -1,5 +1,5 @@
 /** @file
-    Wireless M-Bus (EN 13757-4)
+    Wireless M-Bus (EN 13757-4).
   
    Copyright (C) 2018 Tommy Vestermark
 
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-Wireless M-Bus (EN 13757-4)
+Wireless M-Bus (EN 13757-4).
  
 Implements the Physical layer (RF receiver) and Data Link layer of the
 Wireless M-Bus protocol. Will return a data string (including the CI byte)

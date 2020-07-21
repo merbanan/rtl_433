@@ -1,5 +1,5 @@
 /** @file
-    Ford Car Key
+    Ford Car Key.
  
  
     This program is free software; you can redistribute it and/or modify
@@ -9,7 +9,7 @@
 
 */
 /**
-Ford Car Key
+Ford Car Key.
 
 Identifies event, but does not attempt to decrypt rolling code...
 Note: this used to have a broken PWM decoding, but is now proper DMC.

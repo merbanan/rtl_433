@@ -1,5 +1,5 @@
 /** @file
-   GE Color Effects Remote
+   GE Color Effects Remote.
   
    Copyright (C) 2017 Luke Cyca <me@lukecyca.com>, Christian W. Zuckschwerdt <zany@triq.net>
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-GE Color Effects Remote
+GE Color Effects Remote.
 
 Previous work decoding this device:
  https://lukecyca.com/2013/g35-rf-remote.html

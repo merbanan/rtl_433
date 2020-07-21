@@ -1,5 +1,5 @@
 /** @file
-    Quhwa HS1527
+    Quhwa HS1527.
   
     Copyright (C) 2016 Ask Jakobsen
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-Quhwa * HS1527
+Quhwa HS1527.
 
 Tested devices:
 QH-C-CE-3V (which should be compatible with QH-832AC),

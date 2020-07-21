@@ -1,5 +1,5 @@
 /** @file
-   Honda Car Key
+   Honda Car Key.
 
    Copyright (C) 2016 Adrian Stevenson
 
@@ -10,7 +10,7 @@
 */
 
 /**
-Honda Car Key
+Honda Car Key.
 
 Identifies button event, but does not attempt to decrypt rolling code...
 Note that this is actually Manchester coded and should be changed.

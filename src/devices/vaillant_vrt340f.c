@@ -1,5 +1,5 @@
 /** @file
-    Vaillant VRT 340f (calorMatic 340f) central heating control
+    Vaillant VRT 340f (calorMatic 340f) central heating control.
 
     Copyright (C) 2017 Reinhold Kainhofer <reinhold@kainhofer.com>
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-Protocol of the Vaillant VRT 340f (calorMatic 340f) central heating control
+Vaillant VRT 340f (calorMatic 340f) central heating control.
 
     http://wiki.kainhofer.com/hardware/vaillantvrt340f
 

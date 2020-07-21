@@ -1,5 +1,5 @@
 /** @file
-    Chuango Security Technology
+    Chuango Security Technology.
 
     Copyright (C) 2015 Tommy Vestermark
 
@@ -10,7 +10,8 @@
 
 */
 /**
-Chuango Security Technology Corporation
+Chuango Security Technology.
+
 likely based on HS1527 or compatible
 
 Tested devices:

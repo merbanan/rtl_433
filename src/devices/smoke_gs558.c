@@ -1,5 +1,5 @@
 /** @file
-    Wireless Smoke & Heat Detector
+    Wireless Smoke & Heat Detector.
 
     Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
 
@@ -10,7 +10,7 @@
 
 */
 /**
-Wireless Smoke & Heat Detector
+Wireless Smoke & Heat Detector.
 
 Ningbo Siterwell Electronics  GS 558  Sw. V05  Ver. 1.3  on 433.885MHz
 VisorTech RWM-460.f  Sw. V05, distributed by PEARL, seen on 433.674MHz

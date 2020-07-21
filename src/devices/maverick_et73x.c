@@ -1,5 +1,5 @@
 /** @file
-   Maverick ET-73x BBQ Sensor
+   Maverick ET-73x BBQ Sensor.
   
    Copyright (C) 2016 gismo2004
    Credits to all users of mentioned forum below!
@@ -11,7 +11,7 @@
 */
 
 /**
-Maverick ET-73x BBQ Sensor
+Maverick ET-73x BBQ Sensor.
 
 The thermometer transmits 4 identical messages every 12 seconds at 433.92 MHz,
 using on-off keying and 2000bps Manchester encoding,

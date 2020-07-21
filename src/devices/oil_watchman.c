@@ -1,5 +1,5 @@
 /** @file
-   Oil tank monitor using Si4320 framed FSK protocol
+   Oil tank monitor using Si4320 framed FSK protocol.
   
    Copyright (C) 2015 David Woodhouse
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-Oil tank monitor using Si4320 framed FSK protocol
+Oil tank monitor using Si4320 framed FSK protocol.
  
 Tested devices:
 Sensor Systems Watchman Sonic

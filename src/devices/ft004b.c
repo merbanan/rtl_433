@@ -1,5 +1,5 @@
 /** @file
-   FT-004-B Temperature Sensor
+   FT-004-B Temperature Sensor.
 
    Copyright (C) 2017 George Hopkins <george-hopkins@null.net>
   
@@ -17,7 +17,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
-FT-004-B Temperature Sensor
+FT-004-B Temperature Sensor.
   
 The sensor sends a packet every 60 seconds. Each frame of 46 bits
 is sent 3 times without padding/pauses.

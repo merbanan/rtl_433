@@ -1,5 +1,5 @@
 /** @file
-    Hideki Temperature, Humidity, Wind, Rain sensor
+    Hideki Temperature, Humidity, Wind, Rain sensor.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -8,8 +8,7 @@
 
 */
 /**
-
-Hideki Temperature, Humidity, Wind, Rain sensor
+Hideki Temperature, Humidity, Wind, Rain sensor.
  
 The received bits are inverted.
 

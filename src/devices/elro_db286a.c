@@ -1,5 +1,5 @@
 /** @file
-    Generic doorbell implementation for Elro DB286A devices
+    Generic doorbell implementation for Elro DB286A devices.
 
     Copyright (C) 2016 Fabian Zaremba <fabian@youremail.eu>
 
@@ -10,7 +10,7 @@
 
 */
 /**
-Generic doorbell implementation for Elro DB286A devices
+Generic doorbell implementation for Elro DB286A devices.
 
 Note that each device seems to have two codes, which alternate
 for every other button press.

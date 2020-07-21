@@ -1,5 +1,5 @@
 /** @file
-   Inovalley kw9015b rain and Temperature weather station
+   Inovalley kw9015b rain and Temperature weather station.
   
    Copyright (C) 2015 Alexandre Coffignal
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-Inovalley kw9015b rain and Temperature weather station
+Inovalley kw9015b rain and Temperature weather station.
 
 AAAAAAAA BBBBBBBB BBBBBBBB CCCCCCCC DDDD
 A : ID

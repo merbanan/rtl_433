@@ -1,5 +1,5 @@
 /** @file
-   LightwaveRF protocol
+   LightwaveRF protocol.
   
    Copyright (C) 2015 Tommy Vestermark
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-LightwaveRF protocol
+LightwaveRF protocol.
 
 Stub for decoding test data only
 

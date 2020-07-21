@@ -1,5 +1,5 @@
 /** @file
-    ELV WS 2000
+    ELV WS 2000.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

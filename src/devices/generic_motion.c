@@ -1,5 +1,6 @@
 /** @file
-   Generic off-brand wireless motion sensor and alarm system on 433.3MHz
+   Generic off-brand wireless motion sensor and alarm system on 433.3MHz.
+
    Copyright (C) 2015 Christian W. Zuckschwerdt <zany@triq.net>
   
    This program is free software; you can redistribute it and/or modify
@@ -8,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-Generic off-brand wireless motion sensor and alarm system on 433.3MHz
+Generic off-brand wireless motion sensor and alarm system on 433.3MHz.
   
 Example codes are: 80042 Arm alarm, 80002 Disarm alarm,
 80008 System ping (every 15 minutes), 800a2, 800c2, 800e2 Motion event

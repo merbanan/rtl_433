@@ -1,5 +1,5 @@
 /** @file
-Ambient Weather F007TH Thermo-Hygrometer
+Ambient Weather F007TH Thermo-Hygrometer.
 
 contributed by David Ediger
 discovered by Ron C. Lewis

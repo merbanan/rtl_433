@@ -1,5 +1,5 @@
 /** @file
-   Maverick ET-73
+   Maverick ET-73.
   
    Copyright (C) 2018 Benjamin Larsson
   
@@ -10,7 +10,7 @@
   
 */
 /**
-Maverick ET-73
+Maverick ET-73.
 
 Based on TP12 code
 

@@ -1,5 +1,5 @@
 /** @file
-    IBIS vehicle information beacon
+   IBIS vehicle information beacon.
   
    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-IBIS vehicle information beacon
+IBIS vehicle information beacon.
 (used in public transportation)
 
 The packet is 28 manchester encoded bytes with a Preamble of 0xAAB and

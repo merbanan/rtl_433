@@ -1,5 +1,5 @@
 /** @file
-    Danfoss CFR Thermostat sensor protocol
+    Danfoss CFR Thermostat sensor protocol.
 
     Copyright (C) 2016 Tommy Vestermark
 
@@ -9,7 +9,7 @@
     (at your option) any later version.
 */
 /**
-Danfoss CFR Thermostat sensor protocol
+Danfoss CFR Thermostat sensor protocol.
 
 Manual: http://na.heating.danfoss.com/PCMPDF/Vi.88.R1.22%20CFR%20Thrm.pdf
 

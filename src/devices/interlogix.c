@@ -1,5 +1,5 @@
 /** @file
-   Interlogix/GE/UTC Wireless Device Decoder
+   Interlogix/GE/UTC Wireless Device Decoder.
   
    Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
   
@@ -8,10 +8,8 @@
    the Free Software Foundation; either version 2 of the License, or
    (at your option) any later version.
 */
-
-
-/*
-Interlogix/GE/UTC Wireless 319.5 mhz Devices
+/**
+Interlogix/GE/UTC Wireless Device Decoder.
 
 Frequency: 319508000
 

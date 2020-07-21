@@ -1,5 +1,5 @@
 /** @file
-   RF-tech decoder (INFRA 217S34)
+   RF-tech decoder (INFRA 217S34).
 
    Copyright (C) 2016 Erik Johannessen
   
@@ -9,7 +9,7 @@
    (at your option) any later version.
 */
 /**
-RF-tech decoder
+RF-tech decoder (INFRA 217S34).
 
 Also marked INFRA 217S34
 Ewig Industries Macao

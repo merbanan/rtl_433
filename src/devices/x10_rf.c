@@ -1,5 +1,5 @@
 /** @file
-   X10 sensor (Stub for decoding test data only)
+   X10 sensor (Stub for decoding test data only).
   
    Copyright (C) 2015 Tommy Vestermark
   

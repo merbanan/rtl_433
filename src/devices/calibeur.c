@@ -1,6 +1,5 @@
 /** @file
-
-    Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor
+    Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -8,6 +7,8 @@
     (at your option) any later version.
 */
 /**
+Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor.
+
 RF-104 Temperature/Humidity sensor
 aka Biltema Art. 84-056 (Sold in Denmark)
 aka ...

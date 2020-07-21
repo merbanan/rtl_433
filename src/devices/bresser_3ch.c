@@ -1,5 +1,5 @@
 /** @file
-    Bresser sensor protocol
+    Bresser sensor protocol.
 
     Copyright (C) 2015 Christian W. Zuckschwerdt <zany@triq.net>
 
@@ -10,7 +10,7 @@
 */
 
 /**
-Bresser sensor protocol
+Bresser sensor protocol.
 
 The protocol is for the wireless Temperature/Humidity sensor
 Bresser Thermo-/Hygro-Sensor 3CH

@@ -1,5 +1,5 @@
 /** @file
-    Decoder for UHF Dish Remote Control 6.3
+    Decoder for UHF Dish Remote Control 6.3.
 
     Copyright (C) 2018 David E. Tiller
 
@@ -10,7 +10,7 @@
 
 */
 /**
-Decoder for UHF Dish Remote Control 6.3,
+Decoder for UHF Dish Remote Control 6.3.
 (tested with genuine Dish remote.)
 
 The device uses PPM encoding,

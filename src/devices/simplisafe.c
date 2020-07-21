@@ -1,5 +1,5 @@
 /** @file
-    Protocol of the SimpliSafe Sensors
+    Protocol of the SimpliSafe Sensors.
 
     Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
 
@@ -11,7 +11,7 @@
     License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
 */
 /**
-Protocol of the SimpliSafe Sensors
+Protocol of the SimpliSafe Sensors.
 
 The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
 

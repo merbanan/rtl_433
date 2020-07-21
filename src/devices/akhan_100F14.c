@@ -1,5 +1,5 @@
 /** @file
-Akhan remote keyless entry system
+Akhan remote keyless entry system.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -9,6 +9,8 @@ the Free Software Foundation; either version 2 of the License, or
 */
 
 /**
+Akhan remote keyless entry system.
+
 This RKE system uses a HS1527 OTP encoder (http://sc-tech.cn/en/hs1527.pdf)
 Each message consists of a preamble, 20 bit id and 4 data bits.
  

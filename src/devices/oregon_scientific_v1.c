@@ -1,5 +1,5 @@
 /** @file
-    OSv1 protocol
+    OSv1 protocol.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -7,7 +7,7 @@
     (at your option) any later version.
 */
 /**
-OSv1 protocol
+OSv1 protocol.
 
 MC with nominal bit width of 2930 us.
 Pulses are somewhat longer than nominal half-bit width, 1748 us / 3216 us,

@@ -1,5 +1,5 @@
 /* @file
-   Emos TTX201 Thermo Remote Sensor
+   Emos TTX201 Thermo Remote Sensor.
   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
   
 */
 /**
-Emos TTX201 Thermo Remote Sensor
+Emos TTX201 Thermo Remote Sensor.
 
 Manufacturer: Ewig Industries Macao
 Maybe same as Ewig TTX201M (FCC ID: N9ZTTX201M)

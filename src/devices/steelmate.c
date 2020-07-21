@@ -1,5 +1,5 @@
 /** @file
-   Steelmate TPMS FSK protocol
+   Steelmate TPMS FSK protocol.
   
    Copyright (C) 2016 Benjamin Larsson
    Copyright (C) 2016 John Jore
@@ -10,7 +10,7 @@
    (at your option) any later version.
 */
 /**
-Steelmate TPMS FSK protocol
+Steelmate TPMS FSK protocol.
 
 Packet payload: 9 bytes.
 

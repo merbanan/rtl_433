@@ -1,5 +1,5 @@
 /** @file
-    Opus/Imagintronix XT300 Soil Moisture Sensor
+    Opus/Imagintronix XT300 Soil Moisture Sensor.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -8,7 +8,7 @@
 
 */
 /**
-Opus/Imagintronix XT300 Soil Moisture Sensor
+Opus/Imagintronix XT300 Soil Moisture Sensor.
 
 Also called XH300 sometimes, this seems to be the associated display name
 
