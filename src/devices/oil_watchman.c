@@ -1,15 +1,18 @@
 /** @file
- * Oil tank monitor using Si4320 framed FSK protocol
- *
- * Tested devices:
- * Sensor Systems Watchman Sonic
- *
- * Copyright (C) 2015 David Woodhouse
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+   Oil tank monitor using Si4320 framed FSK protocol
+  
+   Copyright (C) 2015 David Woodhouse
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Oil tank monitor using Si4320 framed FSK protocol
+ 
+Tested devices:
+Sensor Systems Watchman Sonic
  */
 #include "decoder.h"
 

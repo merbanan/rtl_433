@@ -1,14 +1,23 @@
 /** @file
- * Inovalley kw9015b rain and Temperature weather station
- *
- * Copyright (C) 2015 Alexandre Coffignal
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+   Inovalley kw9015b rain and Temperature weather station
+  
+   Copyright (C) 2015 Alexandre Coffignal
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Inovalley kw9015b rain and Temperature weather station
 
+AAAAAAAA BBBBBBBB BBBBBBBB CCCCCCCC DDDD
+A : ID
+B : Temp
+C : Rain
+D : checksum
+
+*/
 #include "decoder.h"
 
 static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)

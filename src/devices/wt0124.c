@@ -1,17 +1,17 @@
 /** @file
- * WT0124 Pool Thermometer decoder.
- *
- * Copyright (C) 2018 Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- *
- */
+   WT0124 Pool Thermometer decoder.
+  
+   Copyright (C) 2018 Benjamin Larsson
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+  
+*/
 
-/*
+/**
 
 5e       ba       9a       9f       e1       34
 01011110 10111010 10011010 10011111 11100001 00110100
@@ -40,6 +40,9 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int16_t value;
     float temp_c;
     uint8_t channel;
+  
+  
+  
 
     if (bitbuffer->bits_per_row[1] !=49)
         return DECODE_ABORT_LENGTH;

@@ -1,17 +1,22 @@
 /** @file
- * IBIS vehicle information beacon, used in public transportation.
- *
- * The packet is 28 manchester encoded bytes with a Preamble of 0xAAB and
- * 16-bit CRC, containing a company ID, vehicle ID, (door opening) counter,
- * and various flags.
- *
- * Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+    IBIS vehicle information beacon
+  
+   Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+IBIS vehicle information beacon
+(used in public transportation)
+
+The packet is 28 manchester encoded bytes with a Preamble of 0xAAB and
+16-bit CRC, containing a company ID, vehicle ID, (door opening) counter,
+and various flags.
+
+*/
 
 #include "decoder.h"
 
