@@ -539,87 +539,87 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     /* clang-format off */
     data = data_make(
-		     "model",                   "",         DATA_STRING, "Acurite-Atlas",
-		     _X("id", "sensor_id"),	NULL,       DATA_INT,    sensor_id,
-		     "channel",                 NULL,       DATA_STRING, &channel_str,
-		     "sequence_num",            NULL,       DATA_INT,    sequence_num,
-		     "battery_ok",              NULL,       DATA_INT,    !battery_low,
-		     _X("subtype","message_type"),     NULL,       DATA_INT,    message_type,
-		     "wind_avg_mi_h",           "Wind Speed", DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
-		     NULL);
+                     "model",                   "",         DATA_STRING, "Acurite-Atlas",
+                     _X("id", "sensor_id"),     NULL,       DATA_INT,    sensor_id,
+                     "channel",                 NULL,       DATA_STRING, &channel_str,
+                     "sequence_num",            NULL,       DATA_INT,    sequence_num,
+                     "battery_ok",              NULL,       DATA_INT,    !battery_low,
+                     _X("subtype","message_type"),     NULL,       DATA_INT,    message_type,
+                     "wind_avg_mi_h",           "Wind Speed", DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
+                     NULL);
     /* clang-format on */
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM ||
-	message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG) {
+        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG) {
         // Wind speed, temperature and humidity
 
         // range -40 to 160 F
         // FIXME: are there really 13 bits? use 11 for now.
         int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
-	tempf = (temp_raw - 400) * 0.1;
+        tempf = (temp_raw - 400) * 0.1;
 
-	humidity = (bb[6] & 0x7f); // 1-99 %rH
+        humidity = (bb[6] & 0x7f); // 1-99 %rH
 
-	/* clang-format off */
-	data = data_append(data,
-			   "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
-			   "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
-			   NULL);
-	/* clang-format on */
+        /* clang-format off */
+        data = data_append(data,
+                           "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
+                           "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
+                           NULL);
+        /* clang-format on */
     }
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN ||
-	message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG) {
+        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG) {
         // Wind speed, wind direction, and rain fall
         wind_dir = ((bb[4] & 0x1f) << 5) | ((bb[5] & 0x7c) >> 2);
 
-	// range: 0 to 5.11 in, 0.01 inch increments, accumulated
-	// JRH: Confirmed 9 bits, counter rolls over after 5.11 inches
-	raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
+        // range: 0 to 5.11 in, 0.01 inch increments, accumulated
+        // JRH: Confirmed 9 bits, counter rolls over after 5.11 inches
+        raincounter = ((bb[5] & 0x03) << 7) | (bb[6] & 0x7F);
 
-	/* clang-format off */
-	data = data_append(data,
-			   "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
-			   "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
-			   NULL);
-	/* clang-format on */
+        /* clang-format off */
+        data = data_append(data,
+                           "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
+                           "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                           NULL);
+        /* clang-format on */
     }
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX ||
-	message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG) {
+        message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG) {
         // Wind speed, UV Index, Light Intensity, Lightning?
         int uv = (bb[4] & 0x0f);
-	int lux = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
+        int lux = ((bb[5] & 0x7f) << 7) | (bb[6] & 0x7F);
 
-	/* clang-format off */
-	data = data_append(data,
-			   "uv",               NULL,           DATA_INT, uv,
-			   "lux",              NULL,           DATA_INT, lux * 10,
-			   NULL);
-	/* clang-format on */
+        /* clang-format off */
+        data = data_append(data,
+                           "uv",               NULL,           DATA_INT, uv,
+                           "lux",              NULL,           DATA_INT, lux * 10,
+                           NULL);
+        /* clang-format on */
     }
 
     if ((message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM_LTNG ||
-	 message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG ||
-	 message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
+         message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG ||
+         message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
 
         // @todo decode strike_distance to miles or KM.
         int strike_count = ((bb[7] & 0x7f) << 2) | ((bb[8] & 0x60) >> 5);
-	int strike_distance = bb[8] & 0x1f;
+        int strike_distance = bb[8] & 0x1f;
 
-	/* clang-format off */
-	data = data_append(data,
-			   "strike_count",         NULL,           DATA_INT, strike_count,
-			   "strike_distance",      NULL,           DATA_INT, strike_distance,
-			   NULL);
-	/* clang-format on */
+        /* clang-format off */
+        data = data_append(data,
+                           "strike_count",         NULL,           DATA_INT, strike_count,
+                           "strike_distance",      NULL,           DATA_INT, strike_distance,
+                           NULL);
+        /* clang-format on */
     }
 
 
     data = data_append(data,
-		       "exception",     "data_exception",   DATA_INT,    exception,    // @todo convert to bool
-		       "raw_msg",       "raw_message",      DATA_STRING, raw_str,
-		       NULL);
+                       "exception",     "data_exception",   DATA_INT,    exception,    // @todo convert to bool
+                       "raw_msg",       "raw_message",      DATA_STRING, raw_str,
+                       NULL);
 
     decoder_output_data(decoder, data);
 
@@ -902,7 +902,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                   message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN_LTNG ||
                   message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_UV_LUX_LTNG)) {
             valid += acurite_atlas_decode(decoder, bitbuffer, brow);
-	}
+        }
     }
 
     return valid;
