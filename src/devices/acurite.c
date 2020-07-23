@@ -539,14 +539,14 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     /* clang-format off */
     data = data_make(
-                     "model",                   "",         DATA_STRING, "Acurite-Atlas",
-                     _X("id", "sensor_id"),     NULL,       DATA_INT,    sensor_id,
-                     "channel",                 NULL,       DATA_STRING, &channel_str,
-                     "sequence_num",            NULL,       DATA_INT,    sequence_num,
-                     "battery_ok",              NULL,       DATA_INT,    !battery_low,
-                     _X("subtype","message_type"),     NULL,       DATA_INT,    message_type,
-                     "wind_avg_mi_h",           "Wind Speed", DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
-                     NULL);
+            "model",                   "",         DATA_STRING, "Acurite-Atlas",
+            _X("id", "sensor_id"),     NULL,       DATA_INT,    sensor_id,
+            "channel",                 NULL,       DATA_STRING, &channel_str,
+            "sequence_num",            NULL,       DATA_INT,    sequence_num,
+            "battery_ok",              NULL,       DATA_INT,    !battery_low,
+            _X("subtype","message_type"),     NULL,       DATA_INT,    message_type,
+            "wind_avg_mi_h",           "Wind Speed", DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
+            NULL);
     /* clang-format on */
 
     if (message_type == ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM ||
@@ -562,9 +562,9 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                           "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
-                           "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
-                           NULL);
+                "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
+                "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
+                NULL);
         /* clang-format on */
     }
 
@@ -579,9 +579,9 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                           "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
-                           "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
-                           NULL);
+                "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
+                "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                NULL);
         /* clang-format on */
     }
 
@@ -593,9 +593,9 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                           "uv",               NULL,           DATA_INT, uv,
-                           "lux",              NULL,           DATA_INT, lux * 10,
-                           NULL);
+                "uv",               NULL,           DATA_INT, uv,
+                "lux",              NULL,           DATA_INT, lux * 10,
+                NULL);
         /* clang-format on */
     }
 
@@ -609,9 +609,9 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                           "strike_count",         NULL,           DATA_INT, strike_count,
-                           "strike_distance",      NULL,           DATA_INT, strike_distance,
-                           NULL);
+                "strike_count",         NULL,           DATA_INT, strike_count,
+                "strike_distance",      NULL,           DATA_INT, strike_distance,
+                NULL);
         /* clang-format on */
     }
 
