@@ -89,6 +89,16 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // remove the first leading bit and extract the 4 bytes carrying the data
     bitbuffer_extract_bytes(bitbuffer, r, 1, b, 32);
 
+    // Prevent false positives from 'allzero' 
+    // reject if Checksum channelhumidity and temperature are all zero 
+    // No need to decode/extract values for simple test
+    if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all zero\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     /* Parity check over 7 nibbles (must be ODD) */
     memcpy(p, b, 4);
     p[3]=p[3]&0xF0;
