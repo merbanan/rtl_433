@@ -38,6 +38,16 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 cs += nibble[i * 2] + 16 * nibble[i * 2 + 1];
         }
 
+
+        // No need to decode/extract values for simple test
+        if ( bitbuffer->bb[row][0] == 0xFF && bitbuffer->bb[row][1] == 0xFF
+            && bitbuffer->bb[row][2] == 0xFF && bitbuffer->bb[row][3] == 0xFF )  {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+            }
+            continue; //  DECODE_FAIL_SANITY
+        }
+
         cs = (cs & 0xFF) + (cs >> 8);
         checksum = nibble[6] + (nibble[7] << 4);
         /* reject 0x00 checksums to reduce false positives */

@@ -37,6 +37,7 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         // strictly validate package as there is no checksum
         if ((bitbuffer->bits_per_row[i] != 20)
                 || ((b[1] == 0) && (b[2] == 0))
+                || ((b[1] == 0xff) && (b[2] == 0xff))
                 || count_repeats(bitbuffer, i) < 3)
             continue; // DECODE_ABORT_EARLY
 

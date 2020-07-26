@@ -33,7 +33,16 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] != 48) {
             continue; // DECODE_ABORT_LENGTH
         }
+
         b = bitbuffer->bb[row];
+
+        if (!b[0] && !b[1] && !b[2] && !b[3]) {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            }
+            continue; // DECODE_FAIL_SANITY;
+        }
+
         if (b[0] != 0xFF && ((b[1] | 0x1) & 0xFD) == 0x55) {
             continue; // DECODE_ABORT_EARLY
         }

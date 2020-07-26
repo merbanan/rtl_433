@@ -56,7 +56,8 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     }
 
     bytes = bitbuffer->bb[row];
-    if (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3]) {
+    if ( (!bytes[0] && !bytes[1] && !bytes[2] && !bytes[3])
+    || (bytes[0] == 0xFF && bytes[1] == 0xFF && bytes[2] == 0xFF && bytes[3] == 0xFF))  {
         return DECODE_ABORT_EARLY; // reduce false positives
     }
 
@@ -76,12 +77,15 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
     temp1_c = temp1_raw * 0.1f;
     temp2_c = temp2_raw * 0.1f;
 
+    /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, _X("Maverick-ET73","Maverick ET73"),
             _X("id","rid"),              "Random Id",        DATA_INT, device,
             "temperature_1_C",  "Temperature 1",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp1_c,
             "temperature_2_C",  "Temperature 2",    DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp2_c,
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
     return 1;
 }

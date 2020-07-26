@@ -40,18 +40,30 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         return DECODE_FAIL_MIC;
     }
 
+
+    // No need to decode/extract values for simple test
+    if ( (!bb[row][0] && !bb[row][1] && !bb[row][2] && !bb[row][3])
+       || (bb[row][0] == 0xff && bb[row][1] == 0xff && bb[row][2] == 0xff && bb[row][3] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     value = (bb[row][0] << 16) + (bb[row][1] << 8) + bb[row][2];
     device = value >> 12;
 
     temp_raw = value & 0xfff;
     temp_c = (temp_raw - 200) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Thermopro-TP11","Thermopro TP11 Thermometer"),
             "id",            "Id",          DATA_INT,    device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "mic",           "Integrity",   DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;
 }
