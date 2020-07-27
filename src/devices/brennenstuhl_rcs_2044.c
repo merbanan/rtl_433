@@ -1,11 +1,11 @@
 /** @file
-  Brennenstuhl RCS 2044 remote control on 433.92MHz likely x1527.
- 
-  Copyright (C) 2015 Paul Ortyl
- 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License version 3 as
-  published by the Free Software Foundation.
+    Brennenstuhl RCS 2044 remote control on 433.92MHz likely x1527.
+
+    Copyright (C) 2015 Paul Ortyl
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 3 as
+    published by the Free Software Foundation.
 */
 
 /*

@@ -1,12 +1,12 @@
 /** @file
-   Interlogix/GE/UTC Wireless Device Decoder.
-  
-   Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+    Interlogix/GE/UTC Wireless Device Decoder.
+
+    Copyright (C) 2017 Brent Bailey <bailey.brent@gmail.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 Interlogix/GE/UTC Wireless Device Decoder.
@@ -213,27 +213,27 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "subtype",
-    "id",
-    "device_type", // TODO: delete this
-    "raw_message",
-    "battery",
-    "switch1",
-    "switch2",
-    "switch3",
-    "switch4",
-    "switch5",
-    NULL,
+        "model",
+        "subtype",
+        "id",
+        "device_type", // TODO: delete this
+        "raw_message",
+        "battery",
+        "switch1",
+        "switch2",
+        "switch3",
+        "switch4",
+        "switch5",
+        NULL,
 };
 
 r_device interlogix = {
-    .name          = "Interlogix GE UTC Security Devices",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 122,
-    .long_width    = 244,
-    .reset_limit   = 500, // Maximum gap size before End Of Message
-    .decode_fn     = &interlogix_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Interlogix GE UTC Security Devices",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 122,
+        .long_width  = 244,
+        .reset_limit = 500, // Maximum gap size before End Of Message
+        .decode_fn   = &interlogix_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

@@ -1,18 +1,18 @@
 /** @file
-   HT680 based Remote control (broadly similar to x1527 protocol).
-  
-   Copyright (C) 2016 Igor Polovnikov
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+    HT680 based Remote control (broadly similar to x1527 protocol).
+
+    Copyright (C) 2016 Igor Polovnikov
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 HT680 based Remote control (broadly similar to x1527 protocol).
- 
-short is 850 us gap 260 us pulse
-long is 434 us gap 663 us pulse
+
+- short is 850 us gap 260 us pulse
+- long is 434 us gap 663 us pulse
 
 */
 
@@ -80,25 +80,25 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "address", // TODO: remove this
-    "button1",
-    "button2",
-    "button3",
-    "button4",
-    "tristate",
-    NULL,
+        "model",
+        "id",
+        "address", // TODO: remove this
+        "button1",
+        "button2",
+        "button3",
+        "button4",
+        "tristate",
+        NULL,
 };
 
 r_device ht680 = {
-    .name          = "HT680 Remote control",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 200,
-    .long_width    = 600,
-    .gap_limit     = 1200,
-    .reset_limit   = 14000,
-    .decode_fn     = &ht680_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "HT680 Remote control",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 200,
+        .long_width  = 600,
+        .gap_limit   = 1200,
+        .reset_limit = 14000,
+        .decode_fn   = &ht680_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

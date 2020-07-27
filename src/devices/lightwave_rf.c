@@ -1,12 +1,12 @@
 /** @file
-   LightwaveRF protocol.
-  
-   Copyright (C) 2015 Tommy Vestermark
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+    LightwaveRF protocol.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 LightwaveRF protocol.
@@ -139,21 +139,21 @@ static int lightwave_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "subunit",
-    "command",
-    "parameter",
-    NULL
+        "model",
+        "id",
+        "subunit",
+        "command",
+        "parameter",
+        NULL,
 };
 
 r_device lightwave_rf = {
-    .name           = "LightwaveRF",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 250, // Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
-    .long_width     = 1250, //
-    .reset_limit    = 1500, // Gap between messages is unknown so let us get them individually
-    .decode_fn      = &lightwave_rf_callback,
-    .disabled       = 1,
-    .fields         = output_fields,
+        .name        = "LightwaveRF",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 250,  // Short gap 250µs, long gap 1250µs, (Pulse width is 250µs)
+        .long_width  = 1250, //
+        .reset_limit = 1500, // Gap between messages is unknown so let us get them individually
+        .decode_fn   = &lightwave_rf_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

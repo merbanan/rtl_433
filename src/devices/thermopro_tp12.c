@@ -1,44 +1,43 @@
 /** @file
-   Thermopro TP-12 Thermometer.
-  
-   Copyright (C) 2017 Google Inc.
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-  
+    Thermopro TP-12 Thermometer.
+
+    Copyright (C) 2017 Google Inc.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 Thermopro TP-12 Thermometer.
 
 A normal sequence for the TP12:
 
-[00] {0} :
-[01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[02] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[03] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[04] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[05] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[06] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[07] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[08] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[09] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[10] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[11] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[12] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[13] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[14] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[15] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[16] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001
+    [00] {0} :
+    [01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [02] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [03] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [04] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [05] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [06] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [07] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [08] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [09] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [10] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [11] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [12] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [13] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [14] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [15] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [16] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001
 
 Layout appears to be:
 
-[01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-                              device   temp 1   temp     temp 2   checksum
-                                       low bits 1   2    low bits
-                                                hi bits
+    [01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+                                  device   temp 1   temp     temp 2   checksum
+                                           low bits 1   2    low bits
+                                                    hi bits
 
 */
 
@@ -46,7 +45,8 @@ Layout appears to be:
 
 #define BITS_IN_VALID_ROW 40
 
-static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
@@ -102,22 +102,22 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_1_C",
-    "temperature_2_C",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "temperature_1_C",
+        "temperature_2_C",
+        "mic",
+        NULL,
 };
 
 r_device thermopro_tp12 = {
-    .name          = "Thermopro TP08/TP12/TP20 thermometer",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 500,
-    .long_width    = 1500,
-    .gap_limit     = 2000,
-    .reset_limit   = 4000,
-    .decode_fn     = &thermopro_tp12_sensor_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Thermopro TP08/TP12/TP20 thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2000,
+        .reset_limit = 4000,
+        .decode_fn   = &thermopro_tp12_sensor_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

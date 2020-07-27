@@ -1,43 +1,43 @@
 /** @file
-   Maverick ET-73.
-  
-   Copyright (C) 2018 Benjamin Larsson
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-  
+    Maverick ET-73.
+
+    Copyright (C) 2018 Benjamin Larsson
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 Maverick ET-73.
 
 Based on TP12 code
 
-[00] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[01] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[02] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[03] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[04] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[05] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[06] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[07] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[08] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[09] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[10] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[11] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[12] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
-[13] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [00] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [01] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [02] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [03] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [04] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [05] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [06] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [07] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [08] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [09] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [10] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [11] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [12] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+    [13] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
 
 
 Layout appears to be:
-          II 11 12 22 XX XX
-[01] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
 
-I = random id
-1 = temperature sensor 1 12 bits
-2 = temperature sensor 2 12 bits
-X = unknown, checksum maybe ?
+              II 11 12 22 XX XX
+    [01] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
+
+- I = random id
+- 1 = temperature sensor 1 12 bits
+- 2 = temperature sensor 2 12 bits
+- X = unknown, checksum maybe ?
 
 */
 
@@ -88,22 +88,22 @@ static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuff
 }
 
 static char *output_fields[] = {
-    "model",
-    "rid", // TODO: delete this
-    "id",
-    "temperature_1_C",
-    "temperature_2_C",
-    NULL
+        "model",
+        "rid", // TODO: delete this
+        "id",
+        "temperature_1_C",
+        "temperature_2_C",
+        NULL,
 };
 
 r_device maverick_et73 = {
-    .name          = "Maverick et73",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 1050,
-    .long_width    = 2050,
-    .gap_limit     = 2200,
-    .reset_limit   = 4400, // 4050 us nominal packet gap
-    .decode_fn     = &maverick_et73_sensor_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Maverick et73",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 1050,
+        .long_width  = 2050,
+        .gap_limit   = 2200,
+        .reset_limit = 4400, // 4050 us nominal packet gap
+        .decode_fn   = &maverick_et73_sensor_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

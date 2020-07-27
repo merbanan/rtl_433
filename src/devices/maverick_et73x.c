@@ -1,13 +1,13 @@
 /** @file
-   Maverick ET-73x BBQ Sensor.
-  
-   Copyright (C) 2016 gismo2004
-   Credits to all users of mentioned forum below!
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+    Maverick ET-73x BBQ Sensor.
+
+    Copyright (C) 2016 gismo2004
+    Credits to all users of mentioned forum below!
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 
 /**
@@ -21,15 +21,16 @@ Each message consists of 26 nibbles (104 bits total) which are again manchester 
 For nibble 24 some devices are sending 0x1 or 0x2 ?
 
 Payload:
-P = 12 bit Preamble (raw 0x55666a, decoded 0xfa8)
-F =  4 bit device state (2=default; 7=init)
-T = 10 bit temp1 (degree C, offset by 532)
-t = 10 bit temp2 (degree C, offset by 532)
-D = 16 bit digest (over FTt, includes non-transmitted device id renewed on a device reset) gen 0x8810 init 0xdd38
 
-nibble: 0 1 2 3 4 5 6  7 8 9 10 11 12
-msg:    P P P F T T Tt t t D D  D  D
-PRE:12h FLAG:4h TA:10d TB:10d | DIGEST:16h
+- P = 12 bit Preamble (raw 0x55666a, decoded 0xfa8)
+- F =  4 bit device state (2=default; 7=init)
+- T = 10 bit temp1 (degree C, offset by 532)
+- t = 10 bit temp2 (degree C, offset by 532)
+- D = 16 bit digest (over FTt, includes non-transmitted device id renewed on a device reset) gen 0x8810 init 0xdd38
+
+    nibble: 0 1 2 3 4 5 6  7 8 9 10 11 12
+    msg:    P P P F T T Tt t t D D  D  D
+    PRE:12h FLAG:4h TA:10d TB:10d | DIGEST:16h
 
 further information can be found here: https://forums.adafruit.com/viewtopic.php?f=8&t=25414
 note that the mentioned quaternary conversion is actually manchester code.
@@ -95,26 +96,26 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "status",
-    "temperature1_C", // TODO: remove this
-    "temperature2_C", // TODO: remove this
-    "temperature_1_C",
-    "temperature_2_C",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "status",
+        "temperature1_C", // TODO: remove this
+        "temperature2_C", // TODO: remove this
+        "temperature_1_C",
+        "temperature_2_C",
+        "mic",
+        NULL,
 };
 
 r_device maverick_et73x = {
-    .name           = "Maverick ET-732/733 BBQ Sensor",
-    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = 230,
-    .long_width     = 0, //not used
-    .reset_limit    = 4000,
-    //.reset_limit    = 6000, // if pulse_demod_manchester_zerobit implements gap_limit
-    //.gap_limit      = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
-    .decode_fn      = &maverick_et73x_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Maverick ET-732/733 BBQ Sensor",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 230,
+        .long_width  = 0, //not used
+        .reset_limit = 4000,
+        //.reset_limit = 6000, // if pulse_demod_manchester_zerobit implements gap_limit
+        //.gap_limit   = 1000, // if pulse_demod_manchester_zerobit implements gap_limit
+        .decode_fn   = &maverick_et73x_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

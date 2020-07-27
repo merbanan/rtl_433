@@ -1,12 +1,12 @@
 /** @file
-   IBIS vehicle information beacon.
-  
-   Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
-  
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
+    IBIS vehicle information beacon.
+
+    Copyright (C) 2017 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /**
 IBIS vehicle information beacon.
@@ -79,21 +79,21 @@ static int ibis_beacon_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "counter",
-    "code",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "counter",
+        "code",
+        "mic",
+        NULL,
 };
 
 r_device ibis_beacon = {
-    .name           = "IBIS beacon",
-    .modulation     = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width    = 30,  // Nominal width of clock half period [us]
-    .long_width     = 0,   // Not used
-    .reset_limit    = 100, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &ibis_beacon_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "IBIS beacon",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 30,  // Nominal width of clock half period [us]
+        .long_width  = 0,   // Not used
+        .reset_limit = 100, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &ibis_beacon_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
