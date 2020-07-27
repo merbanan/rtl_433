@@ -1134,6 +1134,7 @@ static void sighandler(int signum)
     }
     else if (signum == SIGALRM) {
         fprintf(stderr, "Async read stalled, exiting!\n");
+	g_cfg.exit_code = 42;
     }
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
@@ -1501,7 +1502,7 @@ int main(int argc, char **argv) {
     // Normal case, no test data, no in files
     r = sdr_open(&cfg->dev, &demod->sample_size, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
-        exit(1);
+        exit(2);
     }
 
 #ifndef _WIN32
@@ -1588,9 +1589,12 @@ int main(int argc, char **argv) {
         flush_report_data(cfg);
     }
 
-    if (!cfg->do_exit)
+    if (!cfg->do_exit) {
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
+	cfg->exit_code = r;
+    }
 
+    r = cfg->exit_code;
     r_free_cfg(cfg);
 
     return r >= 0 ? r : -r;
