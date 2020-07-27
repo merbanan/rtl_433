@@ -39,6 +39,16 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
             continue; // DECODE_ABORT_LENGTH
 
         msg = bitbuffer->bb[row_index];
+
+        // No need to decode/extract values for simple test
+        // check id channel temperature humidity value not zero
+        if ( !msg[0] && !msg[1] && !msg[2] && !msg[3] ) {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            }
+            continue; // DECODE_FAIL_SANITY
+        }
+
         chk = msg[0] >> 4;
 
         // align the channel "half nibble"

@@ -52,6 +52,17 @@ static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float humidity;
     bitrow_t *bb = bitbuffer->bb;
 
+    // row [0] is empty due to sync bit
+    // No need to decode/extract values for simple test
+    // check for 0x00 and 0xff
+    if ( (!bb[1][0] && !bb[1][1] && !bb[1][2])
+       || (bb[1][0] == 0xff && bb[1][1] == 0xff && bb[1][2] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     bitbuffer_invert(bitbuffer);
     // Validate package (row [0] is empty due to sync bit)
     int valid = (bitbuffer->bits_per_row[1] == 21)  // Don't waste time on a long/short package
