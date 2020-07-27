@@ -49,7 +49,8 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // No need to decode/extract values for simple test
-    if (b[0] == 0xff &&  b[2] == 0xff && b[5] == 0xFF && b[6] == 0xFF)  {
+    if (b[2] == 0xff && b[3] == 0xff && b[4] == 0xff && b[5] == 0xff
+            && b[6] == 0xff && b[7] == 0xff && b[8] == 0xff) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
         }
