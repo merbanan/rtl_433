@@ -1,23 +1,29 @@
-/* Decoder for UHF Dish Remote Control 6.3, tested with genuine Dish remote.
- *
- * Copyright (C) 2018 David E. Tiller
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * The device uses PPM encoding,
- * 0 is encoded as 400 us pulse and 1692 uS gap,
- * 1 is encoded as 400 us pulse and 2812 uS gap.
- * The device sends 7 transmissions per button press approx 6000 uS apart.
- * A transmission starts with a 400 uS start bit and a 6000 uS gap.
- *
- * Each packet is 16 bits in length.
- * Packet bits: BBBBBB10 101X1XXX
- * B = Button pressed, big-endian
- * X = unknown, possibly channel
- */
+/** @file
+    Decoder for UHF Dish Remote Control 6.3.
+
+    Copyright (C) 2018 David E. Tiller
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Decoder for UHF Dish Remote Control 6.3.
+(tested with genuine Dish remote.)
+
+The device uses PPM encoding,
+0 is encoded as 400 us pulse and 1692 uS gap,
+1 is encoded as 400 us pulse and 2812 uS gap.
+The device sends 7 transmissions per button press approx 6000 uS apart.
+A transmission starts with a 400 uS start bit and a 6000 uS gap.
+
+Each packet is 16 bits in length.
+Packet bits: BBBBBB10 101X1XXX
+B = Button pressed, big-endian
+X = unknown, possibly channel
+*/
 
 #include "decoder.h"
 

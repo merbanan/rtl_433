@@ -1,16 +1,22 @@
-/* Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol
- *
- * Tested devices:
- * SC2260
- * EV1527
- *
- * Copyright (C) 2015 Tommy Vestermark
- * Copyright (C) 2015 nebman
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+   Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol.
+  
+   Copyright (C) 2015 Tommy Vestermark
+   Copyright (C) 2015 nebman
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Generic remotes and sensors using PT2260/PT2262 SC2260/SC2262 EV1527 protocol.
+
+Tested devices:
+SC2260
+EV1527
+*/
+
 #include "decoder.h"
 
 static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)

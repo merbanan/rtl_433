@@ -1,23 +1,25 @@
-/* Thermopro TP-11 Thermometer.
- *
- * Copyright (C) 2017 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/* @file
+   Thermopro TP-11 Thermometer.
+  
+   Copyright (C) 2017 Google Inc.
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+*/
+/**
+Thermopro TP-11 Thermometer.
 
-#include "decoder.h"
-
-/* normal sequence of bit rows:
+normal sequence of bit rows:
 [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [02] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
 [03] {32} db 41 57 c2 : 11011011 01000001 01010111 11000010
 
 */
+#include "decoder.h"
 
 static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int temp_raw, row;

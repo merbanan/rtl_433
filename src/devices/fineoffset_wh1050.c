@@ -3,8 +3,16 @@
 
     2016 Nicola Quiriti ('ovrheat')
     Modifications 2016 by Don More
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
  */
 /**
+Fine Offset WH1050 Weather Station.
+
 This module is a cut-down version of the WH1080 decoder.
 The WH1050 sensor unit is like the WH1080 unit except it has no
 wind direction sensor or time receiver.

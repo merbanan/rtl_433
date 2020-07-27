@@ -1,12 +1,13 @@
-/** ELV Energy Counter ESA 1000/2000.
- *
- * Copyright (C) 2016 TylerDurden23, initial cleanup by Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+   ELV Energy Counter ESA 1000/2000.
+  
+   Copyright (C) 2016 TylerDurden23, initial cleanup by Benjamin Larsson
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
 
 #include "decoder.h"
 

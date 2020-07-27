@@ -1,17 +1,17 @@
-/* Maverick ET-73
- *
- * Copyright (C) 2018 Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+   Maverick ET-73.
+  
+   Copyright (C) 2018 Benjamin Larsson
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+  
+*/
+/**
+Maverick ET-73.
 
-#include "decoder.h"
-
-/*
 Based on TP12 code
 
 [00] {48} 68 00 01 0b 90 fc : 01101000 00000000 00000001 00001011 10010000 11111100
@@ -41,6 +41,7 @@ X = unknown, checksum maybe ?
 
 */
 
+#include "decoder.h"
 
 static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int temp1_raw, temp2_raw, row;

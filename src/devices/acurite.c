@@ -1,8 +1,17 @@
 /** @file
-    Acurite weather stations and temperature / humidity sensors
+    Acurite weather stations and temperature / humidity sensors.
 
     Copyright (c) 2015, Jens Jenson, Helge Weissig, David Ray Thompson, Robert Terzi
 
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+
+*/
+/**
+Acurite weather stations and temperature / humidity sensors.
     Devices decoded:
     - 5-n-1 weather sensor, Model; VN1TXC, 06004RM
     - 5-n-1 pro weather sensor, Model: 06014RM

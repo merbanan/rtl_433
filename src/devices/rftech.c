@@ -1,14 +1,19 @@
-/* RF-tech decoder
- * Also marked INFRA 217S34
- * Ewig Industries Macao
- *
- * Copyright (C) 2016 Erik Johannessen
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+   RF-tech decoder (INFRA 217S34).
+
+   Copyright (C) 2016 Erik Johannessen
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+RF-tech decoder (INFRA 217S34).
+
+Also marked INFRA 217S34
+Ewig Industries Macao
+*/
 
 #include "decoder.h"
 

@@ -1,5 +1,5 @@
 /** @file
-    Globaltronics Quigg BBQ GT-TMBBQ-05
+    Globaltronics Quigg BBQ GT-TMBBQ-05.
 
     Copyright (C) 2019 Olaf Glage
 

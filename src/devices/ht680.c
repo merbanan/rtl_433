@@ -1,15 +1,20 @@
-/* HT680 based Remote control (broadly similar to x1527 protocol)
- *
- * short is 850 us gap 260 us pulse
- * long is 434 us gap 663 us pulse
- *
- * Copyright (C) 2016 Igor Polovnikov
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+   HT680 based Remote control (broadly similar to x1527 protocol).
+  
+   Copyright (C) 2016 Igor Polovnikov
+  
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+HT680 based Remote control (broadly similar to x1527 protocol).
+ 
+short is 850 us gap 260 us pulse
+long is 434 us gap 663 us pulse
+
+*/
 
 #include "decoder.h"
 

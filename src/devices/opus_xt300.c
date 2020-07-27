@@ -1,22 +1,32 @@
-/* Opus/Imagintronix XT300 Soil Moisture Sensor
- *
- * Also called XH300 sometimes, this seems to be the associated display name
- *
- * https://www.plantcaretools.com/product/wireless-moisture-monitor/
- *
- * Data is transmitted with 6 bytes row:
- * 
- +.  0. 1. 2. 3. 4. 5
- *  FF ID SM TT ?? CC
- * 
- * FF: initial preamble
- * ID: 0101 01ID
- * SM: soil moisure (decimal 05 -> 99 %)
- * TT: temperature °C + 40°C (decimal)
- * ??: always FF... maybe spare bytes
- * CC: check sum (simple sum) except 0xFF preamble
-  * 
- */
+/** @file
+    Opus/Imagintronix XT300 Soil Moisture Sensor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Opus/Imagintronix XT300 Soil Moisture Sensor.
+
+Also called XH300 sometimes, this seems to be the associated display name
+
+https://www.plantcaretools.com/product/wireless-moisture-monitor/
+
+Data is transmitted with 6 bytes row:
+
+  0. 1. 2. 3. 4. 5
+ FF ID SM TT ?? CC
+
+FF: initial preamble
+ID: 0101 01ID
+SM: soil moisure (decimal 05 -> 99 %)
+TT: temperature °C + 40°C (decimal)
+??: always FF... maybe spare bytes
+CC: check sum (simple sum) except 0xFF preamble
+ 
+*/
 
 #include "decoder.h"
 
