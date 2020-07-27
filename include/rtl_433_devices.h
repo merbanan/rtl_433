@@ -169,6 +169,7 @@
     DECL(insteon) \
     DECL(idm) \
     DECL(netidm) \
+    DECL(aft77a1) \
 
     /* Add new decoders here. */
 

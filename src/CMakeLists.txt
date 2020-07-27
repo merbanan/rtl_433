@@ -31,6 +31,7 @@ add_library(r_433 STATIC
     util.c
     write_sigrok.c
     devices/acurite.c
+    devices/aft77a1.c
     devices/akhan_100F14.c
     devices/alecto.c
     devices/ambient_weather.c
