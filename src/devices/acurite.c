@@ -901,7 +901,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     
     // parity check: odd parity on bits [0 .. 10]
     // i.e. 8 bytes and another 2 bits.
-    byte parity = b[0]; // parity as byte
+    uint8_t parity = b[0]; // parity as byte
     parity = (parity >> 4) ^ (parity & 0xF); // fold to nibble
     parity = (parity >> 2) ^ (parity & 0x3); // fold to 2 bits
     parity ^= b[1] >> 6; // add remaining bits
