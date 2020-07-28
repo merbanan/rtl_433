@@ -1,22 +1,32 @@
-/* Opus/Imagintronix XT300 Soil Moisture Sensor
- *
- * Also called XH300 sometimes, this seems to be the associated display name
- *
- * https://www.plantcaretools.com/product/wireless-moisture-monitor/
- *
- * Data is transmitted with 6 bytes row:
- * 
- +.  0. 1. 2. 3. 4. 5
- *  FF ID SM TT ?? CC
- * 
- * FF: initial preamble
- * ID: 0101 01ID
- * SM: soil moisure (decimal 05 -> 99 %)
- * TT: temperature °C + 40°C (decimal)
- * ??: always FF... maybe spare bytes
- * CC: check sum (simple sum) except 0xFF preamble
-  * 
- */
+/** @file
+    Opus/Imagintronix XT300 Soil Moisture Sensor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Opus/Imagintronix XT300 Soil Moisture Sensor.
+
+Also called XH300 sometimes, this seems to be the associated display name
+
+https://www.plantcaretools.com/product/wireless-moisture-monitor/
+
+Data is transmitted with 6 bytes row:
+
+  0. 1. 2. 3. 4. 5
+ FF ID SM TT ?? CC
+
+FF: initial preamble
+ID: 0101 01ID
+SM: soil moisure (decimal 05 -> 99 %)
+TT: temperature °C + 40°C (decimal)
+??: always FF... maybe spare bytes
+CC: check sum (simple sum) except 0xFF preamble
+ 
+*/
 
 #include "decoder.h"
 
@@ -33,7 +43,16 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] != 48) {
             continue; // DECODE_ABORT_LENGTH
         }
+
         b = bitbuffer->bb[row];
+
+        if (!b[0] && !b[1] && !b[2] && !b[3]) {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            }
+            continue; // DECODE_FAIL_SANITY;
+        }
+
         if (b[0] != 0xFF && ((b[1] | 0x1) & 0xFD) == 0x55) {
             continue; // DECODE_ABORT_EARLY
         }

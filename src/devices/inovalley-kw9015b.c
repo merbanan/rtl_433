@@ -1,13 +1,24 @@
-/* Inovalley kw9015b rain and Temperature weather station
- *
- * Copyright (C) 2015 Alexandre Coffignal
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Inovalley kw9015b rain and Temperature weather station.
 
+    Copyright (C) 2015 Alexandre Coffignal
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Inovalley kw9015b rain and Temperature weather station.
+
+    AAAAAAAA BBBBBBBB BBBBBBBB CCCCCCCC DDDD
+
+- A : ID
+- B : Temp
+- C : Rain
+- D : checksum
+
+*/
 #include "decoder.h"
 
 static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -69,21 +80,21 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *kw9015b_csv_output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "rain",
-    NULL
+        "model",
+        "id",
+        "temperature_C",
+        "rain",
+        NULL,
 };
 
 r_device kw9015b = {
-    .name          = "Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 2000,
-    .long_width    = 4000,
-    .gap_limit     = 4800,
-    .reset_limit   = 10000,
-    .decode_fn     = &kw9015b_callback,
-    .disabled      = 1,
-    .fields        = kw9015b_csv_output_fields,
+        .name        = "Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 2000,
+        .long_width  = 4000,
+        .gap_limit   = 4800,
+        .reset_limit = 10000,
+        .decode_fn   = &kw9015b_callback,
+        .disabled    = 1,
+        .fields      = kw9015b_csv_output_fields,
 };

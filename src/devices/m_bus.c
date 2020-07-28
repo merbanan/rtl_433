@@ -1,15 +1,20 @@
-/* Wireless M-Bus (EN 13757-4)
- *
- * Implements the Physical layer (RF receiver) and Data Link layer of the
- * Wireless M-Bus protocol. Will return a data string (including the CI byte)
- * for further processing by an Application layer (outside this program).
- *
- * Copyright (C) 2018 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Wireless M-Bus (EN 13757-4).
+  
+   Copyright (C) 2018 Tommy Vestermark
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Wireless M-Bus (EN 13757-4).
+ 
+Implements the Physical layer (RF receiver) and Data Link layer of the
+Wireless M-Bus protocol. Will return a data string (including the CI byte)
+for further processing by an Application layer (outside this program).
+*/
 #include "decoder.h"
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A

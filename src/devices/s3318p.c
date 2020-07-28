@@ -74,6 +74,15 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     // remove the two leading 0-bits and align the data
     bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
 
+    // No need to decode/extract values for simple test
+    // check id channel temperature humidity value not zero
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
     if (crc != (b[4] & 0xf))

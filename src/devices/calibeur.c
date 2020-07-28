@@ -1,35 +1,47 @@
-/* Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor
- * aka Biltema Art. 84-056 (Sold in Denmark)
- * aka ...
- *
- * NB. Only 3 unique sensors can be detected!
- *
- * Update (LED flash) each 2:53
- *
- * Pulse Width Modulation with fixed rate and startbit
- * Startbit     = 390 samples = 1560 µs
- * Short pulse  = 190 samples =  760 µs = Logic 0
- * Long pulse   = 560 samples = 2240 µs = Logic 1
- * Pulse rate   = 740 samples = 2960 µs
- * Burst length = 81000 samples = 324 ms
- *
- * Sequence of 5 times 21 bit separated by start bit (total of 111 pulses)
- * S 21 S 21 S 21 S 21 S 21 S
- *
- * Channel number is encoded into fractional temperature
- * Temperature is oddly arranged and offset for negative temperatures = <6543210> - 41 C
- * Always an odd number of 1s (odd parity)
- *
- * Encoding legend:
- * f = fractional temperature + <ch no> * 10
- * 0-6 = integer temperature + 41C
- * p = parity
- * H = Most significant bits of humidity [5:6]
- * h = Least significant bits of humidity [0:4]
- *
- * LSB                 MSB
- * ffffff45 01236pHH hhhhh Encoding
+/** @file
+    Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
+/**
+Shenzhen Calibeur Industries Co. Ltd Wireless Thermometer RF-104 Temperature/Humidity sensor.
+
+RF-104 Temperature/Humidity sensor
+aka Biltema Art. 84-056 (Sold in Denmark)
+aka ...
+
+NB. Only 3 unique sensors can be detected!
+
+Update (LED flash) each 2:53
+
+Pulse Width Modulation with fixed rate and startbit
+Startbit     = 390 samples = 1560 µs
+Short pulse  = 190 samples =  760 µs = Logic 0
+Long pulse   = 560 samples = 2240 µs = Logic 1
+Pulse rate   = 740 samples = 2960 µs
+Burst length = 81000 samples = 324 ms
+
+Sequence of 5 times 21 bit separated by start bit (total of 111 pulses)
+S 21 S 21 S 21 S 21 S 21 S
+
+Channel number is encoded into fractional temperature
+Temperature is oddly arranged and offset for negative temperatures = <6543210> - 41 C
+Always an odd number of 1s (odd parity)
+
+Encoding legend:
+f = fractional temperature + <ch no> * 10
+0-6 = integer temperature + 41C
+p = parity
+H = Most significant bits of humidity [5:6]
+h = Least significant bits of humidity [0:4]
+
+LSB                 MSB
+ffffff45 01236pHH hhhhh Encoding
+*/
+
 #include "decoder.h"
 
 static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
@@ -39,6 +51,17 @@ static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     float temperature;
     float humidity;
     bitrow_t *bb = bitbuffer->bb;
+
+    // row [0] is empty due to sync bit
+    // No need to decode/extract values for simple test
+    // check for 0x00 and 0xff
+    if ( (!bb[1][0] && !bb[1][1] && !bb[1][2])
+       || (bb[1][0] == 0xff && bb[1][1] == 0xff && bb[1][2] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     bitbuffer_invert(bitbuffer);
     // Validate package (row [0] is empty due to sync bit)

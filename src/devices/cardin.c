@@ -1,14 +1,23 @@
-/*
- * Cardin S466-TX2 generic garage door remote control on 27.195 Mhz
- * Remember to set de freq right with -f 27195000
- * May be useful for other Cardin product too
- *
- * Copyright (C) 2015 Denis Bodor
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
+/** @file
+    Cardin S466-TX2 generic garage door remote control on 27.195 Mhz.
+
+    Copyright (C) 2015 Denis Bodor
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License version 2 as
+    published by the Free Software Foundation.
+*/
+/**
+Cardin S466-TX2 generic garage door remote control on 27.195 Mhz.
+
+Remember to set de freq right with -f 27195000
+May be useful for other Cardin product too
+
+- "11R"  = on-on    Right button used
+- "10R"  = on-off   Right button used
+- "01R"  = off-on   Right button used
+- "00L?" = off-off  Left button used or right button does the same as the left
+*/
 
 #include "decoder.h"
 
@@ -16,12 +25,7 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitrow_t *bb = bitbuffer->bb;
     unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
-    /*
-     * "11R"  = on-on    Right button used
-     * "10R"  = on-off   Right button used
-     * "01R"  = off-on   Right button used
-     * "00L?" = off-off  Left button used or right button does the same as the left
-     */
+
     char *rbutton[4] = { "11R", "10R", "01R", "00L?" };
     data_t *data;
 

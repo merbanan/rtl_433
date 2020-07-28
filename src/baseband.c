@@ -149,13 +149,15 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param x Denominator (real value of complex vector)
     @return angle in radians (Pi equals INT16_MAX)
 */
-static int16_t atan2_int16(int16_t y, int16_t x)
+static int16_t atan2_int16(int32_t y, int32_t x)
 {
     static int32_t const I_PI_4 = INT16_MAX/4;      // M_PI/4
     static int32_t const I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
 
     int32_t const abs_y = abs(y);
     int32_t angle;
+
+    if ((!x) && !y) return 0; // We get 8191 with the code below, FIXME
 
     if (x >= 0) {    // Quadrant I and IV
         int32_t denom = (abs_y + x);

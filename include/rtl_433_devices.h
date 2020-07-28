@@ -161,6 +161,14 @@
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
     DECL(cotech_36_7959) \
+    DECL(scmplus) \
+    DECL(fineoffset_wh1080_fsk) \
+    DECL(tpms_abarth124) \
+    DECL(missil_ml0757) \
+    DECL(sharp_spc775) \
+    DECL(insteon) \
+    DECL(idm) \
+    DECL(netidm) \
     DECL(acurite_590tx) \
     /* Add new decoders here. */
 

@@ -205,6 +205,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     while (prev && prev->next)
         prev = prev->next;
     char *format = NULL;
+    int skip = 0; // skip the data item if this is set
     type = va_arg(ap, data_type_t);
     do {
         data_t *current;
@@ -213,6 +214,10 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         value_release_fn value_release = NULL; // appease CSA checker
 
         switch (type) {
+        case DATA_COND:
+            skip |= !va_arg(ap, int);
+            type = va_arg(ap, data_type_t);
+            continue;
         case DATA_FORMAT:
             if (format) {
                 fprintf(stderr, "vdata_make() format type used twice\n");
@@ -225,7 +230,6 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             }
             type = va_arg(ap, data_type_t);
             continue;
-            break;
         case DATA_COUNT:
             assert(0);
             break;
@@ -254,34 +258,43 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             goto alloc_error;
         }
 
-        current = calloc(1, sizeof(*current));
-        if (!current) {
-            WARN_CALLOC("vdata_make()");
+        if (skip) {
             if (value_release) // could use dmt[type].value_release
                 value_release(value.v_ptr);
-            goto alloc_error;
+            free(format);
+            format = NULL;
+            skip = 0;
         }
-        current->type   = type;
-        current->format = format;
-        format          = NULL; // consumed
-        current->value  = value;
-        current->next   = NULL;
+        else {
+            current = calloc(1, sizeof(*current));
+            if (!current) {
+                WARN_CALLOC("vdata_make()");
+                if (value_release) // could use dmt[type].value_release
+                    value_release(value.v_ptr);
+                goto alloc_error;
+            }
+            current->type   = type;
+            current->format = format;
+            format          = NULL; // consumed
+            current->value  = value;
+            current->next   = NULL;
 
-        if (prev)
-            prev->next = current;
-        prev = current;
-        if (!first)
-            first = current;
+            if (prev)
+                prev->next = current;
+            prev = current;
+            if (!first)
+                first = current;
 
-        current->key = strdup(key);
-        if (!current->key) {
-            WARN_STRDUP("vdata_make()");
-            goto alloc_error;
-        }
-        current->pretty_key = strdup(pretty_key ? pretty_key : key);
-        if (!current->pretty_key) {
-            WARN_STRDUP("vdata_make()");
-            goto alloc_error;
+            current->key = strdup(key);
+            if (!current->key) {
+                WARN_STRDUP("vdata_make()");
+                goto alloc_error;
+            }
+            current->pretty_key = strdup(pretty_key ? pretty_key : key);
+            if (!current->pretty_key) {
+                WARN_STRDUP("vdata_make()");
+                goto alloc_error;
+            }
         }
 
         // next args
@@ -419,6 +432,7 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     switch (type) {
     case DATA_FORMAT:
     case DATA_COUNT:
+    case DATA_COND:
         assert(0);
         break;
     case DATA_DATA:
