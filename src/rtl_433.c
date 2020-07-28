@@ -1134,7 +1134,7 @@ static void sighandler(int signum)
     }
     else if (signum == SIGALRM) {
         fprintf(stderr, "Async read stalled, exiting!\n");
-	g_cfg.exit_code = 42;
+        g_cfg.exit_code = 3;
     }
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
@@ -1591,10 +1591,11 @@ int main(int argc, char **argv) {
 
     if (!cfg->do_exit) {
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
-	cfg->exit_code = r;
+        cfg->exit_code = r;
     }
 
-    r = cfg->exit_code;
+    if (cfg->exit_code >= 0)
+        r = cfg->exit_code;
     r_free_cfg(cfg);
 
     return r >= 0 ? r : -r;
