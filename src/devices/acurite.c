@@ -861,7 +861,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
  
 
-static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
@@ -873,8 +873,8 @@ static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
 
 
-    //if (decoder->verbose >1)
-    //  bitbuffer_printf(bitbuffer, "%s: ", __func__);
+    if (decoder->verbose >1)
+      bitbuffer_printf(bitbuffer, "%s: ", __func__);
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
     if (row < 0)
@@ -896,11 +896,25 @@ static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     
-    //TODO: calculate the checksum and only continue if we have a matching checksum
-    //uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
-    //if (chk != b[3])
-    //    return DECODE_FAIL_MIC;
+    
+    
+    
+    // parity check: odd parity on bits [0 .. 10]
+    // i.e. 8 bytes and another 2 bits.
+    byte parity = b[0]; // parity as byte
+    parity = (parity >> 4) ^ (parity & 0xF); // fold to nibble
+    parity = (parity >> 2) ^ (parity & 0x3); // fold to 2 bits
+    parity ^= b[1] >> 6; // add remaining bits
+    parity = (parity >> 1) ^ (parity & 0x1); // fold to 1 bit
 
+    if (!parity) {
+        //Enable with -vv (verbose decoders)
+        if (decoder->verbose) {
+            fprintf(stderr, "%s: parity check failed\n", __func__);
+        }
+        return DECODE_FAIL_MIC;
+    }
+        
     // Processing the temperature:
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
@@ -914,12 +928,12 @@ static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      humidity = b[2];
      /* clang-format off */
      data = data_make(
-            "model",            "",             DATA_STRING, "Acurite-RNE590A1TX",
+            "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT, sensor_id,
             "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "identifyID",       "Identify ID",  DATA_INT, identify_id,
             "humidity",         "Humidity",     DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "Parity",
             NULL);
     /* clang-format on */
 
@@ -932,13 +946,13 @@ static int acurite_rne590_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Acurite-RNE590A1TX",
+            "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT, sensor_id,
             "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "identifyID",       "Identify ID",  DATA_INT, identify_id,
 	    "temperature_C",    "Temperature C",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
             "temperature_F",    "Temperature F",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c*1.8+32,
-            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "Parity",
             NULL);
     /* clang-format on */
     }
@@ -1255,15 +1269,15 @@ r_device acurite_00275rm = {
 };
 
 
-r_device acurite_rne590A1tx = {
-    .name           = "Acurite RNE5901A1TX Temperature with optional Humidity",
+r_device acurite_590tx = {
+    .name           = "Acurite 590TX Temperature with optional Humidity",
     .modulation     = OOK_PULSE_PPM,  //OOK_PULSE_PWM,
     .short_width    = 500,  // short pulse is 232 us
     .long_width     = 1500,  // long pulse is 420 us
     .gap_limit      = 1484,  // long gap is 384 us, sync gap is 592 us
     .reset_limit    = 3000,  // no packet gap, sync gap is 592 us
     .sync_width     = 500,  // sync pulse is 632 us
-    .decode_fn      = &acurite_rne590_decode,
+    .decode_fn      = &acurite_590tx_decode,
     .disabled       = 0,
     .fields         = acurite_590_output_fields,
 };
