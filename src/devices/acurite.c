@@ -875,7 +875,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
     int row;
-    uint8_t identify_id,humidity;  
+    uint8_t channel,humidity;  
     int16_t temp_raw; // temperature as read from the data packet
     float temp_c;     // temperature in C
     int battery;      // the battery status: 1 is good, 0 is low
@@ -931,7 +931,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     battery   = (b[0] & 0x01); //1=ok, 0=low battery
     //next 2 bits are checksum
     //next two bits are identify ID (maybe channel ?)
-    identify_id = (uint8_t)((b[1]>>4) & 0x03);
+    channel = (uint8_t)((b[1]>>4) & 0x03);
     if ( (b[1] & 0x0F)==0 && b[2]<=100) //MFD: I see no other way to diferentiate humidity from temperature
     {
      humidity = b[2];
@@ -939,10 +939,11 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT, sensor_id,
-            "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
-            "channel",          "Channel",      DATA_INT, identify_id,
+            "batttery",         "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery OK",   DATA_INT, battery,
+            "channel",          "Channel",      DATA_INT, channel,
             "humidity",         "Humidity",     DATA_INT, humidity,
-            "mic",              "Integrity",    DATA_STRING, "Parity",
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -957,11 +958,12 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT, sensor_id,
-            "bat",              "Battery",      DATA_STRING, battery ? "OK" : "LOW",
-            "channel",          "Channel",      DATA_INT, identify_id,
-	    "temperature_C",    "Temperature C",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
-            "temperature_F",    "Temperature F",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c*1.8+32,
-            "mic",              "Integrity",    DATA_STRING, "Parity",
+            "batttery",         "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery OK",   DATA_INT, battery,
+            "channel",          "Channel",      DATA_INT, channel,
+	        "temperature_C",    "Temperature C",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c,
+            //"temperature_F",    "Temperature F",  DATA_FORMAT, "%.1f", DATA_DOUBLE, temp_c*1.8+32,
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
     }
@@ -1219,10 +1221,10 @@ static char *acurite_606_output_fields[] = {
 static char *acurite_590_output_fields[] = {
     "model",
     "id",
-    "bat",
+    "batttery",
     "channel",
     "temperature_C",
-    "temperature_F",
+    //"temperature_F",
     "humidity",
     "mic",
     NULL,
