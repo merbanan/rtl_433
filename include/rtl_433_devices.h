@@ -169,6 +169,7 @@
     DECL(insteon) \
     DECL(idm) \
     DECL(netidm) \
+    DECL(thermopro_tx2) \
 
     /* Add new decoders here. */
 
