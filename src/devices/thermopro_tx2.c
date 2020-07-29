@@ -1,11 +1,18 @@
 /** @file
-    Prologue sensor protocol.
+    ThermoPro TX2 sensor protocol.
+
+    Copyright (C) 2020 Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
-/** @fn int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-Prologue sensor protocol,
-also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102,
-and Pearl NC-7159-675.
-The sensor can be bought at Clas Ohlson.
+/** @fn int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+ThermoPro TX2 sensor protocol.
+
+Note: this is the Prologue protocol with the battery low flag inverted.
+Disable Prologue and enable this to use, e.g. `-R -3 -R 162`.
 
 The sensor sends 36 bits 7 times, before the first packet there is a sync pulse.
 The packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -19,7 +26,7 @@ The data is grouped in 9 nibbles
 - type: 4 bit fixed 1001 (9) or 0110 (5)
 - id: 8 bit a random id that is generated when the sensor starts, could include battery status
   the same batteries often generate the same id
-- flags(3): is 0 when the battery is low, otherwise 1 (ok), first reading always says low
+- flags(3): is 1 when the battery is low, otherwise 0 (ok)
 - flags(2): is 1 when the sensor sends a reading when pressing the button on the sensor
 - flags(1,0): the channel number that can be set by the sensor (1, 2, 3, X)
 - temp: 12 bit signed scaled by 10
@@ -31,7 +38,7 @@ The data is grouped in 9 nibbles
 
 extern int alecto_checksum(r_device *decoder, bitrow_t *bb);
 
-static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int thermopro_tx2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b;
     data_t *data;
@@ -78,11 +85,11 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
-            _X("subtype","id"),       "",            DATA_INT, type,
-            _X("id","rid"),            "",            DATA_INT, id,
+            "model",         "",            DATA_STRING, "Thermopro-TX2",
+            "subtype",       "",            DATA_INT, type,
+            "id",            "",            DATA_INT, id,
             "channel",       "Channel",     DATA_INT, channel,
-            "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",    "Battery",     DATA_INT, !battery,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
             "humidity",      "Humidity",    DATA_COND, humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",        "Button",      DATA_INT, button,
@@ -97,23 +104,22 @@ static char *output_fields[] = {
         "model",
         "subtype",
         "id",
-        "rid", // TODO: delete this
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "button",
         NULL,
 };
 
-r_device prologue = {
-        .name        = "Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor",
+r_device thermopro_tx2 = {
+        .name        = "ThermoPro-TX2 temperature sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 2000,
         .long_width  = 4000,
         .gap_limit   = 7000,
         .reset_limit = 10000,
-        .decode_fn   = &prologue_callback,
-        .disabled    = 0,
+        .decode_fn   = &thermopro_tx2_decode,
+        .disabled    = 1,
         .fields      = output_fields,
 };
