@@ -1,5 +1,5 @@
 /** @file
-    Insteon RF decoder
+    Insteon RF decoder.
 
     Copyright (C) 2020 Peter Shipley
 
@@ -7,11 +7,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-**/
+*/
 
 /** @fn int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-
-Insteon RF decoder
+Insteon RF decoder.
 
     "Insteon is a home automation (domotics) technology that enables
     light switches, lights, thermostats, leak sensors, remote controls,
@@ -52,7 +51,7 @@ all following bytes are transmitted with a decrementing index count with the fin
 - SampleRate: 1024K
 - Modulation: FSK
 
-**/
+*/
 
 #include "decoder.h"
 
@@ -390,6 +389,10 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     return 1;
 }
 
+/**
+Insteon RF decoder.
+@sa parse_insteon_pkt()
+*/
 static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // unsigned int pkt_start_pos;

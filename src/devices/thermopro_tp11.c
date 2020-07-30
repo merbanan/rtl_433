@@ -1,4 +1,4 @@
-/* @file
+/** @file
     Thermopro TP-11 Thermometer.
 
     Copyright (C) 2017 Google Inc.

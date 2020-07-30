@@ -1,4 +1,4 @@
-/* @file
+/** @file
     Emos TTX201 Thermo Remote Sensor.
 
     This program is free software; you can redistribute it and/or modify
@@ -185,6 +185,10 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     return 1;
 }
 
+/**
+Emos TTX201 Thermo Remote Sensor.
+@sa ttx201_decode()
+*/
 static int
 ttx201_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
