@@ -258,7 +258,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
 
     // if (decoder->verbose > 1) {
     //     for(int j=0; j < results_len; j++) {
-    //          printf("%d:%02X ", j,  results[j]);
+    //          fprintf(stderr, "%d:%02X ", j,  results[j]);
     //     }
     //     puts("\n");
     // }
@@ -346,11 +346,11 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {
-        printf("type %s\n", pkt_type_str);
+        fprintf(stderr, "type %s\n", pkt_type_str);
         for (int j = 0; j < min_pkt_len; j++) {
-            printf("%d:%02X ", j, results[j]);
+            fprintf(stderr, "%d:%02X ", j, results[j]);
         }
-        puts("\n");
+        fprintf(stderr, "\n");
     }
 
     // Format data
@@ -438,14 +438,14 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
              }
 
             if (decoder->verbose > 1)
-                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %d %d (%d)\n",
+                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %u %u (%d)\n",
                      __func__, row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
             search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
             if (search_index >= bitbuffer->bits_per_row[row]) {
                 if (decoder->verbose > 1 && bit_index == 0)
-                    fprintf(stderr, "%s: insteon_preamble not found %d %d %d\n", __func__,
+                    fprintf(stderr, "%s: insteon_preamble not found %u %u %d\n", __func__,
                         search_index, bit_index, bitbuffer->bits_per_row[row]);
                 break;
             }

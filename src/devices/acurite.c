@@ -939,7 +939,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "channel",          "Channel",      DATA_INT,    channel,
             "humidity",         "Humidity",     DATA_COND,   humidity != -1,    DATA_INT,    humidity,
-	        "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
