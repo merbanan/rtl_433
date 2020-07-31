@@ -640,7 +640,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
         }
 
         // print key
-        char *key = *data->pretty_key ? data->pretty_key : data->key;
+        char *key = data->pretty_key ? data->pretty_key : data->key;
         kv->column += fprintf(output->file, "%-10s: ", key);
         // print value
         if (color)
