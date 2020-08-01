@@ -111,7 +111,7 @@ static uint8_t gen_crc(uint8_t *dat)
     return (r);
 }
 
-static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
+static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
 {
     uint8_t results[35]   = {0};
     uint8_t results_len   = 0;
@@ -162,13 +162,13 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     results[results_len++] = pkt_d;
 
     if (pkt_i != 31) { // should always be 31 ( 0b11111) in first block of packet
-        return (DECODE_ABORT_EARLY);
+        return DECODE_ABORT_EARLY;
     }
 
     bitbuffer_extract_bytes(bits, row, start_pos + 26, &i, 2);
     // Check for packet delimiter  marker bits (at least once)
     if (i != 0xc0) {                 // 0b11000000
-        return (DECODE_FAIL_SANITY); // There should be two high bits '11' between packets
+        return DECODE_FAIL_SANITY; // There should be two high bits '11' between packets
     }
 
     // printBits(sizeof(d), &d);
@@ -206,7 +206,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
             fprintf(stderr, "%s\trow to short for %s packet type\n",
                 __func__, (extended ? "extended" : "regular"));
         }
-        return(DECODE_ABORT_LENGTH);     // row to short for packet type
+        return DECODE_ABORT_LENGTH;     // row to short for packet type
      }
      */
 
@@ -248,11 +248,11 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
 
-        // packet index should decrement 
+        // packet index should decrement
         if (pkt_i < prev_i) {
             prev_i = pkt_i;
         } else {
-            return(DECODE_ABORT_EARLY);
+            return DECODE_ABORT_EARLY;
         }
     }
 
@@ -266,7 +266,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     if (results_len < min_pkt_len) {
         if (decoder->verbose > 1)
             fprintf(stderr, "%s: fail: short packet %d < 9\n", __func__, results_len);
-        return (0);
+        return 0;
     }
 
     uint8_t crc_val;
@@ -281,7 +281,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
         if (decoder->verbose > 1)
             fprintf(stderr, "%s: fail: bad CRC %02X != %02X %s\n", __func__, results[min_pkt_len], crc_val,
                     (extended ? "extended" : ""));
-        return (DECODE_FAIL_MIC);
+        return DECODE_FAIL_MIC;
     }
 
     char pkt_from_addr[8]   = {0};
