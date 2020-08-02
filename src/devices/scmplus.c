@@ -123,6 +123,7 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
     char *meter_type;
+
     switch (b[3] & 0x0f) {
         case 4:
         case 5:
@@ -130,11 +131,14 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         case 8:
             meter_type = "Electric";
             break;
+        case 0:
+        case 1:
         case 2:
         case 9:
         case 12:
             meter_type = "Gas";
             break;
+        case 3:
         case 11:
         case 13:
             meter_type = "Water";
@@ -143,6 +147,7 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             meter_type = "unknown";
             break;
     }
+
     // fprintf(stderr, "meter_type = %s\n", meter_type);
 
     /* 
