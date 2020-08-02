@@ -44,14 +44,12 @@ static char *get_meter_type_name(uint8_t ERTType)
     case 7:
     case 8:
         return "Electric";
-        break;
     case 0:
     case 1:
     case 2:
     case 9:
     case 12:
         return "Gas";
-        break;
     case 3:
     case 11:
     case 13:
