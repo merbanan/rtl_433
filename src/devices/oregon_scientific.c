@@ -738,6 +738,10 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
     return DECODE_FAIL_SANITY;
 }
 
+/**
+Various Oregon Scientific protocols.
+@sa oregon_scientific_v2_1_decode() oregon_scientific_v3_decode()
+*/
 static int oregon_scientific_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = oregon_scientific_v2_1_decode(decoder, bitbuffer);

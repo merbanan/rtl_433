@@ -56,7 +56,6 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
     bytes = bitbuffer->bb[row];
 
-
     if (bitbuffer->bits_per_row[row] != 48)
         return DECODE_ABORT_LENGTH;
 
@@ -64,6 +63,15 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     /* Parity check (must be EVEN) */
     parity = parity_bytes(bytes, 6);
+
+    // No need to decode/extract values for simple test
+    if ((!bytes[0] && !bytes[2] && !bytes[4] && !bytes[5])
+       || (bytes[0] == 0xff && bytes[2] == 0xff && bytes[4] == 0xff && bytes[5] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     if (parity) { // ODD parity detected
         if (decoder->verbose > 1) {

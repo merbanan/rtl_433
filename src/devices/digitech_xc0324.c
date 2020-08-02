@@ -150,9 +150,13 @@ static char *output_fields[] = {
     "flags",
     "mic",
     "message_num",
-    NULL
+    NULL,
 };
 
+/**
+Digitech XC-0324 device.
+@sa decode_xc0324_message()
+*/
 static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int r; // a row index

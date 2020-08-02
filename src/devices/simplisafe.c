@@ -1,15 +1,26 @@
-/* Protocol of the SimpliSafe Sensors
- *
- * The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
- *
- * All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
- *
- *  2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte       | 1 Byte
- *  Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
- *
- * Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
- * License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
- */
+/** @file
+    Protocol of the SimpliSafe Sensors.
+
+    Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
+*/
+/**
+Protocol of the SimpliSafe Sensors.
+
+The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
+
+All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
+
+ 2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte       | 1 Byte
+ Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
+
+*/
 
 #include "decoder.h"
 
@@ -137,6 +148,10 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     return 1;
 }
 
+/**
+Protocol of the SimpliSafe Sensors.
+@sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
+*/
 static int
 ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {

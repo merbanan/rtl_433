@@ -44,6 +44,15 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     b = bitbuffer->bb[r];
 
+    // No need to decode/extract values for simple test
+    if ((!b[0] && !b[1] && !b[2])
+       || (b[0] == 0xff && b[1] == 0xff && b[2] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     int temperature;
     int battery_status;
     int startup;

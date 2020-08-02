@@ -1,7 +1,15 @@
 /** @file
-    Fine Offset WH1080/WH3080 Weather Station
+    Fine Offset WH1080/WH3080 Weather Station.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
 */
 /** @fn int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Fine Offset WH1080/WH3080 Weather Station.
+
 This module is based on Stanisław Pitucha ('viraptor' https://github.com/viraptor) code stub for the Digitech XC0348
 Weather Station, which seems to be a rebranded Fine Offset WH1080 Weather Station.
 
@@ -302,14 +310,23 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1;
 }
 
-static int fineoffset_wh1080_callback_ook(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Fine Offset WH1080/WH3080 Weather Station.
+@sa fineoffset_wh1080_callback()
+*/
+static int fineoffset_wh1080_callback_ook(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_OOK);
 }
 
-static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Fine Offset WH1080/WH3080 Weather Station.
+@sa fineoffset_wh1080_callback()
+*/
+static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_FSK);
 }
-
 
 static char *output_fields[] = {
         "model",

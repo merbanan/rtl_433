@@ -204,7 +204,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
-    int model;
+    int type;
 
     // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 215) {
@@ -223,11 +223,11 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Classification heuristics
     if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8)
         if (bit_offset < 61)
-            model = MODEL_WH24; // nominal 3 bits postamble
+            type = MODEL_WH24; // nominal 3 bits postamble
         else
-            model = MODEL_WH65B;
+            type = MODEL_WH65B;
     else
-        model = MODEL_WH65B; // nominal 12 bits postamble
+        type = MODEL_WH65B; // nominal 12 bits postamble
 
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
@@ -266,7 +266,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float wind_speed_factor, rain_cup_count;
     // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
     // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
-    if (model == MODEL_WH24) { // WH24
+    if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
         rain_cup_count = 0.3f;
     } else { // WH65B
@@ -306,7 +306,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, model == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
+            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
             "id",               "ID",               DATA_INT, id,
             "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,

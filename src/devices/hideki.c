@@ -1,27 +1,38 @@
-/* Hideki Temperature, Humidity, Wind, Rain sensor
- *
- * The received bits are inverted.
- * Every 8 bits are stuffed with a (even) parity bit.
- * The payload (excluding the header) has an byte parity (XOR) check
- * The payload (excluding the header) has CRC-8, poly 0x07 init 0x00 check
- * The payload bytes are reflected (LSB first / LSB last) after the CRC check
- *
- *    11111001 0  11110101 0  01110011 1 01111010 1  11001100 0  01000011 1  01000110 1  00111111 0  00001001 0  00010111 0
- *    SYNC+HEAD P   RC cha P     LEN   P     Nr.? P   .1° 1°  P   10°  BV P   1%  10% P     ?     P     XOR   P     CRC   P
- *
- * TS04:
- *    00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999
- *    SYNC+HEAD cha   RC     LEN        Nr.?    1° .1°  VB   10°   10%  1%     ?         XOR      CRC
- *
- * Wind:
- *    00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999 AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
- *    SYNC+HEAD cha   RC     LEN        Nr.?    1° .1°  VB   10°    1° .1°  VB   10°   1W .1W  .1G 10W   10G 1G    w°  AA    XOR      CRC
- *
- * Rain:
- *    00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888
- *    SYNC+HEAD cha   RC   B LEN        Nr.?   RAIN_L    RAIN_H     0x66       XOR       CRC
- *
- */
+/** @file
+    Hideki Temperature, Humidity, Wind, Rain sensor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Hideki Temperature, Humidity, Wind, Rain sensor.
+ 
+The received bits are inverted.
+
+Every 8 bits are stuffed with a (even) parity bit.
+The payload (excluding the header) has an byte parity (XOR) check
+The payload (excluding the header) has CRC-8, poly 0x07 init 0x00 check
+The payload bytes are reflected (LSB first / LSB last) after the CRC check
+
+  11111001 0  11110101 0  01110011 1 01111010 1  11001100 0  01000011 1  01000110 1  00111111 0  00001001 0  00010111 0
+  SYNC+HEAD P   RC cha P     LEN   P     Nr.? P   .1° 1°  P   10°  BV P   1%  10% P     ?     P     XOR   P     CRC   P
+
+TS04:
+  00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999
+  SYNC+HEAD cha   RC     LEN        Nr.?    1° .1°  VB   10°   10%  1%     ?         XOR      CRC
+
+Wind:
+  00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888 99999999 AAAAAAAA BBBBBBBB CCCCCCCC DDDDDDDD
+  SYNC+HEAD cha   RC     LEN        Nr.?    1° .1°  VB   10°    1° .1°  VB   10°   1W .1W  .1G 10W   10G 1G    w°  AA    XOR      CRC
+
+Rain:
+  00000000  11111111  22222222  33333333  44444444  55555555  66666666  77777777  88888888
+  SYNC+HEAD cha   RC   B LEN        Nr.?   RAIN_L    RAIN_H     0x66       XOR       CRC
+
+*/
 
 #include "decoder.h"
 

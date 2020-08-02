@@ -1,5 +1,5 @@
 /** @file
-    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor
+    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
     Changes done by Andrew Rivett <veggiefrog@gmail.com>. Copyright is
     retained by Robert Fraczkiewicz.
@@ -12,6 +12,8 @@
     (at your option) any later version.
 */
 /**
+LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
+
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
 in the 433.92 MHz band. Product pages:

@@ -70,6 +70,14 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     b = bitbuffer->bb[0];
 
+    // No need to decode/extract values for simple test
+    if (!b[0] && !b[2] && !b[3] && !b[4]) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     // Correct start sequence?
     if (b[0] != 0x00) {
         if (decoder->verbose) {

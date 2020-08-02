@@ -67,6 +67,15 @@ static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // extract message, drop leading start bit, include trailing LRC nibble
     bitbuffer_extract_bytes(bitbuffer, row, 1, msg, 36);
+
+    // No need to decode/extract values for simple test
+    if (!msg[0] && !msg[1] && !msg[2] && !msg[3] && !msg[4]) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     lrc = xor_bytes(msg, 5);
     if (((lrc >> 4) ^ (lrc & 0xf)) != 0)
        return DECODE_FAIL_MIC;

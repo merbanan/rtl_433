@@ -1,14 +1,24 @@
-/* OSv1 protocol
- *
- * MC with nominal bit width of 2930 us.
- * Pulses are somewhat longer than nominal half-bit width, 1748 us / 3216 us,
- * Gaps are somewhat shorter than nominal half-bit width, 1176 us / 2640 us.
- * After 12 preamble bits there is 4200 us gap, 5780 us pulse, 5200 us gap.
- *
- * Care must be taken with the gap after the sync pulse since it
- * is outside of the normal clocking.  Because of this a data stream
- * beginning with a 0 will have data in this gap.
- */
+/** @file
+    OSv1 protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+OSv1 protocol.
+
+MC with nominal bit width of 2930 us.
+Pulses are somewhat longer than nominal half-bit width, 1748 us / 3216 us,
+Gaps are somewhat shorter than nominal half-bit width, 1176 us / 2640 us.
+After 12 preamble bits there is 4200 us gap, 5780 us pulse, 5200 us gap.
+
+Care must be taken with the gap after the sync pulse since it
+is outside of the normal clocking.  Because of this a data stream
+beginning with a 0 will have data in this gap.
+
+*/
 
 #include "decoder.h"
 
@@ -36,6 +46,16 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
             nibble[i * 2 + 1] = byte >> 4;
             if (i < ((OSV1_BITS / 8) - 1))
                 cs += nibble[i * 2] + 16 * nibble[i * 2 + 1];
+        }
+
+
+        // No need to decode/extract values for simple test
+        if ( bitbuffer->bb[row][0] == 0xFF && bitbuffer->bb[row][1] == 0xFF
+            && bitbuffer->bb[row][2] == 0xFF && bitbuffer->bb[row][3] == 0xFF )  {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+            }
+            continue; //  DECODE_FAIL_SANITY
         }
 
         cs = (cs & 0xFF) + (cs >> 8);

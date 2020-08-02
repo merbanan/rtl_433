@@ -235,6 +235,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [159]  Insteon
     [160]  Interval Data Message (IDM)
     [161]  Interval Data Message (IDM) for Net Meters
+    [162]* ThermoPro-TX2 temperature sensor
+    [163]  Acurite 590TX Temperature with optional Humidity
 
 * Disabled by default, use -R n or -G
 

@@ -1,21 +1,27 @@
-/* Generic doorbell implementation for Elro DB286A devices
- *
- * Note that each device seems to have two codes, which alternate
- * for every other button press.
- *
- * short is 456 us pulse, 1540 us gap
- * long is 1448 us pulse, 544 us gap
- * packet gap is 7016 us
- *
- * Example code: 37f62a6c80
- *
- * Copyright (C) 2016 Fabian Zaremba <fabian@youremail.eu>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Generic doorbell implementation for Elro DB286A devices.
+
+    Copyright (C) 2016 Fabian Zaremba <fabian@youremail.eu>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Generic doorbell implementation for Elro DB286A devices.
+
+Note that each device seems to have two codes, which alternate
+for every other button press.
+
+short is 456 us pulse, 1540 us gap
+long is 1448 us pulse, 544 us gap
+packet gap is 7016 us
+
+Example code: 37f62a6c80
+*/
+
 
 #include "decoder.h"
 
