@@ -184,7 +184,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     if (decoder->verbose) {
         uint8_t buffy[4];
-        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %d\n",
+        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n",
                 __func__, start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
         fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n",
                 __func__, "pkt_i", "pkt_d", "next", "length", "count");
@@ -227,7 +227,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         y = (next_pos - start_pos);
         if (y != 26) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: stop %d != 26\n", __func__, y);
+                fprintf(stderr, "%s: stop %u != 26\n", __func__, y);
             break;
         }
 
@@ -397,7 +397,6 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // unsigned int pkt_start_pos;
     uint16_t row;
-    unsigned int bit_index;
     unsigned int ret_value = 0;
     int fail_value         = 0;
     // unsigned int pkt_cnt   = 0;
@@ -416,7 +415,7 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      * loop over all rows and look for preamble
     */
     for (row = 0; row < bitbuffer->num_rows; ++row) {
-        bit_index = 0;
+        unsigned bit_index = 0;
         // Validate message and reject it as fast as possible : check for preamble
 
         if (bitbuffer->bits_per_row[row] < INSTEON_BITLEN_MIN) {

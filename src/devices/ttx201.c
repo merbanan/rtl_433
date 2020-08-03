@@ -117,7 +117,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
                             bits, MSG_PREAMBLE_BITS);
                 }
             } else if (row != (unsigned)bitbuffer->num_rows - 1 && bits == 1) {
-                fprintf(stderr, "Wrong packet #%d length: %d bits (expected %d)\n",
+                fprintf(stderr, "Wrong packet #%u length: %d bits (expected %d)\n",
                         row, bits, MSG_PACKET_BITS);
             }
         }
@@ -136,7 +136,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
         bitbuffer_print(bitbuffer);
         fprintf(stderr, "Data decoded:\n" \
                 " r  cs    K   ID    S   B  C  X    T    M     J\n");
-        fprintf(stderr, "%2d  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
+        fprintf(stderr, "%2u  %2d    %2d  %3d  0x%01x  %1d  %1d  %1d  %4d  0x%02x",
                 row,
                 checksum_calculated,
                 checksum,
@@ -155,14 +155,14 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
 
     if (postmark != MSG_PACKET_POSTMARK) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%d wrong postmark 0x%02x (expected 0x%02x).\n",
+            fprintf(stderr, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).\n",
                     row, postmark, MSG_PACKET_POSTMARK);
         return 0;
     }
 
     if (checksum != checksum_calculated) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "Packet #%d checksum error.\n", row);
+            fprintf(stderr, "Packet #%u checksum error.\n", row);
         return 0;
     }
 
