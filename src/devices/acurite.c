@@ -326,7 +326,6 @@ Additional reverse engineering needed:
 @todo - Get distance to front of storm to match display
 @todo - figure out remaining status bits and how to report
 */
-
 static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     float tempf;
@@ -421,11 +420,8 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1;
 }
 
-
-
 /**
-
-Acurite Atlas:
+Acurite Atlas weather and lightning sensor.
 
 | Reading           | Operating Range               | Reading Frequency | Accuracy |
 | ---               | ---                           | ---        | ---             |
@@ -491,8 +487,6 @@ Lux needs to multiplied by 10.
 - D = lightning Distance (miles)
 
 */
-
-
 static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     uint8_t humidity, sequence_num, message_type;
@@ -548,13 +542,13 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
     /* clang-format off */
     data = data_make(
-            "model",                   "",         DATA_STRING, "Acurite-Atlas",
-            _X("id", "sensor_id"),     NULL,       DATA_INT,    sensor_id,
-            "channel",                 NULL,       DATA_STRING, &channel_str,
-            "sequence_num",            NULL,       DATA_INT,    sequence_num,
-            "battery_ok",              NULL,       DATA_INT,    !battery_low,
-            _X("subtype","message_type"),     NULL,       DATA_INT,    message_type,
-            "wind_avg_mi_h",           "Wind Speed", DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
+            "model",                "",             DATA_STRING, "Acurite-Atlas",
+            "id",                   NULL,           DATA_INT,    sensor_id,
+            "channel",              NULL,           DATA_STRING, &channel_str,
+            "sequence_num",         NULL,           DATA_INT,    sequence_num,
+            "battery_ok",           NULL,           DATA_INT,    !battery_low,
+            "subtype",              NULL,           DATA_INT,    message_type,
+            "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
             NULL);
     /* clang-format on */
 
@@ -626,16 +620,14 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
 
     data = data_append(data,
-                       "exception",     "data_exception",   DATA_INT,    exception,    // @todo convert to bool
-                       "raw_msg",       "raw_message",      DATA_STRING, raw_str,
-                       NULL);
+            "exception",        "data_exception",   DATA_INT,    exception,    // @todo convert to bool
+            "raw_msg",          "raw_message",      DATA_STRING, raw_str,
+            NULL);
 
     decoder_output_data(decoder, data);
 
     return 1;  // one valid message decoded
 }
-
-
 
 /**
 This callback handles several Acurite devices that use a very
