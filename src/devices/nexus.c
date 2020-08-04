@@ -112,7 +112,7 @@ static char *output_fields[] = {
 };
 
 r_device nexus = {
-        .name        = "Nexus, FreeTec NC-7345, NX-3980 temperature/humidity sensor",
+        .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
         .long_width  = 2000,
