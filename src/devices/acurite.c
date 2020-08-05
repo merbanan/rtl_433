@@ -35,15 +35,12 @@ Acurite weather stations and temperature / humidity sensors.
 #define ACURITE_ATLAS_BITLEN      80
 
 // ** Acurite known message types
-#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
+//#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
 #define ACURITE_MSGTYPE_6045M                           0x2f
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
 #define ACURITE_MSGTYPE_3N1_WINDSPEED_TEMP_HUMIDITY     0x20
 #define ACURITE_MSGTYPE_RAINFALL                        0x30
-#define ACURITE_MSGTYPE_ATLAS_WINDSPEED_TEMP_HUMIDITY   0x25
-#define ACURITE_MSGTYPE_ATLAS_WINDSPEED_RAINFALL        0x26
-#define ACURITE_MSGTYPE_ATLAS_WINDSPEED_UV_LUX          0x27
 
 #define ACURITE_MSGTYPE_ATLAS_WNDSPD_TEMP_HUM           0x05
 #define ACURITE_MSGTYPE_ATLAS_WNDSPD_RAIN               0x06

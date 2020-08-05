@@ -64,11 +64,11 @@ running this decoder with debug level :
 
 #include "decoder.h"
 
-#define XC0324_DEVICE_BITLEN      148
+//#define XC0324_DEVICE_BITLEN      148
 #define XC0324_MESSAGE_BITLEN     48
 #define XC0324_MESSAGE_BYTELEN    (XC0324_MESSAGE_BITLEN + 7)/ 8
 #define XC0324_DEVICE_STARTBYTE   0x5F
-#define XC0324_DEVICE_MINREPEATS  3
+//#define XC0324_DEVICE_MINREPEATS  3
 
 static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
@@ -98,7 +98,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
                     "chksum = 0x%02X not 0x00 <- XC0324:vv row %d bit %d",
                     chksum, row, bitpos);
         }
-        return 0; // No message was able to be decoded
+        return DECODE_FAIL_MIC; // No message was able to be decoded
     }
 
     // Extract the id as hex string

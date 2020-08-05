@@ -87,7 +87,7 @@ Packet Checksum       | 2      | 88
 */
 static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[92];
+    uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
     unsigned sync_index;
     const uint8_t idm_frame_sync[] = {0x16, 0xA3, 0x1C};
@@ -350,7 +350,7 @@ Packet Checksum       | 2      | 88    CRC-16-CCITT of packet starting at Packet
 */
 static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[92];
+    uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
     unsigned sync_index;
     const uint8_t idm_frame_sync[] = {0x16, 0xA3, 0x1C};
