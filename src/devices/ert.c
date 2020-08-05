@@ -47,7 +47,8 @@ https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTM
 
 static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
+    // TODO: Verify preamble
+    //static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
     uint8_t *b;
     uint8_t physical_tamper, ert_type, encoder_tamper;
     uint32_t consumption_data, ert_id;

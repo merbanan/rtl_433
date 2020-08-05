@@ -136,13 +136,12 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             continue; // DECODE_ABORT_EARLY
         }
 
-        uint8_t msg_len      = msg_nybbles[1];
+        // TODO: check if message length is a valid value
+        //uint8_t msg_len      = msg_nybbles[1];
         uint8_t msg_type     = msg_nybbles[2];
         uint8_t sensor_id    = (msg_nybbles[3] << 3) + (msg_nybbles[4] >> 1);
-        uint8_t msg_parity   = msg_nybbles[4] & 0x01;
         float msg_value      = msg_nybbles[5] * 10 + msg_nybbles[6] + msg_nybbles[7] / 10.0;
         int msg_value_int    = msg_nybbles[8] * 10 + msg_nybbles[9];
-        uint8_t msg_checksum = msg_nybbles[10];
 
         // Check Repeated data values as another way of verifying
         // message integrity.

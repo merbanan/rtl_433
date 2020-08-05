@@ -59,7 +59,6 @@ Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
 
 static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
     char *event_str = "UNKNOWN";         /* human-readable event     */
     char x10_id_str[12] = "";            /* string showing hex value */

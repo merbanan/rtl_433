@@ -334,7 +334,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     char raw_str[31], *rawp;
     uint16_t sensor_id;
     uint8_t strike_count, strike_distance;
-    int battery_low, active, rfi_detect, ussb1;
+    int battery_low, active, rfi_detect;
     int exception = 0;
     data_t *data;
 

@@ -33,7 +33,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
  * 10 = 0
  *  1100 = 1
  */
-unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
+unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
     uint8_t *bits = inbuf->bb[row];
     unsigned int len = inbuf->bits_per_row[row];
@@ -71,7 +71,7 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     uint8_t device_id;
     uint8_t command;
 
-    ge_decode(decoder, bitbuffer, row, start_pos, &packet_bits);
+    ge_decode(bitbuffer, row, start_pos, &packet_bits);
     //bitbuffer_print(&packet_bits);
 
     /* From http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/

@@ -42,8 +42,6 @@ static int philips_aj7010_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *b;
     data_t *data;
-    uint8_t c_crc = 0;
-    uint8_t r_crc = 0;
     int channel;
     int temp_raw;
     float temp_c;
