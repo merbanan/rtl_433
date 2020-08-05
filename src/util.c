@@ -361,7 +361,7 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes)
         } \
     } while (0)
 
-int main(int argc, char **argv) {
+int main(void) {
     unsigned passed = 0;
     unsigned failed = 0;
 
