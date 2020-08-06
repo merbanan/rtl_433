@@ -125,7 +125,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned int bit_offset = bitbuffer_search(bitbuffer, row, 0, &preamble, (sizeof preamble) * 8);
     if (bit_offset == bitbuffer->bits_per_row[row]) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "Interlogix: Preamble not found, bit_offset: %d\n", bit_offset);
+            fprintf(stderr, "Interlogix: Preamble not found, bit_offset: %u\n", bit_offset);
         return DECODE_FAIL_SANITY;
     }
 

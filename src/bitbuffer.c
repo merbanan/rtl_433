@@ -414,7 +414,7 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
 // Unit testing
 #ifdef _TEST
 #include <assert.h>
-int main(int argc, char **argv)
+int main(void)
 {
     fprintf(stderr, "bitbuffer:: test\n");
 

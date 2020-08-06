@@ -148,6 +148,10 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     return 1;
 }
 
+/**
+Protocol of the SimpliSafe Sensors.
+@sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
+*/
 static int
 ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {

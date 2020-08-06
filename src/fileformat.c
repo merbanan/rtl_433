@@ -290,7 +290,7 @@ void assert_str_equal(char const *a, char const *b)
     }
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
     fprintf(stderr, "Testing:\n");
 

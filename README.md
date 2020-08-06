@@ -96,7 +96,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
-    [19]  Nexus, FreeTec NC-7345, NX-3980 temperature/humidity sensor
+    [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S temperature/humidity sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
@@ -235,6 +235,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [159]  Insteon
     [160]  Interval Data Message (IDM)
     [161]  Interval Data Message (IDM) for Net Meters
+    [162]* ThermoPro-TX2 temperature sensor
+    [163]  Acurite 590TX Temperature with optional Humidity
 
 * Disabled by default, use -R n or -G
 

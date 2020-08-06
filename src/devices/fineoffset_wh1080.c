@@ -310,14 +310,23 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     return 1;
 }
 
-static int fineoffset_wh1080_callback_ook(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Fine Offset WH1080/WH3080 Weather Station.
+@sa fineoffset_wh1080_callback()
+*/
+static int fineoffset_wh1080_callback_ook(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_OOK);
 }
 
-static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Fine Offset WH1080/WH3080 Weather Station.
+@sa fineoffset_wh1080_callback()
+*/
+static int fineoffset_wh1080_callback_fsk(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return fineoffset_wh1080_callback(decoder, bitbuffer, TYPE_FSK);
 }
-
 
 static char *output_fields[] = {
         "model",

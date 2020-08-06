@@ -63,6 +63,10 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     return 1;
 }
 
+/**
+Ambient Weather F007TH Thermo-Hygrometer.
+@sa ambient_weather_decode()
+*/
 static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // three repeats without gap

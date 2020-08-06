@@ -1,5 +1,5 @@
 /** @file
-    ERT Interval Data Message (IDM) and Interval Data Message (IDM) for Net Meters
+    ERT Interval Data Message (IDM) and Interval Data Message (IDM) for Net Meters.
 
     Copyright (C) 2020 Peter Shipley <peter.shipley@gmail.com>
 
@@ -11,92 +11,83 @@
 
 #include "decoder.h"
 
-/**
-
+/*
 Freq 912600155
 
 Random information:
 
-    this file contains supports callbacks for both IDM and NetIDM Given the similarities
+This file contains supports callbacks for both IDM and NetIDM Given the similarities.
 
-    Currently the code is unable to differentiate between the the two
-    similar protocols thus both will respond to the same packet. As
-    of this time.I am unable to find any documentation on how to
-    differentiate IDM and NetIDM packets as both use identical use Sync
-    ID / Packet Type / length / App Version ID and CRC
+Currently the code is unable to differentiate between the the two
+similar protocols thus both will respond to the same packet. As
+of this time I am unable to find any documentation on how to
+differentiate IDM and NetIDM packets as both use identical use Sync
+ID / Packet Type / length / App Version ID and CRC.
 
-    Eventually idm_callback() and netidm_callback() may be merged 
-
-
-**/
-
-/*
+Eventually idm_callback() and netidm_callback() may be merged.
 
 https://github.com/bemasher/rtlamr/wiki/Protocol
 http://www.gridinsight.com/community/documentation/itron-ert-technology/
-
 */
-
-
 
 #define IDM_PACKET_BYTES 92
 #define IDM_PACKET_BITLEN 720
 // 92 * 8
 
-
-
 // Least significant nibble of endpoint_type is equivalent to SCM's endpoint type field
 // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
-static char *get_meter_type_name(uint8_t ERTType) {
+static char *get_meter_type_name(uint8_t ERTType)
+{
     switch (ERTType & 0x0f) {
     case 4:
     case 5:
     case 7:
     case 8:
-        return("Electric");
-        break;
+        return "Electric";
+    case 0:
+    case 1:
     case 2:
     case 9:
     case 12:
-        return("Gas");
-        break;
+        return "Gas";
+    case 3:
     case 11:
     case 13:
-        return("Water");
-        break;
+        return "Water";
+    default:
+        return "unknown";
     }
-
-    return("unknown");
 }
-    
-/*
+
+/**
+ERT Interval Data Message (IDM).
+
 IDM layout:
 
-        field                length     Offset/byte index
-
-        pream                   2
-        Sync Word       	2	0
-        Packet Type	        1	2
-        Packet Length	        1	3
-        Hamming Code	        1	4
-        Application Version	1       5
-        Endpoint Type	        1	6
-        Endpoint ID	        4       7
-        Consumption Interval	1	11
-        Mod Programming State	1       12
-        Tamper Count    	6       13
-        Async Count     	2       19
-        Power Outage Flags	6       21
-        Last Consumption	4	27
-        Diff Consumption	53	31
-        Transmit Time Offset	2	84
-        Meter ID Checksum	2	86
-        Packet Checksum   	2	88
+Field                 | Length | Offset/byte index
+--- | --- | ---
+pream                 | 2      |
+Sync Word             | 2      | 0
+Packet Type           | 1      | 2
+Packet Length         | 1      | 3
+Hamming Code          | 1      | 4
+Application Version   | 1      | 5
+Endpoint Type         | 1      | 6
+Endpoint ID           | 4      | 7
+Consumption Interval  | 1      | 11
+Mod Programming State | 1      | 12
+Tamper Count          | 6      | 13
+Async Count           | 2      | 19
+Power Outage Flags    | 6      | 21
+Last Consumption      | 4      | 27
+Diff Consumption      | 53     | 31
+Transmit Time Offset  | 2      | 84
+Meter ID Checksum     | 2      | 86
+Packet Checksum       | 2      | 88
 */
-
 static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[92];
+    uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
     unsigned sync_index;
     const uint8_t idm_frame_sync[] = {0x16, 0xA3, 0x1C};
@@ -137,7 +128,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // to be removed later
         if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-            fprintf(stderr, "%s: %s, row len=%hu < %u\n", __func__, "DECODE_ABORT_LENGTH",
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH, row len=%hu < %d\n", __func__,
                     bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
             fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %hu < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
             bitbuffer_print(bitbuffer);
@@ -148,7 +139,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sync_index = bitbuffer_search(bitbuffer, 0, 0, idm_frame_sync, 24);
 
     if (decoder->verbose) {
-        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: sync_index=%u\n", __func__, sync_index);
     }
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
@@ -165,7 +156,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // to be removed later
         if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %d < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %u < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
             //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
             bitbuffer_print(bitbuffer);
         }
@@ -283,7 +274,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Least significant nibble of endpoint_type is  equivalent to SCM's endpoint type field
     // id info from https://github.com/bemasher/rtlamr/wiki/Compatible-Meters
 
-    char * meter_type = get_meter_type_name(ERTType);
+    char *meter_type = get_meter_type_name(ERTType);
     // fprintf(stderr, "meter_type = %s\n", meter_type);
 
     /*
@@ -329,39 +320,37 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+Interval Data Message (IDM) for Net Meters.
 
-/*
 NetIDM layout:
-                           length     Offset
-        Preamble        	2	
-        Sync Word       	2       0
-        Protocol ID     	1	2
-        Packet Length   	1	3
-        Hamming Code    	1	4
-        Application Version	1       5
-        Endpoint Type   	1	6
-        Endpoint ID     	4       7
-        Consumption Interval    1	11	
-        Programming State	1       12
 
-        Tamper Count    	6       13  - New
-        Unknown_1       	7       19  - New
-
-        Unknown_1       	13      13  - Old
-
-        Last Generation Count	3	26
-        Unknown_2       	3       29
-        Last Consumption Count	4	32
-        Differential Cons	48	36	27 intervals of 14-bit unsigned integers.
-        Transmit Time Offset	2	84
-        Meter ID Checksum	2	86	CRC-16-CCITT of Meter ID.
-        Packet Checksum 	2	88	CRC-16-CCITT of packet starting at Packet Type.
+Field                 | Length | Offset/byte index
+--- | --- | ---
+Preamble              | 2
+Sync Word             | 2      | 0
+Protocol ID           | 1      | 2
+Packet Length         | 1      | 3
+Hamming Code          | 1      | 4
+Application Version   | 1      | 5
+Endpoint Type         | 1      | 6
+Endpoint ID           | 4      | 7
+Consumption Interval  | 1      | 11
+Programming State     | 1      | 12
+Tamper Count          | 6      | 13  - New
+Unknown_1             | 7      | 19  - New
+Unknown_1             | 13     | 13  - Old
+Last Generation Count | 3      | 26
+Unknown_2             | 3      | 29
+Last Consumption Count| 4      | 32
+Differential Cons     | 48     | 36    27 intervals of 14-bit unsigned integers.
+Transmit Time Offset  | 2      | 84
+Meter ID Checksum     | 2      | 86    CRC-16-CCITT of Meter ID.
+Packet Checksum       | 2      | 88    CRC-16-CCITT of packet starting at Packet Type.
 */
-
-
 static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t b[92];
+    uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
     unsigned sync_index;
     const uint8_t idm_frame_sync[] = {0x16, 0xA3, 0x1C};
@@ -416,7 +405,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // to be removed later
         if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-            fprintf(stderr, "%s: %s, row len=%hu < %u\n", __func__, "DECODE_ABORT_LENGTH",
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH, row len=%hu < %d\n", __func__,
                     bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
             fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %d < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
         }
@@ -427,7 +416,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sync_index = bitbuffer_search(bitbuffer, 0, 0, idm_frame_sync, 24);
 
     if (decoder->verbose) {
-        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: sync_index=%u\n", __func__, sync_index);
     }
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
@@ -442,7 +431,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bitbuffer->bits_per_row[0] - sync_index) < IDM_PACKET_BITLEN) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %d < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %u < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
             //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
             bitbuffer_print(bitbuffer);
         }
@@ -645,7 +634,6 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     decoder_output_data(decoder, data);
     return 1;
 }
-
 
 static char *output_fields[] = {
 

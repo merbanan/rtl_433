@@ -1,5 +1,5 @@
 /** @file
-    Insteon RF decoder
+    Insteon RF decoder.
 
     Copyright (C) 2020 Peter Shipley
 
@@ -7,11 +7,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-**/
+*/
 
 /** @fn int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-
-Insteon RF decoder
+Insteon RF decoder.
 
     "Insteon is a home automation (domotics) technology that enables
     light switches, lights, thermostats, leak sensors, remote controls,
@@ -52,7 +51,7 @@ all following bytes are transmitted with a decrementing index count with the fin
 - SampleRate: 1024K
 - Modulation: FSK
 
-**/
+*/
 
 #include "decoder.h"
 
@@ -112,7 +111,7 @@ static uint8_t gen_crc(uint8_t *dat)
     return (r);
 }
 
-static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
+static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int row, unsigned int start_pos)
 {
     uint8_t results[35]   = {0};
     uint8_t results_len   = 0;
@@ -163,13 +162,13 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     results[results_len++] = pkt_d;
 
     if (pkt_i != 31) { // should always be 31 ( 0b11111) in first block of packet
-        return (DECODE_ABORT_EARLY);
+        return DECODE_ABORT_EARLY;
     }
 
     bitbuffer_extract_bytes(bits, row, start_pos + 26, &i, 2);
     // Check for packet delimiter  marker bits (at least once)
     if (i != 0xc0) {                 // 0b11000000
-        return (DECODE_FAIL_SANITY); // There should be two high bits '11' between packets
+        return DECODE_FAIL_SANITY; // There should be two high bits '11' between packets
     }
 
     // printBits(sizeof(d), &d);
@@ -185,7 +184,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
 
     if (decoder->verbose) {
         uint8_t buffy[4];
-        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %d\n",
+        fprintf(stderr, "%s\tstart_pos %u row_length %hu =  %u\n",
                 __func__, start_pos, bits->bits_per_row[row], (bits->bits_per_row[row] - start_pos));
         fprintf(stderr, "%s\t%s\t%-5s\t%s\t%s\t%s\n",
                 __func__, "pkt_i", "pkt_d", "next", "length", "count");
@@ -207,7 +206,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
             fprintf(stderr, "%s\trow to short for %s packet type\n",
                 __func__, (extended ? "extended" : "regular"));
         }
-        return(DECODE_ABORT_LENGTH);     // row to short for packet type
+        return DECODE_ABORT_LENGTH;     // row to short for packet type
      }
      */
 
@@ -228,7 +227,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
         y = (next_pos - start_pos);
         if (y != 26) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: stop %d != 26\n", __func__, y);
+                fprintf(stderr, "%s: stop %u != 26\n", __func__, y);
             break;
         }
 
@@ -249,17 +248,17 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
             // parse_insteon_pkt: curr packet (3f) { 1} d6 : 1
         }
 
-        // packet index should decrement 
+        // packet index should decrement
         if (pkt_i < prev_i) {
             prev_i = pkt_i;
         } else {
-            return(DECODE_ABORT_EARLY);
+            return DECODE_ABORT_EARLY;
         }
     }
 
     // if (decoder->verbose > 1) {
     //     for(int j=0; j < results_len; j++) {
-    //          printf("%d:%02X ", j,  results[j]);
+    //          fprintf(stderr, "%d:%02X ", j,  results[j]);
     //     }
     //     puts("\n");
     // }
@@ -267,7 +266,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     if (results_len < min_pkt_len) {
         if (decoder->verbose > 1)
             fprintf(stderr, "%s: fail: short packet %d < 9\n", __func__, results_len);
-        return (0);
+        return 0;
     }
 
     uint8_t crc_val;
@@ -282,7 +281,7 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
         if (decoder->verbose > 1)
             fprintf(stderr, "%s: fail: bad CRC %02X != %02X %s\n", __func__, results[min_pkt_len], crc_val,
                     (extended ? "extended" : ""));
-        return (DECODE_FAIL_MIC);
+        return DECODE_FAIL_MIC;
     }
 
     char pkt_from_addr[8]   = {0};
@@ -347,11 +346,11 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {
-        printf("type %s\n", pkt_type_str);
+        fprintf(stderr, "type %s\n", pkt_type_str);
         for (int j = 0; j < min_pkt_len; j++) {
-            printf("%d:%02X ", j, results[j]);
+            fprintf(stderr, "%d:%02X ", j, results[j]);
         }
-        puts("\n");
+        fprintf(stderr, "\n");
     }
 
     // Format data
@@ -390,11 +389,14 @@ static unsigned int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsi
     return 1;
 }
 
+/**
+Insteon RF decoder.
+@sa parse_insteon_pkt()
+*/
 static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // unsigned int pkt_start_pos;
     uint16_t row;
-    unsigned int bit_index;
     unsigned int ret_value = 0;
     int fail_value         = 0;
     // unsigned int pkt_cnt   = 0;
@@ -413,7 +415,7 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
      * loop over all rows and look for preamble
     */
     for (row = 0; row < bitbuffer->num_rows; ++row) {
-        bit_index = 0;
+        unsigned bit_index = 0;
         // Validate message and reject it as fast as possible : check for preamble
 
         if (bitbuffer->bits_per_row[row] < INSTEON_BITLEN_MIN) {
@@ -435,14 +437,14 @@ static int insteon_callback(r_device *decoder, bitbuffer_t *bitbuffer)
              }
 
             if (decoder->verbose > 1)
-                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %d %d (%d)\n",
+                 fprintf(stderr, "%s: bitbuffer_search at row / search_index : %d, %u %u (%d)\n",
                      __func__, row, search_index, bit_index, bitbuffer->bits_per_row[row]);
 
             search_index = bitbuffer_search(bitbuffer, row, search_index, insteon_preamble, INSTEON_PREAMBLE_LEN);
 
             if (search_index >= bitbuffer->bits_per_row[row]) {
                 if (decoder->verbose > 1 && bit_index == 0)
-                    fprintf(stderr, "%s: insteon_preamble not found %d %d %d\n", __func__,
+                    fprintf(stderr, "%s: insteon_preamble not found %u %u %d\n", __func__,
                         search_index, bit_index, bitbuffer->bits_per_row[row]);
                 break;
             }

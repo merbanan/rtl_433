@@ -133,10 +133,10 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int battery_low = (b[1] & 0x80) >> 7;
     int msg_type    = (b[1] & 0x60) >> 5;
-    int button      = (b[1] & 0x10) >> 4;
+    //int button      = (b[1] & 0x10) >> 4;
     int msg_rain    = (b[1] & 0x0f) == 0x0c;
-    int msg_wind    = (b[1] & 0x0f) == 0x08 && b[2] == 0;
-    int msg_gust    = (b[1] & 0x0e) == 0x0e;
+    //int msg_wind    = (b[1] & 0x0f) == 0x08 && b[2] == 0;
+    //int msg_gust    = (b[1] & 0x0e) == 0x0e;
     int channel     = (b[0] & 0xc) >> 2;
     int sensor_id   = reverse8(b[0]);
 

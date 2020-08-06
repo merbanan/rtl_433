@@ -667,8 +667,6 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
 
 static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
-    data_output_kv_t *kv = (data_output_kv_t *)output;
-
     //fprintf(output->file, "[ ");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
@@ -1040,7 +1038,6 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
     struct addrinfo hints, *res, *res0;
     int    error;
     SOCKET sock;
-    const char *cause = NULL;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;

@@ -48,7 +48,6 @@ Protocol cribbed from:
 
 static int visonic_powercode_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t *b; // bits of a row
     uint8_t msg[32];
     data_t *data;
     char id[7];

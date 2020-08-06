@@ -506,13 +506,11 @@ int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    int i, n, limit;
-
-    limit = device->s_short_width;
+    int limit = device->s_short_width;
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         if (pulses->pulse[n] > limit) {
-            for(i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
+            for(int i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
                 bitbuffer_add_bit(&bits, 1);
             }
             bitbuffer_add_bit(&bits, 0);

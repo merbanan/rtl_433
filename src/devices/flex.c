@@ -510,7 +510,6 @@ r_device *flex_create_device(char *spec)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
     dev->decode_ctx = params;
-    char *c, *o;
     int get_count = 0;
 
     spec = strdup(spec);
