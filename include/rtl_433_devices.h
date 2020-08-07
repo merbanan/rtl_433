@@ -171,6 +171,7 @@
     DECL(netidm) \
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
+    DECL(came_top432)
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

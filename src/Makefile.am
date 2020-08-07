@@ -44,6 +44,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/bresser_5in1.c \
                        devices/bt_rain.c \
                        devices/calibeur.c \
+                       devices/came_top432.c \
                        devices/cardin.c \
                        devices/chuango.c \
                        devices/companion_wtr001.c \
