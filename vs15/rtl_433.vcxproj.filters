@@ -241,6 +241,9 @@
     <ClCompile Include="..\src\devices\calibeur.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\came_top432.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\cardin.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

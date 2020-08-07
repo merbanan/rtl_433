@@ -168,6 +168,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\bresser_5in1.c" />
     <ClCompile Include="..\src\devices\bt_rain.c" />
     <ClCompile Include="..\src\devices\calibeur.c" />
+    <ClCompile Include="..\src\devices\came_top432.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
