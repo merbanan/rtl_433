@@ -64,6 +64,7 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t sensor_id;
     uint8_t msg_type;
     int16_t code;
+    char code_str[3];
     
     if (decoder->verbose > 1) {
         bitbuffer_printf(bitbuffer, "%s: ", __func__);
@@ -99,15 +100,15 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     b = bitbuffer->bb[0];
 
     // reconstruct the 12 bits code
-    code = (b[0] << 4) | (b[1]>>4);
-
+    code = ((b[0] << 4) | (b[1]>>4)) & 0xFFF;
+    sprintf(code_str, "%03x", code);
     /* clang-format off */
     data = data_make(
             "brand",    "", DATA_STRING,   "CAME",
             "model",    "", DATA_STRING,   "TOP432",
             "type",     "", DATA_STRING,   "remote control",
             "code",     "", DATA_INT,      code,
-            "code_hex", "", DATA_FORMAT,   "0x%03x", DATA_INT, code,
+            "code_hex", "", DATA_STRING,   code_str,
             NULL);
     /* clang-format on */
     decoder_output_data(decoder, data);
