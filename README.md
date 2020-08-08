@@ -263,6 +263,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [184]  Auriol AFT 77 B2 temperature sensor
     [185]  Honeywell CM921 Wireless Programmable Room Thermostat
     [186]  Hyundai TPMS (VDO)
+    [187]  Inkbird ITH-20R temperature humidity sensor
 
 * Disabled by default, use -R n or -G
 
