@@ -201,6 +201,7 @@
     DECL(markisol) \
     DECL(govee) \
     DECL(cmr113) \
+    DECL(inkbird_ith20r) \
 
     /* Add new decoders here. */
 
