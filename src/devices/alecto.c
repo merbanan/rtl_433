@@ -233,8 +233,8 @@ static char *output_fields[] = {
     "wind_speed", // TODO: remove this
     "wind_gust", // TODO: remove this
     "wind_direction", // TODO: remove this
-    "wind_avg_km_h",
-    "wind_max_km_h",
+    "wind_avg_m_s",
+    "wind_max_m_s",
     "wind_dir_deg",
     "mic",
     NULL,
