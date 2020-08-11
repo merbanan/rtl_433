@@ -10,24 +10,12 @@
 
  */
 
-/*
-    Use this as a starting point for a new decoder.
-
-    Keep the Doxygen (slash-star-star) comment above to document the file and copyright.
-
-    Keep the Doxygen (slash-star-star) comment below to describe the decoder.
-    See http://www.doxygen.nl/manual/markdown.html for the formating options.
-
-    Remove all other multiline (slash-star) comments.
-    Use single-line (slash-slash) comments to annontate important lines if needed.
-*/
-
 /**
 The device uses PPM encoding,
 - 0 is encoded as 320 us gap and 640 us pulse,
 - 1 is encoded as 640 us gap and 320 us pulse.
 The device sends a 4 times the packet when a button on the remote control is pressed.
-A transmission starts with a 320 us pulse. At the end of the packet, there is 36 periods of 320us between messages (11520us)
+A transmission starts with a 320 us pulse. At the end of the packet, there is a minimum of 36 periods of 320us between messages (11520us)
 
 Diagram :
           |        <---> logical 0          <---> logical 1                     <-- 11520us -->
