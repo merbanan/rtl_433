@@ -34,7 +34,7 @@ There is no CRC, no parity, no preamble (only the start pulse indicate the begin
 */
 #include "decoder.h"
 
-#define CAMETOP432_BITLEN      12
+#define CAMETOP432_BITLEN      12 // one start bit and twelve data bits
 
 static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -49,9 +49,10 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char code_str[3];
     
     if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
+        bitbuffer_printf(bitbuffer, "%s:\n", __func__);
     }
 
+    b = bitbuffer->bb[0];
     for (r = 0; r < bitbuffer->num_rows; ++r) {
         b = bitbuffer->bb[r];
 
@@ -65,7 +66,7 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
          * - valid preamble/device type/fixed bits if any
          * - Data integrity checks (CRC/Checksum/Parity)
          */
-
+        
         if (bitbuffer->bits_per_row[r] < CAMETOP432_BITLEN) {
             if (decoder->verbose > 1) {
                 fprintf(stderr, "%s: bitbuffer len received %d, expected : %d\n", __func__, bitbuffer->bits_per_row[r], CAMETOP432_BITLEN);
@@ -76,13 +77,16 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // no crc
         // no checksum
         // no parity
+
     }
+	//bitbuffer_extract_bytes(bitbuffer, 0, 1, out, 12);
+	// Ignoring first bit of the bitbuffer, used as the start bit
+	// 
 
     // packet is not repeated
-    b = bitbuffer->bb[0];
-
-    // reconstruct the 12 bits code
-    code = ((b[0] << 4) | (b[1]>>4)) & 0xFFF;
+	
+   // reconstruct the code with the 2 bytes of the bitbuffer, and keep the 12 bits (ignoring the start bit)
+    code = (((b[0] << 8) | b[1]) >> 3) & 0x0FFF;
     sprintf(code_str, "%03x", code);
     /* clang-format off */
     data = data_make(
@@ -113,12 +117,12 @@ static char *output_fields[] = {
 
 r_device came_top432 = {
         .name        = "Came TOP432 remote control",
-        .modulation  = OOK_PULSE_PPM,
+        .modulation  = OOK_PULSE_PWM,
         .short_width = 320,  // 
         .long_width  = 640,  // 
-        .sync_width  = 320,
-        //.gap_limit   = 0,  // dont know how to find this value
-        .reset_limit = 36*320, // a bit longer than packet gap
+        .sync_width  = 0,
+        .gap_limit   = 830,  // dont know how to find this value
+        .reset_limit = 16000, // a bit longer than packet gap
         .decode_fn   = &came_top432_decode,
         .disabled    = 1, // disabled and hidden by default (because there is no crc/preamble on this protocol)
         .fields      = output_fields,
