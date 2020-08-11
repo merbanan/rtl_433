@@ -79,12 +79,11 @@ static int came_top432_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // no parity
 
     }
-	//bitbuffer_extract_bytes(bitbuffer, 0, 1, out, 12);
-	// Ignoring first bit of the bitbuffer, used as the start bit
-	// 
+    // Ignoring first bit of the bitbuffer, used as the start bit
+    //
 
     // packet is not repeated
-	
+
    // reconstruct the code with the 2 bytes of the bitbuffer, and keep the 12 bits (ignoring the start bit)
     code = (((b[0] << 8) | b[1]) >> 3) & 0x0FFF;
     sprintf(code_str, "%03x", code);
