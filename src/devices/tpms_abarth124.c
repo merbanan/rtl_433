@@ -49,8 +49,27 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int status;
     int checksum;
 
+    // if (decoder->verbose) {
+    //     uint8_t buffy[32] = {0};
+    //     bitbuffer_extract_bytes(bitbuffer, row, bitpos - 24, buffy, 72 * 2);
+    //     bitrow_debugf(buffy, 72 *2 , "%s %s\t", __func__, "pre  decode");
+    // }
+
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
+
+    // make sure we decoded the expected number of bits
+    if ((start_pos - bitpos) < 72) {
+        // fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
+        return 0; // DECODE_FAIL_SANITY;
+    }
+
     b = packet_bits.bb[0];
+
+    if (decoder->verbose) {
+        bitrow_debugf(packet_bits.bb[0], 72, "%s %s\t", __func__, "post decode");
+        fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
+        // fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    }
 
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);
