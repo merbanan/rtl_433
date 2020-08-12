@@ -13,6 +13,8 @@
 /**
 Maverick ET-73x BBQ Sensor.
 
+FCC-Id: TKCET-733
+
 The thermometer transmits 4 identical messages every 12 seconds at 433.92 MHz,
 using on-off keying and 2000bps Manchester encoding,
 with each message preceded by 8 carrier pulses 230 us wide and 5 ms apart.
@@ -56,6 +58,11 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // decode the inner manchester encoding
     bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);
+
+    // we require 7 bytes 13 nibble rounded up (  b[6] highest referance below )
+    if (mc.bits_per_row[0] < 56) {
+        return DECODE_FAIL_SANITY; // manchester_decode fail
+    }
 
     uint8_t *b = mc.bb[0];
     int pre    = (b[0] << 4) | (b[1] & 0xf0) >> 4;

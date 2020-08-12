@@ -42,6 +42,11 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     char code_str[7 * 2 + 1];
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
+
+    if (packet_bits.bits_per_row[0] < 56) {
+        return DECODE_FAIL_SANITY;
+        // fprintf(stderr, "%s packet_bits.bits_per_row = %d\n", __func__, packet_bits.bits_per_row[0]); 
+    }
     b = packet_bits.bb[0];
 
     // TODO: validate checksum

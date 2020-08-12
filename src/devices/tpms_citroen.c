@@ -12,6 +12,8 @@
 Citroen FSK 10 byte Manchester encoded checksummed TPMS data
 also Peugeot and likely Fiat, Mitsubishi, VDO-types.
 
+Fcc-Id:
+
 Packet nibbles:
 
     UU  IIIIIIII FR  PP TT BB  CC
@@ -45,6 +47,12 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int crc;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
+
+    // fprintf(stderr, "%s : bits %d\n", __func__, packet_bits.bits_per_row[0]);
+    if ( packet_bits.bits_per_row[0] < 80) {
+        return DECODE_FAIL_SANITY; // sanity check failed
+    }
+
     b = packet_bits.bb[0];
 
     if (b[6] == 0 || b[7] == 0) {
