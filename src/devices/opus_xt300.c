@@ -33,6 +33,7 @@ CC: check sum (simple sum) except 0xFF preamble
 static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int ret = 0;
+    int fail_code = 0;
     int row;
     int chk;
     uint8_t *b;
@@ -40,8 +41,10 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
+        fprintf(stderr, "%s: bits_per_row %d\n", __func__, bitbuffer->bits_per_row[row]);
         if (bitbuffer->bits_per_row[row] != 48) {
-            continue; // DECODE_ABORT_LENGTH
+            fail_code = DECODE_ABORT_LENGTH;
+            continue;
         }
 
         b = bitbuffer->bb[row];
@@ -50,21 +53,33 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1) {
                 fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
             }
-            continue; // DECODE_FAIL_SANITY;
+            fail_code = DECODE_FAIL_SANITY;
+            continue;
         }
 
         if (b[0] != 0xFF && ((b[1] | 0x1) & 0xFD) == 0x55) {
-            continue; // DECODE_ABORT_EARLY
+            fail_code = DECODE_ABORT_EARLY;
+            continue;
         }
         chk = add_bytes(b + 1, 4); // sum bytes 1-4
         chk = chk & 0xFF;
         if (chk != 0 && chk != b[5] ) {
-            continue; // DECODE_FAIL_MIC
+            fail_code =  DECODE_FAIL_MIC;
+            continue;
         }
 
         channel  = (b[1] & 0x03);
         temp     = b[3] - 40;
         moisture =  b[2];
+
+        // unverified sales advert say Outdoor temperature range: -40°C to +65°C
+        // test for Boiling water
+        // over 100% soil humidity ?
+        if (temp > 100 || moisture > 101) {
+            // fprintf(stderr, "%s: temp %d moisture %d\n", __func__, temp, moisture);
+            fail_code = DECODE_FAIL_SANITY;
+            continue;
+        }
 
         data = data_make(
             "model",            "",             DATA_STRING, "Opus-XT300",
@@ -76,7 +91,7 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         decoder_output_data(decoder, data);
         ret++;
     }
-    return ret;
+    return ret > 0 ? ret : fail_code;
 }
 
 static char *output_fields[] = {
