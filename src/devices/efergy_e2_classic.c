@@ -38,6 +38,10 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
+    if (decoder->verbose) {
+        bitrow_debugf(bytes, 64, "%s %s\t", __func__, "pre  shift");
+    }
+
     // The bit buffer isn't always aligned to the transmitted data, so
     // search for data start and shift out the bits which aren't part
     // of the data. The data always starts with 0000 (or 1111 if
@@ -54,6 +58,11 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    if (decoder->verbose) {
+        bitrow_debugf(bytes, 64, "%s %s\t", __func__, "mid  shift");
+        // fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    }
+
     // Sometimes pulses and gaps are mixed up. If this happens, invert
     // all bytes to get correct interpretation.
     if (bytes[0] & 0xf0) {
@@ -62,7 +71,15 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    if (decoder->verbose) {
+        bitrow_debugf(bytes, 64, "%s %s\t", __func__, "post shift");
+        // fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+    }
+
+
     unsigned checksum = add_bytes(bytes, 7);
+    fprintf(stderr, "%s : checksum = %u\n", __func__,  checksum);
+
     if (checksum == 0) {
         return DECODE_FAIL_SANITY; // reduce false positives
     }
