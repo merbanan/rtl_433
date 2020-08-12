@@ -65,11 +65,13 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
 
     b = packet_bits.bb[0];
 
+    /*
     if (decoder->verbose) {
         bitrow_debugf(packet_bits.bb[0], 72, "%s %s\t", __func__, "post decode");
         fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
         // fprintf(stderr, "%02x %02x %02x %02x %02x %02x %02x %02x %02x\n", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
     }
+    */
 
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);
