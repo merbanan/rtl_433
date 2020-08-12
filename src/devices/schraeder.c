@@ -13,6 +13,8 @@
 /**
 Schrader TPMS decoder.
 
+FCC-Id: MRXGG4
+
 Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 
     0 12 34 56 78 9A BC DE F0
