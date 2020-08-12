@@ -41,7 +41,7 @@ static int opus_xt300_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
-        fprintf(stderr, "%s: bits_per_row %d\n", __func__, bitbuffer->bits_per_row[row]);
+
         if (bitbuffer->bits_per_row[row] != 48) {
             fail_code = DECODE_ABORT_LENGTH;
             continue;
