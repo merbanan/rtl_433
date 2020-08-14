@@ -60,7 +60,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);
 
     // we require 7 bytes 13 nibble rounded up (  b[6] highest referance below )
-    if (mc.bits_per_row[0] < 56) {
+    if (mc.bits_per_row[0] < 52) {
         return DECODE_FAIL_SANITY; // manchester_decode fail
     }
 

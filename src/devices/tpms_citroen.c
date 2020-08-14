@@ -12,7 +12,6 @@
 Citroen FSK 10 byte Manchester encoded checksummed TPMS data
 also Peugeot and likely Fiat, Mitsubishi, VDO-types.
 
-Fcc-Id:
 
 Packet nibbles:
 
