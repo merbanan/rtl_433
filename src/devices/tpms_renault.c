@@ -42,7 +42,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 72 data bits
-    if (start_pos-bitpos < 144) {
+    if (packet_bits.bits_per_row[0] < 72) {
         return 0;
     }
     b = packet_bits.bb[0];

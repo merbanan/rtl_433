@@ -65,7 +65,7 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
     // require 64 data bits
-    if (start_pos - bitpos < 128) {
+    if (packet_bits.bits_per_row[0] < 64) {
         return DECODE_ABORT_LENGTH;
     }
     b = packet_bits.bb[0];
