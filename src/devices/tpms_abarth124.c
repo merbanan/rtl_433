@@ -49,7 +49,15 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int status;
     int checksum;
 
+
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
+
+    // make sure we decoded the expected number of bits
+    if (packet_bits.bits_per_row[0] < 72) {
+        // fprintf(stderr, "bitpos=%u start_pos=%u = %u\n", bitpos, start_pos, (start_pos - bitpos));
+        return 0; // DECODE_FAIL_SANITY;
+    }
+
     b = packet_bits.bb[0];
 
     // check checksum (checksum8 xor)
