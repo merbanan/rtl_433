@@ -459,11 +459,9 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     data_t  *data;
     char    str_buf[1024];
 
-    // Get time now
-
     // Make data string
-    str_buf[0] = 0;
-    for (unsigned n=0; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
+    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
+    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
     if (block1->knx_mode) {
