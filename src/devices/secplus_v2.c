@@ -1,0 +1,548 @@
+/** @file
+    Security+ 2.0 rolling code
+
+    Copyright (C) 2020 Peter Shipley <peter.shipley@gmail.com>
+    Based on code by Clayton Smith https://github.com/argilo/secplus
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+/**
+Freq 310M
+
+Security+ 2.0  is described in [US patent application US20110317835A1](https://patents.google.com/patent/US20110317835A1/)
+
+
+*/
+
+#include "decoder.h"
+
+// delete this soon
+void debug_10bit_bufs(uint16_t a, uint16_t b, uint16_t c)
+{
+    fprintf(stderr, "\na : ");
+    for (int j = 9; j >= 0; j--) {
+        fprintf(stderr, "%d ", (a >> j) & 0x01);
+    }
+    fprintf(stderr, "\t%d\n", a);
+    fprintf(stderr, "b : ");
+    for (int j = 9; j >= 0; j--) {
+        fprintf(stderr, "%d ", (b >> j) & 0x01);
+    }
+    fprintf(stderr, "\t%d\n", b);
+    fprintf(stderr, "c : ");
+    for (int j = 9; j >= 0; j--) {
+        fprintf(stderr, "%d ", (c >> j) & 0x01);
+    }
+    // fprintf(stderr, "\n%05X\n", c & 0x3f);
+    fprintf(stderr, "\t%d\n", c);
+    fprintf(stderr, "\n");
+}
+
+/**
+
+
+data comes in two bursts/packets
+
+Layout:
+bits = AA BB IIII OOOO X*30
+
+AA = payload type  ( 2 bits 00 or 01 )
+BB = FrameID ( 2 bits always 00)
+IIII = inversion indicator ( 4 bits )
+OOOO = Order indicator ( 4 bits )
+XXXX....  = data ( 30 bits )
+
+--
+
+data is broken up into 3 parts ( p0 p1 p2 )
+eg:
+
+data = ABCABCABCABCABCABCABCABCABCABC
+becomes:
+    p0 = AAAAAAAAAA
+    p1 = BBBBBBBBBB
+    p2 = CCCCCCCCCC
+
+these three parts are then inverted and reordered based on the 4bit Order and Inversion indicators
+
+fixed generated from concatenate  p0 + p1
+
+roll_array is generated from the 8 bit used for Order and Inversion indicators + p3
+by reading the buffer in binary bit pairs forming trinary values
+
+EG:
+`1 0 0 1 1 0 1 0 0 1 1 0=> [1 0] [0 1] [1 0] [1 0] [0 1] [1 0] => 2 1 2 2 1 2`
+
+Returns data in :
+    roll_array as an array of trinary values ( 0, 1, 2) the value 3 is invalid
+    fixed_p as an bitbuffer_t with 20 bits of data
+
+
+*/
+
+
+int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
+{
+    uint8_t invert = 0;
+    uint8_t order  = 0;
+    uint32_t x    = 0;
+    unsigned int start_pos = 2; //
+    uint8_t buffy[10];
+
+
+    uint8_t part_id = (bits->bb[0][0] >> 6);
+
+    // fprintf(stdout, "%s: part %d\n", __func__, part_id);
+
+    if (verbose) {
+        fprintf(stdout, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
+
+        bitrow_debugf(bits->bb[0], bits->bits_per_row[0], "%s : ", __func__);
+    }
+
+    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 2);
+    start_pos += 2;
+
+    if (verbose)
+        fprintf(stderr, "%s : j      = %d %x\n", __func__, buffy[0], buffy[0]);
+
+    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 8);
+    start_pos += 8;
+    order = buffy[0] >> 4;
+
+    // bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 4);
+    invert = buffy[0] & 0x0f;
+    // bitrow_debug(&invert, 8);
+    if (verbose) {
+        bitrow_printf(&invert, 8, "%s : invert ", __func__);
+
+        fprintf(stderr, "invert = %d %x\n", invert, invert);
+        fprintf(stderr, "order  = %d %x\n", order, order);
+    }
+
+    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 30);
+    start_pos += 30;
+    if (verbose) {
+        bitrow_printf(buffy, 30, "%s : buffy bits ", __func__);
+    }
+
+    // copy 30 bits of data into 32bit int then shift >> 2
+    // memcpy(&dat, buffy, 4);
+    x = ((uint32_t)buffy[0] << 24) | (buffy[1] << 16) | (buffy[2] << 8) | (buffy[3]);
+
+    // uint32_t x = dat;
+    x >>= 2;
+    if (verbose) {
+        for (int i = 29; i >= 0; i--) {
+            fprintf(stderr, "%d ", (x >> i) & 0x01);
+        }
+    }
+
+    // using short to store 10bit values
+    uint16_t p0 = 0, p1 = 0, p2 = 0;
+
+    for (int i = 0; i < 10; i++) {
+        p2 ^= (x & 0x00000001) << i; // 9-
+        x >>= 1;
+        p1 ^= (x & 0x00000001) << i;
+        x >>= 1;
+        p0 ^= (x & 0x00000001) << i;
+        x >>= 1;
+    }
+
+    if (verbose > 1) {
+        debug_10bit_bufs(p0, p1, p2);
+
+        fprintf(stderr, "\n");
+    }
+    // fprintf(stderr, "f1 (%d) %d %d %d\n", part_id, p0, p1, p2);
+
+    // selectively invert buffers
+    if (verbose)
+        fprintf(stderr, "%s (%d): invert = %d %x\n", __func__, part_id, invert, invert);
+    switch (invert) {
+    case 0x00: // 0b0000 (True, True, False),
+        p0 = ~p0 & 0x03FF;
+        p1 = ~p1 & 0x03FF;
+        break;
+    case 0x01: // 0b0001 (False, True, False),
+        p1 = ~p1 & 0x03FF;
+        break;
+    case 0x02: // 0b0010 (False, False, True),
+        p2 = ~p2 & 0x03FF;
+        break;
+    case 0x04: // 0b0100 (True, True, True),
+        p0 = ~p0 & 0x03FF;
+        p1 = ~p1 & 0x03FF;
+        p2 = ~p2 & 0x03FF;
+        break;
+    case 0x05: // 0b0101 (True, False, True),
+    case 0x0a: // 0b1010 (True, False, True),
+        p0 = ~p0 & 0x03FF;
+        p2 = ~p2 & 0x03FF;
+        break;
+    case 0x06: // 0b0110 (False, True, True),
+        p1 = ~p1 & 0x03FF;
+        p2 = ~p2 & 0x03FF;
+        break;
+    case 0x08: // 0b1000 (True, False, False),
+        p0 = ~p0 & 0x03FF;
+        break;
+    case 0x09: // 0b1001 (False, False, False),
+        // fprintf(stderr, "Ord 9\n");
+        break;
+    default:
+        fprintf(stderr, "Invert FAIL\n");
+        return 1;
+    }
+
+    if (verbose > 1)
+        debug_10bit_bufs(p0, p1, p2);
+
+    uint16_t a = 0, b = 0, c = 0;
+    a = p0;
+    b = p1;
+    c = p2;
+
+    switch (order) {
+    case 0x06: // 0b0110  2, 1, 0],
+    case 0x09: // 0b1001  2, 1, 0],
+        p2 = a;
+        p1 = b;
+        p0 = c;
+        break;
+
+    case 0x08: // 0b1000  1, 2, 0],
+    case 0x04: // 0b0100  1, 2, 0],
+        p1 = a;
+        p2 = b;
+        p0 = c;
+        break;
+
+    case 0x01: // 0b0001 2, 0, 1],
+        p2 = a;
+        p0 = b;
+        p1 = c;
+        break;
+
+    case 0x00: // 0b0000  0, 2, 1],
+        p0 = a;
+        p2 = b;
+        p1 = c;
+        break;
+
+    case 0x05: // 0b0101 1, 0, 2],
+        p1 = a;
+        p0 = b;
+        p2 = c;
+        break;
+
+    case 0x02: // 0b0010 0, 1, 2],
+    case 0x0A: // 0b1010 0, 1, 2],
+        p0 = a;
+        p1 = b;
+        p2 = c;
+        break;
+
+    default:
+        fprintf(stderr, "Order FAIL");
+        return 2;
+    }
+
+    //debug_10bit_bufs(p0, p1, p2);
+
+    bitbuffer_extract_bytes(bits, 0, 4, buffy, 8);
+    x     = buffy[0];
+    int k = 0;
+    for (int i = 6; i >= 0; i -= 2) {
+        roll_array[k++] = (x >> i) & 0x03;
+    }
+
+    if (verbose) {
+        for (int i = 0; i < 4; i++) {
+            fprintf(stderr, "%d ", roll_array[i]);
+        }
+        fprintf(stderr, "\n");
+    }
+
+    x           = p2;
+
+    uint16_t px = p2;
+    // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
+    for (int i = 8; i >= 0; i -= 2) {
+        roll_array[k++] = (x >> i) & 0x03;
+    }
+    if (verbose) {
+        fprintf(stderr, "%s : roll_array : (%d) ", __func__, part_id);
+        for (int i = 0; i < 9; i++) {
+            fprintf(stderr, "%d ", roll_array[i]);
+        }
+        fprintf(stderr, "\n");
+    }
+
+    for (int i = 0; i < 9; i++) {
+        if (roll_array[i] == 3) {
+            fprintf(stderr, "roll_array val  FAIL\n");
+            return 1; // DECODE_FAIL_SANITY;
+        }
+    }
+
+    // fixed_p = p0 + p1
+    for (int i = 9; i >= 0; i--) {
+        bitbuffer_add_bit(fixed_p, (p0 >> i) & 0x01);
+    }
+    for (int i = 9; i >= 0; i--) {
+        bitbuffer_add_bit(fixed_p, (p1 >> i) & 0x01);
+    }
+
+    return 0;
+}
+
+static const uint8_t _preamble[] = {0xaa, 0xaa, 0x95, 0x60};
+unsigned _preamble_len           = 28;
+
+static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    unsigned search_index = 0;
+    unsigned next_pos     = 0;
+    uint8_t buffy[20]; // 80 bits (overkill)
+    bitbuffer_t bits = {0};
+    // int i            = 0;
+
+    bitbuffer_t bits_1    = {0};
+    bitbuffer_t fixed_1   = {0};
+    uint8_t rolling_1[16] = {0};
+
+    bitbuffer_t bits_2    = {0};
+    bitbuffer_t fixed_2   = {0};
+    uint8_t rolling_2[16] = {0};
+
+
+    if (decoder->verbose) {
+        (void)fprintf(stderr, "\n\n\n");
+
+        (void)fprintf(stderr, "%s: len %u\n", __func__, bitbuffer->bits_per_row[0]);
+        bitrow_printf(bitbuffer->bb[0], bitbuffer->bits_per_row[0], "%s", __func__);
+    }
+
+    // 280 is a cconservative guess
+    if (bitbuffer->bits_per_row[0] < 280) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    // loop though segments until we collect both parts, or run out of data
+    while (search_index < bitbuffer->bits_per_row[0]) {
+
+        if (decoder->verbose)
+            (void)fprintf(stderr, "%s\n", __func__);
+
+        search_index = bitbuffer_search(bitbuffer, 0, search_index, _preamble, _preamble_len);
+
+        if (search_index >= bitbuffer->bits_per_row[0]) {
+            break;
+        }
+
+        bitbuffer_clear(&bits);
+        next_pos = bitbuffer_manchester_decode(bitbuffer, 0, search_index + 26, &bits, 80);
+        search_index += 20;
+        if (bits.bits_per_row[0] < 42) {
+            continue; // DECODE_ABORT_LENGTH;
+        }
+
+        if (decoder->verbose) {
+            (void)fprintf(stderr, "%s: manchester_decode %d len = %u\n", __func__,
+                    0, bits.bits_per_row[0]);
+            bitrow_debugf(bits.bb[0], bits.bits_per_row[0], "%s: manchester_decoded %d", __func__, 0);
+        }
+
+        // valid = 0X00XXXX
+        if (bits.bb[0][0] & 0xB0) {
+            if (decoder->verbose)
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY 0X00XXXX\n", __func__);
+            continue;
+        }
+
+        if (bits.bb[0][0] & 0xC0) {
+            if (decoder->verbose)
+                (void)fprintf(stderr, "%s: Set 2\n", __func__);
+            _decode_v2_half(&bits, rolling_2, &fixed_2, decoder->verbose);
+        }
+        else {
+            if (decoder->verbose)
+                (void)fprintf(stderr, "%s: Set 1\n", __func__);
+            _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
+        }
+
+        // break if we've recived both parts
+        if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
+            break;
+        }
+
+        // i++;
+    }
+
+    if (decoder->verbose)
+        fprintf(stderr, "%s M fixed_1.bits_per_row = %u\tfixed_2.bits_per_row = %u\n",
+                __func__, fixed_1.bits_per_row[0], fixed_2.bits_per_row[0]);
+
+    // Do was have what we need ??
+    if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
+        //  No?  Awww F'ck it then
+        if (decoder->verbose)
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
+        return DECODE_FAIL_SANITY;
+    }
+
+    if (decoder->verbose > 1) {
+        bitrow_debugf(fixed_1.bb[0], fixed_1.bits_per_row[0], "%s: fixed bit 1 : ", __func__);
+        fprintf(stderr, "%s rolling_1 : ", __func__);
+        for (int i = 0; i < 9; i++) {
+            fprintf(stderr, "%d ", rolling_1[i]);
+        }
+        fprintf(stderr, "\n");
+
+        bitrow_debugf(fixed_2.bb[0], fixed_2.bits_per_row[0], "%s: fixed bit 2 : ", __func__);
+        fprintf(stderr, "%s rolling_2 : ", __func__);
+        for (int i = 0; i < 9; i++) {
+            fprintf(stderr, "%d ", rolling_2[i]);
+        }
+        fprintf(stderr, "\n\n\n");
+    }
+
+    // Assemble rolling_1[] and rolling_2[] into rolling_digits[]
+    uint8_t rolling_digits[24] = {0};
+    uint8_t *r;
+
+    r    = rolling_digits;
+    *r++ = rolling_2[8];
+    *r++ = rolling_1[8];
+    for (int i = 4; i < 8; i++) {
+        *r++ = rolling_2[i];
+    }
+    for (int i = 4; i < 8; i++) {
+        *r++ = rolling_1[i];
+    }
+
+    for (int i = 0; i < 4; i++) {
+        *r++ = rolling_2[i];
+    }
+    for (int i = 0; i < 4; i++) {
+        *r++ = rolling_1[i];
+    }
+
+    if (decoder->verbose > 1) {
+        fprintf(stderr, "rolling_digits :");
+        for (int i = 0; i < 18; i++) {
+            fprintf(stderr, "%d ", rolling_digits[i]);
+        }
+        fprintf(stderr, "\n\n");
+    }
+
+    // compute rolling_total from rolling_digits[]
+    uint32_t rolling_total = 0;
+    uint32_t rolling_temp  = 0;
+
+    for (int i = 0; i < 18; i++) {
+        rolling_temp = (rolling_temp * 3) + rolling_digits[i];
+        // fprintf(stderr, ">> %12d\t%d\n", rolling_temp, rolling_digits[i]);
+    }
+
+    rolling_total = reverse32(rolling_temp);
+
+
+    // delete this soon
+    if (decoder->verbose) {
+        fprintf(stderr, "%s : rolling_temp = %u\n", __func__, rolling_temp);
+
+        fprintf(stderr, "\n\nrolling_temp : ");
+        for (int i = 0; i < 32; i++) {
+            fprintf(stderr, "%d", ((rolling_temp >> i) & 0x01));
+        }
+        fprintf(stderr, "\n\n");
+
+        fprintf(stderr, "rolling_total = %u\n", rolling_total);
+
+        fprintf(stderr, "\n\nrolling_total : ");
+        for (int i = 0; i < 32; i++) {
+            fprintf(stderr, "%d", ((rolling_total >> i) & 0x01));
+        }
+        fprintf(stderr, "\n\n");
+    }
+
+
+    // Assemble "fixed" data part
+    uint64_t fixed_total = 0;
+    uint8_t *bb;
+    bb = fixed_1.bb[0];
+    fixed_total ^= ((uint64_t)bb[0]) << 32;
+    fixed_total ^= ((uint64_t)bb[1]) << 24;
+    fixed_total ^= ((uint64_t)bb[2]) << 16;
+
+    bb = fixed_2.bb[0];
+    fixed_total ^= ((uint64_t)bb[0]) << 12;
+    fixed_total ^= ((uint64_t)bb[1]) << 4;
+    fixed_total ^= (bb[2] >> 4) & 0x0f;
+
+    // ??
+    fixed_total ^= 0xff < 12;
+
+    // fprintf(stderr, "fixed_total = %lu\n", fixed_total);
+
+    // int button    = fixed_total >> 32;
+    // int remote_id = fixed_total & 0xffffffff;
+    char fixed_str[16];
+    char rolling_str[16];
+
+    // rolling_total is a 28 bit unsigned number
+    // fixed_totals is 40 bit in a uint64_t
+    snprintf(fixed_str, sizeof(fixed_str), "%lu", fixed_total);
+    snprintf(rolling_str, sizeof(rolling_str), "%u", rolling_total);
+
+    /* clang-format off */
+    data_t *data;
+    data = data_make(
+            "id",       "ID",    DATA_STRING, "Secplus_v2",
+            "button_id",   "Button-ID",    DATA_INT,    (fixed_total >> 32),
+            "remote_id",   "Remote-ID",    DATA_INT,    (fixed_total & 0xffffffff),
+            // "fixed",       "",    DATA_INT,    fixed_total,
+            "fixed",       "Fixed_Code",    DATA_STRING,    fixed_str,
+            "rolling",     "Rolling_Code",    DATA_STRING,    rolling_str,
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
+static char *output_fields[] = {
+
+        // Common fields
+        "model",
+        "rolling"
+        "fixed",
+        "button_id",
+        "remote_id",
+        NULL,
+};
+
+//      Freq 310.01M
+//  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
+
+r_device secplus_v2 = {
+        .name        = "Secplus v2",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 230,
+        .long_width  = 230,
+        .tolerance   = 50,
+        .gap_limit   = 1500,
+        .reset_limit = 9000,
+        // .gap_limit   = 2500,
+        // .reset_limit = 4000,
+        .decode_fn = &secplus_v2_callback,
+        .disabled  = 0,
+        .fields    = output_fields,
+};

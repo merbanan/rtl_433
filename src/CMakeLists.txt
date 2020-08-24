@@ -133,6 +133,7 @@ add_library(r_433 STATIC
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
+    devices/secplus_v2.c
     devices/sharp_spc775.c
     devices/silvercrest.c
     devices/simplisafe.c
