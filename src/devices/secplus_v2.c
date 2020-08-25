@@ -11,7 +11,7 @@
 */
 
 /**
-Freq 310M
+Freq 310, 315 and 390 MHz.
 
 Security+ 2.0  is described in [US patent application US20110317835A1](https://patents.google.com/patent/US20110317835A1/)
 
@@ -82,6 +82,8 @@ Returns data in :
     fixed_p as an bitbuffer_t with 20 bits of data
 
 
+Once the above has been run twice the two are merged
+
 */
 
 
@@ -134,7 +136,6 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     // memcpy(&dat, buffy, 4);
     x = ((uint32_t)buffy[0] << 24) | (buffy[1] << 16) | (buffy[2] << 8) | (buffy[3]);
 
-    // uint32_t x = dat;
     x >>= 2;
     if (verbose) {
         for (int i = 29; i >= 0; i--) {
@@ -145,6 +146,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     // using short to store 10bit values
     uint16_t p0 = 0, p1 = 0, p2 = 0;
 
+    // sort 30 bits of interleaved data into three 10 bit buffers 
     for (int i = 0; i < 10; i++) {
         p2 ^= (x & 0x00000001) << i; // 9-
         x >>= 1;
@@ -203,11 +205,9 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     if (verbose > 1)
         debug_10bit_bufs(p0, p1, p2);
 
-    uint16_t a = 0, b = 0, c = 0;
-    a = p0;
-    b = p1;
-    c = p2;
+    uint16_t a = p0, b = p1, c = p2;
 
+    // selectively reorder buffers
     switch (order) {
     case 0x06: // 0b0110  2, 1, 0],
     case 0x09: // 0b1001  2, 1, 0],
@@ -269,13 +269,15 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         fprintf(stderr, "\n");
     }
 
-    x           = p2;
 
-    uint16_t px = p2;
     // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
+
+    // assemble binary bits into trinary 
+    x = p2;
     for (int i = 8; i >= 0; i -= 2) {
         roll_array[k++] = (x >> i) & 0x03;
     }
+
     if (verbose) {
         fprintf(stderr, "%s : roll_array : (%d) ", __func__, part_id);
         for (int i = 0; i < 9; i++) {
@@ -284,6 +286,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         fprintf(stderr, "\n");
     }
 
+    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not 
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
             fprintf(stderr, "roll_array val  FAIL\n");
@@ -360,12 +363,14 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // valid = 0X00XXXX
+        // 1st 3rs and 4th bits should alway be 0
         if (bits.bb[0][0] & 0xB0) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: DECODE_FAIL_SANITY 0X00XXXX\n", __func__);
             continue;
         }
 
+        // 2nd bit indicates with half of the data 
         if (bits.bb[0][0] & 0xC0) {
             if (decoder->verbose)
                 (void)fprintf(stderr, "%s: Set 2\n", __func__);
@@ -377,7 +382,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 
-        // break if we've recived both parts
+        // break if we've recived both halfs
         if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
             break;
         }
@@ -451,7 +456,9 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // fprintf(stderr, ">> %12d\t%d\n", rolling_temp, rolling_digits[i]);
     }
 
+    // value is 28 bits thus need to shift over 4 bit
     rolling_total = reverse32(rolling_temp);
+    rolling_total = rolling_total >> 4;
 
 
     // delete this soon
