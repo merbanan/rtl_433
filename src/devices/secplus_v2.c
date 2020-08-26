@@ -494,9 +494,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     fixed_total ^= ((uint64_t)bb[1]) << 4;
     fixed_total ^= (bb[2] >> 4) & 0x0f;
 
-    // ??
-    fixed_total ^= 0xff < 12;
-
     // fprintf(stderr, "fixed_total = %lu\n", fixed_total);
 
     // int button    = fixed_total >> 32;
@@ -542,13 +539,11 @@ static char *output_fields[] = {
 r_device secplus_v2 = {
         .name        = "Secplus v2",
         .modulation  = OOK_PULSE_PCM_RZ,
-        .short_width = 230,
-        .long_width  = 230,
+        .short_width = 250,
+        .long_width  = 250,
         .tolerance   = 50,
         .gap_limit   = 1500,
         .reset_limit = 9000,
-        // .gap_limit   = 2500,
-        // .reset_limit = 4000,
         .decode_fn = &secplus_v2_callback,
         .disabled  = 0,
         .fields    = output_fields,
