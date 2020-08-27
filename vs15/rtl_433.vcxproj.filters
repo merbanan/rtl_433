@@ -505,6 +505,9 @@
     <ClCompile Include="..\src\devices\scmplus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\secplus_v1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\secplus_v2.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

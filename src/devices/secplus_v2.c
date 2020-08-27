@@ -273,8 +273,8 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t rolling_2[16] = {0};
 
 
-    // 280 is a cconservative guess
-    if (bitbuffer->bits_per_row[0] < 280) {
+    // 280 is a conservative guess
+    if (bitbuffer->bits_per_row[0] <= 280) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -365,8 +365,8 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // fprintf(stderr, ">> %12d\t%d\n", rolling_temp, rolling_digits[i]);
     }
 
-    // Max value = 2^28
-    if ( rolling_temp > 268435456 ) {
+    // Max value = 2^28 (268435456)
+    if ( rolling_temp >= 0x10000000 ) {
         return DECODE_FAIL_SANITY;
     }
 
