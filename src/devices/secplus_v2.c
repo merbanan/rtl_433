@@ -20,52 +20,34 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 
 #include "decoder.h"
 
-// delete this soon
-void debug_10bit_bufs(uint16_t a, uint16_t b, uint16_t c)
-{
-    fprintf(stderr, "\na : ");
-    for (int j = 9; j >= 0; j--) {
-        fprintf(stderr, "%d ", (a >> j) & 0x01);
-    }
-    fprintf(stderr, "\t%d\n", a);
-    fprintf(stderr, "b : ");
-    for (int j = 9; j >= 0; j--) {
-        fprintf(stderr, "%d ", (b >> j) & 0x01);
-    }
-    fprintf(stderr, "\t%d\n", b);
-    fprintf(stderr, "c : ");
-    for (int j = 9; j >= 0; j--) {
-        fprintf(stderr, "%d ", (c >> j) & 0x01);
-    }
-    // fprintf(stderr, "\n%05X\n", c & 0x3f);
-    fprintf(stderr, "\t%d\n", c);
-    fprintf(stderr, "\n");
-}
-
 /**
 
 
 data comes in two bursts/packets
 
 Layout:
-bits = AA BB IIII OOOO X*30
+
+bits = `AA BB IIII OOOO X*30`
 
 AA = payload type  ( 2 bits 00 or 01 )
 BB = FrameID ( 2 bits always 00)
 IIII = inversion indicator ( 4 bits )
-OOOO = Order indicator ( 4 bits )
+OOOO = Order indicator ( 4 bits ).
 XXXX....  = data ( 30 bits )
 
---
+---
+
+
 
 data is broken up into 3 parts ( p0 p1 p2 )
 eg:
 
-data = ABCABCABCABCABCABCABCABCABCABC
+data = `ABCABCABCABCABCABCABCABCABCABC`
 becomes:
-    p0 = AAAAAAAAAA
-    p1 = BBBBBBBBBB
-    p2 = CCCCCCCCCC
+
+    `p0 = AAAAAAAAAA`
+    `p1 = BBBBBBBBBB`
+    `p2 = CCCCCCCCCC`
 
 these three parts are then inverted and reordered based on the 4bit Order and Inversion indicators
 
@@ -78,11 +60,14 @@ EG:
 `1 0 0 1 1 0 1 0 0 1 1 0=> [1 0] [0 1] [1 0] [1 0] [0 1] [1 0] => 2 1 2 2 1 2`
 
 Returns data in :
-    roll_array as an array of trinary values ( 0, 1, 2) the value 3 is invalid
-    fixed_p as an bitbuffer_t with 20 bits of data
+  * roll_array as an array of trinary values ( 0, 1, 2) the value 3 is invalid
+  * fixed_p as an bitbuffer_t with 20 bits of data
 
 
 Once the above has been run twice the two are merged
+
+---
+
 
 */
 
@@ -109,39 +94,21 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 2);
     start_pos += 2;
 
-    if (verbose)
-        fprintf(stderr, "%s : j      = %d %x\n", __func__, buffy[0], buffy[0]);
-
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 8);
     start_pos += 8;
     order = buffy[0] >> 4;
 
-    // bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 4);
     invert = buffy[0] & 0x0f;
     // bitrow_debug(&invert, 8);
-    if (verbose) {
-        bitrow_printf(&invert, 8, "%s : invert ", __func__);
-
-        fprintf(stderr, "invert = %d %x\n", invert, invert);
-        fprintf(stderr, "order  = %d %x\n", order, order);
-    }
 
     bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 30);
     start_pos += 30;
-    if (verbose) {
-        bitrow_printf(buffy, 30, "%s : buffy bits ", __func__);
-    }
 
     // copy 30 bits of data into 32bit int then shift >> 2
     // memcpy(&dat, buffy, 4);
     x = ((uint32_t)buffy[0] << 24) | (buffy[1] << 16) | (buffy[2] << 8) | (buffy[3]);
 
     x >>= 2;
-    if (verbose) {
-        for (int i = 29; i >= 0; i--) {
-            fprintf(stderr, "%d ", (x >> i) & 0x01);
-        }
-    }
 
     // using short to store 10bit values
     uint16_t p0 = 0, p1 = 0, p2 = 0;
@@ -156,16 +123,9 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         x >>= 1;
     }
 
-    if (verbose > 1) {
-        debug_10bit_bufs(p0, p1, p2);
-
-        fprintf(stderr, "\n");
-    }
     // fprintf(stderr, "f1 (%d) %d %d %d\n", part_id, p0, p1, p2);
 
     // selectively invert buffers
-    if (verbose)
-        fprintf(stderr, "%s (%d): invert = %d %x\n", __func__, part_id, invert, invert);
     switch (invert) {
     case 0x00: // 0b0000 (True, True, False),
         p0 = ~p0 & 0x03FF;
@@ -195,15 +155,12 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         p0 = ~p0 & 0x03FF;
         break;
     case 0x09: // 0b1001 (False, False, False),
-        // fprintf(stderr, "Ord 9\n");
         break;
     default:
-        fprintf(stderr, "Invert FAIL\n");
+        if (verbose) 
+            fprintf(stderr, "Invert FAIL\n");
         return 1;
     }
-
-    if (verbose > 1)
-        debug_10bit_bufs(p0, p1, p2);
 
     uint16_t a = p0, b = p1, c = p2;
 
@@ -249,11 +206,10 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         break;
 
     default:
-        fprintf(stderr, "Order FAIL");
+        if (verbose)
+            fprintf(stderr, "Order FAIL");
         return 2;
     }
-
-    //debug_10bit_bufs(p0, p1, p2);
 
     bitbuffer_extract_bytes(bits, 0, 4, buffy, 8);
     x     = buffy[0];
@@ -261,14 +217,6 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     for (int i = 6; i >= 0; i -= 2) {
         roll_array[k++] = (x >> i) & 0x03;
     }
-
-    if (verbose) {
-        for (int i = 0; i < 4; i++) {
-            fprintf(stderr, "%d ", roll_array[i]);
-        }
-        fprintf(stderr, "\n");
-    }
-
 
     // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
 
@@ -325,13 +273,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t rolling_2[16] = {0};
 
 
-    if (decoder->verbose) {
-        (void)fprintf(stderr, "\n\n\n");
-
-        (void)fprintf(stderr, "%s: len %u\n", __func__, bitbuffer->bits_per_row[0]);
-        bitrow_printf(bitbuffer->bb[0], bitbuffer->bits_per_row[0], "%s", __func__);
-    }
-
     // 280 is a cconservative guess
     if (bitbuffer->bits_per_row[0] < 280) {
         return DECODE_ABORT_LENGTH;
@@ -339,9 +280,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // loop though segments until we collect both parts, or run out of data
     while (search_index < bitbuffer->bits_per_row[0]) {
-
-        if (decoder->verbose)
-            (void)fprintf(stderr, "%s\n", __func__);
 
         search_index = bitbuffer_search(bitbuffer, 0, search_index, _preamble, _preamble_len);
 
@@ -366,7 +304,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // 1st 3rs and 4th bits should alway be 0
         if (bits.bb[0][0] & 0xB0) {
             if (decoder->verbose)
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY 0X00XXXX\n", __func__);
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
             continue;
         }
 
@@ -387,12 +325,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
         }
 
-        // i++;
     }
-
-    if (decoder->verbose)
-        fprintf(stderr, "%s M fixed_1.bits_per_row = %u\tfixed_2.bits_per_row = %u\n",
-                __func__, fixed_1.bits_per_row[0], fixed_2.bits_per_row[0]);
 
     // Do was have what we need ??
     if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
@@ -400,22 +333,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose)
             fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
         return DECODE_FAIL_SANITY;
-    }
-
-    if (decoder->verbose > 1) {
-        bitrow_debugf(fixed_1.bb[0], fixed_1.bits_per_row[0], "%s: fixed bit 1 : ", __func__);
-        fprintf(stderr, "%s rolling_1 : ", __func__);
-        for (int i = 0; i < 9; i++) {
-            fprintf(stderr, "%d ", rolling_1[i]);
-        }
-        fprintf(stderr, "\n");
-
-        bitrow_debugf(fixed_2.bb[0], fixed_2.bits_per_row[0], "%s: fixed bit 2 : ", __func__);
-        fprintf(stderr, "%s rolling_2 : ", __func__);
-        for (int i = 0; i < 9; i++) {
-            fprintf(stderr, "%d ", rolling_2[i]);
-        }
-        fprintf(stderr, "\n\n\n");
     }
 
     // Assemble rolling_1[] and rolling_2[] into rolling_digits[]
@@ -439,14 +356,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         *r++ = rolling_1[i];
     }
 
-    if (decoder->verbose > 1) {
-        fprintf(stderr, "rolling_digits :");
-        for (int i = 0; i < 18; i++) {
-            fprintf(stderr, "%d ", rolling_digits[i]);
-        }
-        fprintf(stderr, "\n\n");
-    }
-
     // compute rolling_total from rolling_digits[]
     uint32_t rolling_total = 0;
     uint32_t rolling_temp  = 0;
@@ -462,7 +371,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 
     // delete this soon
-    if (decoder->verbose) {
+    if (decoder->verbose > 2) {
         fprintf(stderr, "%s : rolling_temp = %u\n", __func__, rolling_temp);
 
         fprintf(stderr, "\n\nrolling_temp : ");
