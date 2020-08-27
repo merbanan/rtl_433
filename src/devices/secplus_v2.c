@@ -365,29 +365,14 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // fprintf(stderr, ">> %12d\t%d\n", rolling_temp, rolling_digits[i]);
     }
 
+    // Max value = 2^28
+    if ( rolling_temp > 268435456 ) {
+        return DECODE_FAIL_SANITY;
+    }
+
     // value is 28 bits thus need to shift over 4 bit
     rolling_total = reverse32(rolling_temp);
     rolling_total = rolling_total >> 4;
-
-
-    // delete this soon
-    if (decoder->verbose > 2) {
-        fprintf(stderr, "%s : rolling_temp = %u\n", __func__, rolling_temp);
-
-        fprintf(stderr, "\n\nrolling_temp : ");
-        for (int i = 0; i < 32; i++) {
-            fprintf(stderr, "%d", ((rolling_temp >> i) & 0x01));
-        }
-        fprintf(stderr, "\n\n");
-
-        fprintf(stderr, "rolling_total = %u\n", rolling_total);
-
-        fprintf(stderr, "\n\nrolling_total : ");
-        for (int i = 0; i < 32; i++) {
-            fprintf(stderr, "%d", ((rolling_total >> i) & 0x01));
-        }
-        fprintf(stderr, "\n\n");
-    }
 
 
     // Assemble "fixed" data part
@@ -418,7 +403,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data;
     data = data_make(
-            "id",       "ID",    DATA_STRING, "Secplus_v2",
+            "model",       "Model",    DATA_STRING, "Secplus-v2",
             "button_id",   "Button-ID",    DATA_INT,    (fixed_total >> 32),
             "remote_id",   "Remote-ID",    DATA_INT,    (fixed_total & 0xffffffff),
             // "fixed",       "",    DATA_INT,    fixed_total,
@@ -446,7 +431,7 @@ static char *output_fields[] = {
 //  -X "n=vI3,m=OOK_PCM,s=230,l=230,t=40,r=10000,g=7400,match={24}0xaaaa9560"
 
 r_device secplus_v2 = {
-        .name        = "Secplus v2",
+        .name        = "Security+ 2.0 (Keyfob) ",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 250,
         .long_width  = 250,
