@@ -256,7 +256,6 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\scmplus.c" />
-    <ClCompile Include="..\src\devices\secplus_v1.c" />
     <ClCompile Include="..\src\devices\secplus_v2.c" />
     <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
