@@ -224,7 +224,7 @@ Acurite 06045m Lightning Sensor decoding.
 
 Specs:
 - lightning strike count
-- estimated distance to front of storm, up to 25 miles / 40 km
+- estimated distance to front of storm, 1 to 25 miles / 1.6 to 40 km
 - Temperature -40 to 158 F / -40 to 70 C
 - Humidity 1 - 99% RH
 
@@ -237,44 +237,44 @@ Message format:
 Somewhat similar to 592TXR and 5-n-1 weather stations.
 Same pulse characteristics. checksum, and parity checking on data bytes.
 
-    0   1   2   3   4   5   6   7   8
-    CI II  BB  HH  ST  TT  LL  DD  KK
 
-- C = Channel
-- I = ID
-- B = Battery + Message type 0x2f
-- S = Status/Message type/Temperature MSB.
-- T = Temperature
-- D = Lightning distance and status bits?
-- L = Lightning strike count.
-- K = Checksum
+    Byte 0   Byte 1   Byte 2   Byte 3   Byte 4   Byte 5   Byte 6   Byte 7   Byte 8
+    CCIIIIII IIIIIIII pB101111 pHHHHHHH pA?TTTTT pTTTTTTT pLLLLLLL pLRDDDDD KKKKKKKK
 
-Byte 0 - channel/?/ID?
+- C = Channel (2 bits)
+- I = Sensor ID (14 bit Static ID)
+- p = parity check bit
+- B = Battery OK (cleared for low)
+- H = Humidity (7 bits)
+- A = Active mode lightning detection (cleared for standby mode)
+- T = Temperature (12 bits)
+- L = Lightning strike count (8 bits)
+- D = Lightning distance (5 bits)
+- K = Checksum (8 bits)
+
+Byte 0 - channel/ID
+- bitmask CCII IIII
 - 0xC0: channel (A: 0xC, B: 0x8, C: 00)
-- 0x3F: most significant 6 bits of bit ID
+- 0x3F: most significant 6 bits of Sensor ID
    (14 bits, same as Acurite Tower sensor family)
 
 Byte 1 - ID all 8 bits, no parity.
-- 0xFF = least significant 8 bits of ID
-   Note that ID is just a number and that least/most is not
-   externally meaningful.
+- 0xFF = least significant 8 bits of Sensor ID
 
 Byte 2 - Battery and Message type
 - Bitmask PBMMMMMM
 - 0x80 = Parity
 - 0x40 = 1 is battery OK, 0 is battery low
-- 0x3f = Message type is 0x2f to indicate 06045M lightning
+- 0x3f = Message type 0x2f for 06045M lightning detector
 
 Byte 3 - Humidity
 - 0x80 - even parity
 - 0x7f - humidity
 
 Byte 4 - Status (2 bits) and Temperature MSB (5 bits)
-- Bitmask PAUTTTTT  (P = Parity, A = Active,  U = unknown, T = Temperature)
+- Bitmask PA?TTTTT  (P = Parity, A = Active,  T = Temperature)
 - 0x80 - even parity
-- 0x40 - Active Mode
-   Transmitting every 8 seconds (lightning possibly detected)
-   normal, off, transmits every 24 seconds
+- 0x40 - 1 is Active lightning detection Mode, 0 is standby
 - 0x20 - TBD: always off?
 - 0x1F - Temperature most significant 5 bits
 
@@ -292,37 +292,50 @@ Byte 7 - Edge of Storm Distance Approximation & other bits
 - 0x80 - even parity
 - 0x40 - LSB of 8 bit strike counter
 - 0x20 - RFI (radio frequency interference)
-- 0x1F - distance to edge of storm (theory)
+- 0x1F - distance to edge of storm
    value 0x1f is possible invalid value indication (value at power up)
    @todo determine mapping function/table.
 
 
 Byte 8 - checksum. 8 bits, no parity.
 
-Data fields:
-- active (vs standby) whether the AS39335 is in active scanning mode
-    will be transmitting evey 8 seconds instead of every 24.
-- RFI detected - the AS3935 uses broad RFI for detection
-    Somewhat correlates with the Yellow LED, but stays set longer
-    Short periods of RFI on is normal
-    long periods of RFI means interference, solid yellow, relocate sensor
-- Strike count - count of detection events, 8 bits, non-volatile
-    counts up to 255, wraps back to 0.
-    Stored in EEPROM (or something non-volatile), doesn't reset at power up
-- Distance to edge of storm - See AS3935 documentation.
-    sensor will make a distance estimate with each strike event.
-    Units unknown, data needed from people with Acurite consoles
-    0x1f (31) is invalid/undefined value, consumers should check for this.
+Data fields in rtl_433 messages:
+- active (vs standby) lightning detection mode
+    When active:
+      the AS39335 is in active scanning mode
+      6045M will transmit every 8 seconds instead of every 24.
+
+- RFI - radio frequency interference detected
+    The AS3935 uses broad RFI for detection
+    Somewhat correlates with the yellow LED on the sensor, but stays set longer
+    Short periods of RFI appears to be somewhat normal
+    long periods of RFI on indicates interference, relocate sensor until
+    yellow LED is no longer on solid
+
+- strike_count - count of detection events, 8 bits
+    counts up to 255, wraps around to 0
+    non-volatile (doesn't reset at power up)
+
+- storm_distance - statistically estimated distance to edge of storm
+    See AS3935 documentation
+    sensor will make calculate a distance estimate with each strike event
+    0x1f (31) is invalid/undefined value, used at power-up to indicate invalid
     Only 5 bits available, needs to cover range of 25 miles/40 KM per spec.
-- exception - bits that were invariant for me have changed.
-    save raw_msg for further examination.
+    Units unknown, data needed from people with Acurite consoles
+
+- exception - additional analysis of message maybe needed
+    Suggest reporting raw_msg for further examination.
+    bits that were invariant (for me) have changed.
+
+Notes:
+
+2020-08-29 - changed temperature decoding, was 2.0 F too low vs. Acurite Access
 
 @todo - check parity on bytes 2 - 7
+@todo - storm_distance conversion to miles/KM (should match Acurite consoles)
 
-Additional reverse engineering needed:
-@todo - Get distance to front of storm to match display
-@todo - figure out remaining status bits and how to report
 */
+
 static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     float tempf;
@@ -352,9 +365,9 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // 12 bits of temperature after removing parity and status bits.
     // Message native format appears to be in 1/10 of a degree Fahrenheit
     // Device Specification: -40 to 158 F  / -40 to 70 C
-    // Available range given encoding with 12 bits -150.0 F to +259.6 F
+    // Available range given 12 bits with +1480 offset: -140.0 F to +261.5 F
     int temp_raw = ((bb[4] & 0x1F) << 7) | (bb[5] & 0x7F);
-    tempf = (temp_raw - 1500) * 0.1f;
+    tempf = (temp_raw - 1480) * 0.1f;
 
     // Strike count is 8 bits, LSB in following byte
     strike_count = ((bb[6] & 0x7f) << 1) | ((bb[7] & 0x40) >> 6);
@@ -376,24 +389,11 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     *rawp = '\0';
 
     // Flag whether this message might need further analysis
-    if ((message_type != ACURITE_MSGTYPE_6045M) // 6045 message type is 0x2f
-            || ((bb[2] & 0x20) != 0x20) // unknown status bit, always on
-            || ((bb[2] & 0x0f) != 0x0f) // unknown status bits, always on
-            || ((bb[4] & 0x20) != 0)) { // unknown status bits, always off
+    if (((bb[4] & 0x20) != 0) ||  // unknown status bits, always off
+        (humidity > 100) ||
+        (tempf > 158) ||
+        (tempf < -40)) {
         exception++;
-    }
-
-    // TODO: temporarily leaving the old output for ease of debugging
-    // and backward compatibility. Remove when doing a "1.0" release.
-    if (decoder->verbose) {
-        fprintf(stderr, "Acurite lightning 0x%04X Ch %c Msg Type 0x%02x: %.1f F %d %% RH Strikes %d Distance %d L_status 0x%02x -",
-                sensor_id, channel, message_type, tempf, humidity, strike_count, strike_distance, l_status);
-        for (int i=0; i < browlen; i++) {
-            char pc;
-            pc = parity8(bb[i]) == 0 ? ' ' : '*';
-            fprintf(stderr, " %02x%c", bb[i], pc);
-        }
-        fprintf(stderr, "\n");
     }
 
     /* clang-format off */
@@ -888,7 +888,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
 
-        else if (browlen == ACURITE_6045_BITLEN / 8) {
+        else if (message_type == ACURITE_MSGTYPE_6045M) {
             // TODO: check parity and reject if invalid
             valid += acurite_6045_decode(decoder, bitbuffer, brow);
         }
