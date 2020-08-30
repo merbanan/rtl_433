@@ -888,7 +888,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             }
         }
 
-        else if (browlen == ACURITE_6045_BITLEN / 8) {
+        else if (message_type == ACURITE_MSGTYPE_6045M) {
             // TODO: check parity and reject if invalid
             valid += acurite_6045_decode(decoder, bitbuffer, brow);
         }
