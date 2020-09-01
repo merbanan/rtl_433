@@ -133,6 +133,7 @@ add_library(r_433 STATIC
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
+    devices/secplus_v1.c
     devices/sharp_spc775.c
     devices/silvercrest.c
     devices/simplisafe.c
@@ -167,7 +168,6 @@ add_library(r_433 STATIC
     devices/wt450.c
     devices/x10_rf.c
     devices/x10_sec.c
-    devices/secplus_v1.c
 )
 
 if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
