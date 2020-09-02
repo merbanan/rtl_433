@@ -238,7 +238,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob) 
-    [165]  Secplus v1
+    [165]  Security+ 1.0 (Keyfob)
 
 * Disabled by default, use -R n or -G
 

@@ -137,19 +137,21 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose) {
         (void)fprintf(stderr, "%s: rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
-        bitrow_printf(bitbuffer->bb[0], bitbuffer->bits_per_row[0], "%s", __func__);
     }
 
 
     int status = 0;
 
+    // loop through all the rows till both parts are received
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
         int search_index;
         uint8_t buffy[32]    = {0};
         uint8_t buffi[32]    = {0};
 
-        if (decoder->verbose)
+        if (decoder->verbose) {
             (void)fprintf(stderr, "%s row = %hu\n", __func__, row);
+            bitrow_printf(bitbuffer->bb[0], bitbuffer->bits_per_row[0], "%s : ", __func__);
+        }
 
 
         if (bitbuffer->bits_per_row[row] < 84) {
@@ -250,7 +252,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *res;
 
-    // skip the first 
+    // skip the first
     res = result_1;
     res++;
 
@@ -270,7 +272,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         digit        = res[i];
         rolling_temp = (rolling_temp * 3) + digit;
         acc += digit;
-        
+
         digit = (60 + res[i + 1] - acc) % 3;
         fixed = (fixed * 3) + digit;
         acc += digit;
@@ -304,8 +306,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     rolling = reverse32(rolling_temp);
 
-    /* 
-        we now have values for rolling & fixed 
+    /*
+        we now have values for rolling & fixed
         next we extract status info stored in the value for 'fixed'
     */
     int switch_id = fixed % 3;
@@ -318,10 +320,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int pad_id         = 0;
     int pin            = 0;
     char pin_s[24]     = {0};
-    char *pin_suffix_s = "";
 
     int remote_id  = 0;
-    int remote_idm = 0;
     char *button   = "";
 
     if (id1 == 0) {
@@ -359,12 +359,14 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             button = "right";
 
         if (decoder->verbose)
-            fprintf(stderr, "remote_id=%d %d\tbutton=%s\n", remote_id, remote_idm, button);
+            fprintf(stderr, "remote_id=%d\tbutton=%s\n", remote_id, button);
     }
 
+    // preformat unsigned int
     char rolling_str[16];
     snprintf(rolling_str, sizeof(rolling_str), "%u", rolling);
 
+    // preformat unsigned int
     char fixed_str[16]; // should be 10 chars max
     snprintf(fixed_str, sizeof(fixed_str), "%u", fixed);
 
@@ -420,7 +422,7 @@ static char *output_fields[] = {
 //   -X "n=v1,m=OOK_PCM,s=500,l=500,t=40,r=10000,g=7400"
 
 r_device secplus_v1 = {
-        .name        = "Secplus v1",
+        .name        = "Security+ 1.0 (Keyfob)",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 500,
         .long_width  = 500,
