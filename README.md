@@ -237,7 +237,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [161]  Interval Data Message (IDM) for Net Meters
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
-    [164]  Security+ 2.0 (Keyfob) 
+    [164]  Security+ 2.0 (Keyfob)
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
 
 * Disabled by default, use -R n or -G
 
