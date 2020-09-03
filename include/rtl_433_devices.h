@@ -172,6 +172,7 @@
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
     DECL(tfa_twin_plus_303221) \
+    DECL(secplus_v2) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

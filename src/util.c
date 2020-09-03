@@ -26,7 +26,7 @@ uint32_t reverse32(uint32_t x)
 {
     uint32_t ret;
     uint8_t* xp = (uint8_t*)&x;
-    ret = reverse8(xp[0]) << 24 | reverse8(xp[1]) << 16 | reverse8(xp[2]) << 8 | reverse8(xp[3]);
+    ret = (uint32_t) reverse8(xp[0]) << 24 | reverse8(xp[1]) << 16 | reverse8(xp[2]) << 8 | reverse8(xp[3]);
     return ret;
 }
 
