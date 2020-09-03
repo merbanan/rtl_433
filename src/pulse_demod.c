@@ -56,7 +56,8 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    int const max_zeros = device->s_reset_limit / device->s_long_width;
+    int const gap_limit = device->s_gap_limit ? device->s_gap_limit : device->s_reset_limit;
+    int const max_zeros = gap_limit / device->s_long_width;
     int tolerance = device->s_tolerance;
     if (tolerance <= 0)
         tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
@@ -134,9 +135,9 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
         }
 
         // Validate data
-        if ((device->s_short_width != device->s_long_width)                    // Only for RZ coding
-                && (abs(pulses->pulse[n] - device->s_short_width) > tolerance) // Pulse must be within tolerance
-        ) {
+        if ((device->s_short_width != device->s_long_width)                       // Only for RZ coding
+                && (abs(pulses->pulse[n] - device->s_short_width) > tolerance)) { // Pulse must be within tolerance
+
             // Data is corrupt
             if (device->verbose > 3) {
                 fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
@@ -146,11 +147,15 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_clear(&bits);
         }
 
+        // Check for new packet in multipacket
+        else if (pulses->gap[n] > gap_limit && pulses->gap[n] <= device->s_reset_limit) {
+            bitbuffer_add_row(&bits);
+        }
         // End of Message?
-        if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
-                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
-                && (bits.bits_per_row[0] > 0)                    // Only if data has been accumulated
-        ) {
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] > device->s_reset_limit))      // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
