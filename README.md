@@ -96,7 +96,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
-    [19]  Nexus, FreeTec NC-7345, NX-3980 temperature/humidity sensor
+    [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S temperature/humidity sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
@@ -115,7 +115,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [37]* Inovalley kw9015b, TFA Dostmann 30.3161 (Rain and temperature sensor)
     [38]  Generic temperature sensor 1
     [39]  WG-PB12V1 Temperature Sensor
-    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+    [40]  Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 3N1, Atlas
     [41]  Acurite 986 Refrigerator / Freezer Thermometer
     [42]  HIDEKI TS04 Temperature, Humidity, Wind and Rain Sensor
     [43]  Watchman Sonic / Apollo Ultrasonic / Beckett Rocket oil tank monitor
@@ -164,7 +164,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [88]  Toyota TPMS
     [89]  Ford TPMS
     [90]  Renault TPMS
-    [91]  inFactory, FreeTec NC-3982-913 temperature humidity sensor
+    [91]  inFactory, nor-tec, FreeTec NC-3982-913 temperature humidity sensor
     [92]  FT-004-B Temperature Sensor
     [93]  Ford Car Key
     [94]  Philips outdoor temperature sensor (type AJ3650)
@@ -229,7 +229,15 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [153]  Cotech 36-7959 wireless weather station with USB
     [154]  Standard Consumption Message Plus (SCMplus)
     [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
-    [156]  Abarth 124 / VDO TG1C TPMS Sensor
+    [156]  Abarth 124 Spider TPMS
+    [157]  Missil ML0757 weather station
+    [158]  Sharp SPC775 weather station
+    [159]  Insteon
+    [160]  Interval Data Message (IDM)
+    [161]  Interval Data Message (IDM) for Net Meters
+    [162]* ThermoPro-TX2 temperature sensor
+    [163]  Acurite 590TX Temperature with optional Humidity
+    [164]  Security+ 2.0 (Keyfob) 
 
 * Disabled by default, use -R n or -G
 

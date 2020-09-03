@@ -13,6 +13,8 @@
 /**
 Schrader TPMS decoder.
 
+FCC-Id: MRXGG4
+
 Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 
     0 12 34 56 78 9A BC DE F0
@@ -108,6 +110,15 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) 
 
     /* Discard the first 40 bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 40, b, 80);
+
+    // No need to decode/extract values for simple test
+    // check serial flags pressure temperature value not zero
+    if ( !b[1] && !b[2] && !b[4] && !b[5] && !b[7] && !b[8] ) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     /* Calculate the checksum */
     checksum = add_bytes(b, 9) & 0xff;

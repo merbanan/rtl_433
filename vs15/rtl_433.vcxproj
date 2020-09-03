@@ -212,9 +212,11 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
+    <ClCompile Include="..\src\devices\idm.c" />
     <ClCompile Include="..\src\devices\ikea_sparsnas.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
     <ClCompile Include="..\src\devices\inovalley-kw9015b.c" />
+    <ClCompile Include="..\src\devices\insteon.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
     <ClCompile Include="..\src\devices\intertechno.c" />
     <ClCompile Include="..\src\devices\kedsum.c" />
@@ -230,6 +232,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
+    <ClCompile Include="..\src\devices\missil_ml0757.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
     <ClCompile Include="..\src\devices\newkaku.c" />
     <ClCompile Include="..\src\devices\nexa.c" />
@@ -253,6 +256,8 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\scmplus.c" />
+    <ClCompile Include="..\src\devices\secplus_v2.c" />
+    <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
     <ClCompile Include="..\src\devices\simplisafe.c" />
     <ClCompile Include="..\src\devices\smoke_gs558.c" />
@@ -265,6 +270,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
     <ClCompile Include="..\src\devices\thermopro_tp12.c" />
+    <ClCompile Include="..\src\devices\thermopro_tx2.c" />
     <ClCompile Include="..\src\devices\tpms_abarth124.c" />
     <ClCompile Include="..\src\devices\tpms_citroen.c" />
     <ClCompile Include="..\src\devices\tpms_elantra2012.c" />

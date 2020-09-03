@@ -199,7 +199,6 @@ static void print_influx_array(data_output_t *output, data_array_t *array, char 
 
 static void print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
 {
-    influx_client_t *influx = (influx_client_t *)output;
     char str[1000];
     data_print_jsons(data, str, sizeof (str));
     output->print_string(output, str, format);

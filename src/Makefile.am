@@ -88,9 +88,11 @@ rtl_433_SOURCES      = abuf.c \
                        devices/honeywell_wdb.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
+                       devices/idm.c \
                        devices/ikea_sparsnas.c \
                        devices/infactory.c \
                        devices/inovalley-kw9015b.c \
+                       devices/insteon.c \
                        devices/interlogix.c \
                        devices/intertechno.c \
                        devices/kedsum.c \
@@ -106,6 +108,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/maverick_et73.c \
                        devices/maverick_et73x.c \
                        devices/mebus.c \
+                       devices/missil_ml0757.c \
                        devices/new_template.c \
                        devices/newkaku.c \
                        devices/nexa.c \
@@ -129,6 +132,8 @@ rtl_433_SOURCES      = abuf.c \
                        devices/s3318p.c \
                        devices/schraeder.c \
                        devices/scmplus.c \
+                       devices/secplus_v2.c \
+                       devices/sharp_spc775.c \
                        devices/silvercrest.c \
                        devices/simplisafe.c \
                        devices/smoke_gs558.c \
@@ -141,6 +146,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/tfa_twin_plus_30.3049.c \
                        devices/thermopro_tp11.c \
                        devices/thermopro_tp12.c \
+                       devices/thermopro_tx2.c \
                        devices/tpms_abarth124.c \
                        devices/tpms_citroen.c \
                        devices/tpms_elantra2012.c \

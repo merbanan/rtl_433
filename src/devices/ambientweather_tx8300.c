@@ -111,14 +111,7 @@ static int ambientweather_tx8300_callback(r_device *decoder, bitbuffer_t *bitbuf
             "channel",       "",            DATA_INT, channel,
             "battery",       "Battery",     DATA_INT, battery_low, // mapping unknown
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            NULL);
-
-    if (humidity >= 0)
-        data = data_append(data,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                NULL);
-
-    data = data_append(data,
+            "humidity",      "Humidity",    DATA_COND, humidity >= 0, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

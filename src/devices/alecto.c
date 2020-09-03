@@ -1,5 +1,11 @@
 /*** @file
     AlectoV1 Weather Sensor protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
 */
 /** @fn int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 AlectoV1 Weather Sensor decoder.
@@ -127,10 +133,10 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int battery_low = (b[1] & 0x80) >> 7;
     int msg_type    = (b[1] & 0x60) >> 5;
-    int button      = (b[1] & 0x10) >> 4;
+    //int button      = (b[1] & 0x10) >> 4;
     int msg_rain    = (b[1] & 0x0f) == 0x0c;
-    int msg_wind    = (b[1] & 0x0f) == 0x08 && b[2] == 0;
-    int msg_gust    = (b[1] & 0x0e) == 0x0e;
+    //int msg_wind    = (b[1] & 0x0f) == 0x08 && b[2] == 0;
+    //int msg_gust    = (b[1] & 0x0e) == 0x0e;
     int channel     = (b[0] & 0xc) >> 2;
     int sensor_id   = reverse8(b[0]);
 
@@ -227,8 +233,8 @@ static char *output_fields[] = {
     "wind_speed", // TODO: remove this
     "wind_gust", // TODO: remove this
     "wind_direction", // TODO: remove this
-    "wind_avg_km_h",
-    "wind_max_km_h",
+    "wind_avg_m_s",
+    "wind_max_m_s",
     "wind_dir_deg",
     "mic",
     NULL,

@@ -164,8 +164,15 @@
     DECL(scmplus) \
     DECL(fineoffset_wh1080_fsk) \
     DECL(tpms_abarth124) \
+    DECL(missil_ml0757) \
+    DECL(sharp_spc775) \
+    DECL(insteon) \
+    DECL(idm) \
+    DECL(netidm) \
+    DECL(thermopro_tx2) \
+    DECL(acurite_590tx) \
+    DECL(secplus_v2) \
     DECL(tfa_30_3221) \
-
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

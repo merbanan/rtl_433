@@ -338,7 +338,7 @@ char *remove_ws(char *str)
         }                                                   \
     } while (0)
 
-int main(int argc, char **argv)
+int main(void)
 {
     unsigned passed = 0;
     unsigned failed = 0;

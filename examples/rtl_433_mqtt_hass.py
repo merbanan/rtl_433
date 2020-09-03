@@ -20,6 +20,9 @@ import paho.mqtt.client as mqtt
 MQTT_HOST = "127.0.0.1"
 MQTT_PORT = 1883
 MQTT_TOPIC = "rtl_433/+/events"
+# When MQTT_USERNAME is set to None it will disable username and password for mqtt
+MQTT_USERNAME = None
+MQTT_PASSWORD = None
 DISCOVERY_PREFIX = "homeassistant"
 DISCOVERY_INTERVAL = 600  # Seconds before refreshing the discovery
 
@@ -122,6 +125,16 @@ mappings = {
         }
     },
 
+    "wind_avg_m_s": {
+        "device_type": "sensor",
+        "object_suffix": "WS",
+        "config": {
+            "name": "Wind Average",
+            "unit_of_measurement": "km/h",
+            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
+        }
+    },
+
     "wind_speed_m_s": {
         "device_type": "sensor",
         "object_suffix": "WS",
@@ -141,6 +154,16 @@ mappings = {
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
             "value_template": "{{ value|float }}"
+        }
+    },
+
+    "wind_max_m_s": {
+        "device_type": "sensor",
+        "object_suffix": "GS",
+        "config": {
+            "name": "Wind max",
+            "unit_of_measurement": "km/h",
+            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
         }
     },
 
@@ -185,6 +208,26 @@ mappings = {
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
             "value_template": "{{ value|float }}"
+        }
+    },
+
+    "rain_in": {
+        "device_type": "sensor",
+        "object_suffix": "RT",
+        "config": {
+            "name": "Rain Total",
+            "unit_of_measurement": "mm",
+            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
+        }
+    },
+
+    "rain_rate_in_h": {
+        "device_type": "sensor",
+        "object_suffix": "RR",
+        "config": {
+            "name": "Rain Rate",
+            "unit_of_measurement": "mm/h",
+            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
         }
     },
 
@@ -305,9 +348,10 @@ def publish_config(mqttc, topic, model, instance, mapping):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
+    instance_no_slash = instance.replace("/", "-")
     device_type = mapping["device_type"]
     object_suffix = mapping["object_suffix"]
-    object_id = "-".join([model, instance])
+    object_id = "-".join([model, instance_no_slash])
     object_name = "-".join([object_id,object_suffix])
 
     path = "/".join([DISCOVERY_PREFIX, device_type, object_id, object_name, "config"])
@@ -323,7 +367,8 @@ def publish_config(mqttc, topic, model, instance, mapping):
     config = mapping["config"].copy()
     config["name"] = object_name
     config["state_topic"] = topic
-    config["device"] = { "identifiers": instance, "name": object_id, "model": model }
+    config["unique_id"] = object_name
+    config["device"] = { "identifiers": object_id, "name": object_id, "manufacturer": "rtl_433" }
 
     mqttc.publish(path, json.dumps(config))
     print(path, " : ", json.dumps(config))
@@ -336,13 +381,17 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
         # not a device event
         return
     model = sanitize(data["model"])
+    instance = None
 
     if "channel" in data:
         channel = str(data["channel"])
         instance = channel
-    elif "id" in data:
+    if "id" in data:
         device_id = str(data["id"])
-        instance = device_id
+        if not instance:
+            instance = device_id
+        else:
+            instance = channel + "/" + device_id
     if not instance:
         # no unique device identifier
         return
@@ -357,6 +406,8 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
     mqttc = mqtt.Client()
+    if MQTT_USERNAME is not None:
+        mqttc.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message

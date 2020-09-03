@@ -48,6 +48,15 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
+    // No need to decode/extract values for simple test
+    if (b[2] == 0xff && b[3] == 0xff && b[4] == 0xff && b[5] == 0xff
+            && b[6] == 0xff && b[7] == 0xff && b[8] == 0xff) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     // align buffer, shifting by 4 bits
     for (i = 1; i < 10; i++) {
         b[i] = (b[i] << 4) | (b[i + 1] >> 4);

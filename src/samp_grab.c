@@ -101,7 +101,7 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     double freq_mhz = *g->frequency / 1000000.0;
     double rate_khz = *g->samp_rate / 1000.0;
     while (1) {
-        sprintf(f_name, "g%03d_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
+        sprintf(f_name, "g%03u_%gM_%gk.%s", g->sg_counter, freq_mhz, rate_khz, format);
         g->sg_counter++;
         if (access(f_name, F_OK) == -1) {
             break;
@@ -132,10 +132,11 @@ void samp_grab_write(samp_grab_t *g, unsigned grab_len, unsigned grab_end)
     //fprintf(stderr, "signal_bsize = %d  -      sg_index = %d\n", signal_bsize, g->sg_index);
     //fprintf(stderr, "start_pos    = %d  -   buffer_size = %d\n", start_pos, g->sg_size);
 
-    fprintf(stderr, "*** Saving signal to file %s (%d samples, %d bytes)\n", f_name, grab_len, signal_bsize);
+    fprintf(stderr, "*** Saving signal to file %s (%u samples, %u bytes)\n", f_name, grab_len, signal_bsize);
     fp = fopen(f_name, "wb");
     if (!fp) {
         fprintf(stderr, "Failed to open %s\n", f_name);
+        return;
     }
 
     wlen = signal_bsize;

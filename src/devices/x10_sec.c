@@ -1,60 +1,64 @@
-/*
- * X10 Security sensor decoder.
- *
- * Each packet starts with a sync pulse of 9000 us and 4500 us gap.
- * The message is OOK PPM encoded with 562 us pulse and long gap (0 bit)
- * of 1687 us or short gap (1 bit) of 562 us. There are 41 bits, the
- * message is repeated 5 times with a packet gap of 40000 us.
- *
- * The protocol has a lot of similarities to the NEC IR protocol
- *
- * Bits 0-7 are first part of the device ID
- * Bits 8-11 should be identical to bits 0-3
- * Bits 12-15 should be the XOR function of bits 4-7
- * Bits 16-23 are the code/message sent
- * Bits 24-31 should be the XOR function of bits 16-23
- * Bits 32-39 are the second part of the device ID
- * Bit 40 is CRC checksum (even parity)
- *
- * Tested with American sensors operating at 310 MHz
- * e.g., rtl_433 -f 310.558M
- *
- * Tested with European/International sensors, DS18, KR18 and MS18 operating at 433 MHz
- * e.g., rtl_433
- *
- * American sensor names ends with an 'A', like DS18A, while European/International
- * sensor names ends with an 'E', like MS18E
- *
- * The byte value decoding is based on limited observations, and it is likely
- * that there are missing pieces.
- * 
- * DS10 & DS18 door/window sensor bitmask : CTUUUDUB
- *      C = Door/window closed flag.
- *      T = Tamper alarm. Set to 1 if lid is open. (Not supported on DS10)
- *      U = Unknown. Cleared in all samples.
- *      D = Delay setting. Min=1. Max=0.
- *      B = Battery low flag.
- *
- * DS18 has both a magnetic (reed) relay and an external input. The two inputs
- * are reported using two different ID's as if they were two separate sensors.
- *
- * MS10 does not support tamper alarm, while MS18 does
- *
- * Copyright (C) 2018 Anthony Kava
- * Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+    X10 Security sensor decoder.
+
+    Copyright (C) 2018 Anthony Kava
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+X10 Security sensor decoder.
+
+Each packet starts with a sync pulse of 9000 us and 4500 us gap.
+The message is OOK PPM encoded with 562 us pulse and long gap (0 bit)
+of 1687 us or short gap (1 bit) of 562 us. There are 41 bits, the
+message is repeated 5 times with a packet gap of 40000 us.
+
+The protocol has a lot of similarities to the NEC IR protocol
+
+Bits 0-7 are first part of the device ID
+Bits 8-11 should be identical to bits 0-3
+Bits 12-15 should be the XOR function of bits 4-7
+Bits 16-23 are the code/message sent
+Bits 24-31 should be the XOR function of bits 16-23
+Bits 32-39 are the second part of the device ID
+Bit 40 is CRC checksum (even parity)
+
+Tested with American sensors operating at 310 MHz
+e.g., rtl_433 -f 310.558M
+
+Tested with European/International sensors, DS18, KR18 and MS18 operating at 433 MHz
+e.g., rtl_433
+
+American sensor names ends with an 'A', like DS18A, while European/International
+sensor names ends with an 'E', like MS18E
+
+The byte value decoding is based on limited observations, and it is likely
+that there are missing pieces.
+
+DS10 & DS18 door/window sensor bitmask : CTUUUDUB
+     C = Door/window closed flag.
+     T = Tamper alarm. Set to 1 if lid is open. (Not supported on DS10)
+     U = Unknown. Cleared in all samples.
+     D = Delay setting. Min=1. Max=0.
+     B = Battery low flag.
+
+DS18 has both a magnetic (reed) relay and an external input. The two inputs
+are reported using two different ID's as if they were two separate sensors.
+
+MS10 does not support tamper alarm, while MS18 does
+
+Based on code provided by Willi 'wherzig' in issue #30 (2014-04-21)
+
+*/
 
 #include "decoder.h"
 
 static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     data_t *data;
-    uint16_t r;                          /* a row index              */
     uint8_t *b;                          /* bits of a row            */
     char *event_str = "UNKNOWN";         /* human-readable event     */
     char x10_id_str[12] = "";            /* string showing hex value */
@@ -169,59 +173,44 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     /* build and handle data set for normal output */
+    /* clang-format off */
     data = data_make(
-            "model",    "",             DATA_STRING, _X("X10-Security","X10 Security"),
-            "id",       "Device ID",    DATA_STRING, x10_id_str,
-            "code",     "Code",         DATA_STRING, x10_code_str,
-            "event",    "Event",        DATA_STRING, event_str,
+            "model",        "",             DATA_STRING, _X("X10-Security","X10 Security"),
+            "id",           "Device ID",    DATA_STRING, x10_id_str,
+            "code",         "Code",         DATA_STRING, x10_code_str,
+            "event",        "Event",        DATA_STRING, event_str,
+            "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
+            "battery_ok",   "Battery OK",   DATA_COND,   battery_low,   DATA_INT, !battery_low,
+            "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
-
-    /* append delay indicator if set */
-    if (delay) {
-        data = data_append(data,
-                "delay",        "Delay",        DATA_INT, delay,
-                NULL);
-    }
-    /* append battery indicator if set */
-    if (battery_low) {
-        data = data_append(data,
-                "battery_ok",   "Battery OK",   DATA_INT, !battery_low,
-                NULL);
-    }
-    /* append tamper alarm indicator if set */
-    if (tamper) {
-        data = data_append(data,
-                "tamper",   "Tamper",   DATA_INT, tamper,
-                NULL);
-    }
-    /* append mic so it is placed last */
-    data = data_append(data, "mic", "Integrity", DATA_STRING, "CRC", NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "code",
-    "event",
-    "delay",
-    "battery_ok",
-    "tamper",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "code",
+        "event",
+        "delay",
+        "battery_ok",
+        "tamper",
+        "mic",
+        NULL,
 };
 
 /* r_device definition */
 r_device x10_sec = {
-    .name           = "X10 Security",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 562,  // Short gap 562us
-    .long_width     = 1687, // Long gap 1687us
-    .gap_limit      = 2200, // Gap after sync is 4.5ms (1125)
-    .reset_limit    = 6000,
-    .decode_fn      = &x10_sec_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "X10 Security",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 562,  // Short gap 562us
+        .long_width  = 1687, // Long gap 1687us
+        .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
+        .reset_limit = 6000,
+        .decode_fn   = &x10_sec_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

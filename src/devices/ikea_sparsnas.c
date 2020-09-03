@@ -1,5 +1,13 @@
-/*
-IKEA Sparsnäs Energy Meter Monitor decoder
+/** @file
+    IKEA Sparsnäs Energy Meter Monitor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+IKEA Sparsnäs Energy Meter Monitor.
 
 The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit 
 displays and stores the values sent by the sender unit. It is not needed for this
@@ -174,7 +182,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         ikea_sparsnas_sensor_id = ikea_sparsnas_brute_force_encryption(buffer);
         if (decoder->verbose > 1) {
             if (ikea_sparsnas_sensor_id) {
-                fprintf(stderr, "IKEA Sparsnäs: Found valid sensor ID %06d. If reported values does not make sense, this might be incorrect.\n", ikea_sparsnas_sensor_id);
+                fprintf(stderr, "IKEA Sparsnäs: Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.\n", ikea_sparsnas_sensor_id);
             } else {
                 fprintf(stderr, "IKEA Sparsnäs: No valid sensor ID found.\n");
             }
@@ -205,12 +213,12 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "IKEA Sparsnäs: CRC OK (%X == %X)\n", crc_calculated, crc_received);
         fprintf(stderr, "IKEA Sparsnäs: Encryption key: 0x%X%X%X%X%X\n", key[0], key[1], key[2], key[3], key[4]);
         decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
-        fprintf(stderr, "IKEA Sparsnäs: Received sensor id: %d\n", rcv_sensor_id);
+        fprintf(stderr, "IKEA Sparsnäs: Received sensor id: %06u\n", rcv_sensor_id);
     }
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Malformed package, or wrong sensor id. Received sensor id (%d) not the same as sender (%d)\n", rcv_sensor_id, ikea_sparsnas_sensor_id);
+            fprintf(stderr, "IKEA Sparsnäs: Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)\n", rcv_sensor_id, ikea_sparsnas_sensor_id);
         }
     }
 

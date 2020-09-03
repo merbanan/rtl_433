@@ -86,7 +86,6 @@ $ rtl_433 -R 0 -X '-X n=DirecTV,m=FSK_PCM,s=600,l=600,g=30000,r=80000'
 
 #define ROW_BITLEN_MIN     44  // The shortest possible fragment that can possibly decode successfully
 #define ROW_BITLEN_MAX     99  // But even with a LONG SYNC and large MESSAGE value, won't be larger than this
-#define ROW_MINREPEATS     1   // We're expecting that all bitbuffers coming here only have one row at a time
 #define ROW_SYNC_SHORT_LEN 5   // A SYNC longer than this will be considered a LONG SYNC
 #define DTV_BITLEN_MAX     40  // Valid decoded data for this device will be exactly 40 bits in length
 

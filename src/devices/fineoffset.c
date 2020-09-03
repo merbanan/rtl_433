@@ -204,7 +204,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
-    int model;
+    int type;
 
     // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 215) {
@@ -223,11 +223,11 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Classification heuristics
     if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8)
         if (bit_offset < 61)
-            model = MODEL_WH24; // nominal 3 bits postamble
+            type = MODEL_WH24; // nominal 3 bits postamble
         else
-            model = MODEL_WH65B;
+            type = MODEL_WH65B;
     else
-        model = MODEL_WH65B; // nominal 12 bits postamble
+        type = MODEL_WH65B; // nominal 12 bits postamble
 
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
@@ -266,7 +266,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float wind_speed_factor, rain_cup_count;
     // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
     // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
-    if (model == MODEL_WH24) { // WH24
+    if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
         rain_cup_count = 0.3f;
     } else { // WH65B
@@ -306,27 +306,20 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, model == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
+            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
             "id",               "ID",               DATA_INT, id,
             "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
+            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
+            _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
+            _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
+            _X("rain_mm","rainfall_mm"),           "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
+            "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
+            "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
+            "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
-    if (temp_raw       != 0x7ff)
-        data_append(data,   "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature, NULL);
-    if (humidity       != 0xff)
-        data_append(data,   "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity, NULL);
-    if (wind_dir       != 0x1ff)
-        data_append(data,   "wind_dir_deg",     "Wind direction",   DATA_INT, wind_dir, NULL);
-    if (wind_speed_raw != 0x1ff)
-        data_append(data,   _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms, NULL);
-    if (gust_speed_raw != 0xff)
-        data_append(data,   _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms, NULL);
-    data_append(data,       _X("rain_mm","rainfall_mm"),      "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm, NULL);
-    if (uv_raw         != 0xffff)
-        data_append(data,   "uv",               "UV",               DATA_INT, uv_raw,
-                            "uvi",              "UVI",              DATA_INT, uv_index, NULL);
-    if (light_raw      != 0xffffff)
-        data_append(data,   "light_lux",        "Light",            DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux, NULL);
-    data_append(data,       "mic",              "Integrity",        DATA_STRING, "CRC", NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -462,7 +455,11 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify type code
     int msg_type = b[0] & 0xf0;
-    if (msg_type != 0xe0) {
+    if (type == 32 && msg_type == 0xd0) {
+        // this is an older "WH32", does not have a barometric sensor
+        type = 31;
+    }
+    else if (msg_type != 0xe0) {
         if (decoder->verbose)
             fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
         return DECODE_ABORT_EARLY;
@@ -488,20 +485,23 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode data
     uint8_t id        = ((b[0]&0x0f) << 4) | (b[1] >> 4);
     int low_battery   = (b[1] & 0x08) >> 3;
-    int invalid_flag  = (b[1] & 0x04) >> 2;
+    //int invalid_flag  = (b[1] & 0x04) >> 2;
     int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
     float temperature = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
-    float pressure    = (b[4] << 8 | b[5]) * 0.1f;
+    int pressure_raw  = (b[4] << 8 | b[5]);
+    float pressure    = pressure_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
+            "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
+            "model",            "",             DATA_COND, type == 25, DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

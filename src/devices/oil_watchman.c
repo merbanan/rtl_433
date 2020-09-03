@@ -1,24 +1,29 @@
-/* Oil tank monitor using Si4320 framed FSK protocol
- *
- * Tested devices:
- * Sensor Systems Watchman Sonic
- *
- * Copyright (C) 2015 David Woodhouse
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Oil tank monitor using Si4320 framed FSK protocol.
+
+    Copyright (C) 2015 David Woodhouse
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Oil tank monitor using Si4320 framed FSK protocol.
+
+Tested devices:
+- Sensor Systems Watchman Sonic
+*/
 #include "decoder.h"
 
-// Start of frame preamble is 111000xx
-static const unsigned char preamble_pattern = 0xe0;
+static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    // Start of frame preamble is 111000xx
+    uint8_t const preamble_pattern = 0xe0;
 
-// End of frame is 00xxxxxx or 11xxxxxx depending on final data bit
-static const unsigned char postamble_pattern[2] = { 0x00, 0xc0 };
+    // End of frame is 00xxxxxx or 11xxxxxx depending on final data bit
+    uint8_t const postamble_pattern[2] = { 0x00, 0xc0 };
 
-static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     uint8_t *b;
     uint32_t unit_id;
     uint16_t depth = 0;

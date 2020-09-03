@@ -37,8 +37,9 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     char code_str[7];
 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+
     // require 64 data bits
-    if (start_pos-bitpos < 128) {
+    if (packet_bits.bits_per_row[0] < 64) {
         return 0;
     }
     b = packet_bits.bb[0];
