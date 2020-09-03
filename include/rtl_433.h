@@ -21,6 +21,8 @@
 #define SIGNAL_GRABBER_BUFFER   (12 * DEFAULT_BUF_LENGTH)
 #define MAX_FREQS               32
 
+#define MAX_REST_HEADERS        4
+
 #define INPUT_LINE_MAX 8192 /**< enough for a complete textual bitbuffer (25*256) */
 
 struct sdr_dev;
@@ -96,6 +98,8 @@ typedef struct r_cfg {
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval
     unsigned frames_events; ///< stats counter for interval
+    int rest_header_count;
+    char *rest_headers[MAX_REST_HEADERS];
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

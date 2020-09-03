@@ -82,6 +82,8 @@ void add_influx_output(struct r_cfg *cfg, char *param);
 
 void add_syslog_output(struct r_cfg *cfg, char *param);
 
+void add_rest_output(struct r_cfg *cfg, char *param);
+
 void add_null_output(struct r_cfg *cfg, char *param);
 
 void start_outputs(struct r_cfg *cfg, char const **well_known);

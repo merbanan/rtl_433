@@ -148,6 +148,8 @@ if(MINGW OR MSVC)
 list(APPEND NET_LIBRARIES ws2_32 mswsock)
 endif()
 
+list(APPEND NET_LIBRARIES curl)
+
 ########################################################################
 # Setup the include and linker paths
 ########################################################################

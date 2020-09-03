@@ -114,9 +114,11 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
-            "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
+            "  [-B header] Add header to REST logger. Must be specified before -F.\n"
+            "  [-F kv | json | csv | mqtt | influx | syslog | rest | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
+            "       Specify URL for REST e.g. -F rest:https://example.com/api\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
@@ -613,7 +615,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:B:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -651,6 +653,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"duration", 'T'},
         {"test_data", 'y'},
         {"stop_after_successful_events", 'E'},
+        {"rest_header", 'B'},
         {NULL, 0}};
 
 static void parse_conf_text(r_cfg_t *cfg, char *conf)
@@ -1004,6 +1007,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));
         }
+        else if (strncmp(arg, "rest:", 5) == 0 &&
+                strlen(arg) > 5) {
+            add_rest_output(cfg, arg+5);
+        }
         else if (strncmp(arg, "null", 4) == 0) {
             add_null_output(cfg, arg_param(arg));
         }
@@ -1085,6 +1092,12 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else {
             cfg->after_successful_events_flag = atobv(arg, 1);
         }
+        break;
+    case 'B':
+        if (cfg->rest_header_count < MAX_REST_HEADERS) {
+            cfg->rest_headers[cfg->rest_header_count++] = strdup(arg);
+        } else
+            fprintf(stderr, "Max number of headers reached %d\n", MAX_REST_HEADERS);
         break;
     default:
         usage(1);

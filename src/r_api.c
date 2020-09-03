@@ -28,6 +28,7 @@
 #include "list.h"
 #include "optparse.h"
 #include "output_mqtt.h"
+#include "output_http.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
 #include "compat_time.h"
@@ -878,6 +879,13 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
+}
+
+void add_rest_output(r_cfg_t *cfg, char *param)
+{
+    fprintf(stderr, "REST JSON to %s\n", param);
+
+    list_push(&cfg->output_handler, data_output_rest_create(param, cfg->rest_header_count, cfg->rest_headers));
 }
 
 void add_null_output(r_cfg_t *cfg, char *param)
