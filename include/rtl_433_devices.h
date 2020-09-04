@@ -172,6 +172,7 @@
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
     DECL(secplus_v2) \
+    DECL(tfa_30_3221) \
     DECL(secplus_v1) \
 
     /* Add new decoders here. */

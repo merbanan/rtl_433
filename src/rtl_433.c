@@ -1416,6 +1416,18 @@ int main(int argc, char **argv) {
                     if (!demod->pulse_data.num_pulses)
                         break;
 
+                    for (void **iter2 = demod->dumper.elems; iter2 && *iter2; ++iter2) {
+                        file_info_t const *dumper = *iter2;
+                        if (dumper->format == VCD_LOGIC) {
+                            pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
+                        } else if (dumper->format == PULSE_OOK) {
+                            pulse_data_dump(dumper->file, &demod->pulse_data);
+                        } else {
+                            fprintf(stderr, "Dumper (%s) not supported on OOK input\n", dumper->spec);
+                            exit(1);
+                        }
+                    }
+
                     if (demod->pulse_data.fsk_f2_est) {
                         run_fsk_demods(&demod->r_devs, &demod->pulse_data);
                     }

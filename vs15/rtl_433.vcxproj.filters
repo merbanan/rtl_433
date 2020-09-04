@@ -535,6 +535,9 @@
     <ClCompile Include="..\src\devices\tfa_30_3196.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tfa_30_3221.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
