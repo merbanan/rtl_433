@@ -31,8 +31,16 @@ ss_get_id(char *id, uint8_t *b)
 
     // Change to least-significant-bit last (protocol uses least-significant-bit first) for hex representation:
     for (uint16_t k = 3; k <= 7; k++) {
-        b[k] = reverse8(b[k]);
-        sprintf(p++, "%c", (char)b[k]);
+        char c = b[k];
+        c = reverse8(c);
+        // If the character is not representable with a valid-ish ascii character, replace with ?.
+        // This probably means the message is invalid.
+        // This is at least better than spitting out non-printable stuff :).
+        if (c < 32 || c > 126) {
+          sprintf(p++, "%c", '?');
+          continue;
+        }
+        sprintf(p++, "%c", (char)c);
     }
     *p = '\0';
 }
