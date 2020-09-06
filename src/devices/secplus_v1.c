@@ -19,8 +19,8 @@ Security+ 1.0  is described in [US patent application US6980655B2](https://paten
 */
 
 #include "decoder.h"
-#include <math.h>
-
+// # #include <math.h>
+#include <sys/time.h>
 
 /** @fn int _decode_v1_half(uint8_t *bits, uint8_t *result)
 
@@ -53,7 +53,7 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
     uint8_t *r;
     int x = 0;
 
-    r     = result;
+    r = result;
 
     for (int i = 0; i < 11; i++) {
         // fprintf(stderr, "\nbin X = {%ld} %s\n", strlen(binstr), binstr);
@@ -92,11 +92,10 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
     return (int)result[0];
 }
 
-
 static const uint8_t preamble_1[1] = {0x02};
 static const uint8_t preamble_2[1] = {0x07};
 
-/** @fn static int find_next(bitbuffer_t *bitbuffer, uint16_t row, int cur_index)
+/** @fn static int find_next(bitbuffer_t *bitbuffer, int cur_index)
 
     find index of next bursts/packets in bitbuffer
 
@@ -108,137 +107,162 @@ static const uint8_t preamble_2[1] = {0x07};
     (or just the 0001 and 0111 at the start of a bitbuffer)
 */
 
-static int find_next(bitbuffer_t *bitbuffer, uint16_t row, int cur_index)
+static int find_next(bitbuffer_t *bitbuffer, int cur_index)
 {
 
     // int search_index;
     int search_index_1;
     int search_index_2;
 
-    // fprintf(stderr, "%s: row = %hu cur_index = %d\n", __func__, row, cur_index);
 
-    if (cur_index == 0 && ((bitbuffer->bb[row][0] & 0xf0) == 0x10 || (bitbuffer->bb[row][0] & 0xf0) == 0x70))
+    if (cur_index == 0 && ((bitbuffer->bb[0][0] & 0xf0) == 0x10 || (bitbuffer->bb[0][0] & 0xf0) == 0x70))
         return 0;
 
-    search_index_1 = bitbuffer_search(bitbuffer, row, cur_index, preamble_1, 8);
+    if (cur_index == 0 && ((bitbuffer->bb[0][0] & 0xE0) == 0xe0 || (bitbuffer->bb[0][0] & 0xc0) == 0x80))
+        return 0;
+
+    search_index_1 = bitbuffer_search(bitbuffer, 0, cur_index, preamble_1, 8);
     search_index_1 += 3;
 
-    search_index_2 = bitbuffer_search(bitbuffer, row, cur_index, preamble_2, 8);
+    search_index_2 = bitbuffer_search(bitbuffer, 0, cur_index, preamble_2, 8);
     search_index_2 += 3;
 
     // return first match in buffer
     return (search_index_1 < search_index_2 ? search_index_1 : search_index_2);
 }
 
+static uint8_t cached_result[24] = {0};
+static struct timeval cached_tv  = {0};
+
 static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t result_1[24] = {0};
     uint8_t result_2[24] = {0};
+    int status           = 0;
+    int search_index;
 
     if (decoder->verbose) {
-        (void)fprintf(stderr, "%s: rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+        (void)fprintf(stderr, "%s : num rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+    }
+
+    // if we extend the reset limits we should removed the max bits_per_row test
+    if (bitbuffer->bits_per_row[0] < 84 || bitbuffer->bits_per_row[0] > 130) {
+        (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
+        return DECODE_ABORT_LENGTH;
+    }
+
+    // maybe this should move to after the while loop ?
+    if (cached_tv.tv_sec) {
+        struct timeval cur_tv;
+        struct timeval res_tv;
+        gettimeofday(&cur_tv, NULL);
+        timersub(&cur_tv, &cached_tv, &res_tv);
+
+        if (decoder->verbose > 1)
+            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, res_tv.tv_usec);
+
+        if (res_tv.tv_sec == 0 && res_tv.tv_usec < 75000) {
+            if (cached_result[0] == 0) {
+                memcpy(result_1, cached_result, 21);
+                status = 1;
+                if (decoder->verbose )
+                    fprintf(stderr, "%s: Load cache  part 1\n", __func__);
+            }
+            else if (cached_result[0] == 2) {
+                memcpy(result_2, cached_result, 21);
+                status = 2;
+                if (decoder->verbose )
+                    fprintf(stderr, "%s: Load cache  part 2\n", __func__);
+            }
+            else {
+                if (decoder->verbose > 1)
+                    fprintf(stderr, "%s Bad cache val %hu\n", __func__, cached_result[0]);
+            }
+        }
+        memset(cached_result, 0, sizeof(cached_result));
+        timerclear(&cached_tv);
     }
 
 
-    int status = 0;
 
-    // loop through all the rows till both parts are received
-    for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
-        int search_index;
-        uint8_t buffy[32]    = {0};
-        uint8_t buffi[32]    = {0};
 
-        if (decoder->verbose) {
-            (void)fprintf(stderr, "%s row = %hu\n", __func__, row);
-            bitrow_printf(bitbuffer->bb[0], bitbuffer->bits_per_row[0], "%s : ", __func__);
+    search_index = 0;
+    while (search_index < bitbuffer->bits_per_row[0] && status != 3) {
+        int dr = 0;
+        uint8_t buffy[32] = {0};
+        uint8_t buffi[32] = {0};
+
+        // memset(buffy, 0, sizeof(buffy));
+        // memset(buffi, 0, sizeof(buffi));
+
+        search_index = find_next(bitbuffer, search_index);
+
+        if (decoder->verbose > 1)
+            fprintf(stderr, "%s: find_next return : bits_per_row - search_index = %d\n", __func__, bitbuffer->bits_per_row[0] - search_index);
+
+        // nothing found
+        if (search_index == -1 || (search_index + 84) > bitbuffer->bits_per_row[0]) {
+            break;
         }
 
+        bitbuffer_extract_bytes(bitbuffer, 0, search_index, buffi, 84);
 
-        if (bitbuffer->bits_per_row[row] < 84) {
+        dr = _decode_v1_half(buffi, buffy, decoder->verbose);
+
+        if (dr < 0) {
+            // fprintf(stderr, "decode error\n");
+            search_index += 4;
             continue;
         }
-
-        search_index  = 0;
-        while (search_index < bitbuffer->bits_per_row[row] && status != 3) {
-            int dr = 0;
-
-            memset(buffy, 0, sizeof(buffy));
-            memset(buffi, 0, sizeof(buffi));
-
-            search_index = find_next(bitbuffer, row, search_index);
-
-            if (decoder->verbose)
-                fprintf(stderr, "%s: find_next return : %d\n", __func__, search_index);
-
-            // fprintf(stderr, "%s: find_next return : bits_per_row - search_index = %d\n", __func__, bitbuffer->bits_per_row[row] - search_index);
-            if (search_index == -1 || (search_index + 84) > bitbuffer->bits_per_row[row]) {
-                break;
-            }
-
-            bitbuffer_extract_bytes(bitbuffer, row, search_index, buffi, 96);
-
-            dr = _decode_v1_half(buffi, buffy, decoder->verbose);
-
-            if (decoder->verbose > 1) {
-                fprintf(stderr, "%s: dr  = %d\n", __func__, dr);
-
-                fprintf(stderr, "buffy : ");
-                for (int i = 0; i < 20; i++) {
-                    fprintf(stderr, "%02X ", buffy[i]);
-                }
-                fprintf(stderr, "\n");
-            }
-
-            if (dr < 0) {
-                // fprintf(stderr, "decode error\n");
-                search_index += 4;
-                continue;
-            }
-            else if (dr == 0) {
-                // fprintf(stderr, "decode result_1\n");
-                memcpy(result_1, buffy, 22);
-                status ^= 0x001;
-                search_index += 96;
-            }
-            else if (dr == 2) {
-                // fprintf(stderr, "decode result_2\n");
-                memcpy(result_2, buffy, 22);
-                status ^= 0x002;
-                search_index += 96;
-            }
-
-            if (decoder->verbose)
-                (void)fprintf(stderr, "%s: while status = %02X row=%hu\n\n\n", __func__, status, row);
-
-            if (status == 3)
-                break;
-
-        } // while
+        else if (dr == 0) {
+            // fprintf(stderr, "decode result_1\n");
+            memcpy(result_1, buffy, 22);
+            status ^= 0x001;
+            search_index += 88;
+        }
+        else if (dr == 2) {
+            // fprintf(stderr, "decode result_2\n");
+            memcpy(result_2, buffy, 22);
+            status ^= 0x002;
+            search_index += 88;
+        }
 
         if (status == 3)
             break;
 
-    } // for row
+    } // while
 
-    // (void)fprintf(stderr, "%s: no loop status = %02X \n\n\n", __func__, status);
 
-    if (status != 3)
-        return -1;
 
-    if (decoder->verbose > 1) {
-        // fprintf(stderr, "pt_1 :    [0 0 1 1 0 0 2 1 0 0 2 0 1 2 0 1 2 0 0 2 2]\n");
-        // fprintf(stderr, "result_1 : ");
-        for (int i = 0; i <= 20; i++) {
-            fprintf(stderr, "%hu ", result_1[i]);
-        }
-        fprintf(stderr, "\n");
 
-        // fprintf(stderr, "pt_2      [2 1 1 2 2 1 0 2 0 2 0 1 0 2 2 1 2 2 1 0 2]\n");
-        // fprintf(stderr, "result_2 : ");
-        for (int i = 0; i <= 20; i++) {
-            fprintf(stderr, "%hu ", result_2[i]);
-        }
-        fprintf(stderr, "\n");
+    if (decoder->verbose > 1)
+        (void)fprintf(stderr, "%s: exited  loop status = %02X\n", __func__, status);
+
+    // if we have both parts, move on and report data 
+    // if have only one part cache it for later.
+    // if we have no parts, quit
+    if (status == 0) {
+        return -1; // found nothing
+    }
+    else if (status == 1) {
+        gettimeofday(&cached_tv, NULL);
+        memcpy(cached_result, result_1, 21);
+        if (decoder->verbose) 
+            fprintf(stderr, "%s: caching part 1\n", __func__);
+        return -2; // found only 1st part
+    }
+    else if (status == 2) {
+        gettimeofday(&cached_tv, NULL);
+        memcpy(cached_result, result_2, 21);
+        if (decoder->verbose) 
+            fprintf(stderr, "%s: caching part 2\n", __func__);
+        return -2; // found only 2st part
+    }
+    else if (status == 3) {
+        // fprintf(stderr, "%s: got both\n", __func__);
+    }
+    else {
+        return -1; // should never get here
     }
 
     /*
@@ -251,21 +275,10 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t fixed        = 0; // max 3^20 ( ~32 bits )
 
     uint8_t *res;
-
-    // skip the first
     res = result_1;
     res++;
 
-    /*
-    if (decoder->verbose) {
-        for (int l = 0; l < 20; l++) {
-            fprintf(stderr, "%d", res[l]);
-        }
-        fprintf(stderr, "\n\n");
-    }
-    */
-
-    uint32_t acc  = 0;
+    uint32_t acc = 0;
     for (int i = 0; i < 20; i += 2) {
         uint8_t digit = 0;
 
@@ -281,15 +294,6 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     res = result_2;
     res++;
 
-    /*
-    if (decoder->verbose) {
-        for (int l = 0; l < 20; l++) {
-            fprintf(stderr, "%d", res[l]);
-        }
-        fprintf(stderr, "\n\n");
-    }
-    */
-
     acc = 0;
     for (int i = 0; i < 20; i += 2) {
         uint8_t digit = 0;
@@ -303,7 +307,6 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         acc += digit;
     }
 
-
     rolling = reverse32(rolling_temp);
 
     /*
@@ -313,16 +316,12 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int switch_id = fixed % 3;
     int id0       = (fixed / 3) % 3;
     int id1       = (int)(fixed / 9) % 3;
+    int pad_id     = 0;
+    int pin        = 0;
+    char pin_s[24] = {0};
 
-    if (decoder->verbose)
-        fprintf(stderr, "id0=%d  id1=%d switch_id=%d\n", id0, id1, switch_id);
-
-    int pad_id         = 0;
-    int pin            = 0;
-    char pin_s[24]     = {0};
-
-    int remote_id  = 0;
-    char *button   = "";
+    int remote_id = 0;
+    char *button  = "";
 
     if (id1 == 0) {
         //  pad_id = (fixed // 3**3) % (3**7)     27  3^72187
@@ -337,7 +336,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             strcat(pin_s, "enter");
         }
 
-        int pin_suffix     = 0;
+        int pin_suffix = 0;
         // pin_suffix = (fixed // 3**19) % 3   3^19=1162261467
         pin_suffix = (fixed / 1162261467) % 3;
 
@@ -427,8 +426,9 @@ r_device secplus_v1 = {
         .short_width = 500,
         .long_width  = 500,
         .tolerance   = 20,
-        .gap_limit   = 1500,
-        .reset_limit = 9000,
+        .gap_limit   = 15000,
+
+        .reset_limit = 80000,
         .decode_fn   = &secplus_v1_callback,
         .disabled    = 0,
         .fields      = output_fields,
