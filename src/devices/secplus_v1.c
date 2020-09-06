@@ -114,7 +114,6 @@ static int find_next(bitbuffer_t *bitbuffer, int cur_index)
     int search_index_1;
     int search_index_2;
 
-
     if (cur_index == 0 && ((bitbuffer->bb[0][0] & 0xf0) == 0x10 || (bitbuffer->bb[0][0] & 0xf0) == 0x70))
         return 0;
 
@@ -141,14 +140,15 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int status           = 0;
     int search_index;
 
-    if (decoder->verbose) {
-        (void)fprintf(stderr, "%s : num rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
-    }
-
     // if we extend the reset limits we should removed the max bits_per_row test
     if (bitbuffer->bits_per_row[0] < 84 || bitbuffer->bits_per_row[0] > 130) {
-        (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
+        if (decoder->verbose)
+            (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
         return DECODE_ABORT_LENGTH;
+    }
+
+    if (decoder->verbose) {
+        (void)fprintf(stderr, "%s : num rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
     }
 
     // maybe this should move to after the while loop ?
@@ -165,13 +165,13 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (cached_result[0] == 0) {
                 memcpy(result_1, cached_result, 21);
                 status = 1;
-                if (decoder->verbose )
+                if (decoder->verbose)
                     fprintf(stderr, "%s: Load cache  part 1\n", __func__);
             }
             else if (cached_result[0] == 2) {
                 memcpy(result_2, cached_result, 21);
                 status = 2;
-                if (decoder->verbose )
+                if (decoder->verbose)
                     fprintf(stderr, "%s: Load cache  part 2\n", __func__);
             }
             else {
@@ -184,11 +184,9 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
 
-
-
     search_index = 0;
     while (search_index < bitbuffer->bits_per_row[0] && status != 3) {
-        int dr = 0;
+        int dr            = 0;
         uint8_t buffy[32] = {0};
         uint8_t buffi[32] = {0};
 
@@ -232,13 +230,10 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     } // while
 
-
-
-
     if (decoder->verbose > 1)
         (void)fprintf(stderr, "%s: exited  loop status = %02X\n", __func__, status);
 
-    // if we have both parts, move on and report data 
+    // if we have both parts, move on and report data
     // if have only one part cache it for later.
     // if we have no parts, quit
     if (status == 0) {
@@ -247,14 +242,14 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (status == 1) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_1, 21);
-        if (decoder->verbose) 
+        if (decoder->verbose)
             fprintf(stderr, "%s: caching part 1\n", __func__);
         return -2; // found only 1st part
     }
     else if (status == 2) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_2, 21);
-        if (decoder->verbose) 
+        if (decoder->verbose)
             fprintf(stderr, "%s: caching part 2\n", __func__);
         return -2; // found only 2st part
     }
@@ -313,9 +308,9 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         we now have values for rolling & fixed
         next we extract status info stored in the value for 'fixed'
     */
-    int switch_id = fixed % 3;
-    int id0       = (fixed / 3) % 3;
-    int id1       = (int)(fixed / 9) % 3;
+    int switch_id  = fixed % 3;
+    int id0        = (fixed / 3) % 3;
+    int id1        = (int)(fixed / 9) % 3;
     int pad_id     = 0;
     int pin        = 0;
     char pin_s[24] = {0};
@@ -345,8 +340,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (pin_suffix == 2)
             strcat(pin_s, "*");
 
-        if (decoder->verbose)
-            fprintf(stderr, "pad_id=%d\tpin=%d\tpin_s=%s\n", pad_id, pin, pin_s);
+        // if (decoder->verbose)
+        //     fprintf(stderr, "pad_id=%d\tpin=%d\tpin_s=%s\n", pad_id, pin, pin_s);
     }
     else {
         remote_id = (int)fixed / 27;
@@ -357,8 +352,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         else if (switch_id == 2)
             button = "right";
 
-        if (decoder->verbose)
-            fprintf(stderr, "remote_id=%d\tbutton=%s\n", remote_id, button);
+        // if (decoder->verbose)
+        //     fprintf(stderr, "remote_id=%d\tbutton=%s\n", remote_id, button);
     }
 
     // preformat unsigned int
