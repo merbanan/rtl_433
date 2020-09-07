@@ -173,7 +173,6 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     pid_t pid = fork();
     if (pid < 0) {
         perror("forking zip");
-        return;
     }
     else if (pid == 0) {
         // child process because return value zero

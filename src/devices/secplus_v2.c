@@ -83,10 +83,10 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
 
     uint8_t part_id = (bits->bb[0][0] >> 6);
 
-    // fprintf(stdout, "%s: part %d\n", __func__, part_id);
+    // fprintf(stderr, "%s: part %d\n", __func__, part_id);
 
     if (verbose) {
-        fprintf(stdout, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
+        fprintf(stderr, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
 
         bitrow_debugf(bits->bb[0], bits->bits_per_row[0], "%s : ", __func__);
     }
