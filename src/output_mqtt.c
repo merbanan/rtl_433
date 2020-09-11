@@ -15,6 +15,7 @@
 #include "util.h"
 #include "fatal.h"
 #include "r_util.h"
+#include "rfraw.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -242,6 +243,8 @@ typedef struct {
     //char *homie;
     //char *hass;
 } data_output_mqtt_t;
+
+data_output_mqtt_t	*active_mqtt = NULL;
 
 static void print_mqtt_array(data_output_t *output, data_array_t *array, char const *format)
 {
@@ -483,6 +486,9 @@ static void data_output_mqtt_free(data_output_t *output)
     if (!mqtt)
         return;
 
+    if (mqtt == active_mqtt)
+        active_mqtt = NULL;
+
     free(mqtt->devices);
     free(mqtt->events);
     free(mqtt->states);
@@ -630,5 +636,57 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
 
     mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
+    if (!active_mqtt)
+        active_mqtt = mqtt;
+
     return &mqtt->output;
+}
+
+static pulse_data_t *active_pulse = NULL;
+
+static void rfraw_received(const struct mg_str *topic, const struct mg_str *payload)
+{
+    UNUSED(topic);
+
+    char buf[4096];
+    int n = -1;
+
+    if (!active_pulse)
+        return;
+
+    if (sscanf(payload->p, " { \"%*1[Tt]%*1[Ii]%*1[Mm]%*1[Ee]\" : \"%*[^\"]\" , \"%*1[Rr]%*1[Ff]%*1[Rr]%*1[Aa]%*1[Ww]\" : { \"%*1[Dd]%*1[Aa]%*1[Tt]%*1[Aa]\" : \" %4095[0-9A-Fa-f ] \" } } %n", buf, &n) != 1)
+        return;
+    if ((size_t) n != payload->len)
+        return;
+
+    if (!rfraw_parse(active_pulse, buf)) {
+        active_pulse->num_pulses = 0;
+    }
+}
+
+const char *input_mqtt_rfraw_config(const char *topic)
+{
+    if (!active_mqtt)
+        return "MQTT input couldn't be enabled without activating MQTT output";
+
+    mqtt_client_subscribe(active_mqtt->mqc, topic, MG_MQTT_QOS(0), rfraw_received);
+
+    return NULL;
+}
+
+int input_mqtt_rfraw_read(pulse_data_t *data)
+{
+    if (!active_mqtt)
+        return 0;
+
+    pulse_data_clear(data);
+    active_pulse = data;
+
+    do {
+        mg_mgr_poll(active_mqtt->mqc->conn->mgr, 1000);
+    } while (data->num_pulses == 0);
+
+    active_pulse = NULL;
+
+    return 1;
 }
