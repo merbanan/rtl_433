@@ -26,6 +26,7 @@ add_library(r_433 STATIC
     pulse_detect_fsk.c
     r_api.c
     r_util.c
+    rfraw.c
     samp_grab.c
     sdr.c
     term_ctl.c

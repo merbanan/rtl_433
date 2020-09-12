@@ -118,6 +118,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\r_device.h" />
     <ClInclude Include="..\include\r_private.h" />
     <ClInclude Include="..\include\r_util.h" />
+    <ClInclude Include="..\include\rfraw.h" />
     <ClInclude Include="..\include\rtl_433.h" />
     <ClInclude Include="..\include\rtl_433_devices.h" />
     <ClInclude Include="..\include\samp_grab.h" />
@@ -149,6 +150,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\pulse_detect_fsk.c" />
     <ClCompile Include="..\src\r_api.c" />
     <ClCompile Include="..\src\r_util.c" />
+    <ClCompile Include="..\src\rfraw.c" />
     <ClCompile Include="..\src\rtl_433.c" />
     <ClCompile Include="..\src\samp_grab.c" />
     <ClCompile Include="..\src\sdr.c" />

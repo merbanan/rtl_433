@@ -178,6 +178,9 @@
     <ClCompile Include="..\src\r_util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\rfraw.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\rtl_433.c">
       <Filter>Source Files</Filter>
     </ClCompile>
