@@ -128,8 +128,5 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
 
-/// Analyze and print result.
-void pulse_analyzer(pulse_data_t *data, int package_type);
-
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */
