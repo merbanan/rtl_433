@@ -174,6 +174,7 @@
     DECL(secplus_v2) \
     DECL(tfa_30_3221) \
     DECL(lacrosse_breezepro) \
+    DECL(thermor_a6n_132tx) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
