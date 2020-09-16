@@ -1,5 +1,5 @@
 /** @file
-    Bresser sensor protocol.
+    Somfy RTS
 
     Copyright (C) 2020 Matthias Schulz <mschulz@seemoo.tu-darmstadt.de>
 
@@ -10,6 +10,44 @@
 */
 
 #include "decoder.h"
+
+/*
+    Protocol description:
+    The protocol is very well defined under the following two links:
+    [1] https://pushstack.wordpress.com/somfy-rts-protocol/
+    [2] https://patentimages.storage.googleapis.com/bd/ae/4f/bf24e41e0161ca/US8189620.pdf
+
+    Each frame consists of a preamble with hardware and software sync pulses followed by the manchester encoded data pulses.
+    A rising edge describes a data bit 1 and a falling edge a data bit 0. The preamble is different for the first frame and
+    for retransmissions. In the end, the signal is first decoded using an OOK PCM decoder and within the callback, only the
+    data bits will be manchester decoded.
+
+    In the following, each character representing a low level "_" and a high level "°" is roughly 604 us long.
+
+    First frames' preamble:
+
+    °°°°°°°°°°°°°°°°___________°°°°____°°°°____°°°°°°°°_
+
+    The first long pulse is often wrongly detected, so I just make sure that it ends up in another row during decoding and
+    then only consider the rows containing the second part of the first frame preamble.
+
+    Retransmission frames' preamble:
+    
+    °°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°°°°°_
+
+    During reception, I observed that for both preambles the last low value is sometimes missing. Hence, I just call the
+    manchester decoder a second time with one bit offset, if the first decoding failed.
+
+    The data is manchester encoded _° represents a 1 and °_ represents a 0. The data section consists of 56 bits that equals
+    7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
+    descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
+
+    byte 0:   called "random" in [1] and "key" in [2], in the end it is just the seed for the scrambler
+    byte 1:   The higher nibble represents the control command, the lower nibble is the frame's checksum calculated by XORing
+              all nibbles
+    byte 2-3: Replay counter value in big endian byte order
+    byte 4-6: Remote control channel's address
+*/
 
 static const char *control_str[] = {
     "? (0)",
