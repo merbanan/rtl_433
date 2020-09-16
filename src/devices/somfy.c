@@ -107,8 +107,6 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (data_start == 0)
         return DECODE_FAIL_SANITY;
 
-//    decoder_output_bitbuffer(decoder, bitbuffer, "full");
-
     if (bitbuffer_search(bitbuffer, decode_row, 0, preamble_pattern, preamble_pattern_bit_length) != 0)
         return DECODE_FAIL_SANITY;
 
@@ -116,17 +114,11 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start - 1, &bitbuffer_decoded, 56) - data_start + 1 < 56)
             return DECODE_FAIL_MIC;
 
-//    decoder_output_bitbuffer(decoder, &bitbuffer_decoded, "decoded");
-
     bitbuffer_extract_bytes(&bitbuffer_decoded, 0, 0, message_bytes, 56);
-
-//    decoder_output_messagef(decoder, "%02x %02x %02x %02x %02x %02x %02x", message_bytes[0], message_bytes[1], message_bytes[2], message_bytes[3], message_bytes[4], message_bytes[5], message_bytes[6]);
 
     // descramble
     for (int i = 6; i >= 0; i--)
         message_bytes[i] = message_bytes[i] ^ ((i == 0) ? 0 : message_bytes[i-1]);
-
-//    decoder_output_messagef(decoder, "descrambled %02x %02x %02x %02x %02x %02x %02x", message_bytes[0], message_bytes[1], message_bytes[2], message_bytes[3], message_bytes[4], message_bytes[5], message_bytes[6]);
 
     // calculate checksum
     for (int i = 0; i < 7; i++)
@@ -169,7 +161,7 @@ static char *output_fields[] = {
     NULL
 };
 
-// rtl_433 -r g001_433.414M_250k.cu8 -X "n=somfy-test,m=OOK_PCM,s=604,l=604,t=40,r=10000,g=2500,y=2416"
+// rtl_433 -r g001_433.414M_250k.cu8 -X "n=somfy-test,m=OOK_PCM,s=604,l=604,t=40,r=10000,g=3000,y=2416"
 
 r_device somfy_rts = {
     .name           = "Somfy RTS",
