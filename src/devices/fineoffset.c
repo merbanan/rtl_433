@@ -956,7 +956,8 @@ static char *output_fields_WH25[] = {
 static char *output_fields_WH51[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
+    "battery_mV",
     "moisture",
     "boost",
     "ad_raw",
