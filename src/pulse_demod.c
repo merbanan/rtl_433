@@ -120,17 +120,17 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
         int highs = (pulses->pulse[n]) * f_short + 0.5;
-        // Determine number of bit periods in current pulse/gap length (rounded)
-        int periods = (pulses->pulse[n] + pulses->gap[n]) * f_long + 0.5;
+        // Determine number of low bit periods in current gap length (rounded)
+        // for RZ subtract the nominal bit-gap
+        int lows = (pulses->gap[n] + device->s_short_width - device->s_long_width) * f_long + 0.5;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
             bitbuffer_add_bit(&bits, 1);
         }
-        // Add run of zeros
-        periods -= highs;                  // Remove 1s from whole period
-        periods = MIN(periods, max_zeros); // Don't overflow at end of message
-        for (int i = 0; i < periods; ++i) {
+        // Add run of zeros, handle possibly negative "lows" gracefully
+        lows = MIN(lows, max_zeros); // Don't overflow at end of message
+        for (int i = 0; i < lows; ++i) {
             bitbuffer_add_bit(&bits, 0);
         }
 
