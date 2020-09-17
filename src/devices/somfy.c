@@ -1,5 +1,5 @@
 /** @file
-    Somfy RTS
+    Somfy RTS.
 
     Copyright (C) 2020 Matthias Schulz <mschulz@seemoo.tu-darmstadt.de>
 
@@ -9,45 +9,47 @@
     (at your option) any later version.
 */
 
-#include "decoder.h"
+/**
+Somfy RTS.
 
-/*
-    Protocol description:
-    The protocol is very well defined under the following two links:
-    [1] https://pushstack.wordpress.com/somfy-rts-protocol/
-    [2] https://patentimages.storage.googleapis.com/bd/ae/4f/bf24e41e0161ca/US8189620.pdf
+Protocol description:
+The protocol is very well defined under the following two links:
+[1] https://pushstack.wordpress.com/somfy-rts-protocol/
+[2] https://patentimages.storage.googleapis.com/bd/ae/4f/bf24e41e0161ca/US8189620.pdf
 
-    Each frame consists of a preamble with hardware and software sync pulses followed by the manchester encoded data pulses.
-    A rising edge describes a data bit 1 and a falling edge a data bit 0. The preamble is different for the first frame and
-    for retransmissions. In the end, the signal is first decoded using an OOK PCM decoder and within the callback, only the
-    data bits will be manchester decoded.
+Each frame consists of a preamble with hardware and software sync pulses followed by the manchester encoded data pulses.
+A rising edge describes a data bit 1 and a falling edge a data bit 0. The preamble is different for the first frame and
+for retransmissions. In the end, the signal is first decoded using an OOK PCM decoder and within the callback, only the
+data bits will be manchester decoded.
 
-    In the following, each character representing a low level "_" and a high level "°" is roughly 604 us long.
+In the following, each character representing a low level "_" and a high level "°" is roughly 604 us long.
 
-    First frames' preamble:
+First frames' preamble:
 
     °°°°°°°°°°°°°°°°___________°°°°____°°°°____°°°°°°°°_
 
-    The first long pulse is often wrongly detected, so I just make sure that it ends up in another row during decoding and
-    then only consider the rows containing the second part of the first frame preamble.
+The first long pulse is often wrongly detected, so I just make sure that it ends up in another row during decoding and
+then only consider the rows containing the second part of the first frame preamble.
 
-    Retransmission frames' preamble:
-    
+Retransmission frames' preamble:
+
     °°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°°°°°_
 
-    During reception, I observed that for both preambles the last low value is sometimes missing. Hence, I just call the
-    manchester decoder a second time with one bit offset, if the first decoding failed.
+During reception, I observed that for both preambles the last low value is sometimes missing. Hence, I just call the
+manchester decoder a second time with one bit offset, if the first decoding failed.
 
-    The data is manchester encoded _° represents a 1 and °_ represents a 0. The data section consists of 56 bits that equals
-    7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
-    descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
+The data is manchester encoded _° represents a 1 and °_ represents a 0. The data section consists of 56 bits that equals
+7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
+descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
 
-    byte 0:   called "random" in [1] and "key" in [2], in the end it is just the seed for the scrambler
-    byte 1:   The higher nibble represents the control command, the lower nibble is the frame's checksum calculated by XORing
-              all nibbles
-    byte 2-3: Replay counter value in big endian byte order
-    byte 4-6: Remote control channel's address
+- byte 0:   called "random" in [1] and "key" in [2], in the end it is just the seed for the scrambler
+- byte 1:   The higher nibble represents the control command, the lower nibble is the frame's checksum calculated by XORing 
+            all nibbles
+- byte 2-3: Replay counter value in big endian byte order
+- byte 4-6: Remote control channel's address
 */
+
+#include "decoder.h"
 
 static const char *control_str[] = {
     "? (0)",
@@ -68,7 +70,8 @@ static const char *control_str[] = {
     "? (15)",
 };
 
-static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
 
     uint8_t is_retransmission = 0;
@@ -80,11 +83,12 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     bitbuffer_t bitbuffer_decoded = { 0 };
 
     uint8_t message_bytes[7] = { 0 };
+    uint8_t chksum_calc = 0;
     uint8_t chksum = 0;
     uint16_t counter = 0;
     char address[7];
     uint8_t control = 0;
-    uint8_t random = 0;
+    uint8_t seed = 0;
 
     for (int i = 0; i < bitbuffer->num_rows; i++) {
         if (bitbuffer->bits_per_row[i] > 170) {
@@ -122,57 +126,68 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // calculate checksum
     for (int i = 0; i < 7; i++)
-        chksum ^= (message_bytes[i] & 0xf) ^ (message_bytes[i] >> 4);
+        chksum_calc ^= (message_bytes[i] & 0xf) ^ (message_bytes[i] >> 4);
 
-    // extract random
-    random = message_bytes[0];
+    // Fail if checksum is incorrect
+    if (chksum_calc != 0)
+        return DECODE_FAIL_MIC;
+
+    // extract seed
+    seed = message_bytes[0];
 
     // extract control
     control = (message_bytes[1] & 0xf0) >> 4;
+
+    // extract checksum
+    chksum = message_bytes[1] & 0xf;
 
     // extract counter independent of system's byte order
     counter = message_bytes[3] + message_bytes[2] * 255;
 
     // extract address bytes into hexstring
-    snprintf(address, sizeof(address), "%02x%02x%02x", message_bytes[4], message_bytes[5], message_bytes[6]);
+    snprintf(address, sizeof(address), "%02X%02X%02X", message_bytes[4], message_bytes[5], message_bytes[6]);
 
+    /* clang-format off */
     data = data_make(
-            "model",          "",               DATA_STRING, _X("Somfy-RTS","Somfy RTS"),
-            "random",         "Random",         DATA_INT,    random,
+            "model",          "",               DATA_STRING, "Somfy-RTS",
+            "seed",           "Seed",           DATA_FORMAT, "0x%02X", DATA_INT, seed,
             "control",        "Control",        DATA_STRING, control_str[control],
-            "checksum",       "Checksum",       DATA_STRING, chksum == 0 ? "OK" : "NOK",
+            "checksum",       "Checksum",       DATA_FORMAT, "0x%X", DATA_INT, chksum,
             "counter",        "Counter",        DATA_INT,    counter,
             "address",        "Address",        DATA_STRING, address,
             "retransmission", "Retransmission", DATA_STRING, is_retransmission ? "TRUE" : "FALSE",
+            "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "random",
-    "control",
-    "checksum",
-    "counter",
-    "address",
-    "retransmission",
-    NULL
+        "model",
+        "seed",
+        "control",
+        "checksum",
+        "counter",
+        "address",
+        "retransmission",
+        NULL,
 };
 
 // rtl_433 -r g001_433.414M_250k.cu8 -X "n=somfy-test,m=OOK_PCM,s=604,l=604,t=40,r=10000,g=3000,y=2416"
 
 r_device somfy_rts = {
-    .name           = "Somfy RTS",
-    .modulation     = OOK_PULSE_PCM_RZ,
-    .short_width    = 604,   // short pulse is ~604 us
-    .long_width     = 604,   // long pulse is ~604 us
-    .sync_width     = 2416,  // hardware sync pulse is ~2416 us, software sync pulse is ~4550 us
-    .gap_limit      = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us, 3000 us will split first message into two rows one with start pulse and one with first frame
-    .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
-    .tolerance      = 20,
-    .decode_fn      = &somfy_rts_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name           = "Somfy RTS",
+        .modulation     = OOK_PULSE_PCM_RZ,
+        .short_width    = 604,   // short pulse is ~604 us
+        .long_width     = 604,   // long pulse is ~604 us
+        .sync_width     = 2416,  // hardware sync pulse is ~2416 us, software sync pulse is ~4550 us
+        .gap_limit      = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us, 3000 us will split first message into two rows one with start pulse and one with first frame
+        .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
+        .tolerance      = 20,
+        .decode_fn      = &somfy_rts_callback,
+        .disabled       = 0,
+        .fields         = output_fields,
 };
