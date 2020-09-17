@@ -35,9 +35,6 @@ Retransmission frames' preamble:
 
     °°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°°°°°_
 
-During reception, I observed that for both preambles the last low value is sometimes missing. Hence, I just call the
-manchester decoder a second time with one bit offset, if the first decoding failed.
-
 The data is manchester encoded _° represents a 1 and °_ represents a 0. The data section consists of 56 bits that equals
 7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
 descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
@@ -116,8 +113,7 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &bitbuffer_decoded, 56) - data_start < 56)
-        if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start - 1, &bitbuffer_decoded, 56) - (data_start - 1) < 56)
-            return DECODE_FAIL_MIC;
+        return DECODE_FAIL_MIC;
 
     bitbuffer_extract_bytes(&bitbuffer_decoded, 0, 0, message_bytes, 56);
 
@@ -189,7 +185,7 @@ r_device somfy_rts = {
         .modulation     = OOK_PULSE_PCM_RZ,
         .short_width    = 604,   // short pulse is ~604 us (1 x nominal bit width)
         .long_width     = 604,   // long pulse is ~604 us (1 x nominal bit width)
-        .sync_width     = 2416,  // hardware sync pulse is ~2416 us (4 x nominal bit width), software sync pulse is ~4550 us
+//        .sync_width     = 2416,  // hardware sync pulse is ~2416 us (4 x nominal bit width), software sync pulse is ~4550 us. Commented, as sync_width has no effect on the PCM decoder.
         .gap_limit      = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us (11 x nominal bit width), 3000 us will split first message into two rows one with start pulse and one with first frame
         .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
         .tolerance      = 20,
