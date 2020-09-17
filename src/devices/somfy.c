@@ -86,7 +86,8 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t chksum_calc = 0;
     uint8_t chksum = 0;
     uint16_t counter = 0;
-    char address[7];
+    char address_hex[7];
+    uint32_t address_int_le = 0;
     uint8_t control = 0;
     uint8_t seed = 0;
 
@@ -115,7 +116,7 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &bitbuffer_decoded, 56) - data_start < 56)
-        if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start - 1, &bitbuffer_decoded, 56) - data_start + 1 < 56)
+        if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start - 1, &bitbuffer_decoded, 56) - (data_start - 1) < 56)
             return DECODE_FAIL_MIC;
 
     bitbuffer_extract_bytes(&bitbuffer_decoded, 0, 0, message_bytes, 56);
@@ -142,19 +143,23 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     chksum = message_bytes[1] & 0xf;
 
     // extract counter independent of system's byte order
-    counter = message_bytes[3] + message_bytes[2] * 255;
+    counter = message_bytes[3] | (message_bytes[2] << 8);
 
     // extract address bytes into hexstring
-    snprintf(address, sizeof(address), "%02X%02X%02X", message_bytes[4], message_bytes[5], message_bytes[6]);
+    snprintf(address_hex, sizeof(address_hex), "%02X%02X%02X", message_bytes[4], message_bytes[5], message_bytes[6]);
+
+    // extract address as little endian integer. It should be little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
+    address_int_le = (message_bytes[4] << 16) | (message_bytes[5] << 8) | message_bytes[6];
 
     /* clang-format off */
     data = data_make(
             "model",          "",               DATA_STRING, "Somfy-RTS",
+            "id",             "Id",             DATA_INT,    address_int_le,
             "seed",           "Seed",           DATA_FORMAT, "0x%02X", DATA_INT, seed,
             "control",        "Control",        DATA_STRING, control_str[control],
             "checksum",       "Checksum",       DATA_FORMAT, "0x%X", DATA_INT, chksum,
             "counter",        "Counter",        DATA_INT,    counter,
-            "address",        "Address",        DATA_STRING, address,
+            "address",        "Address",        DATA_STRING, address_hex,
             "retransmission", "Retransmission", DATA_STRING, is_retransmission ? "TRUE" : "FALSE",
             "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
