@@ -29,7 +29,8 @@ Power calculations come from Nathaniel Elijah's program EfergyRPI_001.
 
 #include "decoder.h"
 
-static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     unsigned num_bits = bitbuffer->bits_per_row[0];
     uint8_t *bytes = bitbuffer->bb[0];
     data_t *data;

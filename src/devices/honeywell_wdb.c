@@ -42,7 +42,8 @@ Wireless Chimes
 
 #include "decoder.h"
 
-static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int row, secret_knock, relay, battery, parity;
     uint8_t *bytes;
     data_t *data;

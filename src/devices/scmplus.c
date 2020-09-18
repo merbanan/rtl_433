@@ -49,7 +49,7 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose) {
         fprintf(stderr, "%s: row len=%hu\n", __func__, bitbuffer->bits_per_row[0]);
-        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: sync_index=%u\n", __func__, sync_index);
     }
 
     // bitbuffer_debug(bitbuffer);
@@ -150,8 +150,8 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // fprintf(stderr, "meter_type = %s\n", meter_type);
 
-    /* 
-        Field key names and format set to  match rtlamr field names 
+    /*
+        Field key names and format set to  match rtlamr field names
 
         {Time:2020-06-20T09:58:19.074 Offset:49152 Length:49152
         SCM+:{ProtocolID:0x1E EndpointType:0xAB EndpointID:  68211547 Consumption:  6883 Tamper:0x4900 PacketCRC:0x39BE}}

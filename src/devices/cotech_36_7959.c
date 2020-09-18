@@ -42,7 +42,8 @@ Message layout
 
 #include "decoder.h"
 
-static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t const preamble[] = {0x01, 0x40}; // 12 bits
 
     int r = -1;

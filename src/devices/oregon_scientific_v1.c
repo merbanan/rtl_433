@@ -24,7 +24,8 @@ beginning with a 0 will have data in this gap.
 
 #define OSV1_BITS   32
 
-static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int ret = 0;
     int row;
     int cs;
@@ -99,7 +100,7 @@ static char *output_fields[] = {
     "channel",
     "battery",
     "temperature_C",
-    NULL
+    NULL,
 };
 
 r_device oregon_scientific_v1 = {
@@ -111,5 +112,5 @@ r_device oregon_scientific_v1 = {
     .reset_limit    = 14000,
     .decode_fn      = &oregon_scientific_v1_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

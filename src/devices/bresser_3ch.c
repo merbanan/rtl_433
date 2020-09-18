@@ -35,7 +35,8 @@ humi is 8 bit relative humidity percentage
 */
 #include "decoder.h"
 
-static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
 

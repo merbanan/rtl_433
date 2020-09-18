@@ -54,10 +54,11 @@ B = Battery. 0=Ok, 8=Low.
 
 #include "decoder.h"
 
-static const uint8_t preamble_pattern[] = { 0xaa, 0xaa, 0xaa, 0x2d, 0xd4 };
 
 static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    uint8_t const preamble_pattern[] = { 0xaa, 0xaa, 0xaa, 0x2d, 0xd4 };
+
     data_t *data;
     uint8_t msg[26];
     uint16_t sensor_id;
@@ -120,7 +121,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
     float rain = rain_raw * 0.1f;
-    
+
     int battery_ok = ((msg[25] & 0x80) == 0);
 
     data = data_make(
@@ -154,7 +155,7 @@ static char *output_fields[] = {
     "wind_dir_deg",
     "rain_mm",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device bresser_5in1 = {

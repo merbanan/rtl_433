@@ -1,6 +1,6 @@
 /** @file
     Quhwa HS1527.
-  
+
     Copyright (C) 2016 Ask Jakobsen
 
     This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,7 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
-    NULL
+    NULL,
 };
 
 r_device quhwa = {
@@ -74,5 +74,5 @@ r_device quhwa = {
     .tolerance     = 80,   // us
     .decode_fn     = &quhwa_callback,
     .disabled      = 0,
-    .fields        = output_fields
+    .fields        = output_fields,
 };

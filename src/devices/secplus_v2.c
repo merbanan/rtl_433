@@ -1,5 +1,5 @@
 /** @file
-    Security+ 2.0 rolling code
+    Security+ 2.0 rolling code.
 
     Copyright (C) 2020 Peter Shipley <peter.shipley@gmail.com>
     Based on code by Clayton Smith https://github.com/argilo/secplus
@@ -21,23 +21,21 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 #include "decoder.h"
 
 /**
+Security+ 2.0 rolling code.
 
-
-data comes in two bursts/packets
+Data comes in two bursts/packets.
 
 Layout:
 
-bits = `AA BB IIII OOOO X*30`
+    bits = `AA BB IIII OOOO X*30`
 
-AA = payload type  ( 2 bits 00 or 01 )
-BB = FrameID ( 2 bits always 00)
-IIII = inversion indicator ( 4 bits )
-OOOO = Order indicator ( 4 bits ).
-XXXX....  = data ( 30 bits )
+- AA = payload type  ( 2 bits 00 or 01 )
+- BB = FrameID ( 2 bits always 00)
+- IIII = inversion indicator ( 4 bits )
+- OOOO = Order indicator ( 4 bits ).
+- XXXX....  = data ( 30 bits )
 
 ---
-
-
 
 data is broken up into 3 parts ( p0 p1 p2 )
 eg:
@@ -68,9 +66,7 @@ Once the above has been run twice the two are merged
 
 ---
 
-
 */
-
 
 int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
 {
@@ -113,7 +109,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     // using short to store 10bit values
     uint16_t p0 = 0, p1 = 0, p2 = 0;
 
-    // sort 30 bits of interleaved data into three 10 bit buffers 
+    // sort 30 bits of interleaved data into three 10 bit buffers
     for (int i = 0; i < 10; i++) {
         p2 ^= (x & 0x00000001) << i; // 9-
         x >>= 1;
@@ -157,7 +153,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     case 0x09: // 0b1001 (False, False, False),
         break;
     default:
-        if (verbose) 
+        if (verbose)
             fprintf(stderr, "Invert FAIL\n");
         return 1;
     }
@@ -220,7 +216,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
 
     // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
 
-    // assemble binary bits into trinary 
+    // assemble binary bits into trinary
     x = p2;
     for (int i = 8; i >= 0; i -= 2) {
         roll_array[k++] = (x >> i) & 0x03;
@@ -234,7 +230,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         fprintf(stderr, "\n");
     }
 
-    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not 
+    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
             fprintf(stderr, "roll_array val  FAIL\n");
@@ -308,7 +304,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             continue;
         }
 
-        // 2nd bit indicates with half of the data 
+        // 2nd bit indicates with half of the data
         if (bits.bb[0][0] & 0xC0) {
             if (decoder->verbose)
                 (void)fprintf(stderr, "%s: Set 2\n", __func__);
@@ -417,7 +413,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-
         // Common fields
         "model",
         "rolling"

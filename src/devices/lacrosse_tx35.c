@@ -152,7 +152,8 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
 Wrapper for the TX29 device.
 @sa lacrosse_it()
 */
-static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return lacrosse_it(decoder, bitbuffer, LACROSSE_TX29_MODEL);
 }
 
@@ -160,7 +161,8 @@ static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 Wrapper for the TX35 device.
 @sa lacrosse_it()
 */
-static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return lacrosse_it(decoder, bitbuffer, LACROSSE_TX35_MODEL);
 }
 
@@ -173,7 +175,7 @@ static char *output_fields[] = {
     "temperature_C",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 // Receiver for the TX29 device

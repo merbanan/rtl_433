@@ -43,7 +43,7 @@ This means the primary will always have the same unit number as the
 last learned secondary, weird.
 Also you always need to learn from the same primary.
 
-*/ 
+*/
 
 #include "decoder.h"
 
@@ -121,7 +121,7 @@ static char *output_fields[] = {
     "unit",
     "learn",
     "code",
-    NULL
+    NULL,
 };
 
 r_device smoke_gs558 = {
@@ -133,5 +133,5 @@ r_device smoke_gs558 = {
     .reset_limit    = 11764 * 1.2f, // Maximum gap size before End Of Message [us]
     .decode_fn      = &smoke_gs558_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };
