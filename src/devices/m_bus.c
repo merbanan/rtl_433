@@ -295,7 +295,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 //[02 65] b408 [42 65] a008 [8201 65] 6408 [22 65] 9608 [12 65] ac08 [62 65] 2808 [52 65] 920802fb1a470142fb1a4a018201fb1a550122fb1a4a0112fb1a4a0162fb1a3c0152fb1a6c01066dbb3197902100
 
     /* Payload must start with a DIF */
-    while(off < block1->L) {
+    while (off < block1->L) {
         memset(dife_array, 0, 10);
         memset(vife_array, 0, 10);
         dife_cnt = 0;
@@ -330,7 +330,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         if (vif == 0xFB) {
             vif_linear = 0x7B;
             vif_uam = vife_array[0];
-        } else if(vif  == 0xFD) {
+        } else if (vif  == 0xFD) {
             vif_linear = 0x7D;
             vif_uam = vife_array[0];
         } else {
@@ -505,7 +505,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
     }
-    if(block1->block2.CI) {
+    if (block1->block2.CI) {
         data = data_append(data,
         "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
         "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
