@@ -55,8 +55,8 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         bitbuffer_extract_bytes(bitbuffer, row_index, 2, b, 36);
         b[0] &= 0x3f;
 
-        // Prevent false positives from 'allzero' 
-        // reject if Checksum channelhumidity and temperature are all zero 
+        // Prevent false positives from 'allzero'
+        // reject if Checksum channelhumidity and temperature are all zero
         // No need to decode/extract values for simple test
         if (chk == 0 && b[0] == 0 && b[1] == 0 && b[2] == 0)
             continue; // DECODE_FAIL_SANITY

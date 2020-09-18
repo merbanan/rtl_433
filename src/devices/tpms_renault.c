@@ -79,7 +79,8 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 }
 
 /** @sa tpms_renault_decode() */
-static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int tpms_renault_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     // full preamble is 55 55 55 56 (inverted: aa aa aa a9)
     uint8_t const preamble_pattern[2] = {0xaa, 0xa9}; // 16 bits
 

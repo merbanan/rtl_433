@@ -35,6 +35,7 @@
 #include "r_api.h"
 #include "sdr.h"
 #include "baseband.h"
+#include "pulse_analyzer.h"
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
 #include "pulse_demod.h"

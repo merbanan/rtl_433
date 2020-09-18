@@ -29,7 +29,8 @@ Long: 860-1016 us, short: 304-560 us, older sync: 480 us, newer sync: 340 us,
 
 #include "decoder.h"
 
-static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int id;

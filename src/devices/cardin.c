@@ -21,7 +21,8 @@ May be useful for other Cardin product too
 
 #include "decoder.h"
 
-static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     unsigned char dip[10] = {'-','-','-','-','-','-','-','-','-', '\0'};
 
@@ -127,7 +128,7 @@ static char *output_fields[] = {
     "model",
     "dipswitch",
     "rbutton",
-    NULL
+    NULL,
 };
 
 r_device cardin = {

@@ -57,7 +57,8 @@ Random Code / Device ID: (Nibble 1)
 
 #include "decoder.h"
 
-static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t b[5];
     data_t *data;
 

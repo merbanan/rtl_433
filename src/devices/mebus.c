@@ -1,6 +1,5 @@
 /** @file
     Mebus 433.
-    
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -10,7 +9,8 @@
 
 #include "decoder.h"
 
-static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     int16_t temp;
     int8_t  hum;
@@ -70,7 +70,7 @@ static char *output_fields[] = {
     "unknown2",
     "temperature_C",
     "humidity",
-    NULL
+    NULL,
 };
 
 r_device mebus433 = {
@@ -82,5 +82,5 @@ r_device mebus433 = {
     .reset_limit    = 6000,
     .decode_fn      = &mebus433_callback,
     .disabled       = 1, // add docs, tests, false positive checks and then reenable
-    .fields         = output_fields
+    .fields         = output_fields,
 };

@@ -44,7 +44,8 @@ ffffff45 01236pHH hhhhh Encoding
 
 #include "decoder.h"
 
-static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
 
     uint8_t ID;
@@ -118,7 +119,7 @@ static char *output_fields[] = {
     "temperature_C",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device calibeur_RF104 = {

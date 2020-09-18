@@ -30,7 +30,7 @@ Decodes transmitted binary into trinary data
 
 Binary Bits are read from bits and stored as an array of uint8_t in result[]
 
-The trinary value of the first nibble is also returned 
+The trinary value of the first nibble is also returned
 
 The trinary conversion is accomplished done by counting the number of '1' in a group
 

@@ -32,7 +32,8 @@ Packet payload: 1 sync nibble and 8 bytes data, 17 nibbles:
 
 #include "decoder.h"
 
-static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t b[8];
     int serial_id;
@@ -93,7 +94,8 @@ Probable packet payload:
 - T: temperature, degrees Fahrenheit
 - C: checksum, sum of byte data modulo 256
 */
-static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t b[10];
     int serial_id;

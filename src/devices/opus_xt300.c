@@ -25,7 +25,7 @@ SM: soil moisure (decimal 05 -> 99 %)
 TT: temperature °C + 40°C (decimal)
 ??: always FF... maybe spare bytes
 CC: check sum (simple sum) except 0xFF preamble
- 
+
 */
 
 #include "decoder.h"
@@ -99,7 +99,7 @@ static char *output_fields[] = {
     "channel",
     "temperature_C",
     "moisture",
-    NULL
+    NULL,
 };
 
 
@@ -112,5 +112,5 @@ r_device opus_xt300 = {
     .reset_limit    = 31000,
     .decode_fn      = &opus_xt300_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

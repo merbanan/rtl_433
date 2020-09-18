@@ -43,7 +43,8 @@ Layout appears to be:
 
 #include "decoder.h"
 
-static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int maverick_et73_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
