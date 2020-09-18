@@ -1,0 +1,10 @@
+on: [push, pull_request]
+jobs:
+  style_check_job:
+    runs-on: ubuntu-latest
+    name: check code style
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Style Check
+      uses: ./.github/actions/style-check
