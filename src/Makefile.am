@@ -18,6 +18,7 @@ rtl_433_SOURCES      = abuf.c \
                        optparse.c \
                        output_influx.c \
                        output_mqtt.c \
+                       pulse_analyzer.c \
                        pulse_demod.c \
                        pulse_detect.c \
                        pulse_detect_fsk.c \
