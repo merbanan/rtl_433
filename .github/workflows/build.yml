@@ -1,6 +1,7 @@
+name: Build with CMake and Autotools
 on: [push, pull_request]
 jobs:
-  build:
+  build_check_job:
     runs-on: ubuntu-latest
     name: build project
     steps:

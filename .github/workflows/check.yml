@@ -1,8 +1,9 @@
+name: Check code style
 on: [push, pull_request]
 jobs:
   style_check_job:
     runs-on: ubuntu-latest
-    name: check code style
+    name: Check code style
     steps:
     - name: Checkout
       uses: actions/checkout@v2
