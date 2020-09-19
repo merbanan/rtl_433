@@ -393,7 +393,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // rolling_total is a 28 bit unsigned number
     // fixed_totals is 40 bit in a uint64_t
-    snprintf(fixed_str, sizeof(fixed_str), "%llu", fixed_total);
+    snprintf(fixed_str, sizeof(fixed_str), "%llu", (long long unsigned)fixed_total);
     snprintf(rolling_str, sizeof(rolling_str), "%u", rolling_total);
 
     /* clang-format off */
