@@ -68,14 +68,14 @@
 #include "getopt/getopt.h"
 #endif
 
-#if defined(__clang__)
-#define NORETURN _Noreturn
-#elif defined(__GNUC__)
-#define NORETURN __attribute__((noreturn))
+// note that Clang has _Noreturn but it's C11
+// #if defined(__clang__) ...
+#if defined(__GNUC__)
+#define _Noreturn __attribute__((noreturn))
 #elif defined(_MSC_VER)
-#define NORETURN __declspec(noreturn)
+#define _Noreturn __declspec(noreturn)
 #else
-#define NORETURN
+#define _Noreturn
 #endif
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
@@ -86,7 +86,7 @@ static void print_version(void)
     fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
-NORETURN
+_Noreturn
 static void usage(int exit_code)
 {
     term_help_printf(
@@ -140,7 +140,7 @@ static void usage(int exit_code)
     exit(exit_code);
 }
 
-NORETURN
+_Noreturn
 static void help_protocols(r_device *devices, unsigned num_devices, int exit_code)
 {
     unsigned i;
@@ -158,7 +158,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
     exit(exit_code);
 }
 
-NORETURN
+_Noreturn
 static void help_device(void)
 {
     term_help_printf(
@@ -184,7 +184,7 @@ static void help_device(void)
     exit(0);
 }
 
-NORETURN
+_Noreturn
 static void help_gain(void)
 {
     term_help_printf(
@@ -196,7 +196,7 @@ static void help_gain(void)
     exit(0);
 }
 
-NORETURN
+_Noreturn
 static void help_output(void)
 {
     term_help_printf(
@@ -222,7 +222,7 @@ static void help_output(void)
     exit(0);
 }
 
-NORETURN
+_Noreturn
 static void help_meta(void)
 {
     term_help_printf(
@@ -247,7 +247,7 @@ static void help_meta(void)
     exit(0);
 }
 
-NORETURN
+_Noreturn
 static void help_read(void)
 {
     term_help_printf(
@@ -269,7 +269,7 @@ static void help_read(void)
     exit(0);
 }
 
-NORETURN
+_Noreturn
 static void help_write(void)
 {
     term_help_printf(
