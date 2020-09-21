@@ -148,7 +148,7 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     address_int_le = (message_bytes[6] << 16) | (message_bytes[5] << 8) | message_bytes[4];
 
     if (decoder->verbose > 1) {
-        fprintf(stdout, "seed=0x%02x, chksum=0x%x\n", seed, chksum);
+        fprintf(stderr, "seed=0x%02x, chksum=0x%x\n", seed, chksum);
     }
 
     /* clang-format off */
