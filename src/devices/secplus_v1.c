@@ -87,6 +87,12 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
         }
     }
 
+    fprintf(stderr, "\n%s ", __func__);
+    for(int l=0; l<30; l++) {
+        fprintf(stderr,  "%d", result[l]);
+    }
+    fprintf(stderr, "\n");
+
     return (int)result[0];
 }
 
@@ -129,7 +135,7 @@ static int find_next(bitbuffer_t *bitbuffer, int cur_index)
 }
 
 // max age for cache in us
-#define CACHE_MAX_AGE 75000
+#define CACHE_MAX_AGE 800000
 
 static uint8_t cached_result[24] = {0};
 static struct timeval cached_tv  = {0};
@@ -418,7 +424,7 @@ static char *output_fields[] = {
 //   -X "n=v1,m=OOK_PCM,s=500,l=500,t=40,r=10000,g=7400"
 
 r_device secplus_v1 = {
-        .name        = "Security+ 1.0 (Keyfob)",
+        .name        = "Security+ (Keyfob)",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 500,
         .long_width  = 500,
