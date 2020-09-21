@@ -203,7 +203,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
-    [130]  IKEA Sparsnäs Energy Meter Monitor
+    [130]  IKEA Sparsnas Energy Meter Monitor
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer

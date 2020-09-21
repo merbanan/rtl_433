@@ -39,14 +39,14 @@ Example data:
 Temperature:
 - Sensor sends data in °F, lowest supported value is -90°F
 - 12 bit unsigned and scaled by 10 (Nibbles: 6,5,4)
-- in this case "011001100101" =  1637/10 - 90 = 73.7 °F (23.17 °C)
+- in this case `011001100101` =  1637/10 - 90 = 73.7 °F (23.17 °C)
 
 Humidity:
 - 8 bit unsigned (Nibbles 8,7)
-- in this case "00101110" = 46
+- in this case `00101110` = 46
 
 Channel number: (Bits 10,11) + 1
-- in this case "00" --> "00" +1 = Channel1
+- in this case `00` --> `00` +1 = Channel1
 
 Battery status: (Bit 33) (0 normal, 1 voltage is below ~2.7 V)
 - TX-Button: (Bit 32) (0 indicates regular transmission, 1 indicates requested by pushbutton)

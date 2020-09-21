@@ -133,13 +133,13 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
    return 0;
 }
 
-static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
-            fprintf(stderr, "IKEA Sparsnäs: Too short or too long packet received. Expected %d, received %d\n", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
+            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            fprintf(stderr, "%s: Too short or too long packet received. Expected %d, received %d\n", __func__, IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -149,8 +149,8 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bitbuffer->bits_per_row[0] == bitpos) || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
-            fprintf(stderr, "IKEA Sparsnäs: malformed package, preamble not found. (Expected 0xAAAAD201)\n");
+            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            fprintf(stderr, "%s: malformed package, preamble not found. (Expected 0xAAAAD201)\n", __func__);
         }
         return DECODE_ABORT_EARLY;
     }
@@ -160,7 +160,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos + IKEA_SPARSNAS_PREAMBLE_BITLEN, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN);
 
     if (decoder->verbose > 1) {
-        decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
+        decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
         decoder_output_bitrowf(decoder, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
     }
     // CRC check
@@ -169,7 +169,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (crc_received != crc_calculated) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: CRC check failed (0x%X != 0x%X)\n", crc_calculated, crc_received);
+            fprintf(stderr, "%s: CRC check failed (0x%X != 0x%X)\n", __func__, crc_calculated, crc_received);
         }
         return DECODE_FAIL_MIC;
     }
@@ -177,14 +177,14 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //Decryption
     if (!ikea_sparsnas_sensor_id) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: No sensor ID configured. Brute forcing encryption.\n");
+            fprintf(stderr, "%s: No sensor ID configured. Brute forcing encryption.\n", __func__);
         }
         ikea_sparsnas_sensor_id = ikea_sparsnas_brute_force_encryption(buffer);
         if (decoder->verbose > 1) {
             if (ikea_sparsnas_sensor_id) {
-                fprintf(stderr, "IKEA Sparsnäs: Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.\n", ikea_sparsnas_sensor_id);
+                fprintf(stderr, "%s: Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.\n", __func__, ikea_sparsnas_sensor_id);
             } else {
-                fprintf(stderr, "IKEA Sparsnäs: No valid sensor ID found.\n");
+                fprintf(stderr, "%s: No valid sensor ID found.\n", __func__);
             }
         }
     }
@@ -210,15 +210,15 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t rcv_sensor_id = (unsigned)decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "IKEA Sparsnäs: CRC OK (%X == %X)\n", crc_calculated, crc_received);
-        fprintf(stderr, "IKEA Sparsnäs: Encryption key: 0x%X%X%X%X%X\n", key[0], key[1], key[2], key[3], key[4]);
+        fprintf(stderr, "%s: CRC OK (%X == %X)\n", __func__, crc_calculated, crc_received);
+        fprintf(stderr, "%s: Encryption key: 0x%X%X%X%X%X\n", __func__, key[0], key[1], key[2], key[3], key[4]);
         decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
-        fprintf(stderr, "IKEA Sparsnäs: Received sensor id: %06u\n", rcv_sensor_id);
+        fprintf(stderr, "%s: Received sensor id: %06u\n", __func__, rcv_sensor_id);
     }
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)\n", rcv_sensor_id, ikea_sparsnas_sensor_id);
+            fprintf(stderr, "%s: Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)\n", __func__, rcv_sensor_id, ikea_sparsnas_sensor_id);
         }
     }
 
@@ -226,7 +226,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         data_t *data;
         data = data_make(
-            "model",         "Model",               DATA_STRING, "IKEA Sparsnäs Energy Meter Monitor [Encrypted]",
+            "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
             "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
             "mic",           "Integrity",           DATA_STRING,    "CRC",
             NULL
@@ -238,14 +238,14 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decrypted[0] != 0x11) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte0=%X expected %X)\n", decrypted[0], 0x11);
+            fprintf(stderr, "%s: Message malformed (byte0=%X expected %X)\n", __func__, decrypted[0], 0x11);
         }
         return DECODE_FAIL_SANITY;
     }
     if (decrypted[3] != 0x07) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte3=%X expected %X)\n", decrypted[0], 0x07);
+            fprintf(stderr, "%s: Message malformed (byte3=%X expected %X)\n", __func__, decrypted[0], 0x07);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -300,13 +300,13 @@ static char *output_fields[] = {
 };
 
 r_device ikea_sparsnas = {
-    .name          = "IKEA Sparsnäs Energy Meter Monitor",
+    .name          = "IKEA Sparsnas Energy Meter Monitor",
     .modulation    = FSK_PULSE_PCM,
     .short_width   = 27,
     .long_width    = 27,
     .gap_limit     = 1000,
     .reset_limit   = 3000,
-    .decode_fn     = &ikea_sparsnas_callback,
+    .decode_fn     = &ikea_sparsnas_decode,
     .disabled      = 0,
     .fields        = output_fields,
 };

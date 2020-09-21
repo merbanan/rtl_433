@@ -60,7 +60,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     int const max_zeros = gap_limit / device->s_long_width;
     int tolerance = device->s_tolerance;
     if (tolerance <= 0)
-        tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
+        tolerance = device->s_long_width / 4; // default tolerance is +-25% of a bit period
 
     float f_short = device->f_short_width;
     float f_long  = device->f_long_width;

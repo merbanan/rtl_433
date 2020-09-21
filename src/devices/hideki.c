@@ -156,7 +156,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("wind_avg_mi_h","wind_speed_mph"),   "Wind Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, wind_speed * 0.1f,
                 _X("wind_max_mi_h","gust_speed_mph"),   "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
                 "wind_approach",    "Wind Approach",    DATA_INT, wind_approach,
-                _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f °", DATA_DOUBLE, wind_direction * 0.1f,
+                _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f", DATA_DOUBLE, wind_direction * 0.1f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);

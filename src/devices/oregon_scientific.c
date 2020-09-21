@@ -703,7 +703,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                     "battery",          "Battery",          DATA_STRING, batt_low ? "LOW" : "OK",
                     "power_W",          "Power",            DATA_FORMAT, "%d W",DATA_INT, ipower,
                     "energy_kWh",       "Energy",           DATA_FORMAT, "%2.2f kWh",DATA_DOUBLE, total_energy,
-                    "sequence",	        "sequence number",	DATA_INT,    sequence,
+                    "sequence",         "sequence number",  DATA_INT,    sequence,
                     NULL);
             decoder_output_data(decoder, data);
             return 1;

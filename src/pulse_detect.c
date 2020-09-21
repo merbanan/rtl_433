@@ -371,7 +371,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         int16_t ook_threshold = (s->ook_low_estimate + s->ook_high_estimate) / 2;
         if (pulse_detect->ook_fixed_high_level != 0)
             ook_threshold = pulse_detect->ook_fixed_high_level; // Manual override
-        int16_t const ook_hysteresis = ook_threshold / 8; // ±12%
+        int16_t const ook_hysteresis = ook_threshold / 8; // +-12%
 
         // OOK State machine
         switch (s->ook_state) {

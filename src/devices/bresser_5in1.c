@@ -132,7 +132,7 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",     DATA_INT, humidity,
             _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
             _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
-            "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f °",DATA_DOUBLE, wind_direction_deg,
+            "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",DATA_DOUBLE, wind_direction_deg,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
