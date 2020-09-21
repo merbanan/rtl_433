@@ -147,13 +147,15 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // extract address as little endian integer. It should be little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
     address_int_le = (message_bytes[6] << 16) | (message_bytes[5] << 8) | message_bytes[4];
 
+    if (decoder->verbose > 1) {
+        fprintf(stdout, "seed=0x%02x, chksum=0x%x\n", seed, chksum);
+    }
+
     /* clang-format off */
     data = data_make(
             "model",          "",               DATA_STRING, "Somfy-RTS",
             "id",             "Id",             DATA_INT,    address_int_le,
-            "seed",           "Seed",           DATA_FORMAT, "0x%02X", DATA_INT, seed,
             "control",        "Control",        DATA_STRING, control_str[control],
-            "checksum",       "Checksum",       DATA_FORMAT, "0x%X", DATA_INT, chksum,
             "counter",        "Counter",        DATA_INT,    counter,
             "address",        "Address",        DATA_STRING, address_hex,
             "retransmission", "Retransmission", DATA_STRING, is_retransmission ? "TRUE" : "FALSE",
@@ -168,9 +170,7 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "seed",
         "control",
-        "checksum",
         "counter",
         "address",
         "retransmission",
