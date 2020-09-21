@@ -59,37 +59,45 @@ function style_check(filename) {
 
   let line_number = 0
 
-  fs.readFileSync(filename, 'ascii')
+  fs.readFileSync(filename, 'latin1')
     .split('\n')
     .map(line => {
       line_number++
       const len = line.length
       if (len < 0) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::READ error`)
+        log(`::error file=${filename},line=${line_number}::READ error`)
         errors++
       }
       if (len >= MAX_LEN - 1) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::LONG line error`)
+        log(`::error file=${filename},line=${line_number},col=${MAX_LEN}::LONG line error`)
         errors++
       }
       if (line[len - 1] == '\r' || (len > 1 && line[len - 2] == '\r')) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::CRLF error`)
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::CRLF error`)
         errors++
       }
 
       if (line[0] == '\t') {
-        log(`::error file=${filename},line=${line_number},col=${len - 1}::TAB indented line`)
+        log(`::error file=${filename},line=${line_number},col=0::TAB indented line`)
         leading_tabs++
       }
       if (len >= 4 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ' && line[3] == ' ') {
         leading_spcs++
       }
       if (line[len - 1] == ' ' || line[len - 1] == '\t') {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::TRAILING whitespace error`)
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::TRAILING whitespace error`)
         errors++
       }
+      const nonasc = line.search(/[^ -~]/)
+      if (line.indexOf('"') >= 0 && nonasc >= 0) {
+        log(`::error file=${filename},line=${line_number},col=${nonasc + 1}::NON-ASCII character error`)
+        errors++
+      }
+      else if (nonasc >= 0) {
+        //log(`::warning file=${filename},line=${line_number},col=${nonasc + 1}::NON-ASCII character`)
+      }
       if (line.indexOf('(r_device *decoder') >= 0 && line[len - 1] == '{') {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::BRACE function on newline error`)
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::BRACE function on newline error`)
         errors++
       }
 
@@ -108,7 +116,7 @@ function style_check(filename) {
       }
       const p = line.indexOf('printf')
       if (strict && p >= 0) {
-        if (p == 0 || line[p-1] < '_' || line[p-1] > 'z') {
+        if (p == 0 || line[p - 1] < '_' || line[p - 1] > 'z') {
           log(`::error file=${filename},line=${line_number},col=${len - 1}::PRINTF line`)
           errors++
         }
