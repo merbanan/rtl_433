@@ -87,12 +87,6 @@ static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
         }
     }
 
-    fprintf(stderr, "\n%s ", __func__);
-    for(int l=0; l<30; l++) {
-        fprintf(stderr,  "%d", result[l]);
-    }
-    fprintf(stderr, "\n");
-
     return (int)result[0];
 }
 
