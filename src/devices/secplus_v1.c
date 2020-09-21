@@ -15,11 +15,9 @@ Freq 310, 315 and 390 MHz.
 
 Security+ 1.0  is described in [US patent application US6980655B2](https://patents.google.com/patent/US6980655B2/)
 
-
 */
 
 #include "decoder.h"
-// # #include <math.h>
 #include <sys/time.h>
 
 /** @fn int _decode_v1_half(uint8_t *bits, uint8_t *result)
@@ -130,6 +128,9 @@ static int find_next(bitbuffer_t *bitbuffer, int cur_index)
     return (search_index_1 < search_index_2 ? search_index_1 : search_index_2);
 }
 
+// max age for cache in us
+#define CACHE_MAX_AGE 75000
+
 static uint8_t cached_result[24] = {0};
 static struct timeval cached_tv  = {0};
 
@@ -140,7 +141,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int status           = 0;
     int search_index;
 
-    // if we extend the reset limits we should removed the max bits_per_row test
+    // the max of 130 is just a guess
     if (bitbuffer->bits_per_row[0] < 84 || bitbuffer->bits_per_row[0] > 130) {
         if (decoder->verbose)
             (void)fprintf(stderr, "%s:return  DECODE_ABORT_LENGTH\n", __func__);
@@ -151,47 +152,11 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         (void)fprintf(stderr, "%s : num rows = %u len %u\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
     }
 
-    // maybe this should move to after the while loop ?
-    if (cached_tv.tv_sec) {
-        struct timeval cur_tv;
-        struct timeval res_tv;
-        gettimeofday(&cur_tv, NULL);
-        timersub(&cur_tv, &cached_tv, &res_tv);
-
-        if (decoder->verbose > 1)
-            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, res_tv.tv_usec);
-
-        if (res_tv.tv_sec == 0 && res_tv.tv_usec < 75000) {
-            if (cached_result[0] == 0) {
-                memcpy(result_1, cached_result, 21);
-                status = 1;
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: Load cache  part 1\n", __func__);
-            }
-            else if (cached_result[0] == 2) {
-                memcpy(result_2, cached_result, 21);
-                status = 2;
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: Load cache  part 2\n", __func__);
-            }
-            else {
-                if (decoder->verbose > 1)
-                    fprintf(stderr, "%s Bad cache val %hu\n", __func__, cached_result[0]);
-            }
-        }
-        memset(cached_result, 0, sizeof(cached_result));
-        timerclear(&cached_tv);
-    }
-
-
     search_index = 0;
-    while (search_index < bitbuffer->bits_per_row[0] && status != 3) {
+    while (search_index < bitbuffer->bits_per_row[0] && status == 0) {
         int dr            = 0;
         uint8_t buffy[32] = {0};
         uint8_t buffi[32] = {0};
-
-        // memset(buffy, 0, sizeof(buffy));
-        // memset(buffi, 0, sizeof(buffi));
 
         search_index = find_next(bitbuffer, search_index);
 
@@ -225,6 +190,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             search_index += 88;
         }
 
+        // this should not happen
         if (status == 3)
             break;
 
@@ -235,11 +201,48 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // if we have both parts, move on and report data
     // if have only one part cache it for later.
+
     // if we have no parts, quit
     if (status == 0) {
         return -1; // found nothing
     }
-    else if (status == 1) {
+
+    // is there data in cache?
+    if (cached_tv.tv_sec) {
+        struct timeval cur_tv;
+        struct timeval res_tv;
+        gettimeofday(&cur_tv, NULL);
+        timersub(&cur_tv, &cached_tv, &res_tv);
+
+        if (decoder->verbose > 1)
+            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, res_tv.tv_usec);
+
+        // is the data not expired
+        if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
+
+            // if we have part 2 AND part 1 cached
+            if (status == 2 && cached_result[0] == 0) {
+                memcpy(result_1, cached_result, 21);
+                status = 3;
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: Load cache  part 1\n", __func__);
+            }
+            // if we have part 1 AND part 2 cached
+            else if (status == 1 && cached_result[0] == 2) {
+                memcpy(result_2, cached_result, 21);
+                status = 3;
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: Load cache  part 2\n", __func__);
+            }
+        }
+
+        // clear cache because it is expired or used
+        memset(cached_result, 0, sizeof(cached_result));
+        timerclear(&cached_tv);
+
+    } // if cache contains data
+
+    if (status == 1) {
         gettimeofday(&cached_tv, NULL);
         memcpy(cached_result, result_1, 21);
         if (decoder->verbose)
@@ -260,10 +263,9 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return -1; // should never get here
     }
 
-    /*
-        if we are here we have recived both packets now stored in result_1 & result_2
-        we now generate values for rolling_temp & fixed using the trinary data stored in result_1 & result_2
-    */
+    // if we are here we have recived both packets, stored in result_1 & result_2
+    // we now generate values for rolling_temp & fixed
+    // using the trinary data stored in result_1 & result_2
 
     uint32_t rolling;          // max 2**32
     uint32_t rolling_temp = 0; // max 2**32
