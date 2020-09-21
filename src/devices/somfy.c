@@ -22,25 +22,25 @@ A rising edge describes a data bit 1 and a falling edge a data bit 0. The preamb
 for retransmissions. In the end, the signal is first decoded using an OOK PCM decoder and within the callback, only the
 data bits will be manchester decoded.
 
-In the following, each character representing a low level "_" and a high level "°" is roughly 604 us long.
+In the following, each character representing a low level "_" and a high level "^" is roughly 604 us long.
 
 First frames' preamble:
 
-    °°°°°°°°°°°°°°°°___________°°°°____°°°°____°°°°°°°°_
+    ^^^^^^^^^^^^^^^^___________^^^^____^^^^____^^^^^^^^_
 
 The first long pulse is often wrongly detected, so I just make sure that it ends up in another row during decoding and
 then only consider the rows containing the second part of the first frame preamble.
 
 Retransmission frames' preamble:
 
-    °°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°____°°°°°°°°_
+    ^^^^____^^^^____^^^^____^^^^____^^^^____^^^^____^^^^____^^^^^^^^_
 
-The data is manchester encoded _° represents a 1 and °_ represents a 0. The data section consists of 56 bits that equals
+The data is manchester encoded _^ represents a 1 and ^_ represents a 0. The data section consists of 56 bits that equals
 7 bytes of scrambled data. The data is scrambled by XORing each following byte with the last scrambled byte. After
 descrambling, the 7 bytes have the following meaning conting byte from left to right as in big endian byte order:
 
 - byte 0:   called "random" in [1] and "key" in [2], in the end it is just the seed for the scrambler
-- byte 1:   The higher nibble represents the control command, the lower nibble is the frame's checksum calculated by XORing 
+- byte 1:   The higher nibble represents the control command, the lower nibble is the frame's checksum calculated by XORing
             all nibbles
 - byte 2-3: Replay counter value in big endian byte order
 - byte 4-6: Remote control channel's address
