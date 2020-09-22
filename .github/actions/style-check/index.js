@@ -13,7 +13,8 @@
 const path = require('path')
 const fs = require('fs')
 const log = console.error
-const MAX_LEN = 550 // this should be around 120, but idm.c breaks this.
+const MAX_LEN = 300 // this should likely be around 160
+const replacement_character = '\uFFFD'
 
 // console.log(process.cwd()) // /home/runner/work/rtl_433/rtl_433
 // console.log(__dirname) // /home/runner/work/rtl_433/rtl_433/.github/actions/style-check
@@ -56,10 +57,11 @@ function style_check(filename) {
   let leading_spcs = 0
   let mixed_ws = 0
   let need_cond = 0
+  let in_comment = false
 
   let line_number = 0
 
-  fs.readFileSync(filename, 'latin1')
+  fs.readFileSync(filename, 'utf8')
     .split('\n')
     .map(line => {
       line_number++
@@ -76,6 +78,9 @@ function style_check(filename) {
         log(`::error file=${filename},line=${line_number},col=${len - 1}::CRLF error`)
         errors++
       }
+      if (line.indexOf('/*')) {
+        in_comment = true
+      }
 
       if (line[0] == '\t') {
         log(`::error file=${filename},line=${line_number},col=0::TAB indented line`)
@@ -88,8 +93,14 @@ function style_check(filename) {
         log(`::error file=${filename},line=${line_number},col=${len - 1}::TRAILING whitespace error`)
         errors++
       }
+
+      const invchr = line.indexOf(replacement_character)
+      if (invchr >= 0) {
+        log(`::error file=${filename},line=${line_number},col=${invchr + 1}::INVALID-UTF8 character error`)
+        errors++
+      }
       const nonasc = line.search(/[^ -~]/)
-      if (line.indexOf('"') >= 0 && nonasc >= 0) {
+      if (!in_comment && nonasc >= 0) {
         log(`::error file=${filename},line=${line_number},col=${nonasc + 1}::NON-ASCII character error`)
         errors++
       }
@@ -134,6 +145,9 @@ function style_check(filename) {
         need_cond++
       }
 
+      if (line.indexOf('*/')) {
+        in_comment = false
+      }
     })
 
   if (leading_tabs && leading_spcs) {
