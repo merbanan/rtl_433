@@ -240,6 +240,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [164]  Security+ 2.0 (Keyfob)
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
+    [167]  Somfy RTS
 
 * Disabled by default, use -R n or -G
 

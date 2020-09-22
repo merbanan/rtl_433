@@ -140,6 +140,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/simplisafe.c \
                        devices/smoke_gs558.c \
                        devices/solight_te44.c \
+                       devices/somfy.c \
                        devices/springfield.c \
                        devices/steelmate.c \
                        devices/tfa_30_3196.c \
