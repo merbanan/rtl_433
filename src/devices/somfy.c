@@ -48,72 +48,69 @@ descrambling, the 7 bytes have the following meaning conting byte from left to r
 
 #include "decoder.h"
 
-static const char *control_str[] = {
-    "? (0)",
-    "My (1)",
-    "Up (2)",
-    "My + Up (3)",
-    "Down (4)",
-    "My + Down (5)",
-    "Up + Down (6)",
-    "? (7)",
-    "Prog (8)",
-    "Sun + Flag (9)",
-    "Flag (10)",
-    "? (11)",
-    "? (12)",
-    "? (13)",
-    "? (14)",
-    "? (15)",
-};
-
 static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    char const *const control_str[] = {
+            "? (0)",
+            "My (1)",
+            "Up (2)",
+            "My + Up (3)",
+            "Down (4)",
+            "My + Down (5)",
+            "Up + Down (6)",
+            "? (7)",
+            "Prog (8)",
+            "Sun + Flag (9)",
+            "Flag (10)",
+            "? (11)",
+            "? (12)",
+            "? (13)",
+            "? (14)",
+            "? (15)",
+    };
+
     data_t *data;
-
-    uint8_t is_retransmission = 0;
-    uint8_t decode_row = 0;
-    uint8_t data_start = 0;
-    const uint8_t *preamble_pattern;
+    int is_retransmission = 0;
+    unsigned decode_row = 0;
+    unsigned data_start = 0;
+    uint8_t const *preamble_pattern;
     unsigned preamble_pattern_bit_length = 0;
-
     bitbuffer_t bitbuffer_decoded = { 0 };
-
     uint8_t message_bytes[7] = { 0 };
-    uint8_t chksum_calc = 0;
-    uint8_t chksum = 0;
-    uint16_t counter = 0;
+    int chksum_calc;
+    int chksum;
+    int counter;
+    int address;
+    int control;
+    int seed;
     char address_hex[7];
-    uint32_t address_int_le = 0;
-    uint8_t control = 0;
-    uint8_t seed = 0;
 
     for (int i = 0; i < bitbuffer->num_rows; i++) {
         if (bitbuffer->bits_per_row[i] > 170) {
             is_retransmission = 1;
             decode_row = i;
             data_start = 65;
-            preamble_pattern = (const uint8_t *) "\xf0\xf0\xf0\xf0\xf0\xf0\xf0\xff";
+            preamble_pattern = (uint8_t const *) "\xf0\xf0\xf0\xf0\xf0\xf0\xf0\xff";
             preamble_pattern_bit_length = 64;
             break;
         } else if (bitbuffer->bits_per_row[i] > 130) {
             is_retransmission = 0;
             decode_row = i;
             data_start = 25;
-            preamble_pattern = (const uint8_t *) "\xf0\xf0\xff";
+            preamble_pattern = (uint8_t const *) "\xf0\xf0\xff";
             preamble_pattern_bit_length = 24;
             break;
         }
     }
 
     if (data_start == 0)
-        return DECODE_FAIL_SANITY;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer_search(bitbuffer, decode_row, 0, preamble_pattern, preamble_pattern_bit_length) != 0)
-        return DECODE_FAIL_SANITY;
+        return DECODE_ABORT_EARLY;
 
     if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &bitbuffer_decoded, 56) - data_start < 56)
-        return DECODE_FAIL_MIC;
+        return DECODE_ABORT_EARLY;
 
     bitbuffer_extract_bytes(&bitbuffer_decoded, 0, 0, message_bytes, 56);
 
@@ -121,55 +118,45 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     for (int i = 6; i > 0; i--)
         message_bytes[i] = message_bytes[i] ^ message_bytes[i-1];
 
-    // calculate checksum
+    // calculate and verify checksum
     chksum_calc = xor_bytes(message_bytes, 7);
     chksum_calc = (chksum_calc & 0xf) ^ (chksum_calc >> 4); // fold to nibble
-
-    // Fail if checksum is incorrect
     if (chksum_calc != 0)
         return DECODE_FAIL_MIC;
 
-    // extract seed
-    seed = message_bytes[0];
-
-    // extract control
+    seed    = message_bytes[0];
     control = (message_bytes[1] & 0xf0) >> 4;
+    chksum  = message_bytes[1] & 0xf;
+    counter = (message_bytes[2] << 8) | message_bytes[3];
+    // assume little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
+    address = (message_bytes[6] << 16) | (message_bytes[5] << 8) | message_bytes[4];
 
-    // extract checksum
-    chksum = message_bytes[1] & 0xf;
-
-    // extract counter independent of system's byte order
-    counter = message_bytes[3] | (message_bytes[2] << 8);
-
-    // extract address bytes into hexstring
+    // print address into hexstring
     snprintf(address_hex, sizeof(address_hex), "%02X%02X%02X", message_bytes[4], message_bytes[5], message_bytes[6]);
 
-    // extract address as little endian integer. It should be little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
-    address_int_le = (message_bytes[6] << 16) | (message_bytes[5] << 8) | message_bytes[4];
-
     if (decoder->verbose > 1) {
-        fprintf(stderr, "seed=0x%02x, chksum=0x%x\n", seed, chksum);
+        fprintf(stderr, "%s: seed=0x%02x, chksum=0x%x\n", __func__, seed, chksum);
     }
 
     /* clang-format off */
     data = data_make(
             "model",          "",               DATA_STRING, "Somfy-RTS",
-            "id",             "Id",             DATA_INT,    address_int_le,
+            "id",             "Id",             DATA_INT,    address,
             "control",        "Control",        DATA_STRING, control_str[control],
             "counter",        "Counter",        DATA_INT,    counter,
             "address",        "Address",        DATA_STRING, address_hex,
-            "retransmission", "Retransmission", DATA_STRING, is_retransmission ? "TRUE" : "FALSE",
+            "retransmission", "Retransmission", DATA_INT,    is_retransmission,
             "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *output_fields[] = {
         "model",
+        "id",
         "control",
         "counter",
         "address",
