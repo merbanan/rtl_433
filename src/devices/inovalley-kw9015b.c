@@ -13,7 +13,7 @@ Inovalley kw9015b rain and Temperature weather station.
 
 Data layout:
 
-    IIIIIIII TTTTTTTT TTTTRRRR RRRRRRRR CCCC
+    IIIIIIII RRRRtttt TTTTTTTT rrrrrrrr CCCC
 
 - I : 8-bit ID
 - T : 12-bit Temp in C, signed, scaled by 10
@@ -44,7 +44,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     device   = reverse8(b[0]);
     temp_raw = (int16_t)((reverse8(b[2]) << 8) | (reverse8(b[1]) & 0xf0)); // sign-extend
     temp_c   = (temp_raw >> 4) * 0.1f;
-    rain     = ((reverse8(b[1]) & 0x0f) << 4) | reverse8(b[3]);
+    rain     = ((reverse8(b[1]) & 0x0f) << 8) | reverse8(b[3]);
     chksum   = ((reverse8(b[0]) >> 4) + (reverse8(b[0]) & 0x0f) +
               (reverse8(b[1]) >> 4) + (reverse8(b[1]) & 0x0f) +
               (reverse8(b[2]) >> 4) + (reverse8(b[2]) & 0x0f) +
