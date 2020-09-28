@@ -151,12 +151,12 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
 
 /// Digest-16 by "LFSR-based Toeplitz hash".
 ///
-/// @param data up to 32 bits data, LSB aligned
-/// @param bits number of bits to digest
+/// @param message bytes of message data
+/// @param bytes number of bytes to digest
 /// @param gen key stream generator, needs to includes the MSB if the LFSR is rolling
 /// @param key initial key
 /// @return digest value
-uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key);
+uint16_t lfsr_digest16(uint8_t const message[], unsigned bytes, uint16_t gen, uint16_t key);
 
 /// Compute bit parity of a single byte (8 bits).
 ///
