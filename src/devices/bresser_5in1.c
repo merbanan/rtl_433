@@ -10,6 +10,8 @@
     (at your option) any later version.
 */
 
+#include "decoder.h"
+
 /**
 Decoder for Bresser Weather Center 5-in-1.
 
@@ -54,10 +56,7 @@ Packet payload without preamble (203 bits):
 - B = Battery. 0=Ok, 8=Low.
 */
 
-#include "decoder.h"
-
-
-static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = {0xaa, 0xaa, 0xaa, 0x2d, 0xd4};
 
@@ -103,6 +102,9 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_FAIL_MIC; // message isn't correct
         }
     }
+
+    // check popcount
+    // uu = checksum (number/count of set bits within bytes 14-25)
 
     sensor_id = msg[14];
 
@@ -157,7 +159,6 @@ static char *output_fields[] = {
         "wind_avg_m_s",
         "wind_dir_deg",
         "rain_mm",
-        "uv",
         "mic",
         NULL,
 };
@@ -168,7 +169,7 @@ r_device bresser_5in1 = {
         .short_width = 124,
         .long_width  = 124,
         .reset_limit = 25000,
-        .decode_fn   = &bresser_5in1_callback,
+        .decode_fn   = &bresser_5in1_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

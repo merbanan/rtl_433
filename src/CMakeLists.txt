@@ -45,6 +45,8 @@ add_library(r_433 STATIC
     devices/brennenstuhl_rcs_2044.c
     devices/bresser_3ch.c
     devices/bresser_5in1.c
+    devices/bresser_6in1.c
+    devices/bresser_7in1.c
     devices/bt_rain.c
     devices/calibeur.c
     devices/cardin.c

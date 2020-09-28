@@ -179,6 +179,8 @@
     DECL(nice_flor_s) \
     DECL(lacrosse_wr1) \
     DECL(lacrosse_th3) \
+    DECL(bresser_6in1) \
+    DECL(bresser_7in1) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
