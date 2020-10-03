@@ -242,6 +242,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
+    [168]  Schrader TPMS SMD3MA4 (Subaru)
 
 * Disabled by default, use -R n or -G
 
