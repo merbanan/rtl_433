@@ -23,8 +23,6 @@
   x: 8 bit checksum
 
 
-00111100 0000001000000010 00100000
-
     IIIICC-- TTTTTTTT TTTTTTTT --------
     00111100 00000001 10000001 10111110 =   38C, 101F
     11100100 00000001 10001111 00110100 =   39C, 103F
@@ -32,6 +30,7 @@
 
     11100100 00000001 10001100 00110001 =   39C, 103F
     00111100 00000010 11101111 00101101 =   75C, 167F
+
   
 
   flex decoder with -X 'n=sensor,m=OOK_PPM,s=1000,l=2000,g=2000,r=4000,repeats>=3'
@@ -42,7 +41,6 @@
 
 static int thermor_a6n_132tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-
     // 32 bit, repeated multiple times (technically it is repeated 11 times, look for 5 identical versions)
     int row = bitbuffer_find_repeated_row(bitbuffer, 5, 32);
 
