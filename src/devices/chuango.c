@@ -1,27 +1,38 @@
-/* Chuango Security Technology Corporation
- * likely based on HS1527 or compatible
- *
- * Tested devices:
- * G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
- * DWC-100 Door sensor (Default: Normal Zone)
- * DWC-102 Door sensor (Default: Normal Zone)
- * KP-700 Wireless Keypad (Arm, Disarm, Home Mode, Alarm!)
- * PIR-900 PIR sensor (Default: Home Mode Zone)
- * RC-80 Remote Control (Arm, Disarm, Home Mode, Alarm!)
- * SMK-500 Smoke sensor (Default: 24H Zone)
- * WI-200 Water sensor (Default: 24H Zone)
- *
- * Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
- *
- * Copyright (C) 2015 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Chuango Security Technology.
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Chuango Security Technology.
+
+likely based on HS1527 or compatible
+
+Tested devices:
+G5 GSM/SMS/RFID Touch Alarm System (Alarm, Disarm, ...)
+DWC-100 Door sensor (Default: Normal Zone)
+DWC-102 Door sensor (Default: Normal Zone)
+KP-700 Wireless Keypad (Arm, Disarm, Home Mode, Alarm!)
+PIR-900 PIR sensor (Default: Home Mode Zone)
+RC-80 Remote Control (Arm, Disarm, Home Mode, Alarm!)
+SMK-500 Smoke sensor (Default: 24H Zone)
+WI-200 Water sensor (Default: 24H Zone)
+
+Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the flex decoder.
+
+*/
+
+
 #include "decoder.h"
 
-static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int id;
@@ -80,7 +91,7 @@ static char *output_fields[] = {
     "id",
     "cmd",
     "cmd_id",
-    NULL
+    NULL,
 };
 
 r_device chuango = {

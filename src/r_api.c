@@ -422,9 +422,7 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
         // FSK decoders
         case FSK_PULSE_PCM:
         case FSK_PULSE_PWM:
-            break;
         case FSK_PULSE_MANCHESTER_ZEROBIT:
-            p_events += pulse_demod_manchester_zerobit(pulse_data, r_dev);
             break;
         default:
             fprintf(stderr, "Unknown modulation %u in protocol!\n", r_dev->modulation);

@@ -60,7 +60,7 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int channel = b[2] >> 4; // First nybble.
     channel++; // Convert 0-indexed wire protocol to 1-indexed channels on the device UI
-    if (channel < 1 || channel > 3) {
+    if (channel > 3) {
         return DECODE_FAIL_SANITY; // The switch only has 1-3.
     }
 
@@ -73,9 +73,8 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Temperature is next 10 bits
-    float temp_c = -40.0; // Bias
-    temp_c += (float)b[3] / 10.0;
-    temp_c += (float)((b[2] & 0x3) << 8) / 10.0;
+    int temp_raw = ((b[2] & 0x3) << 8) | b[3];
+    float temp_c = (temp_raw - 400) * 0.1f;
 
     // All Ecowitt observed packets have bits 39-48 set.
     if (b[4] != 0xFF) {

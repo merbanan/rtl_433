@@ -3,8 +3,16 @@
 
     2016 Nicola Quiriti ('ovrheat')
     Modifications 2016 by Don More
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
  */
 /**
+Fine Offset WH1050 Weather Station.
+
 This module is a cut-down version of the WH1080 decoder.
 The WH1050 sensor unit is like the WH1080 unit except it has no
 wind direction sensor or time receiver.
@@ -65,7 +73,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // GETTING WEATHER SENSORS DATA
     int temp_raw      = ((br[1] & 0x03) << 8) | br[2];
-    float temperature = (temp_raw - 400) * 0.1;
+    float temperature = (temp_raw - 400) * 0.1f;
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h

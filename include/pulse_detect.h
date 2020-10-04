@@ -103,10 +103,12 @@ void pulse_detect_free(pulse_detect_t *pulse_detect);
 /// Set pulse detector level values.
 ///
 /// @param pulse_detect The pulse_detect instance
+/// @param use_mag_est Use magnitude instead of amplitude
 /// @param fixed_high_level Manual high level override, default is 0 (auto)
 /// @param min_high_level Minimum high level, default is -12 dB
 /// @param high_low_ratio Minimum signal noise ratio, default is 9 dB
-void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio);
+/// @param verbosity Debug output verbosity, 0=None, 1=Levels, 2=Histograms
+void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, float fixed_high_level, float min_high_level, float high_low_ratio, int verbosity);
 
 /// Demodulate On/Off Keying (OOK) and Frequency Shift Keying (FSK) from an envelope signal.
 ///
@@ -125,9 +127,6 @@ void pulse_detect_set_levels(pulse_detect_t *pulse_detect, int use_mag_est, floa
 /// @return 1 if OOK package is detected (but all sample data is still not completely processed)
 /// @return 2 if FSK package is detected (but all sample data is still not completely processed)
 int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_data, int16_t const *fm_data, int len, uint32_t samp_rate, uint64_t sample_offset, pulse_data_t *pulses, pulse_data_t *fsk_pulses, unsigned fpdm);
-
-/// Analyze and print result.
-void pulse_analyzer(pulse_data_t *data, int package_type);
 
 
 #endif /* INCLUDE_PULSE_DETECT_H_ */

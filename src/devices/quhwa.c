@@ -1,16 +1,21 @@
-/* Quhwa
- * HS1527
- *
- * Tested devices:
- * QH-C-CE-3V (which should be compatible with QH-832AC),
- * also sold as "1 by One" wireless doorbell
- *
- * Copyright (C) 2016 Ask Jakobsen
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Quhwa HS1527.
+
+    Copyright (C) 2016 Ask Jakobsen
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Quhwa HS1527.
+
+Tested devices:
+QH-C-CE-3V (which should be compatible with QH-832AC),
+also sold as "1 by One" wireless doorbell
+*/
+
 #include "decoder.h"
 
 static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -20,6 +25,14 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     uint8_t *b = bitbuffer->bb[r];
+
+    // No need to decode/extract values for simple test
+    if (!b[0] && !b[1] && !b[2]) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     b[0] = ~b[0];
     b[1] = ~b[1];
@@ -32,10 +45,12 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t id = (b[0] << 8) | b[1];
 
+    /* clang-format off */
     data_t *data = data_make(
-            "model", "", DATA_STRING, _X("Quhwa-Doorbell","Quhwa doorbell"),
-            "id", "ID", DATA_INT, id,
+            "model",  "",    DATA_STRING, _X("Quhwa-Doorbell","Quhwa doorbell"),
+            "id",     "ID",  DATA_INT, id,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 
@@ -45,7 +60,7 @@ static int quhwa_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
-    NULL
+    NULL,
 };
 
 r_device quhwa = {
@@ -59,5 +74,5 @@ r_device quhwa = {
     .tolerance     = 80,   // us
     .decode_fn     = &quhwa_callback,
     .disabled      = 0,
-    .fields        = output_fields
+    .fields        = output_fields,
 };

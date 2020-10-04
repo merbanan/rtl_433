@@ -125,7 +125,7 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     static int const b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
 
     unsigned long i;
-    // Fixme: Will Segmentation Fault if len < FILTERORDER
+    // TODO: Will Segmentation Fault if len < FILTERORDER
 
     /* Calculate first sample */
     y_buf[0] = ((a[1] * state->y[0] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * state->x[0] >> 1)) >> (F_SCALE - 1);
@@ -149,13 +149,15 @@ void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t le
     @param x Denominator (real value of complex vector)
     @return angle in radians (Pi equals INT16_MAX)
 */
-static int16_t atan2_int16(int16_t y, int16_t x)
+static int16_t atan2_int16(int32_t y, int32_t x)
 {
     static int32_t const I_PI_4 = INT16_MAX/4;      // M_PI/4
     static int32_t const I_3_PI_4 = 3*INT16_MAX/4;  // 3*M_PI/4
 
     int32_t const abs_y = abs(y);
     int32_t angle;
+
+    if (!x && !y) return 0; // We would get 8191 with the code below
 
     if (x >= 0) {    // Quadrant I and IV
         int32_t denom = (abs_y + x);

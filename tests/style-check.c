@@ -35,7 +35,9 @@ static int style_check(char *path)
     int long_errors = 0;
     int crlf_errors = 0;
     int tabs_errors = 0;
+    int trailing_errors = 0;
     int memc_errors = 0;
+    int funbrace_errors = 0;
 
     int leading_tabs = 0;
     int leading_spcs = 0;
@@ -65,6 +67,12 @@ static int style_check(char *path)
         if (len >= 4 && str[0] == ' ' && str[1] == ' ' && str[2] == ' ' && str[3] == ' ') {
             leading_spcs++;
         }
+        if (len > 1 && (str[len - 2] == ' ' || str[len - 2] == '\t')) {
+            trailing_errors++;
+        }
+        if (strstr(str, "(r_device *decoder") && str[len - 2] == '{') {
+            funbrace_errors++;
+        }
 
         if (strstr(str, "stdout")) {
             use_stdout++;
@@ -87,6 +95,7 @@ static int style_check(char *path)
             need_cond++;
         }
     }
+    fclose(fp);
     if (leading_tabs && leading_spcs) {
         tabs_errors = leading_tabs > leading_spcs ? leading_spcs : leading_tabs;
     }
@@ -99,8 +108,12 @@ static int style_check(char *path)
         printf("File \"%s\" has %d CRLF errors.\n", path, crlf_errors);
     if (tabs_errors)
         printf("File \"%s\" has %d MIXED tab/spaces errors.\n", path, tabs_errors);
+    if (trailing_errors)
+        printf("File \"%s\" has %d TRAILING whitespace errors.\n", path, trailing_errors);
     if (memc_errors)
         printf("File \"%s\" has %d ALLOC check errors.\n", path, memc_errors);
+    if (funbrace_errors)
+        printf("File \"%s\" has %d BRACE function on newline error.\n", path, funbrace_errors);
     if (leading_tabs)
         printf("File \"%s\" has %d TAB indented lines.\n", path, leading_tabs);
     if (strict && use_stdout)
@@ -108,7 +121,8 @@ static int style_check(char *path)
     if (strict && use_printf)
         printf("File \"%s\" has %d PRINTF lines.\n", path, use_printf);
 
-    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + (strict ? use_stdout + use_printf : 0) + memc_errors;
+    return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + trailing_errors
+            + funbrace_errors + (strict ? use_stdout + use_printf : 0) + memc_errors;
 }
 
 int main(int argc, char *argv[])

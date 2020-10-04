@@ -22,6 +22,14 @@ uint8_t reverse8(uint8_t x)
     return x;
 }
 
+uint32_t reverse32(uint32_t x)
+{
+    uint32_t ret;
+    uint8_t* xp = (uint8_t*)&x;
+    ret = (uint32_t) reverse8(xp[0]) << 24 | reverse8(xp[1]) << 16 | reverse8(xp[2]) << 8 | reverse8(xp[3]);
+    return ret;
+}
+
 void reflect_bytes(uint8_t message[], unsigned num_bytes)
 {
     for (unsigned i = 0; i < num_bytes; ++i) {
@@ -56,6 +64,33 @@ unsigned extract_nibbles_4b1s(uint8_t *message, unsigned offset_bits, unsigned n
         ret += 1;
         offset_bits += 5;
         num_bits -= 5;
+    }
+
+    return ret;
+}
+
+unsigned extract_bytes_uart(uint8_t *message, unsigned offset_bits, unsigned num_bits, uint8_t *dst)
+{
+    unsigned ret = 0;
+
+    while (num_bits >= 10) {
+        int startb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        int datab = message[offset_bits / 8];
+        if (offset_bits % 8) {
+            datab = (message[offset_bits / 8] << 8) | message[offset_bits / 8 + 1];
+            datab >>= 8 - (offset_bits % 8);
+        }
+        offset_bits += 8;
+        int stopb = message[offset_bits / 8] >> (7 - (offset_bits % 8));
+        offset_bits += 1;
+        if ((startb & 1) != 0)
+            break; // start-bit error
+        if ((stopb & 1) != 1)
+            break; // stop-bit error
+        *dst++ = reverse8(datab & 0xff);
+        ret += 1;
+        num_bits -= 10;
     }
 
     return ret;
@@ -221,21 +256,24 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
     return sum;
 }
 
-uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
+uint16_t lfsr_digest16(uint8_t const message[], unsigned bytes, uint16_t gen, uint16_t key)
 {
     uint16_t sum = 0;
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
-        // if data bit is set then xor with key
-        if ((data >> bit) & 1)
-            sum ^= key;
+    for (unsigned k = 0; k < bytes; ++k) {
+        uint8_t data = message[k];
+        for (int i = 7; i >= 0; --i) {
+            // fprintf(stderr, "key at bit %d : %04x\n", i, key);
+            // if data bit is set then xor with key
+            if ((data >> i) & 1)
+                sum ^= key;
 
-        // roll the key right (actually the lsb is dropped here)
-        // and apply the gen (needs to include the dropped lsb as msb)
-        if (key & 1)
-            key = (key >> 1) ^ gen;
-        else
-            key = (key >> 1);
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
     }
     return sum;
 }
@@ -316,14 +354,51 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes)
 
 // Unit testing
 #ifdef _TEST
-int main(int argc, char **argv) {
+#define ASSERT_EQUALS(a, b) \
+    do { \
+        if ((a) == (b)) \
+            ++passed; \
+        else { \
+            ++failed; \
+            fprintf(stderr, "FAIL: %d <> %d\n", (a), (b)); \
+        } \
+    } while (0)
+
+int main(void) {
+    unsigned passed = 0;
+    unsigned failed = 0;
+
     fprintf(stderr, "util:: test\n");
 
     uint8_t msg[] = {0x08, 0x0a, 0xe8, 0x80};
 
-    fprintf(stderr, "util::crc8(): odd parity:  %02X\n", crc8(msg, 3, 0x80, 0x00));
-    fprintf(stderr, "util::crc8(): even parity: %02X\n", crc8(msg, 4, 0x80, 0x00));
+    fprintf(stderr, "util::crc8(): odd parity\n");
+    ASSERT_EQUALS(crc8(msg, 3, 0x80, 0x00), 0x80);
 
-    return 0;
+    fprintf(stderr, "util::crc8(): even parity\n");
+    ASSERT_EQUALS(crc8(msg, 4, 0x80, 0x00), 0x00);
+
+    // sync-word 0b0 0xff 0b1 0b0 0x33 0b1 (i.e. 0x7fd99, note that 0x33 is 0xcc "on the wire")
+    uint8_t uart[]   = {0x7f, 0xd9, 0x90};
+    uint8_t bytes[6] = {0};
+
+    // y0 xff y1 y0 xcc y1 y0 x80 y1 y0 x40 y1 y0 xc0 y1
+    uint8_t uart123[] = {0x07, 0xfd, 0x99, 0x40, 0x48, 0x16, 0x04, 0x00};
+
+    fprintf(stderr, "util::extract_bytes_uart():\n");
+    ASSERT_EQUALS(extract_bytes_uart(uart, 0, 24, bytes), 2);
+    ASSERT_EQUALS(bytes[0], 0xff);
+    ASSERT_EQUALS(bytes[1], 0x33);
+
+    ASSERT_EQUALS(extract_bytes_uart(uart123, 4, 60, bytes), 5);
+    ASSERT_EQUALS(bytes[0], 0xff);
+    ASSERT_EQUALS(bytes[1], 0x33);
+    ASSERT_EQUALS(bytes[2], 0x01);
+    ASSERT_EQUALS(bytes[3], 0x02);
+    ASSERT_EQUALS(bytes[4], 0x03);
+
+    fprintf(stderr, "util:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+
+    return failed;
 }
 #endif /* _TEST */

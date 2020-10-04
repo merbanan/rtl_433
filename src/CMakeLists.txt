@@ -20,11 +20,13 @@ add_library(r_433 STATIC
     optparse.c
     output_influx.c
     output_mqtt.c
+    pulse_analyzer.c
     pulse_demod.c
     pulse_detect.c
     pulse_detect_fsk.c
     r_api.c
     r_util.c
+    rfraw.c
     samp_grab.c
     sdr.c
     term_ctl.c
@@ -48,6 +50,7 @@ add_library(r_433 STATIC
     devices/cardin.c
     devices/chuango.c
     devices/companion_wtr001.c
+    devices/cotech_36_7959.c
     devices/current_cost.c
     devices/danfoss.c
     devices/digitech_xc0324.c
@@ -57,6 +60,7 @@ add_library(r_433 STATIC
     devices/ecowitt.c
     devices/efergy_e2_classic.c
     devices/efergy_optical.c
+    devices/efth800.c
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c
@@ -87,15 +91,18 @@ add_library(r_433 STATIC
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
+    devices/idm.c
     devices/ikea_sparsnas.c
     devices/infactory.c
     devices/inovalley-kw9015b.c
+    devices/insteon.c
     devices/interlogix.c
     devices/intertechno.c
     devices/kedsum.c
     devices/kerui.c
     devices/klimalogg.c
     devices/lacrosse.c
+    devices/lacrosse_breezepro.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
     devices/lacrosse_ws7000.c
@@ -105,6 +112,7 @@ add_library(r_433 STATIC
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
+    devices/missil_ml0757.c
     devices/new_template.c
     devices/newkaku.c
     devices/nexa.c
@@ -127,18 +135,25 @@ add_library(r_433 STATIC
     devices/rubicson_48659.c
     devices/s3318p.c
     devices/schraeder.c
+    devices/scmplus.c
+    devices/secplus_v2.c
+    devices/sharp_spc775.c
     devices/silvercrest.c
     devices/simplisafe.c
     devices/smoke_gs558.c
     devices/solight_te44.c
+    devices/somfy.c
     devices/springfield.c
     devices/steelmate.c
     devices/tfa_30_3196.c
+    devices/tfa_30_3221.c
     devices/tfa_drop_30.3233.c
     devices/tfa_pool_thermometer.c
     devices/tfa_twin_plus_30.3049.c
     devices/thermopro_tp11.c
     devices/thermopro_tp12.c
+    devices/thermopro_tx2.c
+    devices/tpms_abarth124.c
     devices/tpms_citroen.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
@@ -149,6 +164,7 @@ add_library(r_433 STATIC
     devices/ts_ft002.c
     devices/ttx201.c
     devices/vaillant_vrt340f.c
+    devices/visonic_powercode.c
     devices/waveman.c
     devices/wg_pb12v1.c
     devices/ws2032.c

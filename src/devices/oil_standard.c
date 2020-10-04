@@ -23,6 +23,8 @@ static const unsigned char preamble_pattern1[2] = {0x55, 0x62};
 // End of frame is the last half-bit repeated additional 4 times
 
 /**
+Oil tank monitor using manchester encoded FSK/ASK protocol.
+
 The sensor sends a single packet once every hour or twice a second
 for 11 minutes when in pairing/test mode (pairing needs 35 sec).
 depth reading is in cm, lowest reading is ~3, highest is ~305, 0 is invalid
@@ -98,7 +100,12 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     return 1;
 }
 
-static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+Oil tank monitor using manchester encoded FSK/ASK protocol.
+@sa oil_standard_decode()
+*/
+static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     unsigned bitpos = 0;
     int events = 0;
 
@@ -125,7 +132,7 @@ static char *output_fields[] = {
     "alarm",
     "binding_countdown",
     "depth_cm",
-    NULL
+    NULL,
 };
 
 r_device oil_standard = {

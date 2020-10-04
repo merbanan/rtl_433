@@ -1,3 +1,11 @@
+/** @file
+    Springfield PreciseTemp Wireless Temperature and Soil Moisture Station.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 /**
 Springfield PreciseTemp Wireless Temperature and Soil Moisture Station.
 
@@ -54,9 +62,8 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         battery  = (b[1] >> 7) & 1;
         button   = (b[1] >> 6) & 1;
         channel  = ((b[1] >> 4) & 0x03) + 1;
-        temp     = (b[1] & 0x0f) << 8 | b[2];
-        temp     = (int16_t)(temp << 4) >> 4; // sign extend
-        temp_c   = temp * 0.1;
+        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // sign extend
+        temp_c   = (temp >> 4) * 0.1f;
         moisture = b[3] >> 4;
         uk1      = b[4] >> 4; /* unknown. */
 

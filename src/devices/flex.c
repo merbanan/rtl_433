@@ -1,12 +1,13 @@
-/* Flexible general purpose decoder.
- *
- * Copyright (C) 2017 Christian Zuckschwerdt
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Flexible general purpose decoder.
+
+    Copyright (C) 2017 Christian Zuckschwerdt
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "decoder.h"
 #include "optparse.h"
@@ -91,6 +92,7 @@ struct flex_params {
     unsigned preamble_len;
     bitrow_t preamble_bits;
     struct flex_get getter[GETTER_SLOTS];
+    unsigned decode_uart;
 };
 
 static void print_row_bytes(char *row_bytes, uint8_t *bits, int num_bits)
@@ -211,6 +213,14 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         if (!match_count)
             return DECODE_FAIL_SANITY;
+    }
+
+    if (params->decode_uart) {
+        for (i = 0; i < bitbuffer->num_rows; i++) {
+            int len = extract_bytes_uart(bitbuffer->bb[i], 0, bitbuffer->bits_per_row[i], tmp);
+            memcpy(bitbuffer->bb[i], tmp, len);
+            bitbuffer->bits_per_row[i] = len * 8;
+        }
     }
 
     if (decoder->verbose) {
@@ -500,111 +510,33 @@ r_device *flex_create_device(char *spec)
         return NULL; // NOTE: returns NULL on alloc failure.
     }
     dev->decode_ctx = params;
-    char *c, *o;
     int get_count = 0;
 
     spec = strdup(spec);
     if (!spec)
         FATAL_STRDUP("flex_create_device()");
-    // locate optional args and terminate mandatory args
-    char *args = strchr(spec, ',');
-    if (args) {
-        *args++ = '\0';
-    }
-
-    c = trim_ws(strtok(spec, ":"));
-    if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing name!\n");
-        usage();
-    }
-    if (!strncasecmp(c, "n=", 2))
-        c += 2;
-    if (!strncasecmp(c, "name=", 5))
-        c += 5;
-    params->name  = strdup(c);
-    if (!params->name)
-        FATAL_STRDUP("flex_create_device()");
-    int name_size = strlen(c) + 27;
-    dev->name = malloc(name_size);
-    if (!dev->name)
-        FATAL_MALLOC("flex_create_device()");
-    snprintf(dev->name, name_size, "General purpose decoder '%s'", c);
-
-    c = strtok(NULL, ":");
-    if (c != NULL) {
-        // old style spec, DEPRECATED
-        fprintf(stderr, "\nYou are using the deprecated positional flex spec, please read \"-X help\" and change your spec!\n\n");
-
-    if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing modulation!\n");
-        usage();
-    }
-    dev->modulation = parse_modulation(c);
-
-    c = strtok(NULL, ":");
-    if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing short width!\n");
-        usage();
-    }
-    dev->short_width = atoi(c);
-
-    c = strtok(NULL, ":");
-    if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing long width!\n");
-        usage();
-    }
-    dev->long_width = atoi(c);
-
-    c = strtok(NULL, ":");
-    if (c == NULL) {
-        fprintf(stderr, "Bad flex spec, missing reset limit!\n");
-        usage();
-    }
-    dev->reset_limit = atoi(c);
-
-    if (dev->modulation == OOK_PULSE_PWM) {
-        c = strtok(NULL, ":");
-        if (c == NULL) {
-            fprintf(stderr, "Bad flex spec, missing gap limit!\n");
-            usage();
-        }
-        dev->gap_limit = atoi(c);
-
-        o = strtok(NULL, ":");
-        if (o != NULL) {
-            c = o;
-            dev->tolerance = atoi(c);
-        }
-
-        o = strtok(NULL, ":");
-        if (o != NULL) {
-            c = o;
-            dev->sync_width = atoi(c);
-        }
-    }
-
-    if (dev->modulation == OOK_PULSE_DMC
-            || dev->modulation == OOK_PULSE_PIWM_RAW
-            || dev->modulation == OOK_PULSE_PIWM_DC) {
-        c = strtok(NULL, ":");
-        if (c == NULL) {
-            fprintf(stderr, "Bad flex spec, missing tolerance limit!\n");
-            usage();
-        }
-        dev->tolerance = atoi(c);
-    }
-
-    } // DEPRECATED
 
     dev->decode_fn = flex_callback;
     dev->fields = output_fields;
 
     char *key, *val;
-    while (getkwargs(&args, &key, &val)) {
+    while (getkwargs(&spec, &key, &val)) {
         key = remove_ws(key);
         val = trim_ws(val);
+
         if (!key || !*key)
             continue;
+        else if (!strcasecmp(key, "n") || !strcasecmp(key, "name")) {
+            params->name = strdup(val);
+            if (!params->name)
+                FATAL_STRDUP("flex_create_device()");
+            int name_size = strlen(val) + 27;
+            dev->name = malloc(name_size);
+            if (!dev->name)
+                FATAL_MALLOC("flex_create_device()");
+            snprintf(dev->name, name_size, "General purpose decoder '%s'", val);
+        }
+
         else if (!strcasecmp(key, "m") || !strcasecmp(key, "modulation"))
             dev->modulation = parse_modulation(val);
         else if (!strcasecmp(key, "s") || !strcasecmp(key, "short"))
@@ -657,6 +589,9 @@ r_device *flex_create_device(char *spec)
 
         else if (!strcasecmp(key, "unique"))
             params->unique = val ? atoi(val) : 1;
+
+        else if (!strcasecmp(key, "decode_uart"))
+            params->decode_uart = val ? atoi(val) : 1;
 
         else if (!strcasecmp(key, "get")) {
             if (get_count < GETTER_SLOTS)

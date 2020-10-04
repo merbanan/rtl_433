@@ -59,8 +59,8 @@ static int eurochron_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Extract data */
     device = b[0];
 
-    temp_raw = (int16_t)((b[3] << 8) | (b[4] & 0xf0)) >> 4;
-    temp_c  = (float)temp_raw * 0.1;
+    temp_raw = (int16_t)((b[3] << 8) | (b[4] & 0xf0));
+    temp_c  = (temp_raw >> 4) * 0.1f;
 
     humidity = b[2];
 

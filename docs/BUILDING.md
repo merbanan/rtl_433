@@ -23,6 +23,15 @@ openSUSE users of at least Leap 42.3 or Tumbleweed can add the repository with d
 
 The usual update mechanism will now keep the rtl_433 version current.
 
+### Fedora
+
+Fedora users (31, 32 and Rawhide) can add the following copr repository to get nightly builds:
+
+    $ sudo dnf copr enable tvass/rtl_433
+    $ sudo dnf install rtl_433
+
+The usual update mechanism will now keep the rtl_433 version current.
+
 ## Linux / Mac OS X
 
 Depending on your system, you may need to install the following libraries.
@@ -58,7 +67,7 @@ Installation using CMake:
     make
     make install
 
-Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR, use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
+Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g. with Debian needs the package `libsoapysdr-dev`), use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..

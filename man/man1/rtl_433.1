@@ -80,14 +80,8 @@ Enable blacklisted device decoding protocols, for testing only.
 [ \fB\-X\fI <spec> | help\fP ]
 Add a general purpose decoder (prepend \-R 0 to disable all decoders)
 .TP
-[ \fB\-l\fI <level>\fP ]
-Change detection level used to determine pulses (0\-16384) (0=auto) (default: 0)
-.TP
-[ \fB\-z\fI <value>\fP ]
-Override short value in data decoder
-.TP
-[ \fB\-x\fI <value>\fP ]
-Override long value in data decoder
+[ \fB\-Y\fI level=<dB level>\fP ]
+Manual detection level used to determine pulses (\-1.0 to \-30.0) (0=auto)
 .TP
 [ \fB\-n\fI <value>\fP ]
 Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
@@ -195,7 +189,7 @@ Cardin S466\-TX2
 Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
 .TP
 [ \fB19\fI\fP ]
-Nexus, FreeTec NC\-7345, NX\-3980 temperature/humidity sensor
+Nexus, FreeTec NC\-7345, NX\-3980, Solight TE82S temperature/humidity sensor
 .TP
 [ \fB20\fI\fP ]
 Ambient Weather Temperature Sensor
@@ -252,7 +246,7 @@ Generic temperature sensor 1
 WG\-PB12V1 Temperature Sensor
 .TP
 [ \fB40\fI\fP ]
-Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning
+Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 3N1, Atlas
 .TP
 [ \fB41\fI\fP ]
 Acurite 986 Refrigerator / Freezer Thermometer
@@ -399,7 +393,7 @@ Ford TPMS
 Renault TPMS
 .TP
 [ \fB91\fI\fP ]
-inFactory, FreeTec NC\-3982\-913 temperature humidity sensor
+inFactory, nor\-tec, FreeTec NC\-3982\-913 temperature humidity sensor
 .TP
 [ \fB92\fI\fP ]
 FT\-004\-B Temperature Sensor
@@ -516,7 +510,7 @@ DirecTV RC66RX Remote Control
 * Eurochron temperature and humidity sensor
 .TP
 [ \fB130\fI\fP ]
-IKEA Sparsnäs Energy Meter Monitor
+IKEA Sparsnas Energy Meter Monitor
 .TP
 [ \fB131\fI\fP ]
 Microchip HCS200 KeeLoq Hopping Encoder based remotes
@@ -573,11 +567,61 @@ TFA Drop Rain Gauge 30.3233.01
 DSC Security Contact (WS4945)
 .TP
 [ \fB149\fI\fP ]
-ERT SCM
+ERT
 .TP
-[ \fB149\fI\fP ]
-Klimalogg/30.3180.IT
-
+[ \fB150\fI\fP ]
+* Klimalogg
+.TP
+[ \fB151\fI\fP ]
+Visonic powercode
+.TP
+[ \fB152\fI\fP ]
+Eurochron EFTH\-800 temperature and humidity sensor
+.TP
+[ \fB153\fI\fP ]
+Cotech 36\-7959 wireless weather station with USB
+.TP
+[ \fB154\fI\fP ]
+Standard Consumption Message Plus (SCMplus)
+.TP
+[ \fB155\fI\fP ]
+Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
+.TP
+[ \fB156\fI\fP ]
+Abarth 124 Spider TPMS
+.TP
+[ \fB157\fI\fP ]
+Missil ML0757 weather station
+.TP
+[ \fB158\fI\fP ]
+Sharp SPC775 weather station
+.TP
+[ \fB159\fI\fP ]
+Insteon
+.TP
+[ \fB160\fI\fP ]
+Interval Data Message (IDM)
+.TP
+[ \fB161\fI\fP ]
+Interval Data Message (IDM) for Net Meters
+.TP
+[ \fB162\fI\fP ]
+* ThermoPro\-TX2 temperature sensor
+.TP
+[ \fB163\fI\fP ]
+Acurite 590TX Temperature with optional Humidity
+.TP
+[ \fB164\fI\fP ]
+Security+ 2.0 (Keyfob)
+.TP
+[ \fB165\fI\fP ]
+TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+.TP
+[ \fB166\fI\fP ]
+LaCrosse Technology View LTV\-WSDTH01 Breeze Pro Wind Sensor
+.TP
+[ \fB167\fI\fP ]
+Somfy RTS
 
 * Disabled by default, use \-R n or \-G
 .SS "Input device selection"

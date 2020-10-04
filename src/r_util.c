@@ -90,57 +90,57 @@ char *sample_pos_str(float sample_file_pos, char *buf)
 
 float celsius2fahrenheit(float celsius)
 {
-  return celsius * 9 / 5 + 32;
+  return celsius * (9.0f / 5.0f) + 32;
 }
 
 
 float fahrenheit2celsius(float fahrenheit)
 {
-    return (fahrenheit - 32) / 1.8;
+    return (fahrenheit - 32) * (5.0f / 9.0f);
 }
 
 
 float kmph2mph(float kmph)
 {
-    return kmph / 1.609344;
+    return kmph * (1.0f / 1.609344f);
 }
 
 float mph2kmph(float mph)
 {
-    return mph * 1.609344;
+    return mph * 1.609344f;
 }
 
 
 float mm2inch(float mm)
 {
-    return mm * 0.039370;
+    return mm * 0.039370f;
 }
 
 float inch2mm(float inch)
 {
-    return inch / 0.039370;
+    return inch * 25.4f;
 }
 
 
 float kpa2psi(float kpa)
 {
-    return kpa / 6.89475729;
+    return kpa * (1.0f / 6.89475729f);
 }
 
 float psi2kpa(float psi)
 {
-    return psi * 6.89475729;
+    return psi * 6.89475729f;
 }
 
 
 float hpa2inhg(float hpa)
 {
-    return hpa / 33.8639;
+    return hpa * (1.0f / 33.8639f);
 }
 
 float inhg2hpa(float inhg)
 {
-    return inhg * 33.8639;
+    return inhg * 33.8639f;
 }
 
 

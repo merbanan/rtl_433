@@ -243,7 +243,7 @@ other styles are detected but discouraged, e.g.:
 */
 int parse_file_info(char const *filename, file_info_t *info)
 {
-    if (!filename || !*filename) {
+    if (!filename) {
         return 0;
     }
 
@@ -290,7 +290,7 @@ void assert_str_equal(char const *a, char const *b)
     }
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
     fprintf(stderr, "Testing:\n");
 

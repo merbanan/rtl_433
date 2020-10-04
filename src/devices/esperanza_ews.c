@@ -11,7 +11,7 @@
 */
 /**
 Largely the same as kedsum, s3318p.
-\sa kedsum.c s3318p.c
+@sa kedsum.c s3318p.c
 
 Frame structure:
 
@@ -80,7 +80,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw  = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
-    float temp_f  = (temp_raw - 900) * 0.1;
+    float temp_f  = (temp_raw - 900) * 0.1f;
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
     data = data_make(

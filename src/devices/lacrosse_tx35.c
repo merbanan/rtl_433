@@ -1,5 +1,11 @@
 /** @file
     LaCrosse/StarMétéo/Conrad TX35 protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
 */
 /**
 Generic decoder for LaCrosse "IT+" (instant transmission) protocol.
@@ -12,33 +18,32 @@ Tune to 868240000Hz
 Protocol
 ========
 Example data : https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29.cu8
-~~~
-   a    a    2    d    d    4    9    2    8    4    4    8    6    a    e    c
-Bits :
-1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
-Bytes num :
-----1---- ----2---- ----3---- ----4---- ----5---- ----6---- ----7---- ----8----
-~~~~~~~~~ 1st byte
-preamble, sequence 10B repeated 4 times (see below)
-          ~~~~~~~~~~~~~~~~~~~ bytes 2 and 3
-brand identifier, always 0x2dd4
-                              ~~~~ 1st nibble of bytes 4
-datalength (always 9) in nibble, including this field and crc
-                                   ~~~~ ~~ 2nd nibble of bytes 4 and 1st and 2nd bits of byte 5
-Random device id (6 bits)
-                                          ~ 3rd bits of byte 5
-new battery indicator
-                                           ~ 4th bits of byte 5
-unknown, unused
-                                             ~~~~ ~~~~ ~~~~ 2nd nibble of byte 5 and byte 6
-temperature, in bcd *10 +40
-                                                            ~ 1st bit of byte 7
-weak battery
-                                                             ~~~ ~~~~ 2-8 bits of byte 7
-humidity, in%. If == 0x6a : no humidity sensor
-                                                                      ~~~~ ~~~~ byte 8
-crc8 of bytes
-~~~
+
+       a    a    2    d    d    4    9    2    8    4    4    8    6    a    e    c
+    Bits :
+    1010 1010 0010 1101 1101 0100 1001 0010 1000 0100 0100 1000 0110 1010 1110 1100
+    Bytes num :
+    ----1---- ----2---- ----3---- ----4---- ----5---- ----6---- ----7---- ----8----
+    ~~~~~~~~~ 1st byte
+    preamble, sequence 10B repeated 4 times (see below)
+              ~~~~~~~~~~~~~~~~~~~ bytes 2 and 3
+    brand identifier, always 0x2dd4
+                                  ~~~~ 1st nibble of bytes 4
+    datalength (always 9) in nibble, including this field and crc
+                                       ~~~~ ~~ 2nd nibble of bytes 4 and 1st and 2nd bits of byte 5
+    Random device id (6 bits)
+                                              ~ 3rd bits of byte 5
+    new battery indicator
+                                               ~ 4th bits of byte 5
+    unknown, unused
+                                                 ~~~~ ~~~~ ~~~~ 2nd nibble of byte 5 and byte 6
+    temperature, in bcd *10 +40
+                                                                ~ 1st bit of byte 7
+    weak battery
+                                                                 ~~~ ~~~~ 2-8 bits of byte 7
+    humidity, in%. If == 0x6a : no humidity sensor
+                                                                          ~~~~ ~~~~ byte 8
+    crc8 of bytes
 
 Developer's comments
 ====================
@@ -47,16 +52,12 @@ It seems some sensor send a long preamble (33 bits, 0 / 1 alternated), and some 
 six bits as the preamble. I own 3 sensors TX29, and two of them send a long preamble.
 So this decoder synchronize on the following sequence:
 
----------------------------------------------
+    1010 1000 1011 0111 0101 0010 01--
+       A    8    B    7    5    2    4
 
-1010 1000 1011 0111 0101 0010 01--
-   A    8    B    7    5    2    4
-
- 0 -  5 : short preabmle [101010B]
- 6 - 14 : brand identifier [2DD4h]
-15 - 19 : datalength [9]
-
----------------------------------------------
+-  0 -  5 : short preabmle [101010B]
+-  6 - 14 : brand identifier [2DD4h]
+- 15 - 19 : datalength [9]
 
 Short preamble example (sampling rate - 1Mhz):
 https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29-short-preamble.cu8.
@@ -102,9 +103,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         // remove preamble and keep only five octets
         bitbuffer_extract_bytes(bitbuffer, brow, start_pos+22, out, 40);
 
-        /*
-         * Check message integrity (CRC/Checksum/parity)
-         */
+        // Check message integrity (CRC/Checksum/parity)
         r_crc = out[4];
         c_crc = crc8(&out[0], 4, LACROSSE_TX35_CRC_POLY, LACROSSE_TX35_CRC_INIT);
         if (r_crc != c_crc) {
@@ -114,10 +113,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
             continue; // DECODE_FAIL_MIC
         }
 
-        /*
-         * Now that message "envelope" has been validated,
-         * start parsing data.
-         */
+        // message "envelope" has been validated, start parsing data
         sensor_id   = ((out[0] & 0x0f) << 2) | (out[1] >> 6);
         temp_c      = 10.0 * (out[1] & 0x0f) + 1.0 * ((out[2] >> 4) & 0x0f) + 0.1 * (out[2] & 0x0f) - 40.0;
         newbatt     = (out[1] >> 5) & 1;
@@ -153,16 +149,20 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
 }
 
 /**
- ** Wrapper for the TX29 device
- **/
-static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+Wrapper for the TX29 device.
+@sa lacrosse_it()
+*/
+static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return lacrosse_it(decoder, bitbuffer, LACROSSE_TX29_MODEL);
 }
 
 /**
- ** Wrapper for the TX35 device
- **/
-static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+Wrapper for the TX35 device.
+@sa lacrosse_it()
+*/
+static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     return lacrosse_it(decoder, bitbuffer, LACROSSE_TX35_MODEL);
 }
 
@@ -175,7 +175,7 @@ static char *output_fields[] = {
     "temperature_C",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 // Receiver for the TX29 device

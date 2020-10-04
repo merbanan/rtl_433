@@ -1,7 +1,15 @@
-/*
-IKEA Sparsnäs Energy Meter Monitor decoder
+/** @file
+    IKEA Sparsnäs Energy Meter Monitor.
 
-The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit 
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+IKEA Sparsnäs Energy Meter Monitor.
+
+The IKEA Sparsnäs consists of a display unit, and a sender unit. The display unit
 displays and stores the values sent by the sender unit. It is not needed for this
 decoder. The sender unit is placed by the energy meter. The sender unit has an
 IR photo sensor which is placed over the energy meter impulse diode. The sender
@@ -13,22 +21,22 @@ unit, but usual values are 500, 1000 and 2000. This is usually indicated like
 
 1000 imp/kWh
 
-on the front of the meter. This value goes into ikea_sparsnas_pulses_per_kwh 
+on the front of the meter. This value goes into ikea_sparsnas_pulses_per_kwh
 in this file. The sender also has a unique ID which is used in the encryption
 key, hence it is needed here to decrypt the data. The sender ID is on a sticker
 in the battery compartment. There are three groups of three digits there. The
-last six digits are your sender ID. Eg "400 617 633" gives you the sender id 
+last six digits are your sender ID. Eg "400 617 633" gives you the sender id
 617633. This number goes into IKEA_SPARSNAS_SENSOR_ID in this file.
 
 
-The data is sent using CPFSK modulation. It requires PD_MIN_PULSE_SAMPLES in 
+The data is sent using CPFSK modulation. It requires PD_MIN_PULSE_SAMPLES in
 pulse_detect.h to be lowered to 5 to be able to demodulate at 250kS/s. The
-preamble is optimally 4 bytes of 0XAA. Then the sync word 0xD201. Here only 
+preamble is optimally 4 bytes of 0XAA. Then the sync word 0xD201. Here only
 the last 2 bytes of the 0xAA preamble is checked, as the first ones seems
-to be corrupted quite often. There are plenty of integrety checks made on 
+to be corrupted quite often. There are plenty of integrety checks made on
 the demodulated package which makes this compromise OK.
 
-Packet structure according to: https://github.com/strigeus/sparsnas_decoder 
+Packet structure according to: https://github.com/strigeus/sparsnas_decoder
 (with some changes by myself)
 
 0:  uint8_t length;        // Always 0x11
@@ -46,15 +54,15 @@ Packet structure according to: https://github.com/strigeus/sparsnas_decoder
 Example packet: 0x11a15f070ea2dfefe6d5fdd20547e6340ae7be61
 
 
-The packet's integrety can be checked with the 16b CRC at the end of the packet. 
-There are also several other ways to check the integrety of the package. 
+The packet's integrety can be checked with the 16b CRC at the end of the packet.
+There are also several other ways to check the integrety of the package.
  - (preamble)
  - CRC
  - The decrypted sensor ID
  - the constant bytes at 0, 3 and 4
 
-The decryption, CRC is calculation, value extraction and interpretation is 
-taken from https://github.com/strigeus/sparsnas_decoder and adapted to 
+The decryption, CRC is calculation, value extraction and interpretation is
+taken from https://github.com/strigeus/sparsnas_decoder and adapted to
 this application. Many thanks to strigeus!
 
 Most other things are from https://github.com/kodarn/Sparsnas which is an
@@ -125,13 +133,13 @@ static uint32_t ikea_sparsnas_brute_force_encryption(uint8_t buffer[18])
    return 0;
 }
 
-static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
 
     if ((bitbuffer->bits_per_row[0] < IKEA_SPARSNAS_MESSAGE_BITLEN) || (bitbuffer->bits_per_row[0] > IKEA_SPARSNAS_MESSAGE_BITLEN_MAX)) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
-            fprintf(stderr, "IKEA Sparsnäs: Too short or too long packet received. Expected %d, received %d\n", IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
+            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            fprintf(stderr, "%s: Too short or too long packet received. Expected %d, received %d\n", __func__, IKEA_SPARSNAS_MESSAGE_BITLEN, bitbuffer->bits_per_row[0]);
         }
         return DECODE_ABORT_LENGTH;
     }
@@ -141,8 +149,8 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ((bitbuffer->bits_per_row[0] == bitpos) || (bitpos + IKEA_SPARSNAS_MESSAGE_BITLEN > bitbuffer->bits_per_row[0])) {
         if (decoder->verbose > 1) {
-            decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
-            fprintf(stderr, "IKEA Sparsnäs: malformed package, preamble not found. (Expected 0xAAAAD201)\n");
+            decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            fprintf(stderr, "%s: malformed package, preamble not found. (Expected 0xAAAAD201)\n", __func__);
         }
         return DECODE_ABORT_EARLY;
     }
@@ -152,7 +160,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_extract_bytes(bitbuffer, 0, bitpos + IKEA_SPARSNAS_PREAMBLE_BITLEN, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN);
 
     if (decoder->verbose > 1) {
-        decoder_output_bitbufferf(decoder, bitbuffer, "IKEA Sparsnäs");
+        decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
         decoder_output_bitrowf(decoder, buffer, IKEA_SPARSNAS_MESSAGE_BITLEN, "Encrypted message");
     }
     // CRC check
@@ -161,7 +169,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (crc_received != crc_calculated) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: CRC check failed (0x%X != 0x%X)\n", crc_calculated, crc_received);
+            fprintf(stderr, "%s: CRC check failed (0x%X != 0x%X)\n", __func__, crc_calculated, crc_received);
         }
         return DECODE_FAIL_MIC;
     }
@@ -169,14 +177,14 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     //Decryption
     if (!ikea_sparsnas_sensor_id) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: No sensor ID configured. Brute forcing encryption.\n");
+            fprintf(stderr, "%s: No sensor ID configured. Brute forcing encryption.\n", __func__);
         }
         ikea_sparsnas_sensor_id = ikea_sparsnas_brute_force_encryption(buffer);
         if (decoder->verbose > 1) {
             if (ikea_sparsnas_sensor_id) {
-                fprintf(stderr, "IKEA Sparsnäs: Found valid sensor ID %06d. If reported values does not make sense, this might be incorrect.\n", ikea_sparsnas_sensor_id);
+                fprintf(stderr, "%s: Found valid sensor ID %06u. If reported values does not make sense, this might be incorrect.\n", __func__, ikea_sparsnas_sensor_id);
             } else {
-                fprintf(stderr, "IKEA Sparsnäs: No valid sensor ID found.\n");
+                fprintf(stderr, "%s: No valid sensor ID found.\n", __func__);
             }
         }
     }
@@ -202,15 +210,15 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t rcv_sensor_id = (unsigned)decrypted[5] << 24 | decrypted[6] << 16 | decrypted[7] << 8 | decrypted[8];
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "IKEA Sparsnäs: CRC OK (%X == %X)\n", crc_calculated, crc_received);
-        fprintf(stderr, "IKEA Sparsnäs: Encryption key: 0x%X%X%X%X%X\n", key[0], key[1], key[2], key[3], key[4]);
+        fprintf(stderr, "%s: CRC OK (%X == %X)\n", __func__, crc_calculated, crc_received);
+        fprintf(stderr, "%s: Encryption key: 0x%X%X%X%X%X\n", __func__, key[0], key[1], key[2], key[3], key[4]);
         decoder_output_bitrowf(decoder, decrypted, 18 * 8, "Decrypted");
-        fprintf(stderr, "IKEA Sparsnäs: Received sensor id: %d\n", rcv_sensor_id);
+        fprintf(stderr, "%s: Received sensor id: %06u\n", __func__, rcv_sensor_id);
     }
 
     if (rcv_sensor_id != ikea_sparsnas_sensor_id) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Malformed package, or wrong sensor id. Received sensor id (%d) not the same as sender (%d)\n", rcv_sensor_id, ikea_sparsnas_sensor_id);
+            fprintf(stderr, "%s: Malformed package, or wrong sensor id. Received sensor id (%06u) not the same as sender (%d)\n", __func__, rcv_sensor_id, ikea_sparsnas_sensor_id);
         }
     }
 
@@ -218,7 +226,7 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         data_t *data;
         data = data_make(
-            "model",         "Model",               DATA_STRING, "IKEA Sparsnäs Energy Meter Monitor [Encrypted]",
+            "model",         "Model",               DATA_STRING, "Ikea-Sparsnas",
             "id",            "Sensor ID",           DATA_INT, ikea_sparsnas_sensor_id,
             "mic",           "Integrity",           DATA_STRING,    "CRC",
             NULL
@@ -230,14 +238,14 @@ static int ikea_sparsnas_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (decrypted[0] != 0x11) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte0=%X expected %X)\n", decrypted[0], 0x11);
+            fprintf(stderr, "%s: Message malformed (byte0=%X expected %X)\n", __func__, decrypted[0], 0x11);
         }
         return DECODE_FAIL_SANITY;
     }
     if (decrypted[3] != 0x07) {
         decoder_output_bitrowf(decoder, decrypted + 5, 13 * 8,  "Message malformed");
         if (decoder->verbose > 1) {
-            fprintf(stderr, "IKEA Sparsnäs: Message malformed (byte3=%X expected %X)\n", decrypted[0], 0x07);
+            fprintf(stderr, "%s: Message malformed (byte3=%X expected %X)\n", __func__, decrypted[0], 0x07);
         }
         return DECODE_FAIL_SANITY;
     }
@@ -292,13 +300,13 @@ static char *output_fields[] = {
 };
 
 r_device ikea_sparsnas = {
-    .name          = "IKEA Sparsnäs Energy Meter Monitor",
+    .name          = "IKEA Sparsnas Energy Meter Monitor",
     .modulation    = FSK_PULSE_PCM,
     .short_width   = 27,
     .long_width    = 27,
     .gap_limit     = 1000,
     .reset_limit   = 3000,
-    .decode_fn     = &ikea_sparsnas_callback,
+    .decode_fn     = &ikea_sparsnas_decode,
     .disabled      = 0,
     .fields        = output_fields,
 };

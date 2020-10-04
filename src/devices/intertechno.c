@@ -1,9 +1,20 @@
-/* Intertechno remotes.
- *
- * Intertechno remote labeled ITT-1500 that came with 3x ITR-1500 remote outlets. The set is labeled IT-1500.
- * The PPM consists of a 220µs high followed by 340µs or 1400µs of gap.
- *
- * There is another type of remotes that have an ID prefix of 0x56 and slightly shorter timing.
+/** @file
+    Intertechno remotes.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Intertechno remotes.
+
+Intertechno remote labeled ITT-1500 that came with 3x ITR-1500 remote outlets. The set is labeled IT-1500.
+The PPM consists of a 220µs high followed by 340µs or 1400µs of gap.
+
+There is another type of remotes that have an ID prefix of 0x56 and slightly shorter timing.
+
  */
 
 #include "decoder.h"
@@ -61,7 +72,7 @@ static char *output_fields[] = {
     "slave",
     "master",
     "command",
-    NULL
+    NULL,
 };
 
 r_device intertechno = {

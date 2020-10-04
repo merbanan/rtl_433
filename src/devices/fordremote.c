@@ -1,25 +1,30 @@
-/* Ford Car Key
- *
- * Identifies event, but does not attempt to decrypt rolling code...
- *
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * Note: this used to have a broken PWM decoding, but is now proper DMC.
- * The output changed and the fields are very likely not as intended.
- *
- * [00] {1} 80 : 1
- * [01] {9} 00 80 : 00000000 1
- * [02] {1} 80 : 1
- * [03] {78} 03 e0 01 e4 e0 90 52 97 39 60
- */
+/** @file
+    Ford Car Key.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/**
+Ford Car Key.
+
+Identifies event, but does not attempt to decrypt rolling code...
+Note: this used to have a broken PWM decoding, but is now proper DMC.
+The output changed and the fields are very likely not as intended.
+
+    [00] {1} 80 : 1
+    [01] {9} 00 80 : 00000000 1
+    [02] {1} 80 : 1
+    [03] {78} 03 e0 01 e4 e0 90 52 97 39 60
+
+*/
 
 #include "decoder.h"
 
-static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int fordremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *bytes;
     int found = 0;

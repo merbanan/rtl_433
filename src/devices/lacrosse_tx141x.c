@@ -1,5 +1,5 @@
 /** @file
-    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor
+    LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
     Changes done by Andrew Rivett <veggiefrog@gmail.com>. Copyright is
     retained by Robert Fraczkiewicz.
@@ -12,6 +12,8 @@
     (at your option) any later version.
 */
 /**
+LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
+
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
 in the 433.92 MHz band. Product pages:
@@ -75,6 +77,7 @@ A count enables us to determine the quality of radio transmission.
 The TX141-BV2 is the temperature only version of the TX141TH-BV2 sensor.
 
 Changes:
+- Changed minimum bit length to 32 (tx141b is temperature only)
 - LACROSSE_TX141_BITLEN is 37 instead of 40.
 - The humidity variable has been removed for TX141.
 - Battery check bit is inverse of TX141TH.
@@ -105,6 +108,7 @@ Addition of TX141W and TX145wsdth:
 #include "decoder.h"
 
 // Define the types of devices this file supports (uses expected bitlen)
+#define LACROSSE_TX141B 32
 #define LACROSSE_TX141 37
 #define LACROSSE_TX141TH 40
 #define LACROSSE_TX141BV3 33
@@ -121,7 +125,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, 5, 33); // 33
+    r = bitbuffer_find_repeated_row(bitbuffer, 5, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
@@ -148,7 +152,9 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (bitbuffer->bits_per_row[r] >= 37) {
         device = LACROSSE_TX141;
     }
-    else {
+    else if (bitbuffer->bits_per_row[r] == 32) {
+        device = LACROSSE_TX141B;
+    } else {
         device = LACROSSE_TX141BV3;
     }
 
@@ -193,7 +199,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         else if (type == 2) {
             // Wind
-            speed_kmh = temp_raw * 0.1;
+            speed_kmh = temp_raw * 0.1f;
             // wind direction is in humidity field
 
             /* clang-format off */
@@ -243,7 +249,17 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
-    if (device == LACROSSE_TX141) {
+    if (device == LACROSSE_TX141B) {
+        /* clang-format off */
+        data = data_make(
+                "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141B sensor"),
+                "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
+                NULL);
+        /* clang-format on */
+    } else if (device == LACROSSE_TX141) {
         /* clang-format off */
         data = data_make(
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),

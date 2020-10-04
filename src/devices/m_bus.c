@@ -1,15 +1,20 @@
-/* Wireless M-Bus (EN 13757-4)
- *
- * Implements the Physical layer (RF receiver) and Data Link layer of the
- * Wireless M-Bus protocol. Will return a data string (including the CI byte)
- * for further processing by an Application layer (outside this program).
- *
- * Copyright (C) 2018 Tommy Vestermark
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Wireless M-Bus (EN 13757-4).
+
+   Copyright (C) 2018 Tommy Vestermark
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+*/
+/**
+Wireless M-Bus (EN 13757-4).
+
+Implements the Physical layer (RF receiver) and Data Link layer of the
+Wireless M-Bus protocol. Will return a data string (including the CI byte)
+for further processing by an Application layer (outside this program).
+*/
 #include "decoder.h"
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
@@ -18,12 +23,14 @@
 #define BLOCK1_2B_SIZE 128
 
 // Convert two BCD encoded nibbles to an integer
-static unsigned bcd2int(uint8_t bcd) {
+static unsigned bcd2int(uint8_t bcd)
+{
     return 10*(bcd>>4) + (bcd & 0xF);
 }
 
 // Mapping from 6 bits to 4 bits. "3of6" coding used for Mode T
-static uint8_t m_bus_decode_3of6(uint8_t byte) {
+static uint8_t m_bus_decode_3of6(uint8_t byte)
+{
     uint8_t out = 0xFF; // Error
     //fprintf(stderr,"Decode %0d\n", byte);
     switch(byte) {
@@ -51,7 +58,8 @@ static uint8_t m_bus_decode_3of6(uint8_t byte) {
 
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
 // Bad data must be handled with second layer CRC
-static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes) {
+static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
+{
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
         uint8_t nibble_l = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset+6) >> 2);
@@ -78,7 +86,8 @@ static int m_bus_crc_valid(r_device *decoder, const uint8_t *bytes, unsigned crc
 
 
 // Decode two bytes into three letters of five bits
-static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code) {
+static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code)
+{
     three_letter_code[0] = (m_field >> 10 & 0x1F) + 0x40;
     three_letter_code[1] = (m_field >> 5 & 0x1F) + 0x40;
     three_letter_code[2] = (m_field & 0x1F) + 0x40;
@@ -87,7 +96,8 @@ static void m_bus_manuf_decode(uint16_t m_field, char* three_letter_code) {
 
 
 // Decode device type string
-const char* m_bus_device_type_str(uint8_t devType) {
+const char* m_bus_device_type_str(uint8_t devType)
+{
     char *str = "";
     switch(devType) {
         case 0x00:  str = "Other";  break;
@@ -200,7 +210,8 @@ static char* oms_hum_el[4][4] = {
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
-static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su) {
+static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
+{
     int ret = consumed_bytes[dif_coding&0x07];
     float temp;
     int state;
@@ -211,8 +222,8 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 case 0x19:
                     temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
                     data = data_append(data,
-                        oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
-                        NULL);
+                            oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                            NULL);
                     break;
                 default:
                     break;
@@ -221,7 +232,9 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
         case 0x7B:
             switch(vif_uam>>1) {
                 case 0xD:
-                    data = data_append(data, oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1], NULL);
+                    data = data_append(data,
+                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1],
+                            NULL);
                     break;
                 default:
                     break;
@@ -234,11 +247,15 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     // Open  sets bits 2 and 6 to 1
                     // Close sets bits 2 and 6 to 0
                     state = b[0]&0x44;
-                    data = data_append(data, "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (state==0x44) ? "open":"closed", NULL);
+                    data = data_append(data,
+                            "switch", "Switch", DATA_FORMAT, "%s", DATA_STRING, (state==0x44) ? "open":"closed",
+                            NULL);
                     break;
                 case 0x3a:
                     /* Only use 32 bits of 48 available */
-                    data = data_append(data, ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]), NULL);
+                    data = data_append(data,
+                            ((dif_su==0)?"counter_0":"counter_1"), ((dif_su==0)?"Counter 0":"Counter 1"), DATA_FORMAT, "%d", DATA_INT, (b[3]<<24|b[2]<<16|b[1]<<8|b[0]),
+                            NULL);
                     break;
                 default:
                     break;
@@ -249,7 +266,8 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
     return ret;
 }
 
-static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out) {
+static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bus_data_t *out)
+{
     uint8_t off = block1->block2.pl_offset;
     const uint8_t *b = out->data;
     uint8_t dif = 0;
@@ -277,7 +295,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
 //[02 65] b408 [42 65] a008 [8201 65] 6408 [22 65] 9608 [12 65] ac08 [62 65] 2808 [52 65] 920802fb1a470142fb1a4a018201fb1a550122fb1a4a0112fb1a4a0162fb1a3c0152fb1a6c01066dbb3197902100
 
     /* Payload must start with a DIF */
-    while(off < block1->L) {
+    while (off < block1->L) {
         memset(dife_array, 0, 10);
         memset(vife_array, 0, 10);
         dife_cnt = 0;
@@ -312,7 +330,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
         if (vif == 0xFB) {
             vif_linear = 0x7B;
             vif_uam = vife_array[0];
-        } else if(vif  == 0xFD) {
+        } else if (vif  == 0xFD) {
             vif_linear = 0x7D;
             vif_uam = vife_array[0];
         } else {
@@ -328,7 +346,8 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     return;
 }
 
-static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1) {
+static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1)
+{
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
 
@@ -448,11 +467,9 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
     data_t  *data;
     char    str_buf[1024];
 
-    // Get time now
-
     // Make data string
-    str_buf[0] = 0;
-    for (unsigned n=0; n<out->length; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
+    sprintf(str_buf, "%02x", out->data[0]-2);  // Adjust telegram length
+    for (unsigned n=1; n<out->length+2; n++) { sprintf(str_buf+n*2, "%02x", out->data[n]); }
 
     // Output data
     if (block1->knx_mode) {
@@ -460,7 +477,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         for (unsigned n=0; n<6; n++) { sprintf(sn_str+n*2, "%02x", block1->knx_sn[n]); }
 
         data = data_make(
-        "model",    "",             DATA_STRING,    _X("KNX-RF","KNX-RF"),
+        "model",    "",             DATA_STRING,    "KNX-RF",
         "sn",       "SN",           DATA_STRING,    sn_str,
         "knx_ctrl", "KNX-Ctrl",     DATA_FORMAT,    "0x%02X", DATA_INT, block1->block2.knx_ctrl,
         "src",      "Src",          DATA_FORMAT,    "0x%04X", DATA_INT, block1->block2.src,
@@ -488,7 +505,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         "mic",      "Integrity",    DATA_STRING,    "CRC",
         NULL);
     }
-    if(block1->block2.CI) {
+    if (block1->block2.CI) {
         data = data_append(data,
         "CI",     "Control Info",   DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.CI,
         "AC",     "Access number",  DATA_FORMAT,    "0x%02X",   DATA_INT, block1->block2.AC,
@@ -501,14 +518,15 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         parse_payload(data, block1, out);
     } else {
         data = data_append(data,
-        "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
-                        NULL);
+                "payload_encrypted", "Payload Encrypted", DATA_FORMAT, "1", DATA_INT, NULL,
+                NULL);
     }
     decoder_output_data(decoder, data);
 }
 
 
-static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     static const uint8_t PREAMBLE_T[]  = {0x54, 0x3D};      // Mode T Preamble (always format A - 3of6 encoded)
 //  static const uint8_t PREAMBLE_CA[] = {0x55, 0x54, 0x3D, 0x54, 0xCD};  // Mode C, format A Preamble
 //  static const uint8_t PREAMBLE_CB[] = {0x55, 0x54, 0x3D, 0x54, 0x3D};  // Mode C, format B Preamble
@@ -528,7 +546,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return DECODE_ABORT_EARLY;
     }
-    if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %d\n", bit_offset);
+    if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %u\n", bit_offset);
     bitbuffer_print(bitbuffer);
     }
     bit_offset += sizeof(PREAMBLE_T)*8;     // skip preamble
@@ -575,7 +593,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
-        if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %d\n", data_in.length); }
+        if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %u\n", data_in.length); }
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
             return 0;
@@ -589,7 +607,8 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 
-static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     static const uint8_t PREAMBLE_RA[]  = {0x55, 0x54, 0x76, 0x96};      // Mode R, format A (B not supported)
 
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
@@ -621,7 +640,8 @@ static int m_bus_mode_r_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 // Untested code, signal samples missing
-static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     static const uint8_t PREAMBLE_F[]  = {0x55, 0xF6};      // Mode F Preamble
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
 //  static const uint8_t PREAMBLE_FB[] = {0x55, 0xF6, 0x72};  // Mode F, format B Preamble
@@ -669,7 +689,8 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     return 1;
 }
 
-static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
     unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
@@ -714,7 +735,7 @@ static char *output_fields[] = {
     "tpci",
     "apci",
     "crc",
-    NULL
+    NULL,
 };
 
 // Mode C1, C2 (Meter TX), T1, T2 (Meter TX),

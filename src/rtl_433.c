@@ -35,9 +35,11 @@
 #include "r_api.h"
 #include "sdr.h"
 #include "baseband.h"
+#include "pulse_analyzer.h"
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
 #include "pulse_demod.h"
+#include "rfraw.h"
 #include "data.h"
 #include "r_util.h"
 #include "optparse.h"
@@ -67,6 +69,16 @@
 #include "getopt/getopt.h"
 #endif
 
+// note that Clang has _Noreturn but it's C11
+// #if defined(__clang__) ...
+#if defined(__GNUC__)
+#define _Noreturn __attribute__((noreturn))
+#elif defined(_MSC_VER)
+#define _Noreturn __declspec(noreturn)
+#else
+#define _Noreturn
+#endif
+
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
 
 static void print_version(void)
@@ -75,6 +87,7 @@ static void print_version(void)
     fprintf(stderr, "Use -h for usage help and see https://triq.org/ for documentation.\n");
 }
 
+_Noreturn
 static void usage(int exit_code)
 {
     term_help_printf(
@@ -128,6 +141,7 @@ static void usage(int exit_code)
     exit(exit_code);
 }
 
+_Noreturn
 static void help_protocols(r_device *devices, unsigned num_devices, int exit_code)
 {
     unsigned i;
@@ -145,6 +159,7 @@ static void help_protocols(r_device *devices, unsigned num_devices, int exit_cod
     exit(exit_code);
 }
 
+_Noreturn
 static void help_device(void)
 {
     term_help_printf(
@@ -170,6 +185,7 @@ static void help_device(void)
     exit(0);
 }
 
+_Noreturn
 static void help_gain(void)
 {
     term_help_printf(
@@ -181,6 +197,7 @@ static void help_gain(void)
     exit(0);
 }
 
+_Noreturn
 static void help_output(void)
 {
     term_help_printf(
@@ -206,6 +223,7 @@ static void help_output(void)
     exit(0);
 }
 
+_Noreturn
 static void help_meta(void)
 {
     term_help_printf(
@@ -230,6 +248,7 @@ static void help_meta(void)
     exit(0);
 }
 
+_Noreturn
 static void help_read(void)
 {
     term_help_printf(
@@ -251,6 +270,7 @@ static void help_read(void)
     exit(0);
 }
 
+_Noreturn
 static void help_write(void)
 {
     term_help_printf(
@@ -1058,6 +1078,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
             else if (!strncmp(p, "ampest", 6))
                 cfg->demod->use_mag_est = 0;
+            else if (!strncmp(p, "verbose", 7))
+                cfg->demod->detect_verbosity++;
             else if (!strncmp(p, "magest", 6))
                 cfg->demod->use_mag_est = 1;
             else if (!strncasecmp(p, "level", 5))
@@ -1132,6 +1154,7 @@ static void sighandler(int signum)
     }
     else if (signum == SIGALRM) {
         fprintf(stderr, "Async read stalled, exiting!\n");
+        g_cfg.exit_code = 3;
     }
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
@@ -1195,7 +1218,7 @@ int main(int argc, char **argv) {
         add_infile(cfg, argv[optind++]);
     }
 
-    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr);
+    pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
 
     if (demod->am_analyze) {
         demod->am_analyze->level_limit = DB_TO_AMP(demod->level_limit);
@@ -1327,10 +1350,29 @@ int main(int argc, char **argv) {
                 }
                 if (cfg->verbosity)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                if (rfraw_check(e)) {
+                    pulse_data_t pulse_data = {0};
+                    rfraw_parse(&pulse_data, e);
+                    list_t single_dev = {0};
+                    list_push(&single_dev, r_dev);
+                    if (!pulse_data.fsk_f2_est)
+                        r += run_ook_demods(&single_dev, &pulse_data);
+                    else
+                        r += run_fsk_demods(&single_dev, &pulse_data);
+                    list_free_elems(&single_dev, NULL);
+                } else
                 r += pulse_demod_string(e, r_dev);
                 continue;
             }
             // otherwise test all decoders
+            if (rfraw_check(line)) {
+                pulse_data_t pulse_data = {0};
+                rfraw_parse(&pulse_data, line);
+                if (!pulse_data.fsk_f2_est)
+                    r += run_ook_demods(&demod->r_devs, &pulse_data);
+                else
+                    r += run_fsk_demods(&demod->r_devs, &pulse_data);
+            } else
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
                 if (cfg->verbosity)
@@ -1349,6 +1391,14 @@ int main(int argc, char **argv) {
     // Special case for string test data
     if (cfg->test_data) {
         r = 0;
+        if (rfraw_check(cfg->test_data)) {
+            pulse_data_t pulse_data = {0};
+            rfraw_parse(&pulse_data, cfg->test_data);
+            if (!pulse_data.fsk_f2_est)
+                r += run_ook_demods(&demod->r_devs, &pulse_data);
+            else
+                r += run_fsk_demods(&demod->r_devs, &pulse_data);
+        } else
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
             r_device *r_dev = *iter;
             if (cfg->verbosity)
@@ -1413,6 +1463,18 @@ int main(int argc, char **argv) {
                     if (!demod->pulse_data.num_pulses)
                         break;
 
+                    for (void **iter2 = demod->dumper.elems; iter2 && *iter2; ++iter2) {
+                        file_info_t const *dumper = *iter2;
+                        if (dumper->format == VCD_LOGIC) {
+                            pulse_data_print_vcd(dumper->file, &demod->pulse_data, '\'');
+                        } else if (dumper->format == PULSE_OOK) {
+                            pulse_data_dump(dumper->file, &demod->pulse_data);
+                        } else {
+                            fprintf(stderr, "Dumper (%s) not supported on OOK input\n", dumper->spec);
+                            exit(1);
+                        }
+                    }
+
                     if (demod->pulse_data.fsk_f2_est) {
                         run_fsk_demods(&demod->r_devs, &demod->pulse_data);
                     }
@@ -1469,6 +1531,9 @@ int main(int argc, char **argv) {
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
+#ifndef _WIN32
+            alarm(0); // cancel the watchdog timer
+#endif
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
@@ -1496,7 +1561,7 @@ int main(int argc, char **argv) {
     // Normal case, no test data, no in files
     r = sdr_open(&cfg->dev, &demod->sample_size, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
-        exit(1);
+        exit(2);
     }
 
 #ifndef _WIN32
@@ -1583,9 +1648,13 @@ int main(int argc, char **argv) {
         flush_report_data(cfg);
     }
 
-    if (!cfg->do_exit)
+    if (!cfg->do_exit) {
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
+        cfg->exit_code = r;
+    }
 
+    if (cfg->exit_code >= 0)
+        r = cfg->exit_code;
     r_free_cfg(cfg);
 
     return r >= 0 ? r : -r;

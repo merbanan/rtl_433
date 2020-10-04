@@ -5,6 +5,7 @@
 Prologue sensor protocol,
 also FreeTec NC-7104 sensor for FreeTec Weatherstation NC-7102,
 and Pearl NC-7159-675.
+The sensor can be bought at Clas Ohlson.
 
 The sensor sends 36 bits 7 times, before the first packet there is a sync pulse.
 The packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -18,13 +19,12 @@ The data is grouped in 9 nibbles
 - type: 4 bit fixed 1001 (9) or 0110 (5)
 - id: 8 bit a random id that is generated when the sensor starts, could include battery status
   the same batteries often generate the same id
-- flags(3): is 0 the battery status, 1 ok, 0 low, first reading always say low
+- flags(3): is 0 when the battery is low, otherwise 1 (ok), first reading always says low
 - flags(2): is 1 when the sensor sends a reading when pressing the button on the sensor
 - flags(1,0): the channel number that can be set by the sensor (1, 2, 3, X)
 - temp: 12 bit signed scaled by 10
 - humi: 8 bit always 11001100 (0xCC) if no humidity sensor is available
 
-The sensor can be bought at Clas Ohlson.
 */
 
 #include "decoder.h"
@@ -37,13 +37,13 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     int ret;
 
-    uint8_t type;
-    uint8_t id;
-    uint8_t battery;
-    uint8_t button;
-    uint8_t channel;
-    int16_t temp_raw;
-    uint8_t humidity;
+    int type;
+    int id;
+    int battery;
+    int button;
+    int channel;
+    int temp_raw;
+    int humidity;
 
     if (bitbuffer->bits_per_row[0] <= 8 && bitbuffer->bits_per_row[0] != 0)
         return DECODE_ABORT_EARLY; // Alecto/Auriol-v2 has 8 sync bits, reduce false positive
@@ -62,17 +62,17 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* Check for Alecto collision */
     ret = alecto_checksum(decoder, bitbuffer->bb);
-    // if the checksum is correct, it's not prologue
+    // if the checksum is correct, it's not Prologue/ThermoPro-TX2
     if (ret > 0)
         return DECODE_FAIL_SANITY;
 
-    /* Prologue sensor */
+    /* Prologue/ThermoPro-TX2 sensor */
     type     = b[0] >> 4;
     id       = ((b[0] & 0x0F) << 4) | ((b[1] & 0xF0) >> 4);
     battery  = b[1] & 0x08;
     button   = (b[1] & 0x04) >> 2;
     channel  = (b[1] & 0x03) + 1;
-    temp_raw = (int16_t)((b[2] << 8) | (b[3] & 0xF0));
+    temp_raw = (int16_t)((b[2] << 8) | (b[3] & 0xF0)); // uses sign-extend
     temp_raw = temp_raw >> 4;
     humidity = ((b[3] & 0x0F) << 4) | (b[4] >> 4);
 
@@ -84,13 +84,9 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
+            "humidity",      "Humidity",    DATA_COND, humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",        "Button",      DATA_INT, button,
             NULL);
-
-    if (humidity != 0xcc) // 0xcc is "invalid"
-        data = data_append(data,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,
-                NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -107,7 +103,8 @@ static char *output_fields[] = {
         "temperature_C",
         "humidity",
         "button",
-        NULL};
+        NULL,
+};
 
 r_device prologue = {
         .name        = "Prologue, FreeTec NC-7104, NC-7159-675 temperature sensor",

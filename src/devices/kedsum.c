@@ -1,7 +1,5 @@
 /** @file
     Kedsum temperature and humidity sensor (http://amzn.to/25IXeng).
-    My models transmit at a bit lower freq. of around 433.71 Mhz.
-    Also NC-7415 from Pearl.
 
     Copyright (C) 2016 John Lifsey
     Enhanced (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
@@ -13,7 +11,10 @@
 */
 /**
 Largely the same as esperanza_ews, s3318p.
-\sa esperanza_ews.c s3318p.c
+@sa esperanza_ews.c s3318p.c
+
+My models transmit at a bit lower freq. of around 433.71 Mhz.
+Also NC-7415 from Pearl.
 
 Frame structure:
 
@@ -35,7 +36,8 @@ Frame structure:
 
 #include "decoder.h"
 
-static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t b[5];
     data_t *data;
 
@@ -68,7 +70,7 @@ static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
     int channel  = ((b[1] & 0x30) >> 4) + 1;
     int temp_raw = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
     int humidity = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
-    float temp_f = (temp_raw - 900) * 0.1;
+    float temp_f = (temp_raw - 900) * 0.1f;
 
     char *battery_str = battery == 2 ? "OK" : battery == 1 ? "WEAK" : "LOW";
 
@@ -98,7 +100,7 @@ static char *output_fields[] = {
     "temperature_F",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device kedsum = {
@@ -110,5 +112,5 @@ r_device kedsum = {
     .reset_limit    = 9400,
     .decode_fn      = &kedsum_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

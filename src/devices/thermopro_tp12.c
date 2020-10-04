@@ -1,50 +1,52 @@
-/* Thermopro TP-12 Thermometer.
- *
- * Copyright (C) 2017 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+    Thermopro TP-12 Thermometer.
 
-#include "decoder.h"
+    Copyright (C) 2017 Google Inc.
 
-/*
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Thermopro TP-12 Thermometer.
+
 A normal sequence for the TP12:
 
-[00] {0} :
-[01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[02] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[03] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[04] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[05] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[06] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[07] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[08] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[09] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[10] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[11] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[12] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[13] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[14] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[15] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[16] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-[17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001
+    [00] {0} :
+    [01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [02] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [03] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [04] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [05] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [06] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [07] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [08] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [09] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [10] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [11] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [12] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [13] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [14] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [15] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [16] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+    [17] {40} 38 73 21 bb 81 : 00111000 01110011 00100001 10111011 10000001
 
 Layout appears to be:
 
-[01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
-                              device   temp 1   temp     temp 2   checksum
-                                       low bits 1   2    low bits
-                                                hi bits
+    [01] {41} 38 73 21 bb 81 80 : 00111000 01110011 00100001 10111011 10000001 1
+                                  device   temp 1   temp     temp 2   checksum
+                                           low bits 1   2    low bits
+                                                    hi bits
 
 */
 
-#define BITS_IN_VALID_ROW 40
+#include "decoder.h"
 
-static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+#define BITS_IN_VALID_ROW 41
+
+static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int temp1_raw, temp2_raw, row;
     float temp1_c, temp2_c;
     uint8_t *bytes;
@@ -58,7 +60,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     row = bitbuffer_find_repeated_row(
             bitbuffer,
             (bitbuffer->num_rows > 5) ? 5 : 2,
-            40);
+            BITS_IN_VALID_ROW - 1); // allow 1 bit less to also match the last row
     if (row < 0) {
         return DECODE_ABORT_EARLY;
     }
@@ -68,7 +70,7 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         return DECODE_ABORT_EARLY; // reduce false positives
     }
 
-    if (bitbuffer->bits_per_row[row] != 41)
+    if (bitbuffer->bits_per_row[row] != BITS_IN_VALID_ROW)
         return DECODE_ABORT_LENGTH;
 
     ic = lfsr_digest8_reflect(bytes, 4, 0x51, 0x04);
@@ -85,8 +87,8 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
     temp1_raw = ((bytes[2] & 0xf0) << 4) | bytes[1];
     temp2_raw = ((bytes[2] & 0x0f) << 8) | bytes[3];
 
-    temp1_c = (temp1_raw - 200) * 0.1;
-    temp2_c = (temp2_raw - 200) * 0.1;
+    temp1_c = (temp1_raw - 200) * 0.1f;
+    temp2_c = (temp2_raw - 200) * 0.1f;
 
     data = data_make(
             "model",            "",            DATA_STRING, _X("Thermopro-TP12","Thermopro TP12 Thermometer"),
@@ -100,22 +102,22 @@ static int thermopro_tp12_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_1_C",
-    "temperature_2_C",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "temperature_1_C",
+        "temperature_2_C",
+        "mic",
+        NULL,
 };
 
 r_device thermopro_tp12 = {
-    .name          = "Thermopro TP08/TP12/TP20 thermometer",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 500,
-    .long_width    = 1500,
-    .gap_limit     = 2000,
-    .reset_limit   = 4000,
-    .decode_fn     = &thermopro_tp12_sensor_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Thermopro TP08/TP12/TP20 thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2000,
+        .reset_limit = 4000,
+        .decode_fn   = &thermopro_tp12_sensor_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

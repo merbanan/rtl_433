@@ -56,10 +56,11 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    int const max_zeros = device->s_reset_limit / device->s_long_width;
+    int const gap_limit = device->s_gap_limit ? device->s_gap_limit : device->s_reset_limit;
+    int const max_zeros = gap_limit / device->s_long_width;
     int tolerance = device->s_tolerance;
     if (tolerance <= 0)
-        tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
+        tolerance = device->s_long_width / 4; // default tolerance is +-25% of a bit period
 
     float f_short = device->f_short_width;
     float f_long  = device->f_long_width;
@@ -119,24 +120,24 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
         int highs = (pulses->pulse[n]) * f_short + 0.5;
-        // Determine number of bit periods in current pulse/gap length (rounded)
-        int periods = (pulses->pulse[n] + pulses->gap[n]) * f_long + 0.5;
+        // Determine number of low bit periods in current gap length (rounded)
+        // for RZ subtract the nominal bit-gap
+        int lows = (pulses->gap[n] + device->s_short_width - device->s_long_width) * f_long + 0.5;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
             bitbuffer_add_bit(&bits, 1);
         }
-        // Add run of zeros
-        periods -= highs;                  // Remove 1s from whole period
-        periods = MIN(periods, max_zeros); // Don't overflow at end of message
-        for (int i = 0; i < periods; ++i) {
+        // Add run of zeros, handle possibly negative "lows" gracefully
+        lows = MIN(lows, max_zeros); // Don't overflow at end of message
+        for (int i = 0; i < lows; ++i) {
             bitbuffer_add_bit(&bits, 0);
         }
 
         // Validate data
-        if ((device->s_short_width != device->s_long_width)                    // Only for RZ coding
-                && (abs(pulses->pulse[n] - device->s_short_width) > tolerance) // Pulse must be within tolerance
-        ) {
+        if ((device->s_short_width != device->s_long_width)                       // Only for RZ coding
+                && (abs(pulses->pulse[n] - device->s_short_width) > tolerance)) { // Pulse must be within tolerance
+
             // Data is corrupt
             if (device->verbose > 3) {
                 fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
@@ -146,11 +147,15 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_clear(&bits);
         }
 
+        // Check for new packet in multipacket
+        else if (pulses->gap[n] > gap_limit && pulses->gap[n] <= device->s_reset_limit) {
+            bitbuffer_add_row(&bits);
+        }
         // End of Message?
-        if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
-                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
-                && (bits.bits_per_row[0] > 0)                    // Only if data has been accumulated
-        ) {
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] > device->s_reset_limit))      // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
@@ -506,13 +511,11 @@ int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
 {
     int events = 0;
     bitbuffer_t bits = {0};
-    int i, n, limit;
-
-    limit = device->s_short_width;
+    int limit = device->s_short_width;
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         if (pulses->pulse[n] > limit) {
-            for(i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
+            for (int i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
                 bitbuffer_add_bit(&bits, 1);
             }
             bitbuffer_add_bit(&bits, 0);

@@ -1,5 +1,5 @@
 /** @file
-    Klimalogg/30.3180.IT sensor decoder
+    Klimalogg/30.3180.IT sensor decoder.
 
     Copyright (C) 2020 Benjamin Larsson
 
@@ -9,9 +9,8 @@
     (at your option) any later version.
 */
 
-#include "decoder.h"
-
 /**
+Klimalogg/30.3180.IT sensor decoder.
 
 Random information:
 
@@ -39,6 +38,8 @@ Note: The rtl_433 generic dsp code does not work well with these signals
 play with the -l option (5000-15000 range) or a high sample rate.
 
 */
+
+#include "decoder.h"
 
 static uint8_t bcd_decode8(uint8_t x)
 {

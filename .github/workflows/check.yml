@@ -1,0 +1,19 @@
+name: Check code style
+on: [push, pull_request]
+jobs:
+  style_check_job:
+    runs-on: ubuntu-latest
+    name: Check code style
+    steps:
+    - uses: actions/checkout@v2
+    - name: Style Check
+      uses: ./.github/actions/style-check
+  maintainer_update_check_job:
+    runs-on: ubuntu-latest
+    name: Needs maintainer_update
+    steps:
+    - uses: actions/checkout@v2
+    - name: Working directory clean excluding untracked files
+      run: |
+        ./maintainer_update.py
+        [ -z "$(git status --untracked-files=no --porcelain)" ]

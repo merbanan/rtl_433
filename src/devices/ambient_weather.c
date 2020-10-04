@@ -1,17 +1,22 @@
-/* Ambient Weather F007TH Thermo-Hygrometer
- * contributed by David Ediger
- * discovered by Ron C. Lewis
- *
- * The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
- */
+/** @file
+    Ambient Weather F007TH Thermo-Hygrometer.
+
+    contributed by David Ediger
+    discovered by Ron C. Lewis
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+/**
+Ambient Weather F007TH Thermo-Hygrometer.
+
+The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
+*/
 
 #include "decoder.h"
-
-// three repeats without gap
-// full preamble is 0x00145 (the last bits might not be fixed, e.g. 0x00146)
-// and on decoding also 0xffd45
-static const uint8_t preamble_pattern[2] = {0x01, 0x45}; // 12 bits
-static const uint8_t preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
 
 static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
@@ -41,7 +46,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     isBatteryLow = (b[2] & 0x80) != 0; // if not zero, battery is low
     channel = ((b[2] & 0x70) >> 4) + 1;
     int temp_f = ((b[2] & 0x0f) << 8) | b[3];
-    temperature = (temp_f - 400) / 10.0f;
+    temperature = (temp_f - 400) * 0.1f;
     humidity = b[4];
 
     data = data_make(
@@ -58,8 +63,18 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     return 1;
 }
 
+/**
+Ambient Weather F007TH Thermo-Hygrometer.
+@sa ambient_weather_decode()
+*/
 static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    // three repeats without gap
+    // full preamble is 0x00145 (the last bits might not be fixed, e.g. 0x00146)
+    // and on decoding also 0xffd45
+    uint8_t const preamble_pattern[2]  = {0x01, 0x45}; // 12 bits
+    uint8_t const preamble_inverted[2] = {0xfd, 0x45}; // 12 bits
+
     int row;
     unsigned bitpos;
     int ret = 0;
@@ -88,24 +103,24 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "device", // TODO: delete this
-    "id",
-    "channel",
-    "battery",
-    "temperature_F",
-    "humidity",
-    "mic",
-    NULL
+        "model",
+        "device", // TODO: delete this
+        "id",
+        "channel",
+        "battery",
+        "temperature_F",
+        "humidity",
+        "mic",
+        NULL,
 };
 
 r_device ambient_weather = {
-    .name          = "Ambient Weather Temperature Sensor",
-    .modulation    = OOK_PULSE_MANCHESTER_ZEROBIT,
-    .short_width   = 500,
-    .long_width    = 0, // not used
-    .reset_limit   = 2400,
-    .decode_fn     = &ambient_weather_callback,
-    .disabled      = 0,
-    .fields        = output_fields
+        .name        = "Ambient Weather Temperature Sensor",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 500,
+        .long_width  = 0, // not used
+        .reset_limit = 2400,
+        .decode_fn   = &ambient_weather_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

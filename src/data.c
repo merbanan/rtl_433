@@ -35,19 +35,22 @@
 #endif
 
 #ifdef _WIN32
-  #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
-  #undef _WIN32_WINNT
-  #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
-  #endif
+    #if !defined(_WIN32_WINNT) || (_WIN32_WINNT < 0x0600)
+    #undef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600   /* Needed to pull in 'struct sockaddr_storage' */
+    #endif
 
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
 #else
-  #include <netdb.h>
-  #include <netinet/in.h>
+    #include <sys/types.h>
+    #include <sys/socket.h>
+    #include <netdb.h>
+    #include <netinet/in.h>
 
-  #define SOCKET          int
-  #define INVALID_SOCKET  -1
+    #define SOCKET          int
+    #define INVALID_SOCKET  (-1)
+    #define closesocket(x)  close(x)
 #endif
 
 #include <time.h>
@@ -59,17 +62,15 @@
 #include "data.h"
 
 #ifdef _WIN32
-  #define _POSIX_HOST_NAME_MAX  128
-  #undef  close   /* We only work with sockets here */
-  #define close(s)              closesocket (s)
-  #define perror(str)           ws2_perror (str)
+    #define _POSIX_HOST_NAME_MAX  128
+    #define perror(str)           ws2_perror(str)
 
-  static void ws2_perror (const char *str)
-  {
-    if (str && *str)
-       fprintf (stderr, "%s: ", str);
-    fprintf (stderr, "Winsock error %d.\n", WSAGetLastError());
-  }
+    static void ws2_perror (const char *str)
+    {
+        if (str && *str)
+            fprintf(stderr, "%s: ", str);
+        fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
+    }
 #endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
@@ -204,6 +205,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
     while (prev && prev->next)
         prev = prev->next;
     char *format = NULL;
+    int skip = 0; // skip the data item if this is set
     type = va_arg(ap, data_type_t);
     do {
         data_t *current;
@@ -212,6 +214,10 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         value_release_fn value_release = NULL; // appease CSA checker
 
         switch (type) {
+        case DATA_COND:
+            skip |= !va_arg(ap, int);
+            type = va_arg(ap, data_type_t);
+            continue;
         case DATA_FORMAT:
             if (format) {
                 fprintf(stderr, "vdata_make() format type used twice\n");
@@ -224,7 +230,6 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             }
             type = va_arg(ap, data_type_t);
             continue;
-            break;
         case DATA_COUNT:
             assert(0);
             break;
@@ -253,34 +258,43 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             goto alloc_error;
         }
 
-        current = calloc(1, sizeof(*current));
-        if (!current) {
-            WARN_CALLOC("vdata_make()");
+        if (skip) {
             if (value_release) // could use dmt[type].value_release
                 value_release(value.v_ptr);
-            goto alloc_error;
+            free(format);
+            format = NULL;
+            skip = 0;
         }
-        current->type   = type;
-        current->format = format;
-        format          = NULL; // consumed
-        current->value  = value;
-        current->next   = NULL;
+        else {
+            current = calloc(1, sizeof(*current));
+            if (!current) {
+                WARN_CALLOC("vdata_make()");
+                if (value_release) // could use dmt[type].value_release
+                    value_release(value.v_ptr);
+                goto alloc_error;
+            }
+            current->type   = type;
+            current->format = format;
+            format          = NULL; // consumed
+            current->value  = value;
+            current->next   = NULL;
 
-        if (prev)
-            prev->next = current;
-        prev = current;
-        if (!first)
-            first = current;
+            if (prev)
+                prev->next = current;
+            prev = current;
+            if (!first)
+                first = current;
 
-        current->key = strdup(key);
-        if (!current->key) {
-            WARN_STRDUP("vdata_make()");
-            goto alloc_error;
-        }
-        current->pretty_key = strdup(pretty_key ? pretty_key : key);
-        if (!current->pretty_key) {
-            WARN_STRDUP("vdata_make()");
-            goto alloc_error;
+            current->key = strdup(key);
+            if (!current->key) {
+                WARN_STRDUP("vdata_make()");
+                goto alloc_error;
+            }
+            current->pretty_key = strdup(pretty_key ? pretty_key : key);
+            if (!current->pretty_key) {
+                WARN_STRDUP("vdata_make()");
+                goto alloc_error;
+            }
         }
 
         // next args
@@ -418,6 +432,7 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     switch (type) {
     case DATA_FORMAT:
     case DATA_COUNT:
+    case DATA_COND:
         assert(0);
         break;
     case DATA_DATA:
@@ -652,8 +667,6 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
 
 static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
-    data_output_kv_t *kv = (data_output_kv_t *)output;
-
     //fprintf(output->file, "[ ");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
@@ -1025,7 +1038,6 @@ static int datagram_client_open(datagram_client_t *client, const char *host, con
     struct addrinfo hints, *res, *res0;
     int    error;
     SOCKET sock;
-    const char *cause = NULL;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = PF_UNSPEC;
@@ -1065,7 +1077,7 @@ static void datagram_client_close(datagram_client_t *client)
         return;
 
     if (client->sock != INVALID_SOCKET) {
-        close(client->sock);
+        closesocket(client->sock);
         client->sock = INVALID_SOCKET;
     }
 

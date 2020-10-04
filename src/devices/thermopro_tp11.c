@@ -1,25 +1,28 @@
-/* Thermopro TP-11 Thermometer.
- *
- * Copyright (C) 2017 Google Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- */
+/** @file
+    Thermopro TP-11 Thermometer.
 
-#include "decoder.h"
+    Copyright (C) 2017 Google Inc.
 
-/* normal sequence of bit rows:
-[00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
-[01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
-[02] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
-[03] {32} db 41 57 c2 : 11011011 01000001 01010111 11000010
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Thermopro TP-11 Thermometer.
+
+normal sequence of bit rows:
+
+    [00] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
+    [01] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
+    [02] {33} db 41 57 c2 80 : 11011011 01000001 01010111 11000010 1
+    [03] {32} db 41 57 c2 : 11011011 01000001 01010111 11000010
 
 */
+#include "decoder.h"
 
-static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     int temp_raw, row;
     float temp_c;
     bitrow_t *bb = bitbuffer->bb;
@@ -40,38 +43,50 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
         return DECODE_FAIL_MIC;
     }
 
+
+    // No need to decode/extract values for simple test
+    if ( (!bb[row][0] && !bb[row][1] && !bb[row][2] && !bb[row][3])
+       || (bb[row][0] == 0xff && bb[row][1] == 0xff && bb[row][2] == 0xff && bb[row][3] == 0xff)) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00 or 0xFF\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     value = (bb[row][0] << 16) + (bb[row][1] << 8) + bb[row][2];
     device = value >> 12;
 
     temp_raw = value & 0xfff;
-    temp_c = (temp_raw - 200) / 10.;
+    temp_c = (temp_raw - 200) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Thermopro-TP11","Thermopro TP11 Thermometer"),
             "id",            "Id",          DATA_INT,    device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "mic",           "Integrity",   DATA_STRING, "CRC",
             NULL);
+    /* clang-format on */
     decoder_output_data(decoder, data);
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "temperature_C",
-    "mic",
-    NULL
+        "model",
+        "id",
+        "temperature_C",
+        "mic",
+        NULL,
 };
 
 r_device thermopro_tp11 = {
-    .name          = "Thermopro TP11 Thermometer",
-    .modulation    = OOK_PULSE_PPM,
-    .short_width   = 500,
-    .long_width    = 1500,
-    .gap_limit     = 2000,
-    .reset_limit   = 4000,
-    .decode_fn     = &thermopro_tp11_sensor_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "Thermopro TP11 Thermometer",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,
+        .long_width  = 1500,
+        .gap_limit   = 2000,
+        .reset_limit = 4000,
+        .decode_fn   = &thermopro_tp11_sensor_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

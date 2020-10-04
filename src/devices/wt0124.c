@@ -1,30 +1,29 @@
-/* WT0124 Pool Thermometer decoder.
- *
- * Copyright (C) 2018 Benjamin Larsson
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- *
- */
+/** @file
+    WT0124 Pool Thermometer decoder.
 
-/*
+    Copyright (C) 2018 Benjamin Larsson
 
-5e       ba       9a       9f       e1       34
-01011110 10111010 10011010 10011111 11100001 00110100
-5555RRRR RRRRTTTT TTTTTTTT UUCCFFFF XXXXXXXX ????????
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
+/**
+WT0124 Pool Thermometer decoder.
 
-5 = constant 5
-R = random power on id
-T = 12 bits of temperature with 0x900 bias and scaled by 10
-U = unk, maybe battery indicator (display is missing one though)
-C = channel
-F = constant F
-X = xor checksum
-? = unknown
+    5e       ba       9a       9f       e1       34
+    01011110 10111010 10011010 10011111 11100001 00110100
+    5555RRRR RRRRTTTT TTTTTTTT UUCCFFFF XXXXXXXX ????????
+
+- 5 = constant 5
+- R = random power on id
+- T = 12 bits of temperature with 0x900 bias and scaled by 10
+- U = unk, maybe battery indicator (display is missing one though)
+- C = channel
+- F = constant F
+- X = xor checksum
+- ? = unknown
 
 */
 
@@ -60,7 +59,7 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sensor_rid = (b[0]&0x0F)<<4 | (b[1]&0x0F);
 
     /* Get temperature */
-    temp_c = (float) ((((b[1]&0xF)<<8) | b[2])-0x990) / 10.0;
+    temp_c = ((((b[1] & 0xF) << 8) | b[2]) - 0x990) * 0.1f;
 
     /* Get channel */
     channel = ((b[3]>>4) & 0x3);
@@ -96,26 +95,25 @@ static int wt1024_callback(r_device *decoder, bitbuffer_t *bitbuffer)
  *
  */
 static char *output_fields[] = {
-    "model",
-    "rid", // TODO: delete this
-    "id",
-    "channel",
-    "temperature_C",
-    "mic",
-    "data",
-    NULL
+        "model",
+        "rid", // TODO: delete this
+        "id",
+        "channel",
+        "temperature_C",
+        "mic",
+        "data",
+        NULL,
 };
 
-
 r_device wt1024 = {
-    .name          = "WT0124 Pool Thermometer",
-    .modulation    = OOK_PULSE_PWM,
-    .short_width   = 680,
-    .long_width    = 1850,
-    .reset_limit   = 30000,
-    .gap_limit     = 4000,
-    .sync_width    = 10000,
-    .decode_fn     = &wt1024_callback,
-    .disabled      = 0,
-    .fields        = output_fields,
+        .name        = "WT0124 Pool Thermometer",
+        .modulation  = OOK_PULSE_PWM,
+        .short_width = 680,
+        .long_width  = 1850,
+        .reset_limit = 30000,
+        .gap_limit   = 4000,
+        .sync_width  = 10000,
+        .decode_fn   = &wt1024_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };
