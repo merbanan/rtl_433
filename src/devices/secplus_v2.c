@@ -396,6 +396,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     data = data_make(
             "model",       "Model",    DATA_STRING, "Secplus-v2",
+            "id",          "",       DATA_INT, (fixed_total & 0xffffffff),
             "button_id",   "Button-ID",    DATA_INT,    (fixed_total >> 32),
             "remote_id",   "Remote-ID",    DATA_INT,    (fixed_total & 0xffffffff),
             // "fixed",       "",    DATA_INT,    fixed_total,
@@ -411,6 +412,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         // Common fields
         "model",
+        "id",
         "rolling"
         "fixed",
         "button_id",
