@@ -120,7 +120,7 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",       "",             DATA_INT,   id,
                 "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
                 "pulsecount", "Pulse-count", DATA_INT, pulsecount,
-                _X("energy_kWh","energy"),   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_DOUBLE, energy,
+                _X("energy_kWh","energy"),   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_FLOAT, energy,
                 "mic",       "Integrity",   DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */

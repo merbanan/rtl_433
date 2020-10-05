@@ -23,7 +23,7 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t sensor_id = 0;
     uint8_t button;
     uint8_t battery;
-    double value;
+    float value;
     data_t *data;
     int r;
 
@@ -63,7 +63,7 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model", "", DATA_STRING, "RF-tech",
             "id", "Id", DATA_INT, sensor_id,
             "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_FLOAT, value,
             "button", "Button", DATA_INT, button,
             NULL);
 

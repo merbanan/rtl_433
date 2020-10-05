@@ -91,8 +91,8 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "type", "", DATA_STRING, "TPMS",
             "model", "", DATA_STRING, "Steelmate",
             "id", "", DATA_STRING, sensorIDhex,
-            "pressure_PSI", "", DATA_DOUBLE, pressurePSI,
-            "temperature_F", "", DATA_DOUBLE, (float)tempFahrenheit,
+            "pressure_PSI", "", DATA_FLOAT, pressurePSI,
+            "temperature_F", "", DATA_FLOAT, (float)tempFahrenheit,
             "battery_mV", "", DATA_INT, battery_mV,
             "mic", "Integrity", DATA_STRING, "CHECKSUM",
             NULL);

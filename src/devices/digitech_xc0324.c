@@ -77,7 +77,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
 {
     uint8_t b[XC0324_MESSAGE_BYTELEN];
     char id[4] = {0};
-    double temperature;
+    float temperature;
     uint8_t flags;
     uint8_t chksum; // == 0x00 for a good message
 
@@ -120,7 +120,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         *data = data_make(
                 "model",            "Device Type",      DATA_STRING, _X("Digitech-XC0324","Digitech XC0324"),
                 "id",               "ID",               DATA_STRING, id,
-                "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_FLOAT, temperature,
                 "flags",            "Constant ?",       DATA_INT,    flags,
                 "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
                 NULL);

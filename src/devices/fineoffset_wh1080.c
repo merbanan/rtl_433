@@ -240,7 +240,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
 
     // GETTING LIGHT DATA
     int light = (br[4] << 16) | (br[5] << 8) | br[6];
-    double lux = light * 0.1;
+    float lux = light * 0.1;
     float wm;
     if (preamble == SPB)
         wm = (light * 0.00079);
@@ -266,12 +266,12 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
                 _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
-                "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
+                "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_FLOAT,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
                 _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
-                _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
-                _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
-                _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
+                _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_FLOAT,    speed,
+                _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_FLOAT,    gust,
+                _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_FLOAT,    rain,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
@@ -300,8 +300,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
                 "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
                 "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",
                 "uv_index",         "UV Index",         DATA_INT,       uv_index,
-                "lux",              "Lux",              DATA_FORMAT,    "%.1f",     DATA_DOUBLE,    lux,
-                "wm",               "Watts/m",          DATA_FORMAT,    "%.2f",     DATA_DOUBLE,    wm,
+                "lux",              "Lux",              DATA_FORMAT,    "%.1f",     DATA_FLOAT,    lux,
+                "wm",               "Watts/m",          DATA_FORMAT,    "%.2f",     DATA_FLOAT,    wm,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */

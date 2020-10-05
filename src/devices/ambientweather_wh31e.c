@@ -169,7 +169,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id" ,              "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
                     "battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
                     "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -207,7 +207,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id" ,              "",             DATA_INT,    id,
                     //"channel",          "Channel",      DATA_INT,    channel,
                     //"battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
-                    "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_raw * 0.1,
+                    "rain_mm",          "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_FLOAT, rain_raw * 0.1,
                     "data",             "Extra Data",   DATA_STRING, extra,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
                     NULL);

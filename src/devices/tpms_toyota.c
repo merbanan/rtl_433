@@ -70,8 +70,8 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
         "type",             "",     DATA_STRING,    "TPMS",
         "id",               "",     DATA_STRING,    id_str,
         "status",           "",     DATA_INT,       status,
-        "pressure_PSI",     "",     DATA_DOUBLE,    pressure1*0.25-7.0,
-        "temperature_C",    "",     DATA_DOUBLE,    temp-40.0,
+        "pressure_PSI",     "",     DATA_FLOAT,    pressure1*0.25-7.0,
+        "temperature_C",    "",     DATA_FLOAT,    temp-40.0,
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 

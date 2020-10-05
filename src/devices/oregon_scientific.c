@@ -244,7 +244,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_FLOAT, get_os_temperature(msg),
                 "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 NULL);
         decoder_output_data(decoder, data);
@@ -262,9 +262,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",        "Battery",        DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                _X("wind_max_m_s","gust"), "Gust",             DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
-                _X("wind_avg_m_s","average"), "Average",        DATA_FORMAT, "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
-                _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT, "%3.1f degrees",DATA_DOUBLE, quadrant,
+                _X("wind_max_m_s","gust"), "Gust",             DATA_FORMAT, "%2.1f m/s",DATA_FLOAT, gustWindspeed,
+                _X("wind_avg_m_s","average"), "Average",        DATA_FORMAT, "%2.1f m/s",DATA_FLOAT, avgWindspeed,
+                _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT, "%3.1f degrees",DATA_FLOAT, quadrant,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -292,9 +292,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                 "House Code",         DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",                DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",        "Battery",                DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",     "Humidity",             DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
-                "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.0f hPa",     DATA_DOUBLE, pressure,
+                "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.0f hPa",     DATA_FLOAT, pressure,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -310,8 +310,8 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",        "Battery",        DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                _X("rain_rate_mm_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rain_rate,
-                _X("rain_mm","total_rain"), "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, total_rain,
+                _X("rain_rate_mm_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%.02f mm/h", DATA_FLOAT, rain_rate,
+                _X("rain_mm","total_rain"), "Total Rain", DATA_FORMAT, "%.02f mm", DATA_FLOAT, total_rain,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -326,7 +326,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -341,7 +341,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -356,7 +356,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                 "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 NULL);
         decoder_output_data(decoder, data);
@@ -371,7 +371,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
                 "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
                 "battery",          "Battery",      DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_FLOAT, get_os_temperature(msg),
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
                 NULL);
         decoder_output_data(decoder, data);
@@ -413,7 +413,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                     "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                     "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                     "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                    "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                     "humidity",            "Humidity",        DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                     NULL);
             decoder_output_data(decoder, data);
@@ -433,7 +433,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                     "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                     "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                     "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                    "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                     NULL);
             decoder_output_data(decoder, data);
             return 1;
@@ -456,9 +456,9 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",                        "House Code",    DATA_INT,        get_os_rollingcode(msg),
                 "channel",             "Channel",         DATA_INT,        get_os_channel(msg, sensor_id), // 1 to 5
                 "battery",             "Battery",         DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, get_os_humidity(msg),
-                "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.02f hPa", DATA_DOUBLE, pressure,
+                "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.02f hPa", DATA_FLOAT, pressure,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -486,7 +486,7 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "id",               "House Code",   DATA_INT,    get_os_rollingcode(msg),
                 "channel",          "Channel",      DATA_INT,    get_os_channel(msg, sensor_id), // 1 to 5
                 "battery",          "Battery",      DATA_STRING, get_os_battery(msg) ? "LOW" : "OK",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, get_os_temperature(msg),
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_FLOAT, get_os_temperature(msg),
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    get_os_humidity(msg),
                 NULL);
         decoder_output_data(decoder, data);
@@ -576,7 +576,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",                "Battery",        DATA_STRING, get_os_battery(msg)?"LOW":"OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 NULL);
         decoder_output_data(decoder, data);
@@ -592,7 +592,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                         "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",                "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",                "Battery",        DATA_STRING, get_os_battery(msg)?"LOW":"OK",
-                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -623,8 +623,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",        "Battery",        DATA_STRING, get_os_battery(msg)?"LOW":"OK",
-                _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_DOUBLE, rain_rate,
-                _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_FLOAT, rain_rate,
+                _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_FLOAT, total_rain,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -640,8 +640,8 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                 "House Code", DATA_INT,        get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,        get_os_channel(msg, sensor_id),
                 "battery",        "Battery",        DATA_STRING, get_os_battery(msg)?"LOW":"OK",
-                _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_DOUBLE, rain_rate,
-                _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_DOUBLE, total_rain,
+                _X("rain_rate_in_h","rain_rate"),    "Rain Rate",    DATA_FORMAT, "%3.1f in/h", DATA_FLOAT, rain_rate,
+                _X("rain_in","rain_total"), "Total Rain", DATA_FORMAT, "%3.1f in", DATA_FLOAT, total_rain,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -658,9 +658,9 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                 "id",                 "House Code", DATA_INT,         get_os_rollingcode(msg),
                 "channel",        "Channel",        DATA_INT,         get_os_channel(msg, sensor_id),
                 "battery",        "Battery",        DATA_STRING,    get_os_battery(msg)?"LOW":"OK",
-                _X("wind_max_m_s","gust"),             "Gust",             DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, gustWindspeed,
-                _X("wind_avg_m_s","average"),        "Average",        DATA_FORMAT,    "%2.1f m/s",DATA_DOUBLE, avgWindspeed,
-                _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT,    "%3.1f degrees",DATA_DOUBLE, quadrant,
+                _X("wind_max_m_s","gust"),             "Gust",             DATA_FORMAT,    "%2.1f m/s",DATA_FLOAT, gustWindspeed,
+                _X("wind_avg_m_s","average"),        "Average",        DATA_FORMAT,    "%2.1f m/s",DATA_FLOAT, avgWindspeed,
+                _X("wind_dir_deg","direction"),    "Direction",    DATA_FORMAT,    "%3.1f degrees",DATA_FLOAT, quadrant,
                 NULL);
         decoder_output_data(decoder, data);
         return 1;
@@ -702,7 +702,7 @@ static int oregon_scientific_v3_decode(r_device *decoder, bitbuffer_t *bitbuffer
                     "id",               "House Code",       DATA_INT,    id,
                     "battery",          "Battery",          DATA_STRING, batt_low ? "LOW" : "OK",
                     "power_W",          "Power",            DATA_FORMAT, "%d W",DATA_INT, ipower,
-                    "energy_kWh",       "Energy",           DATA_FORMAT, "%2.2f kWh",DATA_DOUBLE, total_energy,
+                    "energy_kWh",       "Energy",           DATA_FORMAT, "%2.2f kWh",DATA_FLOAT, total_energy,
                     "sequence",         "sequence number",  DATA_INT,    sequence,
                     NULL);
             decoder_output_data(decoder, data);

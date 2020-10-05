@@ -103,7 +103,7 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_FLOAT, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "button",           "Button",       DATA_INT, button,
             "mic",              "Integrity",    DATA_STRING, "CRC",

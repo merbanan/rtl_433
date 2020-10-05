@@ -132,7 +132,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_FLOAT, temp/10.f,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
@@ -152,11 +152,11 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
-                _X("wind_avg_mi_h","wind_speed_mph"),   "Wind Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, wind_speed * 0.1f,
-                _X("wind_max_mi_h","gust_speed_mph"),   "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_FLOAT, temp * 0.1f,
+                _X("wind_avg_mi_h","wind_speed_mph"),   "Wind Speed",       DATA_FORMAT, "%.02f mi/h", DATA_FLOAT, wind_speed * 0.1f,
+                _X("wind_max_mi_h","gust_speed_mph"),   "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_FLOAT, gust_speed * 0.1f,
                 "wind_approach",    "Wind Approach",    DATA_INT, wind_approach,
-                _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f", DATA_DOUBLE, wind_direction * 0.1f,
+                _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f", DATA_FLOAT, wind_direction * 0.1f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
@@ -168,7 +168,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
+                "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_FLOAT, temp * 0.1f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);
@@ -183,7 +183,7 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
                 "channel",          "Channel",          DATA_INT, channel,
                 "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
-                "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
+                "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_FLOAT, rain_units * 0.7f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         decoder_output_data(decoder, data);

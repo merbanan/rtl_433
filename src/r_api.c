@@ -512,7 +512,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _F to _C
-            if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_F")) {
+            if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_F")) {
                 d->value.v_dbl = fahrenheit2celsius(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_F", "_C");
                 free(d->key);
@@ -523,7 +523,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 }
             }
             // Convert double type fields ending in _mph to _kph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mph")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_mph")) {
                 d->value.v_dbl = mph2kmph(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_mph", "_kph");
                 free(d->key);
@@ -533,7 +533,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _mi_h to _km_h
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mi_h")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_mi_h")) {
                 d->value.v_dbl = mph2kmph(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_mi_h", "_km_h");
                 free(d->key);
@@ -543,7 +543,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _in to _mm
-            else if ((d->type == DATA_DOUBLE) &&
+            else if ((d->type == DATA_FLOAT) &&
                      (str_endswith(d->key, "_in") || str_endswith(d->key, "_inch"))) {
                 d->value.v_dbl = inch2mm(d->value.v_dbl);
                 char *new_label = str_replace(str_replace(d->key, "_inch", "_in"), "_in", "_mm");
@@ -554,7 +554,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _in_h to _mm_h
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_in_h")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_in_h")) {
                 d->value.v_dbl = inch2mm(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_in_h", "_mm_h");
                 free(d->key);
@@ -564,7 +564,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _inHg to _hPa
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_inHg")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_inHg")) {
                 d->value.v_dbl = inhg2hpa(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_inHg", "_hPa");
                 free(d->key);
@@ -574,7 +574,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _PSI to _kPa
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_PSI")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_PSI")) {
                 d->value.v_dbl = psi2kpa(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_PSI", "_kPa");
                 free(d->key);
@@ -588,7 +588,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     if (cfg->conversion_mode == CONVERT_CUSTOMARY) {
         for (data_t *d = data; d; d = d->next) {
             // Convert double type fields ending in _C to _F
-            if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_C")) {
+            if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_C")) {
                 d->value.v_dbl = celsius2fahrenheit(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_C", "_F");
                 free(d->key);
@@ -599,7 +599,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 }
             }
             // Convert double type fields ending in _kph to _mph
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kph")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_kph")) {
                 d->value.v_dbl = kmph2mph(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_kph", "_mph");
                 free(d->key);
@@ -609,7 +609,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _km_h to _mi_h
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_km_h")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_km_h")) {
                 d->value.v_dbl = kmph2mph(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_km_h", "_mi_h");
                 free(d->key);
@@ -619,7 +619,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _mm to _inch
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_mm")) {
                 d->value.v_dbl = mm2inch(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_mm", "_in");
                 free(d->key);
@@ -629,7 +629,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _mm_h to _in_h
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_mm_h")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_mm_h")) {
                 d->value.v_dbl = mm2inch(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_mm_h", "_in_h");
                 free(d->key);
@@ -639,7 +639,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _hPa to _inHg
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_hPa")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_hPa")) {
                 d->value.v_dbl = hpa2inhg(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_hPa", "_inHg");
                 free(d->key);
@@ -649,7 +649,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 d->format = new_format_label;
             }
             // Convert double type fields ending in _kPa to _PSI
-            else if ((d->type == DATA_DOUBLE) && str_endswith(d->key, "_kPa")) {
+            else if ((d->type == DATA_FLOAT) && str_endswith(d->key, "_kPa")) {
                 d->value.v_dbl = kpa2psi(d->value.v_dbl);
                 char *new_label = str_replace(d->key, "_kPa", "_PSI");
                 free(d->key);
@@ -678,20 +678,20 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
     if (cfg->report_meta && cfg->demod->fsk_pulse_data.fsk_f2_est) {
         data_append(data,
                 "mod",   "Modulation",  DATA_STRING, "FSK",
-                "freq1", "Freq1",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0,
-                "freq2", "Freq2",       DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0,
-                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.rssi_db,
-                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.snr_db,
-                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->fsk_pulse_data.noise_db,
+                "freq1", "Freq1",       DATA_FORMAT, "%.1f MHz", DATA_FLOAT, cfg->demod->fsk_pulse_data.freq1_hz / 1000000.0,
+                "freq2", "Freq2",       DATA_FORMAT, "%.1f MHz", DATA_FLOAT, cfg->demod->fsk_pulse_data.freq2_hz / 1000000.0,
+                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->fsk_pulse_data.rssi_db,
+                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->fsk_pulse_data.snr_db,
+                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->fsk_pulse_data.noise_db,
                 NULL);
     }
     else if (cfg->report_meta) {
         data_append(data,
                 "mod",   "Modulation",  DATA_STRING, "ASK",
-                "freq",  "Freq",        DATA_FORMAT, "%.1f MHz", DATA_DOUBLE, cfg->demod->pulse_data.freq1_hz / 1000000.0,
-                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.rssi_db,
-                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.snr_db,
-                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_DOUBLE, cfg->demod->pulse_data.noise_db,
+                "freq",  "Freq",        DATA_FORMAT, "%.1f MHz", DATA_FLOAT, cfg->demod->pulse_data.freq1_hz / 1000000.0,
+                "rssi",  "RSSI",        DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->pulse_data.rssi_db,
+                "snr",   "SNR",         DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->pulse_data.snr_db,
+                "noise", "Noise",       DATA_FORMAT, "%.1f dB", DATA_FLOAT, cfg->demod->pulse_data.noise_db,
                 NULL);
     }
 

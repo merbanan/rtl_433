@@ -78,8 +78,8 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_INT,    id,
             "channel",          "",             DATA_INT,    channel + 1,
             "battery_ok",       "Battery",      DATA_INT,    !batt_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_FLOAT, temp_c,
+            "humidity",         "Humidity",     DATA_FORMAT, "%.0f %%", DATA_FLOAT, (float)humidity,
             "button",           "Button",       DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);

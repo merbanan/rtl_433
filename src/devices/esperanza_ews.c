@@ -87,7 +87,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("Esperanza-EWS","Esperanza EWS"),
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_FLOAT, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);

@@ -142,9 +142,9 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
             "seq",              "Sequence",         DATA_FORMAT, "%01x", DATA_INT, seq,
             "flags",            "unknown",          DATA_INT,     flags,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+            "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_FLOAT, speed_kmh,
             "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);

@@ -103,7 +103,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                 DATA_STRING, "LaCrosse-WS7000-27/28",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature",      DATA_FLOAT, temperature,
                 "mic",              "MIC",              DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -122,7 +122,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                 DATA_STRING, "LaCrosse-WS7000-22/25",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature",      DATA_FLOAT, temperature,
                 "humidity",         "Humidity",         DATA_INT,    humidity,
                 "mic",              "MIC",              DATA_STRING, "CHECKSUM",
                 NULL);
@@ -140,7 +140,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                 DATA_STRING, "LaCrosse-WS7000-16",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
-                "rain_mm",          "Rain counter",     DATA_DOUBLE, rain * 0.3,
+                "rain_mm",          "Rain counter",     DATA_FLOAT, rain * 0.3,
                 "mic",              "MIC",              DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -159,9 +159,9 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                 DATA_STRING, "LaCrosse-WS7000-15",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
-                "wind_avg_km_h",    "Wind speed",       DATA_DOUBLE, speed,
-                "wind_dir_deg",     "Wind direction",   DATA_DOUBLE, direction,
-                "wind_dev_deg",     "Wind deviation",   DATA_DOUBLE, deviation,
+                "wind_avg_km_h",    "Wind speed",       DATA_FLOAT, speed,
+                "wind_dir_deg",     "Wind direction",   DATA_FLOAT, direction,
+                "wind_dev_deg",     "Wind deviation",   DATA_FLOAT, deviation,
                 "mic",              "MIC",              DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -181,7 +181,7 @@ static int lacrosse_ws7000_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",                 DATA_STRING, "LaCrosse-WS7000-20",
                 "id",               "",                 DATA_INT,    id,
                 "channel",          "",                 DATA_INT,    addr,
-                "temperature_C",    "Temperature",      DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature",      DATA_FLOAT, temperature,
                 "humidity",         "Humidity",         DATA_INT,    humidity,
                 "pressure_hPa",     "Pressure",         DATA_INT,    pressure,
                 "mic",              "MIC",              DATA_STRING, "CHECKSUM",

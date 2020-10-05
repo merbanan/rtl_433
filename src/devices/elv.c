@@ -187,8 +187,8 @@ static int ws2000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "", DATA_STRING, "ELV-WS2000",
             "subtype",          "", DATA_STRING, subtype,
             "id",               "", DATA_INT,    code,
-            "temperature_C",    "", DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temp,
-            "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_DOUBLE, (double)humidity,
+            "temperature_C",    "", DATA_FORMAT, "%.1f C", DATA_FLOAT, (double)temp,
+            "humidity",         "", DATA_FORMAT, "%.1f %%", DATA_FLOAT, (double)humidity,
             "pressure_hPa",     "", DATA_FORMAT, "%d hPa", DATA_INT, pressure,
             NULL);
     /* clang-format on */

@@ -83,7 +83,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 _X("id","sid"),         "SID",          DATA_INT,       sid,
                 "channel",      "Channel",      DATA_INT,       channel,
                 "battery",      "Battery",      DATA_STRING,    battery ? "LOW" : "OK",
-                "temperature_C","Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
+                "temperature_C","Temperature",  DATA_FORMAT,    "%.01f C",              DATA_FLOAT,    tempC,
                 "mic",          "Integrity",    DATA_STRING,    "CHECKSUM",
             NULL);
         decoder_output_data(decoder, data);

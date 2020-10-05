@@ -222,7 +222,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 case 0x19:
                     temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
                     data = data_append(data,
-                            oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+                            oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_FLOAT, temp,
                             NULL);
                     break;
                 default:
@@ -233,7 +233,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
             switch(vif_uam>>1) {
                 case 0xD:
                     data = data_append(data,
-                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1],
+                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_FLOAT, b[0]*humidity_factor[vif_uam&0x1],
                             NULL);
                     break;
                 default:

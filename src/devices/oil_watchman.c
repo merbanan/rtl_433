@@ -30,7 +30,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t binding_countdown = 0;
     uint8_t flags;
     uint8_t maybetemp;
-    double temperature;
+    float temperature;
     data_t *data;
     unsigned bitpos = 0;
     bitbuffer_t databits = {0};
@@ -87,7 +87,7 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
                 "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
                 "maybetemp", "", DATA_INT, maybetemp,
-                "temperature_C", "", DATA_DOUBLE, temperature,
+                "temperature_C", "", DATA_FLOAT, temperature,
                 "binding_countdown", "", DATA_INT, binding_countdown,
                 _X("depth_cm","depth"), "", DATA_INT, depth,
                 NULL);

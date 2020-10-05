@@ -190,7 +190,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
                     "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
                     "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
-                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Temperature",      DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
                     "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "test",             "Test?",            DATA_INT,    test,
                     "mic",              "Integrity",        DATA_STRING, "CRC",
@@ -208,7 +208,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",               "Sensor ID",        DATA_FORMAT, "%05x", DATA_INT, id,
                     "channel",          "Channel",          DATA_FORMAT, "%01x", DATA_INT, channel,
                     "battery_ok",       "Battery level",    DATA_INT,    !battery_low,
-                    "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+                    "wind_avg_km_h",    "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_FLOAT, speed_kmh,
                     "wind_dir_deg",     "Wind direction",   DATA_INT,    humidity,
                     "test",             "Test?",            DATA_INT,    test,
                     "mic",              "Integrity",        DATA_STRING, "CRC",
@@ -254,7 +254,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141B sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
@@ -265,7 +265,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
@@ -278,7 +278,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
         /* clang-format on */
@@ -290,7 +290,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);

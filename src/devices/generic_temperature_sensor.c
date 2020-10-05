@@ -52,7 +52,7 @@ static int generic_temperature_sensor_callback(r_device *decoder, bitbuffer_t *b
             "model",        "",             DATA_STRING,    _X("Generic-Temperature","Generic temperature sensor 1"),
             "id",           "Id",           DATA_INT,   device,
             "battery",          "Battery?",     DATA_INT,                   battery,
-            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.02f C",  DATA_DOUBLE,    temp_f,
+            "temperature_C",    "Temperature",      DATA_FORMAT,    "%.02f C",  DATA_FLOAT,    temp_f,
             NULL);
     /* clang-format on */
 

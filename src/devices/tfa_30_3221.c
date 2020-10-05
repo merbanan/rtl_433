@@ -77,7 +77,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "Sensor ID",    DATA_INT,    device,
             "channel",          "Channel",      DATA_INT,    channel,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.2f C", DATA_FLOAT, temp_c,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "sendmode",         "Test mode",    DATA_INT,    sendmode,
             "mic",              "Integrity",    DATA_STRING, "CRC",

@@ -115,15 +115,15 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                  "ct2", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],
                  "ct3", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[2],
                  "ct4", "", DATA_FORMAT, "%d", DATA_INT, (int16_t)words[3],
-                 _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
+                 _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_FLOAT, vrms,
                  "pulse", "", DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
                  // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
-                 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[5] * 0.1f,
-                 words[6] == 3000 ? NULL : "temp2_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[6] * 0.1f,
-                 words[7] == 3000 ? NULL : "temp3_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[7] * 0.1f,
-                 words[8] == 3000 ? NULL : "temp4_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[8] * 0.1f,
-                 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[9] * 0.1f,
-                 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_DOUBLE, words[10] * 0.1f,
+                 words[5] == 3000 ? NULL : "temp1_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[5] * 0.1f,
+                 words[6] == 3000 ? NULL : "temp2_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[6] * 0.1f,
+                 words[7] == 3000 ? NULL : "temp3_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[7] * 0.1f,
+                 words[8] == 3000 ? NULL : "temp4_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[8] * 0.1f,
+                 words[9] == 3000 ? NULL : "temp5_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[9] * 0.1f,
+                 words[10] == 3000 ? NULL : "temp6_C", "", DATA_FORMAT, "%.1f", DATA_FLOAT, words[10] * 0.1f,
                  "mic",           "Integrity",   DATA_STRING, "CRC",
                  NULL);
         decoder_output_data(decoder, data);

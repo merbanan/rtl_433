@@ -161,7 +161,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
                     "mic",              "Integrity",    DATA_STRING, "PARITY",
                     NULL);
             /* clang-format on */
@@ -173,7 +173,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, _X("LaCrosse-TX","LaCrosse TX Sensor"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_DOUBLE, msg_value,
+                    "humidity",         "Humidity",     DATA_FORMAT, "%.1f %%", DATA_FLOAT, msg_value,
                     "mic",              "Integrity",    DATA_STRING, "PARITY",
                     NULL);
             /* clang-format on */

@@ -126,7 +126,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
                     "newbattery", "NewBattery", DATA_INT, newbatt,
-                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
                     "mic", "Integrity", DATA_STRING, "CRC",
                     NULL);
         } else {
@@ -136,7 +136,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
                     "newbattery", "NewBattery", DATA_INT, newbatt,
-                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
                     "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "mic", "Integrity", DATA_STRING, "CRC",
                     NULL);

@@ -179,7 +179,7 @@ static int rubicson_48659_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",         "",            DATA_STRING, _X("Rubicson-48659","Rubicson 48659"),
             "id",            "Id",          DATA_INT,    id,
-            "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_f,
+            "temperature_F", "Temperature", DATA_FORMAT, "%.1f F", DATA_FLOAT, temp_f,
             "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

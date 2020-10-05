@@ -143,7 +143,7 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",                "",             DATA_STRING, _X("Acurite-Rain","Acurite Rain Gauge"),
             "id",                   "",             DATA_INT,    id,
-            _X("rain_mm","rain"),   "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain,
+            _X("rain_mm","rain"),   "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_FLOAT, total_rain,
             NULL);
     /* clang-format on */
 
@@ -202,7 +202,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, _X("Acurite-609TXC","Acurite 609TXC Sensor"),
                 "id",               "",             DATA_INT,    id,
                 "battery",          "",             DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, tempc,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                 "status",           "",             DATA_INT,    status,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
@@ -402,7 +402,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
             "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
+            "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_FLOAT,     tempf,
             "humidity",         "humidity",         DATA_FORMAT, "%u %%", DATA_INT,    humidity,
             "strike_count",     "strike_count",     DATA_INT,    strike_count,
             "storm_dist",       "storm_distance",   DATA_INT,    strike_distance,
@@ -545,7 +545,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "sequence_num",         NULL,           DATA_INT,    sequence_num,
             "battery_ok",           NULL,           DATA_INT,    !battery_low,
             "subtype",              NULL,           DATA_INT,    message_type,
-            "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
+            "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_FLOAT, wind_speed_mph,
             NULL);
     /* clang-format on */
 
@@ -562,7 +562,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_DOUBLE, tempf,
+                "temperature_F",    "temperature",  DATA_FORMAT,    "%.1f F",       DATA_FLOAT, tempf,
                 "humidity",         NULL,           DATA_FORMAT,    "%u %%",        DATA_INT,    humidity,
                 NULL);
         /* clang-format on */
@@ -579,8 +579,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
 
         /* clang-format off */
         data = data_append(data,
-                "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_DOUBLE, wind_dir,
-                "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                "wind_dir_deg",     NULL,           DATA_FORMAT,    "%.1f",         DATA_FLOAT, wind_dir,
+                "rain_in",          "Rainfall Accumulation", DATA_FORMAT, "%.2f in", DATA_FLOAT, raincounter * 0.01f,
                 NULL);
         /* clang-format on */
     }
@@ -733,7 +733,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
-                    "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
+                    "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, tempc,
                     "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
@@ -794,9 +794,9 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
-                        "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
-                        _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_FLOAT,     wind_speed_kph,
+                        "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_FLOAT,    wind_dir,
+                        _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_FLOAT, raincounter * 0.01f,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
@@ -821,8 +821,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
-                        "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_FLOAT,     wind_speed_kph,
+                        "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_FLOAT,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
@@ -850,8 +850,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
                         "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
-                        "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
+                        _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_FLOAT,     wind_speed_mph,
+                        "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_FLOAT,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
@@ -872,7 +872,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",               "",                         DATA_INT,    sensor_id,
                         "channel",          "",                         DATA_INT,    channel,
                         "battery_ok",       "Battery",                  DATA_INT,    !battery_low,
-                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_DOUBLE, raincounter * 0.254,
+                        "rain_mm",          "Rainfall Accumulation",    DATA_FORMAT, "%.2f mm", DATA_FLOAT, raincounter * 0.254,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
@@ -1024,7 +1024,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
                 "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
+                "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_FLOAT,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
                 NULL);
@@ -1089,7 +1089,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("Acurite-606TX","Acurite 606TX Sensor"),
             "id",               "",             DATA_INT, sensor_id,
             "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
@@ -1169,7 +1169,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "channel",          "Channel",      DATA_INT,    channel,
             "humidity",         "Humidity",     DATA_COND,   humidity != -1,    DATA_INT,    humidity,
-            "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
             "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
@@ -1235,7 +1235,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     _X("subtype","probe"), "Probe",    DATA_INT,       probe,
                     "id",              "",             DATA_INT,       id,
                     "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_FLOAT, tempc,
                     "humidity",        "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       humidity,
                     NULL);
             /* clang-format on */
@@ -1255,7 +1255,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 ptempc = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
                 /* clang-format off */
                 data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_FLOAT, ptempc,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);
                 /* clang-format on */
@@ -1266,7 +1266,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 phumidity = signal[0][9] & 0x7f;
                 /* clang-format off */
                 data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
+                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_FLOAT, ptempc,
                         _X("humidity_1", "phumidity"),       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       phumidity,
                         "mic",             "Integrity",    DATA_STRING,    "CRC",
                         NULL);

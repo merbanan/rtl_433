@@ -108,7 +108,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "House Code",   DATA_INT,    house_code,
             "channel",          "Channel",      DATA_INT,    channel,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_FLOAT, temp,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "seq",              "Sequence",     DATA_INT,    seq,
             NULL);

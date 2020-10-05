@@ -88,7 +88,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",            "House Code",  DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temperature_c,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_FLOAT, temperature_c,
             "button",           "Button",       DATA_INT, startup,
             NULL);
     /* clang-format on */

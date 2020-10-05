@@ -100,8 +100,8 @@ static int auriol_afw2a1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "Channel",           DATA_INT,    channel + 1,
             "battery_ok",       "Battery",           DATA_INT,    battery_ok,
             "button",           "Button",            DATA_INT,    tx_button,
-            "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",          DATA_FORMAT, "%.0f %%", DATA_DOUBLE, (float)humidity,
+            "temperature_C",    "Temperature",       DATA_FORMAT, "%.1f C",  DATA_FLOAT, temp_c,
+            "humidity",         "Humidity",          DATA_FORMAT, "%.0f %%", DATA_FLOAT, (float)humidity,
             NULL);
     /* clang-format on */
 

@@ -105,8 +105,8 @@ static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
                     "model",         "",            DATA_STRING, _X("Calibeur-RF104","Calibeur RF-104"),
                     "id",            "ID",          DATA_INT, ID,
-                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                    "humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,
+                    "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_FLOAT, temperature,
+                    "humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_FLOAT, humidity,
                     "mic",           "Integrity",   DATA_STRING,    "CRC",
                     NULL);
     decoder_output_data(decoder, data);

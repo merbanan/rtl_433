@@ -37,7 +37,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     unsigned id;
     char id_str[7];
     int pressure_raw, temp_c, unknown;
-    double pressure_kpa;
+    float pressure_kpa;
     char code_str[5];
 
     start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
@@ -69,8 +69,8 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "type",             "", DATA_STRING, "TPMS",
             "id",               "", DATA_STRING, id_str,
             "flags",            "", DATA_STRING, flags_str,
-            "pressure_kPa",     "", DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure_kpa,
-            "temperature_C",    "", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temp_c,
+            "pressure_kPa",     "", DATA_FORMAT, "%.1f kPa", DATA_FLOAT, (double)pressure_kpa,
+            "temperature_C",    "", DATA_FORMAT, "%.0f C", DATA_FLOAT, (double)temp_c,
             "mic",              "", DATA_STRING, "CRC",
             NULL);
 

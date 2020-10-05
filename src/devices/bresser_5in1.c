@@ -131,12 +131,12 @@ static int bresser_5in1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Bresser-5in1",
             "id",               "",             DATA_INT,    sensor_id,
             "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, temperature,
             "humidity",         "Humidity",     DATA_INT, humidity,
-            _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
-            _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
-            "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",DATA_DOUBLE, wind_direction_deg,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+            _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_FLOAT, wind_gust,
+            _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_FLOAT, wind_avg,
+            "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",DATA_FLOAT, wind_direction_deg,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_FLOAT, rain,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

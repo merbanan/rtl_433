@@ -74,8 +74,8 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "Channel",          DATA_INT, channel,
             "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
             "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_FLOAT, temp_c,
+            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_FLOAT, rainrate,
             "button",           "Button",       DATA_INT, button,
             NULL);
     /* clang-format on */

@@ -86,8 +86,8 @@ static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         "battery",          "",     DATA_STRING,    battery_low ? "LOW" : "OK",
         "counter",          "",     DATA_INT,       counter,
         "failed",           "",     DATA_STRING,    failed ? "FAIL" : "OK",
-        "pressure_kPa",     "",     DATA_DOUBLE,    pressure_kpa,
-        "temperature_C",    "",     DATA_DOUBLE,    temperature_c,
+        "pressure_kPa",     "",     DATA_FLOAT,    pressure_kpa,
+        "temperature_C",    "",     DATA_FLOAT,    temperature_c,
         "mic",              "",     DATA_STRING,    "CRC",
         NULL);
 

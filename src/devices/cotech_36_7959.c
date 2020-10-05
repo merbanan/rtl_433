@@ -107,12 +107,12 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //"subtype",          "Type code",        DATA_INT, subtype,
             "id",               "ID",               DATA_INT,    id,
             "battery_ok",       "Battery",          DATA_INT,    !batt_low,
-            "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_DOUBLE, temp_c,
+            "temperature_F",    "Temperature",      DATA_FORMAT, "%.1f F", DATA_FLOAT, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain * 0.1f,
+            "rain_mm",          "Rain",             DATA_FORMAT, "%.1f mm", DATA_FLOAT, rain * 0.1f,
             "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
-            "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
-            "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
+            "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_FLOAT, wind * 0.1f,
+            "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_FLOAT, gust * 0.1f,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

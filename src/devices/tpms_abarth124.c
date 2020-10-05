@@ -79,8 +79,8 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "flags",            "",             DATA_STRING, flags,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (float)pressure * 1.38,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 50.0,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_FLOAT, (float)pressure * 1.38,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_FLOAT, (float)temperature - 50.0,
             "status",           "",             DATA_INT, status,
             "mic",              "",             DATA_STRING, "CHECKSUM",
             NULL);

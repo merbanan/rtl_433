@@ -83,7 +83,7 @@ static int eurochron_efth800_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "",             DATA_INT,    id,
             "channel",          "",             DATA_INT,    channel + 1,
             "battery_ok",       "Battery",      DATA_INT,    !battery_low,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_FLOAT, temp_c,
             "humidity",         "Humidity",     DATA_INT,    humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);

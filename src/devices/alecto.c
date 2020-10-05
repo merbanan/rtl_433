@@ -153,8 +153,8 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             skip = 4;
         } //According to supplied data!
         if (skip >= 0) {
-            double speed = reverse8(bb[1 + skip][3]);
-            double gust = reverse8(bb[5 + skip][3]);
+            float speed = reverse8(bb[1 + skip][3]);
+            float gust = reverse8(bb[5 + skip][3]);
             int direction = (reverse8(bb[5 + skip][2]) << 1) | (bb[5 + skip][1] & 0x1);
 
             /* clang-format off */
@@ -163,8 +163,8 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",             "House Code", DATA_INT,    sensor_id,
                     "channel",        "Channel",    DATA_INT,    channel,
                     "battery",        "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-                    _X("wind_avg_m_s","wind_speed"),     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, speed * 0.2F,
-                    _X("wind_max_m_s","wind_gust"),      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_DOUBLE, gust * 0.2F,
+                    _X("wind_avg_m_s","wind_speed"),     "Wind speed", DATA_FORMAT, "%.2f m/s", DATA_FLOAT, speed * 0.2F,
+                    _X("wind_max_m_s","wind_gust"),      "Wind gust",  DATA_FORMAT, "%.2f m/s", DATA_FLOAT, gust * 0.2F,
                     _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_INT, direction,
                     "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                     NULL);
@@ -176,7 +176,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     else if (msg_type == 0x3 && msg_rain) {
         // Rain sensor
-        double rain_mm = ((reverse8(b[3]) << 8) | reverse8(b[2])) * 0.25F;
+        float rain_mm = ((reverse8(b[3]) << 8) | reverse8(b[2])) * 0.25F;
 
         /* clang-format off */
         data = data_make(
@@ -184,7 +184,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code", DATA_INT,    sensor_id,
                 "channel",       "Channel",    DATA_INT,    channel,
                 "battery",       "Battery",    DATA_STRING, battery_low ? "LOW" : "OK",
-                _X("rain_mm","rain_total"),    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rain_mm,
+                _X("rain_mm","rain_total"),    "Total Rain", DATA_FORMAT, "%.02f mm", DATA_FLOAT, rain_mm,
                 "mic",           "Integrity",  DATA_STRING,    "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -209,7 +209,7 @@ static int alectov1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "id",            "House Code",  DATA_INT,    sensor_id,
                 "channel",       "Channel",     DATA_INT,    channel,
                 "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%",   DATA_INT, humidity,
                 "mic",           "Integrity",   DATA_STRING,    "CHECKSUM",
                 NULL);

@@ -177,7 +177,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
             "id",            "House Code",  DATA_INT,    device_id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_FLOAT, temperature_c,
             "mic",           "MIC",         DATA_STRING, "CHECKSUM",
             NULL);
     decoder_output_data(decoder, data);

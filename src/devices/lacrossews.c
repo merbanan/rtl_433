@@ -127,7 +127,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
+                    "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_FLOAT, temp_c,
                     NULL);
             /* clang-format on */
 
@@ -162,7 +162,7 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    _X("rain_mm", "rainfall_mm"), "Rainfall", DATA_FORMAT, "%3.2f mm", DATA_DOUBLE, rain_mm,
+                    _X("rain_mm", "rainfall_mm"), "Rainfall", DATA_FORMAT, "%3.2f mm", DATA_FLOAT, rain_mm,
                     NULL);
             /* clang-format on */
 
@@ -190,8 +190,8 @@ static int lacrossews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             data = data_make(
                     "model",            "",             DATA_STRING, ws_id == 0x6 ? "LaCrosse-WS3600" : _X("LaCrosse-WS2310", "LaCrosse WS"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    wind_key,           wind_label,     DATA_FORMAT, "%3.1f m/s", DATA_DOUBLE, wind_spd,
-                    _X("wind_dir_deg", "wind_direction"), "Direction", DATA_DOUBLE, wind_dir, NULL);
+                    wind_key,           wind_label,     DATA_FORMAT, "%3.1f m/s", DATA_FLOAT, wind_spd,
+                    _X("wind_dir_deg", "wind_direction"), "Direction", DATA_FLOAT, wind_dir, NULL);
             /* clang-format on */
 
             decoder_output_data(decoder, data);

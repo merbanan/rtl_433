@@ -68,8 +68,8 @@ static int schraeder_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure*0.1,
-            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_FLOAT, (double)pressure*0.1,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_FLOAT, (double)temperature,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
 
@@ -141,8 +141,8 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, (double)pressure*0.1,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, (double)temperature,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_FLOAT, (double)pressure*0.1,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F", DATA_FLOAT, (double)temperature,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
 

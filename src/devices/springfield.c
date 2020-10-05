@@ -74,7 +74,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
                 "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_FLOAT, temp_c,
                 "moisture",         "Moisture",     DATA_INT,    moisture,
                 "button",           "Button",       DATA_INT,    button,
 //                "uk1",            "uk1",          DATA_INT,    uk1,

@@ -180,7 +180,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",        "",                 DATA_STRING, "Archos-TBH",
                 "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "temperature_C", "Temperature",     DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
+                "temperature_C", "Temperature",     DATA_FORMAT, "%.01f C", DATA_FLOAT, temp_c,
                 "humidity",     "Humidity",         DATA_FORMAT, "%d %%", DATA_INT, humidity,
                 "mic",          "Integrity",        DATA_STRING, "CRC",
                 NULL);
@@ -196,7 +196,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",        "",                 DATA_STRING, "Archos-TBH",
                 "id",           "Station ID",       DATA_FORMAT, "%08X", DATA_INT, id,
-                "battery_ok",   "Battery level",    DATA_FORMAT, "%0.2f", DATA_DOUBLE, batt_level * 0.01,
+                "battery_ok",   "Battery level",    DATA_FORMAT, "%0.2f", DATA_FLOAT, batt_level * 0.01,
                 "mic",          "Integrity",        DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */

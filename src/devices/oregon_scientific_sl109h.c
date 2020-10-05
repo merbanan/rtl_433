@@ -87,7 +87,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
                 "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
                 "id",               "Id",                                   DATA_INT,    id,
                 "channel",          "Channel",                              DATA_INT,    channel,
-                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_FLOAT, temp_c,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                 "status",           "Status",                               DATA_INT,    status,
                 "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",
