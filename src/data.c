@@ -116,7 +116,28 @@ static data_meta_type_t dmt[DATA_COUNT] = {
       .array_element_release    = NULL,
       .value_release            = NULL },
 
-    //  DATA_DOUBLE
+    //  DATA_UINT
+    { .array_element_size       = sizeof(unsigned),
+      .array_is_boxed           = false,
+      .array_elementwise_import = NULL,
+      .array_element_release    = NULL,
+      .value_release            = NULL },
+
+    //  DATA_INT64
+    { .array_element_size       = sizeof(int64_t),
+      .array_is_boxed           = false,
+      .array_elementwise_import = NULL,
+      .array_element_release    = NULL,
+      .value_release            = NULL },
+
+    //  DATA_UINT64
+    { .array_element_size       = sizeof(uint64_t),
+      .array_is_boxed           = false,
+      .array_elementwise_import = NULL,
+      .array_element_release    = NULL,
+      .value_release            = NULL },
+
+    //  DATA_FLOAT
     { .array_element_size       = sizeof(double),
       .array_is_boxed           = false,
       .array_elementwise_import = NULL,
@@ -240,7 +261,17 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
         case DATA_INT:
             value.v_int = va_arg(ap, int);
             break;
-        case DATA_DOUBLE:
+        case DATA_UINT:
+            value.v_uint = va_arg(ap, unsigned);
+            break;
+        case DATA_INT64:
+            value.v_int64 = va_arg(ap, int64_t);
+            break;
+        case DATA_UINT64:
+            value.v_uint64 = va_arg(ap, uint64_t);
+            break;
+        // case DATA_FLOAT:
+        case DATA_FLOAT:
             value.v_dbl = va_arg(ap, double);
             break;
         case DATA_STRING:
@@ -441,7 +472,16 @@ void print_value(data_output_t *output, data_type_t type, data_value_t value, ch
     case DATA_INT:
         output->print_int(output, value.v_int, format);
         break;
-    case DATA_DOUBLE:
+    case DATA_UINT:
+        output->print_uint(output, value.v_uint, format);
+        break;
+    case DATA_INT64:
+        output->print_int64(output, value.v_int64, format);
+        break;
+    case DATA_UINT64:
+        output->print_uint64(output, value.v_uint64, format);
+        break;
+    case DATA_FLOAT:
         output->print_double(output, value.v_dbl, format);
         break;
     case DATA_STRING:
@@ -517,6 +557,21 @@ static void print_json_int(data_output_t *output, int data, char const *format)
     fprintf(output->file, "%d", data);
 }
 
+static void print_json_uint(data_output_t *output, unsigned data, char const *format)
+{
+    fprintf(output->file, "%u", data);
+}
+
+static void print_json_int64(data_output_t *output, int64_t data, char const *format)
+{
+    fprintf(output->file, "%ld", data);
+}
+
+static void print_json_uint64(data_output_t *output, uint64_t data, char const *format)
+{
+    fprintf(output->file, "%lu", data);
+}
+
 static void data_output_json_free(data_output_t *output)
 {
     if (!output)
@@ -538,6 +593,9 @@ struct data_output *data_output_json_create(FILE *file)
     output->print_string = print_json_string;
     output->print_double = print_json_double;
     output->print_int    = print_json_int;
+    output->print_uint   = print_json_uint;
+    output->print_int64  = print_json_int64;
+    output->print_uint64 = print_json_uint64;
     output->output_free  = data_output_json_free;
     output->file         = file;
 
@@ -690,6 +748,27 @@ static void print_kv_int(data_output_t *output, int data, char const *format)
     kv->column += fprintf(output->file, format ? format : "%d", data);
 }
 
+static void print_kv_uint(data_output_t *output, unsigned data, char const *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%u", data);
+}
+
+static void print_kv_int64(data_output_t *output, int64_t data, char const *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%ld", data);
+}
+
+static void print_kv_uint64(data_output_t *output, uint64_t data, char const *format)
+{
+    data_output_kv_t *kv = (data_output_kv_t *)output;
+
+    kv->column += fprintf(output->file, format ? format : "%lu", data);
+}
+
 static void print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
@@ -722,6 +801,9 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_string = print_kv_string;
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
+    kv->output.print_uint   = print_kv_uint;
+    kv->output.print_int64  = print_kv_int64;
+    kv->output.print_uint64 = print_kv_uint64;
     kv->output.output_free  = data_output_kv_free;
     kv->output.file         = file;
 
@@ -884,6 +966,21 @@ static void print_csv_int(data_output_t *output, int data, char const *format)
     fprintf(output->file, "%d", data);
 }
 
+static void print_csv_uint(data_output_t *output, unsigned data, char const *format)
+{
+    fprintf(output->file, "%u", data);
+}
+
+static void print_csv_int64(data_output_t *output, int64_t data, char const *format)
+{
+    fprintf(output->file, "%ld", data);
+}
+
+static void print_csv_uint64(data_output_t *output, uint64_t data, char const *format)
+{
+    fprintf(output->file, "%lu", data);
+}
+
 static void data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
@@ -905,6 +1002,9 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_string = print_csv_string;
     csv->output.print_double = print_csv_double;
     csv->output.print_int    = print_csv_int;
+    csv->output.print_uint   = print_csv_uint;
+    csv->output.print_int64  = print_csv_int64;
+    csv->output.print_uint64 = print_csv_uint64;
     csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
     csv->output.file         = file;
@@ -1005,6 +1105,24 @@ static void format_jsons_int(data_output_t *output, int data, char const *format
     abuf_printf(&jsons->msg, "%d", data);
 }
 
+static void format_jsons_uint(data_output_t *output, unsigned data, char const *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%u", data);
+}
+
+static void format_jsons_int64(data_output_t *output, int64_t data, char const *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%ld", data);
+}
+
+static void format_jsons_uint64(data_output_t *output, uint64_t data, char const *format)
+{
+    data_print_jsons_t *jsons = (data_print_jsons_t *)output;
+    abuf_printf(&jsons->msg, "%lu", data);
+}
+
 size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
@@ -1013,6 +1131,9 @@ size_t data_print_jsons(data_t *data, char *dst, size_t len)
             .output.print_string = format_jsons_string,
             .output.print_double = format_jsons_double,
             .output.print_int    = format_jsons_int,
+            .output.print_uint   = format_jsons_uint,
+            .output.print_int64  = format_jsons_int64,
+            .output.print_uint64 = format_jsons_uint64,
     };
 
     abuf_init(&jsons.msg, dst, len);

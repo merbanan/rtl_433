@@ -22,6 +22,7 @@
 #define INCLUDE_DATA_H_
 
 #include <stdio.h>
+#include <inttypes.h>
 
 #if defined(_MSC_VER) && !defined(__clang__)
     // MSVC has something like C99 restrict as __restrict
@@ -33,13 +34,18 @@
 typedef enum {
     DATA_DATA,   /**< pointer to data is stored */
     DATA_INT,    /**< pointer to integer is stored */
-    DATA_DOUBLE, /**< pointer to a double is stored */
+    DATA_UINT,    /**< pointer to unsigned integer is stored */
+    DATA_INT64,    /**< pointer to integer is stored */
+    DATA_UINT64,    /**< pointer to unsigned integer is stored */
+    DATA_FLOAT, /**< pointer to a double is stored */
     DATA_STRING, /**< pointer to a string is stored */
     DATA_ARRAY,  /**< pointer to an array of values is stored */
     DATA_COUNT,  /**< invalid */
     DATA_FORMAT, /**< indicates the following value is formatted */
     DATA_COND,   /**< add data only if condition is true, skip otherwise */
 } data_type_t;
+
+#define DATA_DOUBLE DATA_FLOAT
 
 typedef struct data_array {
     int         num_values;
@@ -49,7 +55,11 @@ typedef struct data_array {
 
 typedef union data_value {
     int         v_int;
+    unsigned    v_uint;
+    int64_t     v_int64;
+    uint64_t    v_uint64;
     double      v_dbl;
+    float       v_flt;
     void        *v_ptr;
 } data_value_t;
 
@@ -135,7 +145,12 @@ typedef struct data_output {
     void (*print_array)(struct data_output *output, data_array_t *data, char const *format);
     void (*print_string)(struct data_output *output, const char *data, char const *format);
     void (*print_double)(struct data_output *output, double data, char const *format);
+
     void (*print_int)(struct data_output *output, int data, char const *format);
+    void (*print_uint)(struct data_output *output, unsigned data, char const *format);
+    void (*print_int64)(struct data_output *output, int64_t data, char const *format);
+    void (*print_uint64)(struct data_output *output, uint64_t data, char const *format);
+
     void (*output_start)(struct data_output *output, const char **fields, int num_fields);
     void (*output_poll)(struct data_output *output);
     void (*output_free)(struct data_output *output);
