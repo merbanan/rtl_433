@@ -196,7 +196,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     /*   Is this overkill ??
     unsigned int l;
-    if(extended) {
+    if (extended) {
          l = 642;
      } else {
          l = 278;
@@ -257,7 +257,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     // if (decoder->verbose > 1) {
-    //     for(int j=0; j < results_len; j++) {
+    //     for (int j=0; j < results_len; j++) {
     //          fprintf(stderr, "%d:%02X ", j,  results[j]);
     //     }
     //     puts("\n");

@@ -281,7 +281,11 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         Field key names and format set to  match rtlamr field names
 
         {"Time":"2020-06-25T08:22:52.404629556-04:00","Offset":1835008,"Length":229376,"Type":"IDM","Message":
-        {"Preamble":1431639715,"PacketTypeID":28,"PacketLength":92,"HammingCode":198,"ApplicationVersion":4,"ERTType":7,"ERTSerialNumber":11278109,"ConsumptionIntervalCount":246,"ModuleProgrammingState":188,"TamperCounters":"QgUWry0H","AsynchronousCounters":0,"PowerOutageFlags":"QUgmCEEF","LastConsumptionCount":339972,"DifferentialConsumptionIntervals":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0],"TransmitTimeOffset":476,"SerialNumberCRC":60090,"PacketCRC":31799}}
+        {"Preamble":1431639715,"PacketTypeID":28,"PacketLength":92,"HammingCode":198,"ApplicationVersion":4,"ERTType":7,
+         "ERTSerialNumber":11278109,"ConsumptionIntervalCount":246,"ModuleProgrammingState":188,
+         "TamperCounters":"QgUWry0H","AsynchronousCounters":0,"PowerOutageFlags":"QUgmCEEF","LastConsumptionCount":339972,
+         "DifferentialConsumptionIntervals":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0],
+         "TransmitTimeOffset":476,"SerialNumberCRC":60090,"PacketCRC":31799}}
     */
 
     /* clang-format off */
@@ -593,7 +597,11 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         Field key names and format set to  match rtlamr field names
 
         {Time":"2020-06-25T08:22:08.569276915-04:00","Offset":1605632,"Length":229376,"Type":"NetIDM","Message":
-        {"Preamble":1431639715,"ProtocolID":28,"PacketLength":92,"HammingCode":198,"ApplicationVersion":4,"ERTType":7,"ERTSerialNumber":1550406067,"ConsumptionIntervalCount":30,"ProgrammingState":184,"LastGeneration":125,"LastConsumption":0,"LastConsumptionNet":2223120656,"DifferentialConsumptionIntervals":[7695,545,2086,1475,6240,2180,4240,4616,240,7191,609,7224,1603,96,2052,12464,6152,8480,9226,352,12312,833,10292,1795,4248,4613,8416],"TransmitTimeOffset":2145,"SerialNumberCRC":61178,"PacketCRC":37271}}
+        {"Preamble":1431639715,"ProtocolID":28,"PacketLength":92,"HammingCode":198,"ApplicationVersion":4,"ERTType":7,
+         "ERTSerialNumber":1550406067,"ConsumptionIntervalCount":30,"ProgrammingState":184,"LastGeneration":125,
+         "LastConsumption":0,"LastConsumptionNet":2223120656,"DifferentialConsumptionIntervals":
+          [7695,545,2086,1475,6240,2180,4240,4616,240,7191,609,7224,1603,96,2052,12464,6152,8480,9226,352,12312,833,10292,1795,4248,4613,8416],
+         "TransmitTimeOffset":2145,"SerialNumberCRC":61178,"PacketCRC":37271}}
 
     */
 

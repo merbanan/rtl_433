@@ -268,23 +268,19 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t fixed_2   = {0};
     uint8_t rolling_2[16] = {0};
 
+    for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] < 110) {
+            continue;
+        }
 
-    // 280 is a conservative guess
-    if (bitbuffer->bits_per_row[0] <= 280) {
-        return DECODE_ABORT_LENGTH;
-    }
+        search_index = bitbuffer_search(bitbuffer, row, 0, _preamble, _preamble_len);
 
-    // loop though segments until we collect both parts, or run out of data
-    while (search_index < bitbuffer->bits_per_row[0]) {
-
-        search_index = bitbuffer_search(bitbuffer, 0, search_index, _preamble, _preamble_len);
-
-        if (search_index >= bitbuffer->bits_per_row[0]) {
+        if (search_index >= bitbuffer->bits_per_row[row]) {
             break;
         }
 
         bitbuffer_clear(&bits);
-        next_pos = bitbuffer_manchester_decode(bitbuffer, 0, search_index + 26, &bits, 80);
+        next_pos = bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
         search_index += 20;
         if (bits.bits_per_row[0] < 42) {
             continue; // DECODE_ABORT_LENGTH;
@@ -393,7 +389,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // rolling_total is a 28 bit unsigned number
     // fixed_totals is 40 bit in a uint64_t
-    snprintf(fixed_str, sizeof(fixed_str), "%llu", fixed_total);
+    snprintf(fixed_str, sizeof(fixed_str), "%llu", (long long unsigned)fixed_total);
     snprintf(rolling_str, sizeof(rolling_str), "%u", rolling_total);
 
     /* clang-format off */

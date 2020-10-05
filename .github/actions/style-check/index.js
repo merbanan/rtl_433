@@ -13,7 +13,8 @@
 const path = require('path')
 const fs = require('fs')
 const log = console.error
-const MAX_LEN = 550 // this should be around 120, but idm.c breaks this.
+const MAX_LEN = 300 // this should likely be around 160
+const replacement_character = '\uFFFD'
 
 // console.log(process.cwd()) // /home/runner/work/rtl_433/rtl_433
 // console.log(__dirname) // /home/runner/work/rtl_433/rtl_433/.github/actions/style-check
@@ -48,73 +49,93 @@ function glob_dir(dir) {
 
 function style_check(filename) {
   const strict = filename.indexOf('/devices/') >= 0
+  const txt = filename.endsWith('.txt')
 
-  let read_errors = 0
-  let long_errors = 0
-  let crlf_errors = 0
-  let tabs_errors = 0
-  let trailing_errors = 0
-  let memc_errors = 0
-  let funbrace_errors = 0
+  let errors = 0
 
   let leading_tabs = 0
   let leading_spcs = 0
-
-  let use_stdout = 0
-  let use_printf = 0
-
+  let mixed_ws = 0
   let need_cond = 0
+  let in_comment = false
+
   let line_number = 0
 
-  fs.readFileSync(filename, 'ascii')
+  fs.readFileSync(filename, 'utf8')
     .split('\n')
     .map(line => {
       line_number++
       const len = line.length
       if (len < 0) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::READ error`)
-        read_errors++
+        log(`::error file=${filename},line=${line_number}::READ error`)
+        errors++
       }
       if (len >= MAX_LEN - 1) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::LONG line error`)
-        long_errors++
+        log(`::error file=${filename},line=${line_number},col=${MAX_LEN}::LONG line error`)
+        errors++
       }
       if (line[len - 1] == '\r' || (len > 1 && line[len - 2] == '\r')) {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::CRLF error`)
-        crlf_errors++
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::CRLF error`)
+        errors++
+      }
+      if (line.indexOf('/*')) {
+        in_comment = true
       }
 
       if (line[0] == '\t') {
-        log(`::error file=${filename},line=${line_number},col=${len - 1}::TAB indented line`)
+        log(`::error file=${filename},line=${line_number},col=0::TAB indented line`)
         leading_tabs++
       }
       if (len >= 4 && line[0] == ' ' && line[1] == ' ' && line[2] == ' ' && line[3] == ' ') {
         leading_spcs++
       }
       if (line[len - 1] == ' ' || line[len - 1] == '\t') {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::TRAILING whitespace error`)
-        trailing_errors++
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::TRAILING whitespace error`)
+        errors++
+      }
+
+      const invchr = line.indexOf(replacement_character)
+      if (invchr >= 0) {
+        log(`::error file=${filename},line=${line_number},col=${invchr + 1}::INVALID-UTF8 character error`)
+        errors++
+      }
+      const nonasc = line.search(/[^ -~]/)
+      if (!in_comment && nonasc >= 0) {
+        log(`::error file=${filename},line=${line_number},col=${nonasc + 1}::NON-ASCII character error`)
+        errors++
+      }
+      else if (nonasc >= 0) {
+        //log(`::warning file=${filename},line=${line_number},col=${nonasc + 1}::NON-ASCII character`)
       }
       if (line.indexOf('(r_device *decoder') >= 0 && line[len - 1] == '{') {
-        log(`::error file=${filename},line=${line_number},col=${len-1}::BRACE function on newline error`)
-        funbrace_errors++
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::BRACE function on newline error`)
+        errors++
+      }
+
+      if (line.indexOf('){') >= 0 && line.indexOf('}') < 0) {
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::STICKY-BRACE error`)
+        errors++
+      }
+      if (!txt && (line.indexOf('if(') >= 0 || line.indexOf('for(') >= 0 || line.indexOf('while(') >= 0)) {
+        log(`::error file=${filename},line=${line_number},col=${len - 1}::STICKY-PAREN error`)
+        errors++
       }
 
       if (strict && line.indexOf('stdout') >= 0) {
         log(`::error file=${filename},line=${line_number},col=${len - 1}::STDOUT line`)
-        use_stdout++
+        errors++
       }
       const p = line.indexOf('printf')
       if (strict && p >= 0) {
-        if (p == 0 || line[p-1] < '_' || line[p-1] > 'z') {
+        if (p == 0 || line[p - 1] < '_' || line[p - 1] > 'z') {
           log(`::error file=${filename},line=${line_number},col=${len - 1}::PRINTF line`)
-          use_printf++
+          errors++
         }
       }
       if (need_cond && line.indexOf('if (!') < 0) {
         // we had an alloc but no check on the following line
         log(`::error file=${filename},line=${line_number},col=${len - 1}::ALLOC check error`)
-        memc_errors++
+        errors++
       }
       need_cond = 0
       if (line.indexOf('alloc(') >= 0 && line.indexOf('alloc()') < 0) {
@@ -124,13 +145,15 @@ function style_check(filename) {
         need_cond++
       }
 
+      if (line.indexOf('*/')) {
+        in_comment = false
+      }
     })
 
   if (leading_tabs && leading_spcs) {
-    log(`::error file=${filename}::${tabs_errors} MIXED tab/spaces errors.`)
-    tabs_errors = leading_tabs > leading_spcs ? leading_spcs : leading_tabs
+    mixed_ws = leading_tabs > leading_spcs ? leading_spcs : leading_tabs
+    log(`::error file=${filename}::${mixed_ws} MIXED tab/spaces errors.`)
   }
 
-  return read_errors + long_errors + crlf_errors + tabs_errors + leading_tabs + trailing_errors
-    + funbrace_errors + use_stdout + use_printf + memc_errors
+  return errors + mixed_ws + leading_tabs
 }

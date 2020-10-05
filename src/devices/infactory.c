@@ -77,7 +77,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (!(b[4]&0x0F))
         return DECODE_ABORT_EARLY;
 
-    if(!infactory_crc_check(b))
+    if (!infactory_crc_check(b))
         return DECODE_FAIL_MIC;
 
     id          = b[0];

@@ -10,6 +10,7 @@
 */
 
 #include "pulse_detect.h"
+#include "rfraw.h"
 #include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
 #include "baseband.h"
@@ -112,9 +113,9 @@ void pulse_data_print_vcd(FILE *file, pulse_data_t const *data, int ch_id)
 
 void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
 {
-    char s[256];
+    char s[1024];
     int i    = 0;
-    int size = sizeof(data->pulse) / sizeof(int);
+    int size = sizeof(data->pulse) / sizeof(*data->pulse);
 
     pulse_data_clear(data);
     data->sample_rate = sample_rate;
@@ -135,6 +136,11 @@ void pulse_data_load(FILE *file, pulse_data_t *data, uint32_t sample_rate)
             else {
                 continue; // still reading a header
             }
+        }
+        if (rfraw_check(s)) {
+            rfraw_parse(data, s);
+            i = data->num_pulses;
+            continue;
         }
         // parse two ints.
         char *p = s;
@@ -371,7 +377,7 @@ int pulse_detect_package(pulse_detect_t *pulse_detect, int16_t const *envelope_d
         int16_t ook_threshold = (s->ook_low_estimate + s->ook_high_estimate) / 2;
         if (pulse_detect->ook_fixed_high_level != 0)
             ook_threshold = pulse_detect->ook_fixed_high_level; // Manual override
-        int16_t const ook_hysteresis = ook_threshold / 8; // ±12%
+        int16_t const ook_hysteresis = ook_threshold / 8; // +-12%
 
         // OOK State machine
         switch (s->ook_state) {

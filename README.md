@@ -3,6 +3,7 @@
 rtl_433 (despite the name) is a generic data receiver, mainly for the 433.92 MHz, 868 MHz (SRD), 315 MHz, 345 MHz, and 915 MHz ISM bands.
 
 The official source code is in the https://github.com/merbanan/rtl_433/ repository.
+For more documentation and related projects see the https://triq.org/ site.
 
 It works with [RTL-SDR](https://github.com/osmocom/rtl-sdr/) and/or [SoapySDR](https://github.com/pothosware/SoapySDR/).
 Actively tested and supported are Realtek RTL2832 based DVB dongles (using RTL-SDR) and LimeSDR ([LimeSDR USB](https://www.crowdsupply.com/lime-micro/limesdr) and [LimeSDR mini](https://www.crowdsupply.com/lime-micro/limesdr-mini) engineering samples kindly provided by [MyriadRf](https://myriadrf.org/)), PlutoSDR, HackRF One (using SoapySDR drivers), as well as SoapyRemote.
@@ -203,7 +204,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [127]  Ecowitt Wireless Outdoor Thermometer WH53/WH0280/WH0281A
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
-    [130]  IKEA Sparsnäs Energy Meter Monitor
+    [130]  IKEA Sparsnas Energy Meter Monitor
     [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
@@ -240,7 +241,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [164]  Security+ 2.0 (Keyfob)
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
-    [167]  Security+ (Keyfob)
+    [167]  Somfy RTS
+    [168]  Security+ (Keyfob)
 
 * Disabled by default, use -R n or -G
 

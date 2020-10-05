@@ -65,7 +65,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     int zero_count = 0;
-    for(int i=0; i<8; i++) {
+    for (int i=0; i<8; i++) {
         if (bytes[i] == 0)
             zero_count++;
     }

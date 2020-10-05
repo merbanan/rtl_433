@@ -71,6 +71,8 @@ def markup_man_text(help_text):
     return help_text
 
 
+verbose = False
+
 # Make sure we run from the top dir
 topdir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(topdir)
@@ -81,45 +83,29 @@ require_clean_work_tree()
 # glob all src and device files
 os.chdir("src")
 src_files = sorted(glob.glob('*.c'))
-print("src_files =", src_files)
+if (verbose):
+    print("src_files =", src_files)
 device_files = sorted(glob.glob('devices/*.c'))
-print("device_files =", device_files)
+if (verbose):
+    print("device_files =", device_files)
 os.chdir("..")
 
 # glob all includes
 os.chdir("include")
 include_files = sorted(glob.glob('*.h'))
-print("include_files =", include_files)
+if (verbose):
+    print("include_files =", include_files)
 os.chdir("..")
 
 # grep all r_devices
 r_devices = [grep_lines(r'(?m)^r_device\s*(.*?)\s*=.*',
                         os.path.join("src", p)) for p in device_files]
 r_devices = [item for sublist in r_devices for item in sublist]
-print("r_devices =", r_devices)
+if (verbose):
+    print("r_devices =", r_devices)
 
 # count r_devices, correct for 'new_template' being used six times
 r_devices_used = len(r_devices) + 5
-
-# README.md
-# Replace everything between ``` with help output.
-repl = '\n' + get_help_text('-h') + '\n'
-repl += get_help_text('-R') + '\n'
-repl += get_help_text('-d') + '\n'
-repl += get_help_text('-g') + '\n'
-repl += get_help_text('-X') + '\n'
-repl += get_help_text('-F') + '\n'
-repl += get_help_text('-M') + '\n'
-repl += get_help_text('-r') + '\n'
-repl += get_help_text('-w') + '\n'
-# repl = repl.encode('utf-8')
-replace_block(r'```',
-              r'```', repl, 'README.md')
-
-# MAN pages
-repl = markup_man_text(repl)
-replace_block(r'\.\\" body',
-              r'\.\\" end', '\n'+repl, 'man/man1/rtl_433.1')
 
 # src/CMakeLists.txt
 repl = src_files + device_files
@@ -182,3 +168,26 @@ repl = [p.replace('devices/', '') for p in device_files]
 repl = (r'">\n      <Filter>Source Files\\devices</Filter>\n    </ClCompile>\n    <ClCompile Include="..\\src\\devices\\'.join(repl))
 replace_block(r'^    <ClCompile Include="..\\src\\devices\\',
               r'">\n      <Filter>Source Files\\devices</Filter>\n    </ClCompile>\n  </ItemGroup>', repl, 'vs15/rtl_433.vcxproj.filters')
+
+if (not os.path.isfile("./build/src/rtl_433")):
+    print("\nWARNING: rtl_433 binary not found: skipping README/man generation!\n")
+    exit(0)
+
+# README.md
+# Replace everything between ``` with help output.
+repl = '\n' + get_help_text('-h') + '\n'
+repl1 = get_help_text('-R') + '\n'
+repl2 = get_help_text('-d') + '\n'
+repl2 += get_help_text('-g') + '\n'
+repl2 += get_help_text('-X') + '\n'
+repl2 += get_help_text('-F') + '\n'
+repl2 += get_help_text('-M') + '\n'
+repl2 += get_help_text('-r') + '\n'
+repl2 += get_help_text('-w') + '\n'
+replace_block(r'```',
+              r'```', repl + repl1 + repl2, 'README.md')
+
+# MAN pages
+repl = markup_man_text(repl + repl2)
+replace_block(r'\.\\" body',
+              r'\.\\" end', '\n'+repl, 'man/man1/rtl_433.1')

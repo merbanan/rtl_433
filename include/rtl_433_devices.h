@@ -174,6 +174,7 @@
     DECL(secplus_v2) \
     DECL(tfa_30_3221) \
     DECL(lacrosse_breezepro) \
+    DECL(somfy_rts) \
     DECL(secplus_v1) \
 
     /* Add new decoders here. */
