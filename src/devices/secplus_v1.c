@@ -370,7 +370,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data_t *data;
     data = data_make(
-            "Model",       "Model",    DATA_STRING, "Secplus_v1",
+            "model",       "",    DATA_STRING, "Secplus_v1",
 
             "id0",       "ID_0",         DATA_INT, id0,
             "id1",       "ID_1",        DATA_INT, id1,
