@@ -311,6 +311,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         next we extract status info stored in the value for 'fixed'
     */
     int switch_id  = fixed % 3;
+    int id;
     int id0        = (fixed / 3) % 3;
     int id1        = (int)(fixed / 9) % 3;
     int pad_id     = 0;
@@ -323,6 +324,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (id1 == 0) {
         //  pad_id = (fixed // 3**3) % (3**7)     27  3^72187
         pad_id = (fixed / 27) % 2187;
+        id = pad_id;
         // pin = (fixed // 3**10) % (3**9)  3^10= 59049 3^9=19683
         pin = (fixed / 59049) % 19683;
 
@@ -347,6 +349,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else {
         remote_id = (int)fixed / 27;
+        id = remote_id;
         if (switch_id == 1)
             button = "left";
         else if (switch_id == 0)
@@ -372,6 +375,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",       "",    DATA_STRING, "Secplus_v1",
 
+            "id",        "",         DATA_INT, id,
             "id0",       "ID_0",         DATA_INT, id0,
             "id1",       "ID_1",        DATA_INT, id1,
             "switch_id", "Switch-ID",   DATA_INT, switch_id,
