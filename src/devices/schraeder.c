@@ -210,13 +210,11 @@ static unsigned get_next_bits(bitbuffer_t *bitbuffer, unsigned *offset,
 static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    uint8_t expected_preamble[] = { 0xF5, 0x55, 0x55, 0x55, 0xE0 };
-    uint8_t received_preamble[sizeof(expected_preamble)];
     bitbuffer_t decoded = { 0 };
     char id_str[9];
-    char flags_str[9];
     unsigned offset = 0, flags, serial_id, pressure;
     int ret;
+    uint8_t *bits;
 
     /* Reject wrong length, with margin of error for extra bits at the end */
     if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL
@@ -225,9 +223,11 @@ static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* Check preamble */
-    bitbuffer_extract_bytes(bitbuffer, 0, 0, received_preamble, NUM_BITS_PREAMBLE);
-    if (memcmp(received_preamble, expected_preamble, sizeof(expected_preamble)))
+    bits = bitbuffer->bb[0];
+    if (bits[0] != 0xf5 || bits[1] != 0x55 || bits[2] != 0x55 || bits[3] != 0x55
+            || (bits[4] >> 4) != 0xe) {
         return DECODE_FAIL_SANITY;
+    }
 
     /* Check and decode the Manchester bits */
     ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
@@ -254,12 +254,11 @@ static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     sprintf(id_str, "%06X", serial_id);
-    sprintf(flags_str, "%02x", flags);
 
     data = data_make(
             "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
             "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_STRING, flags_str,
+            "flags",            "",             DATA_INT,    flags,
             "id",               "ID",           DATA_STRING, id_str,
             "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, (double)pressure * 0.05,
             NULL);
