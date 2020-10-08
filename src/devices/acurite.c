@@ -554,7 +554,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
         // Wind speed, temperature and humidity
 
         // range -40 to 160 F
-        // FIXME: are there really 13 bits? use 11 for now.
+        // TODO: are there really 13 bits? use 11 for now.
         int temp_raw = (bb[4] & 0x0F) << 7 | (bb[5] & 0x7F);
         tempf = (temp_raw - 400) * 0.1;
 

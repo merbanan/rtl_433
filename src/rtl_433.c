@@ -39,6 +39,7 @@
 #include "pulse_detect.h"
 #include "pulse_detect_fsk.h"
 #include "pulse_demod.h"
+#include "rfraw.h"
 #include "data.h"
 #include "r_util.h"
 #include "optparse.h"
@@ -1349,10 +1350,29 @@ int main(int argc, char **argv) {
                 }
                 if (cfg->verbosity)
                     fprintf(stderr, "Verifying test data with device %s.\n", r_dev->name);
+                if (rfraw_check(e)) {
+                    pulse_data_t pulse_data = {0};
+                    rfraw_parse(&pulse_data, e);
+                    list_t single_dev = {0};
+                    list_push(&single_dev, r_dev);
+                    if (!pulse_data.fsk_f2_est)
+                        r += run_ook_demods(&single_dev, &pulse_data);
+                    else
+                        r += run_fsk_demods(&single_dev, &pulse_data);
+                    list_free_elems(&single_dev, NULL);
+                } else
                 r += pulse_demod_string(e, r_dev);
                 continue;
             }
             // otherwise test all decoders
+            if (rfraw_check(line)) {
+                pulse_data_t pulse_data = {0};
+                rfraw_parse(&pulse_data, line);
+                if (!pulse_data.fsk_f2_est)
+                    r += run_ook_demods(&demod->r_devs, &pulse_data);
+                else
+                    r += run_fsk_demods(&demod->r_devs, &pulse_data);
+            } else
             for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
                 r_device *r_dev = *iter;
                 if (cfg->verbosity)
@@ -1371,6 +1391,14 @@ int main(int argc, char **argv) {
     // Special case for string test data
     if (cfg->test_data) {
         r = 0;
+        if (rfraw_check(cfg->test_data)) {
+            pulse_data_t pulse_data = {0};
+            rfraw_parse(&pulse_data, cfg->test_data);
+            if (!pulse_data.fsk_f2_est)
+                r += run_ook_demods(&demod->r_devs, &pulse_data);
+            else
+                r += run_fsk_demods(&demod->r_devs, &pulse_data);
+        } else
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
             r_device *r_dev = *iter;
             if (cfg->verbosity)

@@ -24,6 +24,7 @@ rtl_433_SOURCES      = abuf.c \
                        pulse_detect_fsk.c \
                        r_api.c \
                        r_util.c \
+                       rfraw.c \
                        rtl_433.c \
                        samp_grab.c \
                        sdr.c \

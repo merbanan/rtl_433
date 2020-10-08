@@ -80,15 +80,15 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (flags == 7)
         status = "init";
 
-    //bitbuffer_extract_bytes(bitbuffer, row, 12, b, 24);
-    uint32_t chk_data = (b[1] & 0x0f) << 20 | b[2] << 12 | b[3] << 4 | b[4] >> 4;
+    uint8_t chk[3];
+    bitbuffer_extract_bytes(&mc, 0, 12, chk, 24);
 
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
-    int id = lfsr_digest16(chk_data, 24, 0x8810, 0xdd38) ^ digest;
+    int id = lfsr_digest16(chk, 3, 0x8810, 0xdd38) ^ digest;
 
     if (decoder->verbose)
-        fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %06x, digest xor'ed: %04x\n",
-                __func__, pre, flags, temp1, temp2, digest, chk_data, id);
+        fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x\n",
+                __func__, pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
 
     data = data_make(
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
