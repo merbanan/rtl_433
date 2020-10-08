@@ -27,8 +27,12 @@ https://www.smartmetereducationnetwork.com/uploads/how-to-tell-if-I-have-a-ami-d
 
 Data layout:
 
-    SAAA AAAA  AAAA AAAA  AAAA A
-    iiR PPTT TTEE CCCC CCCC CCCC  CCCC CCCC  CCCC IIII  IIII IIII  IIII IIII  IIII XXXX XXXX XXXX  XXXX
+    SAAA AAAA  AAAA AAAA
+    AAAA AiiR  PPTT TTEE
+    CCCC CCCC  CCCC CCCC
+    CCCC CCCC  IIII IIII
+    IIII IIII  IIII IIII
+    XXXX XXXX  XXXX XXXX
 
 - S - Sync bit
 - A - Preamble
@@ -48,28 +52,55 @@ https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTM
 static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // TODO: Verify preamble
-    //static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
-    uint8_t *b;
+    unsigned sync_index;
+    static const uint8_t ert_frame_sync[]  = {0x1F, 0x2A, 0x60};
+    static const uint8_t ert_frame_sync_alternative []  = {0x01, 0x53, 0x00};
+
+    uint8_t b[12];
     uint8_t physical_tamper, ert_type, encoder_tamper;
     uint32_t consumption_data, ert_id;
     data_t *data;
-
-    if (bitbuffer->bits_per_row[0] != 96)
+    
+    if (bitbuffer->bits_per_row[0] < 96) {   
         return DECODE_ABORT_LENGTH;
-
-    b = bitbuffer->bb[0];
-
-    // No need to decode/extract values for simple test
-    // check id tamper type crc  value not all zero'ed
-    if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
-        if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
-        }
-        return DECODE_FAIL_SANITY;
     }
 
-    if (crc16(&b[2], 10, 0x6F63, 0))
+    sync_index = bitbuffer_search(bitbuffer, 0, 0, ert_frame_sync, 21);
+
+    if (sync_index >= bitbuffer->bits_per_row[0]) {
+        sync_index = bitbuffer_search(bitbuffer, 0, 0, ert_frame_sync_alternative, 21);
+                
+        if(sync_index >= bitbuffer->bits_per_row[0]){
+            if (decoder->verbose > 1) {
+                 fprintf(stderr, "%s: DECODE_ABORT_EARLY %d sync_index %d\n ", __func__, bitbuffer->bits_per_row[0], sync_index);        
+                 bitbuffer_print(bitbuffer);
+                 decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
+            }
+            
+            return DECODE_ABORT_EARLY;
+        }
+    }
+
+    
+    if ( (bitbuffer->bits_per_row[0] - sync_index) < 96) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH %d\n ", __func__, bitbuffer->bits_per_row[0]);        
+        }
+        
+        return DECODE_ABORT_LENGTH;
+    }
+
+    
+    bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 12 * 8);
+
+    if (crc16(&b[2], 10, 0x6F63, 0)){
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_MIC 0x00\n", __func__);
+        }
+
         return DECODE_FAIL_MIC;
+    }
+
 
     /* Instead of detecting the preamble we rely on the
      * CRC and extract the parameters from the back */
@@ -86,7 +117,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",           "",                 DATA_STRING, "ERT-SCM",
             "id",              "Id",               DATA_INT,    ert_id,
             "physical_tamper", "Physical Tamper",  DATA_INT, physical_tamper,
-            "ert_type",        "ERT Type",         DATA_INT, ert_type,
+            "type",        "ERT Type",         DATA_INT, ert_type,
             "encoder_tamper",  "Encoder Tamper",   DATA_INT, encoder_tamper,
             "consumption_data","Consumption Data", DATA_INT, consumption_data,
             "mic",             "Integrity",        DATA_STRING, "CRC",
@@ -101,7 +132,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "physical_tamper",
-        "ert_type",
+        "type",
         "encoder_tamper",
         "consumption_data",
         "mic",
@@ -114,7 +145,7 @@ r_device ert_amr = {
         .short_width = 30,
         .long_width  = 30,
         .gap_limit   = 0,
-        .reset_limit = 64,
+        .reset_limit = 80, // 65
         .decode_fn   = &ert_decode,
         .disabled    = 0,
         .fields      = output_fields,
