@@ -141,14 +141,6 @@ void r_free_cfg(r_cfg_t *cfg)
 
 /* device decoder protocols */
 
-void update_protocol(r_cfg_t *cfg, r_device *r_dev)
-{
-    r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
-    r_dev->verbose_bits = cfg->verbose_bits;
-
-    r_dev->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
-}
-
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 {
     r_device *p;
@@ -165,7 +157,10 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    update_protocol(cfg, p);
+    p->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
+    p->verbose_bits = cfg->verbose_bits;
+
+    p->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
 
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
@@ -202,14 +197,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
         if (cfg->devices[i].disabled <= disabled) {
             register_protocol(cfg, &cfg->devices[i], NULL);
         }
-    }
-}
-
-void update_protocols(r_cfg_t *cfg)
-{
-    for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
-        r_device *r_dev = *iter;
-        update_protocol(cfg, r_dev);
     }
 }
 

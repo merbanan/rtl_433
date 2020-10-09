@@ -32,8 +32,6 @@ void r_free_cfg(struct r_cfg *cfg);
 
 /* device decoder protocols */
 
-void update_protocol(struct r_cfg *cfg, struct r_device *r_dev);
-
 void register_protocol(struct r_cfg *cfg, struct r_device *r_dev, char *arg);
 
 void free_protocol(struct r_device *r_dev);
@@ -41,8 +39,6 @@ void free_protocol(struct r_device *r_dev);
 void unregister_protocol(struct r_cfg *cfg, struct r_device *r_dev);
 
 void register_all_protocols(struct r_cfg *cfg, unsigned disabled);
-
-void update_protocols(struct r_cfg *cfg);
 
 /* output helper */
 
