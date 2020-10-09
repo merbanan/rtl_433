@@ -60,7 +60,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t physical_tamper, ert_type, encoder_tamper;
     uint32_t consumption_data, ert_id;
     data_t *data;
-    
+
     if (bitbuffer->bits_per_row[0] < 96) {   
         return DECODE_ABORT_LENGTH;
     }
@@ -69,19 +69,19 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
         sync_index = bitbuffer_search(bitbuffer, 0, 0, ert_frame_sync_alternative, 21);
-                
+
         if(sync_index >= bitbuffer->bits_per_row[0]){
             if (decoder->verbose > 1) {
                  fprintf(stderr, "%s: DECODE_ABORT_EARLY %d sync_index %d\n ", __func__, bitbuffer->bits_per_row[0], sync_index);        
                  bitbuffer_print(bitbuffer);
                  decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
             }
-            
+
             return DECODE_ABORT_EARLY;
         }
     }
 
-    
+
     if ( (bitbuffer->bits_per_row[0] - sync_index) < 96) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_ABORT_LENGTH %d\n ", __func__, bitbuffer->bits_per_row[0]);        
@@ -90,7 +90,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    
+
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 12 * 8);
 
     if (crc16(&b[2], 10, 0x6F63, 0)){
