@@ -175,6 +175,7 @@
     DECL(tfa_30_3221) \
     DECL(lacrosse_breezepro) \
     DECL(somfy_rts) \
+    DECL(schrader_SMD3MA4) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

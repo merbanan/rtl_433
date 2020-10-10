@@ -150,6 +150,100 @@ static int schrader_EG53MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+SMD3MA4 Schrader TPMS used in Subaru
+Contributed by: RonNiles
+
+Refer to https://github.com/JoeSc/Subaru-TPMS-Spoofing
+
+^^^^_^_^_^_^_^_^_^_^_^_^_^_^_^_^^^^_FFFFFFIIIIIIIIIIIII
+IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPPPPP
+
+- PREAMBLE: 36-bits 0xF5555555E
+- F: FLAGS, 3 Manchester encoded bits
+- I: ID, 24 Manchester encoded bits
+- P: PRESSURE, 10 Manchester encoded bits (PSI * 20)
+
+NOTE: there is NO CRC and NO temperature data transmitted
+
+We use OOK_PULSE_PCM_RZ with .short_pulse = .long_pulse to get the bitstream
+above. Then we use bitbuffer_manchester_decode() which will alert us to any
+bit sequence which is not a valid Manchester transition. This enables a sanity
+check on the Manchester pulses which is important for detecting possible
+corruption since there is no CRC.
+
+The Manchester bits are encoded as 01 => 0 and 10 => 1, which is
+the reverse of bitbuffer_manchester_decode(), so we invert the result.
+*/
+#define NUM_BITS_PREAMBLE (36)
+#define NUM_BITS_FLAGS (3)
+#define NUM_BITS_ID (24)
+#define NUM_BITS_PRESSURE (10)
+#define NUM_BITS_DATA (NUM_BITS_FLAGS + NUM_BITS_ID + NUM_BITS_PRESSURE)
+#define NUM_BITS_TOTAL (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA)
+
+static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    bitbuffer_t decoded = { 0 };
+    char id_str[9];
+    unsigned flags, serial_id, pressure;
+    int ret;
+    uint8_t *bits;
+
+    /* Reject wrong length, with margin of error for extra bits at the end */
+    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL
+            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL + 8) {
+        return DECODE_ABORT_LENGTH;
+    }
+
+    /* Check preamble */
+    bits = bitbuffer->bb[0];
+    if (bits[0] != 0xf5 || bits[1] != 0x55 || bits[2] != 0x55 || bits[3] != 0x55
+            || (bits[4] >> 4) != 0xe) {
+        return DECODE_FAIL_SANITY;
+    }
+
+    /* Check and decode the Manchester bits */
+    ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
+                                      &decoded, NUM_BITS_DATA);
+    if (ret != NUM_BITS_TOTAL) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: invalid Manchester data\n", __func__);
+        }
+        return DECODE_FAIL_MIC;
+    }
+    bitbuffer_invert(&decoded);
+
+    /* Get the decoded data fields */
+    /* FFFSSSSS SSSSSSSS SSSSSSSS SSSPPPPP PPPPPxxx */
+    bits      = decoded.bb[0];
+    flags     = bits[0] >> 5;
+    serial_id = ((bits[0] & 0x1f) << 19) | (bits[1] << 11) | (bits[2] << 3) | (bits[3] >> 5);
+    pressure  = ((bits[3] & 0x1f) <<  5) | (bits[4] >> 3);
+
+    /* reject all-zero data */
+    if (!flags && !serial_id && !pressure) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
+    sprintf(id_str, "%06X", serial_id);
+
+    data = data_make(
+            "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
+            "type",             "",             DATA_STRING, "TPMS",
+            "flags",            "",             DATA_INT,    flags,
+            "id",               "ID",           DATA_STRING, id_str,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, (double)pressure * 0.05,
+            NULL);
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
 static char *output_fields[] = {
         "model",
         "type",
@@ -169,6 +263,15 @@ static char *output_fields_EG53MA4[] = {
         "pressure_kPa",
         "temperature_F",
         "mic",
+        NULL,
+};
+
+static char *output_fields_SMD3MA4[] = {
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_PSI",
         NULL,
 };
 
@@ -192,4 +295,15 @@ r_device schrader_EG53MA4 = {
         .decode_fn   = &schrader_EG53MA4_callback,
         .disabled    = 0,
         .fields      = output_fields_EG53MA4,
+};
+
+r_device schrader_SMD3MA4 = {
+        .name        = "Schrader TPMS SMD3MA4",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 120,
+        .long_width  = 120,
+        .reset_limit = 480,
+        .decode_fn   = &schrader_SMD3MA4_callback,
+        .disabled    = 0,
+        .fields      = output_fields_SMD3MA4,
 };
