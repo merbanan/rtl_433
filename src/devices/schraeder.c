@@ -182,37 +182,12 @@ the reverse of bitbuffer_manchester_decode(), so we invert the result.
 #define NUM_BITS_DATA (NUM_BITS_FLAGS + NUM_BITS_ID + NUM_BITS_PRESSURE)
 #define NUM_BITS_TOTAL (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA)
 
-/**
-utility function to get up to 32 bits from the bitbuffer as an
-integer, while updating the offset for sequential calls
-*/
-static unsigned get_next_bits(bitbuffer_t *bitbuffer, unsigned *offset,
-                              unsigned num_bits)
-{
-    uint8_t b;
-    unsigned bits_now, result = 0;
-
-    while (num_bits != 0) {
-        bits_now = MIN(num_bits, 8);
-        bitbuffer_extract_bytes(bitbuffer, 0, *offset, &b, bits_now);
-
-        /* shift bits from MSB to LSB */
-        if (bits_now < 8)
-            b >>= (8 - bits_now);
-        result = (result << bits_now) | b;
-
-        num_bits -= bits_now;
-        (*offset) += bits_now;
-    }
-    return result;
-}
-
 static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     bitbuffer_t decoded = { 0 };
     char id_str[9];
-    unsigned offset = 0, flags, serial_id, pressure;
+    unsigned flags, serial_id, pressure;
     int ret;
     uint8_t *bits;
 
@@ -241,9 +216,11 @@ static int schrader_SMD3MA4_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_invert(&decoded);
 
     /* Get the decoded data fields */
-    flags     = get_next_bits(&decoded, &offset, NUM_BITS_FLAGS);
-    serial_id = get_next_bits(&decoded, &offset, NUM_BITS_ID);
-    pressure  = get_next_bits(&decoded, &offset, NUM_BITS_PRESSURE);
+    /* FFFSSSSS SSSSSSSS SSSSSSSS SSSPPPPP PPPPPxxx */
+    bits      = decoded.bb[0];
+    flags     = bits[0] >> 5;
+    serial_id = ((bits[0] & 0x1f) << 19) | (bits[1] << 11) | (bits[2] << 3) | (bits[3] >> 5);
+    pressure  = ((bits[3] & 0x1f) <<  5) | (bits[4] >> 3);
 
     /* reject all-zero data */
     if (!flags && !serial_id && !pressure) {
