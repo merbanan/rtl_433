@@ -269,8 +269,8 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 
     if (cfg->verbose_bits)
         *p++ = "bits";
-    if (cfg->output_tag)
-        *p++ = "tag";
+    if (cfg->output_key)
+        *p++ = cfg->output_key;
     if (cfg->report_protocol)
         *p++ = "protocol";
     if (cfg->report_description)
@@ -679,7 +679,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             output_tag = file_basename(cfg->in_filename);
         }
         data = data_prepend(data,
-                "tag", "Tag", DATA_STRING, output_tag,
+                cfg->output_key, "", DATA_STRING, output_tag,
                 NULL);
     }
 

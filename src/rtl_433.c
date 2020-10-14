@@ -131,7 +131,7 @@ static void usage(int exit_code)
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
-            "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
+            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
@@ -1034,6 +1034,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'K':
         cfg->output_tag = arg;
+        cfg->output_key = asepc(&cfg->output_tag, '=');
+        if (!cfg->output_tag) {
+            cfg->output_tag = cfg->output_key;
+            cfg->output_key = "tag";
+        }
         break;
     case 'C':
         if (!arg)
