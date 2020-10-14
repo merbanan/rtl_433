@@ -71,16 +71,6 @@ typedef struct r_device {
     /* private for flex decoder and output callback */
     void *decode_ctx;
     void *output_ctx;
-
-    /* private pulse limits (converted to count of samples) */
-    float f_short_width; ///< precision reciprocal for PCM.
-    float f_long_width;  ///< precision reciprocal for PCM.
-    int s_short_width;
-    int s_long_width;
-    int s_reset_limit;
-    int s_gap_limit;
-    int s_sync_width;
-    int s_tolerance;
 } r_device;
 
 #endif /* INCLUDE_R_DEVICE_H_ */

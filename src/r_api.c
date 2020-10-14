@@ -141,36 +141,6 @@ void r_free_cfg(r_cfg_t *cfg)
 
 /* device decoder protocols */
 
-void update_protocol(r_cfg_t *cfg, r_device *r_dev)
-{
-    float samples_per_us = cfg->samp_rate / 1.0e6;
-
-    r_dev->f_short_width = r_dev->short_width > 0.0 ? 1.0 / (r_dev->short_width * samples_per_us) : 0;
-    r_dev->f_long_width  = r_dev->long_width > 0.0 ? 1.0 / (r_dev->long_width * samples_per_us) : 0;
-    r_dev->s_short_width = r_dev->short_width * samples_per_us;
-    r_dev->s_long_width  = r_dev->long_width * samples_per_us;
-    r_dev->s_reset_limit = r_dev->reset_limit * samples_per_us;
-    r_dev->s_gap_limit   = r_dev->gap_limit * samples_per_us;
-    r_dev->s_sync_width  = r_dev->sync_width * samples_per_us;
-    r_dev->s_tolerance   = r_dev->tolerance * samples_per_us;
-
-    // check for rounding to zero
-    if ((r_dev->short_width > 0 && r_dev->s_short_width <= 0)
-            || (r_dev->long_width > 0 && r_dev->s_long_width <= 0)
-            || (r_dev->reset_limit > 0 && r_dev->s_reset_limit <= 0)
-            || (r_dev->gap_limit > 0 && r_dev->s_gap_limit <= 0)
-            || (r_dev->sync_width > 0 && r_dev->s_sync_width <= 0)
-            || (r_dev->tolerance > 0 && r_dev->s_tolerance <= 0)) {
-        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", r_dev->protocol_num, r_dev->name);
-        exit(1);
-    }
-
-    r_dev->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
-    r_dev->verbose_bits = cfg->verbose_bits;
-
-    r_dev->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
-}
-
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 {
     r_device *p;
@@ -187,7 +157,10 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    update_protocol(cfg, p);
+    p->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
+    p->verbose_bits = cfg->verbose_bits;
+
+    p->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
 
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
@@ -224,14 +197,6 @@ void register_all_protocols(r_cfg_t *cfg, unsigned disabled)
         if (cfg->devices[i].disabled <= disabled) {
             register_protocol(cfg, &cfg->devices[i], NULL);
         }
-    }
-}
-
-void update_protocols(r_cfg_t *cfg)
-{
-    for (void **iter = cfg->demod->r_devs.elems; iter && *iter; ++iter) {
-        r_device *r_dev = *iter;
-        update_protocol(cfg, r_dev);
     }
 }
 
