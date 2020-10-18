@@ -498,6 +498,9 @@ static char *output_fields[] = {
         "mic", // remove if not applicable
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data
+        "msg_str",
+        "hopsmax",
+        "hopsleft",
         // "raw",
         // "raw_message",
         NULL,
@@ -514,7 +517,5 @@ r_device insteon = {
         .tolerance   = 15,
         .reset_limit = 1000, // a bit longer than packet gap
         .decode_fn   = &insteon_callback,
-        .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
         .fields      = output_fields,
-        .verbose     = 0,
 };

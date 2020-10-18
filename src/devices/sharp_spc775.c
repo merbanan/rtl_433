@@ -106,8 +106,10 @@ static int sharp_spc775_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "battery_ok",
         "temperature_C",
         "humidity",
+        "mic",
         NULL,
 };
 

@@ -145,6 +145,7 @@ static char *output_fields[] = {
         "triggered",
         "storage",
         "flags",
+        "mic",
         NULL,
 };
 

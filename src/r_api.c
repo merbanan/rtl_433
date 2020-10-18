@@ -457,6 +457,22 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
 {
     r_cfg_t *cfg = r_dev->output_ctx;
 
+#ifndef NDEBUG
+    // check for undeclared csv fields
+    for (data_t *d = data; d; d = d->next) {
+        int found = 0;
+        for (char **p = r_dev->fields; *p; ++p) {
+            if (!strcmp(d->key, *p)) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            fprintf(stderr, "WARNING: Undeclared field \"%s\" in [%u] \"%s\"\n", d->key, r_dev->protocol_num, r_dev->name);
+        }
+    }
+#endif
+
     // replace textual battery key with numerical battery key
     if (!cfg->old_model_keys) {
         for (data_t *d = data; d; d = d->next) {

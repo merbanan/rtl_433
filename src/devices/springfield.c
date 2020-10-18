@@ -98,6 +98,7 @@ static char *output_fields[] = {
         "temperature_C",
         "moisture",
         "button",
+        "mic",
         NULL,
 };
 

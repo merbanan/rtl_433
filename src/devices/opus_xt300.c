@@ -102,6 +102,7 @@ static char *output_fields[] = {
         "channel",
         "temperature_C",
         "moisture",
+        "mic",
         NULL,
 };
 

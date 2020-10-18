@@ -220,6 +220,7 @@ static char *output_fields[] = {
         "gap",
         "impulses",
         "battery_ok",
+        "mic",
         NULL,
 };
 

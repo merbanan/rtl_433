@@ -1356,6 +1356,16 @@ static char *acurite_txr_output_fields[] = {
         "rain_inch", // TODO: remove this
         "rain_in",
         "rain_mm",
+        "storm_dist",
+        "strike_count",
+        "strike_distance",
+        "uv",
+        "lux",
+        "active",
+        "exception",
+        "raw_msg",
+        "rfi",
+        "mic",
         NULL,
 };
 
