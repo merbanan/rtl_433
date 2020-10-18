@@ -71,7 +71,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
-  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
+  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)

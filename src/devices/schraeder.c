@@ -304,7 +304,7 @@ r_device schrader_EG53MA4 = {
 };
 
 r_device schrader_SMD3MA4 = {
-        .name        = "Schrader TPMS SMD3MA4",
+        .name        = "Schrader TPMS SMD3MA4 (Subaru)",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 120,
         .long_width  = 120,
