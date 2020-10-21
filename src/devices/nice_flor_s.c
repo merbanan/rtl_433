@@ -50,7 +50,7 @@ static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data = data_make(
             "model",  "",              DATA_STRING, "Nice Flor-s",
             "button", "Button ID",     DATA_INT,     button_id,
-            "serial", "Serial (enc.)", DATA_FORMAT, "%04x",        DATA_INT, serial,
+            "serial", "Serial (enc.)", DATA_FORMAT, "%07x",        DATA_INT, serial,
             "code",   "Code (enc.)",   DATA_FORMAT, "%04x",        DATA_INT, code,
             "count",  "",              DATA_INT,     count,
             NULL);
