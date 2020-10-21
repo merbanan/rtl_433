@@ -10,15 +10,22 @@
 */
 
 /**
-Nice Flor-s
+Nice Flor-s remote for gates.
 
 Protocol description:
 The protocol has been analyzed at this link: http://phreakerclub.com/1615
+
+A packet is made of 52 bits (13 nibbles S0 to S12):
+
+- S0: button ID from 1 to 4 (or 1 to 2 depending on the remote)
+- S1: retransmission count starting from 1, xored with ~S0
+- S2 and S7-S12: 28 bit encrypted serial number
+- S3-S6: 16 bits encrypted rolling code
 */
 
 #include "decoder.h"
 
-static int nice_flor_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int nice_flor_s_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows != 2 || bitbuffer->bits_per_row[1] != 0) {
         return DECODE_ABORT_EARLY;
@@ -34,24 +41,18 @@ static int nice_flor_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (button_id < 1 || button_id > 4) {
         return DECODE_ABORT_EARLY;
     }
-    int repeat = (b[0] & 0xf) ^ 0xf ^ button_id;
-    char serial[8], code[5];
-    // Encrypted serial is made of nibbles 2 and 7 to 12
-    snprintf(serial, sizeof serial,
-             "%x%x%02x%02x%x",
-             b[1] >> 4, b[3] & 0xf, b[4], b[5], b[6] >> 4);
-    // Encrypted rolling code is made of nibbles 3 to 6
-    snprintf(code, sizeof code,
-             "%x%02x%x",
-             b[1] & 0xf, b[2], b[3] >> 4);
+    int count = 1 + (((b[0] ^ ~button_id) - 1) & 0xf);
+    uint32_t serial = ((b[1] & 0xf0) << 20) | ((b[3] & 0xf) << 20) |
+       (b[4] << 12) | (b[5] << 4) | (b[6] >> 4);
+    uint16_t code = (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",   "",              DATA_STRING, "Nice Flor-s",
-            "button",  "Button ID",     DATA_INT,     button_id,
-            "serial",  "Serial (enc.)", DATA_FORMAT, "%s", DATA_STRING, serial,
-            "code",    "Code (enc.)",   DATA_FORMAT, "%s", DATA_STRING, code,
-            "repeat",  "",              DATA_INT,     repeat,
+            "model",  "",              DATA_STRING, "Nice Flor-s",
+            "button", "Button ID",     DATA_INT,     button_id,
+            "serial", "Serial (enc.)", DATA_FORMAT, "%04x",        DATA_INT, serial,
+            "code",   "Code (enc.)",   DATA_FORMAT, "%04x",        DATA_INT, code,
+            "count",  "",              DATA_INT,     count,
             NULL);
     /* clang-format on */
 
@@ -64,9 +65,15 @@ static char *output_fields[] = {
         "button",
         "serial",
         "code",
-        "repeat",
+        "count",
         NULL,
 };
+
+// Example:
+// $ rtl_433 -R 169 -y "{52} 0xe7a760b94372e {0}"
+// time      : 2020-10-21 11:06:12
+// model     : Nice Flor-s  Button ID : 1             Serial (enc.): 56bc8d1    Code (enc.): 89f4
+// count     : 6
 
 r_device nice_flor_s = {
         .name           = "Nice Flor-s",
@@ -77,7 +84,7 @@ r_device nice_flor_s = {
         .gap_limit      = 2000,
         .reset_limit    = 5000,
         .tolerance      = 100,
-        .decode_fn      = &nice_flor_s_callback,
-        .disabled       = 0,
+        .decode_fn      = &nice_flor_s_decode,
+        .disabled       = 1,
         .fields         = output_fields,
 };
