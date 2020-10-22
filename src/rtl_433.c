@@ -290,6 +290,18 @@ static void help_write(void)
     exit(0);
 }
 
+static void r_exit_async(r_cfg_t *cfg)
+{
+    cfg->exit_async = 1;
+    sdr_stop(cfg->dev);
+}
+
+static void r_break_async(r_cfg_t *cfg)
+{
+    cfg->break_async = 1;
+    sdr_stop(cfg->dev);
+}
+
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     r_cfg_t *cfg = ctx;
@@ -301,13 +313,12 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         mg_mgr_poll(cfg->mgr, 0);
     }
 
-    if (cfg->do_exit || cfg->do_exit_async)
+    if (cfg->exit_async || cfg->break_async)
         return;
 
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
-        cfg->do_exit = 1;
-        sdr_stop(cfg->dev);
+        r_exit_async(cfg);
     }
 
     get_time_now(&demod->now);
@@ -571,7 +582,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            sdr_stop(cfg->dev);
+            r_exit_async(cfg);
         }
     }
 
@@ -580,14 +591,15 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->bytes_to_read -= len;
 
     if (cfg->after_successful_events_flag && (d_events > 0)) {
-        if (cfg->after_successful_events_flag == 1) {
-            cfg->do_exit = 1;
-        }
-        cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        if (cfg->after_successful_events_flag == 1) {
+            r_exit_async(cfg);
+        }
+        else {
+            r_break_async(cfg);
+        }
     }
 
     time_t rawtime;
@@ -596,18 +608,16 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
             && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
-        cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        r_break_async(cfg);
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
-        cfg->do_exit_async = cfg->do_exit = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        r_exit_async(cfg);
         fprintf(stderr, "Time expired, exiting!\n");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
@@ -1131,14 +1141,12 @@ sighandler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
-        g_cfg.do_exit = 1;
-        sdr_stop(g_cfg.dev);
+        r_exit_async(&g_cfg);
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
         fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
-        g_cfg.do_exit_async = 1;
-        sdr_stop(g_cfg.dev);
+        r_break_async(&g_cfg);
         return TRUE;
     }
     return FALSE;
@@ -1154,8 +1162,7 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGUSR1) {
-        g_cfg.do_exit_async = 1;
-        sdr_stop(g_cfg.dev);
+        r_break_async(&g_cfg);
         return;
     }
     else if (signum == SIGALRM) {
@@ -1165,8 +1172,7 @@ static void sighandler(int signum)
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
-    g_cfg.do_exit = 1;
-    sdr_stop(g_cfg.dev);
+    r_exit_async(&g_cfg);
 }
 #endif
 
@@ -1462,7 +1468,7 @@ int main(int argc, char **argv) {
 
             // special case for pulse data file-inputs
             if (demod->load_info.format == PULSE_OOK) {
-                while (!cfg->do_exit) {
+                while (!cfg->exit_async) {
                     pulse_data_load(in_file, &demod->pulse_data, cfg->samp_rate);
                     if (!demod->pulse_data.num_pulses)
                         break;
@@ -1521,7 +1527,7 @@ int main(int argc, char **argv) {
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / 2 / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, cfg);
-            } while (n_read != 0 && !cfg->do_exit);
+            } while (n_read != 0 && !cfg->exit_async);
 
             // Call a last time with cleared samples to ensure EOP detection
             if (demod->sample_size == 1) { // CU8
@@ -1617,7 +1623,7 @@ int main(int argc, char **argv) {
     }
 
     uint32_t samp_rate = cfg->samp_rate;
-    while (!cfg->do_exit) {
+    while (!cfg->exit_async) {
         time(&cfg->hop_start_time);
 
         /* Set the cfg->frequency */
@@ -1642,7 +1648,7 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        cfg->do_exit_async = 0;
+        cfg->break_async = 0;
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
     }
 
@@ -1651,7 +1657,7 @@ int main(int argc, char **argv) {
         flush_report_data(cfg);
     }
 
-    if (!cfg->do_exit) {
+    if (!cfg->exit_async) {
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
         cfg->exit_code = r;
     }

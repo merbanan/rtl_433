@@ -51,8 +51,8 @@ typedef struct r_cfg {
     char const *test_data;
     list_t in_files;
     char const *in_filename;
-    int do_exit;
-    int do_exit_async;
+    int exit_async;
+    int break_async;
     int exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
     int frequencies;
     int frequency_index;
