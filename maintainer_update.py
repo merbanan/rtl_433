@@ -2,6 +2,7 @@
 
 """rtl_433 maintainer updates to build files and docs."""
 
+import sys
 import os
 import subprocess
 import glob
@@ -71,7 +72,7 @@ def markup_man_text(help_text):
     return help_text
 
 
-verbose = False
+verbose = '-v' in sys.argv
 
 # Make sure we run from the top dir
 topdir = os.path.dirname(os.path.abspath(__file__))
