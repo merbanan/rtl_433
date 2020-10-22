@@ -11,6 +11,8 @@
 /**
 Inovalley kw9015b rain and Temperature weather station.
 
+Also TFA-Dostmann rain-sensor 30.3161 (see #1531) with a 0.45mm rain per tip.
+
 Data layout:
 
     IIIIIIII RRRRtttt TTTTTTTT rrrrrrrr CCCC
@@ -58,7 +60,8 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, _X("Inovalley-kw9015b","Inovalley kw9015b"),
             "id",               "",             DATA_INT,    device,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "rain",             "Rain Count",   DATA_INT,    rain,
+            "rain",             "Rain Count",   DATA_INT,    rain, // TODO: remove this
+            "rain_mm",          "Rain Total",   DATA_DOUBLE, rain * 0.45f,
             NULL);
     /* clang-format on */
 
@@ -70,7 +73,8 @@ static char *kw9015b_csv_output_fields[] = {
         "model",
         "id",
         "temperature_C",
-        "rain",
+        "rain", // TODO: remove this
+        "rain_mm",
         NULL,
 };
 
