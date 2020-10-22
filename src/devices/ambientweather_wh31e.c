@@ -260,7 +260,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             int seconds = ((b[8] & 0x70) >> 4) * 10 + (b[8] & 0x0F);
 
             char clock_str[23];
-            sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02d",  // TODO: add Z suffix
+            sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02dZ",
                     year, month, day, hours, minutes, seconds);
 
             /* clang-format off */
