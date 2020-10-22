@@ -12,7 +12,8 @@ Nexus sensor protocol with ID, temperature and optional humidity
 
 also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
 also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station,
-also Solight TE82S sensors for Solight TE76/TE82/TE83/TE84 stations.
+also Solight TE82S sensors for Solight TE76/TE82/TE83/TE84 stations,
+also TFA 30.3209.02 temperature/humidity sensor.
 
 The sensor sends 36 bits 12 times,
 the packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -112,7 +113,7 @@ static char *output_fields[] = {
 };
 
 r_device nexus = {
-        .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S temperature/humidity sensor",
+        .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
         .long_width  = 2000,
