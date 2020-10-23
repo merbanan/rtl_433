@@ -483,7 +483,7 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         }
         else if (*arg == '%') {
             getter->format = strdup(arg);
-            if (!getter->name)
+            if (!getter->format)
                 FATAL_STRDUP("parse_getter()");
         }
         else {
