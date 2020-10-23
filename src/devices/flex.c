@@ -127,7 +127,7 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
             }
         }
         if (!getter->map[m].val) {
-            if(getter->format) {
+            if (getter->format) {
                 data_append(data,
                     getter->name, "", DATA_FORMAT, getter->format, DATA_INT, val,
                     NULL);
@@ -483,6 +483,8 @@ static void parse_getter(const char *arg, struct flex_get *getter)
         }
         else if (*arg == '%') {
             getter->format = strdup(arg);
+            if (!getter->name)
+                FATAL_STRDUP("parse_getter()");
         }
         else {
             getter->name = strdup(arg);
