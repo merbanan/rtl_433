@@ -45,7 +45,7 @@ static void influx_client_send(influx_client_t *ctx);
 static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
 {
     // note that while shutting down the ctx is NULL
-    influx_client_t *ctx = (influx_client_t *)nc->mgr->user_data;
+    influx_client_t *ctx = (influx_client_t *)nc->user_data;
     struct http_message *hm = (struct http_message *)ev_data;
 
     switch (ev) {
@@ -86,24 +86,12 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
 }
 
-static struct mg_mgr *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
+static influx_client_t *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
 {
-    struct mg_mgr *mgr = calloc(1, sizeof(*mgr));
-    if (!mgr) {
-        FATAL_CALLOC("influx_client_init()");
-    }
-
     strncpy(ctx->url, url, sizeof(ctx->url) - 1);
     snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
 
-    mg_mgr_init(mgr, ctx);
-
-    return mgr;
-}
-
-static int influx_client_poll(struct mg_mgr *mgr)
-{
-    return mg_mgr_poll(mgr, 0);
+    return ctx;
 }
 
 static void influx_client_send(influx_client_t *ctx)
@@ -117,7 +105,8 @@ static void influx_client_send(influx_client_t *ctx)
     if (ctx->transfer_running || !buf->len)
         return;
 
-    if (mg_connect_http(ctx->mgr, influx_client_event, ctx->url, ctx->extra_headers, buf->buf) == NULL) {
+    struct mg_connect_opts opts = {.user_data = ctx};
+    if (mg_connect_http_opt(ctx->mgr, influx_client_event, opts, ctx->url, ctx->extra_headers, buf->buf) == NULL) {
         fprintf(stderr, "Connect to InfluxDB (%s) failed\n", ctx->url);
     }
     else {
@@ -381,7 +370,7 @@ static void data_output_influx_poll(data_output_t *output)
     if (!influx)
         return;
 
-    influx_client_poll(influx->mgr);
+    mg_mgr_poll(influx->mgr, 0);
 }
 
 static void data_output_influx_free(data_output_t *output)
@@ -391,8 +380,9 @@ static void data_output_influx_free(data_output_t *output)
     if (!influx)
         return;
 
-    influx->mgr->user_data = NULL;
     mg_mgr_free(influx->mgr);
+    free(influx->mgr);
+
     free(influx);
 }
 
@@ -463,7 +453,13 @@ struct data_output *data_output_influx_create(char *opts)
 
     fprintf(stderr, "Publishing data to InfluxDB (%s)\n", url);
 
-    influx->mgr = influx_client_init(influx, url, token);
+    // TODO: this could be a global mgr
+    influx->mgr = calloc(1, sizeof(*influx->mgr));
+    if (!influx->mgr)
+        FATAL_CALLOC("data_output_influx_create()");
+    mg_mgr_init(influx->mgr, NULL);
+
+    influx_client_init(influx, url, token);
 
     return &influx->output;
 }
