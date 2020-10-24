@@ -77,7 +77,7 @@ char const *version_string(void)
 
 /* helper */
 
-static struct mg_mgr *get_mgr(r_cfg_t *cfg)
+struct mg_mgr *get_mgr(r_cfg_t *cfg)
 {
     if (!cfg->mgr) {
         cfg->mgr = calloc(1, sizeof(*cfg->mgr));
@@ -87,6 +87,44 @@ static struct mg_mgr *get_mgr(r_cfg_t *cfg)
     }
 
     return cfg->mgr;
+}
+
+void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
+{
+    cfg->frequencies = 1;
+    cfg->frequency_index = 0;
+    cfg->frequency[0] = center_freq;
+    cfg->break_async = 1;
+    sdr_stop(cfg->dev);
+}
+
+void set_freq_correction(r_cfg_t *cfg, int freq_correction)
+{
+    cfg->ppm_error = freq_correction;
+    cfg->break_async = 1;
+    sdr_stop(cfg->dev);
+}
+
+void set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
+{
+    cfg->samp_rate = sample_rate;
+    cfg->break_async = 1;
+    sdr_stop(cfg->dev);
+}
+
+void set_gain_str(struct r_cfg *cfg, char const *gain_str)
+{
+    free(cfg->gain_str);
+    if (!gain_str) {
+        cfg->gain_str = NULL; // auto gain
+    }
+    else {
+        cfg->gain_str = strdup(gain_str);
+        if (!cfg->gain_str)
+            WARN_STRDUP("set_gain_str()");
+    }
+    cfg->break_async = 1;
+    sdr_stop(cfg->dev);
 }
 
 /* general */
@@ -130,6 +168,8 @@ void r_free_cfg(r_cfg_t *cfg)
         sdr_deactivate(cfg->dev);
         sdr_close(cfg->dev);
     }
+
+    free(cfg->gain_str);
 
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;

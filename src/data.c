@@ -745,6 +745,16 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
     if (csv->data_recursion)
         return;
 
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
+    }
+    if (!regular)
+        return;
+
     ++csv->data_recursion;
     for (i = 0; fields[i]; ++i) {
         const char *key = fields[i];

@@ -44,6 +44,7 @@ typedef enum {
 
 typedef struct r_cfg {
     char *dev_query;
+    char const *dev_info;
     char *gain_str;
     char *settings_str;
     int ppm_error;

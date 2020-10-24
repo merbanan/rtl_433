@@ -794,7 +794,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!arg)
             help_gain();
 
-        cfg->gain_str = arg;
+        free(cfg->gain_str);
+        cfg->gain_str = strdup(arg);
+        if (!cfg->gain_str)
+            FATAL_STRDUP("parse_conf_option()");
         break;
     case 'G':
         if (atobv(arg, 1) == 4) {
@@ -1573,6 +1576,7 @@ int main(int argc, char **argv) {
     if (r < 0) {
         exit(2);
     }
+    cfg->dev_info = sdr_get_dev_info(cfg->dev);
 
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
@@ -1623,22 +1627,61 @@ int main(int argc, char **argv) {
     }
 
     uint32_t samp_rate = cfg->samp_rate;
+    char *gain_str = cfg->gain_str;
+    int ppm_error = cfg->ppm_error;
+
+    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+    r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+
     while (!cfg->exit_async) {
         time(&cfg->hop_start_time);
-
-        /* Set the cfg->frequency */
-        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
-        r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
-
+        data_t *data = NULL;
         if (samp_rate != cfg->samp_rate) {
-            r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
             samp_rate = cfg->samp_rate;
+            r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
+
+            data = data_append(data,
+                    "sample_rate", "", DATA_INT, cfg->samp_rate,
+                    NULL);
+        }
+        if (ppm_error != cfg->ppm_error) {
+            ppm_error = cfg->ppm_error;
+            r = sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
+
+            data = data_append(data,
+                    "freq_correction", "", DATA_INT, cfg->ppm_error,
+                    NULL);
+        }
+        if (cfg->center_frequency != cfg->frequency[cfg->frequency_index]) {
+            cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+            r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+
+            data = data_append(data,
+                    "center_frequency", "", DATA_INT, cfg->center_frequency,
+                    "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
+                    "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
+                    NULL);
+        }
+        if (gain_str != cfg->gain_str) {
+            gain_str = cfg->gain_str;
+            r = sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
+
+            data = data_append(data,
+                    "gain", "", DATA_STRING, cfg->gain_str,
+                    NULL);
+        }
+        if (data) {
+            for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+                data_output_print(cfg->output_handler.elems[i], data);
+            }
+            data_free(data);
         }
 
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
+        cfg->break_async = 0;
         r = sdr_start(cfg->dev, sdr_callback, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
@@ -1648,7 +1691,6 @@ int main(int argc, char **argv) {
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        cfg->break_async = 0;
         cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
     }
 
