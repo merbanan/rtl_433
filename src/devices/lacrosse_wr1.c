@@ -39,7 +39,7 @@ capabilities of the CMT2119A and CMT2219A.
 
 Protocol Specification:
 
-Data bits are NRZ encoded with logical 1 and 0 bits 416us in length.
+Data bits are NRZ encoded with logical 1 and 0 bits 104us in length.
 
 LTV-WR1
     SYN:32h ID:24h ?:4b SEQ:3d ?:1b WSPD:12d WDIR:12d RAIN1:12d RAIN2:12d CHK:8h
