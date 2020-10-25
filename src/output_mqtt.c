@@ -138,6 +138,8 @@ static void mqtt_client_publish(mqtt_client_t *ctx, char const *topic, char cons
 
 static void mqtt_client_free(mqtt_client_t *ctx)
 {
+    if (ctx && ctx->conn)
+        ctx->conn->user_data = NULL;
     free(ctx);
 }
 
@@ -157,7 +159,6 @@ static char *mqtt_sanitize_topic(char *topic)
 
 typedef struct {
     struct data_output output;
-    struct mg_mgr *mgr;
     mqtt_client_t *mqc;
     char topic[256];
     char hostname[64];
@@ -400,16 +401,6 @@ static void print_mqtt_int(data_output_t *output, int data, char const *format)
     print_mqtt_string(output, str, format);
 }
 
-static void data_output_mqtt_poll(data_output_t *output)
-{
-    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
-
-    if (!mqtt)
-        return;
-
-    mg_mgr_poll(mqtt->mgr, 0);
-}
-
 static void data_output_mqtt_free(data_output_t *output)
 {
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
@@ -425,8 +416,6 @@ static void data_output_mqtt_free(data_output_t *output)
 
     mqtt_client_free(mqtt->mqc);
 
-    mg_mgr_free(mqtt->mgr);
-    free(mqtt->mgr);
     free(mqtt);
 }
 
@@ -451,7 +440,7 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
     return ret;
 }
 
-struct data_output *data_output_mqtt_create(char const *host, char const *port, char *opts, char const *dev_hint)
+struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host, char const *port, char *opts, char const *dev_hint)
 {
     data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
     if (!mqtt)
@@ -545,16 +534,9 @@ struct data_output *data_output_mqtt_create(char const *host, char const *port, 
     mqtt->output.print_string = print_mqtt_string;
     mqtt->output.print_double = print_mqtt_double;
     mqtt->output.print_int    = print_mqtt_int;
-    mqtt->output.output_poll  = data_output_mqtt_poll;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    // TODO: this could be a global mgr
-    mqtt->mgr = calloc(1, sizeof(*mqtt->mgr));
-    if (!mqtt->mgr)
-        FATAL_CALLOC("data_output_mqtt_create()");
-    mg_mgr_init(mqtt->mgr, NULL);
-
-    mqtt->mqc = mqtt_client_init(mqtt->mgr, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain);
 
     return &mqtt->output;
 }

@@ -411,13 +411,6 @@ void data_output_start(struct data_output *output, const char **fields, int num_
     output->output_start(output, fields, num_fields);
 }
 
-void data_output_poll(struct data_output *output)
-{
-    if (!output || !output->output_poll)
-        return;
-    output->output_poll(output);
-}
-
 void data_output_free(data_output_t *output)
 {
     if (!output)

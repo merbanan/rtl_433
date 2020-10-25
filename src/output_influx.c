@@ -363,16 +363,6 @@ static void print_influx_int(data_output_t *output, int data, char const *format
     mbuf_snprintf(buf, "%d", data);
 }
 
-static void data_output_influx_poll(data_output_t *output)
-{
-    influx_client_t *influx = (influx_client_t *)output;
-
-    if (!influx)
-        return;
-
-    mg_mgr_poll(influx->mgr, 0);
-}
-
 static void data_output_influx_free(data_output_t *output)
 {
     influx_client_t *influx = (influx_client_t *)output;
@@ -380,13 +370,16 @@ static void data_output_influx_free(data_output_t *output)
     if (!influx)
         return;
 
-    mg_mgr_free(influx->mgr);
-    free(influx->mgr);
+    // remove ctx from our connections
+    for (struct mg_connection *c = mg_next(influx->mgr, NULL); c != NULL; c = mg_next(influx->mgr, c)) {
+        if (c->user_data == influx)
+            c->user_data = NULL;
+    }
 
     free(influx);
 }
 
-struct data_output *data_output_influx_create(char *opts)
+struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
 {
     influx_client_t *influx = calloc(1, sizeof(influx_client_t));
     if (!influx) {
@@ -448,17 +441,11 @@ struct data_output *data_output_influx_create(char *opts)
     influx->output.print_string = print_influx_string;
     influx->output.print_double = print_influx_double;
     influx->output.print_int    = print_influx_int;
-    influx->output.output_poll  = data_output_influx_poll;
     influx->output.output_free  = data_output_influx_free;
 
     fprintf(stderr, "Publishing data to InfluxDB (%s)\n", url);
 
-    // TODO: this could be a global mgr
-    influx->mgr = calloc(1, sizeof(*influx->mgr));
-    if (!influx->mgr)
-        FATAL_CALLOC("data_output_influx_create()");
-    mg_mgr_init(influx->mgr, NULL);
-
+    influx->mgr = mgr;
     influx_client_init(influx, url, token);
 
     return &influx->output;

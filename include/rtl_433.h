@@ -25,6 +25,7 @@
 
 struct sdr_dev;
 struct r_device;
+struct mg_mgr;
 
 typedef enum {
     CONVERT_NATIVE,
@@ -97,6 +98,7 @@ typedef struct r_cfg {
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval
     unsigned frames_events; ///< stats counter for interval
+    struct mg_mgr *mgr;
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

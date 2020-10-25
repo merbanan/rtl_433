@@ -30,6 +30,7 @@
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
+#include "mongoose.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -72,6 +73,20 @@ char const *version_string(void)
             " SoapySDR"
 #endif
             ;
+}
+
+/* helper */
+
+static struct mg_mgr *get_mgr(r_cfg_t *cfg)
+{
+    if (!cfg->mgr) {
+        cfg->mgr = calloc(1, sizeof(*cfg->mgr));
+        if (!cfg->mgr)
+            FATAL_CALLOC("get_mgr()");
+        mg_mgr_init(cfg->mgr, NULL);
+    }
+
+    return cfg->mgr;
 }
 
 /* general */
@@ -135,6 +150,9 @@ void r_free_cfg(r_cfg_t *cfg)
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    mg_mgr_free(cfg->mgr);
+    free(cfg->mgr);
 
     //free(cfg);
 }
@@ -841,12 +859,12 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     char *opts = hostport_param(param, &host, &port);
     fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
 
-    list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
+    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
 }
 
 void add_influx_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_influx_create(param));
+    list_push(&cfg->output_handler, data_output_influx_create(get_mgr(cfg), param));
 }
 
 void add_syslog_output(r_cfg_t *cfg, char *param)
