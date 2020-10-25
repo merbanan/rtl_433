@@ -29,6 +29,7 @@
 typedef struct {
     struct data_output output;
     struct mg_mgr *mgr;
+    struct mg_connection *conn;
     int prev_status;
     int prev_resp_code;
     char hostname[64];
@@ -36,7 +37,6 @@ typedef struct {
     char extra_headers[150];
     int databufidxfill;
     struct mbuf databufs[2];
-    bool transfer_running;
 
 } influx_client_t;
 
@@ -56,7 +56,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             if (ctx) {
                 if (ctx->prev_status != connect_status)
                     fprintf(stderr, "InfluxDB connect error: %s\n", strerror(connect_status));
-                ctx->transfer_running = false;
+                ctx->conn = NULL;
             }
         }
         if (ctx)
@@ -79,7 +79,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
         break;
     case MG_EV_CLOSE:
         if (ctx) {
-            ctx->transfer_running = false;
+            ctx->conn = NULL;
             influx_client_send(ctx);
         }
         break;
@@ -100,18 +100,17 @@ static void influx_client_send(influx_client_t *ctx)
 
     /*fprintf(stderr, "Influx %p msg: \"%s\" with %lu/%lu %s\n",
             (void*)ctx, buf->buf, buf->len, buf->size,
-            ctx->transfer_running ? "buffering" : "to be sent");*/
+            ctx->conn ? "buffering" : "to be sent");*/
 
-    if (ctx->transfer_running || !buf->len)
+    if (ctx->conn || !buf->len)
         return;
 
     struct mg_connect_opts opts = {.user_data = ctx};
-    if (mg_connect_http_opt(ctx->mgr, influx_client_event, opts, ctx->url, ctx->extra_headers, buf->buf) == NULL) {
+    if ((ctx->conn = mg_connect_http_opt(ctx->mgr, influx_client_event, opts, ctx->url, ctx->extra_headers, buf->buf)) == NULL) {
         fprintf(stderr, "Connect to InfluxDB (%s) failed\n", ctx->url);
     }
     else {
         ctx->databufidxfill ^= 1;
-        ctx->transfer_running = true;
         buf->len = 0;
         *buf->buf = '\0';
     }
@@ -371,9 +370,9 @@ static void data_output_influx_free(data_output_t *output)
         return;
 
     // remove ctx from our connections
-    for (struct mg_connection *c = mg_next(influx->mgr, NULL); c != NULL; c = mg_next(influx->mgr, c)) {
-        if (c->user_data == influx)
-            c->user_data = NULL;
+    if (influx->conn) {
+        influx->conn->user_data = NULL;
+        influx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
     }
 
     free(influx);
