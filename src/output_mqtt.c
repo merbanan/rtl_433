@@ -138,8 +138,10 @@ static void mqtt_client_publish(mqtt_client_t *ctx, char const *topic, char cons
 
 static void mqtt_client_free(mqtt_client_t *ctx)
 {
-    if (ctx && ctx->conn)
+    if (ctx && ctx->conn) {
         ctx->conn->user_data = NULL;
+        ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    }
     free(ctx);
 }
 
