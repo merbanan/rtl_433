@@ -105,6 +105,7 @@ add_library(r_433 STATIC
     devices/lacrosse_breezepro.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
+    devices/lacrosse_wr1.c
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
     devices/lightwave_rf.c
