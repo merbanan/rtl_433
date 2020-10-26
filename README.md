@@ -246,6 +246,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH3 Thermo/Hygro Sensor
+    [172]  Bresser Weather Center 6-in-1
+    [173]  Bresser Weather Center 7-in-1
 
 * Disabled by default, use -R n or -G
 
