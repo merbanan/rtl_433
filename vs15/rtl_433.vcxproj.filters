@@ -53,6 +53,9 @@
     <ClInclude Include="..\include\fileformat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\jsmn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -143,6 +146,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fileformat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\jsmn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\list.c">
