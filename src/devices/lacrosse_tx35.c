@@ -12,7 +12,7 @@ Generic decoder for LaCrosse "IT+" (instant transmission) protocol.
 Param device29or35 contain "29" or "35" depending of the device.
 
 LaCrosse/StarMétéo/Conrad TX35DTH-IT, TFA Dostmann 30.3155     Temperature/Humidity Sensors.
-LaCrosse/StarMétéo/Conrad TX29-IT                              Temperature Sensors.
+LaCrosse/StarMétéo/Conrad TX29-IT, TFA Dostmann 30.3159.IT     Temperature Sensors.
 Tune to 868240000Hz
 
 Protocol
@@ -180,7 +180,7 @@ static char *output_fields[] = {
 
 // Receiver for the TX29 device
 r_device lacrosse_tx29 = {
-    .name           = "LaCrosse TX29IT Temperature sensor",
+    .name           = "LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor",
     .modulation     = FSK_PULSE_PCM,
     .short_width    = 55,
     .long_width     = 55,
