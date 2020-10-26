@@ -245,6 +245,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [168]  Schrader TPMS SMD3MA4 (Subaru)
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
+    [171]  LaCrosse Technology View LTV-TH3 Thermo/Hygro Sensor
 
 * Disabled by default, use -R n or -G
 
