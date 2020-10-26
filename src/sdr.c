@@ -350,6 +350,8 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
 
             size_t info_len = 41 + strlen(vendor) + strlen(product) + strlen(serial);
             dev->dev_info = malloc(info_len);
+            if (!dev->dev_info)
+                FATAL_MALLOC("sdr_open_rtl");
             snprintf(dev->dev_info, info_len, "{\"vendor\":\"%s\", \"product\":\"%s\", \"serial\":\"%s\"}",
                     vendor, product, serial);
             break;
@@ -741,6 +743,8 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
         info_len += strlen(args.keys[i]) + strlen(args.vals[i]) + 6;
     }
     char *p = dev->dev_info = malloc(info_len);
+    if (!dev->dev_info)
+        FATAL_MALLOC("sdr_open_soapy");
     for (size_t i = 0; i < args.size; ++i) {
         p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]);
     }
