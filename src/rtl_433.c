@@ -51,6 +51,7 @@
 #include "compat_paths.h"
 #include "fatal.h"
 #include "write_sigrok.h"
+#include "mongoose.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -296,8 +297,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_poll(cfg->output_handler.elems[i]);
+    if (cfg->mgr) {
+        mg_mgr_poll(cfg->mgr, 0);
     }
 
     if (cfg->do_exit || cfg->do_exit_async)

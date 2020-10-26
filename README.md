@@ -243,6 +243,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [169]* Nice Flor-s remote control for gates
+    [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
 
 * Disabled by default, use -R n or -G
 

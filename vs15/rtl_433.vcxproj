@@ -244,6 +244,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\newkaku.c" />
     <ClCompile Include="..\src\devices\nexa.c" />
     <ClCompile Include="..\src\devices\nexus.c" />
+    <ClCompile Include="..\src\devices\nice_flor_s.c" />
     <ClCompile Include="..\src\devices\norgo.c" />
     <ClCompile Include="..\src\devices\oil_standard.c" />
     <ClCompile Include="..\src\devices\oil_watchman.c" />

@@ -544,7 +544,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "channel",              NULL,           DATA_STRING, &channel_str,
             "sequence_num",         NULL,           DATA_INT,    sequence_num,
             "battery_ok",           NULL,           DATA_INT,    !battery_low,
-            "subtype",              NULL,           DATA_INT,    message_type,
+            "message_type",              NULL,           DATA_INT,    message_type,
             "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
             NULL);
     /* clang-format on */
@@ -789,7 +789,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
-                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
+                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL, DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -816,7 +816,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
-                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
+                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL, DATA_INT,  sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -845,7 +845,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /* clang-format off */
                 data = data_make(
                         "model",        "",   DATA_STRING,    _X("Acurite-3n1","Acurite 3n1 sensor"),
-                        _X("subtype","message_type"), NULL,   DATA_INT,       message_type,
+                        "message_type", NULL,   DATA_INT,       message_type,
                         _X("id", "sensor_id"),    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
@@ -1336,7 +1336,7 @@ r_device acurite_th = {
  */
 static char *acurite_txr_output_fields[] = {
         "model",
-        "subtype",
+        "subtype",      // TODO: remove this
         "message_type", // TODO: remove this
         "id",
         "sensor_id", // TODO: remove this

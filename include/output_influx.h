@@ -16,6 +16,8 @@
 
 #include "data.h"
 
-struct data_output *data_output_influx_create(char *opts);
+struct mg_mgr;
+
+struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts);
 
 #endif /* INCLUDE_OUTPUT_INFLUX_H_ */
