@@ -103,6 +103,7 @@ add_library(r_433 STATIC
     devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_breezepro.c
+    devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
     devices/lacrosse_wr1.c
