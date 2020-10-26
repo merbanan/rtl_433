@@ -176,6 +176,7 @@
     DECL(lacrosse_breezepro) \
     DECL(somfy_rts) \
     DECL(schrader_SMD3MA4) \
+    DECL(nice_flor_s) \
     DECL(lacrosse_wr1) \
     /* Add new decoders here. */
 
