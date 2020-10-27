@@ -290,18 +290,6 @@ static void help_write(void)
     exit(0);
 }
 
-static void r_exit_async(r_cfg_t *cfg)
-{
-    cfg->exit_async = 1;
-    sdr_stop(cfg->dev);
-}
-
-static void r_break_async(r_cfg_t *cfg)
-{
-    cfg->break_async = 1;
-    sdr_stop(cfg->dev);
-}
-
 static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     r_cfg_t *cfg = ctx;
@@ -313,12 +301,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         mg_mgr_poll(cfg->mgr, 0);
     }
 
-    if (cfg->exit_async || cfg->break_async)
-        return;
-
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
-        r_exit_async(cfg);
+        cfg->exit_async = 1;
     }
 
     get_time_now(&demod->now);
@@ -582,7 +567,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            r_exit_async(cfg);
+            cfg->exit_async = 1;
         }
     }
 
@@ -595,10 +580,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         alarm(0); // cancel the watchdog timer
 #endif
         if (cfg->after_successful_events_flag == 1) {
-            r_exit_async(cfg);
+            cfg->exit_async = 1;
         }
         else {
-            r_break_async(cfg);
+            cfg->break_async = 1;
         }
     }
 
@@ -611,13 +596,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        r_break_async(cfg);
+        cfg->break_async = 1;
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        r_exit_async(cfg);
+        cfg->exit_async = 1;
         fprintf(stderr, "Time expired, exiting!\n");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
@@ -628,6 +613,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         if (cfg->stats_now)
             cfg->stats_now--;
     }
+
+    if (cfg->exit_async || cfg->break_async)
+        sdr_stop(cfg->dev);
 }
 
 static int hasopt(int test, int argc, char *argv[], char const *optstring)
@@ -1144,12 +1132,12 @@ sighandler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
-        r_exit_async(&g_cfg);
+        g_cfg.exit_async = 1;
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
         fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
-        r_break_async(&g_cfg);
+        g_cfg.break_async = 1;
         return TRUE;
     }
     return FALSE;
@@ -1165,7 +1153,7 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGUSR1) {
-        r_break_async(&g_cfg);
+        g_cfg.break_async = 1;
         return;
     }
     else if (signum == SIGALRM) {
@@ -1175,7 +1163,7 @@ static void sighandler(int signum)
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
-    r_exit_async(&g_cfg);
+    g_cfg.exit_async = 1;
 }
 #endif
 
