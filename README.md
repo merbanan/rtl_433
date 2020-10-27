@@ -150,7 +150,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
-    [76]  LaCrosse TX29IT Temperature sensor
+    [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
     [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
