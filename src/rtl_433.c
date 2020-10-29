@@ -128,6 +128,7 @@ static void usage(int exit_code)
             "  [-w <filename> | help] Save data stream to output file (a '-' dumps samples to stdout)\n"
             "  [-W <filename> | help] Save data stream to output file, overwrite existing file\n"
             "\t\t= Data output options =\n"
+            "  [-L <name>=file[:parameters] | mqtt[:parameters]\n"
             "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
@@ -644,7 +645,7 @@ static int hasopt(int test, int argc, char *argv[], char const *optstring)
 
 static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg);
 
-#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:F:K:C:T:UG:y:E:Y:"
+#define OPTSTRING "hVvqDc:x:z:p:a:AI:S:m:M:r:w:W:l:d:t:f:H:g:s:b:n:R:X:L:F:K:C:T:UG:y:E:Y:"
 
 // these should match the short options exactly
 static struct conf_keywords const conf_keywords[] = {
@@ -676,6 +677,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"override_short", 'z'},
         {"override_long", 'x'},
         {"pulse_detect", 'Y'},
+        {"link-config", 'L'},
         {"output", 'F'},
         {"output_tag", 'K'},
         {"convert", 'C'},
@@ -1015,33 +1017,18 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'q':
         fprintf(stderr, "quiet option (-q) is default and deprecated. See -v to increase verbosity\n");
         break;
+    case 'L':
+        if (!arg)
+            usage(1);
+        if (!add_link(cfg, arg)) {
+            fprintf(stderr, "Invalid link setup %s\n", arg);
+            usage(1);
+        }
+        break;
     case 'F':
         if (!arg)
             help_output();
-
-        if (strncmp(arg, "json", 4) == 0) {
-            add_json_output(cfg, arg_param(arg));
-        }
-        else if (strncmp(arg, "csv", 3) == 0) {
-            add_csv_output(cfg, arg_param(arg));
-        }
-        else if (strncmp(arg, "kv", 2) == 0) {
-            add_kv_output(cfg, arg_param(arg));
-        }
-        else if (strncmp(arg, "mqtt", 4) == 0) {
-            add_mqtt_output(cfg, arg_param(arg));
-        }
-        else if (strncmp(arg, "http", 4) == 0
-                || strncmp(arg, "influx", 6) == 0) {
-            add_influx_output(cfg, arg);
-        }
-        else if (strncmp(arg, "syslog", 6) == 0) {
-            add_syslog_output(cfg, arg_param(arg));
-        }
-        else if (strncmp(arg, "null", 4) == 0) {
-            add_null_output(cfg, arg_param(arg));
-        }
-        else {
+        if (!add_output(cfg, arg)) {
             fprintf(stderr, "Invalid output format %s\n", arg);
             usage(1);
         }

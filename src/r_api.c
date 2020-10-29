@@ -27,6 +27,7 @@
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
+#include "link.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
@@ -137,6 +138,7 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
 
     list_ensure_size(&cfg->in_files, 100);
+    list_ensure_size(&cfg->links, 16);
     list_ensure_size(&cfg->output_handler, 16);
 
     cfg->demod = calloc(1, sizeof(*cfg->demod));
@@ -188,6 +190,8 @@ void r_free_cfg(r_cfg_t *cfg)
     free(cfg->demod);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
+
+    list_free_elems(&cfg->links, (list_elem_free_fn)NULL);   //!!!FIXME
 
     list_free_elems(&cfg->in_files, NULL);
 
@@ -921,6 +925,63 @@ void add_null_output(r_cfg_t *cfg, char *param)
 {
     (void)param;
     list_push(&cfg->output_handler, NULL);
+}
+
+bool add_link(r_cfg_t *cfg, char *arg)
+{
+    char *e, *c;
+    link_t *l = NULL;
+
+    e = strchr(arg, '=');
+    c = strchr(arg, ':');
+
+    if (e && c && e < c) {
+        *e = '\0';
+        if (strncasecmp(e + 1, "file:", 5) == 0)
+            l = link_file_create(&cfg->links, arg, c + 1);
+    }
+
+    return l != NULL;
+}
+
+bool add_output(r_cfg_t *cfg, char *arg)
+{
+    char *s, *c;
+    char *name = NULL;
+    struct data_output *output;
+
+    s = strchr(arg, '/');
+    c = strchr(arg, ':');
+
+    if (s && (!c || s < c)) {
+        name = arg;
+        *s++ = '\0';
+        arg = s;
+    }
+
+    if (strncasecmp(arg, "json", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        add_json_output(cfg, arg_param(arg));
+    } else if (strncasecmp(arg, "csv", 3) == 0 && (arg[3] == ':' || arg[3] == '\0')) {
+        add_csv_output(cfg, arg_param(arg));
+    } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {
+        add_kv_output(cfg, arg_param(arg));
+    } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        add_mqtt_output(cfg, arg_param(arg));
+    } else if (strncasecmp(arg, "http", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        add_influx_output(cfg, arg);
+    } else if (strncasecmp(arg, "influx", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
+        add_influx_output(cfg, arg);
+    } else if (strncasecmp(arg, "syslog", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
+        add_syslog_output(cfg, arg_param(arg));
+    } else if (strncasecmp(arg, "null", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        add_null_output(cfg, arg_param(arg));
+    } else {
+        return false;
+    }
+
+    //list_push(&cfg->output_handler, output);
+
+    return true;
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)

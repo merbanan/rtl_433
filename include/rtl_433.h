@@ -90,6 +90,7 @@ typedef struct r_cfg {
     uint16_t num_r_devices;
     char *output_key;
     char *output_tag;
+    list_t links;
     list_t output_handler;
     struct dm_state *demod;
     char const *sr_filename;
