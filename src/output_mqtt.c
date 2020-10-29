@@ -110,6 +110,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, cha
     //ctx->timeout = 10000L;
     //ctx->cleansession = 1;
     strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
+    ctx->client_id[sizeof(ctx->client_id) - 1] = '\0';
 
     // if the host is an IPv6 address it needs quoting
     if (strchr(host, ':'))
