@@ -13,6 +13,7 @@
 #define INCLUDE_R_API_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct r_cfg;
 struct r_device;

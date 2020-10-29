@@ -50,7 +50,8 @@ link_t *link_file_create(list_t *links, const char *name, const char *file)
         }
     }
 
-    if (!(l = malloc(sizeof(link_file_t)))) {
+    l = malloc(sizeof(link_file_t));
+    if (!l) {
         WARN_MALLOC("link_file_create");
         return NULL;
     }
