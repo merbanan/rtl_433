@@ -439,7 +439,7 @@ static int soapysdr_set_bandwidth(SoapySDRDevice *dev, uint32_t bandwidth)
 static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
 {
     int r = 0;
-    char const *value, *set_value;
+    char const *value;
     if (on == 0)
         value = "0";
     else if (on == 1)
@@ -449,20 +449,22 @@ static int soapysdr_direct_sampling(SoapySDRDevice *dev, int on)
     else
         return -1;
     SoapySDRDevice_writeSetting(dev, "direct_samp", value);
-    set_value = SoapySDRDevice_readSetting(dev, "direct_samp");
+    char *set_value = SoapySDRDevice_readSetting(dev, "direct_samp");
 
     if (set_value == NULL) {
         fprintf(stderr, "WARNING: Failed to set direct sampling mode.\n");
         return r;
     }
-    if (atoi(set_value) == 0) {
+    int set_num = atoi(set_value);
+    if (set_num == 0) {
         fprintf(stderr, "Direct sampling mode disabled.\n");}
-    if (atoi(set_value) == 1) {
+    else if (set_num == 1) {
         fprintf(stderr, "Enabled direct sampling mode, input 1/I.\n");}
-    if (atoi(set_value) == 2) {
+    else if (set_num == 2) {
         fprintf(stderr, "Enabled direct sampling mode, input 2/Q.\n");}
-    if (atoi(set_value) == 3) {
+    else if (set_num == 3) {
         fprintf(stderr, "Enabled no-mod direct sampling mode.\n");}
+    free(set_value);
     return r;
 }
 
@@ -485,6 +487,7 @@ static int soapysdr_offset_tuning(SoapySDRDevice *dev)
     else {
         fprintf(stderr, "Offset tuning mode enabled.\n");
     }
+    free(set_value);
     return r;
 }
 
@@ -1055,7 +1058,7 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
     return r;
 }
 
-int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose)
+int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 {
     int r = -1;
 

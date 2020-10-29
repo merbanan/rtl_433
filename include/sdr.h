@@ -99,7 +99,7 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose);
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
-int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose);
+int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose);
 
 /** Get device sample rate.
 
