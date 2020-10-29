@@ -16,11 +16,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include "sdr.h"
 #include "r_util.h"
 #include "optparse.h"
 #include "logger.h"
 #include "fatal.h"
+#include "compat_pthread.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
 #if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
@@ -95,7 +97,6 @@ struct sdr_dev {
     char *dev_info;
 
     int running;
-    int polling;
     uint8_t *buffer; ///< sdr data buffer current and past frames
     size_t buffer_size; ///< sdr data buffer overall size (num * len)
     size_t buffer_pos; ///< sdr data buffer next write position
@@ -103,61 +104,35 @@ struct sdr_dev {
     int sample_size;
     int sample_signed;
 
-    int apply_rate;
-    int apply_freq;
-    int apply_corr;
-    int apply_gain;
     uint32_t sample_rate;
-    int freq_correction;
     uint32_t center_frequency;
-    char *gain_str;
+
+#ifdef THREADS
+    pthread_t thread;
+    pthread_mutex_t lock; ///< lock for exit_acquire
+    int exit_acquire;
+
+    // acquire thread args
+    sdr_event_cb_t async_cb;
+    void *async_ctx;
+    uint32_t buf_num;
+    uint32_t buf_len;
+#endif
 };
 
 /* internal helpers */
 
-static int apply_changes(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx)
-{
-    int r = 0;
-    sdr_event_flags_t flags = 0;
-    if (dev->apply_rate) {
-        r = sdr_set_sample_rate(dev, dev->sample_rate, 1); // always verbose
-        dev->apply_rate = 0;
-        flags |= SDR_EV_RATE;
-    }
-
-    if (dev->apply_corr) {
-        r = sdr_set_freq_correction(dev, dev->freq_correction, 1); // always verbose
-        dev->apply_corr = 0;
-        flags |= SDR_EV_CORR;
-    }
-
-    if (dev->apply_freq) {
-        r = sdr_set_center_freq(dev, dev->center_frequency, 1); // always verbose
-        dev->apply_freq = 0;
-        flags |= SDR_EV_FREQ;
-    }
-
-    char *gain_str = dev->gain_str;
-    dev->gain_str = NULL;
-    if (dev->apply_gain) {
-        r = sdr_set_tuner_gain(dev, gain_str, 1); // always verbose
-        dev->apply_gain = 0;
-        flags |= SDR_EV_GAIN;
-    }
-    if (flags) {
+/*
+        pthread_mutex_lock(&dev->lock);
         sdr_event_t ev = {
                 .ev               = flags,
                 .sample_rate      = dev->sample_rate,
-                .freq_correction  = dev->freq_correction,
                 .center_frequency = dev->center_frequency,
-                .gain_str         = gain_str,
         };
+        pthread_mutex_unlock(&dev->lock);
         if (cb)
             cb(&ev, ctx);
-        free(gain_str);
-    }
-    return r;
-}
+*/
 
 /* rtl_tcp helpers */
 
@@ -258,6 +233,9 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         WARN_CALLOC("rtltcp_open()");
         return -1; // NOTE: returns error on alloc failure.
     }
+#ifdef THREADS
+    pthread_mutex_init(&dev->lock, NULL);
+#endif
 
     dev->rtl_tcp = sock;
     dev->sample_size = sizeof(uint8_t) * 2; // CU8
@@ -286,7 +264,7 @@ static int rtltcp_close(SOCKET sock)
 
 static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
-    size_t buffer_size = buf_num * buf_len;
+    size_t buffer_size = (size_t)buf_num * buf_len;
     if (dev->buffer_size != buffer_size) {
         free(dev->buffer);
         dev->buffer = malloc(buffer_size);
@@ -327,14 +305,13 @@ static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
 
         sdr_event_t ev = {
                 .ev  = SDR_EV_DATA,
+//                .sample_rate = dev->sample_rate,
+//                .center_frequency = dev->center_frequency,
                 .buf = buffer,
                 .len = n_read,
         };
-        dev->polling = 1;
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
-        dev->polling = 0;
-        apply_changes(dev, cb, ctx);
 
     } while (dev->running);
 
@@ -418,6 +395,9 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
         WARN_CALLOC("sdr_open_rtl()");
         return -1; // NOTE: returns error on alloc failure.
     }
+#ifdef THREADS
+    pthread_mutex_init(&dev->lock, NULL);
+#endif
 
     for (uint32_t i = dev_query ? dev_index : 0;
             //cast quiets -Wsign-compare; if dev_index were < 0, would have returned -1 above
@@ -501,6 +481,19 @@ static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
 {
     sdr_dev_t *dev = ctx;
 
+    //fprintf(stderr, "rtlsdr_read_cb enter...\n");
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+    int exit_acquire = dev->exit_acquire;
+    pthread_mutex_unlock(&dev->lock);
+    if (exit_acquire) {
+        // we get one more call after rtlsdr_cancel_async(),
+        // it then takes a full second until rtlsdr_read_async() ends.
+        //fprintf(stderr, "rtlsdr_read_cb stopping...\n");
+        return; // do not deliver any more events
+    }
+#endif
+
     if (dev->buffer_pos + len > dev->buffer_size)
         dev->buffer_pos = 0;
     uint8_t *buffer = &dev->buffer[dev->buffer_pos];
@@ -511,16 +504,21 @@ static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     sdr_event_t ev = {
             .ev  = SDR_EV_DATA,
+//            .sample_rate = dev->sample_rate,
+//            .center_frequency = dev->center_frequency,
             .buf = buffer,
             .len = len,
     };
+    //fprintf(stderr, "rtlsdr_read_cb cb...\n");
     if (len > 0) // prevent a crash in callback
         dev->rtlsdr_cb(&ev, dev->rtlsdr_cb_ctx);
+    //fprintf(stderr, "rtlsdr_read_cb cb done.\n");
+    // NOTE: we actually need to copy the buffer to prevent it going away on cancel_async
 }
 
 static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
-    size_t buffer_size = buf_num * buf_len;
+    size_t buffer_size = (size_t)buf_num * buf_len;
     if (dev->buffer_size != buffer_size) {
         free(dev->buffer);
         dev->buffer = malloc(buffer_size);
@@ -538,8 +536,6 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
     dev->rtlsdr_cb_ctx = ctx;
 
     dev->running = 1;
-    do {
-        dev->polling = 1;
 
         r = rtlsdr_read_async(dev->rtlsdr_dev, rtlsdr_read_cb, dev, buf_num, buf_len);
         // rtlsdr_read_async() returns possible error codes from:
@@ -561,10 +557,7 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
 #endif
             dev->running = 0;
         }
-        dev->polling = 0;
-        apply_changes(dev, cb, ctx);
-
-    } while (dev->running);
+    print_log(LOG_DEBUG, __func__, "rtlsdr_read_async done");
 
     return r;
 }
@@ -867,6 +860,9 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
         WARN_CALLOC("sdr_open_soapy()");
         return -1; // NOTE: returns error on alloc failure.
     }
+#ifdef THREADS
+    pthread_mutex_init(&dev->lock, NULL);
+#endif
 
     dev->soapy_dev = SoapySDRDevice_makeStrArgs(dev_query);
     if (!dev->soapy_dev) {
@@ -950,7 +946,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
-    size_t buffer_size = buf_num * buf_len;
+    size_t buffer_size = (size_t)buf_num * buf_len;
     if (dev->buffer_size != buffer_size) {
         free(dev->buffer);
         dev->buffer = malloc(buffer_size);
@@ -1015,14 +1011,13 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
         sdr_event_t ev = {
                 .ev  = SDR_EV_DATA,
+//                .sample_rate = dev->sample_rate,
+//                .center_frequency = dev->center_frequency,
                 .buf = buffer,
                 .len = n_read * dev->sample_size,
         };
-        dev->polling = 1;
         if (n_read > 0) // prevent a crash in callback
             cb(&ev, ctx);
-        dev->polling = 0;
-        apply_changes(dev, cb, ctx);
 
     } while (dev->running);
 
@@ -1072,7 +1067,7 @@ int sdr_close(sdr_dev_t *dev)
     if (!dev)
         return -1;
 
-    int ret = -1;
+    int ret = sdr_stop(dev);
 
     if (dev->rtl_tcp)
         ret = rtltcp_close(dev->rtl_tcp);
@@ -1085,6 +1080,10 @@ int sdr_close(sdr_dev_t *dev)
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
         ret = rtlsdr_close(dev->rtlsdr_dev);
+#endif
+
+#ifdef THREADS
+    pthread_mutex_destroy(&dev->lock);
 #endif
 
     free(dev->dev_info);
@@ -1122,15 +1121,12 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
     if (!dev)
         return -1;
 
-    if (dev->polling) {
-        dev->center_frequency = freq;
-        dev->apply_freq       = 1;
-#ifdef RTLSDR
-        if (dev->rtlsdr_dev)
-            rtlsdr_cancel_async(dev->rtlsdr_dev);
-#endif
-        return 0;
+#ifdef THREADS
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
     }
+#endif
 
     int r = -1;
 
@@ -1147,8 +1143,10 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 #endif
 
 #ifdef RTLSDR
-    if (dev->rtlsdr_dev)
+    if (dev->rtlsdr_dev) {
         r = rtlsdr_set_center_freq(dev->rtlsdr_dev, freq);
+        print_logf(LOG_DEBUG, "SDR", "rtlsdr_set_center_freq %u = %d", freq, r);
+    }
 #endif
 
     if (verbose) {
@@ -1157,6 +1155,13 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
         else
             print_logf(LOG_NOTICE, "SDR", "Tuned to %s.", nice_freq(sdr_get_center_freq(dev)));
     }
+
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+    dev->center_frequency = freq;
+    pthread_mutex_unlock(&dev->lock);
+#endif
+
     return r;
 }
 
@@ -1186,15 +1191,12 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
     if (!dev)
         return -1;
 
-    if (dev->polling) {
-        dev->freq_correction = ppm;
-        dev->apply_corr      = 1;
-#ifdef RTLSDR
-        if (dev->rtlsdr_dev)
-            rtlsdr_cancel_async(dev->rtlsdr_dev);
-#endif
-        return 0;
+#ifdef THREADS
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
     }
+#endif
 
     int r = -1;
 
@@ -1228,16 +1230,12 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
     if (!dev)
         return -1;
 
-    if (dev->polling) {
-        free(dev->gain_str);
-        dev->gain_str   = NULL; // auto gain
-        dev->apply_gain = 1;
-#ifdef RTLSDR
-        if (dev->rtlsdr_dev)
-            rtlsdr_cancel_async(dev->rtlsdr_dev);
-#endif
-        return 0;
+#ifdef THREADS
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
     }
+#endif
 
     int r = -1;
 
@@ -1268,23 +1266,12 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
     if (!dev)
         return -1;
 
-    if (dev->polling) {
-        free(dev->gain_str);
-        if (!gain_str) {
-            dev->gain_str = NULL; // auto gain
-        }
-        else {
-            dev->gain_str = strdup(gain_str);
-            if (!dev->gain_str)
-                WARN_STRDUP("set_gain_str()");
-        }
-        dev->apply_gain = 1;
-#ifdef RTLSDR
-        if (dev->rtlsdr_dev)
-            rtlsdr_cancel_async(dev->rtlsdr_dev);
-#endif
-        return 0;
+#ifdef THREADS
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
     }
+#endif
 
     int r = -1;
 
@@ -1370,15 +1357,12 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
     if (!dev)
         return -1;
 
-    if (dev->polling) {
-        dev->sample_rate = rate;
-        dev->apply_rate  = 1;
-#ifdef RTLSDR
-        if (dev->rtlsdr_dev)
-            rtlsdr_cancel_async(dev->rtlsdr_dev);
-#endif
-        return 0;
+#ifdef THREADS
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
     }
+#endif
 
     int r = -1;
 
@@ -1403,6 +1387,13 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
         else
             print_logf(LOG_NOTICE, "SDR", "Sample rate set to %u S/s.", sdr_get_sample_rate(dev)); // Unfortunately, doesn't return real rate
     }
+
+#ifdef THREADS
+    pthread_mutex_lock(&dev->lock);
+    dev->sample_rate = rate;
+    pthread_mutex_unlock(&dev->lock);
+#endif
+
     return r;
 }
 
@@ -1594,7 +1585,7 @@ int sdr_reset(sdr_dev_t *dev, int verbose)
     return r;
 }
 
-int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
+int sdr_start_sync(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
     if (!dev)
         return -1;
@@ -1620,7 +1611,7 @@ int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, ui
     return -1;
 }
 
-int sdr_stop(sdr_dev_t *dev)
+int sdr_stop_sync(sdr_dev_t *dev)
 {
     if (!dev)
         return -1;
@@ -1661,3 +1652,98 @@ void sdr_redirect_logging(void)
     SoapySDR_registerLogHandler(soapysdr_log_handler);
 #endif
 }
+
+/* threading */
+
+#ifdef THREADS
+static THREAD_RETURN THREAD_CALL acquire_thread(void *arg)
+{
+    sdr_dev_t *dev = arg;
+    print_log(LOG_DEBUG, __func__, "acquire_thread enter...");
+
+    int r = sdr_start_sync(dev, dev->async_cb, dev->async_ctx, dev->buf_num, dev->buf_len);
+    // if (cfg->verbosity > 1)
+    print_log(LOG_DEBUG, __func__, "acquire_thread async stop...");
+
+    if (r < 0) {
+        print_logf(LOG_ERROR, "SDR", "async read failed (%i).", r);
+    }
+
+//    sdr_event_t ev = {
+//            .ev  = SDR_EV_QUIT,
+//    };
+//    dev->async_cb(&ev, dev->async_ctx);
+
+    print_log(LOG_DEBUG, __func__, "acquire_thread done...");
+    return (THREAD_RETURN)(intptr_t)r;
+}
+
+int sdr_start(sdr_dev_t *dev, sdr_event_cb_t async_cb, void *async_ctx, uint32_t buf_num, uint32_t buf_len)
+{
+    if (!dev)
+        return -1;
+
+    dev->async_cb = async_cb;
+    dev->async_ctx = async_ctx;
+    dev->buf_num = buf_num;
+    dev->buf_len = buf_len;
+
+#ifndef _WIN32
+    // Block all signals from the worker thread
+    sigset_t sigset;
+    sigset_t oldset;
+    sigfillset(&sigset);
+    pthread_sigmask(SIG_SETMASK, &sigset, &oldset);
+#endif
+    int r = pthread_create(&dev->thread, NULL, acquire_thread, dev);
+#ifndef _WIN32
+    pthread_sigmask(SIG_SETMASK, &oldset, NULL);
+#endif
+    if (r) {
+        fprintf(stderr, "%s: error in pthread_create, rc: %d\n", __func__, r);
+    }
+    return r;
+}
+
+int sdr_stop(sdr_dev_t *dev)
+{
+    if (!dev)
+        return -1;
+
+    if (pthread_equal(dev->thread, pthread_self())) {
+        fprintf(stderr, "%s: must not be called from acquire callback!\n", __func__);
+        return -1;
+    }
+
+    print_log(LOG_DEBUG, __func__, "EXITING...");
+    pthread_mutex_lock(&dev->lock);
+    if (dev->exit_acquire) {
+        pthread_mutex_unlock(&dev->lock);
+        print_log(LOG_DEBUG, __func__, "Already exiting.");
+        return 0;
+    }
+    dev->exit_acquire = 1; // for rtl_tcp and SoapySDR
+    sdr_stop_sync(dev); // for rtlsdr
+    pthread_mutex_unlock(&dev->lock);
+
+    print_log(LOG_DEBUG, __func__, "JOINING...");
+    int r = pthread_join(dev->thread, NULL);
+    if (r) {
+        fprintf(stderr, "%s: error in pthread_join, rc: %d\n", __func__, r);
+    }
+
+    print_log(LOG_DEBUG, __func__, "EXITED.");
+    return r;
+}
+#else
+int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
+{
+    UNUSED(dev);
+    return -1;
+}
+int sdr_stop(sdr_dev_t *dev)
+{
+    UNUSED(dev);
+    return -1;
+}
+#endif

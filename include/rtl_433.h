@@ -99,6 +99,7 @@ typedef struct r_cfg {
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;
+    int watchdog; ///< SDR acquire stall watchdog
     /* stats*/
     time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval
