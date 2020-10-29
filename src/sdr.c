@@ -63,6 +63,8 @@
     #define closesocket(x)  close(x)
 #endif
 
+#define GAIN_STR_MAX_SIZE 64
+
 struct sdr_dev {
     SOCKET rtl_tcp;
     uint32_t rtl_tcp_freq; ///< last known center frequency, rtl_tcp only.
@@ -529,8 +531,11 @@ static int soapysdr_auto_gain(SoapySDRDevice *dev, int verbose)
     return r;
 }
 
-static int soapysdr_gain_str_set(SoapySDRDevice *dev, char *gain_str, int verbose)
+static int soapysdr_gain_str_set(SoapySDRDevice *dev, char const *gain_str, int verbose)
 {
+    if (!gain_str || !*gain_str || strlen(gain_str) >= GAIN_STR_MAX_SIZE)
+        return -1;
+
     int r = 0;
 
     // Disable automatic gain
@@ -547,10 +552,14 @@ static int soapysdr_gain_str_set(SoapySDRDevice *dev, char *gain_str, int verbos
     }
 
     if (strchr(gain_str, '=')) {
+        char gain_cpy[GAIN_STR_MAX_SIZE];
+        strncpy(gain_cpy, gain_str, GAIN_STR_MAX_SIZE);
+        gain_cpy[GAIN_STR_MAX_SIZE - 1] = '\0';
+        char *gain_p = gain_cpy;
         // Set each gain individually (more control)
         char *name;
         char *value;
-        while (getkwargs(&gain_str, &name, &value)) {
+        while (getkwargs(&gain_p, &name, &value)) {
             double num = atof(value);
             if (verbose)
                 fprintf(stderr, "Setting gain element %s: %f dB\n", name, num);
@@ -999,7 +1008,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
     return r;
 }
 
-int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose)
+int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 {
     int r = -1;
 

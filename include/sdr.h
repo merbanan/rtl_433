@@ -81,7 +81,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose);
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
-int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose);
+int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose);
 
 /** Set device sample rate, optionally report status.
 
