@@ -42,7 +42,7 @@ Preamble is 111 0001 0101 0101 (0x7155).
   - C3 =1100 0011 = Battery Low, Triggered
   - C5 =1100 0101 = Battery OK, Triggered, Storage Mode
   - E1 =1110 0001 = Mx Sensor Clone for Elantra 2012 US market ? Low Line
-  - C1		 = Mx Sensor Clone for Genesis Sedan 2012 US market ? High Line
+  - C1            = Mx Sensor Clone for Genesis Sedan 2012 US market ? High Line
 - C: CRC-8, poly 0x07, init 0x00
 
 */
