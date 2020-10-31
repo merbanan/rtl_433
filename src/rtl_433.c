@@ -297,10 +297,6 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    if (cfg->mgr) {
-        mg_mgr_poll(cfg->mgr, 0);
-    }
-
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
         cfg->exit_async = 1;
@@ -583,7 +579,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             cfg->exit_async = 1;
         }
         else {
-            cfg->break_async = 1;
+            cfg->hop_now = 1;
         }
     }
 
@@ -596,7 +592,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        cfg->break_async = 1;
+        cfg->hop_now = 1;
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
 #ifndef _WIN32
@@ -614,8 +610,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             cfg->stats_now--;
     }
 
-    if (cfg->exit_async || cfg->break_async)
-        sdr_stop(cfg->dev);
+    if (cfg->hop_now && !cfg->exit_async) {
+        cfg->hop_now = 0;
+        time(&cfg->hop_start_time);
+        cfg->frequency_index  = (cfg->frequency_index + 1) % cfg->frequencies;
+        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+        sdr_set_center_freq(cfg->dev, cfg->center_frequency, 0);
+    }
 }
 
 static int hasopt(int test, int argc, char *argv[], char const *optstring)
@@ -1137,7 +1138,7 @@ sighandler(int signum)
     }
     else if (CTRL_BREAK_EVENT == signum) {
         fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
-        g_cfg.break_async = 1;
+        g_cfg.hop_now = 1;
         return TRUE;
     }
     return FALSE;
@@ -1153,7 +1154,7 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGUSR1) {
-        g_cfg.break_async = 1;
+        g_cfg.hop_now = 1;
         return;
     }
     else if (signum == SIGALRM) {
@@ -1166,6 +1167,53 @@ static void sighandler(int signum)
     g_cfg.exit_async = 1;
 }
 #endif
+
+static void sdr_handler(sdr_event_t *ev, void *ctx)
+{
+    r_cfg_t *cfg = ctx;
+
+    data_t *data = NULL;
+    if (ev->ev & SDR_EV_RATE) {
+        data = data_append(data,
+                "sample_rate", "", DATA_INT, ev->sample_rate,
+                NULL);
+    }
+    if (ev->ev & SDR_EV_CORR) {
+        data = data_append(data,
+                "freq_correction", "", DATA_INT, ev->freq_correction,
+                NULL);
+    }
+    if (ev->ev & SDR_EV_FREQ) {
+        data = data_append(data,
+                "center_frequency", "", DATA_INT, ev->center_frequency,
+                "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
+                "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
+                NULL);
+    }
+    if (ev->ev & SDR_EV_GAIN) {
+        data = data_append(data,
+                "gain", "", DATA_STRING, ev->gain_str,
+                NULL);
+    }
+    if (data) {
+        for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+            data_output_print(cfg->output_handler.elems[i], data);
+        }
+        data_free(data);
+    }
+
+    if (ev->ev == SDR_EV_DATA) {
+        if (cfg->mgr) {
+            mg_mgr_poll(cfg->mgr, 0);
+        }
+
+        if (!cfg->exit_async)
+            sdr_callback((unsigned char *)ev->buf, ev->len, ctx);
+    }
+
+    if (cfg->exit_async)
+        sdr_stop(cfg->dev);
+}
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
@@ -1614,73 +1662,22 @@ int main(int argc, char **argv) {
         cfg->stop_time += cfg->duration;
     }
 
-    uint32_t samp_rate = cfg->samp_rate;
-    char *gain_str = cfg->gain_str;
-    int ppm_error = cfg->ppm_error;
-
     cfg->center_frequency = cfg->frequency[cfg->frequency_index];
     r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
-    while (!cfg->exit_async) {
         time(&cfg->hop_start_time);
-        data_t *data = NULL;
-        if (samp_rate != cfg->samp_rate) {
-            samp_rate = cfg->samp_rate;
-            r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
-
-            data = data_append(data,
-                    "sample_rate", "", DATA_INT, cfg->samp_rate,
-                    NULL);
-        }
-        if (ppm_error != cfg->ppm_error) {
-            ppm_error = cfg->ppm_error;
-            r = sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
-
-            data = data_append(data,
-                    "freq_correction", "", DATA_INT, cfg->ppm_error,
-                    NULL);
-        }
-        if (cfg->center_frequency != cfg->frequency[cfg->frequency_index]) {
-            cfg->center_frequency = cfg->frequency[cfg->frequency_index];
-            r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
-
-            data = data_append(data,
-                    "center_frequency", "", DATA_INT, cfg->center_frequency,
-                    "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
-                    "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
-                    NULL);
-        }
-        if (gain_str != cfg->gain_str) {
-            gain_str = cfg->gain_str;
-            r = sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
-
-            data = data_append(data,
-                    "gain", "", DATA_STRING, cfg->gain_str,
-                    NULL);
-        }
-        if (data) {
-            for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-                data_output_print(cfg->output_handler.elems[i], data);
-            }
-            data_free(data);
-        }
-
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-        cfg->break_async = 0;
-        r = sdr_start(cfg->dev, sdr_callback, (void *)cfg,
+        r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
             fprintf(stderr, "WARNING: async read failed (%i).\n", r);
-            break;
         }
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
-    }
 
     if (cfg->report_stats > 0) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->report_stats));
