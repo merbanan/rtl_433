@@ -72,12 +72,14 @@
 
 // note that Clang has _Noreturn but it's C11
 // #if defined(__clang__) ...
+#if !defined _Noreturn
 #if defined(__GNUC__)
 #define _Noreturn __attribute__((noreturn))
 #elif defined(_MSC_VER)
 #define _Noreturn __declspec(noreturn)
 #else
 #define _Noreturn
+#endif
 #endif
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
