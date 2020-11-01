@@ -169,9 +169,10 @@ static void data_output_csv_start(struct data_output *output, const char **field
 alloc_error:
     free(use_count);
     free(allowed);
-    if (csv)
+    if (csv) {
         free(csv->fields);
-    link_output_free(csv->output.link_output);
+        link_output_free(csv->output.link_output);
+    }
     free(csv);
 }
 
