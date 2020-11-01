@@ -72,8 +72,6 @@ bool add_link(struct r_cfg *cfg, char *arg);
 
 bool add_output(struct r_cfg *cfg, char *arg);
 
-void add_json_output(struct r_cfg *cfg, char *param);
-
 void add_csv_output(struct r_cfg *cfg, char *param);
 
 void add_kv_output(struct r_cfg *cfg, char *param);

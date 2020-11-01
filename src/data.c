@@ -363,6 +363,7 @@ void data_output_print(data_output_t *output, data_t *data)
         fputc('\n', output->file);
         fflush(output->file);
     }
+    link_output_flush(output->link_output);
 }
 
 void data_output_start(struct data_output *output, const char **fields, int num_fields)

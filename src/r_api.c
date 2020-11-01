@@ -869,11 +869,6 @@ static FILE *fopen_output(char *param)
     return file;
 }
 
-void add_json_output(r_cfg_t *cfg, char *param)
-{
-    list_push(&cfg->output_handler, data_output_json_create(fopen_output(param)));
-}
-
 void add_csv_output(r_cfg_t *cfg, char *param)
 {
     list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
@@ -960,7 +955,9 @@ bool add_output(r_cfg_t *cfg, char *arg)
     }
 
     if (strncasecmp(arg, "json", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
-        add_json_output(cfg, arg_param(arg));
+        output = data_output_json_create(&cfg->links, name, arg_param(arg));
+        if (!output) return false;
+        list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "csv", 3) == 0 && (arg[3] == ':' || arg[3] == '\0')) {
         add_csv_output(cfg, arg_param(arg));
     } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {

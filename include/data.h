@@ -30,6 +30,8 @@
     #endif
 #endif
 
+#include "link.h"
+
 typedef enum {
     DATA_DATA,   /**< pointer to data is stored */
     DATA_INT,    /**< pointer to integer is stored */
@@ -139,6 +141,7 @@ typedef struct data_output {
     void (*output_start)(struct data_output *output, const char **fields, int num_fields);
     void (*output_free)(struct data_output *output);
     FILE *file;
+    link_output_t *link_output;
 } data_output_t;
 
 /** Construct data output for CSV printer.
@@ -149,7 +152,7 @@ typedef struct data_output {
 */
 struct data_output *data_output_csv_create(FILE *file);
 
-struct data_output *data_output_json_create(FILE *file);
+struct data_output *data_output_json_create(list_t *links, const char *name, const char *file);
 
 struct data_output *data_output_kv_create(FILE *file);
 
