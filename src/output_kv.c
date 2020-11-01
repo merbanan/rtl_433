@@ -1,7 +1,7 @@
 /** @file
  * Pretty Key-Value output module
  *
- * Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
+ * Copyright (C) 2015 Christian Zuckschwerdt
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
