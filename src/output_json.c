@@ -93,7 +93,10 @@ struct data_output *data_output_json_create(list_t *links, const char *name, con
         return NULL; // NOTE: returns NULL on alloc failure.
     }
 
-    if (!(l = link_file_create(links, name, file))) return NULL;
+    if (!(l = link_file_create(links, name, file))) {
+        free(output);
+        return NULL;
+    }
 
     output->print_data   = print_json_data;
     output->print_array  = print_json_array;

@@ -201,7 +201,7 @@ if(MSVC)
     target_sources(rtl_433 PRIVATE getopt/getopt.c)
 endif()
 
-add_library(data data.c abuf.c term_ctl.c mongoose.c)
+add_library(data data.c link.c link_file.c output_csv.c output_json.c output_kv.c list.c abuf.c term_ctl.c mongoose.c)
 target_link_libraries(data ${NET_LIBRARIES})
 
 target_link_libraries(rtl_433

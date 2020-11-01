@@ -35,8 +35,9 @@ int main()
 				 "data"       , "Data",        DATA_DATA, data_make("Hello", "hello", DATA_STRING, "world", NULL),
 				 NULL);
 	const char *fields[] = { "label", "house_code", "temp", "array", "array2", "array3", "data", "house_code" };
+	list_t links = {0};
 
-	void *json_output = data_output_json_create(stdout);
+	void *json_output = data_output_json_create(&links, NULL, NULL);
 	void *kv_output = data_output_kv_create(stdout);
 	void *csv_output = data_output_csv_create(stdout);
 	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
