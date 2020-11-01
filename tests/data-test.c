@@ -39,7 +39,7 @@ int main()
 
 	void *json_output = data_output_json_create(&links, NULL, NULL);
 	void *kv_output = data_output_kv_create(stdout);
-	void *csv_output = data_output_csv_create(stdout);
+	void *csv_output = data_output_csv_create(&links, NULL, NULL);
 	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 
 	data_output_print(json_output, data); fprintf(stdout, "\n");

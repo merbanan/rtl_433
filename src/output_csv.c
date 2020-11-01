@@ -57,7 +57,7 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
         const char *key = fields[i];
         data_t *found = NULL;
         if (i)
-            fprintf(output->file, "%s", csv->separator);
+            link_output_printf(output->link_output, "%s", csv->separator);
         for (data_t *iter = data; !found && iter; iter = iter->next)
             if (strcmp(iter->key, key) == 0)
                 found = iter;
@@ -72,7 +72,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char con
 {
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(output->file, ";");
+            link_output_write_char(output->link_output, ';');
         print_array_value(output, array, format, c);
     }
 }
@@ -83,8 +83,8 @@ static void print_csv_string(data_output_t *output, const char *str, char const 
 
     while (*str) {
         if (strncmp(str, csv->separator, strlen(csv->separator)) == 0)
-            fputc('\\', output->file);
-        fputc(*str, output->file);
+            link_output_write_char(output->link_output, '\\');
+        link_output_write_char(output->link_output, *str);
         ++str;
     }
 }
@@ -161,9 +161,9 @@ static void data_output_csv_start(struct data_output *output, const char **field
 
     // Output the CSV header
     for (i = 0; csv->fields[i]; ++i) {
-        fprintf(csv->output.file, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
+        link_output_printf(csv->output.link_output, "%s%s", i > 0 ? csv->separator : "", csv->fields[i]);
     }
-    fprintf(csv->output.file, "\n");
+    link_output_printf(csv->output.link_output, "\n");
     return;
 
 alloc_error:
@@ -171,33 +171,41 @@ alloc_error:
     free(allowed);
     if (csv)
         free(csv->fields);
+    link_output_free(csv->output.link_output);
     free(csv);
 }
 
 static void print_csv_double(data_output_t *output, double data, char const *format)
 {
-    fprintf(output->file, "%.3f", data);
+    link_output_printf(output->link_output, "%.3f", data);
 }
 
 static void print_csv_int(data_output_t *output, int data, char const *format)
 {
-    fprintf(output->file, "%d", data);
+    link_output_printf(output->link_output, "%d", data);
 }
 
 static void data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
+    link_output_free(csv->output.link_output);
     free(csv->fields);
     free(csv);
 }
 
-struct data_output *data_output_csv_create(FILE *file)
+struct data_output *data_output_csv_create(list_t *links, const char *name, const char *file)
 {
+    link_t *l;
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
         WARN_CALLOC("data_output_csv_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
+    }
+
+    if (!(l = link_file_create(links, name, file))) {
+        free(csv);
+        return NULL;
     }
 
     csv->output.print_data   = print_csv_data;
@@ -207,7 +215,7 @@ struct data_output *data_output_csv_create(FILE *file)
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
-    csv->output.file         = file;
+    csv->output.link_output  = link_create_output(l);
 
     return &csv->output;
 }

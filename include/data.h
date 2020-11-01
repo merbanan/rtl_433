@@ -150,7 +150,7 @@ typedef struct data_output {
     @return The auxiliary data to pass along with data_csv_printer to data_print.
             You must release this object with data_output_free once you're done with it.
 */
-struct data_output *data_output_csv_create(FILE *file);
+struct data_output *data_output_csv_create(list_t *links, const char *name, const char *file);
 
 struct data_output *data_output_json_create(list_t *links, const char *name, const char *file);
 
