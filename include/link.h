@@ -18,6 +18,8 @@
 #ifndef INCLUDE_LINK_H_
 #define INCLUDE_LINK_H_
 
+#include <stdarg.h>
+
 #include "list.h"
 
 typedef enum {
@@ -27,9 +29,10 @@ typedef enum {
 
 typedef struct link_output {
     void (*write)(struct link_output *output, const void *buf, size_t len);
-    void (*write_char)(struct link_output *output, char data);
-    void (*printf)(struct link_output *output, const char *fmt, ...);
+    void (*vprintf)(struct link_output *output, const char *fmt, va_list ap);
+    void (*flush)(struct link_output *output);
     void (*free)(struct link_output *output);
+    struct link *link;
 } link_output_t;
 
 typedef struct link {
@@ -44,5 +47,13 @@ link_t *link_file_create(list_t *links, const char *name, const char *file);
 
 /// Construct a MQTT link
 link_t *link_mqtt_create(list_t *links, const char *name, const char *host, const char *port, const char *user, const char *pass, const char *client_id);
+
+link_output_t *link_create_output(link_t *l);
+
+void link_output_write(link_output_t *lo, const void *buf, size_t len);
+void link_output_write_char(link_output_t *lo, char data);
+void link_output_printf(link_output_t *lo, const char *fmt, ...);
+void link_output_flush(link_output_t *lo);
+void link_output_free(link_output_t *lo);
 
 #endif // INCLUDE_LINK_H_

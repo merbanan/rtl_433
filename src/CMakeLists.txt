@@ -15,6 +15,7 @@ add_library(r_433 STATIC
     data.c
     decoder_util.c
     fileformat.c
+    link.c
     link_file.c
     list.c
     mongoose.c
