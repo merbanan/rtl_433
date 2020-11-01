@@ -58,6 +58,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/directv.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
+                       devices/ecodhome.c \
                        devices/ecowitt.c \
                        devices/efergy_e2_classic.c \
                        devices/efergy_optical.c \

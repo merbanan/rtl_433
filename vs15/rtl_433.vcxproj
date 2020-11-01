@@ -184,6 +184,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\directv.c" />
     <ClCompile Include="..\src\devices\dish_remote_6_3.c" />
     <ClCompile Include="..\src\devices\dsc.c" />
+    <ClCompile Include="..\src\devices\ecodhome.c" />
     <ClCompile Include="..\src\devices\ecowitt.c" />
     <ClCompile Include="..\src\devices\efergy_e2_classic.c" />
     <ClCompile Include="..\src\devices\efergy_optical.c" />
