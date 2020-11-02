@@ -428,7 +428,7 @@ static void data_output_mqtt_free(data_output_t *output)
     free(mqtt->events);
     free(mqtt->states);
 
-    if(mqtt->lwt) {
+    if (mqtt->lwt) {
         free(mqtt->lwt);
     }
 
