@@ -159,6 +159,7 @@ struct rtl_tcp_info {
 
 static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
 {
+    UNUSED(verbose);
     char *host = "localhost";
     char *port = "1234";
 
@@ -268,6 +269,7 @@ static int rtltcp_close(SOCKET sock)
 
 static int rtltcp_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
+    UNUSED(buf_num);
     if (dev->buffer_size != buf_len) {
         free(dev->buffer);
         dev->buffer = malloc(buf_len);
@@ -1229,6 +1231,8 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 
 int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 {
+    POSSIBLY_UNUSED(dev);
+    POSSIBLY_UNUSED(verbose);
     int r = -1;
 
     if (!antenna_str)
@@ -1315,6 +1319,8 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 
 int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 {
+    POSSIBLY_UNUSED(dev);
+    POSSIBLY_UNUSED(verbose);
     int r = -1;
 
     if (!sdr_settings || !*sdr_settings)
@@ -1363,6 +1369,7 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 
 int sdr_activate(sdr_dev_t *dev)
 {
+    POSSIBLY_UNUSED(dev);
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
         if (SoapySDRDevice_activateStream(dev->soapy_dev, dev->soapy_stream, 0, 0, 0) != 0) {
@@ -1377,6 +1384,7 @@ int sdr_activate(sdr_dev_t *dev)
 
 int sdr_deactivate(sdr_dev_t *dev)
 {
+    POSSIBLY_UNUSED(dev);
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
         SoapySDRDevice_deactivateStream(dev->soapy_dev, dev->soapy_stream, 0, 0);
@@ -1389,6 +1397,7 @@ int sdr_deactivate(sdr_dev_t *dev)
 
 int sdr_reset(sdr_dev_t *dev, int verbose)
 {
+    POSSIBLY_UNUSED(dev);
     int r = 0;
 
 #ifdef RTLSDR

@@ -915,7 +915,7 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
 
 void add_null_output(r_cfg_t *cfg, char *param)
 {
-    (void)param;
+    UNUSED(param);
     list_push(&cfg->output_handler, NULL);
 }
 

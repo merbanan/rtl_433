@@ -14,6 +14,7 @@
 #include "optparse.h"
 #include "util.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -304,6 +305,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
 // <prefix>[/type][/model][/subtype][/channel][/id]/battery: "OK"|"LOW"
 static void print_mqtt_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
     char *orig = mqtt->topic + strlen(mqtt->topic); // save current topic
@@ -374,6 +376,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
 static void print_mqtt_string(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
     mqtt_client_publish(mqtt->mqc, mqtt->topic, str);
 }
