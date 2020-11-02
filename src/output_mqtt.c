@@ -96,15 +96,19 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
 }
 
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain, char const *will_topic, char const *will_message, int will_retain)
 {
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
         FATAL_CALLOC("mqtt_client_init()");
 
-    ctx->opts.user_name = user;
-    ctx->opts.password  = pass;
-    ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
+    ctx->opts.user_name    = user;
+    ctx->opts.password     = pass;
+    ctx->opts.will_topic   = will_topic;
+    ctx->opts.will_message = will_message;
+    ctx->opts.flags       |= (will_retain ? MG_MQTT_WILL_RETAIN : 0);
+    ctx->publish_flags     = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
+
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
@@ -476,6 +480,10 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char *pass = NULL;
     int retain = 0;
 
+    char *will_topic = NULL;
+    char *will_message = NULL;
+    int will_retain = 0;
+
     // parse auth and format options
     char *key, *val;
     while (getkwargs(&opts, &key, &val)) {
@@ -489,6 +497,12 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
             pass = val;
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
+        else if (!strcasecmp(key, "wt") || !strcasecmp(key, "will_topic"))
+            will_topic = val;
+        else if (!strcasecmp(key, "wm") || !strcasecmp(key, "will_message"))
+            will_message = val;
+        else if (!strcasecmp(key, "wr") || !strcasecmp(key, "will_retain"))
+            will_retain = atobv(val, 1);
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
@@ -539,7 +553,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain, will_topic, will_message, will_retain);
 
     return &mqtt->output;
 }
