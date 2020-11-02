@@ -359,10 +359,6 @@ void data_output_print(data_output_t *output, data_t *data)
     if (!output)
         return;
     output->print_data(output, data, NULL);
-    if (output->file) {
-        fputc('\n', output->file);
-        fflush(output->file);
-    }
     link_output_flush(output->link_output);
 }
 

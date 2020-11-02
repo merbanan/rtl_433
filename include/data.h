@@ -140,7 +140,6 @@ typedef struct data_output {
     void (*print_int)(struct data_output *output, int data, char const *format);
     void (*output_start)(struct data_output *output, const char **fields, int num_fields);
     void (*output_free)(struct data_output *output);
-    FILE *file;
     link_output_t *link_output;
 } data_output_t;
 

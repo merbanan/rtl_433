@@ -855,20 +855,6 @@ void flush_report_data(r_cfg_t *cfg)
 
 /* setup */
 
-static FILE *fopen_output(char *param)
-{
-    FILE *file;
-    if (!param || !*param) {
-        return stdout;
-    }
-    file = fopen(param, "a");
-    if (!file) {
-        fprintf(stderr, "rtl_433: failed to open output file\n");
-        exit(1);
-    }
-    return file;
-}
-
 void start_outputs(r_cfg_t *cfg, char const **well_known)
 {
     int num_output_fields;
