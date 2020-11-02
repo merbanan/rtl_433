@@ -96,7 +96,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char PacketTypeID_str[5];
     uint8_t PacketLength;
     // char    PacketLength_str[5];
-    uint8_t HammingCode;
+    //uint8_t HammingCode;
     // char    HammingCode_str[5];
     uint8_t ApplicationVersion;
     // char    ApplicationVersion_str[5];
@@ -193,7 +193,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     PacketLength = b[3];
     // snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
 
-    HammingCode = b[4];
+    //HammingCode = b[4];
     // snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
 
     ApplicationVersion = b[5];
@@ -363,7 +363,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char PacketTypeID_str[5];
     uint8_t PacketLength;
     // char    PacketLength_str[5];
-    uint8_t HammingCode;
+    //uint8_t HammingCode;
     // char    HammingCode_str[5];
     uint8_t ApplicationVersion;
     // char    ApplicationVersion_str[5];
@@ -470,7 +470,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     PacketLength = b[3];
     // snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
 
-    HammingCode = b[4];
+    //HammingCode = b[4];
     // snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
 
     ApplicationVersion = b[5];

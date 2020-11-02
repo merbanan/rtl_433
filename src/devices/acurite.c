@@ -339,7 +339,8 @@ Notes:
 static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row)
 {
     float tempf;
-    uint8_t humidity, message_type, l_status;
+    uint8_t humidity;
+    // uint8_t message_type, l_status;
     char channel, channel_str[2];
     char raw_str[31], *rawp;
     uint16_t sensor_id;
@@ -360,7 +361,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     battery_low = (bb[2] & 0x40) == 0;
     humidity = (bb[3] & 0x7f); // 1-99 %rH, same as TXR
     active = (bb[4] & 0x40) == 0x40;    // Sensor is actively listening for strikes
-    message_type = bb[2] & 0x3f;
+    //message_type = bb[2] & 0x3f;
 
     // 12 bits of temperature after removing parity and status bits.
     // Message native format appears to be in 1/10 of a degree Fahrenheit
@@ -373,7 +374,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     strike_count = ((bb[6] & 0x7f) << 1) | ((bb[7] & 0x40) >> 6);
     strike_distance = bb[7] & 0x1f;
     rfi_detect = (bb[7] & 0x20) == 0x20;
-    l_status = (bb[7] & 0x60) >> 5;
+    //l_status = (bb[7] & 0x60) >> 5;
 
     /*
      * 2018-04-21 rct - There are still a number of unknown bits in the
@@ -648,7 +649,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int browlen, valid = 0;
     uint8_t *bb;
     float tempc, tempf, wind_dir, wind_speed_kph, wind_speed_mph;
-    uint8_t humidity, sensor_status, sequence_num, message_type;
+    uint8_t humidity, sequence_num, message_type;
+    // uint8_t sensor_status;
     char channel;
     char channel_str[2];
     uint16_t sensor_id;
@@ -715,7 +717,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             // Tower sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
-            sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
+            //sensor_status = bb[2]; // TODO:, uses parity? & 0x07f
             humidity = (bb[3] & 0x7f); // 1-99 %rH
             // temperature encoding used by "tower" sensors 592txr
             // 14 bits available after removing both parity bits.

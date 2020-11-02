@@ -106,7 +106,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int valid_cnt = 0;
     uint8_t bytes[5];
     uint8_t status, crc;
-    int subtype;
+    //int subtype;
     uint32_t esn;
     char status_str[3];
     char esn_str[7];
@@ -164,7 +164,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         status = bytes[0];
-        subtype = bytes[1] >> 4;  // @todo needed for detecing keyfob
+        //subtype = bytes[1] >> 4;  // @todo needed for detecing keyfob
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 

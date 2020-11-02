@@ -193,8 +193,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
+        msg_type = b[0];
 
-        if (b[0] == 0x30) {
+        if (msg_type == 0x30) {
             // WH31E
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
@@ -209,7 +210,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x30
             id         = b[1];
             battery_ok = (b[2] >> 7);
             channel    = ((b[2] & 0x70) >> 4) + 1;
@@ -234,7 +234,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x52) {
+        else if (msg_type == 0x52) {
             // WH31E (others?) RCC
             uint8_t c_crc = crc8(b, 10, 0x31, 0x00);
             if (c_crc) {
@@ -249,7 +249,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x52
             id         = b[1];
             int unknown = b[2];
             int year    = ((b[3] & 0xF0) >> 4) * 10 + (b[3] & 0x0F) + 2000;
@@ -276,7 +275,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x40) {
+        else if (msg_type == 0x40) {
             // WH40
             uint8_t c_crc = crc8(b, 8, 0x31, 0x00);
             if (c_crc) {
@@ -291,7 +290,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x40
             id         = (b[2] << 8) | b[3];
             battery_ok = (b[4] >> 7);
             channel    = ((b[4] & 0x70) >> 4) + 1;
@@ -313,7 +311,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x68) {
+        else if (msg_type == 0x68) {
             // WS68
             uint8_t c_crc = crc8(b, 15, 0x31, 0x00);
             if (c_crc) {
@@ -328,7 +326,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x68
             id         = (b[2] << 8) | b[3];
             int lux    = (b[4] << 8) | b[5];
             int batt   = b[6];
@@ -358,7 +355,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         else {
             if (decoder->verbose)
-                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, b[0]);
+                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, msg_type);
         }
     }
     return events;

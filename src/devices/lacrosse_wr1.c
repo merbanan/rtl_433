@@ -59,7 +59,8 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t id;
     int flags, seq, offset, chk;
     int raw_wind, direction, raw_rain1, raw_rain2;
-    float speed_kmh, rain_mm;
+    float speed_kmh;
+    // float rain_mm;
 
     if (bitbuffer->bits_per_row[0] < 120) {
         if (decoder->verbose) {
@@ -112,7 +113,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // base and/or scale adjustments
     speed_kmh = raw_wind * 0.1f;
-    rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
+    //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 
     /* clang-format off */
     data = data_make(

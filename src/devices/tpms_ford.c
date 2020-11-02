@@ -28,7 +28,6 @@ Packet nibbles:
 static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     unsigned id;
@@ -36,7 +35,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     int code;
     char code_str[7];
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
     // require 64 data bits
     if (packet_bits.bits_per_row[0] < 64) {
