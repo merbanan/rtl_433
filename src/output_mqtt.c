@@ -386,7 +386,7 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
     char str[20];
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
-        int ret = snprintf(str, 20, "%g", data);
+        snprintf(str, 20, "%g", data);
     }
     else {
         int ret = snprintf(str, 20, "%.5f", data);
@@ -403,7 +403,7 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
 static void print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
-    int ret = snprintf(str, 20, "%d", data);
+    snprintf(str, 20, "%d", data);
     print_mqtt_string(output, str, format);
 }
 

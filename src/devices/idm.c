@@ -110,7 +110,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char TamperCounters_str[16];
     uint16_t AsynchronousCounters;
     // char AsynchronousCounters_str[8];
-    uint64_t PowerOutageFlags = 0; // 6 bytes
+    //uint64_t PowerOutageFlags = 0; // 6 bytes
     char PowerOutageFlags_str[16];
     uint32_t LastConsumptionCount;
     uint32_t DifferentialConsumptionIntervals[47] = {0}; // 47 intervals of 9-bit unsigned integers
@@ -374,17 +374,17 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t ModuleProgrammingState;
     // char  ModuleProgrammingState_str[5];
 
-    uint8_t Unknown_field_1[13];
+    //uint8_t Unknown_field_1[13];
     char Unknown_field_1_str[32];
 
     uint32_t LastGenerationCount = 0;
-    char LastGenerationCount_str[16];
+    //char LastGenerationCount_str[16];
 
-    uint8_t Unknown_field_2[3];
+    //uint8_t Unknown_field_2[3];
     char Unknown_field_2_str[9];
 
     uint32_t LastConsumptionCount;
-    char LastConsumptionCount_str[16];
+    //char LastConsumptionCount_str[16];
 
     // uint64_t TamperCounters = 0;  // 6 bytes
     char TamperCounters_str[16];

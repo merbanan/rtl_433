@@ -61,7 +61,7 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_t databits = {0};
     // note: not manchester encoded but actually ternary
-    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
 
     /* Reject codes when Manchester decoding fails */
     /* 32 bits or 36 bits with dimmer value */
