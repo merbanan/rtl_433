@@ -170,6 +170,7 @@ static void histogram_print(histogram_t const *hist, uint32_t samp_rate)
 }
 
 #define HEXSTR_BUILDER_SIZE 1024
+#define HEXSTR_MAX_COUNT 32
 
 /// Hex string builder
 typedef struct hexstr {
@@ -365,10 +366,10 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             // pick last gap length but a most the 4th
             int limit_bin = MIN(3, hist_gaps.bins_count - 1);
             int limit = hist_gaps.bins[limit_bin].min;
-            hexstr_t hexstrs[32] = {{{0}}};
+            hexstr_t hexstrs[HEXSTR_MAX_COUNT] = {{{0}}};
             unsigned hexstr_cnt = 0;
             unsigned i = 0;
-            while (i < data->num_pulses) {
+            while (i < data->num_pulses && hexstr_cnt < HEXSTR_MAX_COUNT) {
                 hexstr_t *hexstr = &hexstrs[hexstr_cnt];
                 hexstr_push_byte(hexstr, 0xaa);
                 hexstr_push_byte(hexstr, 0xb0);
@@ -409,6 +410,9 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
                 hexstr_print(&hexstrs[i], stderr);
             }
             fprintf(stderr, "\n");
+            if (hexstr_cnt >= HEXSTR_MAX_COUNT) {
+                fprintf(stderr, "Too many pulse groups (%u pulses missed in rfraw)\n", data->num_pulses - i);
+            }
         }
     }
 
