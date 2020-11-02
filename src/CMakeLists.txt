@@ -45,6 +45,8 @@ add_library(r_433 STATIC
     devices/brennenstuhl_rcs_2044.c
     devices/bresser_3ch.c
     devices/bresser_5in1.c
+    devices/bresser_6in1.c
+    devices/bresser_7in1.c
     devices/bt_rain.c
     devices/calibeur.c
     devices/cardin.c
@@ -103,8 +105,10 @@ add_library(r_433 STATIC
     devices/klimalogg.c
     devices/lacrosse.c
     devices/lacrosse_breezepro.c
+    devices/lacrosse_th3.c
     devices/lacrosse_tx141x.c
     devices/lacrosse_tx35.c
+    devices/lacrosse_wr1.c
     devices/lacrosse_ws7000.c
     devices/lacrossews.c
     devices/lightwave_rf.c
@@ -117,6 +121,7 @@ add_library(r_433 STATIC
     devices/newkaku.c
     devices/nexa.c
     devices/nexus.c
+    devices/nice_flor_s.c
     devices/norgo.c
     devices/oil_standard.c
     devices/oil_watchman.c

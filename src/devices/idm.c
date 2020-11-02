@@ -221,7 +221,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
     p = TamperCounters_str;
-    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[13 + j]);
@@ -233,7 +233,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // snprintf(AsynchronousCounters_str, sizeof(AsynchronousCounters_str), "0x%04X", AsynchronousCounters);
 
     p = PowerOutageFlags_str;
-    strncpy(p, "0x", sizeof(PowerOutageFlags_str) - 1);
+    strncpy(p, "0x", sizeof(PowerOutageFlags_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[21 + j]);
@@ -498,7 +498,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
     p = TamperCounters_str;
-    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[13 + j]);
@@ -509,7 +509,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  should this be included ?
     p = Unknown_field_1_str;
-    strncpy(p, "0x", sizeof(Unknown_field_1_str) - 1);
+    strncpy(p, "0x", sizeof(Unknown_field_1_str));
     p += 2;
     for (int j = 0; j < 7; j++) {
         p += sprintf(p, "%02X", b[19 + j]);
@@ -524,7 +524,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  should this be included ?
     p = Unknown_field_2_str;
-    strncpy(p, "0x", sizeof(Unknown_field_2_str) - 1);
+    strncpy(p, "0x", sizeof(Unknown_field_2_str));
     p += 2;
     for (int j = 0; j < 3; j++) {
         p += sprintf(p, "%02X", b[29 + j]);

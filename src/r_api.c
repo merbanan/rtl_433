@@ -30,6 +30,7 @@
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
+#include "mongoose.h"
 #include "compat_time.h"
 #include "fatal.h"
 
@@ -74,6 +75,54 @@ char const *version_string(void)
             ;
 }
 
+/* helper */
+
+struct mg_mgr *get_mgr(r_cfg_t *cfg)
+{
+    if (!cfg->mgr) {
+        cfg->mgr = calloc(1, sizeof(*cfg->mgr));
+        if (!cfg->mgr)
+            FATAL_CALLOC("get_mgr()");
+        mg_mgr_init(cfg->mgr, NULL);
+    }
+
+    return cfg->mgr;
+}
+
+void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
+{
+    cfg->frequencies = 1;
+    cfg->frequency_index = 0;
+    cfg->frequency[0] = center_freq;
+    sdr_set_center_freq(cfg->dev, center_freq, 0);
+}
+
+void set_freq_correction(r_cfg_t *cfg, int freq_correction)
+{
+    cfg->ppm_error = freq_correction;
+    sdr_set_freq_correction(cfg->dev, freq_correction, 0);
+}
+
+void set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
+{
+    cfg->samp_rate = sample_rate;
+    sdr_set_sample_rate(cfg->dev, sample_rate, 0);
+}
+
+void set_gain_str(struct r_cfg *cfg, char const *gain_str)
+{
+    free(cfg->gain_str);
+    if (!gain_str) {
+        cfg->gain_str = NULL; // auto gain
+    }
+    else {
+        cfg->gain_str = strdup(gain_str);
+        if (!cfg->gain_str)
+            WARN_STRDUP("set_gain_str()");
+    }
+    sdr_set_tuner_gain(cfg->dev, gain_str, 0);
+}
+
 /* general */
 
 void r_init_cfg(r_cfg_t *cfg)
@@ -116,6 +165,8 @@ void r_free_cfg(r_cfg_t *cfg)
         sdr_close(cfg->dev);
     }
 
+    free(cfg->gain_str);
+
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
         if (dumper->file && (dumper->file != stdout))
@@ -135,6 +186,9 @@ void r_free_cfg(r_cfg_t *cfg)
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    mg_mgr_free(cfg->mgr);
+    free(cfg->mgr);
 
     //free(cfg);
 }
@@ -841,12 +895,12 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     char *opts = hostport_param(param, &host, &port);
     fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
 
-    list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
+    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
 }
 
 void add_influx_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_influx_create(param));
+    list_push(&cfg->output_handler, data_output_influx_create(get_mgr(cfg), param));
 }
 
 void add_syslog_output(r_cfg_t *cfg, char *param)

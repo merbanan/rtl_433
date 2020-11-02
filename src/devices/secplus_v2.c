@@ -256,7 +256,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
     unsigned next_pos     = 0;
-    uint8_t buffy[20]; // 80 bits (overkill)
     bitbuffer_t bits = {0};
     // int i            = 0;
 

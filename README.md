@@ -150,7 +150,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
-    [76]  LaCrosse TX29IT Temperature sensor
+    [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
     [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
@@ -243,6 +243,11 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
     [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [169]* Nice Flor-s remote control for gates
+    [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
+    [171]  LaCrosse Technology View LTV-TH3 Thermo/Hygro Sensor
+    [172]  Bresser Weather Center 6-in-1
+    [173]  Bresser Weather Center 7-in-1
 
 * Disabled by default, use -R n or -G
 

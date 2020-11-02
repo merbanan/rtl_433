@@ -411,13 +411,6 @@ void data_output_start(struct data_output *output, const char **fields, int num_
     output->output_start(output, fields, num_fields);
 }
 
-void data_output_poll(struct data_output *output)
-{
-    if (!output || !output->output_poll)
-        return;
-    output->output_poll(output);
-}
-
 void data_output_free(data_output_t *output)
 {
     if (!output)
@@ -750,6 +743,16 @@ static void print_csv_data(data_output_t *output, data_t *data, char const *form
     int i;
 
     if (csv->data_recursion)
+        return;
+
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
+    }
+    if (!regular)
         return;
 
     ++csv->data_recursion;

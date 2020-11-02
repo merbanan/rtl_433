@@ -241,6 +241,12 @@
     <ClCompile Include="..\src\devices\bresser_5in1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\bresser_6in1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\bresser_7in1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\bt_rain.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -415,10 +421,16 @@
     <ClCompile Include="..\src\devices\lacrosse_breezepro.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_th3.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx141x.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx35.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_wr1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_ws7000.c">
@@ -455,6 +467,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\nexus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\nice_flor_s.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\norgo.c">
