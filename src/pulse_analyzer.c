@@ -340,7 +340,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     if (hist_timings.bins_count <= 8) {
         // if there is no 3rd gap length output one long B1 code
         if (hist_gaps.bins_count <= 2) {
-            hexstr_t hexstr = {{0}};
+            hexstr_t hexstr = {.p = {0}};
             hexstr_push_byte(&hexstr, 0xaa);
             hexstr_push_byte(&hexstr, 0xb1);
             hexstr_push_byte(&hexstr, hist_timings.bins_count);
@@ -366,7 +366,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             // pick last gap length but a most the 4th
             int limit_bin = MIN(3, hist_gaps.bins_count - 1);
             int limit = hist_gaps.bins[limit_bin].min;
-            hexstr_t hexstrs[HEXSTR_MAX_COUNT] = {{{0}}};
+            hexstr_t hexstrs[HEXSTR_MAX_COUNT] = {{.p = {0}}};
             unsigned hexstr_cnt = 0;
             unsigned i = 0;
             while (i < data->num_pulses && hexstr_cnt < HEXSTR_MAX_COUNT) {
