@@ -155,6 +155,9 @@ static void mqtt_client_free(mqtt_client_t *ctx)
         ctx->conn->user_data = NULL;
         ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
     }
+    if (ctx && ctx->opts.will_topic) {
+        free((char *)ctx->opts.will_topic);
+    }
     free(ctx);
 }
 
