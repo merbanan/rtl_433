@@ -510,7 +510,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
             will_message = mqtt_lwt_offline;
             will_retain = 1;
         // Simple key-topic mapping
-	} else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
+        } else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
         // deprecated, remove this
         else if (!strcasecmp(key, "c") || !strcasecmp(key, "usechannel")) {
