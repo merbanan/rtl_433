@@ -488,8 +488,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char *pass = NULL;
     int retain = 0;
 
-    char *will_topic = NULL;
-    char *will_message = NULL;
+    char const *will_topic = NULL;
+    char const *will_message = NULL;
     int will_retain = 0;
 
     // parse auth and format options
