@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+
 // gethostname() needs _XOPEN_SOURCE 500 on unistd.h
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 500
@@ -58,6 +59,7 @@
 #include "term_ctl.h"
 #include "abuf.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -474,6 +476,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char co
 
 static void print_json_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     bool separator = false;
     fputc('{', output->file);
     while (data) {
@@ -490,6 +493,7 @@ static void print_json_data(data_output_t *output, data_t *data, char const *for
 
 static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "\"");
     while (*str) {
         if (*str == '"' || *str == '\\')
@@ -502,11 +506,13 @@ static void print_json_string(data_output_t *output, const char *str, char const
 
 static void print_json_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%.3f", data);
 }
 
 static void print_json_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%d", data);
 }
 
@@ -588,6 +594,7 @@ typedef struct {
 
 static void print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     int color = kv->color;
@@ -737,6 +744,7 @@ typedef struct {
 
 static void print_csv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     const char **fields = csv->fields;
@@ -782,6 +790,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char con
 
 static void print_csv_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     while (*str) {
@@ -879,11 +888,13 @@ alloc_error:
 
 static void print_csv_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%.3f", data);
 }
 
 static void print_csv_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%d", data);
 }
 
@@ -937,6 +948,7 @@ static void format_jsons_array(data_output_t *output, data_array_t *array, char 
 
 static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     bool separator = false;
@@ -955,6 +967,7 @@ static void format_jsons_object(data_output_t *output, data_t *data, char const 
 
 static void format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     char *buf   = jsons->msg.tail;
@@ -986,6 +999,7 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
 
 static void format_jsons_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
@@ -1004,6 +1018,7 @@ static void format_jsons_double(data_output_t *output, double data, char const *
 
 static void format_jsons_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     abuf_printf(&jsons->msg, "%d", data);
 }
@@ -1108,6 +1123,7 @@ typedef struct {
 
 static void print_syslog_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     // we expect a normal message around 500 bytes

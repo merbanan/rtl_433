@@ -346,7 +346,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     return;
 }
 
-static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1)
+static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
 {
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
@@ -418,7 +418,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         memcpy(out_ptr, in_ptr, block_size);
     }
 
-    parse_block2(decoder, in, block1);
+    parse_block2(in, block1);
 
     return 1;
 }

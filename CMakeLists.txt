@@ -50,7 +50,6 @@ if(("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_ID}" MATCHES 
     ADD_DEFINITIONS(-Wextra)
     ADD_DEFINITIONS(-Wsign-compare)
     ADD_DEFINITIONS(-Wno-unused)
-    ADD_DEFINITIONS(-Wno-unused-parameter)
     ADD_DEFINITIONS(-Wno-missing-field-initializers)
     ADD_DEFINITIONS(-std=c99)
     ADD_DEFINITIONS(-pedantic)
