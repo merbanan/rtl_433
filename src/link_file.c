@@ -36,18 +36,25 @@ typedef struct {
 
 /* link_output functions */
 
-static void out_write(link_output_t *output, const void *buf, size_t len)
+static int out_write(link_output_t *output, const void *buf, size_t len)
 {
     link_file_t *lf = (link_file_t *) output->link;
 
-    fwrite(buf, len, 1, lf->f);
+    return fwrite(buf, 1, len, lf->f);
 }
 
-static void out_vprintf(link_output_t *output, const char *fmt, va_list ap)
+static int out_vprintf(link_output_t *output, const char *fmt, va_list ap)
 {
     link_file_t *lf = (link_file_t *) output->link;
 
-    vfprintf(lf->f, fmt, ap);
+    return vfprintf(lf->f, fmt, ap);
+}
+
+static FILE *out_get_stream(link_output_t *output)
+{
+    link_file_t *lf = (link_file_t *) output->link;
+
+    return lf->f;
 }
 
 static void out_flush(link_output_t *output)
@@ -111,7 +118,7 @@ static void entry_free(list_t *links, link_t *link)
 
 link_t *link_file_create(list_t *links, const char *name, const char *file)
 {
-    const link_file_t template = {.l = {.type = LINK_FILE, .create_output = create_output, .free = entry_free}, .output = {.write = out_write, .vprintf = out_vprintf, .flush = out_flush, .free = out_free}};
+    const link_file_t template = {.l = {.type = LINK_FILE, .create_output = create_output, .free = entry_free}, .output = {.write = out_write, .vprintf = out_vprintf, .get_stream = out_get_stream, .flush = out_flush, .free = out_free}};
     link_file_t *l;
     static int count = 0;
 

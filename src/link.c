@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
 
@@ -14,28 +15,43 @@ link_output_t *link_create_output(link_t *l)
 
 /* link output helper functions */
 
-void link_output_write(link_output_t *lo, const void *buf, size_t len)
+int link_output_write(link_output_t *lo, const void *buf, size_t len)
 {
     if (lo && lo->write)
-        lo->write(lo, buf, len);
+        return lo->write(lo, buf, len);
+    else
+        return 0;
 }
 
-void link_output_write_char(link_output_t *lo, const char data)
+int link_output_write_char(link_output_t *lo, const char data)
 {
     if (lo && lo->write)
-        lo->write(lo, &data, 1);
+        return lo->write(lo, &data, 1);
+    else
+        return 0;
 }
 
-void link_output_printf(link_output_t *lo, const char *fmt, ...)
+int link_output_printf(link_output_t *lo, const char *fmt, ...)
 {
     va_list ap;
+    int r;
 
     if (!lo || !lo->vprintf)
-        return;
+        return 0;
 
     va_start(ap, fmt);
-    lo->vprintf(lo, fmt, ap);
+    r = lo->vprintf(lo, fmt, ap);
     va_end(ap);
+
+    return r;
+}
+
+FILE *link_output_get_stream(link_output_t *lo)
+{
+    if (lo && lo->get_stream)
+        return lo->get_stream(lo);
+    else
+        return NULL;
 }
 
 void link_output_flush(link_output_t *lo)

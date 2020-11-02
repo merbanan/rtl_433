@@ -18,6 +18,7 @@
 #ifndef INCLUDE_LINK_H_
 #define INCLUDE_LINK_H_
 
+#include <stdio.h>
 #include <stdarg.h>
 
 #include "list.h"
@@ -28,8 +29,9 @@ typedef enum {
 } link_type;
 
 typedef struct link_output {
-    void (*write)(struct link_output *output, const void *buf, size_t len);
-    void (*vprintf)(struct link_output *output, const char *fmt, va_list ap);
+    int (*write)(struct link_output *output, const void *buf, size_t len);
+    int (*vprintf)(struct link_output *output, const char *fmt, va_list ap);
+    FILE *(*get_stream)(struct link_output *output);
     void (*flush)(struct link_output *output);
     void (*free)(struct link_output *output);
     struct link *link;
@@ -50,9 +52,10 @@ link_t *link_mqtt_create(list_t *links, const char *name, const char *host, cons
 
 link_output_t *link_create_output(link_t *l);
 
-void link_output_write(link_output_t *lo, const void *buf, size_t len);
-void link_output_write_char(link_output_t *lo, char data);
-void link_output_printf(link_output_t *lo, const char *fmt, ...);
+int link_output_write(link_output_t *lo, const void *buf, size_t len);
+int link_output_write_char(link_output_t *lo, char data);
+int link_output_printf(link_output_t *lo, const char *fmt, ...);
+FILE *link_output_get_stream(link_output_t *lo);
 void link_output_flush(link_output_t *lo);
 void link_output_free(link_output_t *lo);
 
