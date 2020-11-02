@@ -154,7 +154,7 @@ struct data_output *data_output_csv_create(list_t *links, const char *name, cons
 
 struct data_output *data_output_json_create(list_t *links, const char *name, const char *file);
 
-struct data_output *data_output_kv_create(FILE *file);
+struct data_output *data_output_kv_create(list_t *links, const char *name, const char *file);
 
 struct data_output *data_output_syslog_create(const char *host, const char *port);
 

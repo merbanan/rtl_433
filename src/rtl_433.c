@@ -1253,7 +1253,7 @@ int main(int argc, char **argv) {
     }
 
     if (!cfg->output_handler.len) {
-        add_kv_output(cfg, NULL);
+        add_output(cfg, "kv");
     }
 
     // register default decoders if nothing is configured

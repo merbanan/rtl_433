@@ -82,7 +82,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
 
     // top-level: update width and print separator
     if (!kv->data_recursion) {
-        kv->term_width = term_get_columns(kv->term); // update current term width
+        kv->term_width = kv->term ? term_get_columns(kv->term) : 80; // update current term width
         if (color)
             term_set_fg(kv->term, TERM_COLOR_BLACK);
         if (ring_bell)
@@ -90,7 +90,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
         char sep[] = KV_SEP KV_SEP KV_SEP KV_SEP;
         if (kv->term_width < (int)sizeof(sep))
             sep[kv->term_width > 0 ? kv->term_width - 1 : 40] = '\0';
-        fprintf(output->file, "%s\n", sep);
+        link_output_printf(output->link_output, "%s\n", sep);
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
     }
@@ -98,7 +98,7 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
     else {
         if (color)
             term_set_fg(kv->term, TERM_COLOR_RESET);
-        fprintf(output->file, "\n");
+        link_output_printf(output->link_output, "\n");
         kv->column = 0;
     }
 
@@ -106,22 +106,22 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
     while (data) {
         // break before some known keys
         if (kv->column > 0 && kv_break_before_key(data->key)) {
-            fprintf(output->file, "\n");
+            link_output_printf(output->link_output, "\n");
             kv->column = 0;
         }
         // break if not enough width left
         else if (kv->column >= kv->term_width - 26) {
-            fprintf(output->file, "\n");
+            link_output_printf(output->link_output, "\n");
             kv->column = 0;
         }
         // pad to next alignment if there is enough width left
         else if (kv->column > 0 && kv->column < kv->term_width - 26) {
-            kv->column += fprintf(output->file, "%*s", 25 - kv->column % 26, " ");
+            kv->column += link_output_printf(output->link_output, "%*s", 25 - kv->column % 26, " ");
         }
 
         // print key
         char *key = *data->pretty_key ? data->pretty_key : data->key;
-        kv->column += fprintf(output->file, "%-10s: ", key);
+        kv->column += link_output_printf(output->link_output, "%-10s: ", key);
         // print value
         if (color)
             term_set_fg(kv->term, kv_color_for_key(data->key));
@@ -140,41 +140,41 @@ static void print_kv_data(data_output_t *output, data_t *data, char const *forma
 
     // top-level: always end with newline
     if (!kv->data_recursion && kv->column > 0) {
-        //fprintf(output->file, "\n"); // data_output_print() already adds a newline
+        //link_output_printf(output->link_output, "\n"); // data_output_print() already adds a newline
         kv->column = 0;
     }
 }
 
 static void print_kv_array(data_output_t *output, data_array_t *array, char const *format)
 {
-    //fprintf(output->file, "[ ");
+    //link_output_printf(output->link_output, "[ ");
     for (int c = 0; c < array->num_values; ++c) {
         if (c)
-            fprintf(output->file, ", ");
+            link_output_printf(output->link_output, ", ");
         print_array_value(output, array, format, c);
     }
-    //fprintf(output->file, " ]");
+    //link_output_printf(output->link_output, " ]");
 }
 
 static void print_kv_double(data_output_t *output, double data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%.3f", data);
+    kv->column += link_output_printf(output->link_output, format ? format : "%.3f", data);
 }
 
 static void print_kv_int(data_output_t *output, int data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%d", data);
+    kv->column += link_output_printf(output->link_output, format ? format : "%d", data);
 }
 
 static void print_kv_string(data_output_t *output, const char *data, char const *format)
 {
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
-    kv->column += fprintf(output->file, format ? format : "%s", data);
+    kv->column += link_output_printf(output->link_output, format ? format : "%s", data);
 }
 
 static void data_output_kv_free(data_output_t *output)
@@ -187,14 +187,24 @@ static void data_output_kv_free(data_output_t *output)
     if (kv->color)
         term_free(kv->term);
 
+    link_output_free(output->link_output);
+
     free(output);
 }
-struct data_output *data_output_kv_create(FILE *file)
+
+struct data_output *data_output_kv_create(list_t *links, const char *name, const char *file)
 {
+    link_t *l;
+    FILE *f;
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
         WARN_CALLOC("data_output_kv_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
+    }
+
+    if (!(l = link_file_create(links, name, file))) {
+        free(kv);
+        return NULL;
     }
 
     kv->output.print_data   = print_kv_data;
@@ -203,10 +213,12 @@ struct data_output *data_output_kv_create(FILE *file)
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
     kv->output.output_free  = data_output_kv_free;
-    kv->output.file         = file;
+    kv->output.link_output  = link_create_output(l);
 
-    kv->term = term_init(file);
-    kv->color = term_has_color(kv->term);
+    if ((f = link_output_get_stream(kv->output.link_output)) != NULL) {
+        kv->term = term_init(f);
+        kv->color = term_has_color(kv->term);
+    }
 
     kv->ring_bell = 0; // TODO: enable if requested...
 

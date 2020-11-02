@@ -38,7 +38,7 @@ int main()
 	list_t links = {0};
 
 	void *json_output = data_output_json_create(&links, NULL, NULL);
-	void *kv_output = data_output_kv_create(stdout);
+	void *kv_output = data_output_kv_create(&links, NULL, NULL);
 	void *csv_output = data_output_csv_create(&links, NULL, NULL);
 	data_output_start(csv_output, fields, sizeof fields / sizeof *fields);
 

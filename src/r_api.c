@@ -881,11 +881,6 @@ void start_outputs(r_cfg_t *cfg, char const **well_known)
     free(output_fields);
 }
 
-void add_kv_output(r_cfg_t *cfg, char *param)
-{
-    list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
-}
-
 void add_mqtt_output(r_cfg_t *cfg, char *param)
 {
     char *host = "localhost";
@@ -958,7 +953,9 @@ bool add_output(r_cfg_t *cfg, char *arg)
         if (!output) return false;
         list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {
-        add_kv_output(cfg, arg_param(arg));
+        output = data_output_kv_create(&cfg->links, name, arg_param(arg));
+        if (!output) return false;
+        list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         add_mqtt_output(cfg, arg_param(arg));
     } else if (strncasecmp(arg, "http", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
