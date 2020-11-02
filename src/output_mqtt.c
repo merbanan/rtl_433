@@ -33,6 +33,9 @@ typedef struct mqtt_client {
     int publish_flags; // MG_MQTT_RETAIN | MG_MQTT_QOS(0)
 } mqtt_client_t;
 
+const char *mqtt_lwt_online = "online";
+const char *mqtt_lwt_offline = "offline";
+
 static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
 {
     // note that while shutting down the ctx is NULL
@@ -127,6 +130,11 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, cha
     if (!ctx->conn) {
         fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
         exit(1);
+    }
+
+    if (will_topic != NULL) {
+        ctx->message_id++;
+        mg_mqtt_publish(ctx->conn, will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_lwt_online, strlen(mqtt_lwt_online));
     }
 
     return ctx;
@@ -497,12 +505,10 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
             pass = val;
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
-        else if (!strcasecmp(key, "wt") || !strcasecmp(key, "will_topic"))
-            will_topic = val;
-        else if (!strcasecmp(key, "wm") || !strcasecmp(key, "will_message"))
-            will_message = val;
-        else if (!strcasecmp(key, "wr") || !strcasecmp(key, "will_retain"))
-            will_retain = atobv(val, 1);
+        else if (!strcasecmp(key, "lwt"))
+            will_topic = mqtt_topic_default(val, base_topic, "lwt");
+            will_message = mqtt_lwt_offline;
+            will_retain = 1;
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
