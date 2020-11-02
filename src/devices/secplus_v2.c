@@ -259,11 +259,11 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t bits = {0};
     // int i            = 0;
 
-    bitbuffer_t bits_1    = {0};
+    //bitbuffer_t bits_1    = {0};
     bitbuffer_t fixed_1   = {0};
     uint8_t rolling_1[16] = {0};
 
-    bitbuffer_t bits_2    = {0};
+    //bitbuffer_t bits_2    = {0};
     bitbuffer_t fixed_2   = {0};
     uint8_t rolling_2[16] = {0};
 

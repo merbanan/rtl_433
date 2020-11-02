@@ -282,9 +282,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t vife_cnt = 0;
     uint8_t vif_uam = 0;
     uint8_t vif_linear = 0;
-    uint8_t vife = 0;
-    uint8_t exponent = 0;
-    int cnt = 0, consumed;
+    //uint8_t vife = 0;
+    //uint8_t exponent = 0;
+    //int cnt = 0, consumed;
+    int consumed;
 
     /* Align offset pointer, there might be 2 0x2F bytes */
     if (b[off] == 0x2F) off++;
@@ -646,9 +647,9 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
 //  static const uint8_t PREAMBLE_FB[] = {0x55, 0xF6, 0x72};  // Mode F, format B Preamble
 
-    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
-    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
-    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+    //m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    //m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    //m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
