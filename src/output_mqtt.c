@@ -71,6 +71,10 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         }
         else {
             fprintf(stderr, "MQTT Connection established.\n");
+            if (ctx->opts.will_topic) {
+                ctx->message_id++;
+                mg_mqtt_publish(ctx->conn, ctx->opts.will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_lwt_online, strlen(mqtt_lwt_online));
+            }
         }
         break;
     case MG_EV_MQTT_PUBACK:
@@ -130,11 +134,6 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, cha
     if (!ctx->conn) {
         fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
         exit(1);
-    }
-
-    if (will_topic != NULL) {
-        ctx->message_id++;
-        mg_mqtt_publish(ctx->conn, will_topic, ctx->message_id, MG_MQTT_QOS(0) | MG_MQTT_RETAIN, mqtt_lwt_online, strlen(mqtt_lwt_online));
     }
 
     return ctx;
