@@ -155,9 +155,6 @@ static void mqtt_client_free(mqtt_client_t *ctx)
         ctx->conn->user_data = NULL;
         ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
     }
-    if (ctx && ctx->opts.will_topic) {
-        free((char *)ctx->opts.will_topic);
-    }
     free(ctx);
 }
 
@@ -183,6 +180,7 @@ typedef struct {
     char *devices;
     char *events;
     char *states;
+    char *lwt;
     //char *homie;
     //char *hass;
 } data_output_mqtt_t;
@@ -429,6 +427,11 @@ static void data_output_mqtt_free(data_output_t *output)
     free(mqtt->devices);
     free(mqtt->events);
     free(mqtt->states);
+
+    if(mqtt->lwt) {
+        free(mqtt->lwt);
+    }
+
     //free(mqtt->homie);
     //free(mqtt->hass);
 
@@ -486,6 +489,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char const *path_devices = "devices[/type][/model][/subtype][/channel][/id]";
     char const *path_events = "events";
     char const *path_states = "states";
+    char const *path_lwt = "lwt";
 
     char *user = NULL;
     char *pass = NULL;
@@ -509,7 +513,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
         else if (!strcasecmp(key, "lwt")) {
-            will_topic = mqtt_topic_default(val, base_topic, "lwt");
+            mqtt->lwt = mqtt_topic_default(val, base_topic, path_lwt);
+            will_topic = mqtt->lwt;
             will_message = mqtt_lwt_offline;
             will_retain = 1;
         // Simple key-topic mapping
@@ -554,6 +559,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         fprintf(stderr, "Publishing events info to MQTT topic \"%s\".\n", mqtt->events);
     if (mqtt->states)
         fprintf(stderr, "Publishing states info to MQTT topic \"%s\".\n", mqtt->states);
+    if (mqtt->lwt)
+        fprintf(stderr, "Publishing connection status to MQTT topic \"%s\".\n", mqtt->lwt);
 
     mqtt->output.print_data   = print_mqtt_data;
     mqtt->output.print_array  = print_mqtt_array;
