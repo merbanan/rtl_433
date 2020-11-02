@@ -693,7 +693,6 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -706,7 +705,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find a Mode S data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
-    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 800);
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 800);
     data_in.length = (bitbuffer->bits_per_row[0]);
     bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
 
