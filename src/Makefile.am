@@ -15,6 +15,7 @@ rtl_433_SOURCES      = abuf.c \
                        fileformat.c \
                        link.c \
                        link_file.c \
+                       link_mqtt.c \
                        list.c \
                        mongoose.c \
                        optparse.c \

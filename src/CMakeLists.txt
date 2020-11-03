@@ -17,6 +17,7 @@ add_library(r_433 STATIC
     fileformat.c
     link.c
     link_file.c
+    link_mqtt.c
     list.c
     mongoose.c
     optparse.c
