@@ -92,7 +92,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) {
            fprintf(stderr, "%s: packet length: %d\n", __func__, bitbuffer->bits_per_row[0]);
         }
-        model = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;         
+        model = (bitbuffer->bits_per_row[0] < 280) ? 3 : 2;
     }
 
     offset = bitbuffer_search(bitbuffer, 0, 0,
