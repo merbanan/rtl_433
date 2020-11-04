@@ -43,7 +43,7 @@ LTV-R1
     PRE:32h SYN:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:16d RAIN:16d CHK:8h END:32h
 
     CHK is CRC-8 poly 0x31 init 0x00 over 8 bytes following SYN
-    
+
 */
 
 #include "decoder.h"
@@ -126,7 +126,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
-    
+
     decoder_output_data(decoder, data);
     return 1;
 }
