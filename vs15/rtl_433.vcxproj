@@ -230,6 +230,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\klimalogg.c" />
     <ClCompile Include="..\src\devices\lacrosse.c" />
     <ClCompile Include="..\src\devices\lacrosse_breezepro.c" />
+    <ClCompile Include="..\src\devices\lacrosse_r1.c" />
     <ClCompile Include="..\src\devices\lacrosse_th3.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx141x.c" />
     <ClCompile Include="..\src\devices\lacrosse_tx35.c" />

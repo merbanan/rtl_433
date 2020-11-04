@@ -421,6 +421,9 @@
     <ClCompile Include="..\src\devices\lacrosse_breezepro.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_r1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_th3.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
