@@ -132,31 +132,17 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // base and/or scale adjustments
     temp_c = (raw_temp - 400) * 0.1f;
 
-    if (model == 3) {
-       /* clang-format off */
-       data = data_make(
-            "model",            "",                 DATA_STRING, "LaCrosse-TH3",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
-       /* clang-format on */
-    } else {
-       /* clang-format off */
-       data = data_make(
-            "model",            "",                 DATA_STRING, "LaCrosse-TH2",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
-            NULL);
-       /* clang-format on */
-    }
+    /* clang-format off */
+    data = data_make(
+         "model",            "",                 DATA_FORMAT, "LaCrosse-TH%u", DATA_INT, model,
+         "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
+         "seq",              "Sequence",         DATA_INT,     seq,
+         "flags",            "unknown",          DATA_INT,     flags,
+         "temperature_C",    "Temperature",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
+         "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
+         "mic",              "Integrity",        DATA_STRING, "CRC",
+         NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
