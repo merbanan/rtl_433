@@ -13,300 +13,46 @@
 from __future__ import print_function
 from __future__ import with_statement
 
+import os
+import argparse
+import ast
 import time
 import json
 import paho.mqtt.client as mqtt
 
-MQTT_HOST = "127.0.0.1"
-MQTT_PORT = 1883
-MQTT_TOPIC = "rtl_433/+/events"
-# When MQTT_USERNAME is set to None it will disable username and password for mqtt
-MQTT_USERNAME = None
-MQTT_PASSWORD = None
-DISCOVERY_PREFIX = "homeassistant"
-DISCOVERY_INTERVAL = 600  # Seconds before refreshing the discovery
+"""Parse arguments provide sane defaults"""
+parser = argparse.ArgumentParser()
+parser.add_argument("--host", help="MQTT host", default="127.0.0.1", required=False)
+parser.add_argument("--port", help="MQTT port", default=1883, type=int, required=False)
+parser.add_argument("--topic", help="MQTT topic", default="rtl_433/+/events", required=False)
+parser.add_argument("--username", help="MQTT username", default=None, required=False)
+parser.add_argument("--password", help="MQTT password", default=None, required=False)
+parser.add_argument("--prefix", help="Discovery prefix", default="homeassistant", required=False)
+parser.add_argument("--interval", help="Discovery interval", default=600, type=int, required=False)
+parser.add_argument("--mapfile", help="Mapping file", default="example_mappings.json", required=False)
+parser.add_argument("-e", help="configure from environment variables", action="store_true", required=False)
+args = parser.parse_args()
+
+"""Override Arguments with Env vars if required"""
+if args.e:
+    args.host = os.getenv('HOST', args.host)
+    args.port = int(os.getenv('PORT', args.port))
+    args.topic = os.getenv('TOPIC', args.topic)
+    args.username = os.getenv('USERNAME', args.username)
+    args.password = os.getenv('PASSWORD', args.password)
+    args.prefix = os.getenv('prefix', args.prefix)
+    args.interval = int(os.getenv('INTERVAL', args.interval))
+    args.mapfile = os.getenv('MAPFILE', args.mapfile)
 
 discovery_timeouts = {}
 
-mappings = {
-    "temperature_C": {
-        "device_type": "sensor",
-        "object_suffix": "T",
-        "config": {
-            "device_class": "temperature",
-            "name": "Temperature",
-            "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
-        }
-    },
-    "temperature_1_C": {
-        "device_type": "sensor",
-        "object_suffix": "T1",
-        "config": {
-            "device_class": "temperature",
-            "name": "Temperature 1",
-            "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
-        }
-    },
-    "temperature_2_C": {
-        "device_type": "sensor",
-        "object_suffix": "T2",
-        "config": {
-            "device_class": "temperature",
-            "name": "Temperature 2",
-            "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
-        }
-    },
-    "temperature_F": {
-        "device_type": "sensor",
-        "object_suffix": "F",
-        "config": {
-            "device_class": "temperature",
-            "name": "Temperature",
-            "unit_of_measurement": "°F",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "battery_ok": {
-        "device_type": "sensor",
-        "object_suffix": "B",
-        "config": {
-            "device_class": "battery",
-            "name": "Battery",
-            "unit_of_measurement": "%",
-            "value_template": "{{ float(value|int) * 99 + 1 }}"
-        }
-    },
-
-    "humidity": {
-        "device_type": "sensor",
-        "object_suffix": "H",
-        "config": {
-            "device_class": "humidity",
-            "name": "Humidity",
-            "unit_of_measurement": "%",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "moisture": {
-        "device_type": "sensor",
-        "object_suffix": "H",
-        "config": {
-            "device_class": "moisture",
-            "name": "Moisture",
-            "unit_of_measurement": "%",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "pressure_hPa": {
-        "device_type": "sensor",
-        "object_suffix": "P",
-        "config": {
-            "device_class": "pressure",
-            "name": "Pressure",
-            "unit_of_measurement": "hPa",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "wind_speed_km_h": {
-        "device_type": "sensor",
-        "object_suffix": "WS",
-        "config": {
-            "device_class": "weather",
-            "name": "Wind Speed",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "wind_avg_m_s": {
-        "device_type": "sensor",
-        "object_suffix": "WS",
-        "config": {
-            "name": "Wind Average",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
-        }
-    },
-
-    "wind_speed_m_s": {
-        "device_type": "sensor",
-        "object_suffix": "WS",
-        "config": {
-            "device_class": "weather",
-            "name": "Wind Speed",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 }}"
-        }
-    },
-
-    "gust_speed_km_h": {
-        "device_type": "sensor",
-        "object_suffix": "GS",
-        "config": {
-            "device_class": "weather",
-            "name": "Gust Speed",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "wind_max_m_s": {
-        "device_type": "sensor",
-        "object_suffix": "GS",
-        "config": {
-            "name": "Wind max",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
-        }
-    },
-
-    "gust_speed_m_s": {
-        "device_type": "sensor",
-        "object_suffix": "GS",
-        "config": {
-            "device_class": "weather",
-            "name": "Gust Speed",
-            "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 }}"
-        }
-    },
-
-    "wind_dir_deg": {
-        "device_type": "sensor",
-        "object_suffix": "WD",
-        "config": {
-            "device_class": "weather",
-            "name": "Wind Direction",
-            "unit_of_measurement": "°",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "rain_mm": {
-        "device_type": "sensor",
-        "object_suffix": "RT",
-        "config": {
-            "device_class": "weather",
-            "name": "Rain Total",
-            "unit_of_measurement": "mm",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "rain_mm_h": {
-        "device_type": "sensor",
-        "object_suffix": "RR",
-        "config": {
-            "device_class": "weather",
-            "name": "Rain Rate",
-            "unit_of_measurement": "mm/h",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "rain_in": {
-        "device_type": "sensor",
-        "object_suffix": "RT",
-        "config": {
-            "name": "Rain Total",
-            "unit_of_measurement": "mm",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
-        }
-    },
-
-    "rain_rate_in_h": {
-        "device_type": "sensor",
-        "object_suffix": "RR",
-        "config": {
-            "name": "Rain Rate",
-            "unit_of_measurement": "mm/h",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
-        }
-    },
-
-    "tamper": {
-        "device_type": "binary_sensor",
-        "object_suffix": "tamper",
-        "config": {
-            "device_class": "safety",
-            "force_update": "true",
-            "payload_on": "1",
-            "payload_off": "0"
-        }
-    },
-
-    "alarm": {
-        "device_type": "binary_sensor",
-        "object_suffix": "alarm",
-        "config": {
-            "device_class": "safety",
-            "force_update": "true",
-            "payload_on": "1",
-            "payload_off": "0"
-        }
-    },
-
-    "rssi": {
-        "device_type": "sensor",
-        "object_suffix": "rssi",
-        "config": {
-            "device_class": "signal_strength",
-            "unit_of_measurement": "dB",
-            "value_template": "{{ value|float|round(2) }}"
-        }
-    },
-
-    "snr": {
-        "device_type": "sensor",
-        "object_suffix": "snr",
-        "config": {
-            "device_class": "signal_strength",
-            "unit_of_measurement": "dB",
-            "value_template": "{{ value|float|round(2) }}"
-        }
-    },
-
-    "noise": {
-        "device_type": "sensor",
-        "object_suffix": "noise",
-        "config": {
-            "device_class": "signal_strength",
-            "unit_of_measurement": "dB",
-            "value_template": "{{ valuei|float|round(2) }}"
-        }
-    },
-
-    "depth_cm": {
-        "device_type": "sensor",
-        "object_suffix": "D",
-        "config": {
-            "device_class": "depth",
-            "name": "Depth",
-            "unit_of_measurement": "cm",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-    "power_W": {
-        "device_type": "sensor",
-        "object_suffix": "watts",
-        "config": {
-            "device_class": "power",
-            "name": "Power",
-            "unit_of_measurement": "W",
-            "value_template": "{{ value|float }}"
-        }
-    },
-
-}
-
+"""Read mappings from file"""
+try:
+  with open(args.mapfile, "r") as mappingfile:
+    mappings = ast.literal_eval(mappingfile.read())
+  mappingfile.close()
+except:
+    print("Could not read mappings.")
 
 def mqtt_connect(client, userdata, flags, rc):
     """Callback for MQTT connects."""
@@ -314,7 +60,7 @@ def mqtt_connect(client, userdata, flags, rc):
     if rc != 0:
         print("Could not connect. Error: " + str(rc))
     else:
-        client.subscribe(MQTT_TOPIC)
+        client.subscribe(args.topic)
 
 
 def mqtt_disconnect(client, userdata, rc):
@@ -354,7 +100,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     object_id = "-".join([model, instance_no_slash])
     object_name = "-".join([object_id,object_suffix])
 
-    path = "/".join([DISCOVERY_PREFIX, device_type, object_id, object_name, "config"])
+    path = "/".join([args.prefix, device_type, object_id, object_name, "config"])
 
     # check timeout
     now = time.time()
@@ -362,7 +108,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
         if discovery_timeouts[path] > now:
             return
 
-    discovery_timeouts[path] = now + DISCOVERY_INTERVAL
+    discovery_timeouts[path] = now + args.interval
 
     config = mapping["config"].copy()
     config["name"] = object_name
@@ -406,12 +152,12 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
 def rtl_433_bridge():
     """Run a MQTT Home Assistant auto discovery bridge for rtl_433."""
     mqttc = mqtt.Client()
-    if MQTT_USERNAME is not None:
-        mqttc.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
+    if args.username is not None:
+        mqttc.username_pw_set(args.username, args.password)
     mqttc.on_connect = mqtt_connect
     mqttc.on_disconnect = mqtt_disconnect
     mqttc.on_message = mqtt_message
-    mqttc.connect_async(MQTT_HOST, MQTT_PORT, 60)
+    mqttc.connect_async(args.host, args.port, 60)
     mqttc.loop_start()
 
     while True:
