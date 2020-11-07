@@ -900,6 +900,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query
 
 static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
+    UNUSED(buf_num);
     if (dev->buffer_size != buf_len) {
         free(dev->buffer);
         dev->buffer = malloc(buf_len);
@@ -1007,6 +1008,9 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
 
 int sdr_close(sdr_dev_t *dev)
 {
+    if (!dev)
+        return -1;
+
     int ret = -1;
 
     if (dev->rtl_tcp)
@@ -1030,11 +1034,17 @@ int sdr_close(sdr_dev_t *dev)
 
 char const *sdr_get_dev_info(sdr_dev_t *dev)
 {
+    if (!dev)
+        return NULL;
+
     return dev->dev_info;
 }
 
 int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 {
+    if (!dev)
+        return -1;
+
     if (dev->polling) {
         dev->center_frequency = freq;
         dev->apply_freq       = 1;
@@ -1075,6 +1085,9 @@ int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)
 
 uint32_t sdr_get_center_freq(sdr_dev_t *dev)
 {
+    if (!dev)
+        return 0;
+
     if (dev->rtl_tcp)
         return dev->rtl_tcp_freq;
 
@@ -1093,6 +1106,9 @@ uint32_t sdr_get_center_freq(sdr_dev_t *dev)
 
 int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 {
+    if (!dev)
+        return -1;
+
     if (dev->polling) {
         dev->freq_correction = ppm;
         dev->apply_corr      = 1;
@@ -1129,6 +1145,9 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 
 int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 {
+    if (!dev)
+        return -1;
+
     if (dev->polling) {
         free(dev->gain_str);
         dev->gain_str   = NULL; // auto gain
@@ -1166,6 +1185,9 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 
 int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 {
+    if (!dev)
+        return -1;
+
     if (dev->polling) {
         free(dev->gain_str);
         if (!gain_str) {
@@ -1231,7 +1253,9 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 
 int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 {
-    POSSIBLY_UNUSED(dev);
+    if (!dev)
+        return -1;
+
     POSSIBLY_UNUSED(verbose);
     int r = -1;
 
@@ -1263,6 +1287,9 @@ int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose)
 
 int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 {
+    if (!dev)
+        return -1;
+
     if (dev->polling) {
         dev->sample_rate = rate;
         dev->apply_rate  = 1;
@@ -1301,6 +1328,9 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose)
 
 uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 {
+    if (!dev)
+        return 0;
+
     if (dev->rtl_tcp)
         return dev->rtl_tcp_rate;
 
@@ -1319,7 +1349,9 @@ uint32_t sdr_get_sample_rate(sdr_dev_t *dev)
 
 int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 {
-    POSSIBLY_UNUSED(dev);
+    if (!dev)
+        return -1;
+
     POSSIBLY_UNUSED(verbose);
     int r = -1;
 
@@ -1369,7 +1401,9 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
 
 int sdr_activate(sdr_dev_t *dev)
 {
-    POSSIBLY_UNUSED(dev);
+    if (!dev)
+        return -1;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
         if (SoapySDRDevice_activateStream(dev->soapy_dev, dev->soapy_stream, 0, 0, 0) != 0) {
@@ -1384,7 +1418,9 @@ int sdr_activate(sdr_dev_t *dev)
 
 int sdr_deactivate(sdr_dev_t *dev)
 {
-    POSSIBLY_UNUSED(dev);
+    if (!dev)
+        return -1;
+
 #ifdef SOAPYSDR
     if (dev->soapy_dev) {
         SoapySDRDevice_deactivateStream(dev->soapy_dev, dev->soapy_stream, 0, 0);
@@ -1397,7 +1433,9 @@ int sdr_deactivate(sdr_dev_t *dev)
 
 int sdr_reset(sdr_dev_t *dev, int verbose)
 {
-    POSSIBLY_UNUSED(dev);
+    if (!dev)
+        return -1;
+
     int r = 0;
 
 #ifdef RTLSDR
@@ -1414,6 +1452,9 @@ int sdr_reset(sdr_dev_t *dev, int verbose)
 
 int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)
 {
+    if (!dev)
+        return -1;
+
     if (dev->rtl_tcp)
         return rtltcp_read_loop(dev, cb, ctx, buf_num, buf_len);
 
