@@ -59,7 +59,8 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t id;
     int flags, seq, offset, chk;
     int raw_wind, direction, raw_rain1, raw_rain2;
-    float speed_kmh, rain_mm;
+    float speed_kmh;
+    // float rain_mm;
 
     if (bitbuffer->bits_per_row[0] < 120) {
         if (decoder->verbose) {
@@ -112,7 +113,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // base and/or scale adjustments
     speed_kmh = raw_wind * 0.1f;
-    rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
+    //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 
     /* clang-format off */
     data = data_make(
@@ -120,7 +121,7 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
             "seq",              "Sequence",         DATA_INT,     seq,
             "flags",            "unknown",          DATA_INT,     flags,
-            "wind_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
+            "wind_avg_km_h",        "Wind speed",       DATA_FORMAT, "%.1f km/h",  DATA_DOUBLE, speed_kmh,
             "wind_dir_deg",     "Wind direction",   DATA_INT,    direction,
             "rain1",            "raw_rain1",        DATA_FORMAT, "%03x", DATA_INT, raw_rain1,
             "rain2",            "raw_rain2",        DATA_FORMAT, "%03x", DATA_INT, raw_rain2,
@@ -137,7 +138,7 @@ static char *output_fields[] = {
         "id",
         "seq",
         "flags",
-        "wind_km_h",
+        "wind_avg_km_h",
         "wind_dir_deg",
         "rain1",
         "rain2",

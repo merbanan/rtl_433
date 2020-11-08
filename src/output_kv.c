@@ -24,6 +24,7 @@
 #include "term_ctl.h"
 #include "optparse.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -76,6 +77,7 @@ typedef struct {
 
 static void print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     int color = kv->color;

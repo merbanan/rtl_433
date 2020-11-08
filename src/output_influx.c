@@ -16,6 +16,7 @@
 #include "optparse.h"
 #include "util.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -181,6 +182,8 @@ static void mbuf_remove_part(struct mbuf *a, char *pos, size_t len)
 
 static void print_influx_array(data_output_t *output, data_array_t *array, char const *format)
 {
+    UNUSED(array);
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "\"array\""); // TODO
@@ -195,6 +198,7 @@ static void print_influx_data_escaped(data_output_t *output, data_t *data, char 
 
 static void print_influx_string_escaped(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *databuf = &influx->databufs[influx->databufidxfill];
     size_t size = databuf->size - databuf->len;
@@ -225,6 +229,7 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
 
 static void print_influx_string(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%s", str);
@@ -233,6 +238,7 @@ static void print_influx_string(data_output_t *output, char const *str, char con
 // Generate InfluxDB line protocol
 static void print_influx_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     char *str;
     char *end;
@@ -351,6 +357,7 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
 
 static void print_influx_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%f", data);
@@ -358,6 +365,7 @@ static void print_influx_double(data_output_t *output, double data, char const *
 
 static void print_influx_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%d", data);

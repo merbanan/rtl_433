@@ -52,6 +52,7 @@
 
 #include "abuf.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -150,6 +151,7 @@ typedef struct {
 
 static void print_syslog_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     // we expect a normal message around 500 bytes

@@ -31,6 +31,7 @@
 
 #include "abuf.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -439,6 +440,7 @@ static void format_jsons_array(data_output_t *output, data_array_t *array, char 
 
 static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     bool separator = false;
@@ -457,6 +459,7 @@ static void format_jsons_object(data_output_t *output, data_t *data, char const 
 
 static void format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     char *buf   = jsons->msg.tail;
@@ -488,6 +491,7 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
 
 static void format_jsons_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
@@ -506,6 +510,7 @@ static void format_jsons_double(data_output_t *output, double data, char const *
 
 static void format_jsons_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     abuf_printf(&jsons->msg, "%d", data);
 }

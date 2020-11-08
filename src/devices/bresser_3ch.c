@@ -40,7 +40,8 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
 
-    int id, status, battery_low, test, channel, temp_raw, humidity;
+    int id, battery_low, channel, temp_raw, humidity;
+    // int status, test;
     float temp_f;
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 40);
@@ -63,9 +64,9 @@ static int bresser_3ch_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     id = b[0];
-    status = b[1];
+    //status = b[1];
     battery_low = (b[1] & 0x80) >> 7;
-    test = (b[1] & 0x40) >> 6;
+    //test = (b[1] & 0x40) >> 6;
     channel = (b[1] & 0x30) >> 4;
 
     temp_raw = ((b[1] & 0x0F) << 8) + b[2];

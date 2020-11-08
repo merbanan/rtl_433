@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "list.h"
 #include <time.h>
+#include <signal.h>
 
 #define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
@@ -52,9 +53,9 @@ typedef struct r_cfg {
     char const *test_data;
     list_t in_files;
     char const *in_filename;
-    int exit_async;
-    int break_async;
-    int exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
+    volatile sig_atomic_t hop_now;
+    volatile sig_atomic_t exit_async;
+    volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
     int frequencies;
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
@@ -83,7 +84,7 @@ typedef struct r_cfg {
     int report_description;
     int report_stats;
     int stats_interval;
-    int stats_now;
+    volatile sig_atomic_t stats_now;
     time_t stats_time;
     int no_default_devices;
     struct r_device *devices;

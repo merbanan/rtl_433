@@ -23,6 +23,7 @@
 
 #include "optparse.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -35,6 +36,7 @@ typedef struct {
 
 static void print_csv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     const char **fields = csv->fields;
@@ -80,6 +82,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char con
 
 static void print_csv_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     while (*str) {
@@ -179,11 +182,13 @@ alloc_error:
 
 static void print_csv_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     link_output_printf(output->link_output, "%.3f", data);
 }
 
 static void print_csv_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     link_output_printf(output->link_output, "%d", data);
 }
 

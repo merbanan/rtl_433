@@ -23,6 +23,7 @@
 
 #include "optparse.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -39,6 +40,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char co
 
 static void print_json_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     bool separator = false;
     link_output_write_char(output->link_output, '{');
     while (data) {
@@ -55,6 +57,7 @@ static void print_json_data(data_output_t *output, data_t *data, char const *for
 
 static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     link_output_write_char(output->link_output, '"');
     while (*str) {
         if (*str == '"' || *str == '\\')
@@ -67,11 +70,13 @@ static void print_json_string(data_output_t *output, const char *str, char const
 
 static void print_json_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     link_output_printf(output->link_output, "%.3f", data);
 }
 
 static void print_json_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     link_output_printf(output->link_output, "%d", data);
 }
 

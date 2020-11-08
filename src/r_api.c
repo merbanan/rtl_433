@@ -95,22 +95,19 @@ void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
     cfg->frequencies = 1;
     cfg->frequency_index = 0;
     cfg->frequency[0] = center_freq;
-    cfg->break_async = 1;
-    sdr_stop(cfg->dev);
+    sdr_set_center_freq(cfg->dev, center_freq, 0);
 }
 
 void set_freq_correction(r_cfg_t *cfg, int freq_correction)
 {
     cfg->ppm_error = freq_correction;
-    cfg->break_async = 1;
-    sdr_stop(cfg->dev);
+    sdr_set_freq_correction(cfg->dev, freq_correction, 0);
 }
 
 void set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
 {
     cfg->samp_rate = sample_rate;
-    cfg->break_async = 1;
-    sdr_stop(cfg->dev);
+    sdr_set_sample_rate(cfg->dev, sample_rate, 0);
 }
 
 void set_gain_str(struct r_cfg *cfg, char const *gain_str)
@@ -124,8 +121,7 @@ void set_gain_str(struct r_cfg *cfg, char const *gain_str)
         if (!cfg->gain_str)
             WARN_STRDUP("set_gain_str()");
     }
-    cfg->break_async = 1;
-    sdr_stop(cfg->dev);
+    sdr_set_tuner_gain(cfg->dev, gain_str, 0);
 }
 
 /* general */
@@ -943,9 +939,6 @@ bool add_output(r_cfg_t *cfg, char *arg)
         output = data_output_kv_create(&cfg->links, name, arg_param(arg));
     } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         output = data_output_mqtt_create(&cfg->links, name, get_mgr(cfg), cfg->dev_query, arg_param(arg));
-    } else if (strncasecmp(arg, "http", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
-        add_influx_output(cfg, arg);
-        return true;
     } else if (strncasecmp(arg, "influx", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
         add_influx_output(cfg, arg);
         return true;

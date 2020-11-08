@@ -14,6 +14,7 @@
 #include "optparse.h"
 #include "util.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -178,6 +179,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
 // <prefix>[/type][/model][/subtype][/channel][/id]/battery: "OK"|"LOW"
 static void print_mqtt_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
     char *orig = mqtt->topic + strlen(mqtt->topic); // save current topic
@@ -252,6 +254,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
 static void print_mqtt_string(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
     link_output_set_destination(output->link_output, mqtt->topic);
@@ -264,7 +267,7 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
     char str[20];
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
-        int ret = snprintf(str, 20, "%g", data);
+        snprintf(str, 20, "%g", data);
     }
     else {
         int ret = snprintf(str, 20, "%.5f", data);
@@ -281,7 +284,7 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
 static void print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
-    int ret = snprintf(str, 20, "%d", data);
+    snprintf(str, 20, "%d", data);
     print_mqtt_string(output, str, format);
 }
 
