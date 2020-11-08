@@ -76,6 +76,12 @@ FILE *link_output_get_stream(link_output_t *lo)
         return NULL;
 }
 
+void link_output_set_destination(link_output_t *lo, const char *dest)
+{
+    if (lo && lo->set_destination)
+        lo->set_destination(lo, dest);
+}
+
 void link_output_flush(link_output_t *lo)
 {
     if (lo && lo->flush)

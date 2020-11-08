@@ -867,16 +867,6 @@ void start_outputs(r_cfg_t *cfg, char const **well_known)
     free(output_fields);
 }
 
-void add_mqtt_output(r_cfg_t *cfg, char *param)
-{
-    char *host = "localhost";
-    char *port = "1883";
-    char *opts = hostport_param(param, &host, &port);
-    fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
-
-    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
-}
-
 void add_influx_output(r_cfg_t *cfg, char *param)
 {
     list_push(&cfg->output_handler, data_output_influx_create(get_mgr(cfg), param));
@@ -913,6 +903,12 @@ bool add_link(r_cfg_t *cfg, char *arg)
             get_string_and_kwargs(c + 1, &param, &kwargs);
             l = link_file_create(&cfg->links, arg, param, &kwargs);
 
+        } else if (strncasecmp(e + 1, "mqtt:", 5) == 0) {
+            char *host = "localhost";
+            char *port = "1883";
+
+            get_hostport_and_kwargs(c + 1, &host, &port, &kwargs);
+            l = link_mqtt_create(&cfg->links, arg, get_mgr(cfg), cfg->dev_query, host, port, &kwargs);
         }
         if (kwargs.len != 0) {
             fprintf(stderr, "invalid parameter %s for link %s\n", (const char *) kwargs.elems[0], arg);
@@ -946,8 +942,7 @@ bool add_output(r_cfg_t *cfg, char *arg)
     } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {
         output = data_output_kv_create(&cfg->links, name, arg_param(arg));
     } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
-        add_mqtt_output(cfg, arg_param(arg));
-        return true;
+        output = data_output_mqtt_create(&cfg->links, name, get_mgr(cfg), cfg->dev_query, arg_param(arg));
     } else if (strncasecmp(arg, "http", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         add_influx_output(cfg, arg);
         return true;
