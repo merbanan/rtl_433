@@ -488,7 +488,7 @@ static void rtlsdr_read_cb(unsigned char *iq_buf, uint32_t len, void *ctx)
     };
     if (len > 0) // prevent a crash in callback
         dev->rtlsdr_cb(&ev, dev->rtlsdr_cb_ctx);
-    // FIXME: we actually need to copy the buffer to prevent it going away on cancel_async
+    // NOTE: we actually need to copy the buffer to prevent it going away on cancel_async
 }
 
 static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len)

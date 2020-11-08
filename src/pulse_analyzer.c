@@ -270,7 +270,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 1 && hist_gaps.bins_count > 1) {
         fprintf(stderr, "Pulse Position Modulation with fixed pulse width\n");
-        device.modulation  = OOK_PULSE_PPM;
+        device.modulation  = OOK_PULSE_PPM; // TODO: there is not FSK_PULSE_PPM
         device.short_width = to_us * hist_gaps.bins[0].mean;
         device.long_width  = to_us * hist_gaps.bins[1].mean;
         device.gap_limit   = to_us * (hist_gaps.bins[1].max + 1);                        // Set limit above next lower gap
@@ -278,7 +278,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 1) {
         fprintf(stderr, "Pulse Width Modulation with fixed gap\n");
-        device.modulation  = OOK_PULSE_PWM;
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
         device.short_width = to_us * hist_pulses.bins[0].mean;
         device.long_width  = to_us * hist_pulses.bins[1].mean;
         device.tolerance   = (device.long_width - device.short_width) * 0.4;
@@ -286,7 +286,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 1) {
         fprintf(stderr, "Pulse Width Modulation with fixed period\n");
-        device.modulation  = OOK_PULSE_PWM;
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
         device.short_width = to_us * hist_pulses.bins[0].mean;
         device.long_width  = to_us * hist_pulses.bins[1].mean;
         device.tolerance   = (device.long_width - device.short_width) * 0.4;
@@ -294,7 +294,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
     }
     else if (hist_pulses.bins_count == 2 && hist_gaps.bins_count == 2 && hist_periods.bins_count == 3) {
         fprintf(stderr, "Manchester coding\n");
-        device.modulation  = OOK_PULSE_MANCHESTER_ZEROBIT;
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_MANCHESTER_ZEROBIT : OOK_PULSE_MANCHESTER_ZEROBIT;
         device.short_width = to_us * MIN(hist_pulses.bins[0].mean, hist_pulses.bins[1].mean); // Assume shortest pulse is half period
         device.long_width  = 0;                                                               // Not used
         device.reset_limit = to_us * (hist_gaps.bins[hist_gaps.bins_count - 1].max + 1);      // Set limit above biggest gap
@@ -315,7 +315,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
             && (abs(hist_gaps.bins[1].mean   - 2*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)
             && (abs(hist_gaps.bins[2].mean   - 3*hist_pulses.bins[0].mean) <= hist_pulses.bins[0].mean/8)) {
         fprintf(stderr, "Pulse Code Modulation (Not Return to Zero)\n");
-        device.modulation  = FSK_PULSE_PCM;
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PCM : OOK_PULSE_PCM_RZ;
         device.short_width = to_us * hist_pulses.bins[0].mean;        // Shortest pulse is bit width
         device.long_width  = to_us * hist_pulses.bins[0].mean;        // Bit period equal to pulse length (NRZ)
         device.reset_limit = to_us * hist_pulses.bins[0].mean * 1024; // No limit to run of zeros...
@@ -326,7 +326,7 @@ void pulse_analyzer(pulse_data_t *data, int package_type)
         histogram_sort_count(&hist_pulses);
         int p1 = hist_pulses.bins[1].mean;
         int p2 = hist_pulses.bins[2].mean;
-        device.modulation  = OOK_PULSE_PWM;
+        device.modulation  = (package_type == PULSE_DATA_FSK) ? FSK_PULSE_PWM : OOK_PULSE_PWM;
         device.short_width = to_us * (p1 < p2 ? p1 : p2);                                // Set to shorter pulse width
         device.long_width  = to_us * (p1 < p2 ? p2 : p1);                                // Set to longer pulse width
         device.sync_width  = to_us * hist_pulses.bins[0].mean;                           // Set to lowest count pulse width
