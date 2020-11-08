@@ -23,7 +23,7 @@ add_definitions(-D_TEST)
 foreach(testSrc bitbuffer.c fileformat.c optparse.c util.c)
     get_filename_component(testName ${testSrc} NAME_WE)
 
-    add_executable(test_${testName} ../src/${testSrc})
+    add_executable(test_${testName} ../src/${testSrc} ../src/list.c)
 
     add_test(${testName}_test test_${testName})
 endforeach(testSrc)
