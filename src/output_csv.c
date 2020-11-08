@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "optparse.h"
 #include "fatal.h"
 
 #include "data.h"
@@ -195,18 +196,28 @@ static void data_output_csv_free(data_output_t *output)
     free(csv);
 }
 
-struct data_output *data_output_csv_create(list_t *links, const char *name, const char *file)
+struct data_output *data_output_csv_create(list_t *links, const char *name, char *param)
 {
+    char *arg = NULL;
+    list_t kwargs = {0};
     link_t *l;
+
+    get_string_and_kwargs(param, &arg, &kwargs);
+    if (name) {
+        if (!(l = link_search(links, name))) {
+            fprintf(stderr, "no such link %s\n", name);
+            return NULL;
+        }
+    } else {
+        if (!(l = link_file_create(links, name, arg, &kwargs))) {
+            return NULL;
+        }
+    }
+
     data_output_csv_t *csv = calloc(1, sizeof(data_output_csv_t));
     if (!csv) {
         WARN_CALLOC("data_output_csv_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
-    }
-
-    if (!(l = link_file_create(links, name, file))) {
-        free(csv);
-        return NULL;
     }
 
     csv->output.print_data   = print_csv_data;
@@ -216,7 +227,7 @@ struct data_output *data_output_csv_create(list_t *links, const char *name, cons
     csv->output.print_int    = print_csv_int;
     csv->output.output_start = data_output_csv_start;
     csv->output.output_free  = data_output_csv_free;
-    csv->output.link_output  = link_create_output(l);
+    csv->output.link_output  = link_create_output(l, arg, &kwargs);
 
     return &csv->output;
 }

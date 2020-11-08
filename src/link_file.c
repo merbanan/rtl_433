@@ -22,11 +22,12 @@
 #include <stdarg.h>
 
 #include "link.h"
+#include "optparse.h"
 #include "fatal.h"
 
 
 typedef struct {
-    link_t l;
+    link_t base;
     char file[256];
     FILE *f;
     int open_count;
@@ -83,9 +84,18 @@ static void out_free(link_output_t *output)
 
 /* link functions */
 
-static link_output_t *create_output(link_t *link)
+static link_output_t *create_output(link_t *link, char *param, list_t *kwlist)
 {
     link_file_t *lf = (link_file_t *) link;
+
+    if (param && param[0] != '\0') {
+        fprintf(stderr, "extra argument for link %s: %s\n", link->name, param);
+        return NULL;
+    }
+    if (kwlist->len > 0) {
+        fprintf(stderr, "extra parameters for link %s: %s\n", link->name, (const char *) kwlist->elems[0]);
+        return NULL;
+    }
 
     if (lf->open_count <= 0) {
         if (lf->file[0] == '\0') {
@@ -105,10 +115,8 @@ static link_output_t *create_output(link_t *link)
     return &lf->output;
 }
 
-static void entry_free(list_t *links, link_t *link)
+static void entry_free(link_t *link)
 {
-    assert(links);
-
     if (!link)
         return;
 
@@ -116,26 +124,24 @@ static void entry_free(list_t *links, link_t *link)
     free(link);
 }
 
-link_t *link_file_create(list_t *links, const char *name, const char *file)
+link_t *link_file_create(list_t *links, const char *name, char *arg, list_t *kwargs)
 {
-    const link_file_t template = {.l = {.type = LINK_FILE, .create_output = create_output, .free = entry_free}, .output = {.write = out_write, .vprintf = out_vprintf, .get_stream = out_get_stream, .flush = out_flush, .free = out_free}};
+    const link_file_t template = {.base = {.type = LINK_FILE, .create_output = create_output, .free = entry_free}, .output = {.write = out_write, .vprintf = out_vprintf, .get_stream = out_get_stream, .flush = out_flush, .free = out_free}};
+    size_t i;
     link_file_t *l;
-    static int count = 0;
 
-    if (!file || strcmp(file, "-") == 0)
-        file = "";
+    if (!arg || arg[0] == '\0' || (kwargs && kwargs->len != 0)) {
+        fprintf(stderr, "invalid link parameters\n");
+        return NULL;
+    }
 
-    if (name) {
+    if (strcmp(arg, "-") == 0)
+        arg[0] = '\0';
+
+    if (!name) {
         for (size_t i = 0; i < links->len; ++i) {
             l = links->elems[i];
-            if (strcasecmp(l->l.name, name) == 0) {
-                return (l->l.type == LINK_FILE && (file[0] == '\0' || strcmp(l->file, file) == 0)) ? (link_t *) l : NULL;
-            }
-        }
-    } else {
-        for (size_t i = 0; i < links->len; ++i) {
-            l = links->elems[i];
-            if (l->l.type == LINK_FILE && strcmp(l->file, file) == 0) return (link_t *) l;
+            if (l->base.type == LINK_FILE && strcmp(l->file, arg) == 0) return &l->base;
         }
     }
 
@@ -147,13 +153,12 @@ link_t *link_file_create(list_t *links, const char *name, const char *file)
 
     *l = template;
     if (name)
-        snprintf(l->l.name, sizeof(l->l.name), "%s", name);
-    else
-        snprintf(l->l.name, sizeof(l->l.name), "link%d", count++);
-    snprintf(l->file, sizeof(l->file), "%s", file);
-    l->output.link = (link_t *) l;
+        snprintf(l->base.name, sizeof(l->base.name), "%s", name);
+    snprintf(l->file, sizeof(l->file), "%s", arg);
+    l->output.link = &l->base;
+    arg[0] = '\0';
 
     list_push(links, l);
 
-    return (link_t *) l;
+    return &l->base;
 }

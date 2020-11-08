@@ -22,6 +22,7 @@
 #include <stdlib.h>
 
 #include "term_ctl.h"
+#include "optparse.h"
 #include "fatal.h"
 
 #include "data.h"
@@ -192,19 +193,33 @@ static void data_output_kv_free(data_output_t *output)
     free(output);
 }
 
-struct data_output *data_output_kv_create(list_t *links, const char *name, const char *file)
+struct data_output *data_output_kv_create(list_t *links, const char *name, char *param)
 {
+    char *arg = NULL;
+    list_t kwargs = {0};
     link_t *l;
     FILE *f;
+    char default_param[2] = "-";
+
+    if (!param || param[0] == '\0')
+        param = default_param;
+
+    get_string_and_kwargs(param, &arg, &kwargs);
+    if (name) {
+        if (!(l = link_search(links, name))) {
+            fprintf(stderr, "no such link %s\n", name);
+            return NULL;
+        }
+    } else {
+        if (!(l = link_file_create(links, name, arg, &kwargs))) {
+            return NULL;
+        }
+    }
+
     data_output_kv_t *kv = calloc(1, sizeof(data_output_kv_t));
     if (!kv) {
         WARN_CALLOC("data_output_kv_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
-    }
-
-    if (!(l = link_file_create(links, name, file))) {
-        free(kv);
-        return NULL;
     }
 
     kv->output.print_data   = print_kv_data;
@@ -213,7 +228,7 @@ struct data_output *data_output_kv_create(list_t *links, const char *name, const
     kv->output.print_double = print_kv_double;
     kv->output.print_int    = print_kv_int;
     kv->output.output_free  = data_output_kv_free;
-    kv->output.link_output  = link_create_output(l);
+    kv->output.link_output  = link_create_output(l, arg, &kwargs);
 
     if ((f = link_output_get_stream(kv->output.link_output)) != NULL) {
         kv->term = term_init(f);

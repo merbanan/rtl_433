@@ -191,7 +191,7 @@ void r_free_cfg(r_cfg_t *cfg)
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
-    list_free_elems(&cfg->links, (list_elem_free_fn)NULL);   //!!!FIXME
+    list_free_elems(&cfg->links, (list_elem_free_fn) link_free);
 
     list_free_elems(&cfg->in_files, NULL);
 
@@ -892,15 +892,10 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
 }
 
-void add_null_output(r_cfg_t *cfg, char *param)
-{
-    (void)param;
-    list_push(&cfg->output_handler, NULL);
-}
-
 bool add_link(r_cfg_t *cfg, char *arg)
 {
     char *e, *c;
+    list_t kwargs = {0};
     link_t *l = NULL;
 
     e = strchr(arg, '=');
@@ -908,8 +903,22 @@ bool add_link(r_cfg_t *cfg, char *arg)
 
     if (e && c && e < c) {
         *e = '\0';
-        if (strncasecmp(e + 1, "file:", 5) == 0)
-            l = link_file_create(&cfg->links, arg, c + 1);
+        if (link_search(&cfg->links, arg) != NULL) {
+            fprintf(stderr, "link %s redefined\n", arg);
+            return false;
+        }
+        if (strncasecmp(e + 1, "file:", 5) == 0) {
+            char *param = NULL;
+
+            get_string_and_kwargs(c + 1, &param, &kwargs);
+            l = link_file_create(&cfg->links, arg, param, &kwargs);
+
+        }
+        if (kwargs.len != 0) {
+            fprintf(stderr, "invalid parameter %s for link %s\n", (const char *) kwargs.elems[0], arg);
+            link_free(l);
+            l = NULL;
+        }
     }
 
     return l != NULL;
@@ -932,31 +941,38 @@ bool add_output(r_cfg_t *cfg, char *arg)
 
     if (strncasecmp(arg, "json", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         output = data_output_json_create(&cfg->links, name, arg_param(arg));
-        if (!output) return false;
-        list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "csv", 3) == 0 && (arg[3] == ':' || arg[3] == '\0')) {
         output = data_output_csv_create(&cfg->links, name, arg_param(arg));
-        if (!output) return false;
-        list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {
         output = data_output_kv_create(&cfg->links, name, arg_param(arg));
-        if (!output) return false;
-        list_push(&cfg->output_handler, output);
     } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         add_mqtt_output(cfg, arg_param(arg));
+        return true;
     } else if (strncasecmp(arg, "http", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         add_influx_output(cfg, arg);
+        return true;
     } else if (strncasecmp(arg, "influx", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
         add_influx_output(cfg, arg);
+        return true;
     } else if (strncasecmp(arg, "syslog", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
         add_syslog_output(cfg, arg_param(arg));
+        return true;
     } else if (strncasecmp(arg, "null", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
-        add_null_output(cfg, arg_param(arg));
+        if (strlen(arg) > 5)
+            return false;
+        list_push(&cfg->output_handler, NULL);
+        return true;
     } else {
         return false;
     }
 
-    //list_push(&cfg->output_handler, output);
+    if (!output)
+        return false;
+    if (!output->link_output) {
+        data_output_free(output);
+        return false;
+    }
+    list_push(&cfg->output_handler, output);
 
     return true;
 }

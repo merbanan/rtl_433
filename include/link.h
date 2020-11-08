@@ -40,17 +40,23 @@ typedef struct link_output {
 typedef struct link {
     link_type type;
     char name[64];
-    link_output_t *(*create_output)(struct link *link);
-    void (*free)(list_t *links, struct link *link);
+    link_output_t *(*create_output)(struct link *link, char *param, list_t *kwlist);
+    void (*free)(struct link *link);
 } link_t;
 
+/// Search for an existing link by its name
+link_t *link_search(list_t *links, const char *name);
+
 /// Construct a file link
-link_t *link_file_create(list_t *links, const char *name, const char *file);
+link_t *link_file_create(list_t *links, const char *name, char *arg, list_t *kwargs);
 
 /// Construct a MQTT link
 link_t *link_mqtt_create(list_t *links, const char *name, const char *host, const char *port, const char *user, const char *pass, const char *client_id);
 
-link_output_t *link_create_output(link_t *l);
+/// Destroy a link
+void link_free(link_t *link);
+
+link_output_t *link_create_output(link_t *l, char *param, list_t *kwlist);
 
 int link_output_write(link_output_t *lo, const void *buf, size_t len);
 int link_output_write_char(link_output_t *lo, char data);

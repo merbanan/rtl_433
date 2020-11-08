@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdarg.h>
 #include <assert.h>
 
@@ -6,11 +7,32 @@
 
 /* link helper functions */
 
-link_output_t *link_create_output(link_t *l)
+link_t *link_search(list_t *links, const char *name)
+{
+    size_t i;
+    link_t *l;
+
+    for (i = 0; i < links->len; ++i) {
+        l = links->elems[i];
+        if (strcasecmp(l->name, name) == 0) {
+            return l;
+        }
+    }
+
+    return NULL;
+}
+
+void link_free(link_t *l)
+{
+    if (l && l->free)
+        l->free(l);
+}
+
+link_output_t *link_create_output(link_t *l, char *param, list_t *kwlist)
 {
     assert(l && l->create_output);
 
-    return l->create_output(l);
+    return l->create_output(l, param, kwlist);
 }
 
 /* link output helper functions */

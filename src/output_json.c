@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "optparse.h"
 #include "fatal.h"
 
 #include "data.h"
@@ -84,18 +85,28 @@ static void data_output_json_free(data_output_t *output)
     free(output);
 }
 
-struct data_output *data_output_json_create(list_t *links, const char *name, const char *file)
+struct data_output *data_output_json_create(list_t *links, const char *name, char *param)
 {
+    char *arg = NULL;
+    list_t kwargs = {0};
     link_t *l;
+
+    get_string_and_kwargs(param, &arg, &kwargs);
+    if (name) {
+        if (!(l = link_search(links, name))) {
+            fprintf(stderr, "no such link %s\n", name);
+            return NULL;
+        }
+    } else {
+        if (!(l = link_file_create(links, name, arg, &kwargs))) {
+            return NULL;
+        }
+    }
+
     data_output_t *output = calloc(1, sizeof(data_output_t));
     if (!output) {
         WARN_CALLOC("data_output_json_create()");
         return NULL; // NOTE: returns NULL on alloc failure.
-    }
-
-    if (!(l = link_file_create(links, name, file))) {
-        free(output);
-        return NULL;
     }
 
     output->print_data   = print_json_data;
@@ -104,7 +115,7 @@ struct data_output *data_output_json_create(list_t *links, const char *name, con
     output->print_double = print_json_double;
     output->print_int    = print_json_int;
     output->output_free  = data_output_json_free;
-    output->link_output  = link_create_output(l);
+    output->link_output  = link_create_output(l, arg, &kwargs);
 
     return output;
 }
