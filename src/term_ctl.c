@@ -33,6 +33,10 @@
 #define STDERR_FILENO   2
 #endif
 
+#ifndef UNUSED
+#define UNUSED(x) (void)(x)
+#endif
+
 typedef struct console {
     CONSOLE_SCREEN_BUFFER_INFO info;
     BOOL                       redirected;
