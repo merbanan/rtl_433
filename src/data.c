@@ -1025,11 +1025,13 @@ static void format_jsons_int(data_output_t *output, int data, char const *format
 size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
-            .output.print_data   = format_jsons_object,
-            .output.print_array  = format_jsons_array,
-            .output.print_string = format_jsons_string,
-            .output.print_double = format_jsons_double,
-            .output.print_int    = format_jsons_int,
+            .output = {
+                    .print_data   = format_jsons_object,
+                    .print_array  = format_jsons_array,
+                    .print_string = format_jsons_string,
+                    .print_double = format_jsons_double,
+                    .print_int    = format_jsons_int,
+            },
     };
 
     abuf_init(&jsons.msg, dst, len);
