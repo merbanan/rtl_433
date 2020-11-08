@@ -23,6 +23,8 @@
     #include <strings.h>
 #endif
 
+#include "list.h"
+
 /// Convert string to bool with fallback default.
 /// Parses "true", "yes", "on", "enable" (not case-sensitive) to 1, atoi() otherwise.
 int atobv(char *arg, int def);
@@ -101,5 +103,20 @@ char *trim_ws(char *str);
 /// @param[in,out] str String to change inplace
 /// @return the stripped value of str
 char *remove_ws(char *str);
+
+/// Parse host, port and a comma-separated list of key/value pairs into kwargs.
+///
+/// @param[in, out] param String to change inplace
+/// @param[out] host parsed host
+/// @param[out] port parsed port
+/// @param[out] kwargs separated key/value pairs (key1, value1, key2, value2...)
+void get_hostport_and_kwargs(char *param, char **host, char **port, list_t *kwargs);
+
+/// Parse a string and a comma-separated list of key/value pairs into kwargs.
+///
+/// @param[in, out] param String to change inplace
+/// @param[out] s Parsed string
+/// @param[out] kwargs Separated key/value pairs (key1, value1, key2, value2...)
+void get_string_and_kwargs(char *param, char **s, list_t *kwargs);
 
 #endif /* INCLUDE_OPTPARSE_H_ */
