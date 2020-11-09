@@ -1447,7 +1447,22 @@ int main(int argc, char **argv) {
             if (cfg->verbosity)
                 fprintf(stderr, "Showing demo data for device %s.\n", r_dev->name);
             for (char **code = r_dev->demo_pattern; code && *code; ++code) {
-                r += pulse_demod_string(*code, r_dev);
+              if (rfraw_check(*code)) {
+                    pulse_data_t pulse_data = {0};
+                    rfraw_parse(&pulse_data, *code);
+                    list_t single_dev = {0};
+                    list_push(&single_dev, r_dev);
+                    if (!pulse_data.fsk_f2_est)
+                        r += run_ook_demods(&single_dev, &pulse_data);
+                    else
+                        r += run_fsk_demods(&single_dev, &pulse_data);
+                    list_free_elems(&single_dev, NULL);
+                    if (r <= 0) {
+                      fprintf(stderr, "demo pattern resulted in an error or no output!\n");
+                    }
+                } else {
+                  fprintf(stderr, "ERROR: demo pattern for device %s is invalid\n", r_dev->name);
+                }
             }
         }
         r_free_cfg(cfg);
