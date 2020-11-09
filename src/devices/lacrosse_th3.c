@@ -135,7 +135,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-         "model",            "",                 DATA_FORMAT, "LaCrosse-TH%u", DATA_INT, model,
+         "model",            "",                 DATA_STRING, model == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
          "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
          "seq",              "Sequence",         DATA_INT,     seq,
          "flags",            "unknown",          DATA_INT,     flags,
