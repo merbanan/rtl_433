@@ -86,7 +86,8 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     } else if (bitbuffer->bits_per_row[0] > 290) {
         if (decoder->verbose) {
            fprintf(stderr, "%s: Packet too long: %d bits\n", __func__, bitbuffer->bits_per_row[0]);
-           bitbuffer_debug(bitbuffer);         }
+           bitbuffer_debug(bitbuffer);
+        }
         return DECODE_ABORT_LENGTH;
     } else {
         if (decoder->verbose) {

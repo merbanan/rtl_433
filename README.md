@@ -245,7 +245,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [168]  Schrader TPMS SMD3MA4 (Subaru)
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
-    [171]  LaCrosse Technology View LTV-TH3 Thermo/Hygro Sensor
+    [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1
     [173]  Bresser Weather Center 7-in-1
 
