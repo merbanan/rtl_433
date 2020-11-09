@@ -127,15 +127,14 @@ static void entry_free(link_t *link)
 link_t *link_file_create(list_t *links, const char *name, char *arg, list_t *kwargs)
 {
     const link_file_t template = {.base = {.type = LINK_FILE, .create_output = create_output, .free = entry_free}, .output = {.write = out_write, .vprintf = out_vprintf, .get_stream = out_get_stream, .flush = out_flush, .free = out_free}};
-    size_t i;
     link_file_t *l;
 
-    if (!arg || arg[0] == '\0' || (kwargs && kwargs->len != 0)) {
+    if (kwargs && kwargs->len != 0) {
         fprintf(stderr, "invalid link parameters\n");
         return NULL;
     }
 
-    if (strcmp(arg, "-") == 0)
+    if (arg && strcmp(arg, "-") == 0)
         arg[0] = '\0';
 
     if (!name) {
@@ -154,9 +153,11 @@ link_t *link_file_create(list_t *links, const char *name, char *arg, list_t *kwa
     *l = template;
     if (name)
         snprintf(l->base.name, sizeof(l->base.name), "%s", name);
-    snprintf(l->file, sizeof(l->file), "%s", arg);
+    if (arg && arg[0] != '\0') {
+        snprintf(l->file, sizeof(l->file), "%s", arg);
+        arg[0] = '\0';
+    }
     l->output.link = &l->base;
-    arg[0] = '\0';
 
     list_push(links, l);
 

@@ -201,10 +201,6 @@ struct data_output *data_output_kv_create(list_t *links, const char *name, char 
     list_t kwargs = {0};
     link_t *l;
     FILE *f;
-    char default_param[2] = "-";
-
-    if (!param || param[0] == '\0')
-        param = default_param;
 
     get_string_and_kwargs(param, &arg, &kwargs);
     if (name) {
