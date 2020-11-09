@@ -159,7 +159,6 @@ static void out_free(link_output_t *output)
 static link_output_t *create_output(link_t *link, char *param, list_t *kwargs)
 {
     const link_mqtt_output_t template = {.base = {.write = out_write, .vprintf = out_vprintf, .set_destination = out_set_destination, .flush = out_flush, .free = out_free}, .publish_flags = MG_MQTT_QOS(0)};
-    link_mqtt_t *ctx = (link_mqtt_t *) link;
     size_t i;
     char *key, *val;
     link_mqtt_output_t *output = malloc(sizeof(link_mqtt_output_t));
