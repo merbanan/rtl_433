@@ -143,6 +143,8 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
 
+    time(&cfg->frames_since);
+
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
 }
@@ -775,6 +777,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             continue;
         if (level <= 0)
             continue;
+
         data = data_make(
                 "device",       "", DATA_INT, r_dev->protocol_num,
                 "name",         "", DATA_STRING, r_dev->name,
@@ -813,8 +816,12 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
 
+    char since_str[LOCAL_TIME_BUFLEN];
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
+            "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
             "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
@@ -827,6 +834,7 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
+    time(&cfg->frames_since);
     cfg->frames_count = 0;
     cfg->frames_fsk = 0;
     cfg->frames_events = 0;
