@@ -140,7 +140,7 @@ link_t *link_file_create(list_t *links, const char *name, char *arg, list_t *kwa
     if (!name) {
         for (size_t i = 0; i < links->len; ++i) {
             l = links->elems[i];
-            if (l->base.type == LINK_FILE && ((!arg && l->file[0] == '\0') || strcmp(l->file, arg) == 0)) return &l->base;
+            if (l->base.type == LINK_FILE && strcmp(l->file, arg ? arg : "") == 0) return &l->base;
         }
     }
 
