@@ -248,6 +248,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
     [172]  Bresser Weather Center 6-in-1
     [173]  Bresser Weather Center 7-in-1
+    [174]  EcoDHOME Smart Socket and MCEE Solar monitor
 
 * Disabled by default, use -R n or -G
 
