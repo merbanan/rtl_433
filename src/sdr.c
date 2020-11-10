@@ -441,8 +441,6 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, 
 
 static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
 {
-    int r = -1;
-
     /* Get allowed gains */
     int gains_count = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, NULL);
     if (gains_count < 0) {
@@ -460,8 +458,7 @@ static int rtlsdr_find_tuner_gain(sdr_dev_t *dev, int centigain, int verbose)
         WARN_CALLOC("rtlsdr_find_tuner_gain()");
         return centigain; // NOTE: just aborts on alloc failure.
     }
-    r = rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
-    // TODO: check return value and act upon it
+    rtlsdr_get_tuner_gains(dev->rtlsdr_dev, gains);
 
     /* Find allowed gain */
     for (int i = 0; i < gains_count; ++i) {

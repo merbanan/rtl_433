@@ -34,6 +34,7 @@
 #include "mongoose.h"
 #include "compat_time.h"
 #include "fatal.h"
+#include "http_server.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -144,6 +145,8 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
+
+    time(&cfg->frames_since);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -779,6 +782,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             continue;
         if (level <= 0)
             continue;
+
         data = data_make(
                 "device",       "", DATA_INT, r_dev->protocol_num,
                 "name",         "", DATA_STRING, r_dev->name,
@@ -817,8 +821,12 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
 
+    char since_str[LOCAL_TIME_BUFLEN];
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
+            "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
             "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
@@ -831,6 +839,7 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
+    time(&cfg->frames_since);
     cfg->frames_count = 0;
     cfg->frames_fsk = 0;
     cfg->frames_events = 0;
@@ -876,6 +885,16 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     fprintf(stderr, "Syslog UDP datagrams to %s port %s\n", host, port);
 
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
+}
+
+void add_http_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "0.0.0.0";
+    char *port = "8433";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "HTTP server at %s port %s\n", host, port);
+
+    list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
 
 bool add_link(r_cfg_t *cfg, char *arg)
@@ -944,6 +963,9 @@ bool add_output(r_cfg_t *cfg, char *arg)
         return true;
     } else if (strncasecmp(arg, "syslog", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
         add_syslog_output(cfg, arg_param(arg));
+        return true;
+    } else if (strncmp(optarg, "http", 4) == 0) {
+        add_http_output(cfg, arg_param(optarg));
         return true;
     } else if (strncasecmp(arg, "null", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
         if (strlen(arg) > 5)

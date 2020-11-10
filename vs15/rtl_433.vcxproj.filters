@@ -53,6 +53,12 @@
     <ClInclude Include="..\include\fileformat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\http_server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\jsmn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\list.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -143,6 +149,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fileformat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http_server.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\jsmn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\list.c">
@@ -283,6 +295,9 @@
     <ClCompile Include="..\src\devices\dsc.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ecodhome.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ecowitt.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -304,7 +319,10 @@
     <ClCompile Include="..\src\devices\emontx.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\ert.c">
+    <ClCompile Include="..\src\devices\ert_idm.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ert_scm.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\esa.c">
@@ -383,9 +401,6 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ibis_beacon.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\devices\idm.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\ikea_sparsnas.c">

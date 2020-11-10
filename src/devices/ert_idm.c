@@ -24,7 +24,7 @@ of this time I am unable to find any documentation on how to
 differentiate IDM and NetIDM packets as both use identical use Sync
 ID / Packet Type / length / App Version ID and CRC.
 
-Eventually idm_callback() and netidm_callback() may be merged.
+Eventually ert_idm_decode() and ert_netidm_decode() may be merged.
 
 https://github.com/bemasher/rtlamr/wiki/Protocol
 http://www.gridinsight.com/community/documentation/itron-ert-technology/
@@ -85,7 +85,7 @@ Transmit Time Offset  | 2      | 84
 Meter ID Checksum     | 2      | 86
 Packet Checksum       | 2      | 88
 */
-static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
@@ -352,7 +352,7 @@ Transmit Time Offset  | 2      | 84
 Meter ID Checksum     | 2      | 86    CRC-16-CCITT of Meter ID.
 Packet Checksum       | 2      | 88    CRC-16-CCITT of packet starting at Packet Type.
 */
-static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
@@ -680,8 +680,8 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device idm = {
-        .name        = "Interval Data Message (IDM)",
+r_device ert_idm = {
+        .name        = "ERT Interval Data Message (IDM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
@@ -689,13 +689,13 @@ r_device idm = {
         .reset_limit = 20000,
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
-        .decode_fn = &idm_callback,
+        .decode_fn = &ert_idm_decode,
         .disabled  = 0,
         .fields    = output_fields,
 };
 
-r_device netidm = {
-        .name        = "Interval Data Message (IDM) for Net Meters",
+r_device ert_netidm = {
+        .name        = "ERT Interval Data Message (IDM) for Net Meters",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
@@ -703,7 +703,7 @@ r_device netidm = {
         .reset_limit = 20000,
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
-        .decode_fn = &netidm_callback,
+        .decode_fn = &ert_netidm_decode,
         .disabled  = 0,
         .fields    = output_fields,
 };

@@ -1,5 +1,5 @@
 /** @file
-    ERT SCM sensors.
+    ERT Standard Consumption Message (SCM) sensors.
 
     Copyright (C) 2020 Benjamin Larsson.
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-ERT SCM sensors.
+ERT Standard Consumption Message (SCM) sensors.
 
 Random information:
 
@@ -45,7 +45,7 @@ https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTM
 
 */
 
-static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // TODO: Verify preamble
     //static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
@@ -108,14 +108,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ert_amr = {
-        .name        = "ERT",
+r_device ert_scm = {
+        .name        = "ERT Standard Consumption Message (SCM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
         .gap_limit   = 0,
         .reset_limit = 64,
-        .decode_fn   = &ert_decode,
+        .decode_fn   = &ert_scm_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

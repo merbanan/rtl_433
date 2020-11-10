@@ -15,6 +15,8 @@ add_library(r_433 STATIC
     data.c
     decoder_util.c
     fileformat.c
+    http_server.c
+    jsmn.c
     link.c
     link_file.c
     link_mqtt.c
@@ -66,6 +68,7 @@ add_library(r_433 STATIC
     devices/directv.c
     devices/dish_remote_6_3.c
     devices/dsc.c
+    devices/ecodhome.c
     devices/ecowitt.c
     devices/efergy_e2_classic.c
     devices/efergy_optical.c
@@ -73,7 +76,8 @@ add_library(r_433 STATIC
     devices/elro_db286a.c
     devices/elv.c
     devices/emontx.c
-    devices/ert.c
+    devices/ert_idm.c
+    devices/ert_scm.c
     devices/esa.c
     devices/esic_emt7110.c
     devices/esperanza_ews.c
@@ -100,7 +104,6 @@ add_library(r_433 STATIC
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
-    devices/idm.c
     devices/ikea_sparsnas.c
     devices/infactory.c
     devices/inovalley-kw9015b.c

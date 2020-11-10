@@ -98,6 +98,7 @@ typedef struct r_cfg {
     int sr_execopen;
     int old_model_keys;
     /* stats*/
+    time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval
     unsigned frames_events; ///< stats counter for interval
