@@ -156,7 +156,7 @@
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
     DECL(dsc_security_ws4945) \
-    DECL(ert_amr) \
+    DECL(ert_scm) \
     DECL(klimalogg) \
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
@@ -167,8 +167,8 @@
     DECL(missil_ml0757) \
     DECL(sharp_spc775) \
     DECL(insteon) \
-    DECL(idm) \
-    DECL(netidm) \
+    DECL(ert_idm) \
+    DECL(ert_netidm) \
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
     DECL(secplus_v2) \
