@@ -238,6 +238,7 @@ matrix:
             - mingw-w64-x86-64-dev
             - gcc-mingw-w64
             - p7zip-full
+            - realpath
       before_deploy: ./do_sysroot.sh
       deploy:
         provider: bintray
