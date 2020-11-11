@@ -1371,6 +1371,11 @@ static char *acurite_txr_output_fields[] = {
         NULL,
 };
 
+static char *demo_pattern_txr[] = {
+  "AAB04D050109CC026001A800B4629CA3A3B2A3A3A3A3A3B2B2A3A3A3B2B2B2B2A3A3B2B2B2B2B2B2B2A3B2A3B2A3A3A3B2B2B2A3A3B2A3B2A3A3A3B2A3A3A3B2B2B2B2B2A3A3A3A3B2A3B2A3A3B2A28155",
+  NULL
+};
+
 r_device acurite_txr = {
         .name        = "Acurite 592TXR Temp/Humidity, 5n1 Weather Station, 6045 Lightning, 3N1, Atlas",
         .modulation  = OOK_PULSE_PWM,
@@ -1381,6 +1386,7 @@ r_device acurite_txr = {
         .reset_limit = 4000, // packet gap is 2192 us
         .decode_fn   = &acurite_txr_decode,
         .fields      = acurite_txr_output_fields,
+        .demo_pattern= demo_pattern_txr,
 };
 
 /*
