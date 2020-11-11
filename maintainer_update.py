@@ -72,6 +72,21 @@ def markup_man_text(help_text):
     return help_text
 
 
+def parse_devices(devices_text):
+    devices = []
+    for line in devices_text.splitlines():
+        # match the [123] device number
+        device_info = re.search("\[(\d{1,5})\](.) (.*)", line)
+        if not device_info:
+            continue
+        device_number = int(device_info.group(1).strip(), base=10)
+        is_disabled = device_info.group(2).strip() == "*"
+        device_text = device_info.group(3).strip()
+
+        devices.append((device_number, device_text, is_disabled))
+    return devices
+
+
 verbose = '-v' in sys.argv
 
 # Make sure we run from the top dir
@@ -177,7 +192,7 @@ if (not os.path.isfile("./build/src/rtl_433")):
 # README.md
 # Replace everything between ``` with help output.
 repl = '\n' + get_help_text('-h') + '\n'
-repl1 = get_help_text('-R') + '\n'
+devices = get_help_text('-R') + '\n'
 repl2 = get_help_text('-d') + '\n'
 repl2 += get_help_text('-g') + '\n'
 repl2 += get_help_text('-X') + '\n'
@@ -186,7 +201,20 @@ repl2 += get_help_text('-M') + '\n'
 repl2 += get_help_text('-r') + '\n'
 repl2 += get_help_text('-w') + '\n'
 replace_block(r'```',
-              r'```', repl + repl1 + repl2, 'README.md')
+              r'```', repl + devices + repl2, 'README.md')
+
+# conf/rtl_433.example.conf
+parsed_devices = parse_devices(devices)
+conf_text = ""
+for dev_num, dev_descr, disabled in parsed_devices:
+    comment = "# " if disabled else "  "
+    spaces = (4 - len(str(dev_num))) * " "
+    text = f"{comment}protocol {dev_num}{spaces}# {dev_descr}\n"
+    conf_text += text
+    #print(dev_num, "-" if disabled else "+", dev_descr)
+print(conf_text)
+replace_block("## Protocols to enable \(command line option \"-R\"\)\n",
+        "## Flex devices", "\n" + conf_text + "\n", "conf/rtl_433.example.conf")
 
 # MAN pages
 repl = markup_man_text(repl + repl2)
