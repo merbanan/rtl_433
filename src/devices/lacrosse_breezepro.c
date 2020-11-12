@@ -136,6 +136,12 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temp_c = (raw_temp - 400) * 0.1f;
     speed_kmh = raw_speed * 0.1f;
 
+    if (humidity < 0 || humidity > 100
+        || temp_c < -40 || temp_c > 70
+        || direction < 0 || direction > 360
+        || speed_kmh < 0 || speed_kmh > 200)
+      return DECODE_FAIL_SANITY;
+
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "LaCrosse-BreezePro",

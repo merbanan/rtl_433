@@ -113,6 +113,9 @@ static int lacrosse_wr1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // base and/or scale adjustments
     speed_kmh = raw_wind * 0.1f;
+    if (speed_kmh < 0 || speed_kmh > 200 || direction < 0 || direction > 360)
+      return DECODE_FAIL_SANITY;
+
     //rain_mm   = 0.0;  // dummy until we know what raw_rain1 and raw_rain2 mean
 
     /* clang-format off */

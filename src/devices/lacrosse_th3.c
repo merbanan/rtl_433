@@ -133,6 +133,9 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // base and/or scale adjustments
     temp_c = (raw_temp - 400) * 0.1f;
 
+    if (humidity < 0 || humidity > 100 || temp_c < -50 || temp_c > 70)
+      return DECODE_FAIL_SANITY;
+
     /* clang-format off */
     data = data_make(
          "model",            "",                 DATA_STRING, model == 3 ? "LaCrosse-TH3" : "LaCrosse-TH2",
