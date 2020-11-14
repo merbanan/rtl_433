@@ -108,8 +108,9 @@ static char *output_fields[] = {
 };
 
 static char *demo_pattern[] = {
-        "{41}e8d9f3bf7680{41}e8d9f3bf7680{41}e8d9f3bf7680",
-        NULL,
+    "AAB03B060C00F402DC01E403C004B4271491919191828282A082A0A0A08282A08282A0A0828282828282A0A0828282A0A08282A0A082A0A0A"
+    "082A0A0828355",
+    NULL,
 };
 
 r_device bresser_3ch = {

@@ -156,6 +156,13 @@ static char *output_fields[] = {
         NULL,
 };
 
+static char *demo_pattern[] = {
+        "AAB0320401077C170462A0EA8C8181818181818181818181908181818190819090909081909090818181818181818181909090819255A"
+        "AB02E0401077C170462A0EA8C81818181818181908181818190819090909081909090818181818181818181909090819255AAB02E0401"
+        "077C170462A0EA8C81818181818181908181818190819090909081909090818181818181818181909090819355",
+        NULL,
+};
+
 r_device philips_aj3650 = {
         .name        = "Philips outdoor temperature sensor (type AJ3650)",
         .modulation  = OOK_PULSE_PWM,
@@ -166,4 +173,5 @@ r_device philips_aj3650 = {
         .decode_fn   = &philips_aj3650_decode,
         .disabled    = 0,
         .fields      = output_fields,
+        .demo_pattern= demo_pattern,
 };
