@@ -1441,6 +1441,7 @@ int main(int argc, char **argv) {
 
     // Special case for test pattern demo mode
     if (cfg->demo_mode) {
+        int exit_code = 0;
         r = 0;
         for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
             r_device *r_dev = *iter;
@@ -1459,14 +1460,16 @@ int main(int argc, char **argv) {
                     list_free_elems(&single_dev, NULL);
                     if (r <= 0) {
                       fprintf(stderr, "demo pattern resulted in an error or no output!\n");
+                      exit_code = 1;
                     }
                 } else {
                   fprintf(stderr, "ERROR: demo pattern for device %s is invalid\n", r_dev->name);
+                  exit_code = 1;
                 }
             }
         }
         r_free_cfg(cfg);
-        exit(!r);
+        exit(exit_code);
     }
 
     // Special case for string test data
