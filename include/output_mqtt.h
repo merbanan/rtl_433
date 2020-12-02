@@ -14,6 +14,8 @@
 
 #include "data.h"
 
-struct data_output *data_output_mqtt_create(char const *host, char const *port, char *opts, char const *dev_hint);
+struct mg_mgr;
+
+struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host, char const *port, char *opts, char const *dev_hint);
 
 #endif /* INCLUDE_OUTPUT_MQTT_H_ */

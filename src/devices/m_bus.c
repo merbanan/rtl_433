@@ -282,9 +282,10 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     uint8_t vife_cnt = 0;
     uint8_t vif_uam = 0;
     uint8_t vif_linear = 0;
-    uint8_t vife = 0;
-    uint8_t exponent = 0;
-    int cnt = 0, consumed;
+    //uint8_t vife = 0;
+    //uint8_t exponent = 0;
+    //int cnt = 0, consumed;
+    int consumed;
 
     /* Align offset pointer, there might be 2 0x2F bytes */
     if (b[off] == 0x2F) off++;
@@ -346,7 +347,7 @@ static void parse_payload(data_t *data, const m_bus_block1_t *block1, const m_bu
     return;
 }
 
-static int parse_block2(r_device *decoder, const m_bus_data_t *in, m_bus_block1_t *block1)
+static int parse_block2(const m_bus_data_t *in, m_bus_block1_t *block1)
 {
     m_bus_block2_t *b2 = &block1->block2;
     const uint8_t *b = in->data+BLOCK1A_SIZE;
@@ -418,7 +419,7 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
         memcpy(out_ptr, in_ptr, block_size);
     }
 
-    parse_block2(decoder, in, block1);
+    parse_block2(in, block1);
 
     return 1;
 }
@@ -646,9 +647,9 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 //  static const uint8_t PREAMBLE_FA[] = {0x55, 0xF6, 0x8D};  // Mode F, format A Preamble
 //  static const uint8_t PREAMBLE_FB[] = {0x55, 0xF6, 0x72};  // Mode F, format B Preamble
 
-    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
-    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
-    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+    //m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
+    //m_bus_data_t    data_out    = {0};  // Data from Data Link layer
+    //m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
@@ -692,7 +693,6 @@ static int m_bus_mode_f_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
     m_bus_data_t    data_out    = {0};  // Data from Data Link layer
@@ -705,7 +705,7 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Find a Mode S data package
     unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, PREAMBLE_S, sizeof(PREAMBLE_S)*8);
-    start_pos = bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 410);
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset+sizeof(PREAMBLE_S)*8, &packet_bits, 800);
     data_in.length = (bitbuffer->bits_per_row[0]);
     bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
 
@@ -735,6 +735,28 @@ static char *output_fields[] = {
     "tpci",
     "apci",
     "crc",
+    "M",
+    "C",
+    "data_length",
+    "data",
+    "mic",
+    "temperature_C",
+    "average_temperature_1h_C",
+    "average_temperature_24h_C",
+    "humidity",
+    "average_humidity_1h",
+    "average_humidity_24h",
+    "minimum_temperature_1h_C",
+    "maximum_temperature_1h_C",
+    "minimum_temperature_24h_C",
+    "maximum_temperature_24h_C",
+    "minimum_humidity_1h",
+    "maximum_humidity_1h",
+    "minimum_humidity_24h",
+    "maximum_humidity_24h",
+    "switch",
+    "counter_0",
+    "counter_1",
     NULL,
 };
 

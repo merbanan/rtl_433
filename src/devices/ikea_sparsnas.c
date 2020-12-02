@@ -255,14 +255,14 @@ static int ikea_sparsnas_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint16_t effect = (decrypted[11] <<  8 | decrypted[12]);
     uint32_t pulses = ((unsigned)decrypted[13] << 24 | decrypted[14] << 16 | decrypted[15] << 8 | decrypted[16]);
     uint8_t battery =  decrypted[17];
-    float watt = effect * 24.;
+    //float watt = effect * 24.;
     uint8_t mode = decrypted[4]^0x0f;
 
-    if (mode == 1) {     //Note that mode cycles between 0-3 when you first put in the batteries in
-      watt = ((3600000.0 / ikea_sparsnas_pulses_per_kwh) * 1024.0) / effect;
-    } else if (mode == 0 ) { // special mode for low power usage
-      watt = effect * 0.24 / ikea_sparsnas_pulses_per_kwh;
-    }
+    //if (mode == 1) {     //Note that mode cycles between 0-3 when you first put in the batteries in
+    //  watt = ((3600000.0 / ikea_sparsnas_pulses_per_kwh) * 1024.0) / effect;
+    //} else if (mode == 0 ) { // special mode for low power usage
+    //  watt = effect * 0.24 / ikea_sparsnas_pulses_per_kwh;
+    //}
     float cumulative_kWh = ((float)pulses) / ((float)ikea_sparsnas_pulses_per_kwh);
 
     data_t *data;

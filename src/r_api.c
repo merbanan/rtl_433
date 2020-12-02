@@ -30,8 +30,10 @@
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
+#include "mongoose.h"
 #include "compat_time.h"
 #include "fatal.h"
+#include "http_server.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -74,6 +76,54 @@ char const *version_string(void)
             ;
 }
 
+/* helper */
+
+struct mg_mgr *get_mgr(r_cfg_t *cfg)
+{
+    if (!cfg->mgr) {
+        cfg->mgr = calloc(1, sizeof(*cfg->mgr));
+        if (!cfg->mgr)
+            FATAL_CALLOC("get_mgr()");
+        mg_mgr_init(cfg->mgr, NULL);
+    }
+
+    return cfg->mgr;
+}
+
+void set_center_freq(r_cfg_t *cfg, uint32_t center_freq)
+{
+    cfg->frequencies = 1;
+    cfg->frequency_index = 0;
+    cfg->frequency[0] = center_freq;
+    sdr_set_center_freq(cfg->dev, center_freq, 0);
+}
+
+void set_freq_correction(r_cfg_t *cfg, int freq_correction)
+{
+    cfg->ppm_error = freq_correction;
+    sdr_set_freq_correction(cfg->dev, freq_correction, 0);
+}
+
+void set_sample_rate(r_cfg_t *cfg, uint32_t sample_rate)
+{
+    cfg->samp_rate = sample_rate;
+    sdr_set_sample_rate(cfg->dev, sample_rate, 0);
+}
+
+void set_gain_str(struct r_cfg *cfg, char const *gain_str)
+{
+    free(cfg->gain_str);
+    if (!gain_str) {
+        cfg->gain_str = NULL; // auto gain
+    }
+    else {
+        cfg->gain_str = strdup(gain_str);
+        if (!cfg->gain_str)
+            WARN_STRDUP("set_gain_str()");
+    }
+    sdr_set_tuner_gain(cfg->dev, gain_str, 0);
+}
+
 /* general */
 
 void r_init_cfg(r_cfg_t *cfg)
@@ -93,6 +143,8 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
+
+    time(&cfg->frames_since);
 
     list_ensure_size(&cfg->demod->r_devs, 100);
     list_ensure_size(&cfg->demod->dumper, 32);
@@ -116,6 +168,8 @@ void r_free_cfg(r_cfg_t *cfg)
         sdr_close(cfg->dev);
     }
 
+    free(cfg->gain_str);
+
     for (void **iter = cfg->demod->dumper.elems; iter && *iter; ++iter) {
         file_info_t const *dumper = *iter;
         if (dumper->file && (dumper->file != stdout))
@@ -135,6 +189,9 @@ void r_free_cfg(r_cfg_t *cfg)
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->in_files, NULL);
+
+    mg_mgr_free(cfg->mgr);
+    free(cfg->mgr);
 
     //free(cfg);
 }
@@ -269,8 +326,8 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 
     if (cfg->verbose_bits)
         *p++ = "bits";
-    if (cfg->output_tag)
-        *p++ = "tag";
+    if (cfg->output_key)
+        *p++ = cfg->output_key;
     if (cfg->report_protocol)
         *p++ = "protocol";
     if (cfg->report_description)
@@ -456,6 +513,22 @@ void event_occurred_handler(r_cfg_t *cfg, data_t *data)
 void data_acquired_handler(r_device *r_dev, data_t *data)
 {
     r_cfg_t *cfg = r_dev->output_ctx;
+
+#ifndef NDEBUG
+    // check for undeclared csv fields
+    for (data_t *d = data; d; d = d->next) {
+        int found = 0;
+        for (char **p = r_dev->fields; *p; ++p) {
+            if (!strcmp(d->key, *p)) {
+                found = 1;
+                break;
+            }
+        }
+        if (!found) {
+            fprintf(stderr, "WARNING: Undeclared field \"%s\" in [%u] \"%s\"\n", d->key, r_dev->protocol_num, r_dev->name);
+        }
+    }
+#endif
 
     // replace textual battery key with numerical battery key
     if (!cfg->old_model_keys) {
@@ -679,7 +752,7 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
             output_tag = file_basename(cfg->in_filename);
         }
         data = data_prepend(data,
-                "tag", "Tag", DATA_STRING, output_tag,
+                cfg->output_key, "", DATA_STRING, output_tag,
                 NULL);
     }
 
@@ -705,6 +778,7 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             continue;
         if (level <= 0)
             continue;
+
         data = data_make(
                 "device",       "", DATA_INT, r_dev->protocol_num,
                 "name",         "", DATA_STRING, r_dev->name,
@@ -743,8 +817,12 @@ data_t *create_report_data(r_cfg_t *cfg, int level)
             "events",           "", DATA_INT, cfg->frames_events,
             NULL);
 
+    char since_str[LOCAL_TIME_BUFLEN];
+    format_time_str(since_str, "%Y-%m-%dT%H:%M:%S", cfg->report_time_tz, cfg->frames_since);
+
     data = data_make(
             "enabled",          "", DATA_INT, r_devs->len,
+            "since",            "", DATA_STRING, since_str,
             "frames",           "", DATA_DATA, data,
             "stats",            "", DATA_ARRAY, data_array(dev_data_list.len, DATA_DATA, dev_data_list.elems),
             NULL);
@@ -757,6 +835,7 @@ void flush_report_data(r_cfg_t *cfg)
 {
     list_t *r_devs = &cfg->demod->r_devs;
 
+    time(&cfg->frames_since);
     cfg->frames_count = 0;
     cfg->frames_fsk = 0;
     cfg->frames_events = 0;
@@ -825,12 +904,12 @@ void add_mqtt_output(r_cfg_t *cfg, char *param)
     char *opts = hostport_param(param, &host, &port);
     fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
 
-    list_push(&cfg->output_handler, data_output_mqtt_create(host, port, opts, cfg->dev_query));
+    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
 }
 
 void add_influx_output(r_cfg_t *cfg, char *param)
 {
-    list_push(&cfg->output_handler, data_output_influx_create(param));
+    list_push(&cfg->output_handler, data_output_influx_create(get_mgr(cfg), param));
 }
 
 void add_syslog_output(r_cfg_t *cfg, char *param)
@@ -843,9 +922,19 @@ void add_syslog_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_syslog_create(host, port));
 }
 
+void add_http_output(r_cfg_t *cfg, char *param)
+{
+    char *host = "0.0.0.0";
+    char *port = "8433";
+    hostport_param(param, &host, &port);
+    fprintf(stderr, "HTTP server at %s port %s\n", host, port);
+
+    list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
+}
+
 void add_null_output(r_cfg_t *cfg, char *param)
 {
-    (void)param;
+    UNUSED(param);
     list_push(&cfg->output_handler, NULL);
 }
 

@@ -24,7 +24,7 @@ of this time I am unable to find any documentation on how to
 differentiate IDM and NetIDM packets as both use identical use Sync
 ID / Packet Type / length / App Version ID and CRC.
 
-Eventually idm_callback() and netidm_callback() may be merged.
+Eventually ert_idm_decode() and ert_netidm_decode() may be merged.
 
 https://github.com/bemasher/rtlamr/wiki/Protocol
 http://www.gridinsight.com/community/documentation/itron-ert-technology/
@@ -85,7 +85,7 @@ Transmit Time Offset  | 2      | 84
 Meter ID Checksum     | 2      | 86
 Packet Checksum       | 2      | 88
 */
-static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
@@ -96,7 +96,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char PacketTypeID_str[5];
     uint8_t PacketLength;
     // char    PacketLength_str[5];
-    uint8_t HammingCode;
+    //uint8_t HammingCode;
     // char    HammingCode_str[5];
     uint8_t ApplicationVersion;
     // char    ApplicationVersion_str[5];
@@ -110,7 +110,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char TamperCounters_str[16];
     uint16_t AsynchronousCounters;
     // char AsynchronousCounters_str[8];
-    uint64_t PowerOutageFlags = 0; // 6 bytes
+    //uint64_t PowerOutageFlags = 0; // 6 bytes
     char PowerOutageFlags_str[16];
     uint32_t LastConsumptionCount;
     uint32_t DifferentialConsumptionIntervals[47] = {0}; // 47 intervals of 9-bit unsigned integers
@@ -193,7 +193,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     PacketLength = b[3];
     // snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
 
-    HammingCode = b[4];
+    //HammingCode = b[4];
     // snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
 
     ApplicationVersion = b[5];
@@ -221,7 +221,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
     p = TamperCounters_str;
-    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[13 + j]);
@@ -233,7 +233,7 @@ static int idm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // snprintf(AsynchronousCounters_str, sizeof(AsynchronousCounters_str), "0x%04X", AsynchronousCounters);
 
     p = PowerOutageFlags_str;
-    strncpy(p, "0x", sizeof(PowerOutageFlags_str) - 1);
+    strncpy(p, "0x", sizeof(PowerOutageFlags_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[21 + j]);
@@ -352,7 +352,7 @@ Transmit Time Offset  | 2      | 84
 Meter ID Checksum     | 2      | 86    CRC-16-CCITT of Meter ID.
 Packet Checksum       | 2      | 88    CRC-16-CCITT of packet starting at Packet Type.
 */
-static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[IDM_PACKET_BYTES];
     data_t *data;
@@ -363,7 +363,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char PacketTypeID_str[5];
     uint8_t PacketLength;
     // char    PacketLength_str[5];
-    uint8_t HammingCode;
+    //uint8_t HammingCode;
     // char    HammingCode_str[5];
     uint8_t ApplicationVersion;
     // char    ApplicationVersion_str[5];
@@ -374,17 +374,17 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t ModuleProgrammingState;
     // char  ModuleProgrammingState_str[5];
 
-    uint8_t Unknown_field_1[13];
+    //uint8_t Unknown_field_1[13];
     char Unknown_field_1_str[32];
 
     uint32_t LastGenerationCount = 0;
-    char LastGenerationCount_str[16];
+    //char LastGenerationCount_str[16];
 
-    uint8_t Unknown_field_2[3];
+    //uint8_t Unknown_field_2[3];
     char Unknown_field_2_str[9];
 
     uint32_t LastConsumptionCount;
-    char LastConsumptionCount_str[16];
+    //char LastConsumptionCount_str[16];
 
     // uint64_t TamperCounters = 0;  // 6 bytes
     char TamperCounters_str[16];
@@ -470,7 +470,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     PacketLength = b[3];
     // snprintf(PacketLength_str, sizeof(PacketLength_str), "0x%02X", PacketLength);
 
-    HammingCode = b[4];
+    //HammingCode = b[4];
     // snprintf(HammingCode_str, sizeof(HammingCode_str), "0x%02X", HammingCode);
 
     ApplicationVersion = b[5];
@@ -498,7 +498,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     SCM3 Counter6 Meter has a warning that may or may not require a site visit,
     */
     p = TamperCounters_str;
-    strncpy(p, "0x", sizeof(TamperCounters_str) - 1);
+    strncpy(p, "0x", sizeof(TamperCounters_str));
     p += 2;
     for (int j = 0; j < 6; j++) {
         p += sprintf(p, "%02X", b[13 + j]);
@@ -509,7 +509,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  should this be included ?
     p = Unknown_field_1_str;
-    strncpy(p, "0x", sizeof(Unknown_field_1_str) - 1);
+    strncpy(p, "0x", sizeof(Unknown_field_1_str));
     p += 2;
     for (int j = 0; j < 7; j++) {
         p += sprintf(p, "%02X", b[19 + j]);
@@ -524,7 +524,7 @@ static int netidm_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     //  should this be included ?
     p = Unknown_field_2_str;
-    strncpy(p, "0x", sizeof(Unknown_field_2_str) - 1);
+    strncpy(p, "0x", sizeof(Unknown_field_2_str));
     p += 2;
     for (int j = 0; j < 3; j++) {
         p += sprintf(p, "%02X", b[29 + j]);
@@ -680,8 +680,8 @@ static char *output_fields[] = {
 //      Freq 912600155
 //     -X n=L58,m=OOK_MC_ZEROBIT,s=30,l=30,g=20000,r=20000,match={24}0x16a31e,preamble={1}0x00
 
-r_device idm = {
-        .name        = "Interval Data Message (IDM)",
+r_device ert_idm = {
+        .name        = "ERT Interval Data Message (IDM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
@@ -689,13 +689,13 @@ r_device idm = {
         .reset_limit = 20000,
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
-        .decode_fn = &idm_callback,
+        .decode_fn = &ert_idm_decode,
         .disabled  = 0,
         .fields    = output_fields,
 };
 
-r_device netidm = {
-        .name        = "Interval Data Message (IDM) for Net Meters",
+r_device ert_netidm = {
+        .name        = "ERT Interval Data Message (IDM) for Net Meters",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
@@ -703,7 +703,7 @@ r_device netidm = {
         .reset_limit = 20000,
         // .gap_limit   = 2500,
         // .reset_limit = 4000,
-        .decode_fn = &netidm_callback,
+        .decode_fn = &ert_netidm_decode,
         .disabled  = 0,
         .fields    = output_fields,
 };

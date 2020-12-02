@@ -71,7 +71,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
-  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.
+  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)
@@ -97,7 +97,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [16]  AlectoV1 Weather Sensor (Alecto WS3500 WS4500 Ventus W155/W044 Oregon)
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
-    [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S temperature/humidity sensor
+    [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
     [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
@@ -150,7 +150,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [73]  LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX141W, TX145wsdth sensor
     [74]  Acurite 00275rm,00276rm Temp/Humidity with optional probe
     [75]  LaCrosse TX35DTH-IT, TFA Dostmann 30.3155 Temperature/Humidity sensor
-    [76]  LaCrosse TX29IT Temperature sensor
+    [76]  LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor
     [77]  Vaillant calorMatic VRT340f Central Heating Control
     [78]  Fine Offset Electronics, WH25, WH32B, WH24, WH65B, HP1000 Temperature/Humidity/Pressure Sensor
     [79]  Fine Offset Electronics, WH0530 Temperature/Rain Sensor
@@ -223,7 +223,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [146]  Auriol AFW2A1 temperature/humidity sensor
     [147]  TFA Drop Rain Gauge 30.3233.01
     [148]  DSC Security Contact (WS4945)
-    [149]  ERT
+    [149]  ERT Standard Consumption Message (SCM)
     [150]* Klimalogg
     [151]  Visonic powercode
     [152]  Eurochron EFTH-800 temperature and humidity sensor
@@ -234,14 +234,22 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [157]  Missil ML0757 weather station
     [158]  Sharp SPC775 weather station
     [159]  Insteon
-    [160]  Interval Data Message (IDM)
-    [161]  Interval Data Message (IDM) for Net Meters
+    [160]  ERT Interval Data Message (IDM)
+    [161]  ERT Interval Data Message (IDM) for Net Meters
     [162]* ThermoPro-TX2 temperature sensor
     [163]  Acurite 590TX Temperature with optional Humidity
     [164]  Security+ 2.0 (Keyfob)
     [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
     [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
     [167]  Somfy RTS
+    [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [169]* Nice Flor-s remote control for gates
+    [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
+    [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
+    [172]  Bresser Weather Center 6-in-1
+    [173]  Bresser Weather Center 7-in-1
+    [174]  EcoDHOME Smart Socket and MCEE Solar monitor
+    [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
 
 * Disabled by default, use -R n or -G
 

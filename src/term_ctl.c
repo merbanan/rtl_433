@@ -33,6 +33,10 @@
 #define STDERR_FILENO   2
 #endif
 
+#ifndef UNUSED
+#define UNUSED(x) (void)(x)
+#endif
+
 typedef struct console {
     CONSOLE_SCREEN_BUFFER_INFO info;
     BOOL                       redirected;
@@ -222,7 +226,7 @@ void term_ring_bell(void *ctx)
 {
 #ifdef _WIN32
     Beep(800, 20);
-    (void) ctx;
+    UNUSED(ctx);
 #else
     FILE *fp = (FILE *)ctx;
     fprintf(fp, "\a");

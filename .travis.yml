@@ -237,7 +237,8 @@ matrix:
             - gcc-mingw-w64-x86-64
             - mingw-w64-x86-64-dev
             - gcc-mingw-w64
-            - p7zip
+            - p7zip-full
+            - realpath
       before_deploy: ./do_sysroot.sh
       deploy:
         provider: bintray
@@ -256,7 +257,7 @@ matrix:
       env: RTLSDR=OFF RUN_RTL_433_TESTS=1
       dist: trusty
       python:
-          - "2.7"
+          - "3.6"
       install:
           - pip install deepdiff==3.3.0
       addons:

@@ -302,7 +302,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         cmd_array[cmd_array_len++] = (int)results[j];
     }
 
-    char payload[35] = {0};
+    char payload[INSTEON_PACKET_MIN_EXT * 2 + 1] = {0};
     p                = payload;
     for (int j = 0; j < min_pkt_len; j++) {
         p += sprintf(p, "%02X", results[j]);
@@ -498,6 +498,9 @@ static char *output_fields[] = {
         "mic", // remove if not applicable
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data
+        "msg_str",
+        "hopsmax",
+        "hopsleft",
         // "raw",
         // "raw_message",
         NULL,
@@ -514,7 +517,5 @@ r_device insteon = {
         .tolerance   = 15,
         .reset_limit = 1000, // a bit longer than packet gap
         .decode_fn   = &insteon_callback,
-        .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
         .fields      = output_fields,
-        .verbose     = 0,
 };

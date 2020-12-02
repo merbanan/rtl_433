@@ -52,7 +52,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     // TODO: validate checksum
 
     id          = (unsigned)b[0] << 20 | b[1] << 12 | b[2] << 4 | b[3] >> 4;
-    flags       = b[3] >> 4;
+    flags       = b[3] & 0x0F;
     pressure    = b[4];
     temperature = b[5];
     //crc         = b[6];

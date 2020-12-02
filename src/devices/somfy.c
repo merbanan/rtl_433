@@ -161,6 +161,7 @@ static char *output_fields[] = {
         "counter",
         "address",
         "retransmission",
+        "mic",
         NULL,
 };
 

@@ -16,6 +16,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "r_util.h"
+
 static uint16_t scaled_squares[256];
 
 /// precalculate lookup table for envelope detection.
@@ -257,6 +259,7 @@ static int32_t atan2_int32(int32_t y, int32_t x)
 /// for evaluation.
 void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
 {
+    UNUSED(fpdm);
     ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
     //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
     //static int const blp[2] = {FIX32(0.13673), FIX32(0.13673)};

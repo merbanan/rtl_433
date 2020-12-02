@@ -19,6 +19,7 @@ struct r_device;
 struct data;
 struct pulse_data;
 struct list;
+struct mg_mgr;
 
 /* general */
 
@@ -78,6 +79,8 @@ void add_influx_output(struct r_cfg *cfg, char *param);
 
 void add_syslog_output(struct r_cfg *cfg, char *param);
 
+void add_http_output(struct r_cfg *cfg, char *param);
+
 void add_null_output(struct r_cfg *cfg, char *param);
 
 void start_outputs(struct r_cfg *cfg, char const **well_known);
@@ -92,8 +95,14 @@ void add_infile(struct r_cfg *cfg, char *in_file);
 
 /* runtime */
 
-//void set_center_freq(struct r_cfg *cfg, uint32_t center_frequency);
+struct mg_mgr *get_mgr(struct r_cfg *cfg);
 
-//void set_sample_rate(struct r_cfg *cfg, uint32_t samp_rate);
+void set_center_freq(struct r_cfg *cfg, uint32_t center_freq);
+
+void set_freq_correction(struct r_cfg *cfg, int freq_correction);
+
+void set_sample_rate(struct r_cfg *cfg, uint32_t sample_rate);
+
+void set_gain_str(struct r_cfg *cfg, char const *gain_str);
 
 #endif /* INCLUDE_R_API_H_ */

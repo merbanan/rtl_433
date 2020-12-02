@@ -1,5 +1,5 @@
 /** @file
-    ERT SCM sensors.
+    ERT Standard Consumption Message (SCM) sensors.
 
     Copyright (C) 2020 Benjamin Larsson.
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-ERT SCM sensors.
+ERT Standard Consumption Message (SCM) sensors.
 
 Random information:
 
@@ -49,7 +49,7 @@ https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTM
 
 */
 
-static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     // TODO: Verify preamble
     unsigned sync_index;
@@ -61,7 +61,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t consumption_data, ert_id;
     data_t *data;
 
-    if (bitbuffer->bits_per_row[0] < 96) {   
+    if (bitbuffer->bits_per_row[0] < 96) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -72,7 +72,7 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if(sync_index >= bitbuffer->bits_per_row[0]){
             if (decoder->verbose > 1) {
-                 fprintf(stderr, "%s: DECODE_ABORT_EARLY %d sync_index %d\n ", __func__, bitbuffer->bits_per_row[0], sync_index);        
+                 fprintf(stderr, "%s: DECODE_ABORT_EARLY %d sync_index %d\n ", __func__, bitbuffer->bits_per_row[0], sync_index);
                  bitbuffer_print(bitbuffer);
                  decoder_output_bitbufferf(decoder, bitbuffer, "%s: ", __func__);
             }
@@ -84,9 +84,9 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if ( (bitbuffer->bits_per_row[0] - sync_index) < 96) {
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH %d\n ", __func__, bitbuffer->bits_per_row[0]);        
+            fprintf(stderr, "%s: DECODE_ABORT_LENGTH %d\n ", __func__, bitbuffer->bits_per_row[0]);
         }
-        
+
         return DECODE_ABORT_LENGTH;
     }
 
@@ -139,14 +139,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ert_amr = {
-        .name        = "ERT",
+r_device ert_scm = {
+        .name        = "ERT Standard Consumption Message (SCM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
         .gap_limit   = 0,
-        .reset_limit = 80, // 65
-        .decode_fn   = &ert_decode,
+        .reset_limit = 80, //64,
+        .decode_fn   = &ert_scm_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

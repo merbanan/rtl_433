@@ -51,6 +51,7 @@
 #include "compat_paths.h"
 #include "fatal.h"
 #include "write_sigrok.h"
+#include "mongoose.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -71,12 +72,14 @@
 
 // note that Clang has _Noreturn but it's C11
 // #if defined(__clang__) ...
+#if !defined _Noreturn
 #if defined(__GNUC__)
 #define _Noreturn __attribute__((noreturn))
 #elif defined(_MSC_VER)
 #define _Noreturn __declspec(noreturn)
 #else
 #define _Noreturn
+#endif
 #endif
 
 r_device *flex_create_device(char *spec); // maybe put this in some header file?
@@ -131,7 +134,7 @@ static void usage(int exit_code)
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
-            "  [-K FILE | PATH | <tag>] Add an expanded token or fixed tag to every output line.\n"
+            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
@@ -296,17 +299,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     char time_str[LOCAL_TIME_BUFLEN];
     unsigned long n_samples;
 
-    for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
-        data_output_poll(cfg->output_handler.elems[i]);
-    }
-
-    if (cfg->do_exit || cfg->do_exit_async)
-        return;
-
     if ((cfg->bytes_to_read > 0) && (cfg->bytes_to_read <= len)) {
         len = cfg->bytes_to_read;
-        cfg->do_exit = 1;
-        sdr_stop(cfg->dev);
+        cfg->exit_async = 1;
     }
 
     get_time_now(&demod->now);
@@ -570,7 +565,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
         if (fwrite(out_buf, 1, out_len, dumper->file) != out_len) {
             fprintf(stderr, "Short write, samples lost, exiting!\n");
-            sdr_stop(cfg->dev);
+            cfg->exit_async = 1;
         }
     }
 
@@ -579,14 +574,15 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->bytes_to_read -= len;
 
     if (cfg->after_successful_events_flag && (d_events > 0)) {
-        if (cfg->after_successful_events_flag == 1) {
-            cfg->do_exit = 1;
-        }
-        cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        if (cfg->after_successful_events_flag == 1) {
+            cfg->exit_async = 1;
+        }
+        else {
+            cfg->hop_now = 1;
+        }
     }
 
     time_t rawtime;
@@ -595,18 +591,16 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
             && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
-        cfg->do_exit_async = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        cfg->hop_now = 1;
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
-        cfg->do_exit_async = cfg->do_exit = 1;
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        sdr_stop(cfg->dev);
+        cfg->exit_async = 1;
         fprintf(stderr, "Time expired, exiting!\n");
     }
     if (cfg->stats_now || (cfg->report_stats && cfg->stats_interval && rawtime >= cfg->stats_time)) {
@@ -616,6 +610,14 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             cfg->stats_time += cfg->stats_interval;
         if (cfg->stats_now)
             cfg->stats_now--;
+    }
+
+    if (cfg->hop_now && !cfg->exit_async) {
+        cfg->hop_now = 0;
+        time(&cfg->hop_start_time);
+        cfg->frequency_index  = (cfg->frequency_index + 1) % cfg->frequencies;
+        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+        sdr_set_center_freq(cfg->dev, cfg->center_frequency, 0);
     }
 }
 
@@ -783,7 +785,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!arg)
             help_gain();
 
-        cfg->gain_str = arg;
+        free(cfg->gain_str);
+        cfg->gain_str = strdup(arg);
+        if (!cfg->gain_str)
+            FATAL_STRDUP("parse_conf_option()");
         break;
     case 'G':
         if (atobv(arg, 1) == 4) {
@@ -1017,12 +1022,14 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (strncmp(arg, "mqtt", 4) == 0) {
             add_mqtt_output(cfg, arg_param(arg));
         }
-        else if (strncmp(arg, "http", 4) == 0
-                || strncmp(arg, "influx", 6) == 0) {
+        else if (strncmp(arg, "influx", 6) == 0) {
             add_influx_output(cfg, arg);
         }
         else if (strncmp(arg, "syslog", 6) == 0) {
             add_syslog_output(cfg, arg_param(arg));
+        }
+        else if (strncmp(optarg, "http", 4) == 0) {
+            add_http_output(cfg, arg_param(optarg));
         }
         else if (strncmp(arg, "null", 4) == 0) {
             add_null_output(cfg, arg_param(arg));
@@ -1034,6 +1041,11 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         break;
     case 'K':
         cfg->output_tag = arg;
+        cfg->output_key = asepc(&cfg->output_tag, '=');
+        if (!cfg->output_tag) {
+            cfg->output_tag = cfg->output_key;
+            cfg->output_key = "tag";
+        }
         break;
     case 'C':
         if (!arg)
@@ -1125,14 +1137,12 @@ sighandler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
-        g_cfg.do_exit = 1;
-        sdr_stop(g_cfg.dev);
+        g_cfg.exit_async = 1;
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
         fprintf(stderr, "CTRL-BREAK detected, hopping to next frequency (-f). Use CTRL-C to quit.\n");
-        g_cfg.do_exit_async = 1;
-        sdr_stop(g_cfg.dev);
+        g_cfg.hop_now = 1;
         return TRUE;
     }
     return FALSE;
@@ -1148,8 +1158,7 @@ static void sighandler(int signum)
         return;
     }
     else if (signum == SIGUSR1) {
-        g_cfg.do_exit_async = 1;
-        sdr_stop(g_cfg.dev);
+        g_cfg.hop_now = 1;
         return;
     }
     else if (signum == SIGALRM) {
@@ -1159,10 +1168,56 @@ static void sighandler(int signum)
     else {
         fprintf(stderr, "Signal caught, exiting!\n");
     }
-    g_cfg.do_exit = 1;
-    sdr_stop(g_cfg.dev);
+    g_cfg.exit_async = 1;
 }
 #endif
+
+static void sdr_handler(sdr_event_t *ev, void *ctx)
+{
+    r_cfg_t *cfg = ctx;
+
+    data_t *data = NULL;
+    if (ev->ev & SDR_EV_RATE) {
+        data = data_append(data,
+                "sample_rate", "", DATA_INT, ev->sample_rate,
+                NULL);
+    }
+    if (ev->ev & SDR_EV_CORR) {
+        data = data_append(data,
+                "freq_correction", "", DATA_INT, ev->freq_correction,
+                NULL);
+    }
+    if (ev->ev & SDR_EV_FREQ) {
+        data = data_append(data,
+                "center_frequency", "", DATA_INT, ev->center_frequency,
+                "frequencies", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->frequencies, DATA_INT, cfg->frequency),
+                "hop_times", "", DATA_COND, cfg->frequencies > 1, DATA_ARRAY, data_array(cfg->hop_times, DATA_INT, cfg->hop_time),
+                NULL);
+    }
+    if (ev->ev & SDR_EV_GAIN) {
+        data = data_append(data,
+                "gain", "", DATA_STRING, ev->gain_str,
+                NULL);
+    }
+    if (data) {
+        for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
+            data_output_print(cfg->output_handler.elems[i], data);
+        }
+        data_free(data);
+    }
+
+    if (ev->ev == SDR_EV_DATA) {
+        if (cfg->mgr) {
+            mg_mgr_poll(cfg->mgr, 0);
+        }
+
+        if (!cfg->exit_async)
+            sdr_callback((unsigned char *)ev->buf, ev->len, ctx);
+    }
+
+    if (cfg->exit_async)
+        sdr_stop(cfg->dev);
+}
 
 int main(int argc, char **argv) {
 #ifndef _WIN32
@@ -1456,7 +1511,7 @@ int main(int argc, char **argv) {
 
             // special case for pulse data file-inputs
             if (demod->load_info.format == PULSE_OOK) {
-                while (!cfg->do_exit) {
+                while (!cfg->exit_async) {
                     pulse_data_load(in_file, &demod->pulse_data, cfg->samp_rate);
                     if (!demod->pulse_data.num_pulses)
                         break;
@@ -1515,7 +1570,7 @@ int main(int argc, char **argv) {
                 demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / 2 / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, cfg);
-            } while (n_read != 0 && !cfg->do_exit);
+            } while (n_read != 0 && !cfg->exit_async);
 
             // Call a last time with cleared samples to ensure EOP detection
             if (demod->sample_size == 1) { // CU8
@@ -1561,6 +1616,7 @@ int main(int argc, char **argv) {
     if (r < 0) {
         exit(2);
     }
+    cfg->dev_info = sdr_get_dev_info(cfg->dev);
 
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
@@ -1610,42 +1666,29 @@ int main(int argc, char **argv) {
         cfg->stop_time += cfg->duration;
     }
 
-    uint32_t samp_rate = cfg->samp_rate;
-    while (!cfg->do_exit) {
+    cfg->center_frequency = cfg->frequency[cfg->frequency_index];
+    r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
+
         time(&cfg->hop_start_time);
-
-        /* Set the cfg->frequency */
-        cfg->center_frequency = cfg->frequency[cfg->frequency_index];
-        r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
-
-        if (samp_rate != cfg->samp_rate) {
-            r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
-            samp_rate = cfg->samp_rate;
-        }
-
 #ifndef _WIN32
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
 #endif
-        r = sdr_start(cfg->dev, sdr_callback, (void *)cfg,
+        r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
             fprintf(stderr, "WARNING: async read failed (%i).\n", r);
-            break;
         }
 #ifndef _WIN32
         alarm(0); // cancel the watchdog timer
 #endif
-        cfg->do_exit_async = 0;
-        cfg->frequency_index = (cfg->frequency_index + 1) % cfg->frequencies;
-    }
 
     if (cfg->report_stats > 0) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->report_stats));
         flush_report_data(cfg);
     }
 
-    if (!cfg->do_exit) {
+    if (!cfg->exit_async) {
         fprintf(stderr, "\nLibrary error %d, exiting...\n", r);
         cfg->exit_code = r;
     }

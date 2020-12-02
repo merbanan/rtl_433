@@ -13,6 +13,8 @@ rtl_433_SOURCES      = abuf.c \
                        data.c \
                        decoder_util.c \
                        fileformat.c \
+                       http_server.c \
+                       jsmn.c \
                        list.c \
                        mongoose.c \
                        optparse.c \
@@ -44,6 +46,8 @@ rtl_433_SOURCES      = abuf.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
                        devices/bresser_5in1.c \
+                       devices/bresser_6in1.c \
+                       devices/bresser_7in1.c \
                        devices/bt_rain.c \
                        devices/calibeur.c \
                        devices/cardin.c \
@@ -56,6 +60,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/directv.c \
                        devices/dish_remote_6_3.c \
                        devices/dsc.c \
+                       devices/ecodhome.c \
                        devices/ecowitt.c \
                        devices/efergy_e2_classic.c \
                        devices/efergy_optical.c \
@@ -63,7 +68,8 @@ rtl_433_SOURCES      = abuf.c \
                        devices/elro_db286a.c \
                        devices/elv.c \
                        devices/emontx.c \
-                       devices/ert.c \
+                       devices/ert_idm.c \
+                       devices/ert_scm.c \
                        devices/esa.c \
                        devices/esic_emt7110.c \
                        devices/esperanza_ews.c \
@@ -90,7 +96,6 @@ rtl_433_SOURCES      = abuf.c \
                        devices/honeywell_wdb.c \
                        devices/ht680.c \
                        devices/ibis_beacon.c \
-                       devices/idm.c \
                        devices/ikea_sparsnas.c \
                        devices/infactory.c \
                        devices/inovalley-kw9015b.c \
@@ -102,8 +107,11 @@ rtl_433_SOURCES      = abuf.c \
                        devices/klimalogg.c \
                        devices/lacrosse.c \
                        devices/lacrosse_breezepro.c \
+                       devices/lacrosse_r1.c \
+                       devices/lacrosse_th3.c \
                        devices/lacrosse_tx141x.c \
                        devices/lacrosse_tx35.c \
+                       devices/lacrosse_wr1.c \
                        devices/lacrosse_ws7000.c \
                        devices/lacrossews.c \
                        devices/lightwave_rf.c \
@@ -116,6 +124,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/newkaku.c \
                        devices/nexa.c \
                        devices/nexus.c \
+                       devices/nice_flor_s.c \
                        devices/norgo.c \
                        devices/oil_standard.c \
                        devices/oil_watchman.c \
