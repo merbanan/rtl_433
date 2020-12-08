@@ -42,6 +42,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/archos_tbh.c \
                        devices/auriol_afw2a1.c \
                        devices/auriol_hg02832.c \
+                       devices/blueline.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
