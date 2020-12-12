@@ -29,6 +29,7 @@ Acurite weather stations and temperature / humidity sensors.
 
 // ** Acurite 5n1 functions **
 
+#define ACURITE_515_BITLEN        50
 #define ACURITE_TXR_BITLEN        56
 #define ACURITE_5N1_BITLEN        64
 #define ACURITE_6045_BITLEN       72
@@ -652,7 +653,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t humidity, sequence_num, message_type;
     // uint8_t sensor_status;
     char channel;
-    char channel_str[2];
+    char channel_str[3];
+    char sensor_type;
     uint16_t sensor_id;
     int raincounter, battery_low;
     data_t *data;
@@ -673,7 +675,8 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if ((bitbuffer->bits_per_row[brow] < ACURITE_TXR_BITLEN ||
                 bitbuffer->bits_per_row[brow] > ACURITE_5N1_BITLEN + 1)
                 && bitbuffer->bits_per_row[brow] != ACURITE_6045_BITLEN
-                && bitbuffer->bits_per_row[brow] != ACURITE_ATLAS_BITLEN) {
+                && bitbuffer->bits_per_row[brow] != ACURITE_ATLAS_BITLEN
+                && bitbuffer->bits_per_row[brow] != ACURITE_515_BITLEN) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr, "%s: skipping wrong len\n", __func__);
             continue; // DECODE_ABORT_LENGTH
@@ -737,6 +740,40 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
+                    "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
+                    NULL);
+            /* clang-format on */
+
+            decoder_output_data(decoder, data);
+            valid++;
+        }
+
+        // 515 sensor messages are 6 bytes.
+        if (browlen == ACURITE_515_BITLEN / 8) {
+        // Sensor type is determined by bit 0 from the message_type.
+        // 0 = refrigerator, 1 = freezer
+        sensor_type = message_type & 1 ? 'F' : 'R';
+
+            channel = acurite_getChannel(bb[0]);
+            // Sensor ID is the last 14 bits of byte 0 and 1
+            // CCII IIII | IIII IIII
+            // The sensor ID changes on each power-up of the sensor.
+            sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
+            // temperature encoding used by 515 sensors
+            // 14 bits available after removing both parity bits.
+            int temp_raw = ((bb[3] & 0x7F) << 7) | (bb[4] & 0x7F);
+            tempf = (temp_raw - 1480) * 0.1f;
+            sprintf(channel_str, "%c%c", channel, sensor_type);
+            // Battery status is the 7th bit 0x40. 1 = normal, 0 = low
+            battery_low = (bb[2] & 0x40) == 0;
+
+            /* clang-format off */
+            data = data_make(
+                    "model",                "",             DATA_STRING, _X("Acurite-515","Acurite 515 sensor"),
+                    "id",                   "",             DATA_INT,    sensor_id,
+                    "channel",              NULL,           DATA_STRING, &channel_str,
+                    _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
+                    "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, tempf,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
