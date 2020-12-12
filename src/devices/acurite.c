@@ -773,7 +773,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
-                    "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, tempf,
+                    "temperature_F",        "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, tempf,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
             /* clang-format on */
