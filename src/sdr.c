@@ -1131,8 +1131,11 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 #endif
 
 #ifdef RTLSDR
-    if (dev->rtlsdr_dev)
+    if (dev->rtlsdr_dev) {
         r = rtlsdr_set_freq_correction(dev->rtlsdr_dev, ppm);
+        if (r == -2)
+            r = 0; // -2 is not an error code
+    }
 #endif
 
     if (verbose) {
