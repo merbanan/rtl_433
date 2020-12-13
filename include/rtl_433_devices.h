@@ -183,6 +183,7 @@
     DECL(bresser_7in1) \
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
+    DECL(lacrosse_tx22uit) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
