@@ -37,6 +37,8 @@ Acurite weather stations and temperature / humidity sensors.
 
 // ** Acurite known message types
 //#define ACURITE_MSGTYPE_TOWER_SENSOR                    0x04
+#define ACURITE_MSGTYPE_515_REFRIGERATOR                0x08
+#define ACURITE_MSGTYPE_515_FREEZER                     0x09
 #define ACURITE_MSGTYPE_6045M                           0x2f
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_WINDDIR_RAINFALL  0x31
 #define ACURITE_MSGTYPE_5N1_WINDSPEED_TEMP_HUMIDITY     0x38
@@ -750,15 +752,29 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // 515 sensor messages are 6 bytes.
         if (browlen == ACURITE_515_BITLEN / 8) {
-        // Sensor type is determined by bit 0 from the message_type.
-        // 0 = refrigerator, 1 = freezer
-        sensor_type = message_type & 1 ? 'F' : 'R';
-
             channel = acurite_getChannel(bb[0]);
+
             // Sensor ID is the last 14 bits of byte 0 and 1
             // CCII IIII | IIII IIII
             // The sensor ID changes on each power-up of the sensor.
             sensor_id = ((bb[0] & 0x3f) << 8) | bb[1];
+
+            // Sensor type (refrigerator, freezer) is determined by the message_type.
+            switch (message_type) {
+                case ACURITE_MSGTYPE_515_FREEZER:
+                    sensor_type = 'F';
+                    break;
+                case ACURITE_MSGTYPE_515_REFRIGERATOR:
+                    sensor_type = 'R';
+                    break;
+                default:
+                    if (decoder->verbose > 1) {
+                        fprintf(stderr, "%s: Acurite 515 sensor 0x%04X Ch %c, Unknown message type 0x%02x\n",
+                            __func__, sensor_id, channel, message_type);
+                    }
+                    continue; // DECODE_FAIL_MIC
+            }
+
             // temperature encoding used by 515 sensors
             // 14 bits available after removing both parity bits.
             int temp_raw = ((bb[3] & 0x7F) << 7) | (bb[4] & 0x7F);
@@ -769,7 +785,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",                "",             DATA_STRING, _X("Acurite-515","Acurite 515 sensor"),
+                    "model",                "",             DATA_STRING, "Acurite-515",
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
                     _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
