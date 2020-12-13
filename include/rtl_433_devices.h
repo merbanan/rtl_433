@@ -330,6 +330,8 @@
     DECL(ctt_life_power_hybrid) \
     DECL(tpms_schrader_motorcycle) \
     DECL(tmps_gear_hive) \
+    DECL(lacrosse_tx22uit) \
+    DECL(lacrosse_tx22uit_ook) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device const name;

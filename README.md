@@ -410,6 +410,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [320]  Cellular Tracking Technologies LifeTag/PowerTag/HybridTag
     [321]  Schrader Motorcycle TPMS sensor
     [322]  Gear Hive TPMS sensor
+    [323]  LaCrosse Technology TX22U-IT
+    [324]  LaCrosse Technology TX22U-IT (OOK)
 
 * Disabled by default, use -R n or a conf file to enable
 
