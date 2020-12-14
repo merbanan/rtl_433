@@ -1169,6 +1169,7 @@ static void sighandler(int signum)
         fprintf(stderr, "Signal caught, exiting!\n");
     }
     g_cfg.exit_async = 1;
+    sdr_stop(g_cfg.dev);
 }
 #endif
 

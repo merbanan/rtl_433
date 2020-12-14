@@ -511,6 +511,7 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
             fprintf(stderr, "\n%s: %s!\n"
                             "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
                     libusb_error_name(r), libusb_strerror(r));
+            dev->running = 0;
         }
         dev->polling = 0;
         apply_changes(dev, cb, ctx);
