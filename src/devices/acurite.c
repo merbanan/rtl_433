@@ -1099,9 +1099,8 @@ the interval of sensor2 is 6 minutes.
 static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t *bb, sensor_num, status, crc, crcc;
-    int max_browlen = 8; // larger then expected for debugging
-    int browlen;
-    uint8_t br[max_browlen+1];
+    const int browlen = 7; // expected number of bytes
+    uint8_t br[browlen];
     int bits;
     int8_t tempf; // Raw Temp is 8 bit signed magnitude Fahrenheit
     uint16_t sensor_id, valid_cnt = 0;
@@ -1115,17 +1114,16 @@ static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         bb = bitbuffer->bb[brow];
         bits = bitbuffer->bits_per_row[brow];
-        browlen = DIV_ROUND_UP(bits, 8);
 
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: row %d, bits %d, bytes %d\n",
+            fprintf(stderr, "%s: row %d, bits %d, bytes expected %d)\n",
                     __func__, brow, bits, browlen);
-            bitrow_printf(bb, bits, "%s: original data: ", __func__);
         }
 
-        if (browlen > max_browlen) {
+        if (browlen != DIV_ROUND_UP(bits, 8)) {
             if (decoder->verbose > 1)
-                fprintf(stderr,"%s: skipping, too long\n", __func__);
+                fprintf(stderr,"%s: skipping, wrong len: %d bits\n",
+                        __func__, bits);
             continue;
         }
 
@@ -1135,12 +1133,6 @@ static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (decoder->verbose > 1)
             bitrow_printf(br, bits, "%s: bits reversed: ", __func__);
-
-        if (bits < 44 || bits > 55 ) {
-            if (decoder->verbose > 1 && bits > 16)
-                fprintf(stderr,"%s: skipping, wrong len\n", __func__);
-            continue; // DECODE_ABORT_LENGTH
-        }
 
         // first 2 bytes seem to be garbage (part of sync pluse?)
         tempf = br[2];
