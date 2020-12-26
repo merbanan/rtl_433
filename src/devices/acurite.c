@@ -1116,7 +1116,7 @@ static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bits = bitbuffer->bits_per_row[brow];
 
         if (decoder->verbose > 1) {
-            fprintf(stderr, "%s: row %d, bits %d, bytes expected %d)\n",
+            fprintf(stderr, "%s: row %d, bits %d, (bytes expected %d)\n",
                     __func__, brow, bits, browlen);
         }
 
@@ -1124,6 +1124,16 @@ static int acurite_985_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1)
                 fprintf(stderr,"%s: skipping, wrong len: %d bits\n",
                         __func__, bits);
+            continue;
+        }
+
+        // Reduce false positives.  All zero bytes will pass the CRC check.
+        // This could in theory reject something legit.  But only if
+        // temp==0F, id==0, battery==ok, and sensor==refrigerator.
+        if (bb[2] == 0x00 && bb[3] == 0x00 && bb[4] == 0x00 &&
+            bb[5] == 0x00 && bb[6] == 0x00) {
+            if (decoder->verbose > 1)
+                fprintf(stderr,"%s: skipping, all zeros\n", __func__);
             continue;
         }
 
