@@ -183,6 +183,7 @@
     DECL(bresser_7in1) \
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
+    DECL(blueline) \
     DECL(acurite_985) \
     /* Add new decoders here. */
 

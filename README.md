@@ -250,7 +250,8 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
-    [176]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
+    [176]  BlueLine Power Monitor
+    [177]  Acurite/Chaney 985 Refrigerator / Freezer Thermometer
 
 * Disabled by default, use -R n or -G
 
