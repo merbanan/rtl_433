@@ -64,14 +64,20 @@
  * and the payload may be interpreted.
  *
  * Note that if the transmitter's ID isn't known, the code can't easily determine if messages other than an
- * ID payload are good or bad, and can't intepret their data correctly.  However, if the BLUELINE_USE_ID_TRANSMISSION
- * or BLUELINE_USE_ID_AUTODETECT features are enabled, the system can learn the transmitter's ID by various methods.
+ * ID payload are good or bad, and can't intepret their data correctly.  However, if the "auto" mode is enabled,
+ * the system can try to learn the transmitter's ID by various methods. (See USAGE HINTS below)
  *
  * For the power message (1), the offset payload gives the number of milliseconds gap between impulses for the most
  * recent impulses seen by the monitor.  To convert from this 'gap' to kilowatts, you will need your meter's
  * Kh value. The Kh value is written obviously on the front of most meters, and 1.0 and 7.2 are very common.
  *
  * kW = (3600/gap) * Kh
+ *
+ * Note that the 'gap' value clamps to a maximum of 65533 (0xFFFD), so there is a non-zero floor when calculating the
+ * kW value using this report.  For example, with a Kh of 7.2, the lowest kW value you will ever see when monitoring
+ * the 'gap' value is (3600/65533)*7.2 = 0.395kW.  If you need power monitoring for impulse rates slower than every
+ * 65.533 seconds to do things like confirm that your power consumption is 0kW, you need to monitor the impulse
+ * counts and timing between energy messages (see 3 below).
  *
  * For the temperature message (2), the offset payload gives the temperature in an odd scaling in the last byte,
  * and has some flag bits in the first byte.  The only known flag bit is the battery.  rtl_433 handles scaling back to
@@ -104,15 +110,22 @@
  * rtl_433 -R 176:45364
  *
  * If you are unable to access the monitor to have it send the ID message, you can also use the "auto" parameter:
- * rtl_433 -R 176:auto -v
+ * rtl_433 -vv -R 176:auto
  *
- * Verbose mode is recommended to tell what the "auto" mode is doing.
+ * Verbose mode should be specified first on the command line to see what the "auto" mode is doing.
  *
  * The auto parameter will try to brute-force the ID on any messages that look like they are from a
  * BlueLine monitor.  This method usually succeeds within a few minutes, but is likely to get false positives
  * if there is more than one monitor in range or the messages being received are all identical (i.e. if the
  * meter is continuously reporting 0 watts).  If it succeeds, it will start reporting data with the new ID,
  * which you should then use as a parameter when you re-run rtl_433 in the future.
+ *
+ * Finally, passing a parameter to this decoder requires specifying it explicitly, which normally disables all
+ * other default decoders.  If you want to pass an option to this decoder without disabling all the other defaults,
+ * the simplest method is to explicity exclude this one decoder (which implicitly says to leave all other defaults
+ * enabled), then add this decoder back with a parameter.  The command line looks like this:
+ *
+ * rtl_433 -R -176 -R 176:45364
  *
  */
 
@@ -133,7 +146,7 @@
 
 #define BLUELINE_ID_STEP_SIZE 4
 #define MAX_POSSIBLE_BLUELINE_IDS (65536/BLUELINE_ID_STEP_SIZE)
-#define BLUELINE_ID_GUESS_THRESHOLD 10
+#define BLUELINE_ID_GUESS_THRESHOLD 4
 
 struct blueline_stateful_context {
     unsigned id_guess_hits[MAX_POSSIBLE_BLUELINE_IDS];
@@ -141,50 +154,88 @@ struct blueline_stateful_context {
     unsigned searching_for_new_id;
 };
 
+static uint8_t rev_crc8(uint8_t const message[], unsigned nBytes, uint8_t polynomial, uint8_t remainder) {
+    unsigned byte, bit;
+
+    // Run a CRC backwards to find out what the init value would have been.
+    // Alternatively, put a known init value in the first byte, and it will
+    // return a value that could be used in that place to get that init.
+
+    // This logic only works assuming the polynomial has the lowest bit set,
+    // Which should be true for most CRC polynomials, but let's be safe...
+    if ((polynomial & 0x01) == 0) {
+        fprintf(stderr,"Cannot run reverse CRC-8 with this polynomial!\n");
+        return 0xFF;
+    }
+    polynomial = (polynomial >> 1) | 0x80;
+
+    byte = nBytes;
+    while (byte--) {
+        bit = 8;
+        while (bit--) {
+            if (remainder & 0x01) {
+                remainder = (remainder >> 1) ^ polynomial;
+            } else {
+                remainder = remainder >> 1;
+            }
+
+        }
+        remainder ^= message[byte];
+    }
+    return remainder;
+}
+
+
 static uint16_t guess_blueline_id(r_device *decoder, const uint8_t *current_row)
 {
     struct blueline_stateful_context *const context = decoder->decode_ctx;
     const uint16_t start_value = ((current_row[2] << 8) | current_row[1]);
     const uint8_t recv_crc = current_row[3];
+    const uint8_t rcv_msg_type = (current_row[1] & 0x03);
     uint16_t working_value;
     uint8_t working_buffer[2];
+    uint8_t reverse_crc_result;
     uint16_t best_id;
     unsigned best_hits;
+    unsigned num_at_best_hits;
     unsigned high_byte_steps;
-    unsigned low_byte_steps;
 
     // TL;DR - Try all possible IDs against every incoming message, and count how many times each one
     // succeeds.  If one of them passes a threshold, assume it must be the right one and return it.
 
     // We do some optimizations to try and do all those checks quickly, but it's still about the
-    // same as doing a CRC across 32kbytes of data for every 2 byte payload received.
+    // same as doing a CRC across 512 bytes of data for every 2 byte payload received.
 
-    working_buffer[0] = current_row[1];
+    working_buffer[0] = BLUELINE_CRC_INIT;
     working_buffer[1] = current_row[2];
     high_byte_steps = 256;
     best_id = 0;
     best_hits = 0;
+    num_at_best_hits = 0;
     while (high_byte_steps--) {
-        low_byte_steps = (256/BLUELINE_ID_STEP_SIZE);
-        while (low_byte_steps--) {
-            if (crc8(working_buffer, BLUELINE_CRC_BYTELEN, BLUELINE_CRC_POLY, BLUELINE_CRC_INIT) == recv_crc) {
-                working_value = ((working_buffer[1] << 8) | working_buffer[0]);
-                working_value = start_value - working_value;
-                context->id_guess_hits[(working_value/BLUELINE_ID_STEP_SIZE)]++;
+        reverse_crc_result = rev_crc8(working_buffer, BLUELINE_CRC_BYTELEN, BLUELINE_CRC_POLY, recv_crc);
+        // Would this byte value have been usable while still being the same type of message we received?
+        if ((reverse_crc_result & 0x03) == rcv_msg_type) {
+            working_value = ((working_buffer[1] << 8) | reverse_crc_result);
+            working_value = start_value - working_value;
+            context->id_guess_hits[(working_value/BLUELINE_ID_STEP_SIZE)]++;
+            if (context->id_guess_hits[(working_value/BLUELINE_ID_STEP_SIZE)] >= best_hits) {
                 if (context->id_guess_hits[(working_value/BLUELINE_ID_STEP_SIZE)] > best_hits) {
-                    best_hits = context->id_guess_hits[(working_value/BLUELINE_ID_STEP_SIZE)];
+                    best_hits = context->id_guess_hits[(working_value / BLUELINE_ID_STEP_SIZE)];
                     best_id = working_value;
+                    num_at_best_hits = 1;
+                } else {
+                    num_at_best_hits++;
                 }
             }
-            working_buffer[0] += BLUELINE_ID_STEP_SIZE;
         }
         working_buffer[1] += 1;
     }
 
     if (decoder->verbose) {
-        fprintf(stderr, "Attempting Blueline autodetect: best_hits=%u\n", best_hits);
+        fprintf(stderr, "Attempting Blueline autodetect: best_hits=%u num_at_best_hits=%u\n", best_hits, num_at_best_hits);
     }
-    return (best_hits >= BLUELINE_ID_GUESS_THRESHOLD) ? best_id : 0;
+    return ((best_hits >= BLUELINE_ID_GUESS_THRESHOLD) && (num_at_best_hits == 1)) ? best_id : 0;
 }
 
 static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -280,17 +331,33 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         } else if (message_type == BLUELINE_TEMPERATURE_MSG) {
             // TODO - Confirm battery flag is working properly
 
-            // These are the estimates from Powermon433.
-            // They don't line up perfectly with my LCD display,
-            // but they're close enough!
+            // These were the estimates from Powermon433.
+            // But they didn't line up perfectly with my LCD display.
             //
             // A: deg_f = 0.823 * recvd_temp - 28.63
             // B: deg_c = 0.457 * recvd_temp - 33.68
 
-            const int8_t temperature = offset_payload_u8[1];
+            // I logged raw radio values and their resulting display temperatures
+            // for a range of -13 to 34 degrees C, and it's not perfectly linear.
+            // It's not so far off that I think we should use something other than
+            // a linear fit, but it's likely got some fixed-point truncation errors
+            // in the official display code.
+            //
+            // I put all the points I had into Excel and asked for the best
+            // linear estimate, and it gave me roughly this:
+            //
+            // deg_C = 0.436 * recvd_temp - 30.36
+
+            // In case anyone else wants to continue try and find a better equation,
+            // a full copy of my logged data is in the comments of this GitHub pull
+            // request:
+            //
+            // https://github.com/merbanan/rtl_433/pull/1590
+
+            const uint8_t temperature = offset_payload_u8[1];
             const uint8_t flags = offset_payload_u8[0] >> 2;
             const uint8_t battery = (flags & 0x20) >> 5;
-            const double temperature_C = (0.457 * temperature) - 33.68;
+            const float temperature_C = (0.436 * temperature) - 30.36;
             /* clang-format off */
             data = data_make(
                     "model",         "", DATA_STRING, BLUELINE_MODEL,
