@@ -77,10 +77,10 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
-    int rain_raw      = ((br[6] & 0x0f) << 8) | br[7];
+    int rain_raw      = (br[6] << 8) | br[7];
     float rain        = rain_raw * 0.3f;
     int device_id     = (br[0] << 4 & 0xf0) | (br[1] >> 4);
-    int battery_low   = br[1] & 0x04; // Unsure about Battery byte...
+    int battery_low   = br[1] & 0x04;
 
     /* clang-format off */
     data = data_make(
