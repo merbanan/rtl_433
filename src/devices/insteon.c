@@ -302,9 +302,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         cmd_array[cmd_array_len++] = (int)results[j];
     }
 
-    char payload[INSTEON_PACKET_MIN_EXT * 2 + 1] = {0};
+    char payload[INSTEON_PACKET_MAX_EXT * 2 + 2] = {0};
     p                = payload;
-    for (int j = 0; j < min_pkt_len; j++) {
+    for (int j = 0; j < results_len; j++) {
         p += sprintf(p, "%02X", results[j]);
     }
 
