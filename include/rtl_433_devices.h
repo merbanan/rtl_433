@@ -210,6 +210,7 @@
     DECL(switchdoclabs_F016TH) \
     DECL(switchdoclabs_solarmax) \
     DECL(switchdoclabs_SM23) \
+    DECL(switchdoclabs_weathersenseAQI) \
 
 
     /* Add new decoders here. */
