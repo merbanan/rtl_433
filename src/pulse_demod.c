@@ -9,6 +9,21 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
+	
+	01/2021
+	Marc Prieur https://github.com/marco402
+		add pulse_demod_ppm_spe
+		
+			first invert all bits
+			second decode as this:
+				00-->0
+				01-->1
+				11-->nothing
+				10-->nothing
+			third
+				put only 4 lsb in the byte with shift 1 bit.
+	
+	
 */
 
 #include "pulse_demod.h"
@@ -255,13 +270,117 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
         if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
                     || (pulses->gap[n] >= s_reset))     // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
-
+				
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
     } // for pulses
     return events;
 }
+
+int pulse_demod_ppm_spe(const pulse_data_t *pulses, r_device *device)
+{
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short     = device->short_width * samples_per_us;
+    int s_long      = device->long_width * samples_per_us;
+    int s_reset     = device->reset_limit * samples_per_us;
+    int s_gap       = device->gap_limit * samples_per_us;
+    int s_sync      = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0) || (device->long_width > 0 && s_long <= 0) || (device->reset_limit > 0 && s_reset <= 0) || (device->gap_limit > 0 && s_gap <= 0) || (device->sync_width > 0 && s_sync <= 0) || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
+    int events       = 0;
+    bitbuffer_t bits = {0};
+
+    // lower and upper bounds (non inclusive)
+    int zero_l, zero_u;
+    int one_l, one_u;
+    int sync_l = 0, sync_u = 0;
+
+    if (s_tolerance > 0) {
+        // precise
+        zero_l = s_short - s_tolerance;
+        zero_u = s_short + s_tolerance;
+        one_l  = s_long - s_tolerance;
+        one_u  = s_long + s_tolerance;
+        if (s_sync > 0) {
+            sync_l = s_sync - s_tolerance;
+            sync_u = s_sync + s_tolerance;
+        }
+    }
+    else {
+        // no sync, short=0, long=1
+        zero_l = 0;
+        zero_u = (s_short + s_long) / 2 + 1;
+        one_l  = zero_u - 1;
+        one_u  = s_gap ? s_gap : s_reset;
+    }
+
+    uint8_t lastBit = 2;
+    int8_t cptBitinByte = 0;
+    for (unsigned n = 0; n < pulses->num_pulses; ++n) {
+        if (cptBitinByte == 8)
+            cptBitinByte = 0;
+                
+		if (cptBitinByte < 1)
+		{
+            int memocptBitinByte = cptBitinByte;
+            cptBitinByte   = 0;
+            for (int8_t bit = memocptBitinByte; bit < 4; bit++) //start byte with 4 bits for use only 4 lsb
+				{
+				bitbuffer_add_bit(&bits, 0);
+				cptBitinByte += 1;
+				}
+			}
+        if (pulses->gap[n] > zero_l && pulses->gap[n] < zero_u) {
+                if (lastBit == 0)
+				{
+                bitbuffer_add_bit(&bits, 1);//invert bit zero==1
+                cptBitinByte += 1;
+				}
+                lastBit = 1;
+        }
+        else if (pulses->gap[n] > one_l && pulses->gap[n] < one_u) {
+            if (lastBit == 0) {
+                bitbuffer_add_bit(&bits, 0);//invert bit one==0
+                cptBitinByte += 1;
+            }
+            lastBit = 0;
+        }
+        else if (pulses->gap[n] > sync_l && pulses->gap[n] < sync_u) {
+            // Sync gap
+            bitbuffer_add_sync(&bits);
+        }
+        // Check for new packet in multipacket
+        else if (pulses->gap[n] < s_reset) {
+            for (int k = 0; k < (8 - cptBitinByte); k++) //complete byte
+                bitbuffer_add_bit(&bits, 0);
+            cptBitinByte = -1; //-1 for shifting data 
+            bitbuffer_add_row(&bits);
+            lastBit = 2;
+        }
+        // End of Message?
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] >= s_reset))                   // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+            for (int k = 0; k < (8 - cptBitinByte); k++)              //complete byte
+                bitbuffer_add_bit(&bits, 0);
+            events += account_event(device, &bits, __func__);
+            bitbuffer_clear(&bits);
+        }
+    } // for pulses
+    return events;
+}
+
+
+
+
 
 int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 {

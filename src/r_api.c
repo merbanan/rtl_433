@@ -420,6 +420,9 @@ int run_ook_demods(list_t *r_devs, pulse_data_t *pulse_data)
         case OOK_PULSE_PPM:
             p_events += pulse_demod_ppm(pulse_data, r_dev);
             break;
+        case OOK_PULSE_PPM_SPE:
+            p_events += pulse_demod_ppm_spe(pulse_data, r_dev);
+            break;
         case OOK_PULSE_PWM:
             p_events += pulse_demod_pwm(pulse_data, r_dev);
             break;
