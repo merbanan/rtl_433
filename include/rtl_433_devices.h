@@ -203,6 +203,7 @@
     DECL(cmr113) \
     DECL(inkbird_ith20r) \
     DECL(rainpoint) \
+    DECL(atech_ws308) \
 
     /* Add new decoders here. */
 

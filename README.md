@@ -279,6 +279,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [193]  Clipsal CMR113 Cent-a-meter power meter
     [194]  Inkbird ITH-20R temperature humidity sensor
     [195]  RainPoint soil temperature and moisture sensor
+    [196]  Atech-WS308 temperature sensor
 
 * Disabled by default, use -R n or -G
 
