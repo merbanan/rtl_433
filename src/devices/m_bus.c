@@ -210,11 +210,35 @@ static char* oms_hum_el[4][4] = {
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
+static char* oms_volume[1][1] = {
+{"actual_volume",}
+};
+
+static char* oms_volume_el[1][1] = {
+{"Actual volume",}
+};
+
+static char* oms_volume_month[12] = {
+ "volume_m3_m1","volume_m3_m2","volume_m3_m3","volume_m3_m4",
+ "volume_m3_m5","volume_m3_m6","volume_m3_m7","volume_m3_m8",
+ "volume_m3_m9","volume_m3_m10","volume_m3_m11","volume_m3_m12",
+};
+
+static char* oms_volume_month_el[12] = {
+ "Volume of previous month","Volume of month -2","Volume of month -3","Volume of month -4",
+ "Volume of month -5","Volume of month -6","Volume of month -7","Volume of month -8",
+ "Volume of month -9","Volume of month -10","Volume of month -11","Volume of month -12",
+};
+
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
     int ret = consumed_bytes[dif_coding&0x07];
     float temp;
     int state;
+
+    // for reverse engineering
+    // fprintf(stderr, "**decoding vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[0]=0x%02X, b[1]=0x%02X**\n",
+    //                  vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[0], b[1]);
 
     switch (vif_linear) {
         case 0:
@@ -224,6 +248,22 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     data = data_append(data,
                             oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
                             NULL);
+                    break;
+                case 0x4:
+                    temp = (int16_t)((b[1]<<8)|b[0])*0.001;
+
+                    if(dif_sn == 0) {
+                        data = data_append(data,
+                                oms_volume[0][0], oms_volume_el[0][0], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
+                                NULL);
+                    }
+
+                    if(dif_sn >= 8 && dif_sn <= 19) {
+                        dif_sn -= 8;
+                        data = data_append(data,
+                                oms_volume_month[dif_sn], oms_volume_month_el[dif_sn], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
+                                NULL);
+                    }
                     break;
                 default:
                     break;
@@ -401,7 +441,10 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Check length of package is sufficient
     unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
     if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        if (decoder->verbose) {
+            fprintf(stderr, "M-Bus: Package (%u) too short for packet Length: %u\n", in->length, block1->L);
+            fprintf(stderr, "M-Bus: %u > %u\n", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
+        }
         return 0;
     }
 
@@ -538,7 +581,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char *mode = "";
 
     // Validate package length
-    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*12)) {  // Min/Max (Preamble + payload)
         return DECODE_ABORT_LENGTH;
     }
 
@@ -547,6 +590,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return DECODE_ABORT_EARLY;
     }
+
     if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %u\n", bit_offset);
     bitbuffer_print(bitbuffer);
     }
@@ -593,7 +637,9 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
+
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
+
         if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %u\n", data_in.length); }
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
