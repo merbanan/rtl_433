@@ -230,38 +230,72 @@ static char* oms_volume_month_el[12] = {
  "Volume of month -9","Volume of month -10","Volume of month -11","Volume of month -12",
 };
 
+/**
+ * @brief decode wireless mbus records
+ *
+ * @param data          output for decoded records
+ * @param b             input buffer with records
+ * @param dif_coding    Data Information - Length and coding of data (2=16bit,4=32bit, etc)
+ * @param vif_linear    Value Information Field
+ * @param vif_uam       Value Information Field
+ * @param dif_sn        Data Information Field - storage number
+ * @param dif_ff        Data Information Field - function field (00b	Instantaneous value	01b	Maximum value
+                                                                 10b	Minimum value	11b	Value during error state)
+ * @param dif_su        Data Information Field -
+ * @return int
+ */
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
     int ret = consumed_bytes[dif_coding&0x07];
     float temp;
     int state;
+    uint32_t val = 0;
 
     // for reverse engineering
-    // fprintf(stderr, "**decoding vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[0]=0x%02X, b[1]=0x%02X**\n",
-    //                  vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[0], b[1]);
+    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X**\n",
+    //                  dif_coding, vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[3], b[2], b[1], b[0]);
+
+    // Note: there are also other formats, which should be added when needed
+    switch (dif_coding) {
+        case 4:
+            val |= b[3] << 24;
+            /* fall through */
+        case 3:
+            val |= b[2] << 16;
+            /* fall through */
+        case 2:
+            val |= b[1] << 8;
+            /* fall through */
+        case 1:
+            val |= b[0];
+            break;
+        default:
+            break;
+    }
 
     switch (vif_linear) {
         case 0:
             switch(vif_uam>>2) {
                 case 0x19:
-                    temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
+                    temp = val*record_factor[vif_uam&0x3];
                     data = data_append(data,
                             oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
                             NULL);
                     break;
                 case 0x4:
-                    temp = (int16_t)((b[1]<<8)|b[0])*0.001;
+
+                    temp = val*0.001;
 
                     if (dif_sn == 0) {
                         data = data_append(data,
-                                oms_volume[0][0], oms_volume_el[0][0], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
+                                oms_volume[0][0], oms_volume_el[0][0], DATA_FORMAT, "%.03f m3", DATA_DOUBLE, temp,
                                 NULL);
                     }
 
                     if (dif_sn >= 8 && dif_sn <= 19) {
                         dif_sn -= 8;
                         data = data_append(data,
-                                oms_volume_month[dif_sn], oms_volume_month_el[dif_sn], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
+                                oms_volume_month[dif_sn], oms_volume_month_el[dif_sn], DATA_FORMAT, "%.03f m3", DATA_DOUBLE, temp,
                                 NULL);
                     }
                     break;
@@ -273,7 +307,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
             switch(vif_uam>>1) {
                 case 0xD:
                     data = data_append(data,
-                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1],
+                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, val*humidity_factor[vif_uam&0x1],
                             NULL);
                     break;
                 default:
