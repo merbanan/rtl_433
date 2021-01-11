@@ -958,7 +958,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
-        fprintf(stderr, "debug option (-D) is deprecated. See -v to increase verbosity\n");
+        cfg->demo_mode = atobv(arg, 1);
         break;
     case 'z':
         fprintf(stderr, "override_short (-z) is deprecated.\n");
@@ -1442,6 +1442,22 @@ int main(int argc, char **argv) {
         r_free_cfg(cfg);
         exit(!r);
     }
+
+    // Special case for test pattern demo mode
+    if (cfg->demo_mode) {
+        r = 0;
+        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+            if (cfg->verbosity)
+                fprintf(stderr, "Showing demo data for device %s.\n", r_dev->name);
+            for (char **code = r_dev->demo_pattern; code && *code; ++code) {
+                r += pulse_demod_string(*code, r_dev);
+            }
+        }
+        r_free_cfg(cfg);
+        exit(!r);
+    }
+
     // Special case for string test data
     if (cfg->test_data) {
         r = 0;

@@ -51,6 +51,7 @@ typedef struct r_cfg {
     int ppm_error;
     uint32_t out_block_size;
     char const *test_data;
+    int demo_mode;
     list_t in_files;
     char const *in_filename;
     volatile sig_atomic_t hop_now;
