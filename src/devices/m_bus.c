@@ -252,13 +252,13 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 case 0x4:
                     temp = (int16_t)((b[1]<<8)|b[0])*0.001;
 
-                    if(dif_sn == 0) {
+                    if (dif_sn == 0) {
                         data = data_append(data,
                                 oms_volume[0][0], oms_volume_el[0][0], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
                                 NULL);
                     }
 
-                    if(dif_sn >= 8 && dif_sn <= 19) {
+                    if (dif_sn >= 8 && dif_sn <= 19) {
                         dif_sn -= 8;
                         data = data_append(data,
                                 oms_volume_month[dif_sn], oms_volume_month_el[dif_sn], DATA_FORMAT, "%.02f m3", DATA_DOUBLE, temp,
