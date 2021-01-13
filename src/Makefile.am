@@ -52,6 +52,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/bt_rain.c \
                        devices/calibeur.c \
                        devices/cardin.c \
+                       devices/cavius.c \
                        devices/chuango.c \
                        devices/companion_wtr001.c \
                        devices/cotech_36_7959.c \
