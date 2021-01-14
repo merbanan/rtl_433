@@ -929,7 +929,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
             n_read += r; // r is number of elements read, elements=complex pairs, so buffer length is twice
             //fprintf(stderr, "readStream ret=%d, flags=%d, timeNs=%lld (%zu - %u)\n", r, flags, timeNs, buf_elems, n_read);
         } while (n_read < buf_elems);
-        //fprintf(stderr, "readStream ret=%d (%d), flags=%d, timeNs=%lld\n", n_read, buf_len, flags, timeNs);
+        //fprintf(stderr, "readStream ret=%u (%u), flags=%d, timeNs=%lld\n", n_read, buf_len, flags, timeNs);
         if (r < 0) {
             if (r == SOAPY_SDR_OVERFLOW) {
                 fprintf(stderr, "O");
@@ -944,6 +944,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
         //for (i = 0; i < n_read * 2; ++i)
         //    cu8buf[i] = (int8_t)cu8buf[i] + 128;
 
+        // TODO: SoapyRemote doesn't scale properly when reading (local) CS16 from (remote) CS8
         // rescale cs16 buffer
         if (dev->fullScale >= 2047.0 && dev->fullScale <= 2048.0) {
             for (i = 0; i < n_read * 2; ++i)

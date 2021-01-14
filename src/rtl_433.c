@@ -282,7 +282,7 @@ static void help_write(void)
             "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tFile content and format are detected as parameters, possible options are:\n"
-            "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
+            "\t'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),\n"
             "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
             "\t'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.\n\n"
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
