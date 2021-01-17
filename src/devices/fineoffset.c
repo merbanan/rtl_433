@@ -388,13 +388,13 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
     int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
-    float battery_ok  = battery_bars / 5.0; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
+    float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
-            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.2f", DATA_DOUBLE, battery_ok,
+            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "mic",              "Integrity",    DATA_STRING, "CRC",
