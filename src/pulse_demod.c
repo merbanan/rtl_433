@@ -10,20 +10,18 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 	
-	01/2021
-	Marc Prieur https://github.com/marco402
-		add pulse_demod_ppm_spe
+    01/2021
+    Marc Prieur https://github.com/marco402
+      add pulse_demod_ppm_spe
 		
-			first invert all bits
-			second decode as this:
-				00-->0
-				01-->1
-				11-->nothing
-				10-->nothing
-			third
-				put only 4 lsb in the byte with shift 1 bit.
-	
-	
+    first invert all bits
+    second decode as this:
+        00-->0
+        01-->1
+        11-->nothing
+        10-->nothing
+    third
+        put only 4 lsb in the byte with shift 1 bit.
 */
 
 #include "pulse_demod.h"

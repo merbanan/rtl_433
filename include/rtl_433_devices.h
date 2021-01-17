@@ -184,7 +184,7 @@
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
     DECL(blueline) \
-	DECL(tech_433) \
+    DECL(tech_433) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

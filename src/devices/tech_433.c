@@ -49,8 +49,31 @@ A transmission package is:
 - byte 6 a check byte (the XOR of bytes 1-6 inclusive)
     each bit is effectively a parity bit for correspondingly positioned bit
     in the real message
+exemple:
+00001101100000000001101100000110000001101
+00->0
+ 00->0
+  00->0
+   01->1
+    11->nothing
+     10->nothing
+      01->1...
 
-	command line for me -f 433920000 -g 49.8 -vvv 2>test.txt
+000 1100 0000  0001  1000 0100 0000    1
+    c    signe 1*100 8*10 4    parite
+=184/10 degres
+
+hexa 0c   00   01   08   04   00
+     b[1] b[2] b[3] b[4] b[5] b[6]
+
+for coding
+0->0
+1->011
+
+so we can decode also as this
+
+0->0
+011->1
 */
 
 #include "decoder.h"

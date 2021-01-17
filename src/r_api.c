@@ -467,6 +467,7 @@ int run_fsk_demods(list_t *r_devs, pulse_data_t *fsk_pulse_data)
         // OOK decoders
         case OOK_PULSE_PCM_RZ:
         case OOK_PULSE_PPM:
+		case OOK_PULSE_PPM_SPE:
         case OOK_PULSE_PWM:
         case OOK_PULSE_MANCHESTER_ZEROBIT:
         case OOK_PULSE_PIWM_RAW:

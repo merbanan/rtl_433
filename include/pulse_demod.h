@@ -55,6 +55,31 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device);
 /// @return number of events processed
 int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device);
 
+/// Demodulate a Pulse Position Modulation signal with special coding.
+///
+/// Demodulate a Pulse Position Modulation (PPM) signal consisting of pulses with variable gap.
+/// Pulse width may be fixed or variable.
+/// Gap between pulses determine the encoding:
+/// - Short gap will add a 0 bit
+/// - Long  gap will add a 1 bit
+///
+/// @param pulses The pulse sequence to demodulate
+/// @param device Modulation parameters of
+/// - short_width: Nominal width of '0' [us]
+/// - long_width:  Nominal width of '1' [us]
+/// special codage:
+/// decode as this : 00 -- > 0
+///                  01 -- > 1
+///                  11 -- > nothing
+///                  10 -- > nothing
+///    put only 4 lsb in the byte with shift 1 bit.
+
+/// - reset_limit: Maximum gap size before End Of Message [us].
+/// - gap_limit:   Maximum gap size before new row of bits [us]
+/// - tolerance:   Maximum deviation from nominal widths (optional, raw if 0) [us]
+/// @return number of events processed
+int pulse_demod_ppm_spe(const pulse_data_t *pulses, r_device *device);
+
 /// Demodulate a Pulse Width Modulation signal.
 ///
 /// Demodulate a Pulse Width Modulation (PWM) signal consisting of short, long, and optional sync pulses.
