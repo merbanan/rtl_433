@@ -500,7 +500,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 data = append_val(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
                 // E110 110n	Time Point	n = 0 date, n = 1 time & date
-                if(vif_uam&1) {
+                if (vif_uam&1) {
                     m_bus_tm_decode(&timedate, b, dif_coding);
                     data = append(data, kTimeDate, dif_ff, dif_sn, "", "%d/%d/%d %d:%02d:%02d",
                         timedate.tm_year, timedate.tm_mon, timedate.tm_mday,
