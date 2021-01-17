@@ -16,9 +16,6 @@ Wireless M-Bus protocol. Will return a data string (including the CI byte)
 for further processing by an Application layer (outside this program).
 */
 #include "decoder.h"
-#include <assert.h>
-#include <time.h>
-#include <stdarg.h>
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
 #define BLOCK1B_SIZE 10     // Size of Block 1, format B
@@ -269,31 +266,25 @@ static char *unit_names[][3] = {
 static float pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
-static data_t *append(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* fmt, ...)
+static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* value)
 {
     char key[100] = {0};
     char pretty[100] = {0};
-    char sval[100] = {0};
 
     value_type &= 0x3;
 
     snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
     snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
 
-    va_list argptr;
-    va_start(argptr, fmt);
-
-    vsnprintf(sval, sizeof(sval), fmt, argptr);
-    va_end(argptr);
-
     return data_append(data,
-            key, pretty, DATA_STRING, sval, NULL);
+            key, pretty, DATA_STRING, value, NULL);
 
 }
 
 static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int32_t val, int exp)
 {
     const char *prefix = "";
+    char buffer_val[256] = {0};
 
     if (exp < -6) {
         exp += 6;
@@ -319,65 +310,65 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
         fprintf(stderr, "M-Bus: Program error, exp (%d) is out of bounds", exp);
         return data;
     }
-    assert(exp >= 0 && exp <= 7);
     float fvalue = val * pow10_table[exp];
 
-    return append(data, unit_type, value_type, sn, extra, "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+    snprintf(buffer_val, sizeof(buffer_val), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+
+    return append_str(data, unit_type, value_type, sn, extra, buffer_val);
 }
 
-void m_bus_tm_decode(struct tm *t, const uint8_t *data, size_t data_size)
+size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size_t output_size)
 {
-    if (t == NULL)
+    size_t out_len = 0;
+
+    if (output == NULL)
     {
-        return;
+        return 0;
     }
 
-    t->tm_sec   = 0;
-    t->tm_min   = 0;
-    t->tm_hour  = 0;
-    t->tm_mday  = 0;
-    t->tm_mon   = 0;
-    t->tm_year  = 0;
-    t->tm_wday  = 0;
-    t->tm_yday  = 0;
-    t->tm_isdst = 0;
 
     switch(data_size) {
         case 6:                // Type I = Compound CP48: Date and Time
-            if ((data[1] & 0x80) == 0)     // Time valid ?
+            if ((data[1] & 0x80) != 0)     // Time valid ?
             {
-                t->tm_sec   = data[0] & 0x3F;
-                t->tm_min   = data[1] & 0x3F;
-                t->tm_hour  = data[2] & 0x1F;
-                t->tm_mday  = data[3] & 0x1F;
-                t->tm_mon   = (data[4] & 0x0F);
-                t->tm_year  = (((data[3] & 0xE0) >> 5) |
-                              ((data[4] & 0xF0) >> 1));
-                t->tm_isdst = (data[0] & 0x40) ? 1 : 0;  // day saving time
+                return 0;
             }
+
+            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:%02dZ",
+                ((data[3] & 0xE0) >> 5) | ((data[4] & 0xF0) >> 1),
+                data[4] & 0x0F,
+                data[3] & 0x1F,
+                data[2] & 0x1F,
+                data[1] & 0x3F,
+                data[0] & 0x3F
+            );
+            // (data[0] & 0x40) ? 1 : 0;  // day saving time
             break;
         case 4:           // Type F = Compound CP32: Date and Time
-            if ((data[0] & 0x80) == 0)     // Time valid ?
+            if ((data[0] & 0x80) != 0)     // Time valid ?
             {
-                t->tm_min   = data[0] & 0x3F;
-                t->tm_hour  = data[1] & 0x1F;
-                t->tm_mday  = data[2] & 0x1F;
-                t->tm_mon   = (data[3] & 0x0F);
-                t->tm_year  = (((data[2] & 0xE0) >> 5) |
-                              ((data[3] & 0xF0) >> 1));
-                t->tm_isdst = (data[1] & 0x80) ? 1 : 0;  // day saving time
+                return 0;
             }
+            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:00Z",
+                ((data[2] & 0xE0) >> 5) | ((data[3] & 0xF0) >> 1), // year
+                data[3] & 0x0F, // mon
+                data[2] & 0x1F, // mday
+                data[1] & 0x1F, // hour
+                data[0] & 0x3F // sec
+            );
+            // (data[1] & 0x80) ? 1 : 0;  // day saving time
             break;
         case 2:           // Type G: Compound CP16: Date
-            t->tm_mday = data[0] & 0x1F;
-            t->tm_mon  = (data[1] & 0x0F);
-            t->tm_year = (((data[0] & 0xE0) >> 5) |
-                         ((data[1] & 0xF0) >> 1));
-
+            out_len = snprintf(output, output_size, "%02d-%02d-%02d",
+                ((data[0] & 0xE0) >> 5) | ((data[1] & 0xF0) >> 1), // year
+                data[1] & 0x0F, // mon
+                data[0] & 0x1F  // mday
+            );
             break;
         default:
             break;
     }
+    return out_len;
 }
 
 /**
@@ -401,7 +392,6 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
     int ret = consumed_bytes[dif_coding&0x07];
     int state;
     int32_t val = 0;
-    struct tm timedate;
 
     // Note: there are also other formats, which should be added when needed
     switch (dif_coding) {
@@ -504,15 +494,16 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 data = append_val(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
                 // E110 110n	Time Point	n = 0 date, n = 1 time & date
+                char buff_time[256] = {0};
+
                 if (vif_uam&1) {
-                    m_bus_tm_decode(&timedate, b, dif_coding);
-                    data = append(data, kTimeDate, dif_ff, dif_sn, "", "%d/%d/%d %d:%02d:%02d",
-                        timedate.tm_year, timedate.tm_mon, timedate.tm_mday,
-                        timedate.tm_hour, timedate.tm_min, timedate.tm_sec);
+                    if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
+                        data = append_str(data, kTimeDate, dif_ff, dif_sn, "", buff_time);
+                    }
                 } else {
-                    m_bus_tm_decode(&timedate, b, dif_coding);
-                    data = append(data, kDate, dif_ff, dif_sn, "", "%d/%d/%d",
-                        timedate.tm_year, timedate.tm_mon, timedate.tm_mday);
+                    if (m_bus_tm_decode(b, dif_coding, buff_time, sizeof(buff_time))) {
+                        data = append_str(data, kDate, dif_ff, dif_sn, "", buff_time);
+                    }
                 }
 
             } else if (vif_uam == 0x6E) {
