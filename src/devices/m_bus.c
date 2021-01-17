@@ -16,6 +16,7 @@ Wireless M-Bus protocol. Will return a data string (including the CI byte)
 for further processing by an Application layer (outside this program).
 */
 #include "decoder.h"
+#include <assert.h>
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
 #define BLOCK1B_SIZE 10     // Size of Block 1, format B
@@ -176,25 +177,10 @@ typedef struct {
     uint8_t     data[512];
 } m_bus_data_t;
 
-
-static float record_factor[4] = { 0.001, 0.01, 0.1, 1 };
 static float humidity_factor[2] = { 0.1, 1 };
 
 static int consumed_bytes[8] = { -1, 1, 2, 3, 4, 4, 6, 8};
 
-static char* oms_temp[4][4] = {
-{"temperature_C","average_temperature_1h_C","average_temperature_24h_C","error_04", },
-{"maximum_temperature_1h_C","maximum_temperature_24h_C","error_13","error_14",},
-{"minimum_temperature_1h_C","minimum_temperature_24h_C","error_23","error_24",},
-{"error_31","error_32","error_33","error_34",}
-};
-
-static char* oms_temp_el[4][4] = {
-{"Temperature","Average Temperature 1h","Average Temperature 24h","Error [0][4]", },
-{"Maximum Temperature 1h","Maximum Temperature 24h","Error [1][3]","Error [1][4]",},
-{"Minimum Temperature 1h","Minimum Temperature 24h","Error [2][3]","Error [2][4]",},
-{"error_31","error_32","error_33","error_34",}
-};
 
 static char* oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
@@ -210,30 +196,265 @@ static char* oms_hum_el[4][4] = {
 {"Error 31","Error 32","Error 33","Error 34",}
 };
 
+static char *history_hours[4] = {
+        "1h", "24h", "err[2]", "err[3]",
+};
+
+static char *history_months[12][2] = {
+        {"m1", "of month -1"},
+        {"m2", "of month -2"},
+        {"m3", "of month -3"},
+        {"m4", "of month -4"},
+        {"m5", "of month -5"},
+        {"m6", "of month -6"},
+        {"m7", "of month -7"},
+        {"m8", "of month -8"},
+        {"m9", "of month -9"},
+        {"m10", "of month -10"},
+        {"m11", "of month -11"},
+        {"m12", "of month -12"},
+};
+
+static char *value_types_tab[4][2] = {
+        {"inst", ""},
+        {"max", "Max"},
+        {"min", "Min"},
+        {"err", "Err"},
+};
+
+enum UnitType {
+    kEnergy_Wh = 0,
+    kEnergy_J,
+    kVolume,
+    kMass,
+    kPower_W,
+    kPower_Jh,
+    kVolumeFlow_h,
+    kVolumeFlow_min,
+    kVolumeFlow_s,
+    kMassFlow,
+    kTemperatureFlow,
+    kTemperatureReturn,
+    kTemperatureDiff,
+    kTemperatureExtern,
+    kPressure,
+};
+
+static char *unit_names[][3] = {
+        /* 0 */ {"energy_wh", "Energy", "Wh"},
+        /* 1 */ {"energy_j", "Energy", "J"},
+        /* 2 */ {"volume", "Volume", "m3"},
+        /* 3 */ {"mass", "Mass", "kg"},
+        /* 4 */ {"power_w", "Power", "W"},
+        /* 5 */ {"power_jh", "Power", "J/h"},
+        /* 6 */ {"volume_flow_h", "Volume flow", "m3/h"},
+        /* 7 */ {"volume_flow_min", "Volume flow", "m3/min"},
+        /* 8 */ {"volume_flow_s", "Volume flow", "l/s"},
+        /* 9 */ {"mass_flow", "Mass flow", "kg/h"},
+        /*10 */ {"temperature_flow", "Flow temperature", "C"},
+        /*11 */ {"temperature_return", "Return temperature", "C"},
+        /*12 */ {"temperature_diff", "Temperature diff", "K"},
+        /*13 */ {"temperature_ext", "Temperature extern", "C"},
+        /*14 */ {"pressure", "Pressure", "bar"},
+};
+
+// exponent                    -3     -2    -1    0  1   2    3     4
+// index                        0      1     2    3  4   5    6     7
+static float pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
+
+
+static data_t *append(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int32_t val, int exp)
+{
+    char key[100] = {0};
+    char pretty[100] = {0};
+    char sval[100] = {0};
+    const char *prefix = "";
+
+    if (exp < -6) {
+        exp += 6;
+        prefix = "u";
+    } else if (exp < -3) {
+        exp += 3;
+        prefix = "m";
+    } else if (exp <= 0) {
+        prefix = "";
+    } else if (exp <= 3) {
+        exp -= 3;
+        prefix = "k";
+    } else if (exp <= 6) {
+        exp -= 6;
+        prefix = "M";
+    } else if (exp <= 9) {
+        exp -= 9;
+        prefix = "G";
+    }
+
+    // adapt for table index
+    exp += 3;
+    assert(exp >= 0 && exp <= 7);
+    float fvalue = val * pow10_table[exp];
+
+    value_type &= 0x3;
+
+    snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
+    snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
+    snprintf(sval, sizeof(sval), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+
+    return data_append(data,
+            key, pretty, DATA_STRING, sval, NULL);
+
+}
+
+/**
+ * @brief decode wireless mbus records
+ *
+ * @param data          output for decoded records
+ * @param b             input buffer with records
+ * @param dif_coding    Data Information - Length and coding of data (2=16bit,4=32bit, etc)
+ * @param vif_linear    Value Information Field
+ * @param vif_uam       Value Information Field - unit type + multiplier
+ * @param dif_sn        Data Information Field - storage number
+ * @param dif_ff        Data Information Field - function field (00b	Instantaneous value
+ *                                                               01b	Maximum value
+ *                                                               10b	Minimum value
+ *                                                               11b	Value during error state)
+ * @param dif_su        Data Information Field -
+ * @return int
+ */
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
     int ret = consumed_bytes[dif_coding&0x07];
-    float temp;
     int state;
+    int32_t val = 0;
+
+
+    // Note: there are also other formats, which should be added when needed
+    switch (dif_coding) {
+        // unsupported arithmetic on 64bit
+        // case 7: // 64bit
+        //     val |= (b[7] << 56) + (b[6] << 48);
+        //     /* fall through */
+        // case 6: // 48bit
+        //     val |= (b[5] << 40) + (b[4] << 32);
+        //     /* fall through */
+        case 4: // 32bit
+            val = (int32_t)(b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0]);
+            break;
+        case 3: // 24bit
+            if (b[2] & 0x80) {
+                val = 0xFF;
+            }
+            val = (val << 8) | b[2];
+            val = (val << 8) | b[1];
+            val = (val << 8) | b[0];
+            break;
+        case 2: // 16bit
+            val = (int16_t)(b[1] << 8 |  b[0]);
+            break;
+        case 1: // 8bit
+            val = (int8_t)b[0];
+            break;
+        case 0: // no data
+            break;
+        default:
+            break;
+    }
+
+    // for reverse engineering
+    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X, val=%d**\n",
+    //                  dif_coding, vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[3], b[2], b[1], b[0], val);
 
     switch (vif_linear) {
         case 0:
-            switch(vif_uam>>2) {
-                case 0x19:
-                    temp = (int16_t)((b[1]<<8)|b[0])*record_factor[vif_uam&0x3];
-                    data = data_append(data,
-                            oms_temp[dif_ff&0x3][dif_sn&0x3], oms_temp_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
-                            NULL);
-                    break;
-                default:
-                    break;
+            if ((vif_uam & 0xF8) == 0) {
+                // E000 0nnn Energy	10nnn-3 Wh	0.001Wh to 10000Wh
+                data = append(data, kEnergy_Wh, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+            } else if ((vif_uam&0xF8) == 0x08) {
+                // E000 1nnn	Energy	10nnn J	0.001kJ to 10000kJ
+                data = append(data, kEnergy_J, dif_ff, dif_sn, "", val, vif_uam&0x7);
+            } else if ((vif_uam&0xF8) == 0x10) {
+                // E001 0nnn	Volume	10nnn-6 m3	0.001l to 10000l
+
+                if (dif_sn == 0) {
+                    data = append(data, kVolume, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+                } else
+                if (dif_sn >= 8 && dif_sn <= 19) {
+                    dif_sn -= 8;
+                    data = append(data, kVolume, dif_ff, dif_sn, history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
+                }
+
+            } else if ((vif_uam&0xF8) == 0x18) {
+                // E001 1nnn	Mass	10nnn-3 kg	0.001kg to 10000kg
+                data = append(data, kEnergy_J, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+            } else if ((vif_uam&0xFC) == 0x20) {
+                /* E010 00nn	On Time	nn = 00 seconds
+                                        nn = 01 minutes
+                                        nn = 10 hours
+                                        nn = 11 days */
+            } else if ((vif_uam&0xFC) == 0x24) {
+                // E010 01nn	Operating Time	coded like OnTime
+            } else if ((vif_uam&0xF8) == 0x28) {
+                // E010 1nnn	Power	10nnn-3 W	0.001W to 10000W
+                data = append(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+            } else if ((vif_uam&0xF8) == 0x30) {
+                // E011 0nnn	Power	10nnn J/h	0.001kJ/h to 10000kJ/h
+                data = append(data, kPower_Jh, dif_ff, dif_sn, "", val, vif_uam&0x7);
+            } else if ((vif_uam&0xF8) == 0x38) {
+                // E011 1nnn	Volume Flow	10nnn-6 m3/h	0.001l/h to 10000l/h
+                data = append(data, kVolumeFlow_h, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+            } else if ((vif_uam&0xF8) == 0x40) {
+                // E100 0nnn	Volume Flow ext.	10nnn-7 m3/min	0.0001l/min to 1000l/min
+                data = append(data, kVolumeFlow_min, dif_ff, dif_sn, "", val, -7 + (vif_uam&0x7));
+            } else if ((vif_uam&0xF8) == 0x48) {
+                // E100 1nnn	Volume Flow ext.	10nnn-9 m³/s	0.001ml/s to 10000ml/s
+                // in litres so exp -3
+                data = append(data, kVolumeFlow_s, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+            } else if ((vif_uam&0xF8) == 0x50) {
+                // E101 0nnn	Mass flow	10nnn-3 kg/h	0.001kg/h to 10000kg/h
+                data = append(data, kMassFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+            } else if ((vif_uam&0xFC) == 0x58) {
+                // E101 10nn	Flow Temperature 10nn-3 °C	0.001°C to 1°C
+                data = append(data, kTemperatureFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+            } else if ((vif_uam&0xFC) == 0x5C) {
+                // E101 11nn	Return Temperature 10nn-3 °C	0.001°C to 1°C
+                data = append(data, kTemperatureReturn, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+            } else if ((vif_uam&0xFC) == 0x60) {
+                // E110 00nn	Temperature Difference	10nn-3 K	1mK to 1000mK
+                data = append(data, kTemperatureDiff, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+            } else if ((vif_uam&0xFC) == 0x64) {
+                // E110 01nn	External temperature	10 nn-3 ° C	0.001 ° C to 1 ° C
+                data = append(data, kTemperatureExtern, dif_ff, dif_sn, history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
+            } else if ((vif_uam&0xFC) == 0x68) {
+                // E110 10nn	Pressure	10nn-3 bar	1mbar to 1000mbar
+                data = append(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+            } else if ((vif_uam&0xFE) == 0x6C) {
+                // E110 110n	Time Point	n = 0 date, n = 1 time & date
+
+            } else if (vif_uam == 0x6E) {
+                // E110 1110	Units for H.C.A.	 	dimensionless
+            } else if ((vif_uam&0xFC) == 0x70) {
+                // E111 00nn	Averaging Duration	coded like OnTime
+            } else if ((vif_uam&0xFC) == 0x74) {
+                // E111 01nn	Actuality Duration	coded like OnTime
+            } else if (vif_uam == 0x78) {
+                // E111 1000	Fabrication No
+            } else if (vif_uam == 0x79) {
+                // E111 1001	Enhanced Identification••
+            } else if (vif_uam == 0x7A) {
+                // E111 1010	Bus Address	 	data type C (x=8)
+            } else {
+                // reserved
+                data = data_append(data,
+                        "unknown", "Unknown", DATA_STRING, "none",
+                        NULL);
             }
+
             break;
         case 0x7B:
             switch(vif_uam>>1) {
                 case 0xD:
                     data = data_append(data,
-                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, b[0]*humidity_factor[vif_uam&0x1],
+                            oms_hum[dif_ff&0x3][dif_sn&0x3], oms_hum_el[dif_ff&0x3][dif_sn&0x3], DATA_FORMAT, "%.1f %%", DATA_DOUBLE, val*humidity_factor[vif_uam&0x1],
                             NULL);
                     break;
                 default:
@@ -401,7 +622,10 @@ static int m_bus_decode_format_a(r_device *decoder, const m_bus_data_t *in, m_bu
     // Check length of package is sufficient
     unsigned num_data_blocks = (block1->L-9+15)/16;      // Data blocks are 16 bytes long + 2 CRC bytes (not counted in L)
     if ((block1->L < 9) || ((block1->L-9)+num_data_blocks*2 > in->length-BLOCK1A_SIZE)) {   // add CRC bytes for each data block
-        if (decoder->verbose) { fprintf(stderr, "M-Bus: Package too short for Length: %u\n", block1->L); }
+        if (decoder->verbose) {
+            fprintf(stderr, "M-Bus: Package (%u) too short for packet Length: %u\n", in->length, block1->L);
+            fprintf(stderr, "M-Bus: %u > %u\n", (block1->L-9)+num_data_blocks*2, in->length-BLOCK1A_SIZE);
+        }
         return 0;
     }
 
@@ -538,7 +762,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char *mode = "";
 
     // Validate package length
-    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {  // Min/Max (Preamble + payload)
+    if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*12)) {  // Min/Max (Preamble + payload)
         return DECODE_ABORT_LENGTH;
     }
 
@@ -547,6 +771,7 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bit_offset + 13*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return DECODE_ABORT_EARLY;
     }
+
     if (decoder->verbose) { fprintf(stderr, "PREAMBLE_T: found at: %u\n", bit_offset);
     bitbuffer_print(bitbuffer);
     }
@@ -593,7 +818,9 @@ static int m_bus_mode_c_t_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (decoder->verbose) { fprintf(stderr, "M-Bus: Mode T\n"); }
         if (decoder->verbose) { fprintf(stderr, "Experimental - Not tested\n"); }
         // Extract data
+
         data_in.length = (bitbuffer->bits_per_row[0]-bit_offset)/12;    // Each byte is encoded into 12 bits
+
         if (decoder->verbose) { fprintf(stderr, "MBus telegram length: %u\n", data_in.length); }
         if (m_bus_decode_3of6_buffer(bitbuffer->bb[0], bit_offset, data_in.data, data_in.length) < 0) {
             if (decoder->verbose) fprintf(stderr, "M-Bus: Decoding error\n");
