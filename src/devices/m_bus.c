@@ -315,6 +315,10 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
     }
     // adapt for table index
     exp += 3;
+    if (exp < 0 || exp > 7) {
+        fprintf(stderr, "M-Bus: Program error, exp (%d) is out of bounds", exp);
+        return data;
+    }
     assert(exp >= 0 && exp <= 7);
     float fvalue = val * pow10_table[exp];
 
