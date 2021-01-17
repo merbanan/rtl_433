@@ -17,6 +17,8 @@ for further processing by an Application layer (outside this program).
 */
 #include "decoder.h"
 #include <assert.h>
+#include <time.h>
+#include <stdarg.h>
 
 #define BLOCK1A_SIZE 12     // Size of Block 1, format A
 #define BLOCK1B_SIZE 10     // Size of Block 1, format B
@@ -238,6 +240,8 @@ enum UnitType {
     kTemperatureDiff,
     kTemperatureExtern,
     kPressure,
+    kTimeDate,
+    kDate,
 };
 
 static char *unit_names[][3] = {
@@ -256,6 +260,8 @@ static char *unit_names[][3] = {
         /*12 */ {"temperature_diff", "Temperature diff", "K"},
         /*13 */ {"temperature_ext", "Temperature extern", "C"},
         /*14 */ {"pressure", "Pressure", "bar"},
+        /*15 */ {"timedate", "TimeDate", ""},
+        /*16 */ {"date", "Date", ""},
 };
 
 // exponent                    -3     -2    -1    0  1   2    3     4
@@ -263,11 +269,30 @@ static char *unit_names[][3] = {
 static float pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
-static data_t *append(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int32_t val, int exp)
+static data_t *append(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* fmt, ...)
 {
     char key[100] = {0};
     char pretty[100] = {0};
     char sval[100] = {0};
+
+    value_type &= 0x3;
+
+    snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
+    snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
+
+    va_list argptr;
+    va_start(argptr, fmt);
+
+    vsnprintf(sval, sizeof(sval), fmt, argptr);
+    va_end(argptr);
+
+    return data_append(data,
+            key, pretty, DATA_STRING, sval, NULL);
+
+}
+
+static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int32_t val, int exp)
+{
     const char *prefix = "";
 
     if (exp < -6) {
@@ -288,21 +313,67 @@ static data_t *append(data_t *data, enum UnitType unit_type, uint8_t value_type,
         exp -= 9;
         prefix = "G";
     }
-
     // adapt for table index
     exp += 3;
     assert(exp >= 0 && exp <= 7);
     float fvalue = val * pow10_table[exp];
 
-    value_type &= 0x3;
+    return append(data, unit_type, value_type, sn, extra, "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+}
 
-    snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
-    snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
-    snprintf(sval, sizeof(sval), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
+void m_bus_tm_decode(struct tm *t, const uint8_t *data, size_t data_size)
+{
+    if (t == NULL)
+    {
+        return;
+    }
 
-    return data_append(data,
-            key, pretty, DATA_STRING, sval, NULL);
+    t->tm_sec   = 0;
+    t->tm_min   = 0;
+    t->tm_hour  = 0;
+    t->tm_mday  = 0;
+    t->tm_mon   = 0;
+    t->tm_year  = 0;
+    t->tm_wday  = 0;
+    t->tm_yday  = 0;
+    t->tm_isdst = 0;
 
+    switch(data_size) {
+        case 6:                // Type I = Compound CP48: Date and Time
+            if ((data[1] & 0x80) == 0)     // Time valid ?
+            {
+                t->tm_sec   = data[0] & 0x3F;
+                t->tm_min   = data[1] & 0x3F;
+                t->tm_hour  = data[2] & 0x1F;
+                t->tm_mday  = data[3] & 0x1F;
+                t->tm_mon   = (data[4] & 0x0F);
+                t->tm_year  = (((data[3] & 0xE0) >> 5) |
+                              ((data[4] & 0xF0) >> 1));
+                t->tm_isdst = (data[0] & 0x40) ? 1 : 0;  // day saving time
+            }
+            break;
+        case 4:           // Type F = Compound CP32: Date and Time
+            if ((data[0] & 0x80) == 0)     // Time valid ?
+            {
+                t->tm_min   = data[0] & 0x3F;
+                t->tm_hour  = data[1] & 0x1F;
+                t->tm_mday  = data[2] & 0x1F;
+                t->tm_mon   = (data[3] & 0x0F);
+                t->tm_year  = (((data[2] & 0xE0) >> 5) |
+                              ((data[3] & 0xF0) >> 1));
+                t->tm_isdst = (data[1] & 0x80) ? 1 : 0;  // day saving time
+            }
+            break;
+        case 2:           // Type G: Compound CP16: Date
+            t->tm_mday = data[0] & 0x1F;
+            t->tm_mon  = (data[1] & 0x0F);
+            t->tm_year = (((data[0] & 0xE0) >> 5) |
+                         ((data[1] & 0xF0) >> 1));
+
+            break;
+        default:
+            break;
+    }
 }
 
 /**
@@ -326,7 +397,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
     int ret = consumed_bytes[dif_coding&0x07];
     int state;
     int32_t val = 0;
-
+    struct tm timedate;
 
     // Note: there are also other formats, which should be added when needed
     switch (dif_coding) {
@@ -366,26 +437,26 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
 
     switch (vif_linear) {
         case 0:
-            if ((vif_uam & 0xF8) == 0) {
+            if ((vif_uam&0xF8) == 0) {
                 // E000 0nnn Energy	10nnn-3 Wh	0.001Wh to 10000Wh
-                data = append(data, kEnergy_Wh, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kEnergy_Wh, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x08) {
                 // E000 1nnn	Energy	10nnn J	0.001kJ to 10000kJ
-                data = append(data, kEnergy_J, dif_ff, dif_sn, "", val, vif_uam&0x7);
+                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x10) {
                 // E001 0nnn	Volume	10nnn-6 m3	0.001l to 10000l
 
                 if (dif_sn == 0) {
-                    data = append(data, kVolume, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+                    data = append_val(data, kVolume, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
                 } else
                 if (dif_sn >= 8 && dif_sn <= 19) {
                     dif_sn -= 8;
-                    data = append(data, kVolume, dif_ff, dif_sn, history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
+                    data = append_val(data, kVolume, dif_ff, dif_sn, history_months[dif_sn][1], val, -6 + (vif_uam&0x7));
                 }
 
             } else if ((vif_uam&0xF8) == 0x18) {
                 // E001 1nnn	Mass	10nnn-3 kg	0.001kg to 10000kg
-                data = append(data, kEnergy_J, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x20) {
                 /* E010 00nn	On Time	nn = 00 seconds
                                         nn = 01 minutes
@@ -395,40 +466,50 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 // E010 01nn	Operating Time	coded like OnTime
             } else if ((vif_uam&0xF8) == 0x28) {
                 // E010 1nnn	Power	10nnn-3 W	0.001W to 10000W
-                data = append(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x30) {
                 // E011 0nnn	Power	10nnn J/h	0.001kJ/h to 10000kJ/h
-                data = append(data, kPower_Jh, dif_ff, dif_sn, "", val, vif_uam&0x7);
+                data = append_val(data, kPower_Jh, dif_ff, dif_sn, "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x38) {
                 // E011 1nnn	Volume Flow	10nnn-6 m3/h	0.001l/h to 10000l/h
-                data = append(data, kVolumeFlow_h, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_h, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x40) {
                 // E100 0nnn	Volume Flow ext.	10nnn-7 m3/min	0.0001l/min to 1000l/min
-                data = append(data, kVolumeFlow_min, dif_ff, dif_sn, "", val, -7 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_min, dif_ff, dif_sn, "", val, -7 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x48) {
                 // E100 1nnn	Volume Flow ext.	10nnn-9 m³/s	0.001ml/s to 10000ml/s
                 // in litres so exp -3
-                data = append(data, kVolumeFlow_s, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kVolumeFlow_s, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x50) {
                 // E101 0nnn	Mass flow	10nnn-3 kg/h	0.001kg/h to 10000kg/h
-                data = append(data, kMassFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
+                data = append_val(data, kMassFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x58) {
                 // E101 10nn	Flow Temperature 10nn-3 °C	0.001°C to 1°C
-                data = append(data, kTemperatureFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x5C) {
                 // E101 11nn	Return Temperature 10nn-3 °C	0.001°C to 1°C
-                data = append(data, kTemperatureReturn, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureReturn, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x60) {
                 // E110 00nn	Temperature Difference	10nn-3 K	1mK to 1000mK
-                data = append(data, kTemperatureDiff, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureDiff, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x64) {
                 // E110 01nn	External temperature	10 nn-3 ° C	0.001 ° C to 1 ° C
-                data = append(data, kTemperatureExtern, dif_ff, dif_sn, history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
+                data = append_val(data, kTemperatureExtern, dif_ff, dif_sn, history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x68) {
                 // E110 10nn	Pressure	10nn-3 bar	1mbar to 1000mbar
-                data = append(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
+                data = append_val(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
                 // E110 110n	Time Point	n = 0 date, n = 1 time & date
+                if(vif_uam&1) {
+                    m_bus_tm_decode(&timedate, b, dif_coding);
+                    data = append(data, kTimeDate, dif_ff, dif_sn, "", "%d/%d/%d %d:%02d:%02d",
+                        timedate.tm_year, timedate.tm_mon, timedate.tm_mday,
+                        timedate.tm_hour, timedate.tm_min, timedate.tm_sec);
+                } else {
+                    m_bus_tm_decode(&timedate, b, dif_coding);
+                    data = append(data, kDate, dif_ff, dif_sn, "", "%d/%d/%d",
+                        timedate.tm_year, timedate.tm_mon, timedate.tm_mday);
+                }
 
             } else if (vif_uam == 0x6E) {
                 // E110 1110	Units for H.C.A.	 	dimensionless
