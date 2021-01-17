@@ -393,9 +393,9 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
-	    "id",               "ID",           DATA_INT,    id,
+            "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
-	    "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
+            "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
