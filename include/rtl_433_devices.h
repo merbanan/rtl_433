@@ -184,6 +184,7 @@
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
     DECL(blueline) \
+    DECL(tpms_hyundai_vdo) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
