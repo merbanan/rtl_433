@@ -1,12 +1,12 @@
 /**
-	Hyundai TPMS (VDO) FSK 9 or 10 byte Manchester encoded checksummed TPMS data.
+Hyundai TPMS (VDO) FSK 9 or 10 byte Manchester encoded checksummed TPMS data.
 
-	Copyright (C) 2020 Todor Uzunov aka teou, TTiges, 2019 Andreas Spiess, 2017 Christian W. Zuckschwerdt <zany@triq.net>
+Copyright (C) 2020 Todor Uzunov aka teou, TTiges, 2019 Andreas Spiess, 2017 Christian W. Zuckschwerdt <zany@triq.net>
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 */
 
 /**
@@ -53,7 +53,7 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
 	int pressure;
 	int temperature;
 	char bat_acc[3];
-//	char code_str[9 * 2 + 1];
+	//	char code_str[9 * 2 + 1];
 
 	bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
 
@@ -75,7 +75,7 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
 	repeat = b[5]&0x0f;
 	pressure = b[6];
 	temperature = b[7];
-//	sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
+	//	sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8]);
 	sprintf(bat_acc, "%02x", b[8]);
 
 	data = data_make(
