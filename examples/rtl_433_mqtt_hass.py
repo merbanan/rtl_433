@@ -380,7 +380,7 @@ mappings = {
         "config": {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
-            "value_template": "{{ valuei|float|round(2) }}"
+            "value_template": "{{ value|float|round(2) }}"
         }
     },
 
