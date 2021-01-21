@@ -334,7 +334,7 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
                 return 0;
             }
 
-            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:%02dZ",
+            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:%02d",
                 ((data[3] & 0xE0) >> 5) | ((data[4] & 0xF0) >> 1),
                 data[4] & 0x0F,
                 data[3] & 0x1F,
@@ -349,7 +349,7 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
             {
                 return 0;
             }
-            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:00Z",
+            out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:00",
                 ((data[2] & 0xE0) >> 5) | ((data[3] & 0xF0) >> 1), // year
                 data[3] & 0x0F, // mon
                 data[2] & 0x1F, // mday
