@@ -1209,7 +1209,8 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
 
     if (ev->ev == SDR_EV_DATA) {
         if (cfg->mgr) {
-            mg_mgr_poll(cfg->mgr, 0);
+            int max_polls = 16;
+            while (max_polls-- && mg_mgr_poll(cfg->mgr, 0));
         }
 
         if (!cfg->exit_async)
