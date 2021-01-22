@@ -407,6 +407,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, package_type);
                 }
@@ -427,7 +431,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
+                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                     pulse_analyzer(&demod->fsk_pulse_data, package_type);
                 }
             } // if (package_type == ...

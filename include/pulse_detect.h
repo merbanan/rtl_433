@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "data.h"
 
 #define PD_MAX_PULSES 1200      // Maximum number of pulses before forcing End Of Package
 #define PD_MIN_PULSES 16        // Minimum number of pulses before declaring a proper package
@@ -95,6 +96,9 @@ void pulse_data_print_pulse_header(FILE *file);
 
 /// Print the content of a pulse_data_t structure as OOK text.
 void pulse_data_dump(FILE *file, pulse_data_t *data);
+
+/// Print the content of a pulse_data_t structure as OOK json.
+data_t *pulse_data_print_data(pulse_data_t *data);
 
 pulse_detect_t *pulse_detect_create(void);
 

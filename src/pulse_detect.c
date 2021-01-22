@@ -190,6 +190,30 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
     chk_ret(fprintf(file, ";end\n"));
 }
 
+data_t *pulse_data_print_data(pulse_data_t *data)
+{
+    int pulses[2 * PD_MAX_PULSES];
+    double to_us = 1e6 / data->sample_rate;
+    for (unsigned i = 0; i < data->num_pulses; ++i) {
+        pulses[i * 2 + 0] = data->pulse[i] * to_us;
+        pulses[i * 2 + 1] = data->gap[i] * to_us;
+    }
+
+    /* clang-format off */
+    return data_make(
+            "mod",              "", DATA_STRING, (data->fsk_f2_est) ? "FSK" : "OOK",
+            "count",            "", DATA_INT,    data->num_pulses,
+            "pulses",           "", DATA_ARRAY,  data_array(2 * data->num_pulses, DATA_INT, pulses),
+            "freq1_Hz",         "", DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq1_hz,
+            "freq2_Hz",         "", DATA_COND,   data->fsk_f2_est, DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq2_hz,
+            "samplerate_Hz",    "", DATA_INT,    data->sample_rate,
+            "rssi_dB",          "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->rssi_db,
+            "snr_dB",           "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->snr_db,
+            "noise_dB",         "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->noise_db,
+            NULL);
+    /* clang-format on */
+}
+
 // OOK adaptive level estimator constants
 #define OOK_MAX_HIGH_LEVEL  DB_TO_AMP(0)   // Maximum estimate for high level (-0 dB)
 #define OOK_MAX_LOW_LEVEL   DB_TO_AMP(-15) // Maximum estimate for low level
