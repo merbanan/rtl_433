@@ -22,131 +22,6 @@
 
 #include "mongoose.h"
 
-/* MQTT client abstraction */
-
-typedef struct mqtt_client {
-    struct mg_send_mqtt_handshake_opts opts;
-    struct mg_connection *conn;
-    int prev_status;
-    char address[253 + 6 + 1]; // dns max + port
-    char client_id[256];
-    uint16_t message_id;
-    int publish_flags; // MG_MQTT_RETAIN | MG_MQTT_QOS(0)
-} mqtt_client_t;
-
-static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
-{
-    // note that while shutting down the ctx is NULL
-    mqtt_client_t *ctx = (mqtt_client_t *)nc->user_data;
-    // only valid in MG_EV_MQTT_ events
-    struct mg_mqtt_message *msg = (struct mg_mqtt_message *)ev_data;
-
-    //if (ev != MG_EV_POLL)
-    //    fprintf(stderr, "MQTT user handler got event %d\n", ev);
-
-    switch (ev) {
-    case MG_EV_CONNECT: {
-        int connect_status = *(int *)ev_data;
-        if (connect_status == 0) {
-            // Success
-            fprintf(stderr, "MQTT Connected...\n");
-            mg_set_protocol_mqtt(nc);
-            if (ctx)
-                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->opts);
-        }
-        else {
-            // Error, print only once
-            if (ctx && ctx->prev_status != connect_status)
-                fprintf(stderr, "MQTT connect error: %s\n", strerror(connect_status));
-        }
-        if (ctx)
-            ctx->prev_status = connect_status;
-        break;
-    }
-    case MG_EV_MQTT_CONNACK:
-        if (msg->connack_ret_code != MG_EV_MQTT_CONNACK_ACCEPTED) {
-            fprintf(stderr, "MQTT Connection error: %d\n", msg->connack_ret_code);
-        }
-        else {
-            fprintf(stderr, "MQTT Connection established.\n");
-        }
-        break;
-    case MG_EV_MQTT_PUBACK:
-        fprintf(stderr, "MQTT Message publishing acknowledged (msg_id: %d)\n", msg->message_id);
-        break;
-    case MG_EV_MQTT_SUBACK:
-        fprintf(stderr, "MQTT Subscription acknowledged.\n");
-        break;
-    case MG_EV_MQTT_PUBLISH: {
-        fprintf(stderr, "MQTT Incoming message %.*s: %.*s\n", (int)msg->topic.len,
-                msg->topic.p, (int)msg->payload.len, msg->payload.p);
-        break;
-    }
-    case MG_EV_CLOSE:
-        if (!ctx)
-            break; // shuttig down
-        if (ctx->prev_status == 0)
-            fprintf(stderr, "MQTT Connection failed...\n");
-        // reconnect
-        struct mg_connect_opts opts = {.user_data = ctx};
-        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, opts);
-        if (!ctx->conn) {
-            fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
-        }
-        break;
-    }
-}
-
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
-{
-    mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
-    if (!ctx)
-        FATAL_CALLOC("mqtt_client_init()");
-
-    ctx->opts.user_name = user;
-    ctx->opts.password  = pass;
-    ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
-    // TODO: these should be user configurable options
-    //ctx->opts.keepalive = 60;
-    //ctx->timeout = 10000L;
-    //ctx->cleansession = 1;
-    strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
-    ctx->client_id[sizeof(ctx->client_id) - 1] = '\0';
-
-    // if the host is an IPv6 address it needs quoting
-    if (strchr(host, ':'))
-        snprintf(ctx->address, sizeof(ctx->address), "[%s]:%s", host, port);
-    else
-        snprintf(ctx->address, sizeof(ctx->address), "%s:%s", host, port);
-
-    struct mg_connect_opts opts = {.user_data = ctx};
-    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, opts);
-    if (!ctx->conn) {
-        fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
-        exit(1);
-    }
-
-    return ctx;
-}
-
-static void mqtt_client_publish(mqtt_client_t *ctx, char const *topic, char const *str)
-{
-    if (!ctx->conn || !ctx->conn->proto_handler)
-        return;
-
-    ctx->message_id++;
-    mg_mqtt_publish(ctx->conn, topic, ctx->message_id, ctx->publish_flags, str, strlen(str));
-}
-
-static void mqtt_client_free(mqtt_client_t *ctx)
-{
-    if (ctx && ctx->conn) {
-        ctx->conn->user_data = NULL;
-        ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
-    }
-    free(ctx);
-}
-
 /* Helper */
 
 /// clean the topic inplace to [-.A-Za-z0-9], esp. not whitespace, +, #, /, $
@@ -163,7 +38,6 @@ static char *mqtt_sanitize_topic(char *topic)
 
 typedef struct {
     struct data_output output;
-    mqtt_client_t *mqc;
     char topic[256];
     char hostname[64];
     char *devices;
@@ -331,7 +205,9 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
                 }
                 data_print_jsons(data, message, message_size);
                 expand_topic(mqtt->topic, mqtt->states, data, mqtt->hostname);
-                mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
+                link_output_set_destination(output->link_output, mqtt->topic);
+                link_output_write(output->link_output, message, strlen(message));
+                link_output_flush(output->link_output);
                 *mqtt->topic = '\0'; // clear topic
                 free(message);
             }
@@ -343,7 +219,9 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
             char message[1024]; // we expect the biggest strings to be around 500 bytes.
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
-            mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
+            link_output_set_destination(output->link_output, mqtt->topic);
+            link_output_write(output->link_output, message, strlen(message));
+            link_output_flush(output->link_output);
             *mqtt->topic = '\0'; // clear topic
         }
 
@@ -378,7 +256,10 @@ static void print_mqtt_string(data_output_t *output, char const *str, char const
 {
     UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
-    mqtt_client_publish(mqtt->mqc, mqtt->topic, str);
+
+    link_output_set_destination(output->link_output, mqtt->topic);
+    link_output_write(output->link_output, str, strlen(str));
+    link_output_flush(output->link_output);
 }
 
 static void print_mqtt_double(data_output_t *output, double data, char const *format)
@@ -420,7 +301,7 @@ static void data_output_mqtt_free(data_output_t *output)
     //free(mqtt->homie);
     //free(mqtt->hass);
 
-    mqtt_client_free(mqtt->mqc);
+    link_output_free(output->link_output);
 
     free(mqtt);
 }
@@ -446,8 +327,11 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
     return ret;
 }
 
-struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host, char const *port, char *opts, char const *dev_hint)
+struct data_output *data_output_mqtt_create(list_t *links, const char *name, struct mg_mgr *mgr, const char *dev_hint, char *param)
 {
+    char *host = "localhost";
+    char *port = "1883";
+    list_t kwargs = {0};
     data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
     if (!mqtt)
         FATAL_CALLOC("data_output_mqtt_create()");
@@ -460,12 +344,6 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         *dot = '\0';
     //fprintf(stderr, "Hostname: %s\n", hostname);
 
-    // generate a short deterministic client_id to identify this input device on restart
-    uint16_t host_crc = crc16((uint8_t *)mqtt->hostname, strlen(mqtt->hostname), 0x1021, 0xffff);
-    uint16_t devq_crc = crc16((uint8_t *)dev_hint, dev_hint ? strlen(dev_hint) : 0, 0x1021, 0xffff);
-    char client_id[17];
-    snprintf(client_id, sizeof(client_id), "rtl_433-%04x%04x", host_crc, devq_crc);
-
     // default base topic
     char base_topic[8 + sizeof(mqtt->hostname)];
     snprintf(base_topic, sizeof(base_topic), "rtl_433/%s", mqtt->hostname);
@@ -475,25 +353,32 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char const *path_events = "events";
     char const *path_states = "states";
 
-    char *user = NULL;
-    char *pass = NULL;
-    int retain = 0;
+    link_t *l;
+    char *topic = NULL;
+
+    if (name) {
+        get_string_and_kwargs(param, &topic, &kwargs);
+        if (!(l = link_search(links, name))) {
+            fprintf(stderr, "no such link %s\n", name);
+            free(mqtt);
+            return NULL;
+        }
+    } else {
+        get_hostport_and_kwargs(param, &host, &port, &kwargs);
+        fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
+        if (!(l = link_mqtt_create(links, name, mgr, dev_hint, host, port, &kwargs))) {
+            free(mqtt);
+            return NULL;
+        }
+    }
 
     // parse auth and format options
     char *key, *val;
-    while (getkwargs(&opts, &key, &val)) {
-        key = remove_ws(key);
-        val = trim_ws(val);
-        if (!key || !*key)
-            continue;
-        else if (!strcasecmp(key, "u") || !strcasecmp(key, "user"))
-            user = val;
-        else if (!strcasecmp(key, "p") || !strcasecmp(key, "pass"))
-            pass = val;
-        else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
-            retain = atobv(val, 1);
+    for (size_t i = 0; i < kwargs.len; ) {
+        key = kwargs.elems[i];
+        val = kwargs.elems[i + 1];
         // Simple key-topic mapping
-        else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
+        if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
         // deprecated, remove this
         else if (!strcasecmp(key, "c") || !strcasecmp(key, "usechannel")) {
@@ -516,10 +401,6 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         // TODO: Home Assistant MQTT discovery https://www.home-assistant.io/docs/mqtt/discovery/
         //else if (!strcasecmp(key, "a") || !strcasecmp(key, "hass"))
         //    mqtt->hass = mqtt_topic_default(val, NULL, "homeassistant"); // discovery prefix
-        else {
-            fprintf(stderr, "Invalid key \"%s\" option.\n", key);
-            exit(1);
-        }
     }
 
     // Default is to use all formats
@@ -541,8 +422,12 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     mqtt->output.print_double = print_mqtt_double;
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
+    mqtt->output.link_output  = link_create_output(l, topic, &kwargs);
 
-    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain);
+    if (kwargs.len != 0) {
+        data_output_free(&mqtt->output);
+        return NULL;
+    }
 
     return &mqtt->output;
 }

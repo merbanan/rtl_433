@@ -326,6 +326,40 @@ char *remove_ws(char *str)
     return str;
 }
 
+void get_hostport_and_kwargs(char *param, char **host, char **port, list_t *kwargs)
+{
+    char *opts = hostport_param(param, host, port);
+    char *key, *val;
+
+    if (!opts) return;
+
+    while (getkwargs(&opts, &key, &val)) {
+        key = remove_ws(key);
+        val = trim_ws(val);
+        if (!key || !*key)
+            continue;
+        list_push(kwargs, key);
+        list_push(kwargs, val);
+    }
+}
+
+void get_string_and_kwargs(char *param, char **s, list_t *kwargs)
+{
+    char *key, *val;
+
+    *s = asepc(&param, ',');
+    if (!param) return;
+
+    while (getkwargs(&param, &key, &val)) {
+        key = remove_ws(key);
+        val = trim_ws(val);
+        if (!key || !*key)
+            continue;
+        list_push(kwargs, key);
+        list_push(kwargs, val);
+    }
+}
+
 // Unit testing
 #ifdef _TEST
 #define ASSERT_EQUALS(a,b)                                  \

@@ -13,6 +13,7 @@
 #define INCLUDE_R_API_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct r_cfg;
 struct r_device;
@@ -67,21 +68,15 @@ void flush_report_data(struct r_cfg *cfg);
 
 /* setup */
 
-void add_json_output(struct r_cfg *cfg, char *param);
+bool add_link(struct r_cfg *cfg, char *arg);
 
-void add_csv_output(struct r_cfg *cfg, char *param);
-
-void add_kv_output(struct r_cfg *cfg, char *param);
-
-void add_mqtt_output(struct r_cfg *cfg, char *param);
+bool add_output(struct r_cfg *cfg, char *arg);
 
 void add_influx_output(struct r_cfg *cfg, char *param);
 
 void add_syslog_output(struct r_cfg *cfg, char *param);
 
 void add_http_output(struct r_cfg *cfg, char *param);
-
-void add_null_output(struct r_cfg *cfg, char *param);
 
 void start_outputs(struct r_cfg *cfg, char const **well_known);
 

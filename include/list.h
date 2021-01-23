@@ -14,6 +14,8 @@
 
 #include <stddef.h>
 
+#include "list.h"
+
 /// Dynamically growing list, elems is always NULL terminated, call list_ensure_size() to alloc elems.
 typedef struct list {
     void **elems;

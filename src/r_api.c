@@ -27,6 +27,7 @@
 #include "data.h"
 #include "list.h"
 #include "optparse.h"
+#include "link.h"
 #include "output_mqtt.h"
 #include "output_influx.h"
 #include "write_sigrok.h"
@@ -134,6 +135,7 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
 
     list_ensure_size(&cfg->in_files, 100);
+    list_ensure_size(&cfg->links, 16);
     list_ensure_size(&cfg->output_handler, 16);
 
     cfg->demod = calloc(1, sizeof(*cfg->demod));
@@ -187,6 +189,8 @@ void r_free_cfg(r_cfg_t *cfg)
     free(cfg->demod);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
+
+    list_free_elems(&cfg->links, (list_elem_free_fn) link_free);
 
     list_free_elems(&cfg->in_files, NULL);
 
@@ -856,30 +860,6 @@ void flush_report_data(r_cfg_t *cfg)
 
 /* setup */
 
-static FILE *fopen_output(char *param)
-{
-    FILE *file;
-    if (!param || !*param) {
-        return stdout;
-    }
-    file = fopen(param, "a");
-    if (!file) {
-        fprintf(stderr, "rtl_433: failed to open output file\n");
-        exit(1);
-    }
-    return file;
-}
-
-void add_json_output(r_cfg_t *cfg, char *param)
-{
-    list_push(&cfg->output_handler, data_output_json_create(fopen_output(param)));
-}
-
-void add_csv_output(r_cfg_t *cfg, char *param)
-{
-    list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
-}
-
 void start_outputs(r_cfg_t *cfg, char const **well_known)
 {
     int num_output_fields;
@@ -890,21 +870,6 @@ void start_outputs(r_cfg_t *cfg, char const **well_known)
     }
 
     free(output_fields);
-}
-
-void add_kv_output(r_cfg_t *cfg, char *param)
-{
-    list_push(&cfg->output_handler, data_output_kv_create(fopen_output(param)));
-}
-
-void add_mqtt_output(r_cfg_t *cfg, char *param)
-{
-    char *host = "localhost";
-    char *port = "1883";
-    char *opts = hostport_param(param, &host, &port);
-    fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
-
-    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
 }
 
 void add_influx_output(r_cfg_t *cfg, char *param)
@@ -932,10 +897,94 @@ void add_http_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_http_create(get_mgr(cfg), host, port, cfg));
 }
 
-void add_null_output(r_cfg_t *cfg, char *param)
+bool add_link(r_cfg_t *cfg, char *arg)
 {
-    UNUSED(param);
-    list_push(&cfg->output_handler, NULL);
+    char *e, *c;
+    list_t kwargs = {0};
+    link_t *l = NULL;
+
+    e = strchr(arg, '=');
+    c = strchr(arg, ':');
+
+    if (e && c && e < c) {
+        *e = '\0';
+        if (link_search(&cfg->links, arg) != NULL) {
+            fprintf(stderr, "link %s redefined\n", arg);
+            return false;
+        }
+        if (strncasecmp(e + 1, "file:", 5) == 0) {
+            char *param = NULL;
+
+            get_string_and_kwargs(c + 1, &param, &kwargs);
+            l = link_file_create(&cfg->links, arg, param, &kwargs);
+
+        } else if (strncasecmp(e + 1, "mqtt:", 5) == 0) {
+            char *host = "localhost";
+            char *port = "1883";
+
+            get_hostport_and_kwargs(c + 1, &host, &port, &kwargs);
+            l = link_mqtt_create(&cfg->links, arg, get_mgr(cfg), cfg->dev_query, host, port, &kwargs);
+        }
+        if (kwargs.len != 0) {
+            fprintf(stderr, "invalid parameter %s for link %s\n", (const char *) kwargs.elems[0], arg);
+            link_free(l);
+            l = NULL;
+        }
+    }
+
+    return l != NULL;
+}
+
+bool add_output(r_cfg_t *cfg, char *arg)
+{
+    char *s, *c;
+    char *name = NULL;
+    struct data_output *output;
+
+    s = strchr(arg, '/');
+    c = strchr(arg, ':');
+
+    if (s && (!c || s < c)) {
+        name = arg;
+        *s++ = '\0';
+        arg = s;
+    }
+
+    if (strncasecmp(arg, "json", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        output = data_output_json_create(&cfg->links, name, arg_param(arg));
+    } else if (strncasecmp(arg, "csv", 3) == 0 && (arg[3] == ':' || arg[3] == '\0')) {
+        output = data_output_csv_create(&cfg->links, name, arg_param(arg));
+    } else if (strncasecmp(arg, "kv", 2) == 0 && (arg[2] == ':' || arg[2] == '\0')) {
+        output = data_output_kv_create(&cfg->links, name, arg_param(arg));
+    } else if (strncasecmp(arg, "mqtt", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        output = data_output_mqtt_create(&cfg->links, name, get_mgr(cfg), cfg->dev_query, arg_param(arg));
+    } else if (strncasecmp(arg, "influx", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
+        add_influx_output(cfg, arg);
+        return true;
+    } else if (strncasecmp(arg, "syslog", 6) == 0 && (arg[6] == ':' || arg[6] == '\0')) {
+        add_syslog_output(cfg, arg_param(arg));
+        return true;
+    } else if (strncmp(optarg, "http", 4) == 0) {
+        add_http_output(cfg, arg_param(optarg));
+        return true;
+    } else if (strncasecmp(arg, "null", 4) == 0 && (arg[4] == ':' || arg[4] == '\0')) {
+        if (strlen(arg) > 5)
+            return false;
+        list_push(&cfg->output_handler, NULL);
+        return true;
+    } else {
+        return false;
+    }
+
+    if (!output)
+        return false;
+    if (!output->link_output) {
+        data_output_free(output);
+        return false;
+    }
+    list_push(&cfg->output_handler, output);
+
+    return true;
 }
 
 void add_sr_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
