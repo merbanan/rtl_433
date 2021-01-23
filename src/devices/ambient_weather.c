@@ -13,6 +13,8 @@
 /**
 Ambient Weather F007TH Thermo-Hygrometer.
 
+Also TFA senders 30.3208.02 from the TFA "Klima-Monitor" 30.3054
+
 The check is an LFSR Digest-8, gen 0x98, key 0x3e, init 0x64
 */
 
@@ -35,9 +37,7 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
     if (expected != calculated) {
         if (decoder->verbose) {
-            fprintf(stderr, "Checksum error in Ambient Weather message.    Expected: %02x    Calculated: %02x\n", expected, calculated);
-            fprintf(stderr, "Message: ");
-            bitrow_print(b, 48);
+            bitrow_printf(b, 48, "%s: Checksum error, expected: %02x calculated: %02x\n", __func__, expected, calculated);
         }
         return DECODE_FAIL_MIC;
     }
@@ -115,7 +115,7 @@ static char *output_fields[] = {
 };
 
 r_device ambient_weather = {
-        .name        = "Ambient Weather Temperature Sensor",
+        .name        = "Ambient Weather, TFA 30.3208.02 temperature sensor",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 500,
         .long_width  = 0, // not used
