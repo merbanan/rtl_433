@@ -265,6 +265,9 @@
     <ClCompile Include="..\src\devices\bt_rain.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\burnhardbbq.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\calibeur.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
