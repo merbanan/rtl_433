@@ -98,7 +98,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
-    [20]  Ambient Weather, TFA 30.3208.02 temperature sensor
+    [20]  Ambient Weather Temperature Sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
     [23]  DSC Security Contact
@@ -260,7 +260,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-d <RTL-SDR USB device index>] (default: 0)
   [-d :<RTL-SDR USB device serial (can be set with rtl_eeprom -s)>]
 	To set gain for RTL-SDR use -g <gain> to set an overall gain in dB.
-	SoapySDR device driver is available.
+	SoapySDR device driver is not available.
   [-d ""] Open default SoapySDR device
   [-d driver=rtlsdr] Open e.g. specific SoapySDR device
 	To set gain for SoapySDR use -g ELEM=val,ELEM=val,... e.g. -g LNA=20,TIA=8,PGA=2 (for LimeSDR).
