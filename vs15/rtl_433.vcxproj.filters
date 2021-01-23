@@ -74,6 +74,9 @@
     <ClInclude Include="..\include\output_mqtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\pulse_analyzer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\pulse_demod.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -93,6 +96,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\r_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\rfraw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\rtl_433.h">
@@ -115,7 +121,7 @@
     </ClInclude>
     <ClInclude Include="..\include\write_sigrok.h">
       <Filter>Header Files</Filter>
-    </ClInclude>    
+    </ClInclude>
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
