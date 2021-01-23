@@ -251,6 +251,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
     [176]  BlueLine Power Monitor
+    [177]  Burnhard BBQ thermometer
 
 * Disabled by default, use -R n or -G
 

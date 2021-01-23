@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - GPS meta data
+- Added support for Burnhard BBQ thermometer
 
 ## Release 20.11 (2020-11-13)
 

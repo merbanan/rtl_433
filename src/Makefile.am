@@ -50,6 +50,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/bresser_6in1.c \
                        devices/bresser_7in1.c \
                        devices/bt_rain.c \
+                       devices/burnhardbbq.c \
                        devices/calibeur.c \
                        devices/cardin.c \
                        devices/chuango.c \
