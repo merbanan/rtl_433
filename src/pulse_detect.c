@@ -178,7 +178,10 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
         chk_ret(fprintf(file, ";ook %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
     }
+    chk_ret(fprintf(file, ";centerfreq %.0f Hz\n", data->centerfreq_hz));
     chk_ret(fprintf(file, ";samplerate %u Hz\n", data->sample_rate));
+    chk_ret(fprintf(file, ";sampledepth %u bits\n", data->depth_bits));
+    chk_ret(fprintf(file, ";range %.1f dB\n", data->range_db));
     chk_ret(fprintf(file, ";rssi %.1f dB\n", data->rssi_db));
     chk_ret(fprintf(file, ";snr %.1f dB\n", data->snr_db));
     chk_ret(fprintf(file, ";noise %.1f dB\n", data->noise_db));
@@ -206,7 +209,10 @@ data_t *pulse_data_print_data(pulse_data_t *data)
             "pulses",           "", DATA_ARRAY,  data_array(2 * data->num_pulses, DATA_INT, pulses),
             "freq1_Hz",         "", DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq1_hz,
             "freq2_Hz",         "", DATA_COND,   data->fsk_f2_est, DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq2_hz,
-            "samplerate_Hz",    "", DATA_INT,    data->sample_rate,
+            "freq_Hz",          "", DATA_INT,    (unsigned)data->centerfreq_hz,
+            "rate_Hz",          "", DATA_INT,    data->sample_rate,
+            "depth_bits",       "", DATA_INT,    data->depth_bits,
+            "range_dB",         "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->range_db,
             "rssi_dB",          "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->rssi_db,
             "snr_dB",           "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->snr_db,
             "noise_dB",         "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->noise_db,

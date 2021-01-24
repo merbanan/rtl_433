@@ -28,6 +28,7 @@
 typedef struct pulse_data {
     uint64_t offset;            ///< Offset to first pulse in number of samples from start of stream.
     uint32_t sample_rate;       ///< Sample rate the pulses are recorded with.
+    unsigned depth_bits;        ///< Sample depth in bits.
     unsigned start_ago;         ///< Start of first pulse in number of samples ago.
     unsigned end_ago;           ///< End of last pulse in number of samples ago.
     unsigned int num_pulses;
@@ -39,6 +40,8 @@ typedef struct pulse_data {
     int fsk_f2_est;             ///< Estimate for the F2 frequency for FSK.
     float freq1_hz;
     float freq2_hz;
+    float centerfreq_hz;
+    float range_db;
     float rssi_db;
     float snr_db;
     float noise_db;

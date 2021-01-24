@@ -268,16 +268,22 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
+    pulse_data->centerfreq_hz = cfg->center_frequency;
+    pulse_data->depth_bits    = cfg->demod->sample_size * 8;
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
     if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
-        pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
+        pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->snr_db  = 10.0f * log10f(asnr);
+        pulse_data->snr_db   = 10.0f * log10f(asnr);
     }
     else { // magnitude (CS16)
-        pulse_data->rssi_db = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
+        // actually 12 bit is 20*log10f(2048.0f) = 66.2266f,
+        // actually 16 bit is 20*log10f(32768.0f) = 90.3090f,
+        pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->snr_db  = 20.0f * log10f(asnr);
+        pulse_data->snr_db   = 20.0f * log10f(asnr);
     }
 }
 
