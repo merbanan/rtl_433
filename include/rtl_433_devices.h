@@ -90,6 +90,7 @@
     DECL(ibis_beacon) \
     DECL(oil_standard) \
     DECL(tpms_citroen) \
+    DECL(tpms_nissan) \
     DECL(oil_standard_ask) \
     DECL(thermopro_tp11) \
     DECL(solight_te44) \
