@@ -47,15 +47,26 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // All three rows contain the same information. Return on first decoded row.
+    int ret = 0;
     for (int i = 0; i < bitbuffer->num_rows; ++i) {
         // A row typically has 81 bits, but the last is just a coding artefact.
-        if (bitbuffer->bits_per_row[i] < 80)
+        if (bitbuffer->bits_per_row[i] < 80 || bitbuffer->bits_per_row[i] > 81) {
+            ret = DECODE_ABORT_LENGTH;
             continue;
+        }
         b = bitbuffer->bb[i];
 
-        // Sanity check (digest last byte).
-        if (lfsr_digest8_reflect(b, 9, 0x31, 0xf4) != b[9])
+        // reduce false positives
+        if (b[0] == 0 && b[9] == 0) {
+            ret = DECODE_ABORT_EARLY;
             continue;
+        }
+
+        // Sanity check (digest last byte).
+        if (lfsr_digest8_reflect(b, 9, 0x31, 0xf4) != b[9]) {
+            ret = DECODE_FAIL_MIC;
+            continue;
+        }
 
         id = b[0];
         channel = b[1] & 0x07;
@@ -107,7 +118,7 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0;
+    return ret;
 }
 
 static char *output_fields[] = {
