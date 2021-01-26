@@ -538,7 +538,7 @@ def publish_config(mqttc, topic, model, instance, mapping):
     if args.debug:
         print(path,":",json.dumps(config))
 
-    mqttc.publish(path, json.dumps(config), args.retain)
+    mqttc.publish(path, json.dumps(config), retain=args.retain)
 
     return True
 
