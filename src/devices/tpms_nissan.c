@@ -12,8 +12,8 @@
 /**
 Nissan FSK 37 bit Manchester encoded checksummed TPMS data
 
-MODE:2d TPMS_ID:20h UNKNOWN:5b (PSI+THREE)*FOUR=8d UNKNOWN:2b
-
+Data format:
+MODE:3d TPMS_ID:24h (PSI+THREE)*FOUR=8d UNKNOWN:2b
 */
 
 #include "decoder.h"
@@ -26,10 +26,9 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     int mode;
     // char mode_str[3];
     unsigned id;
-    char id_str[6];
-    int unknown0;
+    char id_str[7];
     int pressure_psi;
-    int unknown1;
+    int unknown;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 113);
     bitbuffer_invert(&packet_bits);  // Manchester (G.E. Thomas) Decoded
@@ -48,24 +47,26 @@ static int tpms_nissan_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     // TODO Is there any parity or other checks we can preform to return
     // DECODE_ABORT_EARLY or DECODE_FAIL_MIC
 
-    mode = b[0] >> 6;
-    //sprintf(mode_str, "%2d", mode);
+    // MODE:3d
+    mode = b[0] >> 5;
 
-    id = (unsigned)((b[0] & 0x3F) << 14) | (b[1] << 6) | (b[2] >> 2);
-    sprintf(id_str, "%05x", id);
+    // TPMS_ID:24h
+    id = (unsigned)((b[0] & 0x1F) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
+    sprintf(id_str, "%06x", id);
 
-    unknown0 = ((b[2] & 0x3) << 3) | (b[3] >> 5);
+    // (PSI+THREE)*FOUR=8d
     pressure_psi = ((b[3] & 0x1F) << 3) | (b[4] >> 5);
-    unknown1 = (b[4] & 0x1F) >> 3;
+
+    // UNKNOWN:2b
+    unknown = (b[4] & 0x1F) >> 3;
 
     data = data_make(
         "model",           "",     DATA_STRING, "Nissan",
         "type",            "",     DATA_STRING, "TPMS",
         "mode",            "",     DATA_INT, mode,
         "id",              "",     DATA_STRING, id_str,
-        "unknown0",        "",     DATA_INT, unknown0,
         "pressure_psi", "Pressure", DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, (double)(pressure_psi / 4.0) - 3.0,
-        "unknown1",        "",     DATA_INT, unknown1,
+        "unknown",        "",     DATA_INT, unknown,
         NULL);
 
     decoder_output_data(decoder, data);
@@ -99,9 +100,8 @@ static char *output_fields[] = {
     "type",
     "mode",
     "id",
-    "unknown0",
     "pressure_psi",
-    "unknown1",
+    "unknown",
     NULL,
 };
 
