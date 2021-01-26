@@ -321,17 +321,16 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
 {
     size_t out_len = 0;
 
-    if (output == NULL)
-    {
+    if (output == NULL) {
         return 0;
     }
 
 
     switch(data_size) {
         case 6:                // Type I = Compound CP48: Date and Time
-            if ((data[1] & 0x80) != 0)     // Time valid ?
-            {
-                return 0;
+            if ((data[1] & 0x80) != 0) { // Time valid ?
+                out_len = snprintf(output, output_size, "invalid");
+                break;
             }
 
             out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:%02d",
@@ -345,9 +344,9 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
             // (data[0] & 0x40) ? 1 : 0;  // day saving time
             break;
         case 4:           // Type F = Compound CP32: Date and Time
-            if ((data[0] & 0x80) != 0)     // Time valid ?
-            {
-                return 0;
+            if ((data[0] & 0x80) != 0) {    // Time valid ?
+                out_len = snprintf(output, output_size, "invalid");
+                break;
             }
             out_len = snprintf(output, output_size, "%02d-%02d-%02dT%02d:%02d:00",
                 ((data[2] & 0xE0) >> 5) | ((data[3] & 0xF0) >> 1), // year
@@ -359,6 +358,10 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
             // (data[1] & 0x80) ? 1 : 0;  // day saving time
             break;
         case 2:           // Type G: Compound CP16: Date
+            if ((data[1] & 0x0F) > 12) { // Date valid ?
+                out_len = snprintf(output, output_size, "invalid");
+                break;
+            }
             out_len = snprintf(output, output_size, "%02d-%02d-%02d",
                 ((data[0] & 0xE0) >> 5) | ((data[1] & 0xF0) >> 1), // year
                 data[1] & 0x0F, // mon
@@ -366,6 +369,7 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
             );
             break;
         default:
+            out_len = snprintf(output, output_size, "unknown");
             break;
     }
     return out_len;
