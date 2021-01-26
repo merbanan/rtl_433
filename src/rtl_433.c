@@ -966,7 +966,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_meta = atobv(arg, 1);
         break;
     case 'D':
-        fprintf(stderr, "debug option (-D) is deprecated. See -v to increase verbosity\n");
+        cfg->demo_mode = atobv(arg, 1);
         break;
     case 'z':
         fprintf(stderr, "override_short (-z) is deprecated.\n");
@@ -1451,6 +1451,40 @@ int main(int argc, char **argv) {
         r_free_cfg(cfg);
         exit(!r);
     }
+
+    // Special case for test pattern demo mode
+    if (cfg->demo_mode) {
+        int exit_code = 0;
+        r = 0;
+        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+            if (cfg->verbosity)
+                fprintf(stderr, "Showing demo data for device %s.\n", r_dev->name);
+            for (char **code = r_dev->demo_pattern; code && *code; ++code) {
+              if (rfraw_check(*code)) {
+                    pulse_data_t pulse_data = {0};
+                    rfraw_parse(&pulse_data, *code);
+                    list_t single_dev = {0};
+                    list_push(&single_dev, r_dev);
+                    if (!pulse_data.fsk_f2_est)
+                        r += run_ook_demods(&single_dev, &pulse_data);
+                    else
+                        r += run_fsk_demods(&single_dev, &pulse_data);
+                    list_free_elems(&single_dev, NULL);
+                    if (r <= 0) {
+                      fprintf(stderr, "demo pattern resulted in an error or no output!\n");
+                      exit_code = 1;
+                    }
+                } else {
+                  fprintf(stderr, "ERROR: demo pattern for device %s is invalid\n", r_dev->name);
+                  exit_code = 1;
+                }
+            }
+        }
+        r_free_cfg(cfg);
+        exit(exit_code);
+    }
+
     // Special case for string test data
     if (cfg->test_data) {
         r = 0;

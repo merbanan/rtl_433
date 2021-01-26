@@ -107,6 +107,12 @@ static char *output_fields[] = {
     NULL
 };
 
+static char *demo_pattern[] = {
+    "AAB03B060C00F402DC01E403C004B4271491919191828282A082A0A0A08282A08282A0A0828282828282A0A0828282A0A08282A0A082A0A0A"
+    "082A0A0828355",
+    NULL,
+};
+
 r_device bresser_3ch = {
     .name           = "Bresser Thermo-/Hygro-Sensor 3CH",
     .modulation     = OOK_PULSE_PWM,
@@ -118,4 +124,5 @@ r_device bresser_3ch = {
     .decode_fn      = &bresser_3ch_callback,
     .disabled       = 0,
     .fields         = output_fields,
+    .demo_pattern   = demo_pattern,
 };
