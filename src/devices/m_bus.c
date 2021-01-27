@@ -290,7 +290,7 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
     value_type &= 0x3;
 
     snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
-    if(extra[0] == '\0') {
+    if (extra[0] == '\0') {
         snprintf(pretty, sizeof(pretty), "%s %s[%d]", value_types_tab[value_type][1], unit_names[unit_type][1], sn);
     } else {
         snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
