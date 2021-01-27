@@ -520,6 +520,9 @@ static void data_output_json_free(data_output_t *output)
     if (!output)
         return;
 
+    if (output->file != stdout)
+        fclose(output->file);
+
     free(output);
 }
 
@@ -702,6 +705,9 @@ static void data_output_kv_free(data_output_t *output)
 
     if (!output)
         return;
+
+    if (output->file != stdout)
+        fclose(output->file);
 
     if (kv->color)
         term_free(kv->term);
@@ -900,6 +906,9 @@ static void print_csv_int(data_output_t *output, int data, char const *format)
 static void data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
+
+    if (output->file != stdout)
+        fclose(output->file);
 
     free(csv->fields);
     free(csv);
