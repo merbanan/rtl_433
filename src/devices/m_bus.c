@@ -412,7 +412,7 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
         case 15: // special function
             return -1;
         case 14: // 12 digit BCD
-            for(int i=5; i >= 0;--i) {
+            for (int i=5; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
@@ -420,13 +420,13 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
         case 13: // variable len
             return -1;
         case 12: // 8 digit BCD
-            for(int i=3; i >= 0;--i) {
+            for (int i=3; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
             return 4;
         case 11: // 6 digit BCD
-            for(int i=2; i >= 0;--i) {
+            for (int i=2; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
