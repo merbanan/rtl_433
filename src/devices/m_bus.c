@@ -178,8 +178,6 @@ typedef struct {
 
 static float humidity_factor[2] = { 0.1, 1 };
 
-static int consumed_bytes[8] = { -1, 1, 2, 3, 4, 4, 6, 8};
-
 
 static char* oms_hum[4][4] = {
 {"humidity","average_humidity_1h","average_humidity_24h","error_04", },
@@ -239,6 +237,15 @@ enum UnitType {
     kPressure,
     kTimeDate,
     kDate,
+    kHca,
+    kOnTimeSec,
+    kOnTimeMin,
+    kOnTimeHours,
+    kOnTimeDays,
+    kOperTimeSec,
+    kOperTimeMin,
+    kOperTimeHours,
+    kOperTimeDays,
 };
 
 static char *unit_names[][3] = {
@@ -259,6 +266,15 @@ static char *unit_names[][3] = {
         /*14 */ {"pressure", "Pressure", "bar"},
         /*15 */ {"timedate", "TimeDate", ""},
         /*16 */ {"date", "Date", ""},
+        /*17 */ {"hca", "HCA", ""},
+        /*18 */ {"ontime_s", "OnTime", "s"},
+        /*19 */ {"ontime_m", "OnTime", "min"},
+        /*20 */ {"ontime_h", "OnTime", "hours"},
+        /*21 */ {"ontime_d", "OnTime", "days"},
+        /*22 */ {"opertime_s", "OperTime", "s"},
+        /*23 */ {"opertime_m", "OperTime", "min"},
+        /*24 */ {"opertime_h", "OperTime", "hours"},
+        /*25 */ {"opertime_d", "OperTime", "days"},
 };
 
 // exponent                    -3     -2    -1    0  1   2    3     4
@@ -274,14 +290,18 @@ static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_t
     value_type &= 0x3;
 
     snprintf(key, sizeof(key), "%s_%s_%d", value_types_tab[value_type][0], unit_names[unit_type][0], sn);
-    snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
+    if(extra[0] == '\0') {
+        snprintf(pretty, sizeof(pretty), "%s %s[%d]", value_types_tab[value_type][1], unit_names[unit_type][1], sn);
+    } else {
+        snprintf(pretty, sizeof(pretty), "%s %s %s", value_types_tab[value_type][1], unit_names[unit_type][1], extra);
+    }
 
     return data_append(data,
             key, pretty, DATA_STRING, value, NULL);
 
 }
 
-static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int32_t val, int exp)
+static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, int64_t val, int exp)
 {
     const char *prefix = "";
     char buffer_val[256] = {0};
@@ -310,7 +330,7 @@ static data_t *append_val(data_t *data, enum UnitType unit_type, uint8_t value_t
         fprintf(stderr, "M-Bus: Program error, exp (%d) is out of bounds", exp);
         return data;
     }
-    float fvalue = val * pow10_table[exp];
+    double fvalue = val * pow10_table[exp];
 
     snprintf(buffer_val, sizeof(buffer_val), "%.03f %s%s", fvalue, prefix, unit_names[unit_type][2]);
 
@@ -372,6 +392,94 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
 }
 
 /**
+ * @brief decode value from the data stream
+ *
+ * @param b             data stream
+ * @param dif_coding    type/size of value
+ * @param out_value     pointer where value will be stored
+ * @return size_t       number of consumed bytes. -1 if error or unknown coding
+ */
+static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_value)
+{
+    *out_value = 0;
+
+    switch (dif_coding) {
+        case 15: // special function
+            return -1;
+        case 14: // 12 digit BCD
+            for (int i=5; i >= 0;--i) {
+                *out_value = (*out_value * 10 ) + (b[i] >> 4);
+                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+            }
+            return 6;
+        case 13: // variable len
+            return -1;
+        case 12: // 8 digit BCD
+            for (int i=3; i >= 0;--i) {
+                *out_value = (*out_value * 10 ) + (b[i] >> 4);
+                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+            }
+            return 4;
+        case 11: // 6 digit BCD
+            for (int i=2; i >= 0;--i) {
+                *out_value = (*out_value * 10 ) + (b[i] >> 4);
+                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+            }
+            return 3;
+        case 10: // 4 digit BCD
+            for (int i=1; i >= 0;--i) {
+                *out_value = (*out_value * 10 ) + (b[i] >> 4);
+                *out_value = (*out_value * 10 ) + (b[i] & 0xF);
+            }
+            return 2;
+        case 9: // 2 digit BCD
+            *out_value = (b[0] >> 4) * 10;
+            *out_value += b[0] & 0xF;
+            return 1;
+        case 8: // Selection for Readout
+            return -1;
+        case 7: // 64bit
+            for (int i=7; i >= 0;--i) {
+                *out_value = (*out_value << 8) | b[i];
+            }
+            return 8;
+        case 6: // 48bit
+            if (b[5] & 0x80) {
+                *out_value = -1;
+            }
+            for (int i=5; i >= 0;--i) {
+                *out_value = (*out_value << 8) | b[i];
+            }
+            return 6;
+        case 5: // 32bit float
+            *out_value = 0; // TODO
+            return -1;
+        case 4: // 32bit
+            *out_value = (int32_t)(b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0]);
+            return 4;
+        case 3: // 24bit
+            if (b[2] & 0x80) {
+                *out_value = -1;
+            }
+            *out_value = (*out_value << 8) | b[2];
+            *out_value = (*out_value << 8) | b[1];
+            *out_value = (*out_value << 8) | b[0];
+            return 3;
+        case 2: // 16bit
+            *out_value = (int16_t)(b[1] << 8 |  b[0]);
+            return 2;
+        case 1: // 8bit
+            *out_value = (int8_t)b[0];
+            return 1;
+        case 0: // no data
+            return 0;
+        default:
+            break;
+    }
+    return -1;
+}
+
+/**
  * @brief decode wireless mbus records
  *
  * @param data          output for decoded records
@@ -389,44 +497,14 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
  */
 static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_coding, uint8_t vif_linear, uint8_t vif_uam, uint8_t dif_sn, uint8_t dif_ff, uint8_t dif_su)
 {
-    int ret = consumed_bytes[dif_coding&0x07];
+    int ret = 0;
     int state;
-    int32_t val = 0;
+    int64_t val = 0;
 
-    // Note: there are also other formats, which should be added when needed
-    switch (dif_coding) {
-        // unsupported arithmetic on 64bit
-        // case 7: // 64bit
-        //     val |= (b[7] << 56) + (b[6] << 48);
-        //     /* fall through */
-        // case 6: // 48bit
-        //     val |= (b[5] << 40) + (b[4] << 32);
-        //     /* fall through */
-        case 4: // 32bit
-            val = (int32_t)(b[3] << 24 | b[2] << 16 | b[1] << 8 | b[0]);
-            break;
-        case 3: // 24bit
-            if (b[2] & 0x80) {
-                val = 0xFF;
-            }
-            val = (val << 8) | b[2];
-            val = (val << 8) | b[1];
-            val = (val << 8) | b[0];
-            break;
-        case 2: // 16bit
-            val = (int16_t)(b[1] << 8 |  b[0]);
-            break;
-        case 1: // 8bit
-            val = (int8_t)b[0];
-            break;
-        case 0: // no data
-            break;
-        default:
-            break;
-    }
+    ret = m_bus_decode_val(b, dif_coding, &val);
 
     // for reverse engineering
-    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X, val=%d**\n",
+    // fprintf(stderr, "**decoding dif_coding=%d, vif=0x%02x, vif_uam=0x%02x, dif_ff=%d, dif_sn=%d, dif_su=%d, b[3]=0x%02X, b[2]=0x%02X,b[1]=0x%02X, b[0]=0x%02X, val=%ld**\n",
     //                  dif_coding, vif_linear, vif_uam, dif_ff, dif_sn, dif_su, b[3], b[2], b[1], b[0], val);
 
     switch (vif_linear) {
@@ -456,8 +534,22 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                                         nn = 01 minutes
                                         nn = 10 hours
                                         nn = 11 days */
+                switch (vif_uam&3) {
+                    case 0: data = append_val(data, kOnTimeSec, dif_ff, dif_sn, "", val, 0); break;
+                    case 1: data = append_val(data, kOnTimeMin, dif_ff, dif_sn, "", val, 0); break;
+                    case 2: data = append_val(data, kOnTimeHours, dif_ff, dif_sn, "", val, 0); break;
+                    case 3: data = append_val(data, kOnTimeDays, dif_ff, dif_sn, "", val, 0); break;
+                    default: break;
+                }
             } else if ((vif_uam&0xFC) == 0x24) {
                 // E010 01nn	Operating Time	coded like OnTime
+                switch (vif_uam&3) {
+                    case 0: data = append_val(data, kOperTimeSec, dif_ff, dif_sn, "", val, 0); break;
+                    case 1: data = append_val(data, kOperTimeMin, dif_ff, dif_sn, "", val, 0); break;
+                    case 2: data = append_val(data, kOperTimeHours, dif_ff, dif_sn, "", val, 0); break;
+                    case 3: data = append_val(data, kOperTimeDays, dif_ff, dif_sn, "", val, 0); break;
+                    default: break;
+                }
             } else if ((vif_uam&0xF8) == 0x28) {
                 // E010 1nnn	Power	10nnn-3 W	0.001W to 10000W
                 data = append_val(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
@@ -508,6 +600,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
 
             } else if (vif_uam == 0x6E) {
                 // E110 1110	Units for H.C.A.	 	dimensionless
+                data = append_val(data, kHca, dif_ff, dif_sn, "", val, 0);
             } else if ((vif_uam&0xFC) == 0x70) {
                 // E111 00nn	Averaging Duration	coded like OnTime
             } else if ((vif_uam&0xFC) == 0x74) {
