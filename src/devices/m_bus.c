@@ -405,13 +405,14 @@ size_t m_bus_tm_decode(const uint8_t *data, size_t data_size, char *output, size
  */
 static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_value)
 {
+    uint64_t val = 0;
     *out_value = 0;
 
     switch (dif_coding) {
         case 15: // special function
             return -1;
         case 14: // 12 digit BCD
-            for (int i=5; i >= 0;--i) {
+            for(int i=5; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
@@ -419,13 +420,13 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
         case 13: // variable len
             return -1;
         case 12: // 8 digit BCD
-            for (int i=3; i >= 0;--i) {
+            for(int i=3; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
             return 4;
         case 11: // 6 digit BCD
-            for (int i=2; i >= 0;--i) {
+            for(int i=2; i >= 0;--i) {
                 *out_value = (*out_value * 10 ) + (b[i] >> 4);
                 *out_value = (*out_value * 10 ) + (b[i] & 0xF);
             }
@@ -449,11 +450,12 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             return 8;
         case 6: // 48bit
             if (b[5] & 0x80) {
-                *out_value = -1;
+                val = 0xFFFFFF;
             }
             for (int i=5; i >= 0;--i) {
-                *out_value = (*out_value << 8) | b[i];
+                val = (val << 8) | b[i];
             }
+            *out_value = (int64_t)val;
             return 6;
         case 5: // 32bit float
             *out_value = 0; // TODO
@@ -463,11 +465,12 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
             return 4;
         case 3: // 24bit
             if (b[2] & 0x80) {
-                *out_value = -1;
+                val = 0xFFFFFFFFFF;
             }
-            *out_value = (*out_value << 8) | b[2];
-            *out_value = (*out_value << 8) | b[1];
-            *out_value = (*out_value << 8) | b[0];
+            val = (val << 8) | b[2];
+            val = (val << 8) | b[1];
+            val = (val << 8) | b[0];
+            *out_value = (int64_t)val;
             return 3;
         case 2: // 16bit
             *out_value = (int16_t)(b[1] << 8 |  b[0]);
