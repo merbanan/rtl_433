@@ -73,6 +73,9 @@ char const *version_string(void)
 #ifdef SOAPYSDR
             " SoapySDR"
 #endif
+#ifdef OPENSSL
+            " with TLS"
+#endif
             ;
 }
 
