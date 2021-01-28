@@ -71,7 +71,8 @@ typedef struct r_cfg {
     uint64_t input_pos;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
-    int grab_mode;
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
     conversion_mode_t conversion_mode;

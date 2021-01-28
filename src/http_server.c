@@ -524,6 +524,9 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
     else if (!strcmp(rpc->method, "get_grab_mode")) {
         rpc->response(rpc, 2, NULL, cfg->grab_mode);
     }
+    else if (!strcmp(rpc->method, "get_raw_mode")) {
+        rpc->response(rpc, 2, NULL, cfg->raw_mode);
+    }
     else if (!strcmp(rpc->method, "get_verbosity")) {
         rpc->response(rpc, 2, NULL, cfg->verbosity);
     }
@@ -588,6 +591,10 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
     }
     else if (!strcmp(rpc->method, "convert")) {
         cfg->conversion_mode = rpc->val;
+        rpc->response(rpc, 0, "Ok", 0);
+    }
+    else if (!strcmp(rpc->method, "raw_mode")) {
+        cfg->raw_mode = rpc->val;
         rpc->response(rpc, 0, "Ok", 0);
     }
     else if (!strcmp(rpc->method, "verbosity")) {

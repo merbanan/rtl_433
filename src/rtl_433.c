@@ -282,7 +282,7 @@ static void help_write(void)
             "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tFile content and format are detected as parameters, possible options are:\n"
-            "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
+            "\t'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),\n"
             "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
             "\t'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.\n\n"
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
@@ -407,6 +407,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, package_type);
                 }
@@ -427,7 +431,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
+                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                     pulse_analyzer(&demod->fsk_pulse_data, package_type);
                 }
             } // if (package_type == ...
@@ -1209,7 +1217,8 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
 
     if (ev->ev == SDR_EV_DATA) {
         if (cfg->mgr) {
-            mg_mgr_poll(cfg->mgr, 0);
+            int max_polls = 16;
+            while (max_polls-- && mg_mgr_poll(cfg->mgr, 0));
         }
 
         if (!cfg->exit_async)

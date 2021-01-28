@@ -28,9 +28,29 @@ wireless sensors group.
 That's why it's NOT possible to get pressure data by wireless communication. If you need pressure data you should try
 an Arduino/Raspberry solution wired with a BMP180 or BMP085 sensor.
 
-Data is transmitted in a 48 seconds cycle (data packet, then wait 48 seconds, then data packet...).
+Data is transmitted every 48 seconds, alternating between sending a single packet and sending two packets in quick succession
+(almost always identical, but clearly generated separately because during e.g. heavy rainfall different values have been observed).
+I.e., data packet, wait 48 seconds, two data packets, wait 48 seconds, data packet, wait 48 seconds, two data packets, ... .
 
 The 'Total rainfall' field is a cumulative counter, increased by 0.3 millimeters of rain each step.
+
+Message layout and example:
+
+         AA BC CD DD EE FF GG HH HH II
+    {80} ff 5f 51 93 48 00 00 12 46 aa
+
+- A :  8 bits : Preamble 0xFF
+- B :  4 bits : ?? - always seems to be 0x5
+- C :  8 bits : Id, changes when reset (e.g., 0xF5)
+- D :  1 bit  : ?? - unknown, always seems to be 0
+- D :  1 bit  : Battery, 0 = ok, 1 = low (e.g, OK)
+- D : 10 bits : Temperature in Celsius, offset 400, scaled by 10 (e.g., 0.3 degrees C)
+- E :  8 bits : Relative humidity, percent (e.g., 72%)
+- F :  8 bits : Wind speed average in m/s, scaled by 1/0.34 (e.g., 0 m/s)
+- G :  8 bits : Wind speed gust in m/s, scaled by 1/0.34 (e.g., 0 m/s)
+- H : 16 bits : Total rainfall in units of 0.3mm, since reset (e.g., 1403.4 mm)
+- I :  8 bits : CRC, poly 0x31, init 0x00 (excluding preamble)
+
 */
 
 #include "decoder.h"
@@ -77,10 +97,10 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity      = br[3];
     float speed       = (br[4] * 0.34f) * 3.6f; // m/s -> km/h
     float gust        = (br[5] * 0.34f) * 3.6f; // m/s -> km/h
-    int rain_raw      = ((br[6] & 0x0f) << 8) | br[7];
+    int rain_raw      = (br[6] << 8) | br[7];
     float rain        = rain_raw * 0.3f;
     int device_id     = (br[0] << 4 & 0xf0) | (br[1] >> 4);
-    int battery_low   = br[1] & 0x04; // Unsure about Battery byte...
+    int battery_low   = br[1] & 0x04;
 
     /* clang-format off */
     data = data_make(

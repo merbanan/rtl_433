@@ -51,6 +51,7 @@ add_library(r_433 STATIC
     devices/bresser_6in1.c
     devices/bresser_7in1.c
     devices/bt_rain.c
+    devices/burnhardbbq.c
     devices/calibeur.c
     devices/cardin.c
     devices/chuango.c

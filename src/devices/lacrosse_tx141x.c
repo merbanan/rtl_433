@@ -284,6 +284,10 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format on */
     }
     else {
+        // Digest check for TX141TH-Bv2
+        if (lfsr_digest8_reflect(b, 4, 0x31, 0xf4) != b[4]) {
+            return DECODE_FAIL_MIC;
+        }
         /* clang-format off */
         data = data_make(
                 "model",         "",              DATA_STRING, _X("LaCrosse-TX141THBv2","LaCrosse TX141TH-Bv2 sensor"),
@@ -293,6 +297,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
+                "mic",           "Integrity",     DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
     }
