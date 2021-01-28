@@ -15,6 +15,29 @@
 #include <limits.h>
 #include <string.h>
 
+int tls_param(tls_opts_t *tls_opts, char *key, char *val)
+{
+    if (!tls_opts || !key || !*key)
+        return 1;
+    else if (!strcasecmp(key, "tls_cert"))
+        tls_opts->tls_cert = val;
+    else if (!strcasecmp(key, "tls_key"))
+        tls_opts->tls_key = val;
+    else if (!strcasecmp(key, "tls_ca_cert"))
+        tls_opts->tls_ca_cert = val;
+    else if (!strcasecmp(key, "tls_cipher_suites"))
+        tls_opts->tls_cipher_suites = val;
+    else if (!strcasecmp(key, "tls_server_name"))
+        tls_opts->tls_server_name = val;
+    else if (!strcasecmp(key, "tls_psk_identity"))
+        tls_opts->tls_psk_identity = val;
+    else if (!strcasecmp(key, "tls_psk_key"))
+        tls_opts->tls_psk_key = val;
+    else
+        return 1;
+    return 0;
+}
+
 int atobv(char *arg, int def)
 {
     if (!arg)

@@ -23,6 +23,43 @@
     #include <strings.h>
 #endif
 
+/// TLS settings.
+typedef struct tls_opts {
+    /// Client certificate to present to the server.
+    const char *tls_cert;
+    /// Private key corresponding to the certificate.
+    /// If tls_cert is set but tls_key is not, tls_cert is used.
+    const char *tls_key;
+    /// Verify server certificate using this CA bundle. If set to "*", then TLS
+    /// is enabled but no cert verification is performed.
+    const char *tls_ca_cert;
+    /// Colon-delimited list of acceptable cipher suites.
+    /// Names depend on the library used, for example:
+    /// ECDH-ECDSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256 (OpenSSL)
+    /// For OpenSSL the list can be obtained by running "openssl ciphers".
+    /// If NULL, a reasonable default is used.
+    const char *tls_cipher_suites;
+    /// Server name verification. If tls_ca_cert is set and the certificate has
+    /// passed verification, its subject will be verified against this string.
+    /// By default (if tls_server_name is NULL) hostname part of the address will
+    /// be used. Wildcard matching is supported. A special value of "*" disables
+    /// name verification.
+    const char *tls_server_name;
+    /// PSK identity is a NUL-terminated string.
+    /// Note: Default list of cipher suites does not include PSK suites, if you
+    /// want to use PSK you will need to set tls_cipher_suites as well.
+    const char *tls_psk_identity;
+    /// PSK key hex string, must be either 16 or 32 bytes (32 or 64 hex digits)
+    /// for AES-128 or AES-256 respectively.
+    const char *tls_psk_key;
+} tls_opts_t;
+
+/// Parse a TLS option.
+///
+/// @sa tls_opts_t
+/// @return 0 if the option was valid, error code otherwise
+int tls_param(tls_opts_t *tls_opts, char *key, char *val);
+
 /// Convert string to bool with fallback default.
 /// Parses "true", "yes", "on", "enable" (not case-sensitive) to 1, atoi() otherwise.
 int atobv(char *arg, int def);

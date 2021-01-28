@@ -1028,7 +1028,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             add_kv_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "mqtt", 4) == 0) {
-            add_mqtt_output(cfg, arg_param(arg));
+            add_mqtt_output(cfg, arg);
         }
         else if (strncmp(arg, "influx", 6) == 0) {
             add_influx_output(cfg, arg);
