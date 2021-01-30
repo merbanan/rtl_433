@@ -493,6 +493,14 @@ static void print_json_data(data_output_t *output, data_t *data, char const *for
 static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
     UNUSED(format);
+
+    size_t str_len = strlen(str);
+    if (str[0] == '{' && str[str_len - 1] == '}') {
+        // Print embedded JSON object verbatim
+        fprintf(output->file, "%s", str);
+        return;
+    }
+
     fprintf(output->file, "\"");
     while (*str) {
         if (*str == '"' || *str == '\\')
@@ -972,7 +980,14 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
     char *buf   = jsons->msg.tail;
     size_t size = jsons->msg.left;
 
-    if (size < strlen(str) + 3) {
+    size_t str_len = strlen(str);
+    if (size < str_len + 3) {
+        return;
+    }
+
+    if (str[0] == '{' && str[str_len - 1] == '}') {
+        // Print embedded JSON object verbatim
+        abuf_cat(&jsons->msg, str);
         return;
     }
 

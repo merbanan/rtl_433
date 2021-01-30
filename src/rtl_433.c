@@ -134,7 +134,7 @@ static void usage(int exit_code)
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
-            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
+            "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
@@ -231,8 +231,19 @@ static void help_tags(void)
 {
     term_help_printf(
             "\t\t= Data tags option =\n"
-            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
-            "\tIf <tag> or <value> is \"FILE\" or \"PATH\" an expanded token will be added.\n");
+            "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
+            "\tIf <tag> is \"FILE\" or \"PATH\" an expanded token will be added.\n"
+            "\tThe <tag> can also be a GPSd URL, e.g.\n"
+            "\t\t\"-K gpsd,lat,lon\" (report lat and lon keys from local gpsd)\n"
+            "\t\t\"-K loc=gpsd,lat,lon\" (report lat and lon in loc object)\n"
+            "\t\t\"-K gpsd\" (full json TPV report, in default \"gps\" object)\n"
+            "\t\t\"-K foo=gpsd://127.0.0.1:2947\" (with key and address)\n"
+            "\t\t\"-K bar=gpsd,nmea\" (NMEA deault GPGGA report)\n"
+            "\t\t\"-K rmc=gpsd,nmea,filter='$GPRMC'\" (NMEA GPRMC report)\n"
+            "\tAlso <tag> can be a generic tcp address, e.g.\n"
+            "\t\t\"-K foo=tcp:localhost:4000\" (read lines as TCP client)\n"
+            "\t\t\"-K bar=tcp://127.0.0.1:3000,init='subscribe tags\\r\\n'\"\n"
+            "\t\t\"-K baz=tcp://127.0.0.1:5000,filter='a prefix to match'\"\n");
     exit(0);
 }
 

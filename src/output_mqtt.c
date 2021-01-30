@@ -362,7 +362,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
         // "events" topic
         if (mqtt->events) {
-            char message[1024]; // we expect the biggest strings to be around 500 bytes.
+            char message[2048]; // we expect the biggest strings to be around 500 bytes.
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
             mqtt_client_publish(mqtt->mqc, mqtt->topic, message);

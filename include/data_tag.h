@@ -12,16 +12,19 @@
 #ifndef INCLUDE_TAGS_H_
 #define INCLUDE_TAGS_H_
 
+struct gpsd_client;
+struct mg_mgr;
 struct data;
 
 typedef struct data_tag {
-    char *key;
-    char *val;
-    int prepend;
+    char const *key;
+    char const *val;
+    char const **includes;
+    struct gpsd_client *gpsd_client;
 } data_tag_t;
 
 /// Create a data tag. Might fail and return NULL.
-data_tag_t *data_tag_create(char *params);
+data_tag_t *data_tag_create(char *params, struct mg_mgr *mgr);
 
 /// Free a data tag.
 void data_tag_free(data_tag_t *tag);
