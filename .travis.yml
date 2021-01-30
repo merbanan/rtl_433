@@ -147,6 +147,7 @@ matrix:
       dist: xenial
       env:
         - RTLSDR=OFF
+        - OPENSSL=OFF
         - CC=arm-linux-gnueabihf-gcc
         - SETARCH="setarch linux32 --verbose --32bit"
       addons:
@@ -161,6 +162,7 @@ matrix:
       dist: xenial
       env:
         - RTLSDR=OFF
+        - OPENSSL=OFF
         - CFLAGS="-m32"
         - SETARCH="setarch i686 --verbose --3gb"
       addons:
