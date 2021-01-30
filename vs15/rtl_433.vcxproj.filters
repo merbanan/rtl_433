@@ -415,6 +415,9 @@
     <ClCompile Include="..\src\devices\honeywell_wdb.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ht12e.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ht680.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
