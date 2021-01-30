@@ -41,6 +41,9 @@
     <ClInclude Include="..\include\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\data_tag.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\decoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -149,6 +152,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\data.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\data_tag.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\decoder_util.c">

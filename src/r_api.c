@@ -25,6 +25,7 @@
 #include "pulse_detect_fsk.h"
 #include "sdr.h"
 #include "data.h"
+#include "data_tag.h"
 #include "list.h"
 #include "optparse.h"
 #include "output_mqtt.h"
@@ -191,6 +192,8 @@ void r_free_cfg(r_cfg_t *cfg)
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
+    list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
+
     list_free_elems(&cfg->in_files, NULL);
 
     mg_mgr_free(cfg->mgr);
@@ -335,8 +338,10 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 
     if (cfg->verbose_bits)
         *p++ = "bits";
-    if (cfg->output_key)
-        *p++ = cfg->output_key;
+    for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
+        data_tag_t *tag = *iter;
+        *p++            = tag->key;
+    }
     if (cfg->report_protocol)
         *p++ = "protocol";
     if (cfg->report_description)
@@ -751,18 +756,10 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    // prepend "tag" if available
-    if (cfg->output_tag) {
-        char const *output_tag = cfg->output_tag;
-        if (cfg->in_filename && !strcmp("PATH", cfg->output_tag)) {
-            output_tag = cfg->in_filename;
-        }
-        else if (cfg->in_filename && !strcmp("FILE", cfg->output_tag)) {
-            output_tag = file_basename(cfg->in_filename);
-        }
-        data = data_prepend(data,
-                cfg->output_key, "", DATA_STRING, output_tag,
-                NULL);
+    // apply all tags
+    for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
+        data_tag_t *tag = *iter;
+        data            = data_tag_apply(tag, data, cfg->in_filename);
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
@@ -1023,4 +1020,9 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 void add_infile(r_cfg_t *cfg, char *in_file)
 {
     list_push(&cfg->in_files, in_file);
+}
+
+void add_data_tag(struct r_cfg *cfg, char *param)
+{
+    list_push(&cfg->data_tags, data_tag_create(param));
 }

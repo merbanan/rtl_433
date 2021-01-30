@@ -93,6 +93,8 @@ void add_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
 void add_infile(struct r_cfg *cfg, char *in_file);
 
+void add_data_tag(struct r_cfg *cfg, char *param);
+
 /* runtime */
 
 struct mg_mgr *get_mgr(struct r_cfg *cfg);

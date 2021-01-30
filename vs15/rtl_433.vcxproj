@@ -101,6 +101,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
+    <ClInclude Include="..\include\data_tag.h" />
     <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fatal.h" />
@@ -139,6 +140,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\compat_time.c" />
     <ClCompile Include="..\src\confparse.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\data_tag.c" />
     <ClCompile Include="..\src\decoder_util.c" />
     <ClCompile Include="..\src\fileformat.c" />
     <ClCompile Include="..\src\http_server.c" />

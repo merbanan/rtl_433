@@ -13,6 +13,7 @@ add_library(r_433 STATIC
     compat_time.c
     confparse.c
     data.c
+    data_tag.c
     decoder_util.c
     fileformat.c
     http_server.c

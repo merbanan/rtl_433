@@ -227,6 +227,16 @@ static void help_output(void)
 }
 
 _Noreturn
+static void help_tags(void)
+{
+    term_help_printf(
+            "\t\t= Data tags option =\n"
+            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
+            "\tIf <tag> or <value> is \"FILE\" or \"PATH\" an expanded token will be added.\n");
+    exit(0);
+}
+
+_Noreturn
 static void help_meta(void)
 {
     term_help_printf(
@@ -1048,12 +1058,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         break;
     case 'K':
-        cfg->output_tag = arg;
-        cfg->output_key = asepc(&cfg->output_tag, '=');
-        if (!cfg->output_tag) {
-            cfg->output_tag = cfg->output_key;
-            cfg->output_key = "tag";
-        }
+        if (!arg)
+            help_tags();
+        add_data_tag(cfg, arg);
         break;
     case 'C':
         if (!arg)
