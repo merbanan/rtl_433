@@ -331,6 +331,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
 Also: Misol PM25
+Also: EcoWitt WH41
 
 The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -339,7 +340,7 @@ Data layout:
              FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
-- D: 8 bit device id?
+- D: 8 bit device id (corresponds to sticker on device in hex)
 - ?: 1 bit?
 - b: 1 bit MSB of battery bars out of 5
 - P: 14 bit PM2.5 reading in ug/m3
