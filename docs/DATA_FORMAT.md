@@ -72,6 +72,9 @@ Examples:
 * **humidity** (double) (Optional)
   * Humidity from a hygrometer sensor in % relative humidity
 
+* **moisture** (double) (Optional)
+  * Moisture from a soil probe in % relative saturation
+
 * **wind_dir_deg** (double) (Optional)
   * Wind direction from wind sensor in compass direction degrees.
 

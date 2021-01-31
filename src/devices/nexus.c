@@ -62,7 +62,7 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
     // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
     // So less then 0.5% which should be acceptable.
-    if (b[0] == 0 || b[2] == 0 || b[3] == 0
+    if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
             || ( b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
             || rubicson_crc_check(b))
         return DECODE_ABORT_EARLY;

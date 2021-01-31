@@ -11,6 +11,7 @@ rtl_433_SOURCES      = abuf.c \
                        compat_time.c \
                        confparse.c \
                        data.c \
+                       data_tag.c \
                        decoder_util.c \
                        fileformat.c \
                        http_server.c \
@@ -42,6 +43,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/archos_tbh.c \
                        devices/auriol_afw2a1.c \
                        devices/auriol_hg02832.c \
+                       devices/blueline.c \
                        devices/blyss.c \
                        devices/brennenstuhl_rcs_2044.c \
                        devices/bresser_3ch.c \
@@ -49,6 +51,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/bresser_6in1.c \
                        devices/bresser_7in1.c \
                        devices/bt_rain.c \
+                       devices/burnhardbbq.c \
                        devices/calibeur.c \
                        devices/cardin.c \
                        devices/chuango.c \

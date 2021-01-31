@@ -81,8 +81,41 @@ if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
 endif()
 
+option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
+if(FORCE_COLORED_BUILD)
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+       add_compile_options(-fdiagnostics-color=always)
+    elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+       add_compile_options(-fcolor-diagnostics)
+    endif()
+endif()
+
 ########################################################################
-# Find build dependencies
+# Find OpenSSL build dependencies
+########################################################################
+set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
+set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_OPENSSL) # AUTO / ON
+
+find_package(OpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "OpenSSL TLS support will be compiled.")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    list(APPEND SDR_LIBRARIES ${OPENSSL_LIBRARIES})
+    ADD_DEFINITIONS(-DOPENSSL)
+    ADD_DEFINITIONS(-DMG_ENABLE_SSL)
+elseif(ENABLE_OPENSSL STREQUAL "AUTO")
+    message(STATUS "OpenSSL development files not found, TLS won't be possible.")
+else()
+    message(FATAL_ERROR "OpenSSL development files not found.")
+endif()
+
+else()
+    message(STATUS "OpenSSL TLS disabled.")
+endif()
+
+########################################################################
+# Find LibRTLSDR build dependencies
 ########################################################################
 set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
@@ -106,6 +139,9 @@ else()
     message(STATUS "RTL-SDR device input disabled.")
 endif()
 
+########################################################################
+# Find SoapySDR build dependencies
+########################################################################
 set(ENABLE_SOAPYSDR AUTO CACHE STRING "Enable SoapySDR driver support")
 set_property(CACHE ENABLE_SOAPYSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_SOAPYSDR) # AUTO / ON
@@ -126,6 +162,9 @@ else()
     message(STATUS "SoapySDR device input disabled.")
 endif()
 
+########################################################################
+# Setup optional Profiling with GPerfTools
+########################################################################
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
 # pprof -text ./src/rtl_433 prof.out
@@ -141,13 +180,13 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
     ADD_DEFINITIONS(-fno-builtin-free)
 endif()
 
+########################################################################
+# Setup the include and linker paths
+########################################################################
 if(MINGW OR MSVC)
 list(APPEND NET_LIBRARIES ws2_32 mswsock)
 endif()
 
-########################################################################
-# Setup the include and linker paths
-########################################################################
 include_directories(
     BEFORE
     ${PROJECT_SOURCE_DIR}/include
