@@ -328,35 +328,38 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 // well-known field "protocol" is only used when model protocol is requested
 // well-known field "description" is only used when model description is requested
 // well-known fields "mod", "freq", "freq1", "freq2", "rssi", "snr", "noise" are used by meta report option
-static char const *well_known_default[15] = {0};
 char const **well_known_output_fields(r_cfg_t *cfg)
 {
-    char const **p = well_known_default;
-    *p++ = "time";
-    *p++ = "msg";
-    *p++ = "codes";
+    list_t field_list = {0};
+    list_ensure_size(&field_list, 15);
+
+    list_push(&field_list, "time");
+    list_push(&field_list, "msg");
+    list_push(&field_list, "codes");
 
     if (cfg->verbose_bits)
-        *p++ = "bits";
+        list_push(&field_list, "bits");
+
     for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
         data_tag_t *tag = *iter;
-        *p++            = tag->key;
-    }
-    if (cfg->report_protocol)
-        *p++ = "protocol";
-    if (cfg->report_description)
-        *p++ = "description";
-    if (cfg->report_meta) {
-        *p++ = "mod";
-        *p++ = "freq";
-        *p++ = "freq1";
-        *p++ = "freq2";
-        *p++ = "rssi";
-        *p++ = "snr";
-        *p++ = "noise";
+        list_push(&field_list, tag->key);
     }
 
-    return well_known_default;
+    if (cfg->report_protocol)
+        list_push(&field_list, "protocol");
+    if (cfg->report_description)
+        list_push(&field_list, "description");
+    if (cfg->report_meta) {
+        list_push(&field_list, "mod");
+        list_push(&field_list, "freq");
+        list_push(&field_list, "freq1");
+        list_push(&field_list, "freq2");
+        list_push(&field_list, "rssi");
+        list_push(&field_list, "snr");
+        list_push(&field_list, "noise");
+    }
+
+    return (char const **)field_list.elems;
 }
 
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
