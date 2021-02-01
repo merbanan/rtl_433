@@ -19,8 +19,6 @@ Systems with 32-bit i686 and 64-bit x86-64 as well as (embedded) ARM, like the R
 
 See [BUILDING.md](docs/BUILDING.md)
 
-Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 and 64 bit) are available at Bintray.
-
 On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
 
 On MacOS, `brew install rtl_433`.

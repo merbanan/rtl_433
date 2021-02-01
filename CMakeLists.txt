@@ -287,11 +287,6 @@ analyzer (requires Clang)" OFF)
 include(CTest) # note: this adds a BUILD_TESTING which defaults to ON
 
 ########################################################################
-# Configure CI deploy
-########################################################################
-configure_file(${PROJECT_SOURCE_DIR}/.bintray.json ${CMAKE_CURRENT_BINARY_DIR}/bintray.json)
-
-########################################################################
 # Add subdirectories
 ########################################################################
 add_subdirectory(include)
