@@ -116,6 +116,14 @@ int atoi_time(char const *str, char const *error_hint);
 /// @return the original value of *stringp
 char *asepc(char **stringp, char delim);
 
+/// Similar to strsep but bounded by a stop character.
+///
+/// @param[in,out] stringp String to parse inplace
+/// @param delim the delimiter character
+/// @param stop the bounding character at which to stop
+/// @return the original value of *stringp
+char *asepcb(char **stringp, char delim, char stop);
+
 /// Parse a comma-separated list of key/value pairs into kwargs.
 ///
 /// The input string will be modified and the pointer advanced.

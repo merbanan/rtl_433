@@ -306,6 +306,23 @@ char *asepc(char **stringp, char delim)
     return p;
 }
 
+static char *achrb(char const *s, int c, int b)
+{
+    for (; s && *s && *s != b; ++s)
+        if (*s == c) return (char *)s;
+    return NULL;
+}
+
+char *asepcb(char **stringp, char delim, char stop)
+{
+    if (!stringp || !*stringp) return NULL;
+    char *s = achrb(*stringp, delim, stop);
+    if (s) *s++ = '\0';
+    char *p = *stringp;
+    *stringp = s;
+    return p;
+}
+
 char *getkwargs(char **s, char **key, char **val)
 {
     char *v = asepc(s, ',');
