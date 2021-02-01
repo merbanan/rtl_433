@@ -11,8 +11,8 @@ set(LIBUSB_DEFINITIONS ${LIBUSB_PKG_CFLAGS_OTHER})
 
 find_path(LIBUSB_INCLUDE_DIR NAMES libusb.h
           HINTS ${LIBUSB_PKG_INCLUDE_DIRS}
+          PATH_SUFFIXES libusb-1.0
           PATHS
-          /usr/include/libusb-1.0
           /usr/include
           /usr/local/include )
 
@@ -22,6 +22,11 @@ set(libusb1_library_names usb-1.0)
 #libusb-1.0 compatible library on freebsd
 if((CMAKE_SYSTEM_NAME STREQUAL "FreeBSD") OR (CMAKE_SYSTEM_NAME STREQUAL "kFreeBSD"))
     list(APPEND libusb1_library_names usb)
+endif()
+
+#libusb-1.0 name on Windows (from PothosSDR distribution)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    list(APPEND libusb1_library_names libusb-1.0)
 endif()
 
 find_library(LIBUSB_LIBRARY
