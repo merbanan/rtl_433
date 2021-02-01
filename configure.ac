@@ -49,8 +49,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/types.h)
 
 # pc variables
-AC_SUBST(RTLSDR_PC_LIBS,["$LIBS"])
-AC_SUBST(RTLSDR_PC_CFLAGS,["$CFLAGS"])
+AC_SUBST(RTL433_PC_LIBS,["$LIBS"])
+AC_SUBST(RTL433_PC_CFLAGS,["$CFLAGS"])
 
 dnl checks for required libraries
 
