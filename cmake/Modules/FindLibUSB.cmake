@@ -1,4 +1,4 @@
-# - Try to find LibUSB
+# - Try to find LibUSB-1.0
 # Once done this will define
 #  LIBUSB_FOUND - System has LibUSB
 #  LIBUSB_INCLUDE_DIRS - The LibUSB include directories
