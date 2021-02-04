@@ -18,7 +18,7 @@ Security+ 1.0  is described in [US patent application US6980655B2](https://paten
 */
 
 #include "decoder.h"
-#include <sys/time.h>
+#include "compat_time.h"
 
 /** @fn int _decode_v1_half(uint8_t *bits, uint8_t *result)
 
@@ -212,7 +212,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         struct timeval cur_tv;
         struct timeval res_tv;
         gettimeofday(&cur_tv, NULL);
-        timersub(&cur_tv, &cached_tv, &res_tv);
+        timeval_subtract(&res_tv, &cur_tv, &cached_tv);
 
         if (decoder->verbose > 1)
             fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, (long)res_tv.tv_usec);
