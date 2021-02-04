@@ -255,16 +255,14 @@ unsigned _preamble_len           = 28;
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
-    unsigned next_pos     = 0;
-    uint8_t buffy[20]; // 80 bits (overkill)
     bitbuffer_t bits = {0};
     // int i            = 0;
 
-    bitbuffer_t bits_1    = {0};
+    //bitbuffer_t bits_1    = {0};
     bitbuffer_t fixed_1   = {0};
     uint8_t rolling_1[16] = {0};
 
-    bitbuffer_t bits_2    = {0};
+    //bitbuffer_t bits_2    = {0};
     bitbuffer_t fixed_2   = {0};
     uint8_t rolling_2[16] = {0};
 
@@ -280,7 +278,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         bitbuffer_clear(&bits);
-        next_pos = bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
+        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
         search_index += 20;
         if (bits.bits_per_row[0] < 42) {
             continue; // DECODE_ABORT_LENGTH;

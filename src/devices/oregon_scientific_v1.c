@@ -31,9 +31,11 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
     int cs;
     int i;
     int nibble[OSV1_BITS/4];
-    int sid, channel, uk1;
+    int sid, channel;
+    // int uk1;
     float tempC;
-    int battery, uk2, sign, uk3, checksum;
+    int battery, sign, checksum;
+    // int uk2, uk3;
     data_t *data;
 
     for (row = 0; row < bitbuffer->num_rows; row++) {
@@ -67,12 +69,12 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
 
         sid      = nibble[0];
         channel  = ((nibble[1] >> 2) & 0x03) + 1;
-        uk1      = (nibble[1] >> 0) & 0x03; /* unknown.  Seen change every 60 minutes */
+        //uk1      = (nibble[1] >> 0) & 0x03; /* unknown.  Seen change every 60 minutes */
         tempC    =  nibble[2] * 0.1 + nibble[3] + nibble[4] * 10.;
         battery  = (nibble[5] >> 3) & 0x01;
-        uk2      = (nibble[5] >> 2) & 0x01; /* unknown.  Always zero? */
+        //uk2      = (nibble[5] >> 2) & 0x01; /* unknown.  Always zero? */
         sign     = (nibble[5] >> 1) & 0x01;
-        uk3      = (nibble[5] >> 0) & 0x01; /* unknown.  Always zero? */
+        //uk3      = (nibble[5] >> 0) & 0x01; /* unknown.  Always zero? */
 
         if (sign)
             tempC = -tempC;
@@ -100,6 +102,7 @@ static char *output_fields[] = {
     "channel",
     "battery",
     "temperature_C",
+    "mic",
     NULL,
 };
 

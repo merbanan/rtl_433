@@ -15,7 +15,27 @@
 #include <stdint.h>
 
 typedef struct sdr_dev sdr_dev_t;
-typedef void (*sdr_read_cb_t)(unsigned char *buf, uint32_t len, void *ctx);
+
+typedef enum sdr_event_flags {
+    SDR_EV_EMPTY = 0,
+    SDR_EV_DATA = 1 << 0,
+    SDR_EV_RATE = 1 << 1,
+    SDR_EV_CORR = 1 << 2,
+    SDR_EV_FREQ = 1 << 3,
+    SDR_EV_GAIN = 1 << 4,
+} sdr_event_flags_t;
+
+typedef struct sdr_event {
+    sdr_event_flags_t ev;
+    uint32_t sample_rate;
+    int freq_correction;
+    uint32_t center_frequency;
+    char const *gain_str;
+    void *buf;
+    int len;
+} sdr_event_t;
+
+typedef void (*sdr_event_cb_t)(sdr_event_t *ev, void *ctx);
 
 /** Find the closest matching device, optionally report status.
 
@@ -33,6 +53,13 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
     @return 0 on success
 */
 int sdr_close(sdr_dev_t *dev);
+
+/** Get device info.
+
+    @param dev the device handle
+    @return JSON device info string
+*/
+char const *sdr_get_dev_info(sdr_dev_t *dev);
 
 /** Set device frequency, optionally report status.
 
@@ -74,7 +101,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose);
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
-int sdr_set_tuner_gain(sdr_dev_t *dev, char *gain_str, int verbose);
+int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose);
 
 /** Set device sample rate, optionally report status.
 
@@ -92,7 +119,7 @@ int sdr_set_sample_rate(sdr_dev_t *dev, uint32_t rate, int verbose);
     @param verbose the verbosity level for reports to stderr
     @return 0 on success
 */
-int sdr_set_antenna(sdr_dev_t *dev, char *antenna_str, int verbose);
+int sdr_set_antenna(sdr_dev_t *dev, char const *antenna_str, int verbose);
 
 /** Get device sample rate.
 
@@ -132,7 +159,7 @@ int sdr_deactivate(sdr_dev_t *dev);
 */
 int sdr_reset(sdr_dev_t *dev, int verbose);
 
-int sdr_start(sdr_dev_t *dev, sdr_read_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
+int sdr_start(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32_t buf_num, uint32_t buf_len);
 int sdr_stop(sdr_dev_t *dev);
 
 #endif /* INCLUDE_SDR_H_ */

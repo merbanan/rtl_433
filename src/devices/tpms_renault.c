@@ -29,7 +29,6 @@ Packet nibbles:
 static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned int start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int flags;
@@ -40,7 +39,7 @@ static int tpms_renault_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     double pressure_kpa;
     char code_str[5];
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
     // require 72 data bits
     if (packet_bits.bits_per_row[0] < 72) {
         return 0;

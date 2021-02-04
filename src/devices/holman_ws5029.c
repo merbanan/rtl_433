@@ -121,10 +121,12 @@ static char *output_fields[] = {
         "id",
         "temperature_C",
         "humidity",
+        "battery_ok",
         "rain_mm",
         "wind_avg_km_h",
         "direction_deg", // TODO: remove this
         "wind_dir_deg", // TODO: remove this
+        "mic",
         NULL,
 };
 

@@ -57,9 +57,43 @@ Packet Decoding
 - CRC (cr)    = 8 bits, CRC, type/polynom to be determined
 
 The ESN in practice is 24 bits, The type + remaining 5 nybbles.
+The physical devices have all 6 digits printed in hex. Devices are enrolled
+by entering or recording the 6 hex digits.
 
 The CRC is 8 bit, reflected (lsb first), Polynomial 0xf5, Initial value 0x3d
+
+Status bit breakout:
+
+The status byte contains a number of bits that indicate:
+-  open vs closed
+- event vs heartbeat
+- battery ok vs low
+- tamper
+- recent activity (for certain devices)
+
+The majority of the DSC sensors use the status bits the same way.
+There are some slight differences depending on who made the device.
+
+@todo - the status bits don't make sense for the one-way keyfob
+and should be broken out two indicate which buttons are pressed.
+The keyfob can be detected by the type nybble.
+
+Notes:
+- The device type nybble isn't really useful other than for detecting
+  the keyfob. For example door/window contacts (Type 2) are used pretty
+  generically, so the same type can be used for burglar, flood, fire,
+  temperature limits, etc.  The device type is mildly informational
+  during testing and discovery. It can easily be seen as the  first digit
+  of the ESN, so it doesn't need to be broken out separately.
+- There seem to be two bits used inconsistently to indicate whether
+  the sensor is being tampered with (case opened, removed from the wall,
+  missing EOL resistor, etc.
+- The two-way devices wireless keypad and use an entirely different
+  modulation. They are supposed to be encrypted. A sampling rate
+  greater than 250 khz (1 mhz?) looks to be necessary.
+
 */
+
 
 #include "decoder.h"
 
@@ -72,9 +106,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int valid_cnt = 0;
     uint8_t bytes[5];
     uint8_t status, crc;
-    int subtype;
+    //int subtype;
     uint32_t esn;
-    char *subtype_str;
     char status_str[3];
     char esn_str[7];
     int s_closed, s_event, s_tamper, s_battery_low;
@@ -131,7 +164,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         status = bytes[0];
-        subtype = bytes[1] >> 4; // maybe full byte?
+        //subtype = bytes[1] >> 4;  // @todo needed for detecing keyfob
         esn = (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
         crc = bytes[4];
 
@@ -172,16 +205,10 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(status_str, "%02x", status);
         sprintf(esn_str, "%06x", esn);
 
-        switch (subtype) {
-        case 0x6: subtype_str = "WS4939 key fob"; break;
-        case 0x2: subtype_str = "DW4917 door/window sensor"; break;
-        default: subtype_str = "unknown"; break;
-        }
 
         /* clang-format off */
         data = data_make(
                 "model",        "",             DATA_STRING, _X("DSC-Security","DSC Contact"),
-                "subtype",      "Device Type",  DATA_STRING, subtype_str,
                 "id",           "",             DATA_INT,    esn,
                 "closed",       "",             DATA_INT,    s_closed, // @todo make bool
                 "event",        "",             DATA_INT,    s_event, // @todo make bool
@@ -213,10 +240,18 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "subtype",
         "id",
+        "closed",
+        "event",
+        "tamper",
         "status",
         "battery_ok",
+        "esn",
+        "exception",
+        "status_hex",
+        "xactivity",
+        "xtamper1",
+        "xtamper2",
         "mic",
         NULL,
 };

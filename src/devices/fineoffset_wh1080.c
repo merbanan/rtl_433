@@ -347,6 +347,7 @@ static char *output_fields[] = {
         "signal",
         "radio_clock",
         "sensor_code",
+        "uv_sensor_id",
         "uv_status",
         "uv_index",
         "lux",

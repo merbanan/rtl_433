@@ -43,7 +43,8 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
-    int id, battery, channel, temp_raw;
+    int id, channel, temp_raw;
+    // int battery;
     float temp_c;
 
     int r = bitbuffer_find_repeated_row(bitbuffer, 3, 36);
@@ -62,7 +63,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     id       = b[0];
-    battery  = (b[1] & 0x80);
+    //battery  = (b[1] & 0x80);
     channel  = ((b[1] & 0x30) >> 4);
     temp_raw = (int16_t)((b[1] << 12) | (b[2] << 4)); // sign-extend
     temp_c   = (temp_raw >> 4) * 0.1f;
@@ -86,7 +87,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        //"battery",
         "temperature_C",
         "mic",
         NULL,

@@ -14,6 +14,7 @@
 #include "optparse.h"
 #include "util.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,7 +25,9 @@
 /* MQTT client abstraction */
 
 typedef struct mqtt_client {
-    struct mg_send_mqtt_handshake_opts opts;
+    struct mg_connect_opts connect_opts;
+    struct mg_send_mqtt_handshake_opts mqtt_opts;
+    struct mg_connection *conn;
     int prev_status;
     char address[253 + 6 + 1]; // dns max + port
     char client_id[256];
@@ -35,7 +38,7 @@ typedef struct mqtt_client {
 static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
 {
     // note that while shutting down the ctx is NULL
-    mqtt_client_t *ctx = (mqtt_client_t *)nc->mgr->user_data;
+    mqtt_client_t *ctx = (mqtt_client_t *)nc->user_data;
     // only valid in MG_EV_MQTT_ events
     struct mg_mqtt_message *msg = (struct mg_mqtt_message *)ev_data;
 
@@ -50,7 +53,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             fprintf(stderr, "MQTT Connected...\n");
             mg_set_protocol_mqtt(nc);
             if (ctx)
-                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->opts);
+                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->mqtt_opts);
         }
         else {
             // Error, print only once
@@ -86,33 +89,33 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         if (ctx->prev_status == 0)
             fprintf(stderr, "MQTT Connection failed...\n");
         // reconnect
-        if (mg_connect(nc->mgr, ctx->address, mqtt_client_event) == NULL) {
-            fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+        char const *error_string = NULL;
+        ctx->connect_opts.error_string = &error_string;
+        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+        ctx->connect_opts.error_string = NULL;
+        if (!ctx->conn) {
+            fprintf(stderr, "MQTT connect (%s) failed%s%s\n", ctx->address,
+                    error_string ? ": " : "", error_string ? error_string : "");
         }
         break;
     }
 }
 
-static struct mg_mgr *mqtt_client_init(char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
 {
-    struct mg_mgr *mgr = calloc(1, sizeof(*mgr));
-    if (!mgr)
-        FATAL_CALLOC("mqtt_client_init()");
-
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
         FATAL_CALLOC("mqtt_client_init()");
 
-    ctx->opts.user_name = user;
-    ctx->opts.password  = pass;
+    ctx->mqtt_opts.user_name = user;
+    ctx->mqtt_opts.password  = pass;
     ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
     //ctx->cleansession = 1;
     strncpy(ctx->client_id, client_id, sizeof(ctx->client_id));
-
-    mg_mgr_init(mgr, ctx);
+    ctx->client_id[sizeof(ctx->client_id) - 1] = '\0';
 
     // if the host is an IPv6 address it needs quoting
     if (strchr(host, ':'))
@@ -120,36 +123,50 @@ static struct mg_mgr *mqtt_client_init(char const *host, char const *port, char 
     else
         snprintf(ctx->address, sizeof(ctx->address), "%s:%s", host, port);
 
-    if (mg_connect(mgr, ctx->address, mqtt_client_event) == NULL) {
-        fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+    ctx->connect_opts.user_data = ctx;
+    if (tls_opts && tls_opts->tls_ca_cert) {
+#if MG_ENABLE_SSL
+        ctx->connect_opts.ssl_cert          = tls_opts->tls_cert;
+        ctx->connect_opts.ssl_key           = tls_opts->tls_key;
+        ctx->connect_opts.ssl_ca_cert       = tls_opts->tls_ca_cert;
+        ctx->connect_opts.ssl_cipher_suites = tls_opts->tls_cipher_suites;
+        ctx->connect_opts.ssl_server_name   = tls_opts->tls_server_name;
+        ctx->connect_opts.ssl_psk_identity  = tls_opts->tls_psk_identity;
+        ctx->connect_opts.ssl_psk_key       = tls_opts->tls_psk_key;
+#else
+        fprintf(stderr, "mqtts (TLS) not available\n");
+        exit(1);
+#endif
+    }
+    char const *error_string = NULL;
+    ctx->connect_opts.error_string = &error_string;
+    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+    ctx->connect_opts.error_string = NULL;
+    if (!ctx->conn) {
+        fprintf(stderr, "MQTT connect (%s) failed%s%s\n", ctx->address,
+                error_string ? ": " : "", error_string ? error_string : "");
         exit(1);
     }
 
-    return mgr;
+    return ctx;
 }
 
-static int mqtt_client_poll(struct mg_mgr *mgr)
+static void mqtt_client_publish(mqtt_client_t *ctx, char const *topic, char const *str)
 {
-    return mg_mgr_poll(mgr, 0);
-}
+    if (!ctx->conn || !ctx->conn->proto_handler)
+        return;
 
-static void mqtt_client_publish(struct mg_mgr *mgr, char const *topic, char const *str)
-{
-    mqtt_client_t *ctx = (mqtt_client_t *)mgr->user_data;
     ctx->message_id++;
-
-    for (struct mg_connection *c = mg_next(mgr, NULL); c != NULL; c = mg_next(mgr, c)) {
-        if (c->proto_handler)
-            mg_mqtt_publish(c, topic, ctx->message_id, ctx->publish_flags, str, strlen(str));
-    }
+    mg_mqtt_publish(ctx->conn, topic, ctx->message_id, ctx->publish_flags, str, strlen(str));
 }
 
-static void mqtt_client_free(struct mg_mgr *mgr)
+static void mqtt_client_free(mqtt_client_t *ctx)
 {
-    free(mgr->user_data);
-    mgr->user_data = NULL;
-    mg_mgr_free(mgr);
-    free(mgr);
+    if (ctx && ctx->conn) {
+        ctx->conn->user_data = NULL;
+        ctx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    }
+    free(ctx);
 }
 
 /* Helper */
@@ -168,7 +185,7 @@ static char *mqtt_sanitize_topic(char *topic)
 
 typedef struct {
     struct data_output output;
-    struct mg_mgr *mgr;
+    mqtt_client_t *mqc;
     char topic[256];
     char hostname[64];
     char *devices;
@@ -310,6 +327,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
 // <prefix>[/type][/model][/subtype][/channel][/id]/battery: "OK"|"LOW"
 static void print_mqtt_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
 
     char *orig = mqtt->topic + strlen(mqtt->topic); // save current topic
@@ -335,7 +353,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
                 }
                 data_print_jsons(data, message, message_size);
                 expand_topic(mqtt->topic, mqtt->states, data, mqtt->hostname);
-                mqtt_client_publish(mqtt->mgr, mqtt->topic, message);
+                mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
                 *mqtt->topic = '\0'; // clear topic
                 free(message);
             }
@@ -344,10 +362,10 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
         // "events" topic
         if (mqtt->events) {
-            char message[1024]; // we expect the biggest strings to be around 500 bytes.
+            char message[2048]; // we expect the biggest strings to be around 500 bytes.
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
-            mqtt_client_publish(mqtt->mgr, mqtt->topic, message);
+            mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
             *mqtt->topic = '\0'; // clear topic
         }
 
@@ -380,8 +398,9 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
 static void print_mqtt_string(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
-    mqtt_client_publish(mqtt->mgr, mqtt->topic, str);
+    mqtt_client_publish(mqtt->mqc, mqtt->topic, str);
 }
 
 static void print_mqtt_double(data_output_t *output, double data, char const *format)
@@ -389,7 +408,7 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
     char str[20];
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
-        int ret = snprintf(str, 20, "%g", data);
+        snprintf(str, 20, "%g", data);
     }
     else {
         int ret = snprintf(str, 20, "%.5f", data);
@@ -406,18 +425,8 @@ static void print_mqtt_double(data_output_t *output, double data, char const *fo
 static void print_mqtt_int(data_output_t *output, int data, char const *format)
 {
     char str[20];
-    int ret = snprintf(str, 20, "%d", data);
+    snprintf(str, 20, "%d", data);
     print_mqtt_string(output, str, format);
-}
-
-static void data_output_mqtt_poll(data_output_t *output)
-{
-    data_output_mqtt_t *mqtt = (data_output_mqtt_t *)output;
-
-    if (!mqtt)
-        return;
-
-    mqtt_client_poll(mqtt->mgr);
 }
 
 static void data_output_mqtt_free(data_output_t *output)
@@ -433,7 +442,8 @@ static void data_output_mqtt_free(data_output_t *output)
     //free(mqtt->homie);
     //free(mqtt->hass);
 
-    mqtt_client_free(mqtt->mgr);
+    mqtt_client_free(mqtt->mqc);
+
     free(mqtt);
 }
 
@@ -458,7 +468,7 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
     return ret;
 }
 
-struct data_output *data_output_mqtt_create(char const *host, char const *port, char *opts, char const *dev_hint)
+struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, char const *dev_hint)
 {
     data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
     if (!mqtt)
@@ -490,6 +500,17 @@ struct data_output *data_output_mqtt_create(char const *host, char const *port, 
     char *user = NULL;
     char *pass = NULL;
     int retain = 0;
+
+    // parse host and port
+    tls_opts_t tls_opts = {0};
+    if (strncmp(param, "mqtts", 5) == 0) {
+        tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
+    }
+    param      = arg_param(param);
+    char *host = "localhost";
+    char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
+    char *opts = hostport_param(param, &host, &port);
+    fprintf(stderr, "Publishing MQTT data to %s port %s%s\n", host, port, tls_opts.tls_ca_cert ? " (TLS)" : "");
 
     // parse auth and format options
     char *key, *val;
@@ -528,6 +549,9 @@ struct data_output *data_output_mqtt_create(char const *host, char const *port, 
         // TODO: Home Assistant MQTT discovery https://www.home-assistant.io/docs/mqtt/discovery/
         //else if (!strcasecmp(key, "a") || !strcasecmp(key, "hass"))
         //    mqtt->hass = mqtt_topic_default(val, NULL, "homeassistant"); // discovery prefix
+        else if (!tls_param(&tls_opts, key, val)) {
+            // ok
+        }
         else {
             fprintf(stderr, "Invalid key \"%s\" option.\n", key);
             exit(1);
@@ -552,10 +576,9 @@ struct data_output *data_output_mqtt_create(char const *host, char const *port, 
     mqtt->output.print_string = print_mqtt_string;
     mqtt->output.print_double = print_mqtt_double;
     mqtt->output.print_int    = print_mqtt_int;
-    mqtt->output.output_poll  = data_output_mqtt_poll;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mgr = mqtt_client_init(host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain);
 
     return &mqtt->output;
 }

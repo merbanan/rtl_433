@@ -44,13 +44,20 @@ descrambling, the 7 bytes have the following meaning conting byte from left to r
             all nibbles
 - byte 2-3: Replay counter value in big endian byte order
 - byte 4-6: Remote control channel's address
+
+## TEL-FIX wall-mounted remote control for RadioLoop Motor
+
+There is a quirk with TEL-FIX wall-mounted remote control for RadioLoop Motor:
+It looks like the seed isn't random but actually the button code: 0x88 DOWN, 0x85 STOP, 0x86 UP.
+The command is fixed to 0xf, which we use as idication that an actual command is in the seed.
+
 */
 
 #include "decoder.h"
 
-static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    char const *const control_str[] = {
+    char const *const control_strs[] = {
             "? (0)",
             "My (1)",
             "Up (2)",
@@ -69,21 +76,39 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "? (15)",
     };
 
+    char const *const seed_strs[] = {
+            "? (0)",
+            "? (1)",
+            "? (2)",
+            "? (3)",
+            "? (4)",
+            "Stop (5)",
+            "Up (6)",
+            "? (7)",
+            "Down (8)",
+            "? (9)",
+            "? (10)",
+            "? (11)",
+            "? (12)",
+            "? (13)",
+            "? (14)",
+            "? (15)",
+    };
+
     data_t *data;
     int is_retransmission = 0;
     unsigned decode_row = 0;
     unsigned data_start = 0;
     uint8_t const *preamble_pattern;
     unsigned preamble_pattern_bit_length = 0;
-    bitbuffer_t bitbuffer_decoded = { 0 };
-    uint8_t message_bytes[7] = { 0 };
+    bitbuffer_t decoded = { 0 };
+    uint8_t *b;
     int chksum_calc;
     int chksum;
     int counter;
     int address;
     int control;
     int seed;
-    char address_hex[7];
 
     for (int i = 0; i < bitbuffer->num_rows; i++) {
         if (bitbuffer->bits_per_row[i] > 170) {
@@ -109,30 +134,34 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer_search(bitbuffer, decode_row, 0, preamble_pattern, preamble_pattern_bit_length) != 0)
         return DECODE_ABORT_EARLY;
 
-    if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &bitbuffer_decoded, 56) - data_start < 56)
+    if (bitbuffer_manchester_decode(bitbuffer, decode_row, data_start, &decoded, 56) - data_start < 56)
         return DECODE_ABORT_EARLY;
 
-    bitbuffer_extract_bytes(&bitbuffer_decoded, 0, 0, message_bytes, 56);
+    b = decoded.bb[0];
 
     // descramble
     for (int i = 6; i > 0; i--)
-        message_bytes[i] = message_bytes[i] ^ message_bytes[i-1];
+        b[i] = b[i] ^ b[i-1];
 
     // calculate and verify checksum
-    chksum_calc = xor_bytes(message_bytes, 7);
+    chksum_calc = xor_bytes(b, 7);
     chksum_calc = (chksum_calc & 0xf) ^ (chksum_calc >> 4); // fold to nibble
     if (chksum_calc != 0)
         return DECODE_FAIL_MIC;
 
-    seed    = message_bytes[0];
-    control = (message_bytes[1] & 0xf0) >> 4;
-    chksum  = message_bytes[1] & 0xf;
-    counter = (message_bytes[2] << 8) | message_bytes[3];
+    seed    = b[0];
+    control = (b[1] & 0xf0) >> 4;
+    chksum  = b[1] & 0xf;
+    counter = (b[2] << 8) | b[3];
     // assume little endian as multiple addresses used by one remote control increase the address value in little endian byte order.
-    address = (message_bytes[6] << 16) | (message_bytes[5] << 8) | message_bytes[4];
+    address = (b[6] << 16) | (b[5] << 8) | b[4];
 
-    // print address into hexstring
-    snprintf(address_hex, sizeof(address_hex), "%02X%02X%02X", message_bytes[4], message_bytes[5], message_bytes[6]);
+    // lookup control
+    char const *control_str = control_strs[control];
+    if (control == 0xf) {
+        // TEL-FIX quirk
+        control_str = seed_strs[seed & 0xf];
+    }
 
     if (decoder->verbose > 1) {
         fprintf(stderr, "%s: seed=0x%02x, chksum=0x%x\n", __func__, seed, chksum);
@@ -141,10 +170,9 @@ static int somfy_rts_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",          "",               DATA_STRING, "Somfy-RTS",
-            "id",             "Id",             DATA_INT,    address,
-            "control",        "Control",        DATA_STRING, control_str[control],
+            "id",             "",               DATA_FORMAT, "%06X", DATA_INT, address,
+            "control",        "Control",        DATA_STRING, control_str,
             "counter",        "Counter",        DATA_INT,    counter,
-            "address",        "Address",        DATA_STRING, address_hex,
             "retransmission", "Retransmission", DATA_INT,    is_retransmission,
             "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
@@ -159,8 +187,8 @@ static char *output_fields[] = {
         "id",
         "control",
         "counter",
-        "address",
         "retransmission",
+        "mic",
         NULL,
 };
 
@@ -176,7 +204,7 @@ r_device somfy_rts = {
         .gap_limit      = 3000,  // largest off between two pulses is ~2416 us during sync. Gap between start pulse (9664 us) and first frame is 6644 us (11 x nominal bit width), 3000 us will split first message into two rows one with start pulse and one with first frame
         .reset_limit    = 10000, // larger than gap between start pulse and first frame (6644 us = 11 x nominal bit width) to put start pulse and first frame in two rows, but smaller than inter-frame space of 30415 us
         .tolerance      = 20,
-        .decode_fn      = &somfy_rts_callback,
+        .decode_fn      = &somfy_rts_decode,
         .disabled       = 0,
         .fields         = output_fields,
 };

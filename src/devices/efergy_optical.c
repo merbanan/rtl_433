@@ -136,6 +136,7 @@ static char *output_fields[] = {
         "pulsecount",
         "energy", // TODO: remove this
         "energy_kWh",
+        "mic",
         NULL,
 };
 

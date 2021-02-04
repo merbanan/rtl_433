@@ -109,9 +109,10 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
 
 static char *output_fields[] = {
     "model",
-    "type",
+    "id",
+    "key",
     "state",
-    NULL
+    NULL,
 };
 
 r_device brennenstuhl_rcs_2044 = {

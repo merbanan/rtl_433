@@ -114,6 +114,7 @@ static char *output_fields[] = {
         "current",
         "interval",
         "learn",
+        "mic",
         NULL,
 };
 

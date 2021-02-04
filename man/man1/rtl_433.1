@@ -123,7 +123,7 @@ Produce decoded output in given format.
 [ \fB\-M\fI time[:<options>] | protocol | level | stats | bits | help\fP ]
 Add various meta data to each output.
 .TP
-[ \fB\-K\fI FILE | PATH | <tag>\fP ]
+[ \fB\-K\fI FILE | PATH | <tag> | <key>=<tag>\fP ]
 Add an expanded token or fixed tag to every output line.
 .TP
 [ \fB\-C\fI native | si | customary\fP ]
@@ -466,7 +466,7 @@ Parameters are detected from the full path, file name, and extension.
 File content and format are detected as parameters, possible options are:
 .RE
 .RS
- 'cu8', 'cs16', 'cf32' ('IQ' implied),
+ 'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),
 .RE
 .RS
  'am.s16', 'am.f32', 'fm.s16', 'fm.f32',

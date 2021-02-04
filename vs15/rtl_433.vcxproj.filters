@@ -41,6 +41,9 @@
     <ClInclude Include="..\include\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\data_tag.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\decoder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,6 +54,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\fileformat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\http_server.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\jsmn.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\list.h">
@@ -66,6 +75,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\output_mqtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\pulse_analyzer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\include\pulse_demod.h">
@@ -89,6 +101,9 @@
     <ClInclude Include="..\include\r_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\rfraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\rtl_433.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -109,7 +124,7 @@
     </ClInclude>
     <ClInclude Include="..\include\write_sigrok.h">
       <Filter>Header Files</Filter>
-    </ClInclude>    
+    </ClInclude>
     <ClInclude Include="..\src\getopt\getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -139,10 +154,19 @@
     <ClCompile Include="..\src\data.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\data_tag.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\decoder_util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fileformat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\http_server.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\jsmn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\list.c">
@@ -229,6 +253,9 @@
     <ClCompile Include="..\src\devices\auriol_hg02832.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\blueline.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\blyss.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -241,7 +268,16 @@
     <ClCompile Include="..\src\devices\bresser_5in1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\bresser_6in1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\bresser_7in1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\bt_rain.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\burnhardbbq.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\calibeur.c">
@@ -277,6 +313,9 @@
     <ClCompile Include="..\src\devices\dsc.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\ecodhome.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ecowitt.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -298,7 +337,10 @@
     <ClCompile Include="..\src\devices\emontx.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\ert.c">
+    <ClCompile Include="..\src\devices\ert_idm.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\ert_scm.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\esa.c">
@@ -379,9 +421,6 @@
     <ClCompile Include="..\src\devices\ibis_beacon.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\idm.c">
-      <Filter>Source Files\devices</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\devices\ikea_sparsnas.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -415,10 +454,19 @@
     <ClCompile Include="..\src\devices\lacrosse_breezepro.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_r1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_th3.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx141x.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_tx35.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\lacrosse_wr1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\lacrosse_ws7000.c">
@@ -455,6 +503,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\nexus.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\nice_flor_s.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\norgo.c">

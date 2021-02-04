@@ -119,13 +119,15 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
 
     unsigned prev_pulses = data->num_pulses;
     bool pulse_needed = true;
+    bool aligned = true;
     while (*p) {
-        if (hexstr_peek_byte(*p) == 0x55) {
+        if (aligned && hexstr_peek_byte(*p) == 0x55) {
             hexstr_get_byte(p); // consume 0x55
             break;
         }
 
         int w = hexstr_get_nibble(p);
+        aligned = !aligned;
         if (w < 0) return false;
         if (w >= 8) { // pulse
             if (!pulse_needed) {
@@ -167,6 +169,10 @@ bool rfraw_parse(pulse_data_t *data, char const *p)
     // pulse_data_clear(data);
 
     while (*p) {
+        // skip whitespace and separators
+        while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' || *p == '+' || *p == '-')
+            ++p;
+
         if (!parse_rfraw(data, &p))
             break;
     }

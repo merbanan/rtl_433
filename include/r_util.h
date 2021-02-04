@@ -27,6 +27,14 @@
 // buffer to hold localized timestamp "YYYY-MM-DD HH:MM:SS.000000+0000"
 #define LOCAL_TIME_BUFLEN 32
 
+// Macro to prevent unused variables (passed into a function)
+// from generating a warning.
+#define UNUSED(x) (void)(x)
+// Macro to signal that that variable might not be used.
+// Useful when a variable is used only in an ifdef block that may or
+// may not be enabled.
+#define POSSIBLY_UNUSED(x) (void)(x)
+
 /** Get current time with usec precision.
 
     @param tv output for current time
