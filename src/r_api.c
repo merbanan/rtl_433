@@ -60,8 +60,12 @@ char const *version_string(void)
 #define STR_VALUE(arg) #arg
 #define STR_EXPAND(s) STR_VALUE(s)
             " version " STR_EXPAND(GIT_VERSION)
+#ifdef GIT_BRANCH
             " branch " STR_EXPAND(GIT_BRANCH)
+#endif
+#ifdef GIT_TIMESTAMP
             " at " STR_EXPAND(GIT_TIMESTAMP)
+#endif
 #undef STR_VALUE
 #undef STR_EXPAND
 #else

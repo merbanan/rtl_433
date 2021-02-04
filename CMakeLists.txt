@@ -41,6 +41,26 @@ if(GIT_COMMIT) # is a git repo
 endif()
 
 ########################################################################
+# Fallback to get release version info from Changelog
+########################################################################
+if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
+    # parse the CHANGELOG.md, this is clever, i.e. might go wrong ;)
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md" CHANGELOG LIMIT_COUNT 42)
+    # list(FILTER ...) needs CMake 3.6+
+    foreach(item ${CHANGELOG})
+        string(REGEX MATCH "^## Release (.+)" item ${item})
+        if(CMAKE_MATCH_1)
+            list(APPEND RELEASE_VERSIONS ${CMAKE_MATCH_1})
+        endif()
+    endforeach()
+    if(RELEASE_VERSIONS)
+        list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
+        message(STATUS "Found Release version: ${RELEASE_VERSION}")
+        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
+    endif()
+endif()
+
+########################################################################
 # Compiler specific setup
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)
