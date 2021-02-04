@@ -215,7 +215,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         timersub(&cur_tv, &cached_tv, &res_tv);
 
         if (decoder->verbose > 1)
-            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, res_tv.tv_usec);
+            fprintf(stderr, "%s res    %12ld %8ld\n", __func__, res_tv.tv_sec, (long)res_tv.tv_usec);
 
         // is the data not expired
         if (res_tv.tv_sec == 0 && res_tv.tv_usec < CACHE_MAX_AGE) {
