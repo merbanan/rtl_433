@@ -42,7 +42,7 @@ Binary | Trinary
 
 000100110111011100110001 -> 0001 0011 0111 0111 0011 0001 -> 1 11 111 111 11 1 -> [0, 1,2, 2, 1, 0]
 
-The pattens `1 1 1 1` or `0 0 0 0` should never happen
+The patterns `1 1 1 1` or `0 0 0 0` should never happen
 
 */
 
@@ -263,7 +263,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return -1; // should never get here
     }
 
-    // if we are here we have recived both packets, stored in result_1 & result_2
+    // if we are here we have received both packets, stored in result_1 & result_2
     // we now generate values for rolling_temp & fixed
     // using the trinary data stored in result_1 & result_2
 

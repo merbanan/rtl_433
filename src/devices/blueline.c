@@ -64,7 +64,7 @@
  * and the payload may be interpreted.
  *
  * Note that if the transmitter's ID isn't known, the code can't easily determine if messages other than an
- * ID payload are good or bad, and can't intepret their data correctly.  However, if the "auto" mode is enabled,
+ * ID payload are good or bad, and can't interpret their data correctly.  However, if the "auto" mode is enabled,
  * the system can try to learn the transmitter's ID by various methods. (See USAGE HINTS below)
  *
  * For the power message (1), the offset payload gives the number of milliseconds gap between impulses for the most
