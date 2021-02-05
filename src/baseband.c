@@ -180,10 +180,10 @@ static int16_t atan2_int16(int32_t y, int32_t x)
 ///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
 //static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
 //static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
-static int32_t const alps_16[][2] = {{FIX(1.00000), FIX(0.72654)},
-                                     {FIX(1.00000), FIX(0.50953)}};
-static int32_t const blps_16[][2] = {{FIX(0.13673), FIX(0.13673)},
-                                     {FIX(0.24524), FIX(0.24524)}};
+static int32_t const alps_16[][2] = {{FIX(1.00000) >> 1, FIX(0.72654) >> 1},
+                                     {FIX(1.00000) >> 1, FIX(0.50953) >> 1}};
+static int32_t const blps_16[][2] = {{FIX(0.13673) >> 1, FIX(0.13673) >> 1},
+                                     {FIX(0.24524) >> 1, FIX(0.24524) >> 1}};
 /// Fast Instantaneous frequency and Low Pass filter, CU8 samples
 void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
 {
@@ -217,7 +217,8 @@ void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_s
         x0f = atan2_int16(pi, pr); // Integer implementation
         // xlp = pi; // Cheat and use only imaginary part (works OK, but is amplitude sensitive)
         // Low pass filter
-        y0f      = ((alp[1] * y1f >> 1) + (blp[0] * x0f >> 1) + (blp[1] * x1f >> 1)) >> (F_SCALE - 1);
+        // y0f      = ((alp[1] * y1f >> 1) + (blp[0] * x0f >> 1) + (blp[1] * x1f >> 1)) >> (F_SCALE - 1);
+        y0f      = (alp[1] * y1f + blp[0] * (x0f + x1f)) >> (F_SCALE - 1); // note: prescaled, blp[0]==blp[1]
         *y_buf++ = y0f;
     }
 
@@ -301,7 +302,8 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
         // xlp = atan2_int16(pi >> 16, pr >> 16) << 16; // Integer implementation, truncated
         // xlp = pi; // Cheat and use only imaginary part (works OK, but is amplitude sensitive)
         // Low pass filter
-        y0f      = (alp[1] * y1f + blp[0] * x0f + blp[1] * x1f) >> F_SCALE32;
+        // y0f      = (alp[1] * y1f + blp[0] * x0f + blp[1] * x1f) >> F_SCALE32;
+        y0f      = (alp[1] * y1f + blp[0] * (x0f + x1f)) >> F_SCALE32; // note: blp[0]==blp[1]
         *y_buf++ = y0f >> 16; // not really losing info here, maybe optimize earlier
     }
 
