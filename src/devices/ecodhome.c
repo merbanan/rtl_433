@@ -72,7 +72,7 @@ Removing the first 1 or 2 bits gives a prefix of 55a8aaaaaa2dd4, the leading bit
 The next bytes of 5231 5c6a 7700 are likely a serial number (id).
 
 Then we have messages with 414b or 565a or 5053 which likely is a message type.
-On 414b the two byte (little endian) power value follows. For the other types it is unknonwn, maybe kWh or state.
+On 414b the two byte (little endian) power value follows. For the other types it is unknown, maybe kWh or state.
 Lastly there is a fixed 53 (status? stop?) and a checksum byte.
 
 Interesting to note that 414b, 565a, and 53 are "AK", "VZ", and "S" which might not be a coincidence.

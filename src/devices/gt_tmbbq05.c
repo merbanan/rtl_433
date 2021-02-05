@@ -116,7 +116,7 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-    // temperature: concat the upper bits to the lower bits and substract the fixed offset 90
+    // temperature: concat the upper bits to the lower bits and subtract the fixed offset 90
     int tempf = (((b[3] & 0xc0) << 2) | b[1]) - 90;
 
     // device id: concat the two bytes

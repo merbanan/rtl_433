@@ -228,7 +228,7 @@ data_t *pulse_data_print_data(pulse_data_t *data)
 
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
-    int use_mag_est;          ///< Wether the envelope data is an amplitude or magnitude.
+    int use_mag_est;          ///< Whether the envelope data is an amplitude or magnitude.
     int ook_fixed_high_level; ///< Manual detection level override, 0 = auto.
     int ook_min_high_level;   ///< Minimum estimate of high level (-12 dB: 1000 amp, 4000 mag).
     int ook_high_low_ratio;   ///< Default ratio between high and low (noise) level (9 dB: x8 amp, 11 dB: x3.6 mag).

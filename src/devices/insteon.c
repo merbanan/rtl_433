@@ -489,12 +489,12 @@ static char *output_fields[] = {
         "from_id",
         "to_id",
         "msg_type",     // packet type at int
-        "msg_type_str",  // packet type as formated string
+        "msg_type_str",  // packet type as formatted string
         // "command",
         "extended",     // 0= short pkt, 1=extended pkt
         "hops_max",     // almost always 3
         "hops_left",    // remaining hops
-        "formatted",   // entire packet as a formated string with hex
+        "formatted",   // entire packet as a formatted string with hex
         "mic", // remove if not applicable
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data

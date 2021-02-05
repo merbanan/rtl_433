@@ -291,7 +291,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // valid = 0X00XXXX
-        // 1st 3rs and 4th bits should alway be 0
+        // 1st 3rs and 4th bits should always be 0
         if (bits.bb[0][0] & 0xB0) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
@@ -310,7 +310,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 
-        // break if we've recived both halfs
+        // break if we've received both halfs
         if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
             break;
         }
