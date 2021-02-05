@@ -94,8 +94,10 @@ typedef struct filter_state {
 
 /// FM_Demod state buffer.
 typedef struct demodfm_state {
-    int32_t br, bi;   // Last I/Q sample
-    int32_t xlp, ylp; // Low-pass filter state
+    int32_t xr; ///< Last I/Q sample, real part
+    int32_t xi; ///< Last I/Q sample, imag part
+    int32_t xf; ///< Last Instantaneous frequency
+    int32_t yf; ///< Last Instantaneous frequency, low pass filtered
 } demodfm_state_t;
 
 /** Lowpass filter.
