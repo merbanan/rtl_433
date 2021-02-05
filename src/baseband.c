@@ -174,22 +174,32 @@ static int16_t atan2_int16(int32_t y, int32_t x)
     return angle;
 }
 
-///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
-//static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
-//static int const blp[2] = {FIX(0.13673), FIX(0.13673)};
-///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
-//static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
-//static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
-static int32_t const alps_16[][2] = {{FIX(1.00000) >> 1, FIX(0.72654) >> 1},
-                                     {FIX(1.00000) >> 1, FIX(0.50953) >> 1}};
-static int32_t const blps_16[][2] = {{FIX(0.13673) >> 1, FIX(0.13673) >> 1},
-                                     {FIX(0.24524) >> 1, FIX(0.24524) >> 1}};
 /// Fast Instantaneous frequency and Low Pass filter, CU8 samples
-void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
+void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state)
 {
-    // Select filter coeffs
-    const int32_t *alp = alps_16[fpdm];
-    const int32_t *blp = blps_16[fpdm];
+    // Select filter coeffs, [b,a] = butter(1, cutoff)
+    // e.g [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
+    // a = 1.00000, 0.72654; b = 0.13673, 0.13673;
+    // e.g. [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
+    // a = 1.00000, 0.50953; b = 0.24524, 0.24524;
+    if (state->rate != samp_rate) {
+        if (low_pass > 1e4) {
+            low_pass = low_pass / samp_rate;
+        } else if (low_pass >= 1.0) {
+            low_pass = 1e6 / low_pass / samp_rate;
+        }
+        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
+                __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+        double ita  = 1.0 / tan(0.5 * M_PI * low_pass);
+        double gain = 1.0 / (1.0 + ita) / 2; // prescaled by div 2
+        state->alp_16[0] = FIX(1.0);
+        state->alp_16[1] = FIX((ita - 1.0) * gain); // scaled by -1
+        state->blp_16[0] = FIX(gain);
+        state->blp_16[1] = FIX(gain);
+        state->rate      = samp_rate;
+    }
+    int32_t const *alp = state->alp_16;
+    int32_t const *blp = state->blp_16;
 
     // Pre-feed old sample
     int16_t x0r = state->xr; // IQ sample: x[n], real
@@ -257,23 +267,32 @@ static int32_t atan2_int32(int32_t y, int32_t x)
     return angle;
 }
 
-///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
-//static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
-//static int64_t const blp[2] = {FIX32(0.13673), FIX32(0.13673)};
-///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
-//static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.50953)};
-//static int64_t const blp[2] = {FIX32(0.24524), FIX32(0.24524)};
-static int64_t const alps_32[][2] = {{FIX32(1.00000), FIX32(0.72654)},
-                                     {FIX32(1.00000), FIX32(0.50953)}};
-static int64_t const blps_32[][2] = {{FIX32(0.13673), FIX32(0.13673)},
-                                     {FIX32(0.24524), FIX32(0.24524)}};
-
 /// Fast Instantaneous frequency and Low Pass filter, CS16 samples.
-void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
+void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, uint32_t samp_rate, float low_pass, demodfm_state_t *state)
 {
-    // Select filter coeffs
-    const int64_t *alp = alps_32[fpdm];
-    const int64_t *blp = blps_32[fpdm];
+    // Select filter coeffs, [b,a] = butter(1, cutoff)
+    // e.g [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
+    // a = 1.00000, 0.72654; b = 0.13673, 0.13673;
+    // e.g. [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
+    // a = 1.00000, 0.50953; b = 0.24524, 0.24524;
+    if (state->rate != samp_rate) {
+        if (low_pass > 1e4) {
+            low_pass = low_pass / samp_rate;
+        } else if (low_pass >= 1.0) {
+            low_pass = 1e6 / low_pass / samp_rate;
+        }
+        fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
+                __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
+        double ita  = 1.0 / tan(0.5 * M_PI * low_pass);
+        double gain = 1.0 / (1.0 + ita);
+        state->alp_32[0] = FIX32(1.0);
+        state->alp_32[1] = FIX32((ita - 1.0) * gain); // scaled by -1
+        state->blp_32[0] = FIX32(gain);
+        state->blp_32[1] = FIX32(gain);
+        state->rate      = samp_rate;
+    }
+    int64_t const *alp = state->alp_32;
+    int64_t const *blp = state->blp_32;
 
     // Pre-feed old sample
     int32_t x0r = state->xr; // IQ sample: x[n], real

@@ -376,10 +376,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (demod->enable_FM_demod) {
+        float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 1) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
+            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
+            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         }
     }
 
@@ -1126,6 +1127,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->demod->min_level = arg_float(p + 8, "-Y minlevel: ");
             else if (!strncasecmp(p, "minsnr", 6))
                 cfg->demod->min_snr = arg_float(p + 6, "-Y minsnr: ");
+            else if (!strncasecmp(p, "filter", 6))
+                cfg->demod->low_pass = arg_float(p + 6, "-Y filter: ");
             else {
                 fprintf(stderr, "Unknown pulse detector setting: %s\n", p);
                 usage(1);
