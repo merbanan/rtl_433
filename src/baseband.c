@@ -120,25 +120,27 @@ void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 void baseband_low_pass_filter(uint16_t const *x_buf, int16_t *y_buf, uint32_t len, filter_state_t *state)
 {
     ///  [b,a] = butter(1, 0.01) -> 3x tau (95%) ~100 samples
-    //static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.96907)};
-    //static int const b[FILTER_ORDER + 1] = {FIX(0.015466), FIX(0.015466)};
+    //static int const a[FILTER_ORDER + 1] = {FIX(1.00000) >> 1, FIX(0.96907) >> 1};
+    //static int const b[FILTER_ORDER + 1] = {FIX(0.015466) >> 1, FIX(0.015466) >> 1};
     ///  [b,a] = butter(1, 0.05) -> 3x tau (95%) ~20 samples
-    static int const a[FILTER_ORDER + 1] = {FIX(1.00000), FIX(0.85408)};
-    static int const b[FILTER_ORDER + 1] = {FIX(0.07296), FIX(0.07296)};
+    static int const a[FILTER_ORDER + 1] = {FIX(1.00000) >> 1, FIX(0.85408) >> 1};
+    static int const b[FILTER_ORDER + 1] = {FIX(0.07296) >> 1, FIX(0.07296) >> 1};
+    // note that coeffs are prescaled by div 2
 
-    unsigned long i;
-    // TODO: Will Segmentation Fault if len < FILTERORDER
-
-    /* Calculate first sample */
-    y_buf[0] = ((a[1] * state->y[0] >> 1) + (b[0] * x_buf[0] >> 1) + (b[1] * state->x[0] >> 1)) >> (F_SCALE - 1);
-    for (i = 1; i < len; i++) {
-        y_buf[i] = ((a[1] * y_buf[i - 1] >> 1) + (b[0] * x_buf[i] >> 1) + (b[1] * x_buf[i - 1] >> 1)) >> (F_SCALE - 1);
+    // Prevent out of bounds access
+    if (len < FILTER_ORDER) {
+        return;
     }
 
-    /* Save last samples */
+    // Calculate first sample
+    y_buf[0] = (a[1] * state->y[0] + b[0] * (x_buf[0] + state->x[0])) >> (F_SCALE - 1); // note: prescaled, b[0]==b[1]
+    for (unsigned long i = 1; i < len; i++) {
+        y_buf[i] = (a[1] * y_buf[i - 1] + b[0] * (x_buf[i] + x_buf[i - 1])) >> (F_SCALE - 1); // note: prescaled, b[0]==b[1]
+    }
+
+    // Save last samples
     memcpy(state->x, &x_buf[len - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
     memcpy(state->y, &y_buf[len - FILTER_ORDER], FILTER_ORDER * sizeof (int16_t));
-    //fprintf(stderr, "%d\n", y_buf[0]);
 }
 
 
