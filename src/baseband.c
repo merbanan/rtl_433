@@ -174,15 +174,12 @@ static int16_t atan2_int16(int32_t y, int32_t x)
     return angle;
 }
 
-
-///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
+///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
 //static int const alp[2] = {FIX(1.00000), FIX(0.72654)};
 //static int const blp[2] = {FIX(0.13673), FIX(0.13673)};
-///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
+///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
 //static int const alp[2] = {FIX(1.00000), FIX(0.50953)};
 //static int const blp[2] = {FIX(0.24524), FIX(0.24524)};
-
-
 static int32_t const alps_16[][2] = {{FIX(1.00000), FIX(0.72654)},
                                      {FIX(1.00000), FIX(0.50953)}};
 static int32_t const blps_16[][2] = {{FIX(0.13673), FIX(0.13673)},
@@ -256,16 +253,23 @@ static int32_t atan2_int32(int32_t y, int32_t x)
     return angle;
 }
 
+///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples, 250k -> 40us, 1024k -> 10us
+//static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
+//static int64_t const blp[2] = {FIX32(0.13673), FIX32(0.13673)};
+///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
+//static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.50953)};
+//static int64_t const blp[2] = {FIX32(0.24524), FIX32(0.24524)};
+static int64_t const alps_32[][2] = {{FIX32(1.00000), FIX32(0.72654)},
+                                     {FIX32(1.00000), FIX32(0.50953)}};
+static int64_t const blps_32[][2] = {{FIX32(0.13673), FIX32(0.13673)},
+                                     {FIX32(0.24524), FIX32(0.24524)}};
+
 /// for evaluation.
 void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long num_samples, demodfm_state_t *state, unsigned fpdm)
 {
-    UNUSED(fpdm);
-    ///  [b,a] = butter(1, 0.1) -> 3x tau (95%) ~10 samples
-    //static int const alp[2] = {FIX32(1.00000), FIX32(0.72654)};
-    //static int const blp[2] = {FIX32(0.13673), FIX32(0.13673)};
-    ///  [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples
-    static int64_t const alp[2] = {FIX32(1.00000), FIX32(0.50953)};
-    static int64_t const blp[2] = {FIX32(0.24524), FIX32(0.24524)};
+    /* Select filter coeffs */
+    const int64_t *alp = alps_32[fpdm];
+    const int64_t *blp = blps_32[fpdm];
 
     int32_t ar, ai;  // New IQ sample: x[n]
     int32_t br, bi;  // Old IQ sample: x[n-1]
