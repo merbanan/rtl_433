@@ -1,7 +1,18 @@
 /** @file
-    Cavius decoder.
-
- 
+*    Cavius smoke alarm decoder.
+*
+*    The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
+*    They seem to use 'Cavi' as a sync word on the chips
+*    Everything after the sync word is Manchester coded.
+*    The unpacked payload is 11 bytes long structured as follows:
+*  
+*    NNNNTTCSSSS
+*  
+*    N = Network ID (Device ID of the Master device)
+*    T = Type bytes. Described later. Second byte is 0xF ^ T
+*    C = CRC-8 (Maxim type) of NNNNTT (the first 6 bytes in the payload)
+*    S = Sending device ID
+* 
 */
 
 #include "decoder.h"
@@ -32,19 +43,26 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, &databits, 11*8);
     bitbuffer_invert(&databits);
 
-    bitbuffer_print(&databits);
+    if(decoder->verbose) {
+        bitbuffer_print(&databits);
+    }
 
     uint32_t net_id    = 0;
     uint8_t  message   = 0;
     uint8_t  message_i = 0;
     uint8_t  crc       = 0;
     uint32_t sender_id = 0;
+    uint8_t  crc_calced = crc8le(databits.bb[0], 6, 0x131, 0x0);
+
+    uint8_t  crcok = 0;
 
     bitbuffer_extract_bytes(&databits, 0, 0*8, &net_id,    4*8);
     bitbuffer_extract_bytes(&databits, 0, 4*8, &message,   1*8);
     bitbuffer_extract_bytes(&databits, 0, 5*8, &message_i, 1*8);
     bitbuffer_extract_bytes(&databits, 0, 6*8, &crc,       1*8);
     bitbuffer_extract_bytes(&databits, 0, 7*8, &sender_id, 4*8);
+
+    if(crc == crc_calced) crcok = 1;
 
     // Some uglyish bit banging here. Extraction seems to change endianness?
     uint32_t net_id_big = ((net_id>>24)&0xff) | // move byte 3 to byte 0
@@ -57,7 +75,8 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                              ((sender_id>>8)&0xff00) | // move byte 2 to byte 1
                              ((sender_id<<24)&0xff000000); // byte 0 to byte 3
 
-    printf("Net: %d Sender: %d Message %02x\n", net_id_big, sender_id, message);
+    //printf("Net: %d Sender: %d Message %02x\n", net_id_big, sender_id, message);
+    //printf("CRC_calced: %d OK: %d\n", crc_calced, crcok);
 
     /* clang-format off */
     data = data_make(
@@ -65,6 +84,7 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "senderid",      "Sender ID",   DATA_INT,    sender_id_big,
             "message",       "Message",     DATA_INT,    message,
             "crc",           "CRC-8",       DATA_INT,    crc,
+            "crcok",         "CRC OK",      DATA_INT,    crcok,
             NULL);
     /* clang-format on */
 
@@ -77,6 +97,7 @@ static char *output_fields[] = {
         "senderid",
         "message",
         "crc",
+        "crcok",
         NULL,
 };
 
