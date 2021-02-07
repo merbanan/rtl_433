@@ -11,6 +11,7 @@ rtl_433_SOURCES      = abuf.c \
                        compat_time.c \
                        confparse.c \
                        data.c \
+                       data_tag.c \
                        decoder_util.c \
                        fileformat.c \
                        http_server.c \
@@ -50,6 +51,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/bresser_6in1.c \
                        devices/bresser_7in1.c \
                        devices/bt_rain.c \
+                       devices/burnhardbbq.c \
                        devices/calibeur.c \
                        devices/cardin.c \
                        devices/cavius.c \
@@ -146,6 +148,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/s3318p.c \
                        devices/schraeder.c \
                        devices/scmplus.c \
+                       devices/secplus_v1.c \
                        devices/secplus_v2.c \
                        devices/sharp_spc775.c \
                        devices/silvercrest.c \

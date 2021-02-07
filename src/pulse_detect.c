@@ -178,7 +178,10 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
         chk_ret(fprintf(file, ";ook %u pulses\n", data->num_pulses));
         chk_ret(fprintf(file, ";freq1 %.0f\n", data->freq1_hz));
     }
+    chk_ret(fprintf(file, ";centerfreq %.0f Hz\n", data->centerfreq_hz));
     chk_ret(fprintf(file, ";samplerate %u Hz\n", data->sample_rate));
+    chk_ret(fprintf(file, ";sampledepth %u bits\n", data->depth_bits));
+    chk_ret(fprintf(file, ";range %.1f dB\n", data->range_db));
     chk_ret(fprintf(file, ";rssi %.1f dB\n", data->rssi_db));
     chk_ret(fprintf(file, ";snr %.1f dB\n", data->snr_db));
     chk_ret(fprintf(file, ";noise %.1f dB\n", data->noise_db));
@@ -190,6 +193,33 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
     chk_ret(fprintf(file, ";end\n"));
 }
 
+data_t *pulse_data_print_data(pulse_data_t *data)
+{
+    int pulses[2 * PD_MAX_PULSES];
+    double to_us = 1e6 / data->sample_rate;
+    for (unsigned i = 0; i < data->num_pulses; ++i) {
+        pulses[i * 2 + 0] = data->pulse[i] * to_us;
+        pulses[i * 2 + 1] = data->gap[i] * to_us;
+    }
+
+    /* clang-format off */
+    return data_make(
+            "mod",              "", DATA_STRING, (data->fsk_f2_est) ? "FSK" : "OOK",
+            "count",            "", DATA_INT,    data->num_pulses,
+            "pulses",           "", DATA_ARRAY,  data_array(2 * data->num_pulses, DATA_INT, pulses),
+            "freq1_Hz",         "", DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq1_hz,
+            "freq2_Hz",         "", DATA_COND,   data->fsk_f2_est, DATA_FORMAT, "%u Hz", DATA_INT, (unsigned)data->freq2_hz,
+            "freq_Hz",          "", DATA_INT,    (unsigned)data->centerfreq_hz,
+            "rate_Hz",          "", DATA_INT,    data->sample_rate,
+            "depth_bits",       "", DATA_INT,    data->depth_bits,
+            "range_dB",         "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->range_db,
+            "rssi_dB",          "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->rssi_db,
+            "snr_dB",           "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->snr_db,
+            "noise_dB",         "", DATA_FORMAT, "%.1f dB", DATA_DOUBLE, data->noise_db,
+            NULL);
+    /* clang-format on */
+}
+
 // OOK adaptive level estimator constants
 #define OOK_MAX_HIGH_LEVEL  DB_TO_AMP(0)   // Maximum estimate for high level (-0 dB)
 #define OOK_MAX_LOW_LEVEL   DB_TO_AMP(-15) // Maximum estimate for low level
@@ -198,7 +228,7 @@ void pulse_data_dump(FILE *file, pulse_data_t *data)
 
 /// Internal state data for pulse_pulse_package()
 struct pulse_detect {
-    int use_mag_est;          ///< Wether the envelope data is an amplitude or magnitude.
+    int use_mag_est;          ///< Whether the envelope data is an amplitude or magnitude.
     int ook_fixed_high_level; ///< Manual detection level override, 0 = auto.
     int ook_min_high_level;   ///< Minimum estimate of high level (-12 dB: 1000 amp, 4000 mag).
     int ook_high_low_ratio;   ///< Default ratio between high and low (noise) level (9 dB: x8 amp, 11 dB: x3.6 mag).

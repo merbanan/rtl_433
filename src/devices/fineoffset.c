@@ -330,6 +330,8 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 /**
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
+Also: Misol PM25
+Also: EcoWitt WH41
 
 The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -338,15 +340,21 @@ Data layout:
              FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
-- D: 8 bit device id?
-- ?: 2 bits ?
+- D: 8 bit device id (corresponds to sticker on device in hex)
+- ?: 1 bit?
+- b: 1 bit MSB of battery bars out of 5
 - P: 14 bit PM2.5 reading in ug/m3
-- ?: 2 bits ?
+- b: 2 bits LSBs of battery bars out of 5
 - A: 14 bit PM10.0 reading in ug/m3
-- ?: 8 bits ?
 - C: 8 bit CRC checksum of the previous 6 bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
 
+BitBench Examples
+{129} 55 55 55 55 55 51 6e a2 0c ba 02 d0 03 25 13 c0 00 [pm2=9 pm10=10 id=151 0x97 battery 4/5bars]
+{128} 55 55 55 55 55 51 6e a2 0c ba 03 70 03 c3 43 30 [pm2=11 pm10=12 id=151 0x97 battery 4/5bars]
+{129} 55 55 55 55 55 51 6e a2 0c b8 01 46 01 94 9c 2c 00 [pm2=4 pm10=5 id=151 0x97 3/5 bars]
+Preamble: aa2dd4
+FAM:8d ID: 8h 1b Bat_MSB:1d PMTWO:14d Bat_LSB:2d PMTEN:14d CRC:8h BITSIM:8h bbbbb
 */
 static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -377,17 +385,23 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Decode data
+    uint8_t family    = b[0];
     uint8_t id        = b[1];
+    uint8_t unknown1  = (b[2] & 0x80) ? 1 : 0;
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
-
+    int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
+    float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
+            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "family",           "FAMILY",       DATA_INT,    family,
+            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

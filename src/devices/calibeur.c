@@ -28,11 +28,11 @@ Sequence of 5 times 21 bit separated by start bit (total of 111 pulses)
 S 21 S 21 S 21 S 21 S 21 S
 
 Channel number is encoded into fractional temperature
-Temperature is oddly arranged and offset for negative temperatures = <6543210> - 41 C
+Temperature is oddly arranged and offset for negative temperatures = [6543210] - 41 C
 Always an odd number of 1s (odd parity)
 
 Encoding legend:
-f = fractional temperature + <ch no> * 10
+f = fractional temperature + [ch no] * 10
 0-6 = integer temperature + 41C
 p = parity
 H = Most significant bits of humidity [5:6]
