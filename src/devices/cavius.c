@@ -1,21 +1,42 @@
 /** @file
-*    Cavius smoke alarm decoder.
+*   Cavius smoke alarm decoder.
 *
-*    The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
-*    They seem to use 'Cavi' as a sync word on the chips
-*    Everything after the sync word is Manchester coded.
-*    The unpacked payload is 11 bytes long structured as follows:
+*   The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
+*   They seem to use 'Cavi' as a sync word on the chips
+*   Everything after the sync word is Manchester coded.
+*   The unpacked payload is 11 bytes long structured as follows:
 *  
-*    NNNNTTCSSSS
+*   NNNNMMCSSSS
 *  
-*    N = Network ID (Device ID of the Master device)
-*    T = Type bytes. Described later. Second byte is 0xF ^ T
-*    C = CRC-8 (Maxim type) of NNNNTT (the first 6 bytes in the payload)
-*    S = Sending device ID
+*   N = Network ID (Device ID of the Master device)
+*   M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
+*   C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
+*   S = Sending device ID
 * 
+*   Message bits as far as we can tell:
+*
+*   CAVIUS_MESSAGE_PAIRING  = 0x80
+*   CAVIUS_MESSAGE_TEST     = 0x40
+*   CAVIUS_MESSAGE_ALARM    = 0x20
+*   CAVIUS_MESSAGE_WARNING  = 0x10
+*   CAVIUS_MESSAGE_BATTLOW  = 0x08
+*   CAVIUS_MESSAGE_MUTE     = 0x04
+*   CAVIUS_MESSAGE_UNKNOWN2 = 0x02
+*   CAVIUS_MESSAGE_UNKNOWN1 = 0x01
+*
+*   Sometimes the receiver has to be at 250ksps to decode. Don't know why.
 */
 
 #include "decoder.h"
+
+const uint8_t CAVIUS_MESSAGE_PAIRING  = 0x80;
+const uint8_t CAVIUS_MESSAGE_TEST     = 0x40;
+const uint8_t CAVIUS_MESSAGE_ALARM    = 0x20;
+const uint8_t CAVIUS_MESSAGE_WARNING  = 0x10;
+const uint8_t CAVIUS_MESSAGE_BATTLOW  = 0x08;
+const uint8_t CAVIUS_MESSAGE_MUTE     = 0x04;
+const uint8_t CAVIUS_MESSAGE_UNKNOWN2 = 0x02;
+const uint8_t CAVIUS_MESSAGE_UNKNOWN1 = 0x01;
 
 // typedef struct {
 //     uint32_t net_id;
@@ -75,6 +96,31 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                              ((sender_id>>8)&0xff00) | // move byte 2 to byte 1
                              ((sender_id<<24)&0xff000000); // byte 0 to byte 3
 
+    char *text = "Unknown";
+
+    switch (message) {
+        case CAVIUS_MESSAGE_ALARM:
+            text = "Fire alarm";
+            break;
+        case CAVIUS_MESSAGE_BATTLOW:
+            text = "Battery low";
+            break;
+        case CAVIUS_MESSAGE_MUTE:
+            text = "Alarm muted";
+            break;
+        case CAVIUS_MESSAGE_PAIRING:
+            text = "Pairing";
+            break;
+        case CAVIUS_MESSAGE_TEST:
+            text = "Test alarm";
+            break;
+        case CAVIUS_MESSAGE_WARNING:
+            text = "Warning/Water detected";
+            break;
+        default:
+            break;
+    }
+
     //printf("Net: %d Sender: %d Message %02x\n", net_id_big, sender_id, message);
     //printf("CRC_calced: %d OK: %d\n", crc_calced, crcok);
 
@@ -83,6 +129,7 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "netid",         "Net ID",      DATA_INT,    net_id_big,
             "senderid",      "Sender ID",   DATA_INT,    sender_id_big,
             "message",       "Message",     DATA_INT,    message,
+            "text",          "Description", DATA_STRING, text,
             "crc",           "CRC-8",       DATA_INT,    crc,
             "crcok",         "CRC OK",      DATA_INT,    crcok,
             NULL);
@@ -96,6 +143,7 @@ static char *output_fields[] = {
         "netid",
         "senderid",
         "message",
+        "text",
         "crc",
         "crcok",
         NULL,
