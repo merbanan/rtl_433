@@ -96,9 +96,10 @@ if(MSVC)
     ADD_DEFINITIONS(-DNOMINMAX)
 endif()
 
-# Fix printf %zu
+# Fix printf %zu, make sure we get M_PI
 if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
+    add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
 option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
