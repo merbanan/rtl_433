@@ -1,51 +1,56 @@
-/** @file
-*   Cavius smoke alarm decoder.
-*
-*   The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
-*   They seem to use 'Cavi' as a sync word on the chips
-*   Everything after the sync word is Manchester coded.
-*   The unpacked payload is 11 bytes long structured as follows:
-*  
-*   NNNNMMCSSSS
-*  
-*   N = Network ID (Device ID of the Master device)
-*   M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
-*   C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
-*   S = Sending device ID
-* 
-*   Message bits as far as we can tell:
-*
-*   CAVIUS_MESSAGE_PAIRING  = 0x80
-*   CAVIUS_MESSAGE_TEST     = 0x40
-*   CAVIUS_MESSAGE_ALARM    = 0x20
-*   CAVIUS_MESSAGE_WARNING  = 0x10
-*   CAVIUS_MESSAGE_BATTLOW  = 0x08
-*   CAVIUS_MESSAGE_MUTE     = 0x04
-*   CAVIUS_MESSAGE_UNKNOWN2 = 0x02
-*   CAVIUS_MESSAGE_UNKNOWN1 = 0x01
-*
-*   Sometimes the receiver has to be at 250ksps to decode. Don't know why.
+/*** @file
+    Cavius protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+*/
+/** Cavius smoke, heat and water detectors
+
+    The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
+    They seem to use 'Cavi' as a sync word on the chips
+    Everything after the sync word is Manchester coded.
+    The unpacked payload is 11 bytes long structured as follows:
+
+    NNNNMMCSSSS
+
+    N = Network ID (Device ID of the Master device)
+    M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
+    C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
+    S = Sending device ID
+
+    Message bits as far as we can tell:
+
+    0x80 = PAIRING
+    0x40 = TEST
+    0x20 = ALARM
+    0x10 = WARNING
+    0x08 = BATTLOW
+    0x04 = MUTE
+    0x02 = UNKNOWN2
+    0x01 = UNKNOWN1
+
+    Sometimes the receiver samplerate has to be at 250ksps to decode properly.
 */
 
 #include "decoder.h"
 
-const uint8_t CAVIUS_MESSAGE_PAIRING  = 0x80;
-const uint8_t CAVIUS_MESSAGE_TEST     = 0x40;
-const uint8_t CAVIUS_MESSAGE_ALARM    = 0x20;
-const uint8_t CAVIUS_MESSAGE_WARNING  = 0x10;
-const uint8_t CAVIUS_MESSAGE_BATTLOW  = 0x08;
-const uint8_t CAVIUS_MESSAGE_MUTE     = 0x04;
-const uint8_t CAVIUS_MESSAGE_UNKNOWN2 = 0x02;
-const uint8_t CAVIUS_MESSAGE_UNKNOWN1 = 0x01;
+enum cavius_message {
+    cavius_pairing  = 0x80,
+    cavius_test     = 0x40,
+    cavius_alarm    = 0x20,
+    cavius_warning  = 0x10,
+    cavius_battlow  = 0x08,
+    cavius_mute     = 0x04,
+    cavius_unknown2 = 0x02,
+    cavius_unknown1 = 0x01,
+};
 
-// typedef struct {
-//     uint32_t net_id;
-//     uint8_t  message;
-//     uint8_t  message_i;
-//     uint8_t  crc;
-//     uint32_t sender_id;
-// } cavius_packet_t;
-
+/** @fn int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+    Cavius smoke alarm decoder.
+*/
 static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -99,22 +104,22 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     char *text = "Unknown";
 
     switch (message) {
-        case CAVIUS_MESSAGE_ALARM:
+        case cavius_alarm:
             text = "Fire alarm";
             break;
-        case CAVIUS_MESSAGE_BATTLOW:
+        case cavius_battlow:
             text = "Battery low";
             break;
-        case CAVIUS_MESSAGE_MUTE:
+        case cavius_mute:
             text = "Alarm muted";
             break;
-        case CAVIUS_MESSAGE_PAIRING:
+        case cavius_pairing:
             text = "Pairing";
             break;
-        case CAVIUS_MESSAGE_TEST:
+        case cavius_test:
             text = "Test alarm";
             break;
-        case CAVIUS_MESSAGE_WARNING:
+        case cavius_warning:
             text = "Warning/Water detected";
             break;
         default:
