@@ -80,15 +80,13 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint32_t sender_id = 0;
     uint8_t  crc_calced = crc8le(databits.bb[0], 6, 0x131, 0x0);
 
-    uint8_t  crcok = 0;
-
     bitbuffer_extract_bytes(&databits, 0, 0*8, &net_id,    4*8);
     bitbuffer_extract_bytes(&databits, 0, 4*8, &message,   1*8);
     bitbuffer_extract_bytes(&databits, 0, 5*8, &message_i, 1*8);
     bitbuffer_extract_bytes(&databits, 0, 6*8, &crc,       1*8);
     bitbuffer_extract_bytes(&databits, 0, 7*8, &sender_id, 4*8);
 
-    if(crc == crc_calced) crcok = 1;
+    if(crc != crc_calced) return DECODE_FAIL_MIC; // invalid CRC
 
     // Some uglyish bit banging here. Extraction seems to change endianness?
     uint32_t net_id_big = ((net_id>>24)&0xff) | // move byte 3 to byte 0
@@ -135,8 +133,7 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "senderid",      "Sender ID",   DATA_INT,    sender_id_big,
             "message",       "Message",     DATA_INT,    message,
             "text",          "Description", DATA_STRING, text,
-            "crc",           "CRC-8",       DATA_INT,    crc,
-            "crcok",         "CRC OK",      DATA_INT,    crcok,
+            "mic",           "Integrity",   DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -150,7 +147,6 @@ static char *output_fields[] = {
         "message",
         "text",
         "crc",
-        "crcok",
         NULL,
 };
 
