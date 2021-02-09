@@ -253,6 +253,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [176]  BlueLine Power Monitor
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
+    [179]  Cavius
 
 * Disabled by default, use -R n or -G
 
