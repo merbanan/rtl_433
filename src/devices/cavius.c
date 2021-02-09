@@ -1,4 +1,4 @@
-/*** @file
+/** @file
     Cavius protocol.
 
     This program is free software; you can redistribute it and/or modify
@@ -7,32 +7,33 @@
     (at your option) any later version.
 
 */
-/** Cavius smoke, heat and water detectors
+/** @fn int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+Cavius smoke, heat and water detector decoder
 
-    The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
-    They seem to use 'Cavi' as a sync word on the chips
-    Everything after the sync word is Manchester coded.
-    The unpacked payload is 11 bytes long structured as follows:
+The alarm units use HopeRF RF69 chips on 869.67 MHz. FSK modulation, 4800 bps
+They seem to use 'Cavi' as a sync word on the chips
+Everything after the sync word is Manchester coded.
+The unpacked payload is 11 bytes long structured as follows:
 
-    NNNNMMCSSSS
+NNNNMMCSSSS
 
-    N = Network ID (Device ID of the Master device)
-    M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
-    C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
-    S = Sending device ID
+N = Network ID (Device ID of the Master device)
+M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
+C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
+S = Sending device ID
 
-    Message bits as far as we can tell:
+Message bits as far as we can tell:
 
-    0x80 = PAIRING
-    0x40 = TEST
-    0x20 = ALARM
-    0x10 = WARNING
-    0x08 = BATTLOW
-    0x04 = MUTE
-    0x02 = UNKNOWN2
-    0x01 = UNKNOWN1
+0x80 = PAIRING
+0x40 = TEST
+0x20 = ALARM
+0x10 = WARNING
+0x08 = BATTLOW
+0x04 = MUTE
+0x02 = UNKNOWN2
+0x01 = UNKNOWN1
 
-    Sometimes the receiver samplerate has to be at 250ksps to decode properly.
+Sometimes the receiver samplerate has to be at 250ksps to decode properly.
 */
 
 #include "decoder.h"
@@ -48,9 +49,6 @@ enum cavius_message {
     cavius_unknown1 = 0x01,
 };
 
-/** @fn int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
-    Cavius smoke alarm decoder.
-*/
 static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
@@ -73,31 +71,13 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_print(&databits);
     }
 
-    uint32_t net_id    = 0;
-    uint8_t  message   = 0;
-    uint8_t  message_i = 0;
-    uint8_t  crc       = 0;
-    uint32_t sender_id = 0;
-    uint8_t  crc_calced = crc8le(databits.bb[0], 6, 0x131, 0x0);
+    uint8_t *b = databits.bb[0];
 
-    bitbuffer_extract_bytes(&databits, 0, 0*8, &net_id,    4*8);
-    bitbuffer_extract_bytes(&databits, 0, 4*8, &message,   1*8);
-    bitbuffer_extract_bytes(&databits, 0, 5*8, &message_i, 1*8);
-    bitbuffer_extract_bytes(&databits, 0, 6*8, &crc,       1*8);
-    bitbuffer_extract_bytes(&databits, 0, 7*8, &sender_id, 4*8);
+    uint32_t net_id    = ((uint32_t)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
+    uint32_t sender_id = ((uint32_t)b[7] << 24) | (b[8] << 16) | (b[9] << 8) | (b[10]);
+    uint8_t  message   = b[4];
 
-    if (crc != crc_calced) return DECODE_FAIL_MIC; // invalid CRC
-
-    // Some uglyish bit banging here. Extraction seems to change endianness?
-    uint32_t net_id_big = ((net_id>>24)&0xff) | // move byte 3 to byte 0
-                          ((net_id<<8)&0xff0000) | // move byte 1 to byte 2
-                          ((net_id>>8)&0xff00) | // move byte 2 to byte 1
-                          ((net_id<<24)&0xff000000); // byte 0 to byte 3
-
-    uint32_t sender_id_big = ((sender_id>>24)&0xff) | // move byte 3 to byte 0
-                             ((sender_id<<8)&0xff0000) | // move byte 1 to byte 2
-                             ((sender_id>>8)&0xff00) | // move byte 2 to byte 1
-                             ((sender_id<<24)&0xff000000); // byte 0 to byte 3
+    if (crc8le(databits.bb[0], 7, 0x31, 0x0) != 0) return DECODE_FAIL_MIC; // invalid CRC
 
     char *text = "Unknown";
 
@@ -126,8 +106,8 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "netid",         "Net ID",      DATA_INT,    net_id_big,
-            "senderid",      "Sender ID",   DATA_INT,    sender_id_big,
+            "netid",         "Net ID",      DATA_INT,    net_id,
+            "senderid",      "Sender ID",   DATA_INT,    sender_id,
             "message",       "Message",     DATA_INT,    message,
             "text",          "Description", DATA_STRING, text,
             "mic",           "Integrity",   DATA_STRING, "CRC",
