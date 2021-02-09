@@ -266,8 +266,8 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
             break;
         ++format;
         // read slash
-        if (*format == '/') {
-            leading_slash = 1;
+        if (!leading_slash && (*format < 'a' || *format > 'z')) {
+            leading_slash = *format;
             format++;
         }
         // read key until : or ]
@@ -311,7 +311,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         if (!data_token && !string_token && !d_start)
             continue;
         if (leading_slash)
-            *topic++ = '/';
+            *topic++ = leading_slash;
         if (data_token)
             topic = append_topic(topic, data_token);
         else if (string_token)
