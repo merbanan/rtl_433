@@ -15,23 +15,23 @@ They seem to use 'Cavi' as a sync word on the chips
 Everything after the sync word is Manchester coded.
 The unpacked payload is 11 bytes long structured as follows:
 
-NNNNMMCSSSS
+    NNNNMMCSSSS
 
-N = Network ID (Device ID of the Master device)
-M = Message bytes. Second byte is the first byte inverted (0xF ^ M)
-C = CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
-S = Sending device ID
+- N: Network ID (Device ID of the Master device)
+- M: Message bytes. Second byte is the first byte inverted (0xFF ^ M)
+- C: CRC-8 (Maxim type) of NNNNMM (the first 6 bytes in the payload)
+- S: Sending device ID
 
 Message bits as far as we can tell:
 
-0x80 = PAIRING
-0x40 = TEST
-0x20 = ALARM
-0x10 = WARNING
-0x08 = BATTLOW
-0x04 = MUTE
-0x02 = UNKNOWN2
-0x01 = UNKNOWN1
+- 0x80: PAIRING
+- 0x40: TEST
+- 0x20: ALARM
+- 0x10: WARNING
+- 0x08: BATTLOW
+- 0x04: MUTE
+- 0x02: UNKNOWN2
+- 0x01: UNKNOWN1
 
 Sometimes the receiver samplerate has to be at 250ksps to decode properly.
 */
@@ -53,14 +53,14 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
 
-    static const uint8_t SYNC[]  = {0x43, 0x61, 0x76, 0x69};
+    static const uint8_t preamble[]  = {0x43, 0x61, 0x76, 0x69};
 
     // Find the sync
-    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, SYNC, sizeof(SYNC)*8);
+    unsigned bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble)*8);
     if (bit_offset + 22*8 >= bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         return 0;
     }
-    bit_offset += sizeof(SYNC)*8;     // skip sync
+    bit_offset += sizeof(preamble)*8;     // skip sync
 
     bitbuffer_t databits = {0};
 
@@ -106,11 +106,13 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "netid",         "Net ID",      DATA_INT,    net_id,
-            "senderid",      "Sender ID",   DATA_INT,    sender_id,
+            "id",            "Device ID",   DATA_INT,    sender_id,
+            "net_id",        "Net ID",      DATA_INT,    net_id,
             "message",       "Message",     DATA_INT,    message,
             "text",          "Description", DATA_STRING, text,
+            "battery_ok",    "Battery OK",  DATA_INT,    ((message & cavius_battlow) == cavius_battlow) ? 0 : 1,
             "mic",           "Integrity",   DATA_STRING, "CRC",
+            "model",         "",            DATA_STRING, "Cavius-Security",
             NULL);
     /* clang-format on */
 
@@ -119,16 +121,18 @@ static int cavius_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-        "netid",
-        "senderid",
+        "id",
+        "net_id",
         "message",
         "text",
-        "crc",
+        "battery_ok"
+        "mic",
+        "model",
         NULL,
 };
 
 r_device cavius = {
-        .name        = "Cavius",
+        .name        = "Cavius smoke, heat and water detector",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 206,
         .long_width  = 206,
