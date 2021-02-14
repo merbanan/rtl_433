@@ -55,6 +55,7 @@ add_library(r_433 STATIC
     devices/burnhardbbq.c
     devices/calibeur.c
     devices/cardin.c
+    devices/cavius.c
     devices/chuango.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
