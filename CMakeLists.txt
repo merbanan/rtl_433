@@ -96,12 +96,19 @@ if(MSVC)
     ADD_DEFINITIONS(-DNOMINMAX)
 endif()
 
-# Fix printf %zu, make sure we get M_PI
+# Fix printf %zu
 if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
+endif()
+
+# Make sure we get M_PI
+if(WIN32)
     add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
+########################################################################
+# Option to force ANSI-colored build output (for Ninja)
+########################################################################
 option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
 if(FORCE_COLORED_BUILD)
     if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
