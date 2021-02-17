@@ -95,6 +95,9 @@ static int govee_water_h5054_callback(r_device *decoder, bitbuffer_t *bitbuffer)
          */
         event_str = "Batt 1 Bar";
     }
+    else if (event == 0x0202) {
+        event_str = "Heartbeat";
+    }
     else {
        event_str = "Unknown";
     }
