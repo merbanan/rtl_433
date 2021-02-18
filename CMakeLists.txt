@@ -41,6 +41,26 @@ if(GIT_COMMIT) # is a git repo
 endif()
 
 ########################################################################
+# Fallback to get release version info from Changelog
+########################################################################
+if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
+    # parse the CHANGELOG.md, this is clever, i.e. might go wrong ;)
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md" CHANGELOG LIMIT_COUNT 42)
+    # list(FILTER ...) needs CMake 3.6+
+    foreach(item ${CHANGELOG})
+        string(REGEX MATCH "^## Release (.+)" item ${item})
+        if(CMAKE_MATCH_1)
+            list(APPEND RELEASE_VERSIONS ${CMAKE_MATCH_1})
+        endif()
+    endforeach()
+    if(RELEASE_VERSIONS)
+        list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
+        message(STATUS "Found Release version: ${RELEASE_VERSION}")
+        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
+    endif()
+endif()
+
+########################################################################
 # Compiler specific setup
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)
@@ -81,6 +101,14 @@ if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
 endif()
 
+# Make sure we get M_PI
+if(WIN32)
+    add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
+########################################################################
+# Option to force ANSI-colored build output (for Ninja)
+########################################################################
 option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
 if(FORCE_COLORED_BUILD)
     if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
@@ -124,11 +152,21 @@ if(ENABLE_RTLSDR) # AUTO / ON
 find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
-if(LIBRTLSDR_FOUND AND LIBUSB_FOUND)
+if(LIBRTLSDR_FOUND)
     message(STATUS "RTL-SDR device input will be compiled.")
-    include_directories(${LIBRTLSDR_INCLUDE_DIRS} ${LIBUSB_INCLUDE_DIRS})
-    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES} ${LIBUSB_LIBRARIES})
+    include_directories(${LIBRTLSDR_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
     ADD_DEFINITIONS(-DRTLSDR)
+
+if(LIBUSB_FOUND)
+    message(STATUS "libusb-1.0 error messages are available.")
+    include_directories(${LIBUSB_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBUSB_LIBRARIES})
+    ADD_DEFINITIONS(-DLIBUSB1)
+else()
+    message(STATUS "libusb-1.0 error messages are not available.")
+endif()
+
 elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
 else()

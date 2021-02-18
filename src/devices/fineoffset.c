@@ -331,6 +331,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
 Also: Misol PM25
+Also: EcoWitt WH41
 
 The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
 
@@ -339,7 +340,7 @@ Data layout:
              FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
-- D: 8 bit device id?
+- D: 8 bit device id (corresponds to sticker on device in hex)
 - ?: 1 bit?
 - b: 1 bit MSB of battery bars out of 5
 - P: 14 bit PM2.5 reading in ug/m3
@@ -384,7 +385,9 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Decode data
+    uint8_t family    = b[0];
     uint8_t id        = b[1];
+    uint8_t unknown1  = (b[2] & 0x80) ? 1 : 0;
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
     int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
@@ -397,6 +400,8 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "family",           "FAMILY",       DATA_INT,    family,
+            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */

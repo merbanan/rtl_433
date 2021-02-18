@@ -14,6 +14,8 @@
 /**
 LaCrosse TX141-Bv2, TX141TH-Bv2, TX141-Bv3, TX145wsdth sensor.
 
+Also TFA 30.3221.02 (a TX141TH-Bv2).
+
 LaCrosse Color Forecast Station (model C85845), or other LaCrosse product
 utilizing the remote temperature/humidity sensor TX141TH-Bv2 transmitting
 in the 433.92 MHz band. Product pages:
@@ -120,8 +122,6 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int r;
     int device;
     uint8_t *b;
-    int type, id, battery_low, test, channel, temp_raw, humidity = 0;
-    float temp_c, speed_kmh;
 
     // Find the most frequent data packet
     // reduce false positives, require at least 5 out of 12 repeats.
@@ -172,17 +172,17 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             return DECODE_FAIL_MIC;
         }
 
-        id          = ((b[0] & 0x07) << 16) | (b[1] << 8) | b[2];
-        battery_low = (b[3] >> 7);
-        test        = (b[3] & 0x40) >> 6;
-        channel     = (b[3] & 0x30) >> 4;
-        type        = (b[3] & 0x0f);
-        temp_raw    = (b[4] << 4) | (b[5] >> 4);
-        humidity    = ((b[5] & 0x0f) << 8) | b[6];
+        int id          = ((b[0] & 0x07) << 16) | (b[1] << 8) | b[2];
+        int battery_low = (b[3] >> 7);
+        int test        = (b[3] & 0x40) >> 6;
+        int channel     = (b[3] & 0x30) >> 4;
+        int type        = (b[3] & 0x0f);
+        int temp_raw    = (b[4] << 4) | (b[5] >> 4);
+        int humidity    = ((b[5] & 0x0f) << 8) | b[6];
 
         if (type == 1) {
             // Temp/Hum
-            temp_c = (float)temp_raw * 0.1 - 50.0;
+            float temp_c = (temp_raw - 500) * 0.1f;
 
             /* clang-format off */
             data = data_make(
@@ -199,7 +199,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         else if (type == 2) {
             // Wind
-            speed_kmh = temp_raw * 0.1f;
+            float speed_kmh = temp_raw * 0.1f;
             // wind direction is in humidity field
 
             /* clang-format off */
@@ -226,18 +226,20 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    id = b[0];
+    int id = b[0];
+    int battery_low;
     if (device == LACROSSE_TX141TH) {
         battery_low = (b[1] >> 7);
     }
     else { // LACROSSE_TX141 || LACROSSE_TX141BV3
         battery_low = !(b[1] >> 7);
     }
-    test     = (b[1] & 0x40) >> 6;
-    channel  = (b[1] & 0x30) >> 4;
-    temp_raw = ((b[1] & 0x0F) << 8) | b[2];
-    temp_c   = (float)temp_raw * 0.1 - 50.0; // Temperature in C
+    int test     = (b[1] & 0x40) >> 6;
+    int channel  = (b[1] & 0x30) >> 4;
+    int temp_raw = ((b[1] & 0x0F) << 8) | b[2];
+    float temp_c = (temp_raw - 500) * 0.1f; // Temperature in C
 
+    int humidity = 0;
     if (device == LACROSSE_TX141TH) {
         humidity = b[3];
     }
@@ -331,6 +333,5 @@ r_device lacrosse_tx141x = {
         .gap_limit   = 625,  // long gap (with short pulse) is ~417 us, sync gap is ~833 us
         .reset_limit = 1700, // maximum gap is 1250 us (long gap + longer sync gap on last repeat)
         .decode_fn   = &lacrosse_tx141x_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };

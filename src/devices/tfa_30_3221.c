@@ -11,6 +11,8 @@
 /**
 Temperature/Humidity outdoor sensor TFA 30.3221.02.
 
+This is the same as LaCrosse-TX141THBv2 and should be merged.
+
 S.a. https://github.com/RFD-FHEM/RFFHEM/blob/master/FHEM/14_SD_WS.pm
 
     0    4    | 8    12   | 16   20   | 24   28   | 32   36
@@ -45,7 +47,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
 
     // Checking for right number of bits per row
-    if (bitbuffer->bits_per_row[row] != 41)
+    if (bitbuffer->bits_per_row[row] > 41)
         return DECODE_ABORT_LENGTH;
 
     bitbuffer_invert(bitbuffer);
@@ -65,7 +67,7 @@ static int tfa_303221_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     temp_raw    = ((b[1] & 0x0F) << 8) | b[2];
-    temp_c      = (float)(temp_raw - 500) * 0.1f;
+    temp_c      = (temp_raw - 500) * 0.1f;
     humidity    = b[3];
     battery_low = b[1] >> 7;
     channel     = ((b[1] >> 4) & 3) + 1;

@@ -117,6 +117,20 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
         bins[i] = hexstr_get_word(p);
     }
 
+    // check if this is the old or new format
+    bool oldfmt = true;
+    char const *t = *p;
+    while (*t) {
+        int b = hexstr_get_byte(&t);
+        if (b < 0 || b == 0x55) {
+            break;
+        }
+        if (b & 0x88) {
+            oldfmt = false;
+            break;
+        }
+    }
+
     unsigned prev_pulses = data->num_pulses;
     bool pulse_needed = true;
     bool aligned = true;
@@ -129,7 +143,7 @@ static bool parse_rfraw(pulse_data_t *data, char const **p)
         int w = hexstr_get_nibble(p);
         aligned = !aligned;
         if (w < 0) return false;
-        if (w >= 8) { // pulse
+        if (w >= 8 || (oldfmt && !aligned)) { // pulse
             if (!pulse_needed) {
                 data->gap[data->num_pulses] = 0;
                 data->num_pulses++;

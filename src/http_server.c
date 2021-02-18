@@ -710,7 +710,7 @@ static void handle_redirect(struct mg_connection *nc, struct http_message *hm)
             "HTTP/1.1 307 Temporary Redirect\r\n",
             "Location: http://triq.org/rxui/#",
             (int)host.len, host.p,
-            "\r\n");
+            "\r\n\r\n");
 }
 
 // reply to ws command

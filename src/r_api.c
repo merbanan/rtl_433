@@ -60,8 +60,12 @@ char const *version_string(void)
 #define STR_VALUE(arg) #arg
 #define STR_EXPAND(s) STR_VALUE(s)
             " version " STR_EXPAND(GIT_VERSION)
+#ifdef GIT_BRANCH
             " branch " STR_EXPAND(GIT_BRANCH)
+#endif
+#ifdef GIT_TIMESTAMP
             " at " STR_EXPAND(GIT_TIMESTAMP)
+#endif
 #undef STR_VALUE
 #undef STR_EXPAND
 #else
@@ -342,7 +346,12 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 
     for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
         data_tag_t *tag = *iter;
-        list_push(&field_list, tag->key);
+        if (tag->key) {
+            list_push(&field_list, (void *)tag->key);
+        }
+        else {
+            list_push_all(&field_list, (void **)tag->includes);
+        }
     }
 
     if (cfg->report_protocol)
@@ -1027,5 +1036,5 @@ void add_infile(r_cfg_t *cfg, char *in_file)
 
 void add_data_tag(struct r_cfg *cfg, char *param)
 {
-    list_push(&cfg->data_tags, data_tag_create(param));
+    list_push(&cfg->data_tags, data_tag_create(param, get_mgr(cfg)));
 }

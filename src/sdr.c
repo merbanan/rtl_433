@@ -22,7 +22,9 @@
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
+#ifdef LIBUSB1
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
+#endif
 #endif
 #ifdef SOAPYSDR
 #include <SoapySDR/Version.h>
@@ -508,9 +510,15 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
         //     r = libusb_cancel_transfer(dev->xfer[i]);
         // We can safely assume it's an libusb error.
         if (r < 0) {
+#ifdef LIBUSB1
             fprintf(stderr, "\n%s: %s!\n"
                             "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
                     libusb_error_name(r), libusb_strerror(r));
+#else
+            fprintf(stderr, "\nLIBUSB_ERROR: %d\n"
+                            "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
+                    r);
+#endif
             dev->running = 0;
         }
         dev->polling = 0;

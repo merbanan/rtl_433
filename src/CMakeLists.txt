@@ -55,6 +55,7 @@ add_library(r_433 STATIC
     devices/burnhardbbq.c
     devices/calibeur.c
     devices/cardin.c
+    devices/cavius.c
     devices/chuango.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
@@ -148,6 +149,7 @@ add_library(r_433 STATIC
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
+    devices/secplus_v1.c
     devices/secplus_v2.c
     devices/sharp_spc775.c
     devices/silvercrest.c

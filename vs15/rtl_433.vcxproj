@@ -54,7 +54,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -183,6 +183,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\burnhardbbq.c" />
     <ClCompile Include="..\src\devices\calibeur.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
+    <ClCompile Include="..\src\devices\cavius.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
     <ClCompile Include="..\src\devices\cotech_36_7959.c" />
@@ -276,6 +277,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\scmplus.c" />
+    <ClCompile Include="..\src\devices\secplus_v1.c" />
     <ClCompile Include="..\src\devices\secplus_v2.c" />
     <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
