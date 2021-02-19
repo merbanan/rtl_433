@@ -10,7 +10,7 @@
 */
 /**
 FSK 8 byte Manchester encoded TPMS with simple checksum.
-Seen on Ford Fiesta, Focus, ...
+Seen on Ford Fiesta, Focus, Kuga, Escape ...
 
 Packet nibbles:
 
@@ -34,6 +34,11 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     char id_str[9];
     int code;
     char code_str[7];
+    float pressure;
+    float pressure_bar;
+    char pressure_str[20]; //64.05 psi ~4.40 bar
+    int temperature;
+    char temperature_str[6]; //125°C
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
@@ -52,12 +57,21 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
 
     code = b[4]<<16 | b[5]<<8 | b[6];
     sprintf(code_str, "%06x", code);
+    
+    pressure = 0.3 + b[4] * 0.25;
+    pressure_bar = pressure * 0.0689475729;
+    sprintf(temperature_str, "%.2f%s%.2f%s", pressure, "psi ~", pressure_bar, "bar");
+    
+    temperature = b[5]-64;
+    sprintf(temperature_str, "%d%s", temperature, "°C");
 
     data = data_make(
         "model",        "",     DATA_STRING, "Ford",
         "type",         "",     DATA_STRING, "TPMS",
         "id",           "",     DATA_STRING, id_str,
         "code",         "",     DATA_STRING, code_str,
+        "pressure",         "",     DATA_STRING, pressure_str,
+        "temperature",         "",     DATA_STRING, temperature_str,
         "mic",          "",     DATA_STRING, "CHECKSUM",
         NULL);
 
@@ -99,6 +113,8 @@ static char *output_fields[] = {
     "type",
     "id",
     "code",
+    "pressure",
+    "temperature",
     "mic",
     NULL,
 };
