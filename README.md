@@ -23,6 +23,8 @@ Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 
 
 On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
 
+On MacOS, `brew install rtl_433`.
+
 Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
 
 ## How to add support for unsupported sensors
