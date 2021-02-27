@@ -55,7 +55,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     code = b[4] << 16 | b[5] << 8 | b[6];
     sprintf(code_str, "%06x", code);
 
-    pressure_psi  = b[4] * 0.25f; // empirical guess
+    pressure_psi  = 0.3 + b[4] * 0.25f; // BdyCM + FORScan
     temperature_f = b[5];         // empirical guess
 
     /* clang-format off */
