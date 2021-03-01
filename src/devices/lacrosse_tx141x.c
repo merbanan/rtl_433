@@ -47,6 +47,8 @@ The TX141TH-Bv2 sensor sends 12 of identical packets, one immediately following
 the other, in a single burst. These 12-packet bursts repeat every 50 seconds. At
 the end of the last packet there are two 833 us pulses ("post-amble"?).
 
+The TX141-Bv3 has a revision which only sends 4 packets per transmission.
+
 The data is grouped in 5 bytes / 10 nybbles
 
     [id] [id] [flags] [temp] [temp] [temp] [humi] [humi] [chk] [chk]
@@ -124,8 +126,8 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
 
     // Find the most frequent data packet
-    // reduce false positives, require at least 5 out of 12 repeats.
-    r = bitbuffer_find_repeated_row(bitbuffer, 5, 32); // 32
+    // reduce false positives, require at least 5 out of 12 or 3 of 4 repeats.
+    r = bitbuffer_find_repeated_row(bitbuffer, bitbuffer->num_rows > 4 ? 5 : 3, 32); // 32
     if (r < 0) {
         // try again for TX141W/TX145wsdth, require at least 2 out of 3-7 repeats.
         r = bitbuffer_find_repeated_row(bitbuffer, 2, 64); // 65
