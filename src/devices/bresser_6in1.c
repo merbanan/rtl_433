@@ -18,6 +18,7 @@ Decoder for Bresser Weather Center 6-in-1.
 - also Bresser new 5-in-1 sensors.
 - also Froggit WH6000 sensors.
 - also rebranded as Ventus C8488A (W835)
+- also Bresser 3-in-1 Professional Wind Gauge / Anemometer PN 7002531
 
 There are at least two different message types:
 - 24 seconds interval for temperatur, hum, uv and rain (alternating messages)
@@ -70,13 +71,13 @@ Checksum is 8-bit add (with carry) to 0xff.
 
 Notes on different sensors:
 
-- 1910 084d 18 : @RebeckaJohansson, VENTUS W835
-- 2030 088d 10 : @mvdgrift, Wi-Fi Colour Weather Station with 5in1 Sensor, Art.No.: 7002580, ff 01 in the UV field is (obviously) invalid.
-- 1970 0d57 18 : @danrhjones, bresser 5-in-1 model 7002580, no UV
-- 18b0 0301 18 : @konserninjohtaja 6-in-1 outdoor sensor
-- 18c0 0f10 18 : @rege245 BRESSER-PC-Weather-station-with-6-in-1-outdoor-sensor
-- 1880 02c3 18 : @f4gqk 6-in-1
-- 18b0 0887 18 : @npkap
+- 1910 084d 18 : RebeckaJohansson, VENTUS W835
+- 2030 088d 10 : mvdgrift, Wi-Fi Colour Weather Station with 5in1 Sensor, Art.No.: 7002580, ff 01 in the UV field is (obviously) invalid.
+- 1970 0d57 18 : danrhjones, bresser 5-in-1 model 7002580, no UV
+- 18b0 0301 18 : konserninjohtaja 6-in-1 outdoor sensor
+- 18c0 0f10 18 : rege245 BRESSER-PC-Weather-station-with-6-in-1-outdoor-sensor
+- 1880 02c3 18 : f4gqk 6-in-1
+- 18b0 0887 18 : npkap
 */
 
 static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -187,9 +188,9 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "channel",          "",             DATA_INT,    chan,
             "battery_ok",       "Battery OK",   DATA_INT,    batt,
             "temperature_C",    "Temperature",  DATA_COND, temp_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
-            "humidity",         "Humidity",     DATA_COND, temp_ok, DATA_INT,    humidity,
+            "humidity",         "Humidity",     DATA_COND, temp_ok && moisture < 0, DATA_INT,    humidity,
             "sensor_type",      "Sensor type",  DATA_INT,    s_type,
-            "moisture",         "Moisture",     DATA_COND, moisture >= 0, DATA_INT,    moisture,
+            "moisture",         "Moisture",     DATA_COND, moisture >= 0, DATA_FORMAT, "%d %%", DATA_INT, moisture,
             "wind_max_m_s",     "Wind Gust",    DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_gust,
             "wind_avg_m_s",     "Wind Speed",   DATA_COND, wind_ok, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_avg,
             "wind_dir_deg",     "Direction",    DATA_COND, wind_ok, DATA_INT,    wind_dir,
@@ -223,7 +224,7 @@ static char *output_fields[] = {
 };
 
 r_device bresser_6in1 = {
-        .name        = "Bresser Weather Center 6-in-1",
+        .name        = "Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 124,
         .long_width  = 124,

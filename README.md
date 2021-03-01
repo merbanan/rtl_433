@@ -23,6 +23,10 @@ Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 
 
 On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
 
+On MacOS, `brew install rtl_433`.
+
+Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
+
 ## How to add support for unsupported sensors
 
 See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
@@ -71,7 +75,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
   [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
-  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.
+  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)
@@ -98,7 +102,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [17]  Cardin S466-TX2
     [18]  Fine Offset Electronics, WH2, WH5, Telldus Temperature/Humidity/Rain Sensor
     [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
-    [20]  Ambient Weather Temperature Sensor
+    [20]  Ambient Weather, TFA 30.3208.02 temperature sensor
     [21]  Calibeur RF-104 Sensor
     [22]* X10 RF
     [23]  DSC Security Contact
@@ -246,10 +250,14 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [169]* Nice Flor-s remote control for gates
     [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
     [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
-    [172]  Bresser Weather Center 6-in-1
+    [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
     [173]  Bresser Weather Center 7-in-1
     [174]  EcoDHOME Smart Socket and MCEE Solar monitor
     [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
+    [176]  BlueLine Power Monitor
+    [177]  Burnhard BBQ thermometer
+    [178]  Security+ (Keyfob)
+    [179]  Cavius smoke, heat and water detector
 
 * Disabled by default, use -R n or -G
 
@@ -401,7 +409,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 	Parameters are detected from the full path, file name, and extension.
 
 	File content and format are detected as parameters, possible options are:
-	'cu8', 'cs16', 'cf32' ('IQ' implied),
+	'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),
 	'am.s16', 'am.f32', 'fm.s16', 'fm.f32',
 	'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.
 

@@ -6,9 +6,9 @@
     Based on rtl_sdr
     Copyright (C) 2012 by Steve Markgraf <steve@steve-m.de>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -134,7 +134,7 @@ static void usage(int exit_code)
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
             "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
-            "  [-K FILE | PATH | <tag> | <key>=<value>] Add an expanded token or fixed tag to every output line.\n"
+            "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
@@ -227,6 +227,27 @@ static void help_output(void)
 }
 
 _Noreturn
+static void help_tags(void)
+{
+    term_help_printf(
+            "\t\t= Data tags option =\n"
+            "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
+            "\tIf <tag> is \"FILE\" or \"PATH\" an expanded token will be added.\n"
+            "\tThe <tag> can also be a GPSd URL, e.g.\n"
+            "\t\t\"-K gpsd,lat,lon\" (report lat and lon keys from local gpsd)\n"
+            "\t\t\"-K loc=gpsd,lat,lon\" (report lat and lon in loc object)\n"
+            "\t\t\"-K gpsd\" (full json TPV report, in default \"gps\" object)\n"
+            "\t\t\"-K foo=gpsd://127.0.0.1:2947\" (with key and address)\n"
+            "\t\t\"-K bar=gpsd,nmea\" (NMEA deault GPGGA report)\n"
+            "\t\t\"-K rmc=gpsd,nmea,filter='$GPRMC'\" (NMEA GPRMC report)\n"
+            "\tAlso <tag> can be a generic tcp address, e.g.\n"
+            "\t\t\"-K foo=tcp:localhost:4000\" (read lines as TCP client)\n"
+            "\t\t\"-K bar=tcp://127.0.0.1:3000,init='subscribe tags\\r\\n'\"\n"
+            "\t\t\"-K baz=tcp://127.0.0.1:5000,filter='a prefix to match'\"\n");
+    exit(0);
+}
+
+_Noreturn
 static void help_meta(void)
 {
     term_help_printf(
@@ -282,7 +303,7 @@ static void help_write(void)
             "  [-W <filename>] Save data stream to output file, overwrite existing file\n"
             "\tParameters are detected from the full path, file name, and extension.\n\n"
             "\tFile content and format are detected as parameters, possible options are:\n"
-            "\t'cu8', 'cs16', 'cf32' ('IQ' implied),\n"
+            "\t'cu8', 'cs8', 'cs16', 'cf32' ('IQ' implied),\n"
             "\t'am.s16', 'am.f32', 'fm.s16', 'fm.f32',\n"
             "\t'i.f32', 'q.f32', 'logic.u8', 'ook', and 'vcd'.\n\n"
             "\tParameters must be separated by non-alphanumeric chars and are case-insensitive.\n"
@@ -355,10 +376,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     if (demod->enable_FM_demod) {
+        float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 1) { // CU8
-            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
+            baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         } else { // CS16
-            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, &demod->demod_FM_state, fpdm);
+            baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         }
     }
 
@@ -407,6 +429,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->pulse_data);
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
                 if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
                     pulse_analyzer(&demod->pulse_data, package_type);
                 }
@@ -427,7 +453,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 }
 
                 if (cfg->verbosity > 2) pulse_data_print(&demod->fsk_pulse_data);
-                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0)) ) {
+                if (cfg->raw_mode == 1 || (cfg->raw_mode == 2 && p_events == 0) || (cfg->raw_mode == 3 && p_events > 0)) {
+                    data_t *data = pulse_data_print_data(&demod->fsk_pulse_data);
+                    event_occurred_handler(cfg, data);
+                }
+                if (demod->analyze_pulses && (cfg->grab_mode <= 1 || (cfg->grab_mode == 2 && p_events == 0) || (cfg->grab_mode == 3 && p_events > 0))) {
                     pulse_analyzer(&demod->fsk_pulse_data, package_type);
                 }
             } // if (package_type == ...
@@ -1020,7 +1050,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             add_kv_output(cfg, arg_param(arg));
         }
         else if (strncmp(arg, "mqtt", 4) == 0) {
-            add_mqtt_output(cfg, arg_param(arg));
+            add_mqtt_output(cfg, arg);
         }
         else if (strncmp(arg, "influx", 6) == 0) {
             add_influx_output(cfg, arg);
@@ -1040,12 +1070,9 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         }
         break;
     case 'K':
-        cfg->output_tag = arg;
-        cfg->output_key = asepc(&cfg->output_tag, '=');
-        if (!cfg->output_tag) {
-            cfg->output_tag = cfg->output_key;
-            cfg->output_key = "tag";
-        }
+        if (!arg)
+            help_tags();
+        add_data_tag(cfg, arg);
         break;
     case 'C':
         if (!arg)
@@ -1100,6 +1127,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
                 cfg->demod->min_level = arg_float(p + 8, "-Y minlevel: ");
             else if (!strncasecmp(p, "minsnr", 6))
                 cfg->demod->min_snr = arg_float(p + 6, "-Y minsnr: ");
+            else if (!strncasecmp(p, "filter", 6))
+                cfg->demod->low_pass = arg_float(p + 6, "-Y filter: ");
             else {
                 fprintf(stderr, "Unknown pulse detector setting: %s\n", p);
                 usage(1);
@@ -1169,6 +1198,7 @@ static void sighandler(int signum)
         fprintf(stderr, "Signal caught, exiting!\n");
     }
     g_cfg.exit_async = 1;
+    sdr_stop(g_cfg.dev);
 }
 #endif
 
@@ -1208,7 +1238,8 @@ static void sdr_handler(sdr_event_t *ev, void *ctx)
 
     if (ev->ev == SDR_EV_DATA) {
         if (cfg->mgr) {
-            mg_mgr_poll(cfg->mgr, 0);
+            int max_polls = 16;
+            while (max_polls-- && mg_mgr_poll(cfg->mgr, 0));
         }
 
         if (!cfg->exit_async)
@@ -1346,7 +1377,9 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "\n");
 
-    start_outputs(cfg, well_known_output_fields(cfg));
+    char const **well_known = well_known_output_fields(cfg);
+    start_outputs(cfg, well_known);
+    free(well_known);
 
     if (cfg->out_block_size < MINIMAL_BUF_LENGTH ||
             cfg->out_block_size > MAXIMAL_BUF_LENGTH) {

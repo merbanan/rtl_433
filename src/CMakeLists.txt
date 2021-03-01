@@ -13,6 +13,7 @@ add_library(r_433 STATIC
     compat_time.c
     confparse.c
     data.c
+    data_tag.c
     decoder_util.c
     fileformat.c
     http_server.c
@@ -43,6 +44,7 @@ add_library(r_433 STATIC
     devices/archos_tbh.c
     devices/auriol_afw2a1.c
     devices/auriol_hg02832.c
+    devices/blueline.c
     devices/blyss.c
     devices/brennenstuhl_rcs_2044.c
     devices/bresser_3ch.c
@@ -50,8 +52,10 @@ add_library(r_433 STATIC
     devices/bresser_6in1.c
     devices/bresser_7in1.c
     devices/bt_rain.c
+    devices/burnhardbbq.c
     devices/calibeur.c
     devices/cardin.c
+    devices/cavius.c
     devices/chuango.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
@@ -145,6 +149,7 @@ add_library(r_433 STATIC
     devices/s3318p.c
     devices/schraeder.c
     devices/scmplus.c
+    devices/secplus_v1.c
     devices/secplus_v2.c
     devices/sharp_spc775.c
     devices/silvercrest.c

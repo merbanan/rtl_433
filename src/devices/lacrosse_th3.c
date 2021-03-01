@@ -77,7 +77,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // bit length is specified as 104us for the TH3 (~256 bits per packet)
     // but the TH2 bit length is actually 107us leading the bitbuffer to
     // report the packet length as ~286 bits long.  We'll use this fact
-    // to indentify which of the two models actually sent the data.
+    // to identify which of the two models actually sent the data.
     if (bitbuffer->bits_per_row[0] < 156) {
         if (decoder->verbose) {
             fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, bitbuffer->bits_per_row[0]);

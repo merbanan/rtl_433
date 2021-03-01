@@ -117,7 +117,7 @@ static unsigned short int cm180_power(uint8_t const *msg)
 {
     unsigned short int val = 0;
     val = (msg[4] << 8) | (msg[3] & 0xF0);
-    // tested accross situations varying from 700 watt to more than 8000 watt to
+    // tested across situations varying from 700 watt to more than 8000 watt to
     // get same value as showed in physical CM180 panel (exactly equals to 1+1/160)
     val *= 1.00625;
     return val;

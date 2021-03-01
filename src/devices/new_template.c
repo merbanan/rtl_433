@@ -15,7 +15,7 @@
     Keep the Doxygen (slash-star-star) comment above to document the file and copyright.
 
     Keep the Doxygen (slash-star-star) comment below to describe the decoder.
-    See http://www.doxygen.nl/manual/markdown.html for the formating options.
+    See http://www.doxygen.nl/manual/markdown.html for the formatting options.
 
     Remove all other multiline (slash-star) comments.
     Use single-line (slash-slash) comments to annontate important lines if needed.

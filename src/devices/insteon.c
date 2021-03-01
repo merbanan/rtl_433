@@ -302,9 +302,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         cmd_array[cmd_array_len++] = (int)results[j];
     }
 
-    char payload[INSTEON_PACKET_MIN_EXT * 2 + 1] = {0};
+    char payload[INSTEON_PACKET_MAX_EXT * 2 + 2] = {0};
     p                = payload;
-    for (int j = 0; j < min_pkt_len; j++) {
+    for (int j = 0; j < results_len; j++) {
         p += sprintf(p, "%02X", results[j]);
     }
 
@@ -489,12 +489,12 @@ static char *output_fields[] = {
         "from_id",
         "to_id",
         "msg_type",     // packet type at int
-        "msg_type_str",  // packet type as formated string
+        "msg_type_str",  // packet type as formatted string
         // "command",
         "extended",     // 0= short pkt, 1=extended pkt
         "hops_max",     // almost always 3
         "hops_left",    // remaining hops
-        "formatted",   // entire packet as a formated string with hex
+        "formatted",   // entire packet as a formatted string with hex
         "mic", // remove if not applicable
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data

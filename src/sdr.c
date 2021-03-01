@@ -22,7 +22,9 @@
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
+#ifdef LIBUSB1
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
+#endif
 #endif
 #ifdef SOAPYSDR
 #include <SoapySDR/Version.h>
@@ -508,9 +510,16 @@ static int rtlsdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint32
         //     r = libusb_cancel_transfer(dev->xfer[i]);
         // We can safely assume it's an libusb error.
         if (r < 0) {
+#ifdef LIBUSB1
             fprintf(stderr, "\n%s: %s!\n"
                             "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
                     libusb_error_name(r), libusb_strerror(r));
+#else
+            fprintf(stderr, "\nLIBUSB_ERROR: %d\n"
+                            "Check your RTL-SDR dongle, USB cables, and power supply.\n\n",
+                    r);
+#endif
+            dev->running = 0;
         }
         dev->polling = 0;
         apply_changes(dev, cb, ctx);
@@ -928,7 +937,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
             n_read += r; // r is number of elements read, elements=complex pairs, so buffer length is twice
             //fprintf(stderr, "readStream ret=%d, flags=%d, timeNs=%lld (%zu - %u)\n", r, flags, timeNs, buf_elems, n_read);
         } while (n_read < buf_elems);
-        //fprintf(stderr, "readStream ret=%d (%d), flags=%d, timeNs=%lld\n", n_read, buf_len, flags, timeNs);
+        //fprintf(stderr, "readStream ret=%u (%u), flags=%d, timeNs=%lld\n", n_read, buf_len, flags, timeNs);
         if (r < 0) {
             if (r == SOAPY_SDR_OVERFLOW) {
                 fprintf(stderr, "O");
@@ -943,6 +952,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
         //for (i = 0; i < n_read * 2; ++i)
         //    cu8buf[i] = (int8_t)cu8buf[i] + 128;
 
+        // TODO: SoapyRemote doesn't scale properly when reading (local) CS16 from (remote) CS8
         // rescale cs16 buffer
         if (dev->fullScale >= 2047.0 && dev->fullScale <= 2048.0) {
             for (i = 0; i < n_read * 2; ++i)
@@ -1131,8 +1141,11 @@ int sdr_set_freq_correction(sdr_dev_t *dev, int ppm, int verbose)
 #endif
 
 #ifdef RTLSDR
-    if (dev->rtlsdr_dev)
+    if (dev->rtlsdr_dev) {
         r = rtlsdr_set_freq_correction(dev->rtlsdr_dev, ppm);
+        if (r == -2)
+            r = 0; // -2 is not an error code
+    }
 #endif
 
     if (verbose) {

@@ -6798,7 +6798,7 @@ static void mg_http_multipart_begin(struct mg_connection *nc,
 
   ct = mg_get_http_header(hm, "Content-Type");
   if (ct == NULL) {
-    /* We need more data - or it isn't multipart mesage */
+    /* We need more data - or it isn't multipart message */
     goto exit_mp;
   }
 
@@ -11039,7 +11039,7 @@ static struct mg_str mg_mqtt_next_topic_component(struct mg_str *topic) {
   return res;
 }
 
-/* Refernce: https://mosquitto.org/man/mqtt-7.html */
+/* Reference: https://mosquitto.org/man/mqtt-7.html */
 int mg_mqtt_match_topic_expression(struct mg_str exp, struct mg_str topic) {
   struct mg_str ec, tc;
   if (exp.len == 0) return 0;

@@ -10,15 +10,15 @@
 */
 /**
 FSK 8 byte Manchester encoded TPMS with simple checksum.
-Seen on Ford Fiesta, Focus, ...
+Seen on Ford Fiesta, Focus, Kuga, Escape ...
 
 Packet nibbles:
 
-    IIIIIIII PP TT FF CC
+    II II II II PP TT FF CC
 
 - I = ID
-- P = likely Pressure
-- T = likely Temperature
+- P = Pressure, maybe PSI scale 0.25?
+- T = Temperature, maybe F?
 - F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 */
@@ -34,6 +34,8 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     char id_str[9];
     int code;
     char code_str[7];
+    float pressure_psi;
+    int temperature_f;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
@@ -50,16 +52,23 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     id = (unsigned)b[0] << 24 | b[1] << 16 | b[2] << 8 | b[3];
     sprintf(id_str, "%08x", id);
 
-    code = b[4]<<16 | b[5]<<8 | b[6];
+    code = b[4] << 16 | b[5] << 8 | b[6];
     sprintf(code_str, "%06x", code);
 
+    pressure_psi  = 0.3 + b[4] * 0.25f; // BdyCM + FORScan
+    temperature_f = b[5];         // empirical guess
+
+    /* clang-format off */
     data = data_make(
-        "model",        "",     DATA_STRING, "Ford",
-        "type",         "",     DATA_STRING, "TPMS",
-        "id",           "",     DATA_STRING, id_str,
-        "code",         "",     DATA_STRING, code_str,
-        "mic",          "",     DATA_STRING, "CHECKSUM",
-        NULL);
+            "model",            "",             DATA_STRING, "Ford",
+            "type",             "",             DATA_STRING, "TPMS",
+            "id",               "",             DATA_STRING, id_str,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure_psi,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",   DATA_DOUBLE, (double)temperature_f,
+            "code",             "",             DATA_STRING, code_str,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -95,21 +104,23 @@ static int tpms_ford_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "id",
-    "code",
-    "mic",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_PSI",
+        "temperature_F",
+        "mic",
+        NULL,
 };
 
 r_device tpms_ford = {
-    .name           = "Ford TPMS",
-    .modulation     = FSK_PULSE_PCM,
-    .short_width    = 52, // 12-13 samples @250k
-    .long_width     = 52, // FSK
-    .reset_limit    = 150, // Maximum gap size before End Of Message [us].
-    .decode_fn      = &tpms_ford_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name        = "Ford TPMS",
+        .modulation  = FSK_PULSE_PCM,
+        .short_width = 52,  // 12-13 samples @250k
+        .long_width  = 52,  // FSK
+        .reset_limit = 150, // Maximum gap size before End Of Message [us].
+        .decode_fn   = &tpms_ford_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

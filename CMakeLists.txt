@@ -41,6 +41,26 @@ if(GIT_COMMIT) # is a git repo
 endif()
 
 ########################################################################
+# Fallback to get release version info from Changelog
+########################################################################
+if(NOT GIT_COMMIT AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md")
+    # parse the CHANGELOG.md, this is clever, i.e. might go wrong ;)
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md" CHANGELOG LIMIT_COUNT 42)
+    # list(FILTER ...) needs CMake 3.6+
+    foreach(item ${CHANGELOG})
+        string(REGEX MATCH "^## Release (.+)" item ${item})
+        if(CMAKE_MATCH_1)
+            list(APPEND RELEASE_VERSIONS ${CMAKE_MATCH_1})
+        endif()
+    endforeach()
+    if(RELEASE_VERSIONS)
+        list(GET RELEASE_VERSIONS 0 RELEASE_VERSION)
+        message(STATUS "Found Release version: ${RELEASE_VERSION}")
+        ADD_DEFINITIONS(-DGIT_VERSION=${RELEASE_VERSION})
+    endif()
+endif()
+
+########################################################################
 # Compiler specific setup
 ########################################################################
 set(CMAKE_C_EXTENSIONS OFF)
@@ -81,8 +101,49 @@ if(MINGW)
     add_definitions(-D__USE_MINGW_ANSI_STDIO)
 endif()
 
+# Make sure we get M_PI
+if(WIN32)
+    add_definitions(-D_USE_MATH_DEFINES)
+endif()
+
 ########################################################################
-# Find build dependencies
+# Option to force ANSI-colored build output (for Ninja)
+########################################################################
+option(FORCE_COLORED_BUILD "Always produce ANSI-colored build output (GNU/Clang only)." FALSE)
+if(FORCE_COLORED_BUILD)
+    if("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+       add_compile_options(-fdiagnostics-color=always)
+    elseif("${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+       add_compile_options(-fcolor-diagnostics)
+    endif()
+endif()
+
+########################################################################
+# Find OpenSSL build dependencies
+########################################################################
+set(ENABLE_OPENSSL AUTO CACHE STRING "Enable OpenSSL TLS support")
+set_property(CACHE ENABLE_OPENSSL PROPERTY STRINGS AUTO ON OFF)
+if(ENABLE_OPENSSL) # AUTO / ON
+
+find_package(OpenSSL)
+if(OPENSSL_FOUND)
+    message(STATUS "OpenSSL TLS support will be compiled.")
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    list(APPEND SDR_LIBRARIES ${OPENSSL_LIBRARIES})
+    ADD_DEFINITIONS(-DOPENSSL)
+    ADD_DEFINITIONS(-DMG_ENABLE_SSL)
+elseif(ENABLE_OPENSSL STREQUAL "AUTO")
+    message(STATUS "OpenSSL development files not found, TLS won't be possible.")
+else()
+    message(FATAL_ERROR "OpenSSL development files not found.")
+endif()
+
+else()
+    message(STATUS "OpenSSL TLS disabled.")
+endif()
+
+########################################################################
+# Find LibRTLSDR build dependencies
 ########################################################################
 set(ENABLE_RTLSDR ON CACHE STRING "Enable RTL-SDR (lbrtlsdr) driver support")
 set_property(CACHE ENABLE_RTLSDR PROPERTY STRINGS AUTO ON OFF)
@@ -91,11 +152,21 @@ if(ENABLE_RTLSDR) # AUTO / ON
 find_package(PkgConfig)
 find_package(LibRTLSDR)
 find_package(LibUSB)
-if(LIBRTLSDR_FOUND AND LIBUSB_FOUND)
+if(LIBRTLSDR_FOUND)
     message(STATUS "RTL-SDR device input will be compiled.")
-    include_directories(${LIBRTLSDR_INCLUDE_DIRS} ${LIBUSB_INCLUDE_DIRS})
-    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES} ${LIBUSB_LIBRARIES})
+    include_directories(${LIBRTLSDR_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBRTLSDR_LIBRARIES})
     ADD_DEFINITIONS(-DRTLSDR)
+
+if(LIBUSB_FOUND)
+    message(STATUS "libusb-1.0 error messages are available.")
+    include_directories(${LIBUSB_INCLUDE_DIRS})
+    list(APPEND SDR_LIBRARIES ${LIBUSB_LIBRARIES})
+    ADD_DEFINITIONS(-DLIBUSB1)
+else()
+    message(STATUS "libusb-1.0 error messages are not available.")
+endif()
+
 elseif(ENABLE_RTLSDR STREQUAL "AUTO")
     message(STATUS "RTL-SDR development files not found, RTL-SDR device input won't be possible.")
 else()
@@ -106,6 +177,9 @@ else()
     message(STATUS "RTL-SDR device input disabled.")
 endif()
 
+########################################################################
+# Find SoapySDR build dependencies
+########################################################################
 set(ENABLE_SOAPYSDR AUTO CACHE STRING "Enable SoapySDR driver support")
 set_property(CACHE ENABLE_SOAPYSDR PROPERTY STRINGS AUTO ON OFF)
 if(ENABLE_SOAPYSDR) # AUTO / ON
@@ -126,6 +200,9 @@ else()
     message(STATUS "SoapySDR device input disabled.")
 endif()
 
+########################################################################
+# Setup optional Profiling with GPerfTools
+########################################################################
 # cmake -DCMAKE_BUILD_TYPE=Profile ..
 # CPUPROFILE=prof.out ./src/rtl_433 ...
 # pprof -text ./src/rtl_433 prof.out
@@ -141,13 +218,13 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Profile")
     ADD_DEFINITIONS(-fno-builtin-free)
 endif()
 
+########################################################################
+# Setup the include and linker paths
+########################################################################
 if(MINGW OR MSVC)
 list(APPEND NET_LIBRARIES ws2_32 mswsock)
 endif()
 
-########################################################################
-# Setup the include and linker paths
-########################################################################
 include_directories(
     BEFORE
     ${PROJECT_SOURCE_DIR}/include

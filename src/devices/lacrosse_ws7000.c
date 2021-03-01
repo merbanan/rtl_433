@@ -26,7 +26,7 @@ Message Layout:
     P P S A D..D X C
 
 - Preamble: 10x bit "0", bit "1"
-- Sensor Type:  Value 0..9 determing the sensor type
+- Sensor Type:  Value 0..9 determining the sensor type
   - 0 = WS7000-27/28 Thermo sensor (interval 177s - Addr * 0.5s)
   - 1 = WS7000-22/25 Thermo/Humidity sensor (interval 177s - Addr * 0.5s)
   - 2 = WS7000-16 Rain sensor (interval 173s - Addr * 0.5s)

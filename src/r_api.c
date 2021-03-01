@@ -25,6 +25,7 @@
 #include "pulse_detect_fsk.h"
 #include "sdr.h"
 #include "data.h"
+#include "data_tag.h"
 #include "list.h"
 #include "optparse.h"
 #include "output_mqtt.h"
@@ -59,8 +60,12 @@ char const *version_string(void)
 #define STR_VALUE(arg) #arg
 #define STR_EXPAND(s) STR_VALUE(s)
             " version " STR_EXPAND(GIT_VERSION)
+#ifdef GIT_BRANCH
             " branch " STR_EXPAND(GIT_BRANCH)
+#endif
+#ifdef GIT_TIMESTAMP
             " at " STR_EXPAND(GIT_TIMESTAMP)
+#endif
 #undef STR_VALUE
 #undef STR_EXPAND
 #else
@@ -72,6 +77,9 @@ char const *version_string(void)
 #endif
 #ifdef SOAPYSDR
             " SoapySDR"
+#endif
+#ifdef OPENSSL
+            " with TLS"
 #endif
             ;
 }
@@ -188,6 +196,8 @@ void r_free_cfg(r_cfg_t *cfg)
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
+    list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
+
     list_free_elems(&cfg->in_files, NULL);
 
     mg_mgr_free(cfg->mgr);
@@ -268,16 +278,22 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     float foffs2 = (float)pulse_data->fsk_f2_est / INT16_MAX * cfg->samp_rate / 2.0;
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
+    pulse_data->centerfreq_hz = cfg->center_frequency;
+    pulse_data->depth_bits    = cfg->demod->sample_size * 8;
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
     if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
-        pulse_data->rssi_db = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
+        pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
+        pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
-        pulse_data->snr_db  = 10.0f * log10f(asnr);
+        pulse_data->snr_db   = 10.0f * log10f(asnr);
     }
     else { // magnitude (CS16)
-        pulse_data->rssi_db = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
+        pulse_data->range_db = 84.2884f; // 20*log10f(16384.0f)
+        // actually 12 bit is 20*log10f(2048.0f) = 66.2266f,
+        // actually 16 bit is 20*log10f(32768.0f) = 90.3090f,
+        pulse_data->rssi_db  = 20.0f * log10f(ook_high_estimate) - 84.2884f; // 20*log10f(16384.0f)
         pulse_data->noise_db = 20.0f * log10f(ook_low_estimate) - 84.2884f; // 20*log10f(16384.0f)
-        pulse_data->snr_db  = 20.0f * log10f(asnr);
+        pulse_data->snr_db   = 20.0f * log10f(asnr);
     }
 }
 
@@ -316,33 +332,43 @@ char *time_pos_str(r_cfg_t *cfg, unsigned samples_ago, char *buf)
 // well-known field "protocol" is only used when model protocol is requested
 // well-known field "description" is only used when model description is requested
 // well-known fields "mod", "freq", "freq1", "freq2", "rssi", "snr", "noise" are used by meta report option
-static char const *well_known_default[15] = {0};
 char const **well_known_output_fields(r_cfg_t *cfg)
 {
-    char const **p = well_known_default;
-    *p++ = "time";
-    *p++ = "msg";
-    *p++ = "codes";
+    list_t field_list = {0};
+    list_ensure_size(&field_list, 15);
+
+    list_push(&field_list, "time");
+    list_push(&field_list, "msg");
+    list_push(&field_list, "codes");
 
     if (cfg->verbose_bits)
-        *p++ = "bits";
-    if (cfg->output_key)
-        *p++ = cfg->output_key;
-    if (cfg->report_protocol)
-        *p++ = "protocol";
-    if (cfg->report_description)
-        *p++ = "description";
-    if (cfg->report_meta) {
-        *p++ = "mod";
-        *p++ = "freq";
-        *p++ = "freq1";
-        *p++ = "freq2";
-        *p++ = "rssi";
-        *p++ = "snr";
-        *p++ = "noise";
+        list_push(&field_list, "bits");
+
+    for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
+        data_tag_t *tag = *iter;
+        if (tag->key) {
+            list_push(&field_list, (void *)tag->key);
+        }
+        else {
+            list_push_all(&field_list, (void **)tag->includes);
+        }
     }
 
-    return well_known_default;
+    if (cfg->report_protocol)
+        list_push(&field_list, "protocol");
+    if (cfg->report_description)
+        list_push(&field_list, "description");
+    if (cfg->report_meta) {
+        list_push(&field_list, "mod");
+        list_push(&field_list, "freq");
+        list_push(&field_list, "freq1");
+        list_push(&field_list, "freq2");
+        list_push(&field_list, "rssi");
+        list_push(&field_list, "snr");
+        list_push(&field_list, "noise");
+    }
+
+    return (char const **)field_list.elems;
 }
 
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
@@ -742,18 +768,10 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
                 NULL);
     }
 
-    // prepend "tag" if available
-    if (cfg->output_tag) {
-        char const *output_tag = cfg->output_tag;
-        if (cfg->in_filename && !strcmp("PATH", cfg->output_tag)) {
-            output_tag = cfg->in_filename;
-        }
-        else if (cfg->in_filename && !strcmp("FILE", cfg->output_tag)) {
-            output_tag = file_basename(cfg->in_filename);
-        }
-        data = data_prepend(data,
-                cfg->output_key, "", DATA_STRING, output_tag,
-                NULL);
+    // apply all tags
+    for (void **iter = cfg->data_tags.elems; iter && *iter; ++iter) {
+        data_tag_t *tag = *iter;
+        data            = data_tag_apply(tag, data, cfg->in_filename);
     }
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
@@ -899,12 +917,7 @@ void add_kv_output(r_cfg_t *cfg, char *param)
 
 void add_mqtt_output(r_cfg_t *cfg, char *param)
 {
-    char *host = "localhost";
-    char *port = "1883";
-    char *opts = hostport_param(param, &host, &port);
-    fprintf(stderr, "Publishing MQTT data to %s port %s\n", host, port);
-
-    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), host, port, opts, cfg->dev_query));
+    list_push(&cfg->output_handler, data_output_mqtt_create(get_mgr(cfg), param, cfg->dev_query));
 }
 
 void add_influx_output(r_cfg_t *cfg, char *param)
@@ -1019,4 +1032,9 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
 void add_infile(r_cfg_t *cfg, char *in_file)
 {
     list_push(&cfg->in_files, in_file);
+}
+
+void add_data_tag(struct r_cfg *cfg, char *param)
+{
+    list_push(&cfg->data_tags, data_tag_create(param, get_mgr(cfg)));
 }

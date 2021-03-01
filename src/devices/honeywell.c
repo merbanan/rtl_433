@@ -81,7 +81,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (len > 50) { // DW11
         if (decoder->verbose)
-            bitrow_printf(b, len, "%s: ", __func__);
+            bitrow_printf(b, (len > 80 ? 80 : len), "%s: ", __func__);
     }
 
     if (channel == 0x2 || channel == 0x4 || channel == 0xA) {

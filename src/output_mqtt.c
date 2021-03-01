@@ -25,7 +25,8 @@
 /* MQTT client abstraction */
 
 typedef struct mqtt_client {
-    struct mg_send_mqtt_handshake_opts opts;
+    struct mg_connect_opts connect_opts;
+    struct mg_send_mqtt_handshake_opts mqtt_opts;
     struct mg_connection *conn;
     int prev_status;
     char address[253 + 6 + 1]; // dns max + port
@@ -52,7 +53,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
             fprintf(stderr, "MQTT Connected...\n");
             mg_set_protocol_mqtt(nc);
             if (ctx)
-                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->opts);
+                mg_send_mqtt_handshake_opt(nc, ctx->client_id, ctx->mqtt_opts);
         }
         else {
             // Error, print only once
@@ -88,23 +89,26 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
         if (ctx->prev_status == 0)
             fprintf(stderr, "MQTT Connection failed...\n");
         // reconnect
-        struct mg_connect_opts opts = {.user_data = ctx};
-        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, opts);
+        char const *error_string = NULL;
+        ctx->connect_opts.error_string = &error_string;
+        ctx->conn = mg_connect_opt(nc->mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+        ctx->connect_opts.error_string = NULL;
         if (!ctx->conn) {
-            fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+            fprintf(stderr, "MQTT connect (%s) failed%s%s\n", ctx->address,
+                    error_string ? ": " : "", error_string ? error_string : "");
         }
         break;
     }
 }
 
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
 {
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
         FATAL_CALLOC("mqtt_client_init()");
 
-    ctx->opts.user_name = user;
-    ctx->opts.password  = pass;
+    ctx->mqtt_opts.user_name = user;
+    ctx->mqtt_opts.password  = pass;
     ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
@@ -119,10 +123,28 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, char const *host, cha
     else
         snprintf(ctx->address, sizeof(ctx->address), "%s:%s", host, port);
 
-    struct mg_connect_opts opts = {.user_data = ctx};
-    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, opts);
+    ctx->connect_opts.user_data = ctx;
+    if (tls_opts && tls_opts->tls_ca_cert) {
+#if MG_ENABLE_SSL
+        ctx->connect_opts.ssl_cert          = tls_opts->tls_cert;
+        ctx->connect_opts.ssl_key           = tls_opts->tls_key;
+        ctx->connect_opts.ssl_ca_cert       = tls_opts->tls_ca_cert;
+        ctx->connect_opts.ssl_cipher_suites = tls_opts->tls_cipher_suites;
+        ctx->connect_opts.ssl_server_name   = tls_opts->tls_server_name;
+        ctx->connect_opts.ssl_psk_identity  = tls_opts->tls_psk_identity;
+        ctx->connect_opts.ssl_psk_key       = tls_opts->tls_psk_key;
+#else
+        fprintf(stderr, "mqtts (TLS) not available\n");
+        exit(1);
+#endif
+    }
+    char const *error_string = NULL;
+    ctx->connect_opts.error_string = &error_string;
+    ctx->conn = mg_connect_opt(mgr, ctx->address, mqtt_client_event, ctx->connect_opts);
+    ctx->connect_opts.error_string = NULL;
     if (!ctx->conn) {
-        fprintf(stderr, "MQTT connect(%s) failed\n", ctx->address);
+        fprintf(stderr, "MQTT connect (%s) failed%s%s\n", ctx->address,
+                error_string ? ": " : "", error_string ? error_string : "");
         exit(1);
     }
 
@@ -244,8 +266,8 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
             break;
         ++format;
         // read slash
-        if (*format == '/') {
-            leading_slash = 1;
+        if (!leading_slash && (*format < 'a' || *format > 'z')) {
+            leading_slash = *format;
             format++;
         }
         // read key until : or ]
@@ -289,7 +311,7 @@ static char *expand_topic(char *topic, char const *format, data_t *data, char co
         if (!data_token && !string_token && !d_start)
             continue;
         if (leading_slash)
-            *topic++ = '/';
+            *topic++ = leading_slash;
         if (data_token)
             topic = append_topic(topic, data_token);
         else if (string_token)
@@ -340,7 +362,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
 
         // "events" topic
         if (mqtt->events) {
-            char message[1024]; // we expect the biggest strings to be around 500 bytes.
+            char message[2048]; // we expect the biggest strings to be around 500 bytes.
             data_print_jsons(data, message, sizeof(message));
             expand_topic(mqtt->topic, mqtt->events, data, mqtt->hostname);
             mqtt_client_publish(mqtt->mqc, mqtt->topic, message);
@@ -446,7 +468,7 @@ static char *mqtt_topic_default(char const *topic, char const *base, char const 
     return ret;
 }
 
-struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host, char const *port, char *opts, char const *dev_hint)
+struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, char const *dev_hint)
 {
     data_output_mqtt_t *mqtt = calloc(1, sizeof(data_output_mqtt_t));
     if (!mqtt)
@@ -478,6 +500,17 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     char *user = NULL;
     char *pass = NULL;
     int retain = 0;
+
+    // parse host and port
+    tls_opts_t tls_opts = {0};
+    if (strncmp(param, "mqtts", 5) == 0) {
+        tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
+    }
+    param      = arg_param(param);
+    char *host = "localhost";
+    char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
+    char *opts = hostport_param(param, &host, &port);
+    fprintf(stderr, "Publishing MQTT data to %s port %s%s\n", host, port, tls_opts.tls_ca_cert ? " (TLS)" : "");
 
     // parse auth and format options
     char *key, *val;
@@ -516,6 +549,9 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
         // TODO: Home Assistant MQTT discovery https://www.home-assistant.io/docs/mqtt/discovery/
         //else if (!strcasecmp(key, "a") || !strcasecmp(key, "hass"))
         //    mqtt->hass = mqtt_topic_default(val, NULL, "homeassistant"); // discovery prefix
+        else if (!tls_param(&tls_opts, key, val)) {
+            // ok
+        }
         else {
             fprintf(stderr, "Invalid key \"%s\" option.\n", key);
             exit(1);
@@ -542,7 +578,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char const *host
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mqc = mqtt_client_init(mgr, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain);
 
     return &mqtt->output;
 }
