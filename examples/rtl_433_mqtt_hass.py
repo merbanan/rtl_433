@@ -106,7 +106,7 @@ NAMING_KEYS = [ "type", "model", "subtype", "channel", "id" ]
 
 # Fields that get ignored when publishing to Home Assistant
 # (reduces noise to help spot missing field mappings)
-SKIP_KEYS = NAMING_KEYS + [ "time", "mic", "mod", "freq", "sequence_num",
+SKIP_KEYS = NAMING_KEYS + [ "mic", "mod", "freq", "sequence_num",
                             "message_type", "exception", "raw_msg" ]
 
 
@@ -155,7 +155,15 @@ mappings = {
             "value_template": "{{ value|float }}"
         }
     },
-
+    "time": {
+        "device_type": "sensor",
+        "object_suffix": "UTC",
+        "config": {
+            "device_class": "timestamp",
+            "name": "Timestamp",
+            "icon": "mdi:clock-in"
+        }
+    },
     "battery_ok": {
         "device_type": "sensor",
         "object_suffix": "B",
@@ -463,6 +471,60 @@ mappings = {
             "value_template": "{{ value|int }}"
         }
     },
+    "channel": {
+        "device_type": "device_automation",
+        "object_suffix": "CH",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+    "button": {
+        "device_type": "device_automation",
+        "object_suffix": "BTN",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+    "code": {
+        "device_type": "device_automation",
+        "object_suffix": "CODE",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+    "unit": {
+        "device_type": "device_automation",
+        "object_suffix": "unit",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+    "tristate": {
+        "device_type": "device_automation",
+        "object_suffix": "tristate",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    },
+    "cmd": {
+        "device_type": "device_automation",
+        "object_suffix": "CMD",
+        "config": {
+           "automation_type": "trigger",
+           "type": "button_short_release",
+           "subtype": "button_1",
+        }
+    }
 }
 
 
@@ -506,17 +568,19 @@ def sanitize(text):
 def rtl_433_device_topic(data):
     """Return rtl_433 device topic to subscribe to for a data element"""
 
-    path_elements = []
+    #path_elements = []
 
-    for key in NAMING_KEYS:
-        if key in data:
-            element = sanitize(str(data[key]))
-            path_elements.append(element)
+    #for key in NAMING_KEYS:
+    #    if key in data:
+    #        element = sanitize(str(data[key]))
+    #        path_elements.append(element)
 
-    return '/'.join(path_elements)
+    uid = data.get('id')
+    if uid is None: uid = 0
+    return 'ID'+str(uid) # '/'.join(path_elements)
 
 
-def publish_config(mqttc, topic, model, instance, mapping):
+def publish_config(mqttc, topic, model, instance, mapping, value=None):
     """Publish Home Assistant auto discovery data."""
     global discovery_timeouts
 
@@ -537,10 +601,16 @@ def publish_config(mqttc, topic, model, instance, mapping):
     discovery_timeouts[path] = now + args.discovery_interval
 
     config = mapping["config"].copy()
-    config["name"] = object_name
-    config["state_topic"] = topic
-    config["unique_id"] = object_name
-    config["device"] = { "identifiers": object_id, "name": object_id, "model": model, "manufacturer": "rtl_433" }
+
+    if device_type == 'device_automation':
+        config["topic"] = topic
+        config["platform"] = 'mqtt'
+        config["payload"] = value
+    else:
+        config["state_topic"] = topic
+        config["unique_id"] = object_name
+        config["name"] = object_name
+    config["device"] = { "identifiers": [object_id], "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
     if args.debug:
         print(path,":",json.dumps(config))
@@ -552,11 +622,16 @@ def publish_config(mqttc, topic, model, instance, mapping):
 def bridge_event_to_hass(mqttc, topicprefix, data):
     """Translate some rtl_433 sensor data to Home Assistant auto discovery."""
 
-    if "model" not in data:
-        # not a device event
+    try:
+        if "model" not in data:
+            # not a device event
+            return
+    except:
+        print ("Fail")
+        print(data)
         return
 
-    model = sanitize(data["model"])
+    model = 'P' + str(data["protocol"])
 
     skipped_keys = []
     published_keys = []
@@ -571,9 +646,9 @@ def bridge_event_to_hass(mqttc, topicprefix, data):
     # detect known attributes
     for key in data.keys():
         if key in mappings:
-            # topic = "/".join([topicprefix,"devices",model,instance,key])
-            topic = "/".join([topicprefix,"devices",instance,key])
-            if publish_config(mqttc, topic, model, instance, mappings[key]):
+            # topic = "/".join([topicprefix,model,instance,key])
+            topic = "/".join([topicprefix,model,instance,key])
+            if publish_config(mqttc, topic, model, instance, mappings[key], data[key]):
                 published_keys.append(key)
         else:
             if key not in SKIP_KEYS:
