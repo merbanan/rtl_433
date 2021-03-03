@@ -1,5 +1,5 @@
 /** @file
-    Jansite FSK 7 byte Manchester encoded checksummed TPMS data.
+    Jansite FSK 11 byte Manchester encoded checksummed TPMS data.
 
     Copyright (C) 2019 Andreas Spiess and Christian W. Zuckschwerdt <zany@triq.net> and Benjamin Larsson 2021
 
@@ -12,16 +12,20 @@
 /**
 Jansite Solar TPMS Solar Model
 
+Signal is manchester modulated, and an 11 byte large message
+
 Data layout (nibbles):
 
-    II II II IS PP TT CC
+    SS SS II II II 00 TT PP 00 CC CC
 
-- I: 28 bit ID
-- S: 4 bit Status (deflation alarm, battery low etc)
+- S: 16 bits sync word, 0xdd33
+- I: 24 bits ID
+- 0: 8 bits Unknown data 1, one bit should be battery level
+- T: 8 bit Temperature (deg. C offset by 55)
 - P: 8 bit Pressure (best guess quarter PSI, i.e. ~0.58 kPa)
-- T: 8 bit Temperature (deg. C offset by 50)
-- C: 8 bit Checksum
-- The preamble is 0xaa..aa9 (or 0x55..556 depending on polarity)
+- 0: 8 bits Unknown data 2, one bit should be battery level
+- C: 16 bit CRC (CRC-16/BUYPASS)
+- The preamble is 0xa6, 0xa6, 0x5a
 */
 
 #include "decoder.h"
@@ -40,31 +44,30 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
     bitbuffer_invert(&packet_bits);
-    
+
     if (packet_bits.bits_per_row[0] < 88) {
         return DECODE_FAIL_SANITY;
     }
     b = packet_bits.bb[0];
-    
+
     /* Check for sync */
     if ((b[0]<<8 | b[1]) != 0xdd33) {
         return DECODE_FAIL_SANITY;
     }
 
-    /* Check crc (CRC-16/BUYPASS) */
+    /* Check crc */
     uint16_t crc_calc = crc16(&b[2], 7, 0x8005, 0x0000);
     if ( ((b[9]<<8) | b[10]) != crc_calc) {
-        fprintf(stdout, "%04x vs %02x %02x\n", crc_calc, b[9], b[10]);
+        fprintf(stderr, "CRC missmatch %04x vs %02x %02x\n", crc_calc, b[9], b[10]);
         return DECODE_FAIL_MIC;
     }
-    //bitbuffer_debug(&packet_bits);
 
     id          = (unsigned)b[2] << 16 | b[3] << 8 | b[4];
     flags       = b[5];
     temperature = b[6];
     pressure    = b[7];
     sprintf(id_str, "%06x", id);
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]); // figure out the checksum
+    sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9], b[10]);
 
     /* clang-format off */
     data = data_make(
@@ -86,21 +89,15 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
 /** @sa tpms_jansite_decode() */
 static int tpms_jansite_solar_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // full preamble is
-    // 0101 0101  0101 0101  0101 0101  0101 0110 = 55 55 55 56
-    uint8_t const preamble_pattern[3] = {0xa6, 0xa6, 0x5a}; // after invert
+    uint8_t const preamble_pattern[3] = {0xa6, 0xa6, 0x5a};
 
     unsigned bitpos = 0;
     int ret         = 0;
     int events      = 0;
 
-//    bitbuffer_debug(bitbuffer);
-    bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24);
-//    fprintf(stdout, "%d \n", bitpos);
-    // Find a preamble with enough bits after it that it could be a complete packet
     while ((bitpos = bitbuffer_search(bitbuffer, 0, bitpos, preamble_pattern, 24)) + 80 <=
             bitbuffer->bits_per_row[0]) {
-//        bitbuffer_debug(bitbuffer);
+
         ret = tpms_jansite_solar_decode(decoder, bitbuffer, 0, bitpos);
         if (ret > 0)
             events += ret;
@@ -127,7 +124,7 @@ r_device tpms_jansite_solar = {
         .modulation  = FSK_PULSE_PCM,
         .short_width = 51,  // 12-13 samples @250k
         .long_width  = 51,  // FSK
-        .reset_limit = 5000, // Maximum gap size before End Of Message [us].
+        .reset_limit = 5000, // Large enough to merge the 3 duplicate messages
         .decode_fn   = &tpms_jansite_solar_callback,
         .disabled    = 0,
         .fields      = output_fields,
