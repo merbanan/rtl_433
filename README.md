@@ -258,6 +258,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
+    [180]  Jansite TPMS Model Solar
 
 * Disabled by default, use -R n or -G
 
