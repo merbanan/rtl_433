@@ -10,10 +10,13 @@
 */
 
 /**
-Jansite Solar TPMS Solar Model (http://www.jansite.cn/P_view.asp?pid=229)
-- Frequency: 433.92 ± 20.00 MHz
-- Pressure: ± 0.1 bar from 0 bar to 6.6 bar
-- Temperature: ± 3 °C from -40 °C to 75 °C
+Jansite Solar TPMS Solar Model.
+
+http://www.jansite.cn/P_view.asp?pid=229
+
+- Frequency: 433.92 +/- 20.00 MHz
+- Pressure: +/- 0.1 bar from 0 bar to 6.6 bar
+- Temperature: +/- 3 C from -40 C to 75 C
 
 Signal is manchester modulated, and an 11 byte large message
 
