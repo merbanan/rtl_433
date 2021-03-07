@@ -1,7 +1,10 @@
 /** @file
     Jansite FSK 11 byte Manchester encoded checksummed TPMS data.
 
-    Copyright (C) 2019 Andreas Spiess and Christian W. Zuckschwerdt <zany@triq.net> and Benjamin Larsson 2021
+    Copyright (C) 2021 Benjamin Larsson
+
+    based on code
+    2019 Andreas Spiess and Christian W. Zuckschwerdt <zany@triq.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +21,7 @@ http://www.jansite.cn/P_view.asp?pid=229
 - Pressure: +/- 0.1 bar from 0 bar to 6.6 bar
 - Temperature: +/- 3 C from -40 C to 75 C
 
-Signal is manchester modulated, and an 11 byte large message
+Signal is manchester encoded, and a 11 byte large message
 
 Data layout (nibbles):
 
@@ -26,12 +29,14 @@ Data layout (nibbles):
 
 - S: 16 bits sync word, 0xdd33
 - I: 24 bits ID
-- 0: 8 bits Unknown data 1, one bit should be battery level
+- 0: 8 bits Unknown data 1
 - T: 8 bit Temperature (deg. C offset by 55)
-- P: 8 bit Pressure (best guess quarter PSI, i.e. ~0.58 kPa)
-- 0: 8 bits Unknown data 2, one bit should be battery level
+- P: 8 bit Pressure
+- 0: 8 bits Unknown data 2
 - C: 16 bit CRC (CRC-16/BUYPASS)
 - The preamble is 0xa6, 0xa6, 0x5a
+
+TODO: identify battery bits
 */
 
 #include "decoder.h"
@@ -128,8 +133,8 @@ static char *output_fields[] = {
 r_device tpms_jansite_solar = {
         .name        = "Jansite TPMS Model Solar",
         .modulation  = FSK_PULSE_PCM,
-        .short_width = 51,  // 12-13 samples @250k
-        .long_width  = 51,  // FSK
+        .short_width = 51,
+        .long_width  = 51,
         .reset_limit = 5000, // Large enough to merge the 3 duplicate messages
         .decode_fn   = &tpms_jansite_solar_callback,
         .disabled    = 0,
