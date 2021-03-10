@@ -1167,6 +1167,7 @@ sighandler(int signum)
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
         g_cfg.exit_async = 1;
+        sdr_stop(g_cfg.dev);
         return TRUE;
     }
     else if (CTRL_BREAK_EVENT == signum) {
