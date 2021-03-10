@@ -1244,6 +1244,9 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
     http->output.output_free  = data_output_http_free;
 
     http->server = http_server_start(mgr, host, port, cfg, &http->output);
+    if (!http->server) {
+        exit(1);
+    }
 
     return &http->output;
 }
