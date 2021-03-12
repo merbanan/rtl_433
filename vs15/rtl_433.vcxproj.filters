@@ -250,6 +250,9 @@
     <ClCompile Include="..\src\devices\archos_tbh.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\auriol_aft77b2.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\auriol_afw2a1.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
