@@ -259,6 +259,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
     [180]  Jansite TPMS Model Solar
+    [181]  Amazon Basics Meat Thermometer
 
 * Disabled by default, use -R n or -G
 

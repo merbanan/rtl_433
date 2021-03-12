@@ -188,6 +188,7 @@
     DECL(secplus_v1) \
     DECL(cavius) \
     DECL(tpms_jansite_solar) \
+    DECL(abmt) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
