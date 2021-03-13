@@ -91,7 +91,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Search a suitable row in the bit buffer
     int row = search_row( bitbuffer ) ;
- 
+
     // Check if found
     if( row == -1 )
        return DECODE_ABORT_EARLY;
