@@ -110,7 +110,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4);
 
     // Check the sum
-    if (add_bytes(frame,6) != frame[6])
+    if ((uint8_t)add_bytes(frame,6) != frame[6])
        return DECODE_FAIL_SANITY;
 
     // Check the lsrc
@@ -126,7 +126,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, "Auriol-AFT77B2","Auriol sensor",
+            "model",         "",            DATA_STRING, "Auriol-AFT77B2",
             "id",            "",            DATA_INT, id,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
             NULL);
@@ -138,6 +138,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+	"id",
         "temperature_C",
         NULL,
 };
@@ -150,5 +151,6 @@ r_device auriol_aft77b2 = {
         .gap_limit   = 1200,
         .reset_limit = 10000,
         .decode_fn   = &auriol_aft77_b2_decode,
+        .disabled    = 0,
         .fields      = output_fields,
 };
