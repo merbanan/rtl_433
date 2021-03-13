@@ -1,5 +1,12 @@
 /** @file
     Auriol AFT 77 B2 sensor protocol.
+
+    Copyright (C) 2021 P. Tellenbach
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 /** @fn int auriol_afT77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 Auriol AFT 77 B2 protocol. The sensor can be bought at Lidl.
@@ -18,6 +25,7 @@ The data is grouped in 17 nibbles
 - prefix: 4 bit fixed 1010 (0x0A) ignored when calculating the checksum and lsrc
 - id: 8 bit a random id that is generated when the sensor starts
 - flags(1): was set at first start and reset after a restart
+- flags(3): might be the battery status (not yet decoded)
 - sign(3): is 1 when the reading is negative
 - temp: a BCD number scaled by 10, 175 is 17.5C
 - sum: 8 bit sum of the previous bytes
@@ -66,23 +74,37 @@ static uint8_t lsrc( uint8_t frame[], int len )
    return result ;
 }
 
+static int search_row( bitbuffer_t *bitbuffer )
+{
+   for( int row = 0; row < bitbuffer->num_rows; row++ )
+   {
+      if( bitbuffer->bits_per_row[row] == 68 )
+         return row ;
+   }
+
+   return -1 ;
+}
+
 static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
 
-    // Check the length
-    if( bitbuffer->bits_per_row[0] != 68 )
+    // Search a suitable row in the bit buffer
+    int row = search_row( bitbuffer ) ;
+ 
+    // Check if found
+    if( row == -1 )
        return DECODE_ABORT_EARLY;
 
-    // Check the prefix
-    uint8_t *ptr = bitbuffer->bb[0] ;
+    uint8_t *ptr = bitbuffer->bb[row] ;
 
+    // Check the prefix
     if( *ptr != 0xA5 )
        return DECODE_ABORT_EARLY;
 
     uint8_t frame[LEN] ;
 
-    // Drop the prefix
+    // Drop the prefix and align the bytes
     for( int i = 0; i < LEN; i++ )
         frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4) ;
 
@@ -125,7 +147,7 @@ r_device auriol_aft77b2 = {
         .short_width = 500,
         .long_width  = 1000,
         .gap_limit   = 1200,
-        .reset_limit = 1800,
+        .reset_limit = 10000,
         .decode_fn   = &auriol_aft77_b2_decode,
         .disabled    = 0,
         .fields      = output_fields,
