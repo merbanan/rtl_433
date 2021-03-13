@@ -61,13 +61,13 @@ static uint8_t lsrc( uint8_t frame[], int len )
 
       for( uint8_t mask = 0x80; mask > 0; mask >>= 1 )
       {
-	 if( (byte & mask) != 0 )
-	    result ^= key ;
+         if( (byte & mask) != 0 )
+            result ^= key ;
 
-	 if( (key & 1) != 0 )
-	    key = (key >> 1) ^ GEN ;
-	 else
-	    key = (key >> 1) ;
+         if( (key & 1) != 0 )
+            key = (key >> 1) ^ GEN ;
+         else
+            key = (key >> 1) ;
       }
    }
 
@@ -126,7 +126,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",         "",            DATA_STRING, _X("Auriol AFT 77 B2","Auriol sensor"),
-	    "id",            "",            DATA_INT, id,
+            "id",            "",            DATA_INT, id,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
             NULL);
     /* clang-format on */
