@@ -59,7 +59,7 @@ static uint8_t lsrc( uint8_t frame[], int len )
       uint8_t byte = frame[i] ;
 
       for (uint8_t mask = 0x80; mask > 0; mask >>= 1) {
-         if( (byte & mask) != 0 )
+         if ((byte & mask) != 0)
             result ^= key ;
 
          if ((key & 1) != 0)
@@ -90,7 +90,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int row = search_row( bitbuffer ) ;
 
     // Check if found
-    if( row == -1 )
+    if (row == -1)
        return DECODE_ABORT_EARLY;
 
     uint8_t *ptr = bitbuffer->bb[row] ;
@@ -106,7 +106,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4) ;
 
     // Check the sum
-    if( sum(frame,6) != frame[6] )
+    if (sum(frame,6) != frame[6])
        return DECODE_FAIL_SANITY;
 
     // Check the lsrc
