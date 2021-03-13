@@ -1178,8 +1178,17 @@ sighandler(int signum)
     return FALSE;
 }
 #else
+#include <execinfo.h>
 static void sighandler(int signum)
 {
+    void *callstack[128];
+    int i, frames = backtrace(callstack, 128);
+    char **strs = backtrace_symbols(callstack, frames);
+    for (i = 0; i < frames; ++i) {
+        printf("%s\n", strs[i]);
+    }
+    free(strs);
+
     if (signum == SIGPIPE) {
         signal(SIGPIPE, SIG_IGN);
     }
