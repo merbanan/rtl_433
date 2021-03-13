@@ -54,16 +54,6 @@ Bitbuffer example from rtl_433 -a:
 
 #define LEN 8
 
-static uint8_t sum( uint8_t frame[], int len )
-{
-   uint8_t result = 0 ;
-
-   for (int i = 0; i < len; i++)
-      result += frame[i] ;
-
-   return result ;
-}
-
 static uint8_t lsrc( uint8_t frame[], int len )
 {
    uint8_t result = 0 ;
@@ -101,42 +91,42 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
 
     // Search a suitable row in the bit buffer
-    int row = search_row( bitbuffer ) ;
+    int row = search_row( bitbuffer );
 
     // Check if found
     if (row == -1)
        return DECODE_ABORT_EARLY;
 
-    uint8_t *ptr = bitbuffer->bb[row] ;
+    uint8_t *ptr = bitbuffer->bb[row];
 
     // Check the prefix
     if (*ptr != 0xA5)
        return DECODE_ABORT_EARLY;
 
-    uint8_t frame[LEN] ;
+    uint8_t frame[LEN];
 
     // Drop the prefix and align the bytes
     for (int i = 0; i < LEN; i++)
-        frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4) ;
+        frame[i] = (ptr[i] << 4) | (ptr[i+1] >> 4);
 
     // Check the sum
-    if (sum(frame,6) != frame[6])
+    if (add_bytes(frame,6) != frame[6])
        return DECODE_FAIL_SANITY;
 
     // Check the lsrc
     if (lsrc(frame,6) != frame[7])
        return DECODE_FAIL_SANITY;
 
-    int id       = frame[1] ;
+    int id       = frame[1];
 
-    int temp_raw = (ptr[4] >> 4) * 100 + (ptr[4] & 0x0F) * 10 + (ptr[5] >> 4) ;
+    int temp_raw = (ptr[4] >> 4) * 100 + (ptr[4] & 0x0F) * 10 + (ptr[5] >> 4);
 
     if ((ptr[3] & 0x08) != 0)
-       temp_raw = -temp_raw ;
+       temp_raw = -temp_raw;
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Auriol AFT 77 B2","Auriol sensor"),
+            "model",         "",            DATA_STRING, "Auriol AFT 77 B2","Auriol sensor",
             "id",            "",            DATA_INT, id,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
             NULL);
@@ -160,6 +150,5 @@ r_device auriol_aft77b2 = {
         .gap_limit   = 1200,
         .reset_limit = 10000,
         .decode_fn   = &auriol_aft77_b2_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };
