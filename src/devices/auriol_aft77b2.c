@@ -22,6 +22,20 @@ The data is grouped in 17 nibbles
     [prefix] [0x05] [0x0C] [id0] [id1] [0x00] [flags] [sign] [temp0] [temp1] [temp2]
     [0x00] [0x00] [sum] [sum] [lsrc] [lsrc]
 
+Bitbuffer example from rtl_433 -a:
+
+    [00] { 0}                            : 
+    [01] { 0}                            : 
+    [02] { 0}                            : 
+    [03] { 0}                            : 
+    [04] { 0}                            : 
+    [05] { 0}                            : 
+    [06] { 0}                            : 
+    [07] { 0}                            : 
+    [08] { 0}                            : 
+    [09] {68} a5 cf 80 20 17 30 0c ac 90 
+    [10] { 0}                            : 
+
 - prefix: 4 bit fixed 1010 (0x0A) ignored when calculating the checksum and lsrc
 - id: 8 bit a random id that is generated when the sensor starts
 - flags(1): was set at first start and reset after a restart
