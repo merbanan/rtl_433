@@ -137,7 +137,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         rain = rain * 2.5;
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, "Bresser-ProRainGuage",
+                "model",            "",             DATA_STRING, "Bresser-ProRainGauge",
                 "id",               "",             DATA_INT,    sensor_id,
                 "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
