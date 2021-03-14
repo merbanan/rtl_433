@@ -610,6 +610,9 @@
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tfa_marbella.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
