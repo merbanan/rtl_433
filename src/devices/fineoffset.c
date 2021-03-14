@@ -335,6 +335,17 @@ Also: EcoWitt WH41
 
 The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
 
+
+PM10 readings might be bogus:
+
+2 PM1.0 in μg/m3, PM4.0 in μg/m3, and PM10 in μg/m3 are calculated from PM 2.5 readings.
+Source:
+https://sensing.honeywell.com/honeywell-sensing-particulate-hpm-series-datasheet-32322550.pdf
+
+So the PM2.5 is a proper read reading and PM10 is as suspected simply derived/calculated from the PM2.5 value.
+
+
+
 Data layout:
     aa 2d d4 42 cc 41 9a 41 ae c1 99 9
              FF DD ?P PP ?A AA CC BB
