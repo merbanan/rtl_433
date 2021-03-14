@@ -347,6 +347,7 @@ So the PM2.5 is a proper read reading and PM10 is as suspected simply derived/ca
 
 
 Data layout:
+             41 c7 41 ae 01 c2 f9 b3 00000, Ecowitt 41
     aa 2d d4 42 cc 41 9a 41 ae c1 99 9
              FF DD ?P PP ?A AA CC BB
 
@@ -488,6 +489,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (msg_type != 0xe0) {
         if (decoder->verbose)
             fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
+        if (b[0] == 0x41) {
+            return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
+        }
         return DECODE_ABORT_EARLY;
     }
 
