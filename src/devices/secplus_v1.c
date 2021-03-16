@@ -173,7 +173,7 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         dr = _decode_v1_half(buffi, buffy, decoder->verbose);
 
-        if (dr < 0) {
+        if (dr < 0 || dr == 1) {
             // fprintf(stderr, "decode error\n");
             search_index += 4;
             continue;
