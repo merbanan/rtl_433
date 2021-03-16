@@ -110,6 +110,7 @@ static char *output_fields[] = {
         "flags",
         "pressure_PSI",
         "temperature_F",
+        "code",
         "mic",
         NULL,
 };
