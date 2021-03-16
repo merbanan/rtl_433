@@ -163,6 +163,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\term_ctl.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\write_sigrok.c" />
+    <ClCompile Include="..\src\devices\abmt.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
@@ -291,6 +292,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_30_3221.c" />
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c" />
+    <ClCompile Include="..\src\devices\tfa_marbella.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
