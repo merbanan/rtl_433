@@ -138,7 +138,7 @@ static int auriol_aft77_b2_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-	"id",
+        "id",
         "temperature_C",
         NULL,
 };
