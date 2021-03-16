@@ -443,7 +443,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "id",               "ID",           DATA_INT,    id,
             "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "family",           "FAMILY",       DATA_INT,    family,
             "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -1010,7 +1010,7 @@ static char *output_fields_WH25[] = {
     "light_lux",
     //WH0290
     "pm2_5_ug_m3",
-    "pm10_0_ug_m3",
+    "estimated_pm10_0_ug_m3",
     "mic",
     NULL,
 };
