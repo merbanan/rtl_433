@@ -44,6 +44,7 @@ Binary | Trinary
 
 The patterns `1 1 1 1` or `0 0 0 0` should never happen
 
+note: due to implementation this needs 44 bytes output in worst case of invalid data.
 */
 
 static int _decode_v1_half(uint8_t *bits, uint8_t *result, int verbose)
@@ -155,8 +156,8 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     search_index = 0;
     while (search_index < bitbuffer->bits_per_row[0] && status == 0) {
         int dr            = 0;
-        uint8_t buffy[32] = {0};
-        uint8_t buffi[32] = {0};
+        uint8_t buffy[44] = {0}; // actually we expect 22 bytes on valid decode
+        uint8_t buffi[11] = {0};
 
         search_index = find_next(bitbuffer, search_index);
 
