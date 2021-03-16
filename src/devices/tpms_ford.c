@@ -14,11 +14,12 @@ Seen on Ford Fiesta, Focus, Kuga, Escape ...
 
 Packet nibbles:
 
-    II II II II PP TT FF CC
+    II II II II PP TT EF CC
 
 - I = ID
 - P = Pressure, maybe PSI scale 0.25?
 - T = Temperature, maybe F?
+- E = high nibble flags XX1X = 9th pressure bit
 - F = Flags, (46: 87% 1e: 5% 06: 2% 4b: 1% 66: 1% 0e: 1% 44: 1%)
 - C = Checksum, SUM bytes 0 to 6 = byte 7
 */
@@ -55,7 +56,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     code = b[4] << 16 | b[5] << 8 | b[6];
     sprintf(code_str, "%06x", code);
 
-    pressure_psi  = 0.3 + b[4] * 0.25f; // BdyCM + FORScan
+    pressure_psi  = 0.3 + (((b[6]&0x20)<<3) | b[4]) * 0.25f; // BdyCM + FORScan
     temperature_f = b[5];         // empirical guess
 
     /* clang-format off */
@@ -64,7 +65,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
             "type",             "",             DATA_STRING, "TPMS",
             "id",               "",             DATA_STRING, id_str,
             "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure_psi,
-            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",   DATA_DOUBLE, (double)temperature_f,
+            "temperature_F",    "Temperature",  DATA_FORMAT, "%.1f F",   DATA_DOUBLE, (float)temperature_f,
             "code",             "",             DATA_STRING, code_str,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
