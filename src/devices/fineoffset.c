@@ -331,19 +331,51 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
 Also: Misol PM25
-Also: EcoWitt WH41
+Also: EcoWitt WH0290, EcoWitt WH41
 
-The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
+The sensor sends a data burst every 10 minutes.  The bits are PCM
+modulated with Frequency Shift Keying.
 
+Ecowitt advertises this device as a PM2.5 sensor.  It contains a
+Honeywell PM2.5 sensor:
 
-PM10 readings might be bogus:
+  https://sensing.honeywell.com/honeywell-sensing-particulate-hpm-series-datasheet-32322550.pdf
 
-2 PM1.0 in μg/m3, PM4.0 in μg/m3, and PM10 in μg/m3 are calculated from PM 2.5 readings.
-Source:
-https://sensing.honeywell.com/honeywell-sensing-particulate-hpm-series-datasheet-32322550.pdf
+However, the Honeywell datasheet says that it also has a PM10 output
+which is "calculated from" the PM2.5 reading.  While there is an
+accuracy spec for PM2.5, there is no specification of an kind from
+PM10.  The datasheet does not explain the calculation, and does not
+give references to papers in the scientific literature.
 
-So the PM2.5 is a proper read reading and PM10 is as suspected simply derived/calculated from the PM2.5 value.
+Note that PM2.5 is the mass of particles <= 2.5 microns in 1 m^3 of
+air, and PM10 is the mass of particles <= 10 microns.  Therefore the
+difference in those measurements is the mass of particles > 2.5
+microns and <= 10 microns, sometimes called PM2.5-10.  By definition
+these particles are not included in the PM2.5 measurement, so
+"calculating" doesn't make sense.  Rather, this appears an assumption
+about correlation, meaning how much mass of larger particles is likely
+to be present based on the mass of the smaller particles.
 
+The serial stream from the sensor has fields for PM2.5 and PM10 and
+these fields have been verified to appear in the transmitted signal by
+cross-comparing the internal serial lines and data received via
+rtl_433.
+
+The Ecowitt displays show only PM2.5, and Ecowitt confirmed that the
+second field is the PM10 output of the sensor but said the value is
+not accurate so they have not adopted it.
+
+By observation of an Ecowitt WH41, the formula is pm10 = pm2.5 +
+increment(pm2.5), where the increment is by ranges from the following
+table (with gaps when no samples have been observed).  It is left as
+future work to compare with an actual PM10 sensor.
+
+0 to 24		| 1
+25 to 106	| 2
+109 to 185	| 3
+190 to 222	| 4
+311		| 5
+390		| 6
 
 
 Data layout:
