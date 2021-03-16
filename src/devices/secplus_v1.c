@@ -372,26 +372,20 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // fprintf(stderr,  "# Security+:  rolling=2320615320  fixed=1846948897  (id1=2 id0=0 switch=1 remote_id=68405514 button=left)\n");
     /* clang-format off */
-    data_t *data;
-    data = data_make(
-            "model",       "",    DATA_STRING, "Secplus_v1",
-
-            "id",        "",         DATA_INT, id,
-            "id0",       "ID_0",         DATA_INT, id0,
-            "id1",       "ID_1",        DATA_INT, id1,
-            "switch_id", "Switch-ID",   DATA_INT, switch_id,
-
-            "pad_id",      "Pad-ID",       DATA_COND,  pad_id,    DATA_INT, pad_id,
-            "pin",         "Pin",          DATA_COND,  pin,       DATA_STRING, pin_s,
-
-            "remote_id",   "Remote-ID",    DATA_COND,  remote_id, DATA_INT,  remote_id,
-            "button_id",   "Button-ID",    DATA_COND,  remote_id,    DATA_STRING,    button,
-
-
-            // "fixed",       "Fixed_Code",    DATA_INT,    fixed,
-            "fixed",       "Fixed_Code",    DATA_STRING,    fixed_str,
-            // "rolling",     "Rolling_Code",    DATA_INT,    rolling,
-            "rolling",     "Rolling_Code",    DATA_STRING,    rolling_str,
+    data_t *data = data_make(
+            "model",        "",             DATA_STRING, "Secplus_v1",
+            "id",           "",             DATA_INT,    id,
+            "id0",          "ID_0",         DATA_INT,    id0,
+            "id1",          "ID_1",         DATA_INT,    id1,
+            "switch_id",    "Switch-ID",    DATA_INT,    switch_id,
+            "pad_id",       "Pad-ID",       DATA_COND,   pad_id,    DATA_INT,    pad_id,
+            "pin",          "Pin",          DATA_COND,   pin,       DATA_STRING, pin_s,
+            "remote_id",    "Remote-ID",    DATA_COND,   remote_id, DATA_INT,    remote_id,
+            "button_id",    "Button-ID",    DATA_COND,   remote_id, DATA_STRING, button,
+            // "fixed",        "Fixed_Code",   DATA_INT,    fixed,
+            "fixed",        "Fixed_Code",   DATA_STRING, fixed_str,
+            // "rolling",      "Rolling_Code", DATA_INT,    rolling,
+            "rolling",      "Rolling_Code", DATA_STRING, rolling_str,
             NULL);
     /* clang-format on */
 
