@@ -37,6 +37,7 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     char code_str[7];
     float pressure_psi;
     int temperature_f;
+    int psibits;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 160);
 
@@ -56,7 +57,12 @@ static int tpms_ford_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned 
     code = b[4] << 16 | b[5] << 8 | b[6];
     sprintf(code_str, "%06x", code);
 
-    pressure_psi  = 0.3 + (((b[6]&0x20)<<3) | b[4]) * 0.25f; // BdyCM + FORScan
+    /* range seems to have different formulas */
+    psibits = (((b[6]&0x20)<<3) | b[4]);
+    if (psibits < 90)
+        pressure_psi  = 0.3 + psibits * 0.25f; // BdyCM + FORScan
+    else
+        pressure_psi  = 6.8 + psibits * 0.2122727273;
     temperature_f = b[5];         // empirical guess
 
     /* clang-format off */
