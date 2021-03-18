@@ -21,7 +21,7 @@ https://www.govee.com/products/110/water-leak-detector
 #define GOVEE_WATER_DETECTOR_ILLEGAL_EVENT (0xFFFF)
 
 
-static int govee_water_h5054_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int govee_water_h5054_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b;
@@ -104,33 +104,35 @@ static int govee_water_h5054_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
 
+    /* clang-format off */
     data = data_make(
-        "model",         "",            DATA_STRING, _X("Water-H5054","Water detector H5054"),
-        "id"   ,         "",            DATA_INT, id,
+        "model",         "",            DATA_STRING, "Water-H5054",
+        "id"   ,         "",            DATA_INT,    id,
         "event",         "",            DATA_STRING, event_str,
         "code",          "Raw Code",    DATA_STRING, code_str,
         NULL);
+    /* clang-format on */
+
     decoder_output_data(decoder, data);
 
     return 1;
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "event",
-    "code",
-    NULL,
+        "model",
+        "id",
+        "event",
+        "code",
+        NULL,
 };
 
 r_device govee_water_h5054 = {
-    .name           = "Govee Water Leak Detector H5054",
-    .modulation     = OOK_PULSE_PWM,
-    .short_width    = 440, // Threshold between short and long pulse [us]
-    .long_width     = 940, // Maximum gap size before new row of bits [us]
-    .gap_limit      = 900, // Maximum gap size before new row of bits [us]
-    .reset_limit    = 9000, // Maximum gap size before End Of Message [us]
-    .decode_fn      = &govee_water_h5054_callback,
-    .disabled       = 0,
-    .fields         = output_fields,
+        .name           = "Govee Water Leak Detector H5054",
+        .modulation     = OOK_PULSE_PWM,
+        .short_width    = 440, // Threshold between short and long pulse [us]
+        .long_width     = 940, // Maximum gap size before new row of bits [us]
+        .gap_limit      = 900, // Maximum gap size before new row of bits [us]
+        .reset_limit    = 9000, // Maximum gap size before End Of Message [us]
+        .decode_fn      = &govee_water_h5054_decode,
+        .fields         = output_fields,
 };
