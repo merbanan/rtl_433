@@ -23,6 +23,10 @@ Official [binary builds for Windows](https://bintray.com/chzu/dist/rtl_433) (32 
 
 On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
 
+On MacOS, `brew install rtl_433`.
+
+Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
+
 ## How to add support for unsupported sensors
 
 See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
@@ -254,6 +258,9 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [177]  Burnhard BBQ thermometer
     [178]  Security+ (Keyfob)
     [179]  Cavius smoke, heat and water detector
+    [180]  Jansite TPMS Model Solar
+    [181]  Amazon Basics Meat Thermometer
+    [182]  TFA Marbella Pool Thermometer
 
 * Disabled by default, use -R n or -G
 

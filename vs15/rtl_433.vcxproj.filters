@@ -226,6 +226,9 @@
     <ClCompile Include="..\src\getopt\getopt.c">
       <Filter>Source Files\getopt</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\abmt.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\acurite.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -610,6 +613,9 @@
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tfa_marbella.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -638,6 +644,9 @@
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\tpms_jansite.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_jansite_solar.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\tpms_pmv107j.c">

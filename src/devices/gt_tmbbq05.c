@@ -112,7 +112,9 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int sum = add_nibbles(b, 3) + (b[3] >> 4);
     if ((sum & 0xf) != (b[3] & 0xf)) {
-        bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
+        if (decoder->verbose > 1) {
+            bitrow_printf(b, 32, "%s: Bad checksum (%x) ", __func__, sum);
+        }
         return DECODE_FAIL_MIC;
     }
 
