@@ -190,6 +190,7 @@
     DECL(tpms_jansite_solar) \
     DECL(abmt) \
     DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
