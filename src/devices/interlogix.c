@@ -163,6 +163,7 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     sprintf(device_type_id, "%01x", (reverse8(message[2]) >> 4));
 
     switch ((reverse8(message[2]) >> 4)) {
+    case 0x2: device_type = "smoke"; break; //switch2 from closed to open on trigger and switch2 & switch4 from closed to open on test
     case 0xa: device_type = "contact"; break;
     case 0xf: device_type = "keyfob"; break;
     case 0x4: device_type = "motion"; break;
