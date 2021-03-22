@@ -184,6 +184,14 @@ static int interlogix_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
         f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
         f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN";
+    // PET Immune SAW PIR motion sensor logic.
+    } else if ((reverse8(message[2]) >> 4) == 0x4) {
+        low_battery    = (message[3] & 0x10) ? "LOW" : "OK";
+        f1_latch_state = ((message[3] & 0x04) | ((message[3] & 0x08) == 0x8)) ? "OPEN" : "CLOSED";
+        f2_latch_state = (message[3] & 0x01) ? "OPEN" : "CLOSED";
+        f3_latch_state = (message[4] & 0x40) ? "OPEN" : "CLOSED";
+        f4_latch_state = (message[4] & 0x10) ? "OPEN" : "CLOSED";
+        f5_latch_state = (message[4] & 0x04) ? "OPEN" : "CLOSED";
     } else {
         low_battery    = (message[3] & 0x10) ? "LOW" : "OK";
         f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";
