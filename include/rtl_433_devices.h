@@ -190,6 +190,7 @@
     DECL(tpms_jansite_solar) \
     DECL(abmt) \
     DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
     DECL(govee_water_h5054) \
     /* Add new decoders here. */
 

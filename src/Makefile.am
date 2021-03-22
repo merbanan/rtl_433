@@ -43,6 +43,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/ambientweather_wh31e.c \
                        devices/archos_tbh.c \
                        devices/auriol_afw2a1.c \
+                       devices/auriol_ahfl.c \
                        devices/auriol_hg02832.c \
                        devices/blueline.c \
                        devices/blyss.c \
