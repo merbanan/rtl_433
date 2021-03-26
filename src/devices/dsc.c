@@ -114,14 +114,13 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
     if (decoder->verbose > 1) {
-        fprintf(stderr,"Possible DSC Contact: ");
-        bitbuffer_print(bitbuffer);
+        bitbuffer_printf(bitbuffer, "%s: ", __func__);
     }
 
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
-            fprintf(stderr,"row %d bit count %d\n", row,
-                bitbuffer->bits_per_row[row]);
+            fprintf(stderr, "%s: row %d bit count %d\n", __func__,
+                    row, bitbuffer->bits_per_row[row]);
         }
 
         // Number of bits in the packet should be 48 but due to the
@@ -134,7 +133,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[row] < 48 ||
             bitbuffer->bits_per_row[row] > 70) {  // should be 48 at most
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0) {
-                fprintf(stderr,"DSC row %d invalid bit count %d\n",
+                fprintf(stderr, "%s: row %d invalid bit count %d\n", __func__,
                         row, bitbuffer->bits_per_row[row]);
             }
             continue; // DECODE_ABORT_EARLY
@@ -148,7 +147,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
               (b[3] & 0x02) &&
               (b[4] & 0x01))) {
             if (decoder->verbose > 1) {
-                bitrow_printf(b, 40, "DSC Invalid start/sync bits ");
+                bitrow_printf(b, 40, "%s: Invalid start/sync bits ", __func__);
             }
             continue; // DECODE_ABORT_EARLY
         }
@@ -159,8 +158,13 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bytes[3] = ((b[3] & 0x01) << 7) | ((b[4] & 0xFE) >> 1);
         bytes[4] = ((b[5]));
 
+        // prevent false positive of: ff ff ff ff 00
+        if (bytes[0] == 0xff && bytes[1] == 0xff && bytes[2] == 0xff && bytes[3] == 0xff) {
+            continue; // DECODE_FAIL_SANITY
+        }
+
         if (decoder->verbose) {
-            bitrow_printf(bytes, 40, "DSC Contact Raw Data: ");
+            bitrow_printf(bytes, 40, "%s: Contact Raw Data: ", __func__);
         }
 
         status = bytes[0];
@@ -170,7 +174,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         if (crc8le(bytes, DSC_CT_MSGLEN, 0xf5, 0x3d) != 0) {
             if (decoder->verbose)
-                fprintf(stderr,"DSC Contact bad CRC: %06X, Status: %02X, CRC: %02X\n",
+                fprintf(stderr, "%s: Contact bad CRC: %06X, Status: %02X, CRC: %02X\n", __func__,
                         esn, status, crc);
             continue; // DECODE_FAIL_MIC
         }
