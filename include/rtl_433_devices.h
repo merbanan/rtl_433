@@ -191,7 +191,7 @@
     DECL(abmt) \
     DECL(tfa_marbella) \
     DECL(auriol_ahfl) \
-    DECL(govee_water_h5054) \
+    DECL(govee) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
