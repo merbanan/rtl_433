@@ -180,6 +180,7 @@ add_library(r_433 STATIC
     devices/switchdoclabs_FT020T.c
     devices/switchdoclabs_SM23.c
     devices/switchdoclabs_solarmax.c
+    devices/switchdoclabs_weathersenseAS.c
     devices/switchdoclabs_weathersenseAQI.c
     devices/switchdoclabs_weathersenseTB.c
     devices/tfa_30_3196.c

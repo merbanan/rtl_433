@@ -212,6 +212,7 @@
     DECL(switchdoclabs_SM23) \
     DECL(switchdoclabs_weathersenseAQI) \
     DECL(switchdoclabs_weathersenseTB) \
+    DECL(switchdoclabs_weathersenseAS) \
 
 
     /* Add new decoders here. */
