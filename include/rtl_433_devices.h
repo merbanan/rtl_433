@@ -190,6 +190,7 @@
     DECL(tpms_jansite_solar) \
     DECL(abmt) \
     DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
     DECL(auriol_aft77b2) \
     /* Add new decoders here. */
 

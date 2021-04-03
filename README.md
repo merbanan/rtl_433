@@ -261,6 +261,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [180]  Jansite TPMS Model Solar
     [181]  Amazon Basics Meat Thermometer
     [182]  TFA Marbella Pool Thermometer
+    [183]  Auriol AHFL temperature/humidity sensor
 
 * Disabled by default, use -R n or -G
 
