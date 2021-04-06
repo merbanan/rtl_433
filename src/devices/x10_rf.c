@@ -7,6 +7,10 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
+
+Tested with American sensors operating at 310 MHz
+e.g., rtl_433 -f 310.558M
+
 */
 
 #include "decoder.h"
@@ -16,8 +20,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b = bitbuffer->bb[1];
 
-    uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x87, 0x87};
-    uint8_t arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x87};
+    uint8_t arrbKnownConstBitMask[4]  = {0x0B, 0x0B, 0x07, 0x07};
+    uint8_t arrbKnownConstBitValue[4] = {0x00, 0x0B, 0x00, 0x07};
     uint8_t bKnownConstFlag = 1;
 
     // Row [0] is sync pulse
@@ -106,9 +110,9 @@ static char *output_fields[] = {
 r_device X10_RF = {
         .name        = "X10 RF",
         .modulation  = OOK_PULSE_PPM,
-        .short_width = 500,  // Short gap 500µs
-        .long_width  = 1680, // Long gap 1680µs
-        .gap_limit   = 2800, // Gap after sync is 4.5ms (1125)
+        .short_width = 562,  // Short gap 500µs
+        .long_width  = 1687, // Long gap 1680µs
+        .gap_limit   = 2200, // Gap after sync is 4.5ms (1125)
         .reset_limit = 6000, // Gap seen between messages is ~40ms so let's get them individually
         .decode_fn   = &x10_rf_callback,
         .disabled    = 1,
