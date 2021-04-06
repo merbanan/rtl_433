@@ -61,18 +61,30 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bDeviceCode |= (b[2] & 0x40) >> 4;
     bDeviceCode |= (b[2] & 0x08) >> 2;
     bDeviceCode |= (b[2] & 0x10) >> 4;
+    bDeviceCode += 1;
 
     char housecode[2] = {0};
     *housecode = bHouseCode + 'A';
 
     int state = (b[2] & 0x20) == 0x00;
 
+    char *event_str = "UNKNOWN";         // human-readable event
+
+    if ((b[2] & 0x80) == 0x80) {         // Dim Bright bit
+        bDeviceCode = 0;                 // No device from dim and bright
+        event_str = ((b[2] & 0x10) == 0x10) ? "DIM" : "BRI";
+    }
+    else {
+        event_str = state ? "ON" : "OFF";
+    }
+
+
     data = data_make(
-            "model",    "", DATA_STRING, "X10-RF",
-            _X("id", "deviceid"), "", DATA_INT, bDeviceCode + 1,
+            "model",                   "", DATA_STRING, "X10-RF",
+            _X("id", "deviceid"),      "", DATA_INT,    bDeviceCode,
             _X("channel", "houseid"),  "", DATA_STRING, housecode,
-            "state",    "", DATA_STRING, state ? "ON" : "OFF",
-            "data",     "", DATA_FORMAT, "%08x", DATA_INT, code,
+            "state",              "State", DATA_STRING, event_str,
+            "data",                "Data", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
 
     decoder_output_data(decoder, data);
