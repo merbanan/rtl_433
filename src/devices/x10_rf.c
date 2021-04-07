@@ -110,9 +110,23 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     char *event_str = "UNKNOWN";         // human-readable event
 
-    if ((b[2] & 0x80) == 0x80) {         // Dim Bright bit
-        bDeviceCode = 0;                 // No device for dim and bright
-        event_str = ((b[2] & 0x10) == 0x10) ? "DIM" : "BRI";
+    if ((b[2] & 0x80) == 0x80) {         // Special event bit
+        bDeviceCode = 0;                 // No device for special events
+
+        switch (b[2]) {
+            case 0x98:
+                event_str = "DIM";
+                break;
+            case 0x88:
+                event_str = "BRI";
+                break;
+            case 0x90:
+                event_str = "ALL LTS ON";
+                break;
+            case 0x80:
+                event_str = "ALL OFF";
+                break;
+        }
     }
     else {
         event_str = state ? "ON" : "OFF";
