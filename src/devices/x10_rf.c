@@ -1,5 +1,5 @@
 /** @file
-    X10 sensor (Stub for decoding test data only).
+    X10 sensor (Non-security devices).
 
     Copyright (C) 2015 Tommy Vestermark
 
@@ -7,16 +7,18 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
+    
+    Mods. by Dave Fleck 2021
 */
 /**
 X10  sensor decoder.
 
 Each packet starts with a sync pulse of 9000 us (16x a bit time) 
-and a 500 us gap.
-The message is OOK PPM encoded with 562 us pulse and long gap (0 bit)
-of 1687 us or short gap (1 bit) of 562 us.
+and a 4500 us gap.
+The message is OOK PPM encoded with 562.5 us pulse and long gap (0 bit)
+of 1687.5 us or short gap (1 bit) of 562.5 us.
 
-There are 32bits, the message is repeated 5 times with
+There are 32bits. The message is repeated 5 times with
 a packet gap of 40000 us.
 
 The protocol has a lot of similarities to the NEC IR protocol
@@ -28,9 +30,13 @@ Based on protocol informtation found at:
 http://www.wgldesigns.com/protocols/w800rf32_protocol.txt
 
 Tested with American sensors operating at 310 MHz
-e.g., rtl_433 -f 310M
+e.g., rtl_433 -f 310M -R 22
 
-Tested with HR12A, RMS18, 
+Seems to work best with 2 MHz sample rate:
+rtl_433 -f 310M -R 22 -s 2M
+
+Tested with HR12A, RMS18, HD23A, MS14A, PMS03, MS12A,
+RMS18, Radio Shack 61-2675-T
 
 */
 
