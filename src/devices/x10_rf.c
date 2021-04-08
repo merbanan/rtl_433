@@ -7,13 +7,13 @@
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-    
+
     Mods. by Dave Fleck 2021
 */
 /**
 X10  sensor decoder.
 
-Each packet starts with a sync pulse of 9000 us (16x a bit time) 
+Each packet starts with a sync pulse of 9000 us (16x a bit time)
 and a 4500 us gap.
 The message is OOK PPM encoded with 562.5 us pulse and long gap (0 bit)
 of 1687.5 us or short gap (1 bit) of 562.5 us.
