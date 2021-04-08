@@ -2,13 +2,13 @@
     X10 sensor (Non-security devices).
 
     Copyright (C) 2015 Tommy Vestermark
+    Mods. by Dave Fleck 2021
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
-    Mods. by Dave Fleck 2021
 */
 /**
 X10  sensor decoder.
@@ -138,6 +138,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_print(bitbuffer);
     }
 
+    /* clang-format off */
     data = data_make(
             "model",                   "", DATA_STRING, "X10-RF",
             _X("id", "deviceid"),      "", DATA_INT,    bDeviceCode,
@@ -145,7 +146,8 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "state",              "State", DATA_STRING, event_str,
             "data",                "Data", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
-
+    /* clang-format on */
+    
     decoder_output_data(decoder, data);
 
     return 1;
