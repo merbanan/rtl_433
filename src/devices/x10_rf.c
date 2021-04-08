@@ -147,7 +147,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "data",                "Data", DATA_FORMAT, "%08x", DATA_INT, code,
             NULL);
     /* clang-format on */
-    
+
     decoder_output_data(decoder, data);
 
     return 1;
