@@ -263,7 +263,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [182]  TFA Marbella Pool Thermometer
     [183]  Auriol AHFL temperature/humidity sensor
     [184]  Auriol AFT 77 B2 temperature sensor
-    [185]  Honeywell CM921/BDR91 (partial Evohome)
+    [185]  Honeywell CM921 Wireless Programmable Room Thermostat
 
 * Disabled by default, use -R n or -G
 
