@@ -164,7 +164,7 @@ data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
                     case 0xCC: /* Unknown, always 0x01? */ break;
                     default:
                         if (verbose)
-                            printf("Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
+                            fprintf(stderr, "Unknown parameter to 0x1030: %x02d=%04d\n", *p, value);
                 }
             }
             break;
@@ -336,7 +336,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int start = preamble_start + preamble_bit_length;
     int len = bitbuffer->bits_per_row[row] - start;
     if (decoder->verbose)
-        printf("preamble_start=%d start=%d len=%d\n", preamble_start, start, len);
+        fprintf(stderr, "preamble_start=%d start=%d len=%d\n", preamble_start, start, len);
     if (len < 8) return DECODE_ABORT_LENGTH;
     int end = start + len;
 
