@@ -31,9 +31,11 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b = bitbuffer->bb[0];
     int i;
-    uint32_t encrypted, serial;
+    uint32_t encrypted, serial, encrypted_rev, serial_rev;
     char encrypted_str[9];
+    char encrypted_rev_str[9];
     char serial_str[9];
+    char serial_rev_str[9];
 
     /* Reject codes of wrong length */
     if (78 != bitbuffer->bits_per_row[0])
@@ -46,6 +48,15 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
+    // No need to decode/extract values for simple test
+    if (b[2] == 0xff && b[3] == 0xff && b[4] == 0xff && b[5] == 0xff
+            && b[6] == 0xff && b[7] == 0xff && b[8] == 0xff) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0xff\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     // align buffer, shifting by 4 bits
     for (i = 1; i < 10; i++) {
         b[i] = (b[i] << 4) | (b[i + 1] >> 4);
@@ -53,15 +64,21 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     encrypted = ((unsigned)b[1] << 24) | (b[2] << 16) | (b[3] << 8) | (b[4]);
     serial    = (b[5] << 20) | (b[6] << 12) | (b[7] << 4) | (b[8] >> 4);
+    encrypted_rev = reverse32(encrypted);
+    serial_rev    = reverse32(serial);
 
     sprintf(encrypted_str, "%08X", encrypted);
     sprintf(serial_str, "%08X", serial);
+    sprintf(encrypted_rev_str, "%08X", encrypted_rev);
+    sprintf(serial_rev_str, "%08X", serial_rev);
 
     /* clang-format off */
     data = data_make(
             "model",        "", DATA_STRING,    "Microchip-HCS200",
             "id",           "", DATA_STRING,    serial_str,
+            "id_rev",           "", DATA_STRING,    serial_rev_str,
             "encrypted",    "", DATA_STRING,    encrypted_str,
+            "encrypted_rev",    "", DATA_STRING,    encrypted_rev_str,
             "button1",      "", DATA_STRING,    ((b[8] & 0x04) == 0x04) ? "ON" : "OFF",
             "button2",      "", DATA_STRING,    ((b[8] & 0x02) == 0x02) ? "ON" : "OFF",
             "button3",      "", DATA_STRING,    ((b[8] & 0x09) == 0x09) ? "ON" : "OFF",
@@ -78,7 +95,9 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "id_rev",
         "encrypted",
+        "encrypted_rev",
         "button1",
         "button2",
         "button3",

@@ -1,23 +1,28 @@
-/* Generic remote Blyss DC5-UK-WH as sold by B&Q
- *
- * DC5-UK-WH pair with receivers, the codes used may be specific to a receiver - use with caution
- *
- * warmup pulse 5552 us, 2072 gap
- * short is 512 us pulse, 1484 us gap
- * long is 1508 us pulse, 488 us gap
- * packet gap is 6964 us
- *
- * Copyright (C) 2016 John Jore
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    Generic remote Blyss DC5-UK-WH as sold by B&Q.
 
+    Copyright (C) 2016 John Jore
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+Generic remote Blyss DC5-UK-WH as sold by B&Q.
+
+DC5-UK-WH pair with receivers, the codes used may be specific to a receiver - use with caution
+
+warmup pulse 5552 us, 2072 gap
+short is 512 us pulse, 1484 us gap
+long is 1508 us pulse, 488 us gap
+packet gap is 6964 us
+
+*/
 #include "decoder.h"
 
-static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer) {
+static int blyss_callback(r_device *decoder,bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     char id_str[16];

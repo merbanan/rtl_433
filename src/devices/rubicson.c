@@ -1,5 +1,11 @@
 /** @file
     Rubicson temperature sensor.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
 */
 /** @fn int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Rubicson temperature sensor.
@@ -26,7 +32,8 @@ The sensor can be bought at Kjell&Co
 #include "decoder.h"
 
 // NOTE: this is used in nexus.c and solight_te44.c
-int rubicson_crc_check(uint8_t *b) {
+int rubicson_crc_check(uint8_t *b)
+{
     uint8_t tmp[5];
     tmp[0] = b[0];            // Byte 0 is nibble 0 and 1
     tmp[1] = b[1];            // Byte 1 is nibble 2 and 3
@@ -38,7 +45,8 @@ int rubicson_crc_check(uint8_t *b) {
     return crc8(tmp, 5, 0x31, 0x6c) == 0;
 }
 
-static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int id, battery, channel, temp_raw;

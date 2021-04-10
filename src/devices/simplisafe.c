@@ -1,15 +1,26 @@
-/* Protocol of the SimpliSafe Sensors
- *
- * The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
- *
- * All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
- *
- *  2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte       | 1 Byte
- *  Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
- *
- * Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
- * License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
- */
+/** @file
+    Protocol of the SimpliSafe Sensors.
+
+    Copyright (C) 2018 Adam Callis <adam.callis@gmail.com>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    License: GPL v2+ (or at your choice, any other OSI-approved Open Source license)
+*/
+/**
+Protocol of the SimpliSafe Sensors.
+
+The data is sent leveraging a PiWM Encoding where a long is 1, and a short is 0
+
+All bytes are sent with least significant bit FIRST (1000 0111 = 0xE1)
+
+ 2 Bytes   | 1 Byte       | 5 Bytes   | 1 Byte  | 1 Byte  | 1 Byte       | 1 Byte
+ Sync Word | Message Type | Device ID | CS Seed | Command | SUM CMD + CS | Epilogue
+
+*/
 
 #include "decoder.h"
 
@@ -20,8 +31,16 @@ ss_get_id(char *id, uint8_t *b)
 
     // Change to least-significant-bit last (protocol uses least-significant-bit first) for hex representation:
     for (uint16_t k = 3; k <= 7; k++) {
-        b[k] = reverse8(b[k]);
-        sprintf(p++, "%c", (char)b[k]);
+        char c = b[k];
+        c = reverse8(c);
+        // If the character is not representable with a valid-ish ascii character, replace with ?.
+        // This probably means the message is invalid.
+        // This is at least better than spitting out non-printable stuff :).
+        if (c < 32 || c > 126) {
+          sprintf(p++, "%c", '?');
+          continue;
+        }
+        sprintf(p++, "%c", (char)c);
     }
     *p = '\0';
 }
@@ -137,6 +156,10 @@ ss_keypad_commands(r_device *decoder, bitbuffer_t *bitbuffer, int row)
     return 1;
 }
 
+/**
+Protocol of the SimpliSafe Sensors.
+@sa ss_sensor_parser() ss_pinentry_parser() ss_keypad_commands()
+*/
 static int
 ss_sensor_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {

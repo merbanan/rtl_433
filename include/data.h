@@ -4,9 +4,9 @@
 
     Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
@@ -37,7 +37,8 @@ typedef enum {
     DATA_STRING, /**< pointer to a string is stored */
     DATA_ARRAY,  /**< pointer to an array of values is stored */
     DATA_COUNT,  /**< invalid */
-    DATA_FORMAT  /**< indicates the following value is formatted */
+    DATA_FORMAT, /**< indicates the following value is formatted */
+    DATA_COND,   /**< add data only if condition is true, skip otherwise */
 } data_type_t;
 
 typedef struct data_array {
@@ -136,7 +137,6 @@ typedef struct data_output {
     void (*print_double)(struct data_output *output, double data, char const *format);
     void (*print_int)(struct data_output *output, int data, char const *format);
     void (*output_start)(struct data_output *output, const char **fields, int num_fields);
-    void (*output_poll)(struct data_output *output);
     void (*output_free)(struct data_output *output);
     FILE *file;
 } data_output_t;
@@ -166,9 +166,6 @@ void data_output_start(struct data_output *output, const char **fields, int num_
 
 /** Prints a structured data object. */
 void data_output_print(struct data_output *output, data_t *data);
-
-/** Allows to polls an event loop, if necessary. */
-void data_output_poll(struct data_output *output);
 
 void data_output_free(struct data_output *output);
 

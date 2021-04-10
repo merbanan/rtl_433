@@ -413,29 +413,46 @@ int bitbuffer_find_repeated_row(bitbuffer_t *bits, unsigned min_repeats, unsigne
 
 // Unit testing
 #ifdef _TEST
-#include <assert.h>
-int main(int argc, char **argv)
+
+#define ASSERT(expr) \
+    do { \
+        if (expr) { \
+            ++passed; \
+        } else { \
+            ++failed; \
+            fprintf(stderr, "FAIL: line %d: %s\n", __LINE__, #expr); \
+        } \
+    } while (0)
+
+int main(void)
 {
+    unsigned passed = 0;
+    unsigned failed = 0;
+
     fprintf(stderr, "bitbuffer:: test\n");
 
     bitbuffer_t bits = {0};
 
     fprintf(stderr, "TEST: bitbuffer:: The empty buffer\n");
     bitbuffer_print(&bits);
+    ASSERT(bits.num_rows == 0);
 
     fprintf(stderr, "TEST: bitbuffer:: Add 1 bit\n");
     bitbuffer_add_bit(&bits, 1);
     bitbuffer_print(&bits);
+    ASSERT(bits.num_rows == 1);
 
     fprintf(stderr, "TEST: bitbuffer:: Add 1 new row\n");
     bitbuffer_add_row(&bits);
     bitbuffer_print(&bits);
+    ASSERT(bits.num_rows == 2);
 
     fprintf(stderr, "TEST: bitbuffer:: Fill row\n");
     for (int i = 0; i < BITBUF_COLS * 8; ++i) {
         bitbuffer_add_bit(&bits, i % 2);
     }
     bitbuffer_print(&bits);
+    ASSERT(bits.num_rows == 2);
 
     fprintf(stderr, "TEST: bitbuffer:: Add row and fill 1 column too many\n");
     bitbuffer_add_row(&bits);
@@ -443,6 +460,7 @@ int main(int argc, char **argv)
         bitbuffer_add_bit(&bits, i % 2);
     }
     bitbuffer_print(&bits);
+    ASSERT(bits.num_rows == 3);
 
     fprintf(stderr, "TEST: bitbuffer:: invert\n");
     bitbuffer_invert(&bits);
@@ -455,11 +473,12 @@ int main(int argc, char **argv)
     bits.bits_per_row[0] = 12;
     bitbuffer_nrzs_decode(&bits);
     bitbuffer_print(&bits);
-    assert(bits.bb[0][0] == 0xB1);
-    assert(bits.bb[0][1] == 0xA0);
+    ASSERT(bits.bb[0][0] == 0xB1);
+    ASSERT(bits.bb[0][1] == 0xA0);
 
     fprintf(stderr, "TEST: bitbuffer:: Clear\n");
     bitbuffer_clear(&bits);
+    ASSERT(bits.num_rows == 0);
     bitbuffer_print(&bits);
 
     fprintf(stderr, "TEST: bitbuffer:: Add 1 row too many\n");
@@ -469,6 +488,8 @@ int main(int argc, char **argv)
     bitbuffer_add_bit(&bits, 1);
     bitbuffer_print(&bits);
 
-    return 0;
+    fprintf(stderr, "bitbuffer:: test (%u/%u) passed, (%u) failed.\n", passed, passed + failed, failed);
+
+    return failed > 0 ? 1 : 0;
 }
 #endif /* _TEST */

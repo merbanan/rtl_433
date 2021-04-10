@@ -42,12 +42,17 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     char code_str[7 * 2 + 1];
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 56);
+
+    if (packet_bits.bits_per_row[0] < 56) {
+        return DECODE_FAIL_SANITY;
+        // fprintf(stderr, "%s packet_bits.bits_per_row = %d\n", __func__, packet_bits.bits_per_row[0]);
+    }
     b = packet_bits.bb[0];
 
     // TODO: validate checksum
 
     id          = (unsigned)b[0] << 20 | b[1] << 12 | b[2] << 4 | b[3] >> 4;
-    flags       = b[3] >> 4;
+    flags       = b[3] & 0x0F;
     pressure    = b[4];
     temperature = b[5];
     //crc         = b[6];

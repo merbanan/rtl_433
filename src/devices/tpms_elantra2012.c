@@ -42,7 +42,7 @@ Preamble is 111 0001 0101 0101 (0x7155).
   - C3 =1100 0011 = Battery Low, Triggered
   - C5 =1100 0101 = Battery OK, Triggered, Storage Mode
   - E1 =1110 0001 = Mx Sensor Clone for Elantra 2012 US market ? Low Line
-  - C1		 = Mx Sensor Clone for Genesis Sedan 2012 US market ? High Line
+  - C1            = Mx Sensor Clone for Genesis Sedan 2012 US market ? High Line
 - C: CRC-8, poly 0x07, init 0x00
 
 */
@@ -52,7 +52,6 @@ Preamble is 111 0001 0101 0101 (0x7155).
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    unsigned start_pos;
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     uint32_t id;
@@ -63,9 +62,9 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     int temperature_c;
     int triggered, battery_low, storage;
 
-    start_pos = bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
     // require 64 data bits
-    if (start_pos - bitpos < 128) {
+    if (packet_bits.bits_per_row[0] < 64) {
         return DECODE_ABORT_LENGTH;
     }
     b = packet_bits.bb[0];
@@ -145,6 +144,7 @@ static char *output_fields[] = {
         "triggered",
         "storage",
         "flags",
+        "mic",
         NULL,
 };
 

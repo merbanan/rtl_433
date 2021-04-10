@@ -54,27 +54,49 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
 
 int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
+    // precision reciprocals
+    float f_short = device->short_width > 0.0 ? 1.0 / (device->short_width * samples_per_us) : 0;
+    float f_long  = device->long_width > 0.0 ? 1.0 / (device->long_width * samples_per_us) : 0;
+
     int events = 0;
     bitbuffer_t bits = {0};
-    int const max_zeros = device->s_reset_limit / device->s_long_width;
-    int tolerance = device->s_tolerance;
-    if (tolerance <= 0)
-        tolerance = device->s_long_width / 4; // default tolerance is ±25% of a bit period
 
-    float f_short = device->f_short_width;
-    float f_long  = device->f_long_width;
+    int const gap_limit = s_gap ? s_gap : s_reset;
+    int const max_zeros = gap_limit / s_long;
+    if (s_tolerance <= 0)
+        s_tolerance = s_long / 4; // default tolerance is +-25% of a bit period
+
     // if there is a run of bit-wide toggles (preamble) tune the bit period
-    int min_count = device->s_short_width == device->s_long_width ? 12 : 4;
+    int min_count = s_short == s_long ? 12 : 4;
     // RZ
-    for (unsigned n = 0; device->s_short_width != device->s_long_width && n < pulses->num_pulses; ++n) {
+    for (unsigned n = 0; s_short != s_long && n < pulses->num_pulses; ++n) {
         int swidth = 0;
         int lwidth = 0;
         int count = 0;
         while (n < pulses->num_pulses
-                && pulses->pulse[n] >= device->s_short_width - tolerance
-                && pulses->pulse[n] <= device->s_short_width + tolerance
-                && pulses->pulse[n] + pulses->gap[n] >= device->s_long_width - tolerance
-                && pulses->pulse[n] + pulses->gap[n] <= device->s_long_width + tolerance) {
+                && pulses->pulse[n] >= s_short - s_tolerance
+                && pulses->pulse[n] <= s_short + s_tolerance
+                && pulses->pulse[n] + pulses->gap[n] >= s_long - s_tolerance
+                && pulses->pulse[n] + pulses->gap[n] <= s_long + s_tolerance) {
             swidth += pulses->pulse[n];
             lwidth += pulses->pulse[n] + pulses->gap[n];
             count += 1;
@@ -88,18 +110,18 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
                 fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f (pulse width %.2f vs %.2f), %d bit preamble\n",
-                        to_us / f_long, to_us * device->s_long_width,
-                        to_us / f_short, to_us * device->s_short_width, count);
+                        to_us / f_long, to_us * s_long,
+                        to_us / f_short, to_us * s_short, count);
             }
         }
     }
     // NRZ
-    for (unsigned n = 0; device->s_short_width == device->s_long_width && n < pulses->num_pulses; ++n) {
+    for (unsigned n = 0; s_short == s_long && n < pulses->num_pulses; ++n) {
         int width = 0;
         int count = 0;
         while (n < pulses->num_pulses
-                && (int)(pulses->pulse[n] * device->f_short_width + 0.5) == 1
-                && (int)(pulses->gap[n] * device->f_long_width + 0.5) == 1) {
+                && (int)(pulses->pulse[n] * f_short + 0.5) == 1
+                && (int)(pulses->gap[n] * f_long + 0.5) == 1) {
             width += pulses->pulse[n] + pulses->gap[n];
             count += 2;
             n++;
@@ -111,7 +133,7 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             if (device->verbose > 1) {
                 float to_us = 1e6 / pulses->sample_rate;
                 fprintf(stderr, "Exact bit width (in us) is %.2f vs %.2f, %d bit preamble\n",
-                        to_us / f_short, to_us * device->s_short_width, count);
+                        to_us / f_short, to_us * s_short, count);
             }
         }
     }
@@ -119,24 +141,24 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // Determine number of high bit periods for NRZ coding, where bits may not be separated
         int highs = (pulses->pulse[n]) * f_short + 0.5;
-        // Determine number of bit periods in current pulse/gap length (rounded)
-        int periods = (pulses->pulse[n] + pulses->gap[n]) * f_long + 0.5;
+        // Determine number of low bit periods in current gap length (rounded)
+        // for RZ subtract the nominal bit-gap
+        int lows = (pulses->gap[n] + s_short - s_long) * f_long + 0.5;
 
         // Add run of ones (1 for RZ, many for NRZ)
         for (int i = 0; i < highs; ++i) {
             bitbuffer_add_bit(&bits, 1);
         }
-        // Add run of zeros
-        periods -= highs;                  // Remove 1s from whole period
-        periods = MIN(periods, max_zeros); // Don't overflow at end of message
-        for (int i = 0; i < periods; ++i) {
+        // Add run of zeros, handle possibly negative "lows" gracefully
+        lows = MIN(lows, max_zeros); // Don't overflow at end of message
+        for (int i = 0; i < lows; ++i) {
             bitbuffer_add_bit(&bits, 0);
         }
 
         // Validate data
-        if ((device->s_short_width != device->s_long_width)                    // Only for RZ coding
-                && (abs(pulses->pulse[n] - device->s_short_width) > tolerance) // Pulse must be within tolerance
-        ) {
+        if ((s_short != s_long)                                       // Only for RZ coding
+                && (abs(pulses->pulse[n] - s_short) > s_tolerance)) { // Pulse must be within tolerance
+
             // Data is corrupt
             if (device->verbose > 3) {
                 fprintf(stderr, "bitbuffer cleared at %u: pulse %d, gap %d, period %d\n",
@@ -146,11 +168,15 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
             bitbuffer_clear(&bits);
         }
 
+        // Check for new packet in multipacket
+        else if (pulses->gap[n] > gap_limit && pulses->gap[n] <= s_reset) {
+            bitbuffer_add_row(&bits);
+        }
         // End of Message?
-        if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
-                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
-                && (bits.bits_per_row[0] > 0)                    // Only if data has been accumulated
-        ) {
+        if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
+                    || (pulses->gap[n] > s_reset))      // Long silence (OOK)
+                && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
+
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
@@ -160,6 +186,26 @@ int pulse_demod_pcm(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int events = 0;
     bitbuffer_t bits = {0};
 
@@ -168,23 +214,23 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
     int one_l, one_u;
     int sync_l = 0, sync_u = 0;
 
-    if (device->s_tolerance > 0) {
+    if (s_tolerance > 0) {
         // precise
-        zero_l = device->s_short_width - device->s_tolerance;
-        zero_u = device->s_short_width + device->s_tolerance;
-        one_l  = device->s_long_width - device->s_tolerance;
-        one_u  = device->s_long_width + device->s_tolerance;
-        if (device->s_sync_width > 0) {
-            sync_l = device->s_sync_width - device->s_tolerance;
-            sync_u = device->s_sync_width + device->s_tolerance;
+        zero_l = s_short - s_tolerance;
+        zero_u = s_short + s_tolerance;
+        one_l  = s_long - s_tolerance;
+        one_u  = s_long + s_tolerance;
+        if (s_sync > 0) {
+            sync_l = s_sync - s_tolerance;
+            sync_u = s_sync + s_tolerance;
         }
     }
     else {
         // no sync, short=0, long=1
         zero_l = 0;
-        zero_u = (device->s_short_width + device->s_long_width) / 2 + 1;
+        zero_u = (s_short + s_long) / 2 + 1;
         one_l  = zero_u - 1;
-        one_u  = device->s_gap_limit ? device->s_gap_limit : device->s_reset_limit;
+        one_u  = s_gap ? s_gap : s_reset;
     }
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
@@ -202,12 +248,12 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
         }
 
         // Check for new packet in multipacket
-        else if (pulses->gap[n] < device->s_reset_limit) {
+        else if (pulses->gap[n] < s_reset) {
             bitbuffer_add_row(&bits);
         }
         // End of Message?
         if (((n == pulses->num_pulses - 1)                            // No more pulses? (FSK)
-                    || (pulses->gap[n] >= device->s_reset_limit))     // Long silence (OOK)
+                    || (pulses->gap[n] >= s_reset))     // Long silence (OOK)
                 && (bits.bits_per_row[0] > 0 || bits.num_rows > 1)) { // Only if data has been accumulated
 
             events += account_event(device, &bits, __func__);
@@ -219,6 +265,26 @@ int pulse_demod_ppm(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int events = 0;
     bitbuffer_t bits = {0};
 
@@ -227,48 +293,48 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
     int zero_l, zero_u;
     int sync_l = 0, sync_u = 0;
 
-    if (device->s_tolerance > 0) {
+    if (s_tolerance > 0) {
         // precise
-        one_l  = device->s_short_width - device->s_tolerance;
-        one_u  = device->s_short_width + device->s_tolerance;
-        zero_l = device->s_long_width - device->s_tolerance;
-        zero_u = device->s_long_width + device->s_tolerance;
-        if (device->s_sync_width > 0) {
-            sync_l = device->s_sync_width - device->s_tolerance;
-            sync_u = device->s_sync_width + device->s_tolerance;
+        one_l  = s_short - s_tolerance;
+        one_u  = s_short + s_tolerance;
+        zero_l = s_long - s_tolerance;
+        zero_u = s_long + s_tolerance;
+        if (s_sync > 0) {
+            sync_l = s_sync - s_tolerance;
+            sync_u = s_sync + s_tolerance;
         }
     }
-    else if (device->s_sync_width <= 0) {
+    else if (s_sync <= 0) {
         // no sync, short=1, long=0
         one_l  = 0;
-        one_u  = (device->s_short_width + device->s_long_width) / 2 + 1;
+        one_u  = (s_short + s_long) / 2 + 1;
         zero_l = one_u - 1;
         zero_u = INT_MAX;
     }
-    else if (device->s_sync_width < device->s_short_width) {
+    else if (s_sync < s_short) {
         // short=sync, middle=1, long=0
         sync_l = 0;
-        sync_u = (device->s_sync_width + device->s_short_width) / 2 + 1;
+        sync_u = (s_sync + s_short) / 2 + 1;
         one_l  = sync_u - 1;
-        one_u  = (device->s_short_width + device->s_long_width) / 2 + 1;
+        one_u  = (s_short + s_long) / 2 + 1;
         zero_l = one_u - 1;
         zero_u = INT_MAX;
     }
-    else if (device->s_sync_width < device->s_long_width) {
+    else if (s_sync < s_long) {
         // short=1, middle=sync, long=0
         one_l  = 0;
-        one_u  = (device->s_short_width + device->s_sync_width) / 2 + 1;
+        one_u  = (s_short + s_sync) / 2 + 1;
         sync_l = one_u - 1;
-        sync_u = (device->s_sync_width + device->s_long_width) / 2 + 1;
+        sync_u = (s_sync + s_long) / 2 + 1;
         zero_l = sync_u - 1;
         zero_u = INT_MAX;
     }
     else {
         // short=1, middle=0, long=sync
         one_l  = 0;
-        one_u  = (device->s_short_width + device->s_long_width) / 2 + 1;
+        one_u  = (s_short + s_long) / 2 + 1;
         zero_l = one_u - 1;
-        zero_u = (device->s_long_width + device->s_sync_width) / 2 + 1;
+        zero_u = (s_long + s_sync) / 2 + 1;
         sync_l = zero_u - 1;
         sync_u = INT_MAX;
     }
@@ -296,12 +362,12 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 
         // End of Message?
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
-                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
+                    || (pulses->gap[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
         }
-        else if (device->s_gap_limit > 0 && pulses->gap[n] > device->s_gap_limit
+        else if (s_gap > 0 && pulses->gap[n] > s_gap
                 && bits.num_rows > 0 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             // New packet in multipacket
             bitbuffer_add_row(&bits);
@@ -312,6 +378,26 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int events = 0;
     int time_since_last = 0;
     bitbuffer_t bits = {0};
@@ -321,13 +407,13 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         // The pulse or gap is too long or too short, thus invalid
-        if (device->s_tolerance > 0
-                && (pulses->pulse[n] < device->s_short_width - device->s_tolerance
-                || pulses->pulse[n] > device->s_short_width * 2 + device->s_tolerance
-                || pulses->gap[n] < device->s_short_width - device->s_tolerance
-                || pulses->gap[n] > device->s_short_width * 2 + device->s_tolerance)) {
-            if (pulses->pulse[n] > device->s_short_width * 1.5
-                    && pulses->pulse[n] <= device->s_short_width * 2 + device->s_tolerance) {
+        if (s_tolerance > 0
+                && (pulses->pulse[n] < s_short - s_tolerance
+                || pulses->pulse[n] > s_short * 2 + s_tolerance
+                || pulses->gap[n] < s_short - s_tolerance
+                || pulses->gap[n] > s_short * 2 + s_tolerance)) {
+            if (pulses->pulse[n] > s_short * 1.5
+                    && pulses->pulse[n] <= s_short * 2 + s_tolerance) {
                 // Long last pulse means with the gap this is a [1]10 transition, add a one
                 bitbuffer_add_bit(&bits, 1);
             }
@@ -336,7 +422,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
             time_since_last = 0;
         }
         // Falling edge is on end of pulse
-        else if (pulses->pulse[n] + time_since_last > (device->s_short_width * 1.5)) {
+        else if (pulses->pulse[n] + time_since_last > (s_short * 1.5)) {
             // Last bit was recorded more than short_width*1.5 samples ago
             // so this pulse start must be a data edge (falling data edge means bit = 1)
             bitbuffer_add_bit(&bits, 1);
@@ -348,7 +434,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 
         // End of Message?
         if (((n == pulses->num_pulses - 1)                       // No more pulses? (FSK)
-                    || (pulses->gap[n] > device->s_reset_limit)) // Long silence (OOK)
+                    || (pulses->gap[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                        // Only if data has been accumulated
             events += account_event(device, &bits, __func__);
             bitbuffer_clear(&bits);
@@ -356,7 +442,7 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
             time_since_last = 0;
         }
         // Rising edge is on end of gap
-        else if (pulses->gap[n] + time_since_last > (device->s_short_width * 1.5)) {
+        else if (pulses->gap[n] + time_since_last > (s_short * 1.5)) {
             // Last bit was recorded more than short_width*1.5 samples ago
             // so this pulse end is a data edge (rising data edge means bit = 0)
             bitbuffer_add_bit(&bits, 0);
@@ -371,6 +457,26 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int symbol[PD_MAX_PULSES * 2 + 1] = {0};
     unsigned int n;
 
@@ -383,11 +489,11 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
     }
 
     for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        if (abs(symbol[n] - device->s_short_width) < device->s_tolerance) {
+        if (abs(symbol[n] - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
-            if (abs(symbol[++n] - device->s_short_width) > device->s_tolerance) {
-                if (symbol[n] >= device->s_reset_limit - device->s_tolerance) {
+            if (abs(symbol[++n] - s_short) > s_tolerance) {
+                if (symbol[n] >= s_reset - s_tolerance) {
                     // Don't expect another short gap at end of message
                     n--;
                 }
@@ -400,11 +506,11 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
                 }
             }
         }
-        else if (abs(symbol[n] - device->s_long_width) < device->s_tolerance) {
+        else if (abs(symbol[n] - s_long) < s_tolerance) {
             // Long - 0
             bitbuffer_add_bit(&bits, 0);
         }
-        else if (symbol[n] >= device->s_reset_limit - device->s_tolerance
+        else if (symbol[n] >= s_reset - s_tolerance
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
@@ -416,6 +522,29 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
+    // precision reciprocal
+    float f_short = device->short_width > 0.0 ? 1.0 / (device->short_width * samples_per_us) : 0;
+
     int symbol[PD_MAX_PULSES * 2];
     unsigned int n;
     int w;
@@ -423,22 +552,23 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
     bitbuffer_t bits = {0};
     int events = 0;
 
+
     for (n = 0; n < pulses->num_pulses; n++) {
         symbol[n * 2] = pulses->pulse[n];
         symbol[n * 2 + 1] = pulses->gap[n];
     }
 
     for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        w = symbol[n] * device->f_short_width + 0.5;
-        if (symbol[n] > device->s_long_width) {
+        w = symbol[n] * f_short + 0.5;
+        if (symbol[n] > s_long) {
             bitbuffer_add_row(&bits);
         }
-        else if (abs(symbol[n] - w * device->s_short_width) < device->s_tolerance) {
+        else if (abs(symbol[n] - w * s_short) < s_tolerance) {
             // Add w symbols
             for (; w > 0; --w)
                 bitbuffer_add_bit(&bits, 1 - n % 2);
         }
-        else if (symbol[n] < device->s_reset_limit
+        else if (symbol[n] < s_reset
                 && bits.num_rows > 0
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
@@ -449,7 +579,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
         }
 
         if (((n == pulses->num_pulses * 2 - 1)              // No more pulses? (FSK)
-                    || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
+                    || (symbol[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
@@ -461,6 +591,26 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int symbol[PD_MAX_PULSES * 2];
     unsigned int n;
 
@@ -473,15 +623,15 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
     }
 
     for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        if (abs(symbol[n] - device->s_short_width) < device->s_tolerance) {
+        if (abs(symbol[n] - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
         }
-        else if (abs(symbol[n] - device->s_long_width) < device->s_tolerance) {
+        else if (abs(symbol[n] - s_long) < s_tolerance) {
             // Long - 0
             bitbuffer_add_bit(&bits, 0);
         }
-        else if (symbol[n] < device->s_reset_limit
+        else if (symbol[n] < s_reset
                 && bits.num_rows > 0
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
@@ -492,7 +642,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
         }
 
         if (((n == pulses->num_pulses * 2 - 1)              // No more pulses? (FSK)
-                    || (symbol[n] > device->s_reset_limit)) // Long silence (OOK)
+                    || (symbol[n] > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
@@ -504,15 +654,33 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     int events = 0;
     bitbuffer_t bits = {0};
-    int i, n, limit;
-
-    limit = device->s_short_width;
+    int limit = s_short;
 
     for (unsigned n = 0; n < pulses->num_pulses; ++n) {
         if (pulses->pulse[n] > limit) {
-            for(i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
+            for (int i = 0 ; i < (pulses->pulse[n]/limit) ; i++) {
                 bitbuffer_add_bit(&bits, 1);
             }
             bitbuffer_add_bit(&bits, 0);
@@ -521,7 +689,7 @@ int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
         }
 
         if (n == pulses->num_pulses - 1
-                    || pulses->gap[n] >= device->s_reset_limit) {
+                    || pulses->gap[n] >= s_reset) {
 
             events += account_event(device, &bits, __func__);
         }
@@ -546,13 +714,33 @@ int pulse_demod_nrzs(const pulse_data_t *pulses, r_device *device)
 
 int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
 {
+    float samples_per_us = pulses->sample_rate / 1.0e6;
+
+    int s_short = device->short_width * samples_per_us;
+    int s_long  = device->long_width * samples_per_us;
+    int s_reset = device->reset_limit * samples_per_us;
+    int s_gap   = device->gap_limit * samples_per_us;
+    int s_sync  = device->sync_width * samples_per_us;
+    int s_tolerance = device->tolerance * samples_per_us;
+
+    // check for rounding to zero
+    if ((device->short_width > 0 && s_short <= 0)
+            || (device->long_width > 0 && s_long <= 0)
+            || (device->reset_limit > 0 && s_reset <= 0)
+            || (device->gap_limit > 0 && s_gap <= 0)
+            || (device->sync_width > 0 && s_sync <= 0)
+            || (device->tolerance > 0 && s_tolerance <= 0)) {
+        fprintf(stderr, "sample rate too low for protocol %u \"%s\"\n", device->protocol_num, device->name);
+        return 0;
+    }
+
     unsigned int n;
     int preamble = 0;
     int events = 0;
     int manbit = 0;
     bitbuffer_t bits = {0};
-    int halfbit_min = device->s_short_width / 2;
-    int halfbit_max = device->s_short_width * 3 / 2;
+    int halfbit_min = s_short / 2;
+    int halfbit_max = s_short * 3 / 2;
     int sync_min = 2 * halfbit_max;
 
     /* preamble */
@@ -597,7 +785,7 @@ int pulse_demod_osv1(const pulse_data_t *pulses, r_device *device)
                 bitbuffer_add_bit(&bits, 1);
         }
         if ((n == pulses->num_pulses - 1
-                    || pulses->gap[n] > device->s_reset_limit)
+                    || pulses->gap[n] > s_reset)
                 && (bits.num_rows > 0)) { // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);

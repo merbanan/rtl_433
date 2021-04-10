@@ -1,10 +1,19 @@
 /** @file
     Nexus temperature and optional humidity sensor protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
 */
 /** @fn int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 Nexus sensor protocol with ID, temperature and optional humidity
+
 also FreeTec (Pearl) NC-7345 sensors for FreeTec Weatherstation NC-7344,
-also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station.
+also infactory/FreeTec (Pearl) NX-3980 sensors for infactory/FreeTec NX-3974 station,
+also Solight TE82S sensors for Solight TE76/TE82/TE83/TE84 stations,
+also TFA 30.3209.02 temperature/humidity sensor.
 
 The sensor sends 36 bits 12 times,
 the packets are ppm modulated (distance coding) with a pulse of ~500 us
@@ -53,7 +62,8 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // The nexus protocol will trigger on rubicson data, so calculate the rubicson crc and make sure
     // it doesn't match. By guesstimate it should generate a correct crc 1/255% of the times.
     // So less then 0.5% which should be acceptable.
-    if (b[0] == 0 || b[2] == 0 || b[3] == 0
+    if ((b[0] == 0 && b[2] == 0 && b[3] == 0)
+            || ( b[0] == 0xff &&  b[2] == 0xff && b[3] == 0xFF)
             || rubicson_crc_check(b))
         return DECODE_ABORT_EARLY;
 
@@ -103,7 +113,7 @@ static char *output_fields[] = {
 };
 
 r_device nexus = {
-        .name        = "Nexus, FreeTec NC-7345, NX-3980 temperature/humidity sensor",
+        .name        = "Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor",
         .modulation  = OOK_PULSE_PPM,
         .short_width = 1000,
         .long_width  = 2000,

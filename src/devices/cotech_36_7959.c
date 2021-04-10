@@ -20,7 +20,7 @@ Integrity check is done using CRC8 using poly=0x31  init=0xc0
 
 Message layout
 
-    AAAA BBBBBBBB C D E F GGGGGGGG HHHHHHHH IIIIIIII JJJJ KKKKKKKKKKKK LLLL MMMMMMMMMMMM NNNNNNNN OOOOOOOOOOOOOOOOOOOOOOOO XXXXXXXX
+    AAAA BBBBBBBB C D E F GGGGGGGG HHHHHHHH IIIIIIII JJJJ KKKKKKKKKKKK LLLL MMMMMMMMMMMM NNNNNNNN OOOOOOOOOOOOOOOO PPPPPPPP XXXXXXXX
 
 - A : 4 bit: ?? Type code? part of id?, never seems to change
 - B : 8 bit: Id, changes when reset
@@ -33,16 +33,18 @@ Message layout
 - I : 8 bit: Wind direction in degrees.
 - J : 4 bit: ? Might belong to the rain value
 - K : 12 bit: Total rain in mm, scaled by 10
-- L : 4 bit: ?, always the same sequence: 1000
+- L : 4 bit: Flag bitmask, always the same sequence: 1000
 - M : 12 bit: Temperature in Fahrenheit, offset 400, scaled by 10
 - N : 8 bit: Humidity
-- O : 24 bit: ? Always the same, might be some padding for the CRC-calculation
+- O : 16 bit: Sunlight intensity, 0 to 200,000 lumens
+- P : 8 bit: UV index (1-15)
 - X : 8 bit: CRC, poly 0x31, init 0xc0
 */
 
 #include "decoder.h"
 
-static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t const preamble[] = {0x01, 0x40}; // 12 bits
 
     int r = -1;
@@ -83,21 +85,24 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
     }
 
     // Extract data from buffer
-    //int subtype  = (b[0] >> 4);                            // [0:4]
-    int id       = ((b[0] & 0x0f) << 4) | (b[1] >> 4);     // [4:8]
-    int batt_low = (b[1] & 0x08) >> 3;                     // [12:1]
-    int deg_msb  = (b[1] & 0x04) >> 2;                     // [13:1]
-    int gust_msb = (b[1] & 0x02) >> 1;                     // [14:1]
-    int wind_msb = (b[1] & 0x01);                          // [15:1]
-    int wind     = (wind_msb << 8) | b[2];                 // [16:8]
-    int gust     = (gust_msb << 8) | b[3];                 // [24:8]
-    int wind_dir = (deg_msb << 8) | b[4];                  // [32:8]
-    //int unk1     = (b[5] >> 4);                            // [40:4]
-    int rain     = ((b[5] & 0x0f) << 8) | (b[6]);          // [44:12]
-    //int unk2     = (b[7] >> 4);                            // [56:4]
-    int temp_raw = ((b[7] & 0x0f) << 8) | (b[8]);          // [60:12]
-    int humidity = (b[9]);                                 // [72:8]
-    //int unk3     = (b[10] << 16) | (b[11] << 8) | (b[12]); // [80:24]
+    //int subtype  = (b[0] >> 4);                                   // [0:4]
+    int id        = ((b[0] & 0x0f) << 4) | (b[1] >> 4);           // [4:8]
+    int batt_low  = (b[1] & 0x08) >> 3;                           // [12:1]
+    int deg_msb   = (b[1] & 0x04) >> 2;                           // [13:1]
+    int gust_msb  = (b[1] & 0x02) >> 1;                           // [14:1]
+    int wind_msb  = (b[1] & 0x01);                                // [15:1]
+    int wind      = (wind_msb << 8) | b[2];                       // [16:8]
+    int gust      = (gust_msb << 8) | b[3];                       // [24:8]
+    int wind_dir  = (deg_msb << 8) | b[4];                        // [32:8]
+    //int unk1      = (b[5] >> 4);                                  // [40:4]
+    int rain      = ((b[5] & 0x0f) << 8) | (b[6]);                // [44:12]
+    int flags     = (b[7] & 0xf0) >> 4;                           // [56:4]
+    int temp_raw  = ((b[7] & 0x0f) << 8) | (b[8]);                // [60:12]
+    int humidity  = (b[9]);                                       // [72:8]
+    int light_lux = (b[10] << 8) + b[11] + ((flags & 0x08) << 9); // [80:16]
+    int uv        = (b[12]);                                      // [96:8]
+    //int unk3      = (b[13]);                                      // [104:8]
+
     float temp_c = (temp_raw - 400) * 0.1f;
 
     /* clang-format off */
@@ -112,6 +117,8 @@ static int cotech_36_7959_decode(r_device *decoder, bitbuffer_t *bitbuffer) {
             "wind_dir_deg",     "Wind direction",   DATA_INT,    wind_dir,
             "wind_avg_m_s",     "Wind",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind * 0.1f,
             "wind_max_m_s",     "Gust",             DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust * 0.1f,
+            "light_lux",        "Light Intensity",  DATA_FORMAT, "%u lux", DATA_INT, light_lux,
+            "uv",               "UV Index",         DATA_FORMAT, "%u", DATA_INT, uv,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -131,6 +138,8 @@ static char *cotech_36_7959_output_fields[] = {
         "wind_dir_deg",
         "wind_avg_m_s",
         "wind_max_m_s",
+        "light_lux",
+        "uv",
         "mic",
         NULL,
 };

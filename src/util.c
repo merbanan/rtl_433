@@ -22,6 +22,14 @@ uint8_t reverse8(uint8_t x)
     return x;
 }
 
+uint32_t reverse32(uint32_t x)
+{
+    uint32_t ret;
+    uint8_t* xp = (uint8_t*)&x;
+    ret = (uint32_t) reverse8(xp[0]) << 24 | reverse8(xp[1]) << 16 | reverse8(xp[2]) << 8 | reverse8(xp[3]);
+    return ret;
+}
+
 void reflect_bytes(uint8_t message[], unsigned num_bytes)
 {
     for (unsigned i = 0; i < num_bytes; ++i) {
@@ -248,21 +256,24 @@ uint8_t lfsr_digest8_reflect(uint8_t const message[], int bytes, uint8_t gen, ui
     return sum;
 }
 
-uint16_t lfsr_digest16(uint32_t data, int bits, uint16_t gen, uint16_t key)
+uint16_t lfsr_digest16(uint8_t const message[], unsigned bytes, uint16_t gen, uint16_t key)
 {
     uint16_t sum = 0;
-    for (int bit = bits - 1; bit >= 0; --bit) {
-        // fprintf(stderr, "key at bit %d : %04x\n", bit, key);
-        // if data bit is set then xor with key
-        if ((data >> bit) & 1)
-            sum ^= key;
+    for (unsigned k = 0; k < bytes; ++k) {
+        uint8_t data = message[k];
+        for (int i = 7; i >= 0; --i) {
+            // fprintf(stderr, "key at bit %d : %04x\n", i, key);
+            // if data bit is set then xor with key
+            if ((data >> i) & 1)
+                sum ^= key;
 
-        // roll the key right (actually the lsb is dropped here)
-        // and apply the gen (needs to include the dropped lsb as msb)
-        if (key & 1)
-            key = (key >> 1) ^ gen;
-        else
-            key = (key >> 1);
+            // roll the key right (actually the lsb is dropped here)
+            // and apply the gen (needs to include the dropped lsb as msb)
+            if (key & 1)
+                key = (key >> 1) ^ gen;
+            else
+                key = (key >> 1);
+        }
     }
     return sum;
 }
@@ -353,7 +364,7 @@ int add_nibbles(uint8_t const message[], unsigned num_bytes)
         } \
     } while (0)
 
-int main(int argc, char **argv) {
+int main(void) {
     unsigned passed = 0;
     unsigned failed = 0;
 

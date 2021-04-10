@@ -1,3 +1,13 @@
+/** @file
+    ELV WS 2000.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+
+
 #include "decoder.h"
 
 static uint16_t AD_POP(uint8_t *bb, uint8_t bits, uint8_t bit)
@@ -21,7 +31,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t bytes=0;
     uint8_t bit=18; // preamble
     uint8_t bb_p[14];
-    char* types[] = {"EM 1000-S", "EM 1000-?", "EM 1000-GZ"};
+    //char* types[] = {"EM 1000-S", "EM 1000-?", "EM 1000-GZ"};
     uint8_t checksum_calculated = 0;
     uint8_t i;
     uint8_t stopbit;
@@ -61,7 +71,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 //for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
 
     // based on 15_CUL_EM.pm
-    char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";
+    //char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";
     int code      = dec[1];
     int seqno     = dec[2];
     int total     = dec[3] | dec[4] << 8;

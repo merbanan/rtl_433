@@ -173,7 +173,6 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
     pid_t pid = fork();
     if (pid < 0) {
         perror("forking zip");
-        return;
     }
     else if (pid == 0) {
         // child process because return value zero
@@ -208,7 +207,7 @@ void write_sigrok(char const *filename, unsigned samplerate, unsigned probes, un
             perror("unlinking Sigrok \"logic-1-1\" file");
         }
     }
-    for (unsigned i = 0; i < analogs; ++i) {
+    for (unsigned i = 0; i < analogs && argv_analog[i]; ++i) {
         if (unlink(argv_analog[i])) {
             perror("unlinking Sigrok \"analog-1-N-1\" file");
         }

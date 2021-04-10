@@ -62,7 +62,8 @@ There is an extra, unidentified 7th byte in WH2A packages.
 Based on reverse engineering with gnu-radio and the nice article here:
 http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
 */
-static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
@@ -204,7 +205,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t const preamble[] = {0xAA, 0x2D, 0xD4}; // part of preamble and sync word
     uint8_t b[17]; // aligned packet data
     unsigned bit_offset;
-    int model;
+    int type;
 
     // Validate package, WH24 nominal size is 196 bit periods, WH65b is 209 bit periods
     if (bitbuffer->bits_per_row[0] < 190 || bitbuffer->bits_per_row[0] > 215) {
@@ -223,11 +224,11 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Classification heuristics
     if (bitbuffer->bits_per_row[0] - bit_offset - sizeof(b) * 8 < 8)
         if (bit_offset < 61)
-            model = MODEL_WH24; // nominal 3 bits postamble
+            type = MODEL_WH24; // nominal 3 bits postamble
         else
-            model = MODEL_WH65B;
+            type = MODEL_WH65B;
     else
-        model = MODEL_WH65B; // nominal 12 bits postamble
+        type = MODEL_WH65B; // nominal 12 bits postamble
 
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
 
@@ -266,7 +267,7 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     float wind_speed_factor, rain_cup_count;
     // Wind speed factor is 1.12 m/s (1.19 per specs?) for WH24, 0.51 m/s for WH65B
     // Rain cup each count is 0.3mm for WH24, 0.01inch (0.254mm) for WH65B
-    if (model == MODEL_WH24) { // WH24
+    if (type == MODEL_WH24) { // WH24
         wind_speed_factor = 1.12f;
         rain_cup_count = 0.3f;
     } else { // WH65B
@@ -306,27 +307,20 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, model == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
+            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
             "id",               "ID",               DATA_INT, id,
             "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
+            "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
+            "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
+            _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
+            _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
+            _X("rain_mm","rainfall_mm"),           "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
+            "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
+            "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
+            "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
-    if (temp_raw       != 0x7ff)
-        data_append(data,   "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature, NULL);
-    if (humidity       != 0xff)
-        data_append(data,   "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity, NULL);
-    if (wind_dir       != 0x1ff)
-        data_append(data,   "wind_dir_deg",     "Wind direction",   DATA_INT, wind_dir, NULL);
-    if (wind_speed_raw != 0x1ff)
-        data_append(data,   _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms, NULL);
-    if (gust_speed_raw != 0xff)
-        data_append(data,   _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms, NULL);
-    data_append(data,       _X("rain_mm","rainfall_mm"),      "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm, NULL);
-    if (uv_raw         != 0xffff)
-        data_append(data,   "uv",               "UV",               DATA_INT, uv_raw,
-                            "uvi",              "UVI",              DATA_INT, uv_index, NULL);
-    if (light_raw      != 0xffffff)
-        data_append(data,   "light_lux",        "Light",            DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux, NULL);
-    data_append(data,       "mic",              "Integrity",        DATA_STRING, "CRC", NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
@@ -336,23 +330,75 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 /**
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
+Also: Misol PM25
+Also: EcoWitt WH0290, EcoWitt WH41
 
-The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
+The sensor sends a data burst every 10 minutes.  The bits are PCM
+modulated with Frequency Shift Keying.
+
+Ecowitt advertises this device as a PM2.5 sensor.  It contains a
+Honeywell PM2.5 sensor:
+
+  https://sensing.honeywell.com/honeywell-sensing-particulate-hpm-series-datasheet-32322550.pdf
+
+However, the Honeywell datasheet says that it also has a PM10 output
+which is "calculated from" the PM2.5 reading.  While there is an
+accuracy spec for PM2.5, there is no specification of an kind from
+PM10.  The datasheet does not explain the calculation, and does not
+give references to papers in the scientific literature.
+
+Note that PM2.5 is the mass of particles <= 2.5 microns in 1 m^3 of
+air, and PM10 is the mass of particles <= 10 microns.  Therefore the
+difference in those measurements is the mass of particles > 2.5
+microns and <= 10 microns, sometimes called PM2.5-10.  By definition
+these particles are not included in the PM2.5 measurement, so
+"calculating" doesn't make sense.  Rather, this appears an assumption
+about correlation, meaning how much mass of larger particles is likely
+to be present based on the mass of the smaller particles.
+
+The serial stream from the sensor has fields for PM2.5 and PM10 and
+these fields have been verified to appear in the transmitted signal by
+cross-comparing the internal serial lines and data received via
+rtl_433.
+
+The Ecowitt displays show only PM2.5, and Ecowitt confirmed that the
+second field is the PM10 output of the sensor but said the value is
+not accurate so they have not adopted it.
+
+By observation of an Ecowitt WH41, the formula is pm10 = pm2.5 +
+increment(pm2.5), where the increment is by ranges from the following
+table (with gaps when no samples have been observed).  It is left as
+future work to compare with an actual PM10 sensor.
+
+0 to 24		| 1
+25 to 106	| 2
+109 to 185	| 3
+190 to 222	| 4
+311		| 5
+390		| 6
+
 
 Data layout:
+             41 c7 41 ae 01 c2 f9 b3 00000, Ecowitt 41
     aa 2d d4 42 cc 41 9a 41 ae c1 99 9
              FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
-- D: 8 bit device id?
-- ?: 2 bits ?
+- D: 8 bit device id (corresponds to sticker on device in hex)
+- ?: 1 bit?
+- b: 1 bit MSB of battery bars out of 5
 - P: 14 bit PM2.5 reading in ug/m3
-- ?: 2 bits ?
+- b: 2 bits LSBs of battery bars out of 5
 - A: 14 bit PM10.0 reading in ug/m3
-- ?: 8 bits ?
 - C: 8 bit CRC checksum of the previous 6 bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
 
+BitBench Examples
+{129} 55 55 55 55 55 51 6e a2 0c ba 02 d0 03 25 13 c0 00 [pm2=9 pm10=10 id=151 0x97 battery 4/5bars]
+{128} 55 55 55 55 55 51 6e a2 0c ba 03 70 03 c3 43 30 [pm2=11 pm10=12 id=151 0x97 battery 4/5bars]
+{129} 55 55 55 55 55 51 6e a2 0c b8 01 46 01 94 9c 2c 00 [pm2=4 pm10=5 id=151 0x97 3/5 bars]
+Preamble: aa2dd4
+FAM:8d ID: 8h 1b Bat_MSB:1d PMTWO:14d Bat_LSB:2d PMTEN:14d CRC:8h BITSIM:8h bbbbb
 */
 static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -383,17 +429,23 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Decode data
+    uint8_t family    = b[0];
     uint8_t id        = b[1];
+    uint8_t unknown1  = (b[2] & 0x80) ? 1 : 0;
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
-
+    int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
+    float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
+            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "family",           "FAMILY",       DATA_INT,    family,
+            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -462,9 +514,16 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // Verify type code
     int msg_type = b[0] & 0xf0;
-    if (msg_type != 0xe0) {
+    if (type == 32 && msg_type == 0xd0) {
+        // this is an older "WH32", does not have a barometric sensor
+        type = 31;
+    }
+    else if (msg_type != 0xe0) {
         if (decoder->verbose)
             fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
+        if (b[0] == 0x41) {
+            return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
+        }
         return DECODE_ABORT_EARLY;
     }
 
@@ -488,20 +547,23 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Decode data
     uint8_t id        = ((b[0]&0x0f) << 4) | (b[1] >> 4);
     int low_battery   = (b[1] & 0x08) >> 3;
-    int invalid_flag  = (b[1] & 0x04) >> 2;
+    //int invalid_flag  = (b[1] & 0x04) >> 2;
     int temp_raw      = (b[1] & 0x03) << 8 | b[2]; // 0x7ff if invalid
     float temperature = (temp_raw - 400) * 0.1f;    // range -40.0-60.0 C
     uint8_t humidity  = b[3];
-    float pressure    = (b[4] << 8 | b[5]) * 0.1f;
+    int pressure_raw  = (b[4] << 8 | b[5]);
+    float pressure    = pressure_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, type == 32 ? "Fineoffset-WH32B" : _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
+            "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
+            "model",            "",             DATA_COND, type == 25, DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "pressure_hPa",     "Pressure",     DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
+            "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -554,7 +616,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned bit_offset;
 
     // Validate package
-    if (bitbuffer->bits_per_row[0] < 136) {  // Minimum length 14 bytes data + 3 bytes preamble
+    if (bitbuffer->bits_per_row[0] < 120) {
         return DECODE_ABORT_LENGTH;
     }
 
@@ -948,7 +1010,7 @@ static char *output_fields_WH25[] = {
     "light_lux",
     //WH0290
     "pm2_5_ug_m3",
-    "pm10_0_ug_m3",
+    "estimated_pm10_0_ug_m3",
     "mic",
     NULL,
 };
@@ -956,7 +1018,8 @@ static char *output_fields_WH25[] = {
 static char *output_fields_WH51[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
+    "battery_mV",
     "moisture",
     "boost",
     "ad_raw",

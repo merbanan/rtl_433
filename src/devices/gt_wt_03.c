@@ -3,9 +3,9 @@
 
     Copyright (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
 /** @fn int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -90,7 +90,7 @@ static int gt_wt_03_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int row = 0;
-    uint8_t *b = bitbuffer->bb[row];
+    uint8_t *b;
 
     // nominal 1 row or 23 rows, require more than half to match
     if (bitbuffer->num_rows > 1)
@@ -151,7 +151,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "button",

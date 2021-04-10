@@ -1,18 +1,18 @@
-/* X10 sensor
- *
- * Stub for decoding test data only
- *
- * Copyright (C) 2015 Tommy Vestermark
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    X10 sensor (Stub for decoding test data only).
+
+    Copyright (C) 2015 Tommy Vestermark
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include "decoder.h"
 
-static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b = bitbuffer->bb[1];
 
@@ -81,24 +81,24 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 }
 
 static char *output_fields[] = {
-    "model",
-    "channel",
-    "id",
-    "houseid", // TODO: remove ??
-    "deviceid", // TODO: remove ??
-    "state",
-    "data",
-    NULL
+        "model",
+        "channel",
+        "id",
+        "houseid",  // TODO: remove ??
+        "deviceid", // TODO: remove ??
+        "state",
+        "data",
+        NULL,
 };
 
 r_device X10_RF = {
-    .name           = "X10 RF",
-    .modulation     = OOK_PULSE_PPM,
-    .short_width    = 500,  // Short gap 500µs
-    .long_width     = 1680, // Long gap 1680µs
-    .gap_limit      = 2800, // Gap after sync is 4.5ms (1125)
-    .reset_limit    = 6000, // Gap seen between messages is ~40ms so let's get them individually
-    .decode_fn      = &x10_rf_callback,
-    .disabled       = 1,
-    .fields         = output_fields,
+        .name        = "X10 RF",
+        .modulation  = OOK_PULSE_PPM,
+        .short_width = 500,  // Short gap 500µs
+        .long_width  = 1680, // Long gap 1680µs
+        .gap_limit   = 2800, // Gap after sync is 4.5ms (1125)
+        .reset_limit = 6000, // Gap seen between messages is ~40ms so let's get them individually
+        .decode_fn   = &x10_rf_callback,
+        .disabled    = 1,
+        .fields      = output_fields,
 };

@@ -1,5 +1,5 @@
 /** @file
-    ERT SCM sensors.
+    ERT Standard Consumption Message (SCM) sensors.
 
     Copyright (C) 2020 Benjamin Larsson.
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-ERT SCM sensors.
+ERT Standard Consumption Message (SCM) sensors.
 
 Random information:
 
@@ -45,9 +45,10 @@ https://web.archive.org/web/20090828043201/http://www.openamr.org/wiki/ItronERTM
 
 */
 
-static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+static int ert_scm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
+    // TODO: Verify preamble
+    //static const uint8_t ERT_PREAMBLE[]  = {/*0xF*/ 0x2A, 0x60};
     uint8_t *b;
     uint8_t physical_tamper, ert_type, encoder_tamper;
     uint32_t consumption_data, ert_id;
@@ -57,6 +58,16 @@ static int ert_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
 
     b = bitbuffer->bb[0];
+
+    // No need to decode/extract values for simple test
+    // check id tamper type crc  value not all zero'ed
+    if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
     if (crc16(&b[2], 10, 0x6F63, 0))
         return DECODE_FAIL_MIC;
 
@@ -97,14 +108,14 @@ static char *output_fields[] = {
         NULL,
 };
 
-r_device ert_amr = {
-        .name        = "ERT",
+r_device ert_scm = {
+        .name        = "ERT Standard Consumption Message (SCM)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
         .long_width  = 30,
         .gap_limit   = 0,
         .reset_limit = 64,
-        .decode_fn   = &ert_decode,
+        .decode_fn   = &ert_scm_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

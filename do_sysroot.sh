@@ -4,12 +4,14 @@ set -e
 
 libusb_ver=1.0.22
 rtlsdr_ver=0.6.0
+pothos_ver=2020.01.26-vc14
 
 # from https://libusb.info/
 [ -e libusb-${libusb_ver}.7z ] || curl -L -O https://github.com/libusb/libusb/releases/download/v${libusb_ver}/libusb-${libusb_ver}.7z
-mkdir libusb
-7zr x -olibusb -y libusb-${libusb_ver}.7z
+mkdir -p libusb
+7z x -olibusb -y libusb-${libusb_ver}.7z
 
+source_dir=$(dirname $(realpath -s $0))
 sysroot32=$(pwd)/sysroot32
 sysroot64=$(pwd)/sysroot64
 sysroot32static=$(pwd)/sysroot32static
@@ -38,24 +40,24 @@ cd rtl-sdr-${rtlsdr_ver}
 [ "$(uname)" = "Darwin" ] && export tools=/opt/local
 
 export CMAKE_SYSROOT=$sysroot32 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot32/usr/lib/librtlsdr_static.a $sysroot32/usr/lib/librtlsdr.a
 
 export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/Toolchain-gcc-mingw-w64-i686.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot32static/usr/lib/librtlsdr_static.a $sysroot32static/usr/lib/librtlsdr.a
 rm $sysroot32static/usr/lib/librtlsdr.dll.a
 rm $sysroot32static/usr/bin/librtlsdr.dll
 
 export CMAKE_SYSROOT=$sysroot64 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot64/usr/lib/librtlsdr_static.a $sysroot64/usr/lib/librtlsdr.a
 
 export CMAKE_SYSROOT=$sysroot64static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../../cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake -DBUILD_SHARED_LIBS:BOOL=OFF .. && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot64static/usr/lib/librtlsdr_static.a $sysroot64static/usr/lib/librtlsdr.a
 rm $sysroot64static/usr/lib/librtlsdr.dll.a
@@ -63,10 +65,22 @@ rm $sysroot64static/usr/bin/librtlsdr.dll
 
 cd ..
 
+# from https://downloads.myriadrf.org/builds/PothosSDR/
+[ -e PothosSDR-${pothos_ver}-x64.exe ] || curl -L -O https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-${pothos_ver}-x64.exe
+mkdir -p pothos
+7z x -opothos -y PothosSDR-${pothos_ver}-x64.exe
+# workaround: 7-Zip 9.20 creates strange root directories
+[ -e pothos/bin ] || mv pothos/*/* pothos/ || :
+cp pothos/bin/SoapySDR.dll $sysroot64/usr/bin
+cp -R pothos/include/SoapySDR $sysroot64/usr/include
+cp pothos/lib/SoapySDR.lib $sysroot64/usr/lib
+cp -R pothos/cmake $sysroot64/usr
+sed -i 's/.*INTERFACE_COMPILE_OPTIONS.*//g' $sysroot64/usr/cmake/SoapySDRExport.cmake
+
 # build rtl_433
 
 export CMAKE_SYSROOT=$sysroot32 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake $source_dir && make && make install ; cd ..
 rm -rf build-tmp
 # Non-static 32-bit binary from w64 compiler is broken with
 # missing libgcc_s_sjlj-1.dll, libwinpthread-1.dll
@@ -76,16 +90,16 @@ rm -rf build-tmp
 mv $sysroot32/usr/bin/rtl_433.exe $sysroot32/usr/bin/rtl_433_32bit_nonstatic_broken.exe
 
 export CMAKE_SYSROOT=$sysroot32static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-i686.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-i686.cmake $source_dir && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot32static/usr/bin/rtl_433.exe $sysroot32static/usr/bin/rtl_433_32bit_static.exe
 
 export CMAKE_SYSROOT=$sysroot64 ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DENABLE_SOAPYSDR=ON -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake $source_dir && make && make install ; cd ..
 rm -rf build-tmp
 
 export CMAKE_SYSROOT=$sysroot64static ; echo $CMAKE_SYSROOT
-mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-gcc-mingw-w64-x86-64.cmake .. && make && make install ; cd ..
+mkdir build-tmp ; cd build-tmp ; cmake -DCMAKE_TOOLCHAIN_FILE=$source_dir/cmake/Toolchain-gcc-mingw-w64-x86-64.cmake $source_dir && make && make install ; cd ..
 rm -rf build-tmp
 mv $sysroot64static/usr/bin/rtl_433.exe $sysroot64static/usr/bin/rtl_433_64bit_static.exe
 

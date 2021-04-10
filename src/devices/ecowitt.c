@@ -60,7 +60,7 @@ static int ecowitt_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int channel = b[2] >> 4; // First nybble.
     channel++; // Convert 0-indexed wire protocol to 1-indexed channels on the device UI
-    if (channel < 1 || channel > 3) {
+    if (channel > 3) {
         return DECODE_FAIL_SANITY; // The switch only has 1-3.
     }
 

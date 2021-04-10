@@ -39,11 +39,27 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
             continue; // DECODE_ABORT_LENGTH
 
         msg = bitbuffer->bb[row_index];
+
+        // No need to decode/extract values for simple test
+        // check id channel temperature humidity value not zero
+        if ( !msg[0] && !msg[1] && !msg[2] && !msg[3] ) {
+            if (decoder->verbose > 1) {
+                fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+            }
+            continue; // DECODE_FAIL_SANITY
+        }
+
         chk = msg[0] >> 4;
 
         // align the channel "half nibble"
         bitbuffer_extract_bytes(bitbuffer, row_index, 2, b, 36);
         b[0] &= 0x3f;
+
+        // Prevent false positives from 'allzero'
+        // reject if Checksum channelhumidity and temperature are all zero
+        // No need to decode/extract values for simple test
+        if (chk == 0 && b[0] == 0 && b[1] == 0 && b[2] == 0)
+            continue; // DECODE_FAIL_SANITY
 
         sum = add_nibbles(b, 5) & 0xf;
         if (sum != chk) {
@@ -60,6 +76,13 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
         temp_c = (temp_raw >> 4) * 0.1f;
 
+        // reduce false positives by checking specified sensor range, this isn't great...
+        if (temp_c < -20 || temp_c > 60) {
+            if (decoder->verbose > 1)
+                fprintf(stderr, "%s: temperature sanity check failed: %.1f C\n", __func__, temp_c);
+            return DECODE_FAIL_SANITY;
+        }
+
         // there may be more specific information here; not currently certain what information is encoded here
         status = (b[3] >> 4);
 
@@ -71,7 +94,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
                 "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
                 "id",               "Id",                                   DATA_INT,    id,
                 "channel",          "Channel",                              DATA_INT,    channel,
-                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                 "status",           "Status",                               DATA_INT,    status,
                 "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",

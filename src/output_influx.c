@@ -16,6 +16,7 @@
 #include "optparse.h"
 #include "util.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@
 typedef struct {
     struct data_output output;
     struct mg_mgr *mgr;
+    struct mg_connection *conn;
     int prev_status;
     int prev_resp_code;
     char hostname[64];
@@ -36,7 +38,6 @@ typedef struct {
     char extra_headers[150];
     int databufidxfill;
     struct mbuf databufs[2];
-    bool transfer_running;
 
 } influx_client_t;
 
@@ -45,7 +46,7 @@ static void influx_client_send(influx_client_t *ctx);
 static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
 {
     // note that while shutting down the ctx is NULL
-    influx_client_t *ctx = (influx_client_t *)nc->mgr->user_data;
+    influx_client_t *ctx = (influx_client_t *)nc->user_data;
     struct http_message *hm = (struct http_message *)ev_data;
 
     switch (ev) {
@@ -56,7 +57,7 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
             if (ctx) {
                 if (ctx->prev_status != connect_status)
                     fprintf(stderr, "InfluxDB connect error: %s\n", strerror(connect_status));
-                ctx->transfer_running = false;
+                ctx->conn = NULL;
             }
         }
         if (ctx)
@@ -79,31 +80,20 @@ static void influx_client_event(struct mg_connection *nc, int ev, void *ev_data)
         break;
     case MG_EV_CLOSE:
         if (ctx) {
-            ctx->transfer_running = false;
+            ctx->conn = NULL;
             influx_client_send(ctx);
         }
         break;
     }
 }
 
-static struct mg_mgr *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
+static influx_client_t *influx_client_init(influx_client_t *ctx, char const *url, char const *token)
 {
-    struct mg_mgr *mgr = calloc(1, sizeof(*mgr));
-    if (!mgr) {
-        FATAL_CALLOC("influx_client_init()");
-    }
-
-    strncpy(ctx->url, url, sizeof(ctx->url) - 1);
+    strncpy(ctx->url, url, sizeof(ctx->url));
+    ctx->url[sizeof(ctx->url) - 1] = '\0';
     snprintf(ctx->extra_headers, sizeof (ctx->extra_headers), "Authorization: Token %s\r\n", token);
 
-    mg_mgr_init(mgr, ctx);
-
-    return mgr;
-}
-
-static int influx_client_poll(struct mg_mgr *mgr)
-{
-    return mg_mgr_poll(mgr, 0);
+    return ctx;
 }
 
 static void influx_client_send(influx_client_t *ctx)
@@ -112,17 +102,17 @@ static void influx_client_send(influx_client_t *ctx)
 
     /*fprintf(stderr, "Influx %p msg: \"%s\" with %lu/%lu %s\n",
             (void*)ctx, buf->buf, buf->len, buf->size,
-            ctx->transfer_running ? "buffering" : "to be sent");*/
+            ctx->conn ? "buffering" : "to be sent");*/
 
-    if (ctx->transfer_running || !buf->len)
+    if (ctx->conn || !buf->len)
         return;
 
-    if (mg_connect_http(ctx->mgr, influx_client_event, ctx->url, ctx->extra_headers, buf->buf) == NULL) {
+    struct mg_connect_opts opts = {.user_data = ctx};
+    if ((ctx->conn = mg_connect_http_opt(ctx->mgr, influx_client_event, opts, ctx->url, ctx->extra_headers, buf->buf)) == NULL) {
         fprintf(stderr, "Connect to InfluxDB (%s) failed\n", ctx->url);
     }
     else {
         ctx->databufidxfill ^= 1;
-        ctx->transfer_running = true;
         buf->len = 0;
         *buf->buf = '\0';
     }
@@ -192,6 +182,8 @@ static void mbuf_remove_part(struct mbuf *a, char *pos, size_t len)
 
 static void print_influx_array(data_output_t *output, data_array_t *array, char const *format)
 {
+    UNUSED(array);
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "\"array\""); // TODO
@@ -199,7 +191,6 @@ static void print_influx_array(data_output_t *output, data_array_t *array, char 
 
 static void print_influx_data_escaped(data_output_t *output, data_t *data, char const *format)
 {
-    influx_client_t *influx = (influx_client_t *)output;
     char str[1000];
     data_print_jsons(data, str, sizeof (str));
     output->print_string(output, str, format);
@@ -207,6 +198,7 @@ static void print_influx_data_escaped(data_output_t *output, data_t *data, char 
 
 static void print_influx_string_escaped(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *databuf = &influx->databufs[influx->databufidxfill];
     size_t size = databuf->size - databuf->len;
@@ -237,6 +229,7 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
 
 static void print_influx_string(data_output_t *output, char const *str, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%s", str);
@@ -245,6 +238,7 @@ static void print_influx_string(data_output_t *output, char const *str, char con
 // Generate InfluxDB line protocol
 static void print_influx_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     char *str;
     char *end;
@@ -363,6 +357,7 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
 
 static void print_influx_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%f", data);
@@ -370,19 +365,10 @@ static void print_influx_double(data_output_t *output, double data, char const *
 
 static void print_influx_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     influx_client_t *influx = (influx_client_t *)output;
     struct mbuf *buf = &influx->databufs[influx->databufidxfill];
     mbuf_snprintf(buf, "%d", data);
-}
-
-static void data_output_influx_poll(data_output_t *output)
-{
-    influx_client_t *influx = (influx_client_t *)output;
-
-    if (!influx)
-        return;
-
-    influx_client_poll(influx->mgr);
 }
 
 static void data_output_influx_free(data_output_t *output)
@@ -392,12 +378,16 @@ static void data_output_influx_free(data_output_t *output)
     if (!influx)
         return;
 
-    influx->mgr->user_data = NULL;
-    mg_mgr_free(influx->mgr);
+    // remove ctx from our connections
+    if (influx->conn) {
+        influx->conn->user_data = NULL;
+        influx->conn->flags |= MG_F_CLOSE_IMMEDIATELY;
+    }
+
     free(influx);
 }
 
-struct data_output *data_output_influx_create(char *opts)
+struct data_output *data_output_influx_create(struct mg_mgr *mgr, char *opts)
 {
     influx_client_t *influx = calloc(1, sizeof(influx_client_t));
     if (!influx) {
@@ -459,12 +449,12 @@ struct data_output *data_output_influx_create(char *opts)
     influx->output.print_string = print_influx_string;
     influx->output.print_double = print_influx_double;
     influx->output.print_int    = print_influx_int;
-    influx->output.output_poll  = data_output_influx_poll;
     influx->output.output_free  = data_output_influx_free;
 
     fprintf(stderr, "Publishing data to InfluxDB (%s)\n", url);
 
-    influx->mgr = influx_client_init(influx, url, token);
+    influx->mgr = mgr;
+    influx_client_init(influx, url, token);
 
     return &influx->output;
 }

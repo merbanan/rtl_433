@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include "list.h"
 #include <time.h>
+#include <signal.h>
 
 #define DEFAULT_SAMPLE_RATE     250000
 #define DEFAULT_FREQUENCY       433920000
@@ -25,6 +26,7 @@
 
 struct sdr_dev;
 struct r_device;
+struct mg_mgr;
 
 typedef enum {
     CONVERT_NATIVE,
@@ -43,6 +45,7 @@ typedef enum {
 
 typedef struct r_cfg {
     char *dev_query;
+    char const *dev_info;
     char *gain_str;
     char *settings_str;
     int ppm_error;
@@ -50,8 +53,9 @@ typedef struct r_cfg {
     char const *test_data;
     list_t in_files;
     char const *in_filename;
-    int do_exit;
-    int do_exit_async;
+    volatile sig_atomic_t hop_now;
+    volatile sig_atomic_t exit_async;
+    volatile sig_atomic_t exit_code; ///< 0=no err, 1=params or cmd line err, 2=sdr device read error, 3=usb init error, 5=USB error (reset), other=other error
     int frequencies;
     int frequency_index;
     uint32_t frequency[MAX_FREQS];
@@ -67,7 +71,8 @@ typedef struct r_cfg {
     uint64_t input_pos;
     uint32_t bytes_to_read;
     struct sdr_dev *dev;
-    int grab_mode;
+    int grab_mode; ///< Signal grabber mode: 0=off, 1=all, 2=unknown, 3=known
+    int raw_mode; ///< Raw pulses printing mode: 0=off, 1=all, 2=unknown, 3=known
     int verbosity; ///< 0=normal, 1=verbose, 2=verbose decoders, 3=debug decoders, 4=trace decoding.
     int verbose_bits;
     conversion_mode_t conversion_mode;
@@ -80,21 +85,23 @@ typedef struct r_cfg {
     int report_description;
     int report_stats;
     int stats_interval;
-    int stats_now;
+    volatile sig_atomic_t stats_now;
     time_t stats_time;
     int no_default_devices;
     struct r_device *devices;
     uint16_t num_r_devices;
-    char *output_tag;
+    list_t data_tags;
     list_t output_handler;
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;
     int old_model_keys;
     /* stats*/
+    time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval
     unsigned frames_fsk; ///< stats counter for interval
     unsigned frames_events; ///< stats counter for interval
+    struct mg_mgr *mgr;
 } r_cfg_t;
 
 #endif /* INCLUDE_RTL_433_H_ */

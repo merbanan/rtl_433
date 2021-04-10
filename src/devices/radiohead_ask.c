@@ -1,9 +1,18 @@
-/* RadioHead ASK (generic) protocol
- *
- * Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
- * The symbol encoding ensures a maximum run (gap) of 4x bit-width.
- * Sensible Living uses a speed of 1000, i.e. 1000 us per bit.
- */
+/** @file
+    RadioHead ASK (generic) protocol.
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+RadioHead ASK (generic) protocol.
+
+Default transmitter speed is 2000 bits per second, i.e. 500 us per bit.
+The symbol encoding ensures a maximum run (gap) of 4x bit-width.
+Sensible Living uses a speed of 1000, i.e. 1000 us per bit.
+*/
 
 #include "decoder.h"
 

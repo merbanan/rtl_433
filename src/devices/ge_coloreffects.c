@@ -1,17 +1,20 @@
-/* GE Color Effects Remote
- *
- * Previous work decoding this device:
- *    https://lukecyca.com/2013/g35-rf-remote.html
- *    http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
- *
- * Copyright (C) 2017 Luke Cyca <me@lukecyca.com>, Christian W. Zuckschwerdt <zany@triq.net>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- */
+/** @file
+    GE Color Effects Remote.
 
+    Copyright (C) 2017 Luke Cyca <me@lukecyca.com>, Christian W. Zuckschwerdt <zany@triq.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
+/**
+GE Color Effects Remote.
+
+Previous work decoding this device:
+ https://lukecyca.com/2013/g35-rf-remote.html
+ http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
+*/
 #include "decoder.h"
 
 // Frame preamble:
@@ -30,7 +33,7 @@ static inline int bit(const uint8_t *bytes, unsigned bit)
  * 10 = 0
  *  1100 = 1
  */
-unsigned ge_decode(r_device *decoder, bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
+unsigned ge_decode(bitbuffer_t *inbuf, unsigned row, unsigned start, bitbuffer_t *outbuf)
 {
     uint8_t *bits = inbuf->bb[row];
     unsigned int len = inbuf->bits_per_row[row];
@@ -68,7 +71,7 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     uint8_t device_id;
     uint8_t command;
 
-    ge_decode(decoder, bitbuffer, row, start_pos, &packet_bits);
+    ge_decode(bitbuffer, row, start_pos, &packet_bits);
     //bitbuffer_print(&packet_bits);
 
     /* From http://www.deepdarc.com/2010/11/27/hacking-christmas-lights/
@@ -121,7 +124,12 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 
 }
 
-static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+/**
+GE Color Effects Remote.
+@sa ge_coloreffects_decode()
+*/
+static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     unsigned bitpos = 0;
     int ret         = 0;
     int events      = 0;
@@ -143,7 +151,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "command",
-    NULL
+    NULL,
 };
 
 r_device ge_coloreffects = {

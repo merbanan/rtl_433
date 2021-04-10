@@ -4,9 +4,9 @@
     Copyright (C) 2016 Martin Hauke
     Enhanced (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
 /**
@@ -39,14 +39,14 @@ Example data:
 Temperature:
 - Sensor sends data in °F, lowest supported value is -90°F
 - 12 bit unsigned and scaled by 10 (Nibbles: 6,5,4)
-- in this case "011001100101" =  1637/10 - 90 = 73.7 °F (23.17 °C)
+- in this case `011001100101` =  1637/10 - 90 = 73.7 °F (23.17 °C)
 
 Humidity:
 - 8 bit unsigned (Nibbles 8,7)
-- in this case "00101110" = 46
+- in this case `00101110` = 46
 
 Channel number: (Bits 10,11) + 1
-- in this case "00" --> "00" +1 = Channel1
+- in this case `00` --> `00` +1 = Channel1
 
 Battery status: (Bit 33) (0 normal, 1 voltage is below ~2.7 V)
 - TX-Button: (Bit 32) (0 indicates regular transmission, 1 indicates requested by pushbutton)
@@ -57,7 +57,8 @@ Random Code / Device ID: (Nibble 1)
 
 #include "decoder.h"
 
-static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t b[5];
     data_t *data;
 
@@ -73,6 +74,15 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
 
     // remove the two leading 0-bits and align the data
     bitbuffer_extract_bytes(bitbuffer, r, 2, b, 40);
+
+    // No need to decode/extract values for simple test
+    // check id channel temperature humidity value not zero
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
 
     // CRC-4 poly 0x3, init 0x0 over 32 bits then XOR the next 4 bits
     int crc = crc4(b, 4, 0x3, 0x0) ^ (b[4] >> 4);
