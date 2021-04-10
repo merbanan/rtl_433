@@ -192,6 +192,8 @@
     DECL(tfa_marbella) \
     DECL(auriol_ahfl) \
     DECL(auriol_aft77b2) \
+    DECL(honeywell_cm921) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

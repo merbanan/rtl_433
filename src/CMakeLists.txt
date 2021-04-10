@@ -101,6 +101,7 @@ add_library(r_433 STATIC
     devices/holman_ws5029.c
     devices/hondaremote.c
     devices/honeywell.c
+    devices/honeywell_cm921.c
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
