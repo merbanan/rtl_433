@@ -370,12 +370,12 @@ increment(pm2.5), where the increment is by ranges from the following
 table (with gaps when no samples have been observed).  It is left as
 future work to compare with an actual PM10 sensor.
 
-0 to 24		| 1
-25 to 106	| 2
-109 to 185	| 3
-190 to 222	| 4
-311		| 5
-390		| 6
+0 to 24     | 1
+25 to 106   | 2
+109 to 185  | 3
+190 to 222  | 4
+311         | 5
+390         | 6
 
 
 Data layout:

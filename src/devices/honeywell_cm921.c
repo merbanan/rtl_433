@@ -287,7 +287,7 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
                           msg->header == 0x1c ? 2 :
                           msg->header == 0x10 ? 2 :
                           msg->header == 0x3c ? 2 :
-			  (msg->header >> 2) & 0x03; // total speculation.
+                (msg->header >> 2) & 0x03; // total speculation.
 
     for (unsigned i = 0; i < msg->num_device_ids; i++)
         for (unsigned j = 0; j < 3; j++)
