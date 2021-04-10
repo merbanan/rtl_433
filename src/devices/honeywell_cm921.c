@@ -175,11 +175,11 @@ data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
                 case 1:
                     data = data_append(data, "time_request", "", DATA_INT, msg->payload[0], NULL); break;
                 case 9: {
-                    uint8_t unknown_0 = msg->payload[0]; /* always == 0? */
-                    uint8_t unknown_1 = msg->payload[1]; /* direction? */
+                    //uint8_t unknown_0 = msg->payload[0]; /* always == 0? */
+                    //uint8_t unknown_1 = msg->payload[1]; /* direction? */
                     uint8_t second = msg->payload[2];
                     uint8_t minute = msg->payload[3];
-                    uint8_t day_of_week = msg->payload[4] >> 5;
+                    //uint8_t day_of_week = msg->payload[4] >> 5;
                     uint8_t hour = msg->payload[4] & 0x1F;
                     uint8_t day = msg->payload[5];
                     uint8_t month = msg->payload[6];
@@ -371,7 +371,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned first_byte = 24;
     unsigned end_byte = fi;
     unsigned num_bits  = end_byte - first_byte;
-    unsigned num_bytes = num_bits/8 / 2;
+    //unsigned num_bytes = num_bits/8 / 2;
 
     bitbuffer_t packet = {0};
     unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, num_bits);
