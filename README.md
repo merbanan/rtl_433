@@ -262,6 +262,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [181]  Amazon Basics Meat Thermometer
     [182]  TFA Marbella Pool Thermometer
     [183]  Auriol AHFL temperature/humidity sensor
+    [184]  Auriol AFT 77 B2 temperature sensor
     [185]  Honeywell CM921/BDR91 (partial Evohome)
 
 * Disabled by default, use -R n or -G
