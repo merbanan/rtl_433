@@ -15,6 +15,8 @@ LaCrosse/StarMétéo/Conrad TX35DTH-IT, TFA Dostmann 30.3155     Temperature/Hum
 LaCrosse/StarMétéo/Conrad TX29-IT, TFA Dostmann 30.3159.IT     Temperature Sensors.
 Tune to 868240000Hz
 
+LaCrosse TX25U Temperature/Temperature Probe at 915 MHz
+
 Protocol
 ========
 Example data : https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx29.cu8
@@ -42,6 +44,7 @@ Example data : https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacro
     weak battery
                                                                  ~~~ ~~~~ 2-8 bits of byte 7
     humidity, in%. If == 0x6a : no humidity sensor
+                   If == 0x7d : temperature is actually second probe temperature channel
                                                                           ~~~~ ~~~~ byte 8
     crc8 of bytes
 
@@ -64,11 +67,18 @@ https://github.com/merbanan/rtl_433_tests/tree/master/tests/lacrosse/06/gfile-tx
 
 TX29 and TX35 share the same protocol, but pulse are different length, thus this decoder
 handle the two signal and we use two r_device struct (only differing by the pulse width).
+
+TX25U alternates between a temperature only packet and a packet with temperature and humidity
+where a special humidity flag value of 125 indicates the second channel instead of humidity.
+0x40 is added to the id to distinguish between channels.
+
+There's no way to distinguish between the TX35 and TX25U models
 */
 
 #include "decoder.h"
 
 #define LACROSSE_TX29_NOHUMIDSENSOR  0x6a // Sensor do not support humidity
+#define LACROSSE_TX25_PROBE_FLAG     0x7d // Humidity flag to indicate probe temperature channel
 #define LACROSSE_TX35_CRC_POLY       0x31
 #define LACROSSE_TX35_CRC_INIT       0x00
 #define LACROSSE_TX29_MODEL          29 // Model number
@@ -119,7 +129,10 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         newbatt     = (out[1] >> 5) & 1;
         battery_low = out[3] >> 7;
         humidity    = out[3] & 0x7f;
-        if (humidity == LACROSSE_TX29_NOHUMIDSENSOR) {
+        if ((humidity == LACROSSE_TX29_NOHUMIDSENSOR) || (humidity == LACROSSE_TX25_PROBE_FLAG)) {
+            if (humidity == LACROSSE_TX25_PROBE_FLAG)
+                sensor_id += 0x40;      // Change ID to distinguish between the main and probe channels
+            /* clang-format off */
             data = data_make(
                     "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? _X("LaCrosse-TX29IT","TX29-IT") : _X("LaCrosse-TX35DTHIT","TX35DTH-IT")),
@@ -129,7 +142,9 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                     "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     "mic", "Integrity", DATA_STRING, "CRC",
                     NULL);
+            /* clang-format on */
         } else {
+            /* clang-format off */
             data = data_make(
                     "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? _X("LaCrosse-TX29IT","TX29-IT") : _X("LaCrosse-TX35DTHIT","TX35DTH-IT")),
@@ -140,6 +155,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                     "humidity", "Humidity", DATA_FORMAT, "%u %%", DATA_INT, humidity,
                     "mic", "Integrity", DATA_STRING, "CRC",
                     NULL);
+            /* clang-format on */
         }
 
         decoder_output_data(decoder, data);
@@ -149,7 +165,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
 }
 
 /**
-Wrapper for the TX29 device.
+Wrapper for the TX29 and TX25U device.
 @sa lacrosse_it()
 */
 static int lacrossetx29_callback(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -178,7 +194,7 @@ static char *output_fields[] = {
     NULL,
 };
 
-// Receiver for the TX29 device
+// Receiver for the TX29 and TX25U device
 r_device lacrosse_tx29 = {
     .name           = "LaCrosse TX29IT, TFA Dostmann 30.3159.IT Temperature sensor",
     .modulation     = FSK_PULSE_PCM,
