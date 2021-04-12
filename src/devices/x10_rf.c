@@ -145,6 +145,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _X("channel", "houseid"),  "", DATA_STRING, housecode,
             "state",              "State", DATA_STRING, event_str,
             "data",                "Data", DATA_FORMAT, "%08x", DATA_INT, code,
+            "mic",           "Integrity",  DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -161,6 +162,7 @@ static char *output_fields[] = {
         "deviceid", // TODO: remove ??
         "state",
         "data",
+        "mic",
         NULL,
 };
 
