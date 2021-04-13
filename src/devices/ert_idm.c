@@ -299,7 +299,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
             // "ERTType",                          "",     DATA_INT,       ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "id",                  "ERTSerialNumber",     DATA_INT,       ERTSerialNumber,
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             // "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
@@ -315,7 +315,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
             "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
 
-            "MeterType",                        "Meter_Type",       DATA_STRING, meter_type,
+            "type",                        "Meter_Type",       DATA_STRING, meter_type,
             "mic",                              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -615,7 +615,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "ApplicationVersion",               "",     DATA_INT,       ApplicationVersion,
 
             "ERTType",                          "",     DATA_FORMAT,  "0x%02X", DATA_INT,    ERTType,
-            "ERTSerialNumber",                  "",     DATA_INT,       ERTSerialNumber,
+            "id",                  "ERTSerialNumber",     DATA_INT,       ERTSerialNumber,
             "ConsumptionIntervalCount",         "",     DATA_INT,       ConsumptionIntervalCount,
             "ModuleProgrammingState",           "",     DATA_FORMAT, "0x%02X", DATA_INT, ModuleProgrammingState,
             // "ModuleProgrammingState",           "",     DATA_STRING,    ModuleProgrammingState_str,
@@ -634,7 +634,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "MeterIdCRC",                       "",     DATA_FORMAT, "0x%04X", DATA_INT, MeterIdCRC,
             "PacketCRC",                        "",     DATA_FORMAT, "0x%04X", DATA_INT, PacketCRC,
 
-            "MeterType",                        "",       DATA_STRING, meter_type,
+            "type",                        "Meter_Type",       DATA_STRING, meter_type,
             "mic",                              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -652,7 +652,7 @@ static char *output_fields[] = {
         "HammingCode",
         "ApplicationVersion",
         "ERTType",
-        "ERTSerialNumber",
+        "id",
         "ConsumptionIntervalCount",
         "ModuleProgrammingState",
 
@@ -672,7 +672,7 @@ static char *output_fields[] = {
         "TransmitTimeOffset",
         "MeterIdCRC",
         "PacketCRC",
-        "MeterType",
+        "type",
         "mic",
         NULL,
 };
