@@ -279,7 +279,7 @@ static char *unit_names[][3] = {
 
 // exponent                    -3     -2    -1    0  1   2    3     4
 // index                        0      1     2    3  4   5    6     7
-static float pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
+static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
 static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* value)
