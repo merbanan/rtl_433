@@ -104,7 +104,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [19]  Nexus, FreeTec NC-7345, NX-3980, Solight TE82S, TFA 30.3209 temperature/humidity sensor
     [20]  Ambient Weather, TFA 30.3208.02 temperature sensor
     [21]  Calibeur RF-104 Sensor
-    [22]* X10 RF
+    [22]  X10 RF
     [23]  DSC Security Contact
     [24]* Brennenstuhl RCS 2044
     [25]  Globaltronics GT-WT-02 Sensor
@@ -264,6 +264,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [183]  Auriol AHFL temperature/humidity sensor
     [184]  Auriol AFT 77 B2 temperature sensor
     [185]  Honeywell CM921 Wireless Programmable Room Thermostat
+    [186]  Hyundai TPMS (VDO)
 
 * Disabled by default, use -R n or -G
 

@@ -176,6 +176,7 @@ add_library(r_433 STATIC
     devices/tpms_citroen.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
+    devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_pmv107j.c

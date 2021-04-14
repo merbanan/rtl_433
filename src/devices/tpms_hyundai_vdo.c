@@ -1,4 +1,4 @@
-/**
+/** @file
     Hyundai TPMS (VDO) FSK 10 byte Manchester encoded CRC-8 TPMS data.
 
     Copyright (C) 2020 Todor Uzunov aka teou, TTiges, 2019 Andreas Spiess, 2017 Christian W. Zuckschwerdt <zany@triq.net>
@@ -10,26 +10,27 @@
 */
 
 /**
+Hyundai TPMS (VDO) FSK 10 byte Manchester encoded CRC-8 TPMS data.
+
 Tested on a Hyundai i30 PDE. It uses sensors from Continental/VDO. VDO reference/part no.: A2C98607702, generation TG1C, FCC ID: KR5TIS-01
 Similar sensors and probably protocol are used in models from BMW, Fiat-Chrysler-Alfa, Peugeot-Citroen, Hyundai-KIA, Mitsubishi, Mazda, etc.
 https://www.vdo.com/media/746526/2019-10_tpms-oe-sensors_application-list.pdf
 Hence my compilation and fine-tuning the already present as of late 2020 source for Citroen, Abarth and Jansite.
 
-Working Temperature: -50°C to 125°C (but according to some sources the chip can only handle -40°C)
-Working Frequency: 433.92MHz+-38KHz
-Tire monitoring range value: 0kPa-350kPa+-7kPa
-
+- Working Temperature: -50°C to 125°C (but according to some sources the chip can only handle -40°C)
+- Working Frequency: 433.92MHz+-38KHz
+- Tire monitoring range value: 0kPa-350kPa+-7kPa
 
 Packet nibbles:
 
-PRE    UU  IIIIIIII FR  PP TT BB  CC
+    PRE    UU  IIIIIIII FR  PP TT BB  CC
 
 - PRE = preamble is 55 55 55 56 (inverted: aa aa aa a9)
 - U = state, decoding unknown. In all tests has values 20,21,22,23 in hex.
-Probably codes the information how was the sensor activated - external service tool or internal accelometer (first byte) and the speed of transmission?
+    Probably codes the information how was the sensor activated - external service tool or internal accelometer (first byte) and the speed of transmission?
 - I = sensor Id in hex
 - F = Flags, in my tests always 0. Most probably here are coded in separate bits the alert flags for low pressure (below 150kPa), temperature and low battery.
-So it should be something like 00 (0) - all ok, 01 (1) - low pressure, 11 (3) - low pressure and low battery and so on, but more testing is necessary
+    So it should be something like 00 (0) - all ok, 01 (1) - low pressure, 11 (3) - low pressure and low battery and so on, but more testing is necessary
 - R = packet Repetition in every burst (about 10-11 identical packets are transmitted in every burst approximately once per 64 seconds)
 - P = Pressure X/5=PSI or X(dec).1.375=kPa
 - T = Temperature (deg C offset by 50)
@@ -45,15 +46,13 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     bitbuffer_t packet_bits = {0};
     uint8_t *b;
     int state;
-    char state_str[3];
     unsigned id;
     char id_str[9 + 1];
     int flags;
     int repeat;
     int pressure;
     int temperature;
-    char bat_acc[3];
-//  char code_str[10 * 2 + 1];
+    int maybe_battery;
     int crc;
 
     bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 80);
@@ -73,30 +72,30 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
         return 0;
     }
 
-state = b[0];
-sprintf(state_str, "%02x", state);
-id = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
-sprintf(id_str, "%08x", id);
-flags = b[5]>>4;
-repeat = b[5]&0x0f;
-pressure = b[6];
-temperature = b[7];
-sprintf(bat_acc, "%02x", b[8]);
-//sprintf(code_str, "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], b[8], b[9]);
+    state         = b[0];
+    id            = (unsigned)b[1] << 24 | b[2] << 16 | b[3] << 8 | b[4];
+    flags         = b[5] >> 4;
+    repeat        = b[5] & 0x0f;
+    pressure      = b[6];
+    temperature   = b[7];
+    maybe_battery = b[8];
 
+    sprintf(id_str, "%08x", id);
+
+    /* clang-format off */
     data = data_make(
-        "model",            "",             DATA_STRING, "Hyundai VDO",
-        "type",             "",             DATA_STRING, "TPMS",
-        "state",            "",             DATA_STRING, state_str,
-        "id",               "",             DATA_STRING, id_str,
-        "flags",            "",             DATA_INT, flags,
-        "repeat",           "repetition",   DATA_INT, repeat,
-        "pressure_kPa",     "pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.375,
-        "temperature_C",    "temp",         DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-        "bat_acc",          "bat_or_acc",   DATA_STRING, bat_acc,
-        "mic",              "",             DATA_STRING, "CRC",
-//      "code",             "raw_hex",      DATA_STRING, code_str, // the whole packet in hex for debugging ot testing
-        NULL);
+            "model",            "",             DATA_STRING, "Hyundai-VDO",
+            "type",             "",             DATA_STRING, "TPMS",
+            "id",               "",             DATA_STRING, id_str,
+            "state",            "",             DATA_INT,    state,
+            "flags",            "",             DATA_INT,    flags,
+            "repeat",           "repetition",   DATA_INT,    repeat,
+            "pressure_kPa",     "pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.375,
+            "temperature_C",    "temp",         DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
+            "maybe_battery",    "",             DATA_INT,    maybe_battery,
+            "mic",              "",             DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -126,18 +125,17 @@ static int tpms_hyundai_vdo_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "type",
-    "state",
-    "id",
-    "flags",
-    "repeat",
-    "pressure_kPa",
-    "temperature_C",
-    "bat_acc",
-    "mic",
-//  "code",
-    NULL,
+        "model",
+        "type",
+        "id",
+        "state",
+        "flags",
+        "repeat",
+        "pressure_kPa",
+        "temperature_C",
+        "maybe_battery",
+        "mic",
+        NULL,
 };
 
 r_device tpms_hyundai_vdo = {
@@ -150,4 +148,3 @@ r_device tpms_hyundai_vdo = {
         .disabled    = 0,
         .fields      = output_fields,
 };
-

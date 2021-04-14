@@ -649,6 +649,9 @@
     <ClCompile Include="..\src\devices\tpms_ford.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\tpms_hyundai_vdo.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\tpms_jansite.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
