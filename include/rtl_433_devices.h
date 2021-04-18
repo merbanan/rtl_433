@@ -194,6 +194,7 @@
     DECL(auriol_aft77b2) \
     DECL(honeywell_cm921) \
     DECL(tpms_hyundai_vdo) \
+    DECL(schrader_MRXBC5A4) \
     DECL(rojaflex) \
     DECL(marlec_solar) \
     DECL(somfy_iohc) \

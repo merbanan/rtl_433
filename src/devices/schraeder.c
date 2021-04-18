@@ -283,6 +283,75 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     return 1;
 }
 
+/**
+TPMS Model: Schrader Electronics MRXBC5A4 and MRXBMW433TX1
+Contributed by: Ilias Daradimos.
+
+Probable packet payload:
+
+    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TT
+
+- S: sync 1 wake bit, 13 sync bit, 1 start bit
+- F: 3 bits, might contain status and battery flags.
+- I: id (24 bits)
+- P: 9 bits pressure 1kPa/bit or 8 bits 2kPa/bit + unknown bit
+- ?: Unknown bit
+- T: 8 bits temperature offset by 50, degrees C -50 to 205
+*/
+static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+{
+    data_t *data;
+    uint8_t b[7];
+    int serial_id;
+    char id_str[9];
+    unsigned flags;
+    char flags_str[9];
+    int pressure;    // mbar
+    int temperature; // degree C
+    int checksum;
+    decoder->verbose = 2;
+
+    /* Check for incorrect number of bits received */
+    if (bitbuffer->bits_per_row[0] != 61) {
+      if (decoder->verbose > 1) {
+        fprintf(stderr, "%s: length error %d \n", __func__, bitbuffer->bits_per_row[0]);
+      }
+      return DECODE_ABORT_LENGTH;
+    }
+    /* Discard the first 15 bits */
+    bitbuffer_extract_bytes(bitbuffer, 0, 15, b, 53);
+    // check serial value not zero
+    if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
+        }
+        return DECODE_FAIL_SANITY;
+    }
+
+    /* Get data */
+    serial_id   = ((b[0] & 0xf) << 20) | (b[1] << 12) | (b[2] << 4) | ((b[3] & 0xf0) >> 4);
+    flags       = ((unsigned)b[0] >> 4) & 0x7;
+    pressure    = (((b[3] & 0xf) << 5) | (b[4] >> 3));
+    temperature = ((b[4]&0x3) << 6) | (b[5] >> 2);
+    sprintf(id_str, "%06X", serial_id);
+    sprintf(flags_str, "%01x", flags);
+
+    /* clang-format off */
+    data = data_make(
+            "model",            "",             DATA_STRING, "Schrader-MRXBC5A4/MRXBMW433TX1 (BMW)",
+            "type",             "",             DATA_STRING, "TPMS",
+            "flags",            "",             DATA_STRING, flags_str,
+            "id",               "ID",           DATA_STRING, id_str,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 1.0f,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature -50,
+            "mic",              "Integrity",    DATA_STRING, "None",
+            NULL);
+    /* clang-format on */
+
+    decoder_output_data(decoder, data);
+    return 1;
+}
+
 static char const *const output_fields[] = {
         "model",
         "type",
@@ -314,6 +383,17 @@ static char const *const output_fields_SMD3MA4[] = {
         NULL,
 };
 
+static char *output_fields_MRXBC5A4[] = {
+        "model",
+        "type",
+        "id",
+        "flags",
+        "pressure_kPa",
+        "temperature_C",
+        "mic",
+        NULL,
+};
+
 r_device const schraeder = {
         .name        = "Schrader TPMS",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
@@ -342,4 +422,14 @@ r_device const schrader_SMD3MA4 = {
         .reset_limit = 480,
         .decode_fn   = &schrader_SMD3MA4_decode,
         .fields      = output_fields_SMD3MA4,
+};
+
+r_device schrader_MRXBC5A4 = {
+        .name        = "Schrader TPMS MRXBC5A4 (BMW)",
+        .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
+        .short_width = 120,
+        .long_width  = 0,
+        .reset_limit = 480,
+        .decode_fn   = &schrader_MRXBC5A4_decode,
+        .fields      = output_fields_MRXBC5A4,
 };
