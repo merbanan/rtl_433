@@ -289,9 +289,10 @@ Contributed by: Ilias Daradimos.
 
 Probable packet payload:
 
-    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TT
+    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TTTTTTTT
 
-- S: sync 1 wake bit, 13 sync bit, 1 start bit
+- W: 1 bit wake
+- S: 13 sync bit, 1 start bit
 - F: 3 bits, might contain status and battery flags.
 - I: id (24 bits)
 - P: 9 bits pressure 1kPa/bit or 8 bits 2kPa/bit + unknown bit
@@ -308,8 +309,6 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char flags_str[9];
     int pressure;    // mbar
     int temperature; // degree C
-    int checksum;
-    decoder->verbose = 2;
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 61) {
@@ -319,7 +318,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
       return DECODE_ABORT_LENGTH;
     }
     /* Discard the first 15 bits */
-    bitbuffer_extract_bytes(bitbuffer, 0, 15, b, 53);
+    bitbuffer_extract_bytes(bitbuffer, 0, 15, b, 46);
     // check serial value not zero
     if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
         if (decoder->verbose > 1) {
@@ -338,7 +337,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Schrader-MRXBC5A4/MRXBMW433TX1 (BMW)",
+            "model",            "",             DATA_STRING, "Schrader-MRXBC5A4 (BMW)",
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
@@ -425,11 +424,11 @@ r_device const schrader_SMD3MA4 = {
 };
 
 r_device schrader_MRXBC5A4 = {
-        .name        = "Schrader TPMS MRXBC5A4 (BMW)",
+        .name        = "Schrader TPMS MRXBC5A4, MRXBMW433TX1 (BMW)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 120,
+        .short_width = 123,
         .long_width  = 0,
-        .reset_limit = 480,
+        .reset_limit = 300,
         .decode_fn   = &schrader_MRXBC5A4_decode,
         .fields      = output_fields_MRXBC5A4,
 };
