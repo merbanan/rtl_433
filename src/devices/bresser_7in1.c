@@ -27,7 +27,7 @@ Data layout:
 
     {271}631d05c09e9a18abaabaaaaaaaaa8adacbacff9cafcaaaaaaa000000000000000000
 
-    DIGEST:8h8h ID?8h8h WDIR:8h4h 4h 8h WGUST:8h.4h WAVG:8h.4h RAIN:8h8h4h.4h RAIN?:8h TEMP:8h.4hC 4h HUM:8h% LIGHT:8h4h,4hKL ?:8h8h4h TRAILER:8h8h8h4h
+    DIGEST:8h8h ID?8h8h WDIR:8h4h 4h 8h WGUST:8h.4h WAVG:8h.4h RAIN:8h8h4h.4h RAIN?:8h TEMP:8h.4hC FLAGS?:4h HUM:8h% LIGHT:8h4h,4hKL ?:8h8h4h TRAILER:8h8h8h4h
 
 Unit of light is kLux (not W/m²).
 
@@ -97,6 +97,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float rain_mm = rain_raw * 0.1f;
     int temp_raw = (msg[14] >> 4) * 100 + (msg[14] & 0x0f) * 10 + (msg[15] >> 4);
     float temp_c = temp_raw * 0.1f;
+    int flags    = (msg[15] & 0x0f);
     if (temp_raw > 600)
         temp_c = (temp_raw - 1000) * 0.1f;
     int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
@@ -115,6 +116,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             "light_klx",        "Light",        DATA_FORMAT, "%.1f klx", DATA_DOUBLE, light_klx,
+            "flags",            "Battery?",     DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -133,6 +135,7 @@ static char *output_fields[] = {
         "wind_dir_deg",
         "rain_mm",
         "light_klx",
+        "flags",
         "mic",
         NULL,
 };
