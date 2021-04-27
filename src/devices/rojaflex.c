@@ -50,7 +50,7 @@ To get raw data:
 */
 
 // Message Defines
-#define DATAFRAME_BITCOUNT_INCL_CRC  88
+#define DATAFRAME_BITCOUNT_INCL_CRC 88
 #define DATAFRAME_BYTECOUNT_INCL_CRC 11 //Including CRC but no pramble
 #define LENGTH_OFFSET 0
 #define LENGTH_BITCOUNT 8
@@ -174,7 +174,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const message_preamble[] = {
             /*0xaa, 0xaa,*/ 0xaa, 0xaa, // preamble
-            0xd3, 0x91, 0xd3, 0x91  // sync word
+            0xd3, 0x91, 0xd3, 0x91      // sync word
     };
 
     data_t *data;
@@ -312,14 +312,14 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 msg_new[8 + COMMAND_VALUE_OFFSET] = 0x1;
 
                 // Generate message token
-                uint16_t token_calc               = calcMessageToken(command, channel);
+                uint16_t token_calc                   = calcMessageToken(command, channel);
                 msg_new[8 + MESSAGE_TOKEN_OFFSET + 0] = token_calc >> 8;
                 msg_new[8 + MESSAGE_TOKEN_OFFSET + 1] = token_calc & 0xFF;
 
                 // Generate CRC
                 // Thanks to: ./reveng -w 16 -s $msg1 $msg2 $msg3
                 // width=16  poly=0x8005  init=0xffff  refin=false  refout=false  xorout=0x0000  check=0xaee7  residue=0x0000  name="CRC-16/CMS"
-                uint16_t crc_calc               = crc16(&msg_new[8 + LENGTH_OFFSET], 9, 0x8005, 0xffff);
+                uint16_t crc_calc                   = crc16(&msg_new[8 + LENGTH_OFFSET], 9, 0x8005, 0xffff);
                 msg_new[8 + MESSAGE_CRC_OFFSET + 0] = crc_calc >> 8;
                 msg_new[8 + MESSAGE_CRC_OFFSET + 1] = crc_calc & 0xFF;
 
