@@ -78,24 +78,6 @@ To get raw data:
 #define COMMAND_ID_GO_SAVED_POS    0xda
 #define COMMAND_ID_REQUESTSTATUS   0xea
 
-#if 0
-static char* getDeviceTypeString( uint8_t * msg, unsigned int msg_bitcount)
-{
-    if( (msg[COMMAND_ID_OFFSET] & 0xF) == 0x5 ) {
-        return "RojaFlex Shutter";
-    } else if ( (msg[COMMAND_ID_OFFSET] & 0xF) == 0xa ) {
-        // Rojaflex Bridge clones a remote signal but does not send an CRC!?!?
-        // So we can detect if it a real remote or a bridge on the message length.
-        if( msg_bitcount == MESSAGE_BITCOUNT_INCL_CRC ) {
-            return "RojaFlex Remote";
-        } else {
-            return "RojaFlex Bridge";
-        }
-    }
-    return "Unknown";
-}
-#endif
-
 // Calcualte message token in static way
 // It seems to be a more dynamic formular ... but I did not find it until now.
 static uint16_t calcMessageToken( uint8_t command, uint8_t channel )
