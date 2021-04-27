@@ -50,23 +50,21 @@ To get raw data:
 */
 
 // Message Defines
-#define MESSAGE_BYTECOUNT_INCL_CRC 19 //Including CRC which is optional
-#define MESSAGE_BITCOUNT_INCL_CRC 152
-#define PREAMBLE_OFFSET 0
-#define PREAMBLE_BITCOUNT 64
-#define LENGTH_OFFSET 8
+#define DATAFRAME_BITCOUNT_INCL_CRC  88
+#define DATAFRAME_BYTECOUNT_INCL_CRC 11 //Including CRC but no pramble
+#define LENGTH_OFFSET 0
 #define LENGTH_BITCOUNT 8
-#define ID_OFFSET 9 // HomeID which I assume is static for one Remote Device
+#define ID_OFFSET 1 // HomeID which I assume is static for one Remote Device
 #define ID_BITCOUNT 28
-#define CHANNEL_OFFSET 12         // Mask 0x0F
-#define UNKNOWN_CHANNEL_OFFSET 12 // Mask 0xF0
-#define COMMAND_ID_OFFSET 13
+#define CHANNEL_OFFSET 4         // Mask 0x0F
+#define UNKNOWN_CHANNEL_OFFSET 5 // Mask 0xF0
+#define COMMAND_ID_OFFSET 5
 #define COMMAND_ID_BITCOUNT 8
-#define COMMAND_VALUE_OFFSET 14
+#define COMMAND_VALUE_OFFSET 6
 #define COMMAND_VALUE_BITCOUNT 8
-#define MESSAGE_TOKEN_OFFSET 15
+#define MESSAGE_TOKEN_OFFSET 7
 #define MESSAGE_TOKEN_BITCOUNT 16
-#define MESSAGE_CRC_OFFSET 17
+#define MESSAGE_CRC_OFFSET 9
 #define MESSAGE_CRC_BITCOUNT 16
 
 //Command Defindes
@@ -175,13 +173,13 @@ static char *getCommandString(uint8_t *msg)
 static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const message_preamble[] = {
-            0xaa, 0xaa, 0xaa, 0xaa, // preamble
+            /*0xaa, 0xaa,*/ 0xaa, 0xaa, // preamble
             0xd3, 0x91, 0xd3, 0x91  // sync word
     };
 
     data_t *data;
-    uint8_t msg[MESSAGE_BYTECOUNT_INCL_CRC];
-    uint8_t msg_bitcount = 0;
+    uint8_t msg[DATAFRAME_BYTECOUNT_INCL_CRC];
+    uint8_t dataframe_bitcount = 0;
 
     if (bitbuffer->num_rows != 1) {
         return DECODE_ABORT_EARLY;
@@ -193,25 +191,25 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (start_pos < bitbuffer->bits_per_row[row]) {
         // Save bitcount of total message including preamble
-        msg_bitcount = (bitbuffer->bits_per_row[row] - start_pos) & 0xFE;
+        dataframe_bitcount = (bitbuffer->bits_per_row[row] - start_pos - sizeof(message_preamble) * 8) & 0xFE;
     }
     else {
         return DECODE_ABORT_EARLY; // no preamble detected
     }
 
-    if (msg_bitcount < (MESSAGE_BITCOUNT_INCL_CRC - MESSAGE_CRC_BITCOUNT) || (msg_bitcount > MESSAGE_BITCOUNT_INCL_CRC)) {
+    if (dataframe_bitcount < (DATAFRAME_BITCOUNT_INCL_CRC - MESSAGE_CRC_BITCOUNT) || (dataframe_bitcount > DATAFRAME_BITCOUNT_INCL_CRC)) {
         // check min and max length
         return DECODE_ABORT_LENGTH;
     }
 
     //Extract raw line
-    bitbuffer_extract_bytes(bitbuffer, row, start_pos, msg, sizeof(msg) * 8);
+    bitbuffer_extract_bytes(bitbuffer, row, start_pos + sizeof(message_preamble) * 8, msg, dataframe_bitcount);
     if (decoder->verbose > 1) {
-        bitrow_printf(msg, msg_bitcount, "%s: rawdata: ", __func__);
+        bitrow_printf(msg, dataframe_bitcount, "%s: frame data: ", __func__);
     }
 
     // Check CRC if available
-    if (msg_bitcount == MESSAGE_BITCOUNT_INCL_CRC) {
+    if (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) {
         // Thanks to: ./reveng -w 16 -s $msg1 $msg2 $msg3
         // width=16  poly=0x8005  init=0xffff  refin=false  refout=false  xorout=0x0000  check=0xaee7  residue=0x0000  name="CRC-16/CMS"
         uint16_t crc_message = (msg[MESSAGE_CRC_OFFSET] << 8 | msg[MESSAGE_CRC_OFFSET + 1]);
@@ -229,7 +227,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     {
         char tokenString[7] = "";
         char id[10]         = "";
-        char *integrity     = (msg_bitcount == MESSAGE_BITCOUNT_INCL_CRC) ? "CRC-16/CMS" : "CRC-16/CMS missing";
+        char *integrity     = (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) ? "CRC-16/CMS" : "CRC-16/CMS missing";
         char *deviceType    = "unknown";
         sprintf(tokenString, "0x%02x%02x", msg[MESSAGE_TOKEN_OFFSET], msg[MESSAGE_TOKEN_OFFSET + 1]);
         sprintf(id, "0x%02x%02x%02x%01x", msg[ID_OFFSET], msg[ID_OFFSET + 1], msg[ID_OFFSET + 2], (msg[ID_OFFSET + 3] >> 4));
@@ -240,7 +238,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         else if ((msg[COMMAND_ID_OFFSET] & 0xF) == 0xa) {
             // Rojaflex Bridge clones a remote signal but does not send an CRC!?!?
             // So we can detect if it a real remote or a bridge on the message length.
-            if (msg_bitcount == MESSAGE_BITCOUNT_INCL_CRC) {
+            if (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) {
                 deviceType = "RojaFlex Remote";
             }
             else {
@@ -277,8 +275,8 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 COMMAND_ID_REQUESTSTATUS};
 
         uint8_t channel = GENERATE_COMMANDS_FOR_CURRENT_CHANNEL ? msg[CHANNEL_OFFSET] & 0xF : 0;
-        uint8_t command = 0; // Test
-        uint8_t msg_new[MESSAGE_BYTECOUNT_INCL_CRC];
+        uint8_t command = 0;
+        uint8_t msg_new[19];
 
         fprintf(stderr, "\n");
         fprintf(stderr, "%s: Signal cloner\n", __func__);
@@ -288,41 +286,47 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             for (uint8_t i = 0; i < sizeof(remote_commands); ++i) {
                 command = remote_commands[i];
 
-                // Clone message preamble
-                for (uint8_t j = 0; j < sizeof(message_preamble); ++j) {
-                    msg_new[j] = message_preamble[j];
-                }
+                // Create complete message preamble
+                msg_new[0] = 0xaa;
+                msg_new[1] = 0xaa;
+                msg_new[2] = 0xaa;
+                msg_new[3] = 0xaa;
+                msg_new[4] = 0xd3;
+                msg_new[5] = 0x91;
+                msg_new[6] = 0xd3;
+                msg_new[7] = 0x91;
+
                 // Set length
-                msg_new[LENGTH_OFFSET] = 0x8;
+                msg_new[8 + LENGTH_OFFSET] = 0x8;
 
                 // Clone ID from received message
-                msg_new[ID_OFFSET + 0] = msg[ID_OFFSET + 0];
-                msg_new[ID_OFFSET + 1] = msg[ID_OFFSET + 1];
-                msg_new[ID_OFFSET + 2] = msg[ID_OFFSET + 2];
+                msg_new[8 + ID_OFFSET + 0] = msg[ID_OFFSET + 0];
+                msg_new[8 + ID_OFFSET + 1] = msg[ID_OFFSET + 1];
+                msg_new[8 + ID_OFFSET + 2] = msg[ID_OFFSET + 2];
 
                 // Clone 4bit ID + Channel
-                msg_new[ID_OFFSET + 3] = msg[ID_OFFSET + 3] & 0xF0 + channel;
+                msg_new[8 + ID_OFFSET + 3] = msg[ID_OFFSET + 3] & 0xF0 + channel;
 
                 // Set command id + command value
-                msg_new[COMMAND_ID_OFFSET]    = command;
-                msg_new[COMMAND_VALUE_OFFSET] = (command == COMMAND_ID_REQUESTSTATUS) ? 0x0 : 0x1; //Only the pos request has a zero!?
+                msg_new[8 + COMMAND_ID_OFFSET]    = command;
+                msg_new[8 + COMMAND_VALUE_OFFSET] = 0x1;
 
                 // Generate message token
                 uint16_t token_calc               = calcMessageToken(command, channel);
-                msg_new[MESSAGE_TOKEN_OFFSET + 0] = token_calc >> 8;
-                msg_new[MESSAGE_TOKEN_OFFSET + 1] = token_calc & 0xFF;
+                msg_new[8 + MESSAGE_TOKEN_OFFSET + 0] = token_calc >> 8;
+                msg_new[8 + MESSAGE_TOKEN_OFFSET + 1] = token_calc & 0xFF;
 
                 // Generate CRC
                 // Thanks to: ./reveng -w 16 -s $msg1 $msg2 $msg3
                 // width=16  poly=0x8005  init=0xffff  refin=false  refout=false  xorout=0x0000  check=0xaee7  residue=0x0000  name="CRC-16/CMS"
-                uint16_t crc_calc               = crc16(&msg_new[LENGTH_OFFSET], 9, 0x8005, 0xffff);
-                msg_new[MESSAGE_CRC_OFFSET + 0] = crc_calc >> 8;
-                msg_new[MESSAGE_CRC_OFFSET + 1] = crc_calc & 0xFF;
+                uint16_t crc_calc               = crc16(&msg_new[8 + LENGTH_OFFSET], 9, 0x8005, 0xffff);
+                msg_new[8 + MESSAGE_CRC_OFFSET + 0] = crc_calc >> 8;
+                msg_new[8 + MESSAGE_CRC_OFFSET + 1] = crc_calc & 0xFF;
 
                 /*
                 // Print final command
                 */
-                bitrow_printf(&msg_new[0], msg_bitcount, "%s: CH:%01x Command:0x%02x: ", __func__, channel, command);
+                bitrow_printf(&msg_new[0], sizeof(msg_new) * 8, "%s: CH:%01x Command:0x%02x: ", __func__, channel, command);
             }
 
             fprintf(stderr, "\n");
