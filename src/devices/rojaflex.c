@@ -28,7 +28,7 @@ Default signal layout
 4 Bytes Preamble
 4 Bytes Sync Word
 1 Byte  Size       "S" is always "0x08"
-3 Bytes Key        "Seems to be the static ID for the Homeinstallation"
+3 Bytes ID         "Seems to be the static ID for the Homeinstallation"
 3 Bytes Data       "See docu below"
 2 Bytes Token      "It seems to be a message token which is used for the shutter answer."
 2 Bytes CRC-16/CMS "Seems optional, because this is missing from commands via bridge P2D."
@@ -36,9 +36,9 @@ Default signal layout
 
 Data documentation
 0xFF     - Size always "0x8"
-0xFFFFFF - Home ID, I assume that differs per installation, but is static then
+0xFFFFFF - ID, I assume that differs per installation, but is static then
 0xF      - Unknown (is static 0x2) - Not sure if it is also the HomeID
-0xF      - Radio channel: 1-15 single channels (one shutter is registert to one channel), 0 means all
+0xF      - Channel: 1-15 single channels (one shutter is registert to one channel), 0 means all
 0xFF     - Command ID    (0x0a = stop, 0x1a = up,0x8a = down, 0xea = Request)
 0xFF     - Command Value (in status from shutter this is the percent value. 0% for open 100% for close)
 
@@ -57,9 +57,9 @@ To get raw data:
 #define PREAMBLE_BITCOUNT 64
 #define LENGTH_OFFSET     8
 #define LENGTH_BITCOUNT   8
-#define HOMEID_OFFSET     9
-#define HOMEID_BITCOUNT   28
-#define RADIO_CHANNEL_OFFSET   12 // Mask 0x0F
+#define ID_OFFSET         9 // HomeID which I assume is static for one Remote Device
+#define ID_BITCOUNT       28
+#define CHANNEL_OFFSET    12 // Mask 0x0F
 #define UNKNOWN_CHANNEL_OFFSET 12 // Mask 0xF0
 #define COMMAND_ID_OFFSET      13
 #define COMMAND_ID_BITCOUNT    8
@@ -221,11 +221,11 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Build the default terminal output
     {
         char tokenString[7] = "";
-        char homeID[10]     = "";
+        char id[10]     = "";
         char * integrity    =  (msg_bitcount == MESSAGE_BITCOUNT_INCL_CRC) ? "CRC-16/CMS" : "CRC-16/CMS missing";
         char * deviceType   = "unknown";
         sprintf(tokenString, "0x%02x%02x",msg[MESSAGE_TOKEN_OFFSET], msg[MESSAGE_TOKEN_OFFSET+1]);
-        sprintf(homeID, "0x%02x%02x%02x%01x",msg[HOMEID_OFFSET], msg[HOMEID_OFFSET+1],msg[HOMEID_OFFSET+2], (msg[HOMEID_OFFSET+3] >> 4));
+        sprintf(id, "0x%02x%02x%02x%01x",msg[ID_OFFSET], msg[ID_OFFSET+1],msg[ID_OFFSET+2], (msg[ID_OFFSET+3] >> 4));
 
         if((msg[COMMAND_ID_OFFSET] & 0xF) == 0x5) {
             deviceType = "RojaFlex Shutter";
@@ -242,8 +242,8 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                     "model",        "Model",     DATA_STRING, deviceType,
-                    "radiochannel", "Radio CH.", DATA_INT,    msg[RADIO_CHANNEL_OFFSET] & 0xF,
-                    "homeid",       "Home ID",   DATA_STRING, homeID,
+                    "channel",      "Channel",   DATA_INT,    msg[CHANNEL_OFFSET] & 0xF,
+                    "id",           "ID",        DATA_STRING, id,
                     "token",        "Msg Token", DATA_STRING, tokenString,
                     "commandtype",  "Command ",  DATA_STRING, getCommandString(&msg[0]),
                     "commandvalue", "Value",     DATA_INT,    msg[COMMAND_VALUE_OFFSET],
@@ -269,7 +269,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             COMMAND_ID_REQUESTSTATUS
         };
 
-        uint8_t channel = GENERATE_COMMANDS_FOR_CURRENT_CHANNEL ? msg[RADIO_CHANNEL_OFFSET] & 0xF : 0;
+        uint8_t channel = GENERATE_COMMANDS_FOR_CURRENT_CHANNEL ? msg[CHANNEL_OFFSET] & 0xF : 0;
         uint8_t command = 0;   // Test
         uint8_t msg_new[MESSAGE_BYTECOUNT_INCL_CRC];
 
@@ -290,13 +290,13 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 // Set length
                 msg_new[LENGTH_OFFSET] = 0x8;
                 
-                // Clone homeid from received message
-                msg_new[HOMEID_OFFSET + 0] = msg[HOMEID_OFFSET + 0];
-                msg_new[HOMEID_OFFSET + 1] = msg[HOMEID_OFFSET + 1];
-                msg_new[HOMEID_OFFSET + 2] = msg[HOMEID_OFFSET + 2];
+                // Clone ID from received message
+                msg_new[ID_OFFSET + 0] = msg[ID_OFFSET + 0];
+                msg_new[ID_OFFSET + 1] = msg[ID_OFFSET + 1];
+                msg_new[ID_OFFSET + 2] = msg[ID_OFFSET + 2];
 
-                // Clone 4bit homeID + radio channel
-                msg_new[HOMEID_OFFSET + 3] = msg[HOMEID_OFFSET + 3] & 0xF0 + channel;
+                // Clone 4bit ID + Channel
+                msg_new[ID_OFFSET + 3] = msg[ID_OFFSET + 3] & 0xF0 + channel;
 
                 // Set command id + command value
                 msg_new[COMMAND_ID_OFFSET]    = command;
@@ -331,8 +331,8 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "radiochannel",
-        "homeid",
+        "channel",
+        "id",
         "token",
         "commandtype",
         "commandvalue",
