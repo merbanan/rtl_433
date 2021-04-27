@@ -152,6 +152,7 @@
     DECL(fineoffset_WH51) \
     DECL(holman_ws5029pwm) \
     DECL(archos_tbh) \
+    DECL(rojaflex) \
     DECL(ws2032) \
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
