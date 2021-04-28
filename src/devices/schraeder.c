@@ -289,14 +289,14 @@ Contributed by: Ilias Daradimos.
 
 Probable packet payload:
 
-    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TTTTTTTT
+    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPP ?? TTTTTTTT
 
 - W: 1 bit wake
 - S: 13 sync bit, 1 start bit
 - F: 3 bits, might contain status and battery flags.
 - I: id (24 bits)
-- P: 9 bits pressure 1kPa/bit or 8 bits 2kPa/bit + unknown bit
-- ?: Unknown bit
+- P: pressure 8 bits 2kPa/bit
+- C: Checksum
 - T: 8 bits temperature offset by 50, degrees C -50 to 205
 */
 static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
@@ -309,6 +309,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char flags_str[9];
     int pressure;    // mbar
     int temperature; // degree C
+    uint8_t checksum;
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 61) {
@@ -330,7 +331,8 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* Get data */
     serial_id   = ((b[0] & 0xf) << 20) | (b[1] << 12) | (b[2] << 4) | ((b[3] & 0xf0) >> 4);
     flags       = ((unsigned)b[0] >> 4) & 0x7;
-    pressure    = (((b[3] & 0xf) << 5) | (b[4] >> 3));
+    pressure    = (((b[3] & 0xf) << 4) | (b[4] >> 4));
+    checksum    = (b[4] & 0xc) >> 2;
     temperature = ((b[4]&0x3) << 6) | (b[5] >> 2);
     sprintf(id_str, "%06X", serial_id);
     sprintf(flags_str, "%01x", flags);
@@ -341,9 +343,10 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 1.0f,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 2.0f,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature -50,
-            "mic",              "Integrity",    DATA_STRING, "None",
+            "sleep",            "Sleep",        DATA_STRING, (flags == 2 ? "True" : "False"),
+            "mic",              "Integrity",    DATA_INT, checksum,
             NULL);
     /* clang-format on */
 
@@ -387,6 +390,7 @@ static char *output_fields_MRXBC5A4[] = {
         "type",
         "id",
         "flags",
+        "sleep",
         "pressure_kPa",
         "temperature_C",
         "mic",
