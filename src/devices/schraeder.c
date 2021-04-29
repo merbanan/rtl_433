@@ -303,13 +303,14 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t b[7];
-    int serial_id;
-    char id_str[9];
-    unsigned flags;
+    unsigned int serial_id;
+    char id_str[19];
+    uint8_t flags;
     char flags_str[9];
-    int pressure;    // mbar
+    unsigned int pressure;    // mbar
     int temperature; // degree C
-    uint8_t checksum;
+    uint8_t checksum, bits, n;
+    uint8_t parity = 0;
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 61) {
@@ -319,7 +320,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
       return DECODE_ABORT_LENGTH;
     }
     /* Discard the first 15 bits */
-    bitbuffer_extract_bytes(bitbuffer, 0, 15, b, 46);
+    bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 46);
     // check serial value not zero
     if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
         if (decoder->verbose > 1) {
@@ -328,13 +329,30 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
+    // Check parity
+    for (n=0; n<=4; n++){
+      bits = b[n] & 0xAA;
+      if (n == 4) bits &= 0xf8;
+      while (bits)
+      {
+          parity = !parity;
+          bits = bits & (bits - 1);
+      }
+    }
+    checksum = (b[4] & 0x18) >> 3;
+    if (parity != (checksum & 1)) {
+      if (decoder->verbose > 1) {
+          fprintf(stderr, "%s: Parity fail\n", __func__);
+      }
+      return DECODE_FAIL_MIC;
+    }
+
     /* Get data */
-    serial_id   = ((b[0] & 0xf) << 20) | (b[1] << 12) | (b[2] << 4) | ((b[3] & 0xf0) >> 4);
-    flags       = ((unsigned)b[0] >> 4) & 0x7;
-    pressure    = (((b[3] & 0xf) << 4) | (b[4] >> 4));
-    checksum    = (b[4] & 0xc) >> 2;
-    temperature = ((b[4]&0x3) << 6) | (b[5] >> 2);
-    sprintf(id_str, "%06X", serial_id);
+    serial_id   = ((b[0] & 0xf) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
+    flags       = ((unsigned)b[0] >> 5) & 0x7;
+    pressure    = (((b[3] & 0x1f) << 3) | (b[4] >> 5));
+    temperature = ((b[4]&0x3) << 5) | (b[5] >> 3);
+    sprintf(id_str, "%06Xh (%07d)", serial_id, serial_id);
     sprintf(flags_str, "%01x", flags);
 
     /* clang-format off */
@@ -346,7 +364,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 2.0f,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature -50,
             "sleep",            "Sleep",        DATA_STRING, (flags == 2 ? "True" : "False"),
-            "mic",              "Integrity",    DATA_INT, checksum,
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
