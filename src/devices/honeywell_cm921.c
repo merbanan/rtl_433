@@ -1,5 +1,5 @@
 /** @file
-    Honeywell CM921 Thermostat
+    Honeywell CM921 Thermostat.
 
     Copyright (C) 2020 Christoph M. Wintersteiger <christoph@winterstiger.at>
 
@@ -18,48 +18,28 @@ Honeywell CM921 Thermostat (subset of Evohome).
 
 // #define _DEBUG
 
-static int get_byte(const bitbuffer_t *b, int row, int pos, int end, uint8_t *out)
+static int decode_10to8(uint8_t const *b, int pos, int end, uint8_t *out)
 {
-    *out = 0;
-    int bend = pos + 10;
+    // we need 10 bits
+    if (pos + 10 > end)
+        return DECODE_ABORT_LENGTH;
 
-    while (pos < bend) {
-        if (pos >= end)
-            return DECODE_ABORT_LENGTH;
+    // start bit of 0
+    if (bitrow_get_bit(b, pos) != 0)
+        return DECODE_FAIL_SANITY;
 
-        if (bitrow_get_bit(b->bb[row], pos++) != 0)
-            return DECODE_FAIL_SANITY;
+    // stop bit of 1
+    if (bitrow_get_bit(b, pos + 9) != 1)
+        return DECODE_FAIL_SANITY;
 
-        if (pos + 8 >= end)
-            return DECODE_ABORT_LENGTH;
-
-        for (unsigned i = 0; i < 8; i++)
-            *out = *out << 1 | bitrow_get_bit(b->bb[row], pos++);
-
-        if (pos >= end)
-            return DECODE_ABORT_LENGTH;
-
-        if (bitrow_get_bit(b->bb[row], pos++) != 1)
-            return DECODE_FAIL_SANITY;
-
-        if (pos >= end)
-            return DECODE_ABORT_LENGTH;
-    }
+    *out = bitrow_get_byte(b, pos + 1);
 
     return 10;
 }
 
-uint8_t next(const uint8_t* bb, unsigned *ipos, unsigned num_bytes) {
-    uint8_t r = bitrow_get_byte(bb, *ipos);
-    *ipos += 8;
-    if (*ipos >= num_bytes*8)
-       return DECODE_FAIL_SANITY;
-    return r;
-}
-
 typedef struct {
     uint8_t header;
-    uint8_t num_device_ids : 2;
+    uint8_t num_device_ids;
     uint8_t device_id[4][3];
     uint16_t command;
     uint8_t payload_length;
@@ -69,11 +49,11 @@ typedef struct {
     uint8_t crc;
 } message_t;
 
-
-data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
+#ifdef _DEBUG
+static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
     if (buf && buf_sz > 0)  {
-        char tstr[(buf_sz * 2) + 1];
+        char tstr[(buf_sz * 2) + 1]; // note: VLA should not be used
         char *p = tstr;
         for (unsigned i = 0; i < buf_sz; i++, p+=2)
             sprintf(p, "%02x", buf[i]);
@@ -82,73 +62,79 @@ data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_
     }
     return data;
 }
+#endif
 
-typedef struct { uint8_t t; const char s[4]; } dev_map_entry_t;
+typedef struct {
+    int t;
+    const char s[4];
+} dev_map_entry_t;
 
 static const dev_map_entry_t device_map[] = {
-    { .t = 01, .s = "CTL" }, /* Controller */
-    { .t = 02, .s = "UFH" }, /* Underfloor heating (HCC80, HCE80) */
-    { .t = 03, .s = " 30" }, /* HCW82?? */
-    { .t = 04, .s = "TRV" }, /* Thermostatic radiator valve (HR80, HR91, HR92) */
-    { .t = 07, .s = "DHW" }, /* DHW sensor (CS92) */
-    { .t = 10, .s = "OTB" }, /* OpenTherm bridge (R8810) */
-    { .t = 12, .s = "THm" }, /* Thermostat with setpoint schedule control (DTS92E, CME921) */
-    { .t = 13, .s = "BDR" }, /* Wireless relay box (BDR91) (HC60NG too?) */
-    { .t = 17, .s = " 17" }, /* Dunno - Outside weather sensor? */
-    { .t = 18, .s = "HGI" }, /* Honeywell Gateway Interface (HGI80, HGS80) */
-    { .t = 22, .s = "THM" }, /* Thermostat with setpoint schedule control (DTS92E) */
-    { .t = 30, .s = "GWY" }, /* Gateway (e.g. RFG100?) */
-    { .t = 32, .s = "VNT" }, /* (HCE80) Ventilation (Nuaire VMS-23HB33, VMN-23LMH23) */
-    { .t = 34, .s = "STA" }, /* Thermostat (T87RF) */
-    { .t = 63, .s = "NUL" }, /* No device */
+    { .t =  1, .s = "CTL" }, // Controller
+    { .t =  2, .s = "UFH" }, // Underfloor heating (HCC80, HCE80)
+    { .t =  3, .s = " 30" }, // HCW82??
+    { .t =  4, .s = "TRV" }, // Thermostatic radiator valve (HR80, HR91, HR92)
+    { .t =  7, .s = "DHW" }, // DHW sensor (CS92)
+    { .t = 10, .s = "OTB" }, // OpenTherm bridge (R8810)
+    { .t = 12, .s = "THm" }, // Thermostat with setpoint schedule control (DTS92E, CME921)
+    { .t = 13, .s = "BDR" }, // Wireless relay box (BDR91) (HC60NG too?)
+    { .t = 17, .s = " 17" }, // Dunno - Outside weather sensor?
+    { .t = 18, .s = "HGI" }, // Honeywell Gateway Interface (HGI80, HGS80)
+    { .t = 22, .s = "THM" }, // Thermostat with setpoint schedule control (DTS92E)
+    { .t = 30, .s = "GWY" }, // Gateway (e.g. RFG100?)
+    { .t = 32, .s = "VNT" }, // (HCE80) Ventilation (Nuaire VMS-23HB33, VMN-23LMH23)
+    { .t = 34, .s = "STA" }, // Thermostat (T87RF)
+    { .t = 63, .s = "NUL" }, // No device
 };
 
-void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_sz)
+static void decode_device_id(const uint8_t device_id[3], char *buf, size_t buf_sz)
 {
-    uint8_t dev_type = device_id[0] >> 2;
-    const char *dev_name = " --";
+    int dev_type = device_id[0] >> 2;
+    int dev_id   = (device_id[0] & 0x03) << 16 | (device_id[1] << 8) | device_id[2];
+
+    char const *dev_name = " --";
     for (size_t i = 0; i < sizeof(device_map) / sizeof(dev_map_entry_t); i++)
         if (device_map[i].t == dev_type)
             dev_name = device_map[i].s;
 
-    if (buf_sz < (6 + strlen(dev_name) + 1))
-        return;
-
-    sprintf(buf, "%3s:%06d", dev_name, (device_id[0] & 0x03) << 16 | (device_id[1] << 8) | device_id[2]);
+    snprintf(buf, buf_sz, "%3s:%06d", dev_name, dev_id);
 }
 
-data_t *decode_device_ids(const message_t *msg, data_t *data, int style) {
-    char ds[64] = {0};
+static data_t *decode_device_ids(const message_t *msg, data_t *data, int style)
+{
+    char ds[64] = {0}; // up to 4 ids of at most 10+1 chars
 
     for (unsigned i = 0; i < msg->num_device_ids; i++) {
         if (i != 0) strcat(ds, " ");
 
-        char buf[256] = {0};
+        char buf[16] = {0};
         if (style == 0)
-            decode_device_id(msg->device_id[i], buf, 256);
+            decode_device_id(msg->device_id[i], buf, 16);
         else {
-            for (unsigned j = 0; j < 3; j++)
-                sprintf(buf + 2*j, "%02x", msg->device_id[i][j]);
+            sprintf(buf, "%02x%02x%02x",
+                    msg->device_id[i][0],
+                    msg->device_id[i][1],
+                    msg->device_id[i][2]);
         }
         strcat(ds, buf);
     }
 
-    return data_append(data, "Device IDs", "", DATA_STRING, ds, NULL);
+    return data_append(data, "ids", "Device IDs", DATA_STRING, ds, NULL);
 }
 
 #define UNKNOWN_IF(C) if (C) { return data_append(data, "unknown", "", DATA_FORMAT, "%04x", DATA_INT, msg->command, NULL); }
 
-data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
+static data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
 {
-    /* Sources of inspiration:
-       https://github.com/Evsdd/The-Evohome-Protocol/wiki
-       https://www.domoticaforum.eu/viewtopic.php?f=7&t=5806&start=30
-       (specifically https://www.domoticaforum.eu/download/file.php?id=1396) */
+    // Sources of inspiration:
+    // https://github.com/Evsdd/The-Evohome-Protocol/wiki
+    // https://www.domoticaforum.eu/viewtopic.php?f=7&t=5806&start=30
+    // (specifically https://www.domoticaforum.eu/download/file.php?id=1396)
 
     data = decode_device_ids(msg, data, 1);
 
     data_t *r = data;
-    switch(msg->command) {
+    switch (msg->command) {
         case 0x1030: {
             UNKNOWN_IF(msg->payload_length != 16);
             data = data_append(data, "zone_idx", "", DATA_FORMAT, "%02x", DATA_INT, msg->payload[0], NULL);
@@ -260,7 +246,17 @@ data_t *interpret_message(const message_t *msg, data_t *data, int verbose)
     return r;
 }
 
-int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
+static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)
+{
+    uint8_t r = bitrow_get_byte(bb, *ipos);
+    *ipos += 8;
+    if (*ipos >= num_bytes * 8)
+        return DECODE_FAIL_SANITY;
+    return r;
+}
+
+static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
+{
     if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8)
         return DECODE_ABORT_LENGTH;
 
@@ -271,11 +267,9 @@ int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg) {
     memset(msg, 0, sizeof(message_t));
 
     // Checksum: All bytes add up to 0.
-    uint8_t bsum = 0;
-    for (unsigned i = 0; i < num_bytes; i++)
-        bsum += bitrow_get_byte(bmsg->bb[row], i*8);
-    uint8_t checksum_ok = bsum == 0;
-    msg->crc = bitrow_get_byte(bmsg->bb[row], bmsg->bits_per_row[row] - 8);
+    int bsum = add_bytes(bb, num_bytes) & 0xff;
+    int checksum_ok = bsum == 0;
+    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
 
     if (!checksum_ok)
         return DECODE_FAIL_MIC;
@@ -337,14 +331,15 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int len = bitbuffer->bits_per_row[row] - start;
     if (decoder->verbose)
         fprintf(stderr, "preamble_start=%d start=%d len=%d\n", preamble_start, start, len);
-    if (len < 8) return DECODE_ABORT_LENGTH;
+    if (len < 8)
+        return DECODE_ABORT_LENGTH;
     int end = start + len;
 
     bitbuffer_t bytes = {0};
     int pos = start;
     while (pos < end) {
         uint8_t byte = 0;
-        if (get_byte(bitbuffer, row, pos, end, &byte) != 10)
+        if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10)
             break;
         for (unsigned i = 0; i < 8; i++)
             bitbuffer_add_bit(&bytes, (byte >> i) & 0x1);
@@ -369,13 +364,13 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
 
     unsigned first_byte = 24;
-    unsigned end_byte = fi;
-    unsigned num_bits  = end_byte - first_byte;
+    unsigned end_byte   = fi;
+    unsigned num_bits   = end_byte - first_byte;
     //unsigned num_bytes = num_bits/8 / 2;
 
     bitbuffer_t packet = {0};
     unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, num_bits);
-    unsigned man_errors = num_bits  - (fpos - first_byte - 2);
+    unsigned man_errors = num_bits - (fpos - first_byte - 2);
 
 #ifndef _DEBUG
     if (man_errors != 0)
@@ -384,24 +379,24 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     message_t message;
 
-    int pr = parse_msg(&packet, row, &message);
+    int pr = parse_msg(&packet, 0, &message);
 
     if (pr <= 0)
         return pr;
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",     "", DATA_STRING, "Honeywell CM921",
-            "mic",    "MIC", DATA_STRING, "CHECKSUM",
+            "model",    "",             DATA_STRING, "Honeywell-CM921",
+            "mic",      "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
     data = interpret_message(&message, data, decoder->verbose);
 
 #ifdef _DEBUG
-    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row]/8);
+    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
     data = add_hex_string(data, "Header", &message.header, 1);
-    uint8_t cmd[2] = { message.command >> 8, message.command & 0x00FF};
+    uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);
     data = add_hex_string(data, "Payload", message.payload, message.payload_length);
     data = add_hex_string(data, "Unparsed", message.unparsed, message.unparsed_length);
@@ -416,7 +411,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "Device IDs",
+        "ids",
 #ifdef _DEBUG
         "Packet",
         "Header",
@@ -448,6 +443,5 @@ r_device honeywell_cm921 = {
         .tolerance   = 5,
         .reset_limit = 2000,
         .decode_fn   = &honeywell_cm921_decode,
-        .disabled    = 0,
         .fields      = output_fields,
 };
