@@ -310,7 +310,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     /* Get data */
-    serial_id   = ((b[0] & 0xf) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
+    serial_id   = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
     flags       = (b[0] >> 5) & 0x7;
     pressure    = ((b[3] & 0x1f) << 3) | (b[4] >> 5);
     temperature = ((b[4]&0x3) << 5) | (b[5] >> 3);
