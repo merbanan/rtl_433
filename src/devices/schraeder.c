@@ -284,32 +284,33 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 /**
-TPMS Model: Schrader Electronics MRXBC5A4 and MRXBMW433TX1
+TPMS Model: Schrader Electronics MRXBC5A4
 Contributed by: Ilias Daradimos.
 
-Probable packet payload:
+Packet structure:
 
-    W SSSSSSSSSSSSS S FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPP ?? TTTTTTTT
+    W SSSSSSSSSSSSS s FFF IIIIIIIIIIIIIIIIIIIIIIII PPPPPPPPP ? TTTTTTTT
 
 - W: 1 bit wake
-- S: 13 sync bit, 1 start bit
-- F: 3 bits, might contain status and battery flags.
+- S: 13 sync bit
+- s: 1 start bit
+- F: 3 bits, may contain status and battery flags.
 - I: id (24 bits)
-- P: pressure 8 bits 2kPa/bit
-- C: Checksum
+- P: pressure 9 bits 1kPa/bit
+- ?: Parity?
 - T: 8 bits temperature offset by 50, degrees C -50 to 205
 */
 static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    uint8_t b[7];
+    uint8_t b[6];
     int serial_id;
     char id_str[19];
     int flags;
     char flags_str[9];
-    unsigned int pressure;    // mbar
+    unsigned int pressure;    // kPa
     int temperature; // degree C
-    int parity = 0;
+    // int parity = 0;
 
     /* Check for incorrect number of bits received */
     if (bitbuffer->bits_per_row[0] != 61) {
@@ -320,30 +321,18 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     /* Discard the first 15 bits */
     bitbuffer_extract_bytes(bitbuffer, 0, 16, b, 46);
+
+    /* Get data */
+    serial_id   = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
     // check serial value not zero
-    if ( !b[0] && !b[1] && !b[2] && !b[3] ) {
+    if ( serial_id == 0 || serial_id == 0xFFFFFF ) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
         }
         return DECODE_FAIL_SANITY;
     }
-
-    parity = b[0] ^ b[1] ^ b[2] ^ b[3] ^ (b[4] & 0xfe);
-    parity ^= parity >> 4; // fold
-    parity ^= parity >> 2;
-    parity = parity & 0x2;
-
-    if (parity) {
-      if (decoder->verbose > 1) {
-          fprintf(stderr, "%s: Parity fail\n", __func__);
-      }
-      return DECODE_FAIL_MIC;
-    }
-
-    /* Get data */
-    serial_id   = ((b[0] & 0xf) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
     flags       = (b[0] >> 5) & 0x7;
-    pressure    = ((b[3] & 0x1f) << 3) | (b[4] >> 5);
+    pressure    = ((b[3] & 0x1f) << 4) | (b[4] >> 4);
     temperature = ((b[4]&0x3) << 5) | (b[5] >> 3);
     sprintf(id_str, "%06X", serial_id);
     sprintf(flags_str, "%01x", flags);
@@ -354,7 +343,7 @@ static int schrader_MRXBC5A4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "type",             "",             DATA_STRING, "TPMS",
             "flags",            "",             DATA_STRING, flags_str,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 2.0f,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.1f kPa", DATA_DOUBLE, pressure * 1.0f,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, (double)temperature -50,
             "sleep",            "Sleep",        DATA_STRING, (flags == 2 ? "True" : "False"),
             "mic",              "Integrity",    DATA_STRING, "PARITY",
@@ -396,7 +385,7 @@ static char const *const output_fields_SMD3MA4[] = {
         NULL,
 };
 
-static char *output_fields_MRXBC5A4[] = {
+static char const *const output_fields_MRXBC5A4[] = {
         "model",
         "type",
         "id",
@@ -438,12 +427,12 @@ r_device const schrader_SMD3MA4 = {
         .fields      = output_fields_SMD3MA4,
 };
 
-r_device schrader_MRXBC5A4 = {
-        .name        = "Schrader TPMS MRXBC5A4, MRXBMW433TX1 (BMW)",
+r_device const schrader_MRXBC5A4 = {
+        .name        = "Schrader TPMS MRXBC5A4 (BMW)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
-        .short_width = 135,
+        .short_width = 123,
         .long_width  = 0,
-        .reset_limit = 380,
+        .reset_limit = 800,
         .decode_fn   = &schrader_MRXBC5A4_decode,
         .fields      = output_fields_MRXBC5A4,
 };
