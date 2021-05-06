@@ -66,7 +66,7 @@ Packet length is 264 bits according to inspectrum broken down as follows:
 - trailer:        32 bytes (0xd2d2d200)
 
 The sensor generates a packet every 'n' seconds but only transmits if one or
-more of the following conditions are satified:
+more of the following conditions are satisfied:
 
 - temp changes +/- 0.8 degrees C
 - humidity changes +/- 1%
@@ -135,6 +135,12 @@ static int lacrosse_breezepro_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // base and/or scale adjustments
     temp_c = (raw_temp - 400) * 0.1f;
     speed_kmh = raw_speed * 0.1f;
+
+    if (humidity < 0 || humidity > 100
+        || temp_c < -40 || temp_c > 70
+        || direction < 0 || direction > 360
+        || speed_kmh < 0 || speed_kmh > 200)
+      return DECODE_FAIL_SANITY;
 
     /* clang-format off */
     data = data_make(

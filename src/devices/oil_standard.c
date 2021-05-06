@@ -104,7 +104,8 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 Oil tank monitor using manchester encoded FSK/ASK protocol.
 @sa oil_standard_decode()
 */
-static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int oil_standard_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     unsigned bitpos = 0;
     int events = 0;
 
@@ -131,7 +132,7 @@ static char *output_fields[] = {
     "alarm",
     "binding_countdown",
     "depth_cm",
-    NULL
+    NULL,
 };
 
 r_device oil_standard = {

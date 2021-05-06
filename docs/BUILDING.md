@@ -67,7 +67,7 @@ Installation using CMake:
     make
     make install
 
-Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR, use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
+Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g. with Debian needs the package `libsoapysdr-dev`), use `-DENABLE_RTLSDR=OFF` (default: `ON`) to disable RTL-SDR if needed.
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..

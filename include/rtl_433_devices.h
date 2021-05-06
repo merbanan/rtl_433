@@ -156,7 +156,7 @@
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
     DECL(dsc_security_ws4945) \
-    DECL(ert_amr) \
+    DECL(ert_scm) \
     DECL(klimalogg) \
     DECL(visonic_powercode) \
     DECL(eurochron_efth800) \
@@ -167,13 +167,33 @@
     DECL(missil_ml0757) \
     DECL(sharp_spc775) \
     DECL(insteon) \
-    DECL(idm) \
-    DECL(netidm) \
+    DECL(ert_idm) \
+    DECL(ert_netidm) \
     DECL(thermopro_tx2) \
     DECL(acurite_590tx) \
     DECL(secplus_v2) \
     DECL(tfa_30_3221) \
     DECL(lacrosse_breezepro) \
+    DECL(somfy_rts) \
+    DECL(schrader_SMD3MA4) \
+    DECL(nice_flor_s) \
+    DECL(lacrosse_wr1) \
+    DECL(lacrosse_th3) \
+    DECL(bresser_6in1) \
+    DECL(bresser_7in1) \
+    DECL(ecodhome) \
+    DECL(lacrosse_r1) \
+    DECL(blueline) \
+    DECL(burnhardbbq) \
+    DECL(secplus_v1) \
+    DECL(cavius) \
+    DECL(tpms_jansite_solar) \
+    DECL(abmt) \
+    DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
+    DECL(auriol_aft77b2) \
+    DECL(honeywell_cm921) \
+    DECL(tpms_hyundai_vdo)
     DECL(thermor_a6n_132tx) \
     /* Add new decoders here. */
 

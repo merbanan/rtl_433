@@ -4,9 +4,9 @@
     Copyright (C) 2016 John Lifsey
     Enhanced (C) 2019 Christian W. Zuckschwerdt <zany@triq.net>
 
-    This program is free software: you can redistribute it and/or modify
+    This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 2 of the License, or
+    the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
 /**
@@ -36,7 +36,8 @@ Frame structure:
 
 #include "decoder.h"
 
-static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int kedsum_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     uint8_t b[5];
     data_t *data;
 
@@ -99,7 +100,7 @@ static char *output_fields[] = {
     "temperature_F",
     "humidity",
     "mic",
-    NULL
+    NULL,
 };
 
 r_device kedsum = {
@@ -111,5 +112,5 @@ r_device kedsum = {
     .reset_limit    = 9400,
     .decode_fn      = &kedsum_callback,
     .disabled       = 0,
-    .fields         = output_fields
+    .fields         = output_fields,
 };

@@ -95,7 +95,9 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "id_rev",
         "encrypted",
+        "encrypted_rev",
         "button1",
         "button2",
         "button3",

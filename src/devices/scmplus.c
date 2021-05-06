@@ -23,10 +23,9 @@ http://www.gridinsight.com/community/documentation/itron-ert-technology/
 
 Units: "Some meter types transmit consumption in 1 kWh units, while others use more granular 10 Wh units"
 
-
 */
 
-static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t b[16];
     data_t *data;
@@ -49,12 +48,11 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (decoder->verbose) {
         fprintf(stderr, "%s: row len=%hu\n", __func__, bitbuffer->bits_per_row[0]);
-        fprintf(stderr, "%s: sync_index=%d\n", __func__, sync_index);
+        fprintf(stderr, "%s: sync_index=%u\n", __func__, sync_index);
     }
 
     // bitbuffer_debug(bitbuffer);
     bitbuffer_extract_bytes(bitbuffer, 0, sync_index, b, 16 * 8);
-
 
     // uint32_t t_16; // temp vars
     // uint32_t t_32;
@@ -63,7 +61,6 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // memcpy(&t_16, &b[14], 2);
     // pkt_checksum = ntohs(t_16);
     pkt_checksum = (b[14] << 8 | b[15]);
-
 
     crc = crc16(&b[2], 12, 0x1021, 0x0971);
     // fprintf(stderr, "CRC = %d %04X == %d %04X\n", pkt_checksum,pkt_checksum,  crc, crc);
@@ -150,8 +147,8 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // fprintf(stderr, "meter_type = %s\n", meter_type);
 
-    /* 
-        Field key names and format set to  match rtlamr field names 
+    /*
+        Field key names and format set to  match rtlamr field names
 
         {Time:2020-06-20T09:58:19.074 Offset:49152 Length:49152
         SCM+:{ProtocolID:0x1E EndpointType:0xAB EndpointID:  68211547 Consumption:  6883 Tamper:0x4900 PacketCRC:0x39BE}}
@@ -159,18 +156,18 @@ static int scmplus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",           "",                 DATA_STRING, "SCM+",
-            "ProtocolID",     "Protocol_ID",       DATA_STRING, protocol_id_str,
-            "EndpointType",   "Endpoint_Type",     DATA_STRING, endpoint_type_str,
-            "EndpointID",     "Endpoint_ID",       DATA_INT,    endpoint_id,
-            "Consumption",     "",                 DATA_INT,    consumption_data,
-            "Tamper",          "",                 DATA_STRING, physical_tamper_str,
-            "PacketCRC",       "crc",              DATA_STRING, crc_str,
-            "MeterType",       "Meter_Type",       DATA_STRING, meter_type,
-            "mic",             "Integrity",        DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "SCM+", // TODO: bad name for e.g. MQTT
+            "id",               "",                 DATA_INT,    endpoint_id,
+            "ProtocolID",       "Protocol_ID",      DATA_STRING, protocol_id_str, // TODO: this should be int
+            "EndpointType",     "Endpoint_Type",    DATA_STRING, endpoint_type_str, // TODO: this should be int
+            "EndpointID",       "Endpoint_ID",      DATA_INT,    endpoint_id, // TODO: remove this (see "id")
+            "Consumption",      "",                 DATA_INT,    consumption_data,
+            "Tamper",           "",                 DATA_STRING, physical_tamper_str, // TODO: should be int
+            "PacketCRC",        "crc",              DATA_STRING, crc_str, // TODO: remove this
+            "MeterType",        "Meter_Type",       DATA_STRING, meter_type,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
-
 
     decoder_output_data(decoder, data);
     return 1;
@@ -196,10 +193,10 @@ r_device scmplus = {
         .name        = "Standard Consumption Message Plus (SCMplus)",
         .modulation  = OOK_PULSE_MANCHESTER_ZEROBIT,
         .short_width = 30,
-        .long_width  = 30,
+        .long_width  = 0, // not used
         .gap_limit   = 0,
         .reset_limit = 64,
-        .decode_fn   = &scmplus_callback,
+        .decode_fn   = &scmplus_decode,
         .disabled    = 0,
         .fields      = output_fields,
 };

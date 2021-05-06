@@ -17,6 +17,11 @@
 #include "data.h"
 #include "r_device.h"
 
+// Defined in newer <sal.h> for MSVC.
+#ifndef _Printf_format_string_
+#define _Printf_format_string_
+#endif
+
 /// Create a new r_device, copy from dev_template if not NULL.
 r_device *create_device(r_device *dev_template);
 
@@ -42,29 +47,61 @@ void decoder_output_bitrow(r_device *decoder, uint8_t const *bitrow, unsigned bi
 // print helpers
 
 /// Output a message with args.
-void decoder_output_messagef(r_device *decoder, char const *restrict format, ...);
+void decoder_output_messagef(r_device *decoder, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 2, 3)))
+#endif
+        ;
 
 /// Output a message with args and the content of a bitbuffer.
-void decoder_output_bitbufferf(r_device *decoder, bitbuffer_t const *bitbuffer, char const *restrict format, ...);
+void decoder_output_bitbufferf(r_device *decoder, bitbuffer_t const *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 3, 4)))
+#endif
+        ;
 
 /// Output a message with args and the content of a bitbuffer.
-void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbuffer, char const *restrict format, ...);
+void decoder_output_bitbuffer_arrayf(r_device *decoder, bitbuffer_t const *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 3, 4)))
+#endif
+        ;
 
 /// Output a message with args and the content of a bit row (byte buffer).
-void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
+void decoder_output_bitrowf(r_device *decoder, uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 4, 5)))
+#endif
+        ;
 
 /// Print the content of the bitbuffer.
-void bitbuffer_printf(const bitbuffer_t *bitbuffer, char const *restrict format, ...);
+void bitbuffer_printf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 2, 3)))
+#endif
+        ;
 
 /// Debug print the content of the bitbuffer.
 /// For quick and easy debugging, not for regular usage.
-void bitbuffer_debugf(const bitbuffer_t *bitbuffer, char const *restrict format, ...);
+void bitbuffer_debugf(const bitbuffer_t *bitbuffer, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 2, 3)))
+#endif
+        ;
 
 /// Print the content of a bit row (byte buffer).
-void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
+void bitrow_printf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 3, 4)))
+#endif
+        ;
 
 /// Debug print the content of a bit row (byte buffer).
 /// For quick and easy debugging, not for regular usage.
-void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, char const *restrict format, ...);
+void bitrow_debugf(uint8_t const *bitrow, unsigned bit_len, _Printf_format_string_ char const *restrict format, ...)
+#if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format(printf, 3, 4)))
+#endif
+        ;
 
 #endif /* INCLUDE_DECODER_UTIL_H_ */

@@ -15,7 +15,7 @@ enum modulation_types {
     OOK_PULSE_PIWM_DC            = 11, ///< Level shift for each bit. Short interval = 1, Long = 0.
     OOK_PULSE_DMC                = 9,  ///< Level shift within the clock cycle.
     OOK_PULSE_PWM_OSV1           = 10, ///< Pulse Width Modulation. Oregon Scientific v1.
-    OOK_PULSE_NRZS               = 19, ///< NRZS modulation
+    OOK_PULSE_NRZS               = 12, ///< NRZS modulation
     FSK_DEMOD_MIN_VAL            = 16, ///< Dummy. FSK demodulation must start at this value.
     FSK_PULSE_PCM                = 16, ///< FSK, Pulse Code Modulation.
     FSK_PULSE_PWM                = 17, ///< FSK, Pulse Width Modulation. Short pulses = 1, Long = 0.
@@ -71,16 +71,6 @@ typedef struct r_device {
     /* private for flex decoder and output callback */
     void *decode_ctx;
     void *output_ctx;
-
-    /* private pulse limits (converted to count of samples) */
-    float f_short_width; ///< precision reciprocal for PCM.
-    float f_long_width;  ///< precision reciprocal for PCM.
-    int s_short_width;
-    int s_long_width;
-    int s_reset_limit;
-    int s_gap_limit;
-    int s_sync_width;
-    int s_tolerance;
 } r_device;
 
 #endif /* INCLUDE_R_DEVICE_H_ */

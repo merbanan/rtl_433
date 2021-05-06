@@ -1,22 +1,14 @@
-/*
- * A general structure for extracting hierarchical data from the devices;
- * typically key-value pairs, but allows for more rich data as well.
- *
- * Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
+/** @file
+    A general structure for extracting hierarchical data from the devices;
+    typically key-value pairs, but allows for more rich data as well.
+
+    Copyright (C) 2015 by Erkki Seppälä <flux@modeemi.fi>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+*/
 
 #include <stdarg.h>
 #include <assert.h>
@@ -58,6 +50,7 @@
 #include "term_ctl.h"
 #include "abuf.h"
 #include "fatal.h"
+#include "r_util.h"
 
 #include "data.h"
 
@@ -411,13 +404,6 @@ void data_output_start(struct data_output *output, const char **fields, int num_
     output->output_start(output, fields, num_fields);
 }
 
-void data_output_poll(struct data_output *output)
-{
-    if (!output || !output->output_poll)
-        return;
-    output->output_poll(output);
-}
-
 void data_output_free(data_output_t *output)
 {
     if (!output)
@@ -481,6 +467,7 @@ static void print_json_array(data_output_t *output, data_array_t *array, char co
 
 static void print_json_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     bool separator = false;
     fputc('{', output->file);
     while (data) {
@@ -497,6 +484,15 @@ static void print_json_data(data_output_t *output, data_t *data, char const *for
 
 static void print_json_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
+
+    size_t str_len = strlen(str);
+    if (str[0] == '{' && str[str_len - 1] == '}') {
+        // Print embedded JSON object verbatim
+        fprintf(output->file, "%s", str);
+        return;
+    }
+
     fprintf(output->file, "\"");
     while (*str) {
         if (*str == '"' || *str == '\\')
@@ -509,11 +505,13 @@ static void print_json_string(data_output_t *output, const char *str, char const
 
 static void print_json_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%.3f", data);
 }
 
 static void print_json_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%d", data);
 }
 
@@ -595,6 +593,7 @@ typedef struct {
 
 static void print_kv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_kv_t *kv = (data_output_kv_t *)output;
 
     int color = kv->color;
@@ -744,12 +743,23 @@ typedef struct {
 
 static void print_csv_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     const char **fields = csv->fields;
     int i;
 
     if (csv->data_recursion)
+        return;
+
+    int regular = 0; // skip "states" output
+    for (data_t *d = data; d; d = d->next) {
+        if (!strcmp(d->key, "msg") || !strcmp(d->key, "codes") || !strcmp(d->key, "model")) {
+            regular = 1;
+            break;
+        }
+    }
+    if (!regular)
         return;
 
     ++csv->data_recursion;
@@ -779,6 +789,7 @@ static void print_csv_array(data_output_t *output, data_array_t *array, char con
 
 static void print_csv_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
     while (*str) {
@@ -876,11 +887,13 @@ alloc_error:
 
 static void print_csv_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%.3f", data);
 }
 
 static void print_csv_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     fprintf(output->file, "%d", data);
 }
 
@@ -934,6 +947,7 @@ static void format_jsons_array(data_output_t *output, data_array_t *array, char 
 
 static void format_jsons_object(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     bool separator = false;
@@ -952,12 +966,20 @@ static void format_jsons_object(data_output_t *output, data_t *data, char const 
 
 static void format_jsons_string(data_output_t *output, const char *str, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
 
     char *buf   = jsons->msg.tail;
     size_t size = jsons->msg.left;
 
-    if (size < strlen(str) + 3) {
+    size_t str_len = strlen(str);
+    if (size < str_len + 3) {
+        return;
+    }
+
+    if (str[0] == '{' && str[str_len - 1] == '}') {
+        // Print embedded JSON object verbatim
+        abuf_cat(&jsons->msg, str);
         return;
     }
 
@@ -983,6 +1005,7 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
 
 static void format_jsons_double(data_output_t *output, double data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     // use scientific notation for very big/small values
     if (data > 1e7 || data < 1e-4) {
@@ -1001,6 +1024,7 @@ static void format_jsons_double(data_output_t *output, double data, char const *
 
 static void format_jsons_int(data_output_t *output, int data, char const *format)
 {
+    UNUSED(format);
     data_print_jsons_t *jsons = (data_print_jsons_t *)output;
     abuf_printf(&jsons->msg, "%d", data);
 }
@@ -1008,11 +1032,13 @@ static void format_jsons_int(data_output_t *output, int data, char const *format
 size_t data_print_jsons(data_t *data, char *dst, size_t len)
 {
     data_print_jsons_t jsons = {
-            .output.print_data   = format_jsons_object,
-            .output.print_array  = format_jsons_array,
-            .output.print_string = format_jsons_string,
-            .output.print_double = format_jsons_double,
-            .output.print_int    = format_jsons_int,
+            .output = {
+                    .print_data   = format_jsons_object,
+                    .print_array  = format_jsons_array,
+                    .print_string = format_jsons_string,
+                    .print_double = format_jsons_double,
+                    .print_int    = format_jsons_int,
+            },
     };
 
     abuf_init(&jsons.msg, dst, len);
@@ -1105,6 +1131,7 @@ typedef struct {
 
 static void print_syslog_data(data_output_t *output, data_t *data, char const *format)
 {
+    UNUSED(format);
     data_output_syslog_t *syslog = (data_output_syslog_t *)output;
 
     // we expect a normal message around 500 bytes

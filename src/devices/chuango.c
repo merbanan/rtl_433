@@ -31,7 +31,8 @@ Note: simple 24 bit fixed ID protocol (x1527 style) and should be handled by the
 
 #include "decoder.h"
 
-static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     data_t *data;
     uint8_t *b;
     int id;
@@ -90,7 +91,7 @@ static char *output_fields[] = {
     "id",
     "cmd",
     "cmd_id",
-    NULL
+    NULL,
 };
 
 r_device chuango = {

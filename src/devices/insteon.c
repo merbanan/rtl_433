@@ -196,7 +196,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     /*   Is this overkill ??
     unsigned int l;
-    if(extended) {
+    if (extended) {
          l = 642;
      } else {
          l = 278;
@@ -257,7 +257,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     }
 
     // if (decoder->verbose > 1) {
-    //     for(int j=0; j < results_len; j++) {
+    //     for (int j=0; j < results_len; j++) {
     //          fprintf(stderr, "%d:%02X ", j,  results[j]);
     //     }
     //     puts("\n");
@@ -302,9 +302,9 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         cmd_array[cmd_array_len++] = (int)results[j];
     }
 
-    char payload[35] = {0};
+    char payload[INSTEON_PACKET_MAX_EXT * 2 + 2] = {0};
     p                = payload;
-    for (int j = 0; j < min_pkt_len; j++) {
+    for (int j = 0; j < results_len; j++) {
         p += sprintf(p, "%02X", results[j]);
     }
 
@@ -489,15 +489,18 @@ static char *output_fields[] = {
         "from_id",
         "to_id",
         "msg_type",     // packet type at int
-        "msg_type_str",  // packet type as formated string
+        "msg_type_str",  // packet type as formatted string
         // "command",
         "extended",     // 0= short pkt, 1=extended pkt
         "hops_max",     // almost always 3
         "hops_left",    // remaining hops
-        "formatted",   // entire packet as a formated string with hex
+        "formatted",   // entire packet as a formatted string with hex
         "mic", // remove if not applicable
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data
+        "msg_str",
+        "hopsmax",
+        "hopsleft",
         // "raw",
         // "raw_message",
         NULL,
@@ -514,7 +517,5 @@ r_device insteon = {
         .tolerance   = 15,
         .reset_limit = 1000, // a bit longer than packet gap
         .decode_fn   = &insteon_callback,
-        .disabled    = 0, // disabled and hidden, use 0 if there is a MIC, 1 otherwise
         .fields      = output_fields,
-        .verbose     = 0,
 };

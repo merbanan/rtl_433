@@ -128,7 +128,8 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
 GE Color Effects Remote.
 @sa ge_coloreffects_decode()
 */
-static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int ge_coloreffects_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     unsigned bitpos = 0;
     int ret         = 0;
     int events      = 0;
@@ -150,7 +151,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "command",
-    NULL
+    NULL,
 };
 
 r_device ge_coloreffects = {

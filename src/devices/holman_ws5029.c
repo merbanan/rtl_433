@@ -95,7 +95,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw      = (int16_t)((b[11] << 8) | (b[12] & 0xf0)); // uses sign-extend
     float temp_c      = (temp_raw >> 4) * 0.1f;
     int humidity      = ((b[12] & 0x0f) << 4) | ((b[13] & 0xf0) >> 4);
-    int rain_raw      = ((b[13] & 0x0f) << 12) | b[14];
+    int rain_raw      = ((b[13] & 0x0f) << 8) | b[14];
     float rain_mm     = rain_raw * 0.79f;
     int speed_kmh     = b[15];
     int direction_deg = wind_dir_degr[(b[16] & 0xf0) >> 4];
@@ -121,10 +121,12 @@ static char *output_fields[] = {
         "id",
         "temperature_C",
         "humidity",
+        "battery_ok",
         "rain_mm",
         "wind_avg_km_h",
         "direction_deg", // TODO: remove this
         "wind_dir_deg", // TODO: remove this
+        "mic",
         NULL,
 };
 

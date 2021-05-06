@@ -62,7 +62,8 @@ There is an extra, unidentified 7th byte in WH2A packages.
 Based on reverse engineering with gnu-radio and the nice article here:
 http://lucsmall.com/2012/04/29/weather-station-hacking-part-2/
 */
-static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer) {
+static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
+{
     bitrow_t *bb = bitbuffer->bb;
     uint8_t b[6] = {0};
     data_t *data;
@@ -329,23 +330,75 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 /**
 Fine Offset Electronics WH0290 Wireless Air Quality Monitor
 Also: Ambient Weather PM25
+Also: Misol PM25
+Also: EcoWitt WH0290, EcoWitt WH41
 
-The sensor sends a package each ~10m. The bits are PCM modulated with Frequency Shift Keying.
+The sensor sends a data burst every 10 minutes.  The bits are PCM
+modulated with Frequency Shift Keying.
+
+Ecowitt advertises this device as a PM2.5 sensor.  It contains a
+Honeywell PM2.5 sensor:
+
+  https://sensing.honeywell.com/honeywell-sensing-particulate-hpm-series-datasheet-32322550.pdf
+
+However, the Honeywell datasheet says that it also has a PM10 output
+which is "calculated from" the PM2.5 reading.  While there is an
+accuracy spec for PM2.5, there is no specification of an kind from
+PM10.  The datasheet does not explain the calculation, and does not
+give references to papers in the scientific literature.
+
+Note that PM2.5 is the mass of particles <= 2.5 microns in 1 m^3 of
+air, and PM10 is the mass of particles <= 10 microns.  Therefore the
+difference in those measurements is the mass of particles > 2.5
+microns and <= 10 microns, sometimes called PM2.5-10.  By definition
+these particles are not included in the PM2.5 measurement, so
+"calculating" doesn't make sense.  Rather, this appears an assumption
+about correlation, meaning how much mass of larger particles is likely
+to be present based on the mass of the smaller particles.
+
+The serial stream from the sensor has fields for PM2.5 and PM10 and
+these fields have been verified to appear in the transmitted signal by
+cross-comparing the internal serial lines and data received via
+rtl_433.
+
+The Ecowitt displays show only PM2.5, and Ecowitt confirmed that the
+second field is the PM10 output of the sensor but said the value is
+not accurate so they have not adopted it.
+
+By observation of an Ecowitt WH41, the formula is pm10 = pm2.5 +
+increment(pm2.5), where the increment is by ranges from the following
+table (with gaps when no samples have been observed).  It is left as
+future work to compare with an actual PM10 sensor.
+
+0 to 24     | 1
+25 to 106   | 2
+109 to 185  | 3
+190 to 222  | 4
+311         | 5
+390         | 6
+
 
 Data layout:
+             41 c7 41 ae 01 c2 f9 b3 00000, Ecowitt 41
     aa 2d d4 42 cc 41 9a 41 ae c1 99 9
              FF DD ?P PP ?A AA CC BB
 
 - F: 8 bit Family Code?
-- D: 8 bit device id?
-- ?: 2 bits ?
+- D: 8 bit device id (corresponds to sticker on device in hex)
+- ?: 1 bit?
+- b: 1 bit MSB of battery bars out of 5
 - P: 14 bit PM2.5 reading in ug/m3
-- ?: 2 bits ?
+- b: 2 bits LSBs of battery bars out of 5
 - A: 14 bit PM10.0 reading in ug/m3
-- ?: 8 bits ?
 - C: 8 bit CRC checksum of the previous 6 bytes
 - B: 8 bit Bitsum (sum without carry, XOR) of the previous 7 bytes
 
+BitBench Examples
+{129} 55 55 55 55 55 51 6e a2 0c ba 02 d0 03 25 13 c0 00 [pm2=9 pm10=10 id=151 0x97 battery 4/5bars]
+{128} 55 55 55 55 55 51 6e a2 0c ba 03 70 03 c3 43 30 [pm2=11 pm10=12 id=151 0x97 battery 4/5bars]
+{129} 55 55 55 55 55 51 6e a2 0c b8 01 46 01 94 9c 2c 00 [pm2=4 pm10=5 id=151 0x97 3/5 bars]
+Preamble: aa2dd4
+FAM:8d ID: 8h 1b Bat_MSB:1d PMTWO:14d Bat_LSB:2d PMTEN:14d CRC:8h BITSIM:8h bbbbb
 */
 static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
@@ -376,17 +429,23 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Decode data
+    uint8_t family    = b[0];
     uint8_t id        = b[1];
+    uint8_t unknown1  = (b[2] & 0x80) ? 1 : 0;
     int pm25          = (b[2] & 0x3f) << 8 | b[3];
     int pm100         = (b[4] & 0x3f) << 8 | b[5];
-
+    int battery_bars  = (b[2] & 0x40) >> 4 | (b[4] & 0xC0) >> 6; //out of 5
+    float battery_ok  = battery_bars * 0.2f; //convert out of 5 bars to 0 (0 bars) to 1 (5 bars)
 
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
+            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
-            "pm10_0_ug_m3",     "10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
+            "family",           "FAMILY",       DATA_INT,    family,
+            "unknown1",         "UNKNOWN1",     DATA_INT,    unknown1,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -462,6 +521,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (msg_type != 0xe0) {
         if (decoder->verbose)
             fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
+        if (b[0] == 0x41) {
+            return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
+        }
         return DECODE_ABORT_EARLY;
     }
 
@@ -948,7 +1010,7 @@ static char *output_fields_WH25[] = {
     "light_lux",
     //WH0290
     "pm2_5_ug_m3",
-    "pm10_0_ug_m3",
+    "estimated_pm10_0_ug_m3",
     "mic",
     NULL,
 };
@@ -956,7 +1018,8 @@ static char *output_fields_WH25[] = {
 static char *output_fields_WH51[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
+    "battery_mV",
     "moisture",
     "boost",
     "ad_raw",

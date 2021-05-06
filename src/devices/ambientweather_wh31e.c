@@ -50,6 +50,61 @@ Some payloads:
     30 44 92 15 3d 07 5f 07 45 04 5f
     30 c3 81 d6 5b 90 35 08 35 44 2c
 
+
+Ambient Weather WH31E Radio Controlled Clock (RCC) packet WWVB
+
+These packets are sent with this schedule, according to the manual:
+    After the remote sensor is powered up, the sensor will transmit weather
+    data for 30 seconds, and then the sensor will begin radio controlled clock
+    (RCC) reception. During the RCC time reception period (maximum 5 minutes),
+    no weather data will be transmitted to avoid interference.
+
+    If the signal reception is not successful within 3 minute, the signal
+    search will be cancelled and will automatically resume every two hours
+    until the signal is successfully captured. The regular RF link will resume
+    once RCC reception routine is finished.
+
+ / time message type 0x52
+ |  / station id
+ |  |  / unknown
+ |  |  |  / 20xx year in BCD
+ |  |  |  |  / month in BCD
+ |  |  |  |  |  / day in BCD
+ |  |  |  |  |  |  / hour in BCD
+ |  |  |  |  |  |  |  / minute in BCD
+ |  |  |  |  |  |  |  |  / second in BCD
+ |  |  |  |  |  |  |  |  |  / CRC-8, poly 0x31, init 0x00
+ |  |  |  |  |  |  |  |  |  |  / SUM-8
+YY II UU YY MM DD HH mm SS CC XX
+ 0  1  2  3  4  5  6  7  8  9 10 - byte index
+
+UU has kept the value 0x4a.  Data it may represent that is broadcast from WWVB:
+- Daylight savings upcoming/active (it WAS active during the captures) (2 bits)
+- Leap year (1 bit)
+- Leap second at the end of this month (1 bit)
+- DUT1, difference between UTC and UT1 (4-7 bits depending on re-encoding)
+The upper bits of the upper nibbles M, D, H, m, S may possibly be used to
+encode this information, given their maximum valid digits of 1, 3, 2, 6, 6,
+respectively.
+
+Packets observed
+Reception time               Payload
+2020-10-20T02:06:55.809Z  52 27 4a 20 10 20 02 06 55 05 75
+2020-10-20T02:08:02.793Z  52 27 4a 20 10 20 02 08 02 81 a0
+2020-10-20T07:35:04.290Z  52 75 4a 20 10 20 07 35 03 8a 2a
+2020-10-20T07:35:52.394Z  52 58 4a 20 10 20 07 35 51 48 19
+2020-10-20T07:36:06.287Z  52 75 4a 20 10 20 07 36 05 01 a4
+2020-10-20T07:36:55.305Z  52 58 4a 20 10 20 07 36 54 90 65
+2020-10-20T07:37:08.284Z  52 75 4a 20 10 20 07 37 07 97 3d
+2020-10-20T07:37:58.355Z  52 58 4a 20 10 20 07 37 57 37 10
+2020-10-20T07:38:10.280Z  52 75 4a 20 10 20 07 38 09 11 ba
+2020-10-20T07:39:01.398Z  52 58 4a 20 10 20 07 39 00 b3 37
+2020-10-20T08:05:50.830Z  52 a0 4a 20 10 20 08 05 50 0f f8
+2020-10-20T08:06:58.862Z  52 a0 4a 20 10 20 08 06 58 9b 8d
+2020-10-20T08:08:06.883Z  52 a0 4a 20 10 20 08 08 06 97 39
+2020-10-20T08:09:14.785Z  52 a0 4a 20 10 20 08 09 14 42 f3
+
+
 EcoWitt WH40 protocol.
 Seems to be the same as Fine Offset WH5360 or Ecowitt WH5360B.
 
@@ -138,8 +193,9 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
+        msg_type = b[0];
 
-        if (b[0] == 0x30) {
+        if (msg_type == 0x30) {
             // WH31E
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
@@ -154,7 +210,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x30
             id         = b[1];
             battery_ok = (b[2] >> 7);
             channel    = ((b[2] & 0x70) >> 4) + 1;
@@ -179,7 +234,48 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x40) {
+        else if (msg_type == 0x52) {
+            // WH31E (others?) RCC
+            uint8_t c_crc = crc8(b, 10, 0x31, 0x00);
+            if (c_crc) {
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: WH31E RCC bad CRC\n", __func__);
+                continue; // DECODE_FAIL_MIC
+            }
+            uint8_t c_sum = add_bytes(b, 10) - b[10];
+            if (c_sum) {
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: WH31E RCC bad SUM\n", __func__);
+                continue; // DECODE_FAIL_MIC
+            }
+
+            id         = b[1];
+            int unknown = b[2];
+            int year    = ((b[3] & 0xF0) >> 4) * 10 + (b[3] & 0x0F) + 2000;
+            int month   = ((b[4] & 0x10) >> 4) * 10 + (b[4] & 0x0F);
+            int day     = ((b[5] & 0x30) >> 4) * 10 + (b[5] & 0x0F);
+            int hours   = ((b[6] & 0x30) >> 4) * 10 + (b[6] & 0x0F);
+            int minutes = ((b[7] & 0x70) >> 4) * 10 + (b[7] & 0x0F);
+            int seconds = ((b[8] & 0x70) >> 4) * 10 + (b[8] & 0x0F);
+
+            char clock_str[23];
+            sprintf(clock_str, "%04d-%02d-%02dT%02d:%02d:%02dZ",
+                    year, month, day, hours, minutes, seconds);
+
+            /* clang-format off */
+            data = data_make(
+                    "model",        "",             DATA_STRING,    "AmbientWeather-WH31E",
+                    "id" ,          "Station ID",   DATA_INT,       id,
+                    "data",         "Unknown",      DATA_INT,       unknown,
+                    "radio_clock",  "Radio Clock",  DATA_STRING,    clock_str,
+                    "mic",          "Integrity",    DATA_STRING,    "CRC",
+                    NULL);
+            /* clang-format on */
+            decoder_output_data(decoder, data);
+            events++;
+        }
+
+        else if (msg_type == 0x40) {
             // WH40
             uint8_t c_crc = crc8(b, 8, 0x31, 0x00);
             if (c_crc) {
@@ -194,7 +290,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x40
             id         = (b[2] << 8) | b[3];
             battery_ok = (b[4] >> 7);
             channel    = ((b[4] & 0x70) >> 4) + 1;
@@ -216,7 +311,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             events++;
         }
 
-        else if (b[0] == 0x68) {
+        else if (msg_type == 0x68) {
             // WS68
             uint8_t c_crc = crc8(b, 15, 0x31, 0x00);
             if (c_crc) {
@@ -231,7 +326,6 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 continue; // DECODE_FAIL_MIC
             }
 
-            msg_type   = b[0]; // fixed 0x68
             id         = (b[2] << 8) | b[3];
             int lux    = (b[4] << 8) | b[5];
             int batt   = b[6];
@@ -261,7 +355,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         else {
             if (decoder->verbose)
-                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, b[0]);
+                fprintf(stderr, "%s: unknown message type %02x (expected 0x30/0x40/0x68)\n", __func__, msg_type);
         }
     }
     return events;
@@ -280,6 +374,7 @@ static char *output_fields[] = {
         "wind_max_km_h",
         "wind_dir_deg",
         "data",
+        "radio_clock",
         "mic",
         NULL,
 };

@@ -4,8 +4,9 @@
     Copyright (C) 2015 Paul Ortyl
 
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License version 3 as
-    published by the Free Software Foundation.
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 */
 
 /*
@@ -109,9 +110,10 @@ static int brennenstuhl_rcs_2044_callback(r_device *decoder, bitbuffer_t *bitbuf
 
 static char *output_fields[] = {
     "model",
-    "type",
+    "id",
+    "key",
     "state",
-    NULL
+    NULL,
 };
 
 r_device brennenstuhl_rcs_2044 = {

@@ -1,5 +1,5 @@
 /** @file
-    Security+ 2.0 rolling code
+    Security+ 2.0 rolling code.
 
     Copyright (C) 2020 Peter Shipley <peter.shipley@gmail.com>
     Based on code by Clayton Smith https://github.com/argilo/secplus
@@ -21,23 +21,21 @@ Security+ 2.0  is described in [US patent application US20110317835A1](https://p
 #include "decoder.h"
 
 /**
+Security+ 2.0 rolling code.
 
-
-data comes in two bursts/packets
+Data comes in two bursts/packets.
 
 Layout:
 
-bits = `AA BB IIII OOOO X*30`
+    bits = `AA BB IIII OOOO X*30`
 
-AA = payload type  ( 2 bits 00 or 01 )
-BB = FrameID ( 2 bits always 00)
-IIII = inversion indicator ( 4 bits )
-OOOO = Order indicator ( 4 bits ).
-XXXX....  = data ( 30 bits )
+- AA = payload type  ( 2 bits 00 or 01 )
+- BB = FrameID ( 2 bits always 00)
+- IIII = inversion indicator ( 4 bits )
+- OOOO = Order indicator ( 4 bits ).
+- XXXX....  = data ( 30 bits )
 
 ---
-
-
 
 data is broken up into 3 parts ( p0 p1 p2 )
 eg:
@@ -68,9 +66,7 @@ Once the above has been run twice the two are merged
 
 ---
 
-
 */
-
 
 int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p, int verbose)
 {
@@ -113,7 +109,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     // using short to store 10bit values
     uint16_t p0 = 0, p1 = 0, p2 = 0;
 
-    // sort 30 bits of interleaved data into three 10 bit buffers 
+    // sort 30 bits of interleaved data into three 10 bit buffers
     for (int i = 0; i < 10; i++) {
         p2 ^= (x & 0x00000001) << i; // 9-
         x >>= 1;
@@ -157,7 +153,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     case 0x09: // 0b1001 (False, False, False),
         break;
     default:
-        if (verbose) 
+        if (verbose)
             fprintf(stderr, "Invert FAIL\n");
         return 1;
     }
@@ -220,7 +216,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
 
     // bitrow_printf(buffy, 8, "%s ; buffy bits ", __func__);
 
-    // assemble binary bits into trinary 
+    // assemble binary bits into trinary
     x = p2;
     for (int i = 8; i >= 0; i -= 2) {
         roll_array[k++] = (x >> i) & 0x03;
@@ -234,7 +230,7 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         fprintf(stderr, "\n");
     }
 
-    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not 
+    // SANITY check trinary valuse, 00/01/10 are valid,  11 is not
     for (int i = 0; i < 9; i++) {
         if (roll_array[i] == 3) {
             fprintf(stderr, "roll_array val  FAIL\n");
@@ -259,36 +255,30 @@ unsigned _preamble_len           = 28;
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
-    unsigned next_pos     = 0;
-    uint8_t buffy[20]; // 80 bits (overkill)
     bitbuffer_t bits = {0};
     // int i            = 0;
 
-    bitbuffer_t bits_1    = {0};
+    //bitbuffer_t bits_1    = {0};
     bitbuffer_t fixed_1   = {0};
     uint8_t rolling_1[16] = {0};
 
-    bitbuffer_t bits_2    = {0};
+    //bitbuffer_t bits_2    = {0};
     bitbuffer_t fixed_2   = {0};
     uint8_t rolling_2[16] = {0};
 
+    for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] < 110) {
+            continue;
+        }
 
-    // 280 is a conservative guess
-    if (bitbuffer->bits_per_row[0] <= 280) {
-        return DECODE_ABORT_LENGTH;
-    }
+        search_index = bitbuffer_search(bitbuffer, row, 0, _preamble, _preamble_len);
 
-    // loop though segments until we collect both parts, or run out of data
-    while (search_index < bitbuffer->bits_per_row[0]) {
-
-        search_index = bitbuffer_search(bitbuffer, 0, search_index, _preamble, _preamble_len);
-
-        if (search_index >= bitbuffer->bits_per_row[0]) {
+        if (search_index >= bitbuffer->bits_per_row[row]) {
             break;
         }
 
         bitbuffer_clear(&bits);
-        next_pos = bitbuffer_manchester_decode(bitbuffer, 0, search_index + 26, &bits, 80);
+        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
         search_index += 20;
         if (bits.bits_per_row[0] < 42) {
             continue; // DECODE_ABORT_LENGTH;
@@ -301,14 +291,14 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         // valid = 0X00XXXX
-        // 1st 3rs and 4th bits should alway be 0
+        // 1st 3rs and 4th bits should always be 0
         if (bits.bb[0][0] & 0xB0) {
             if (decoder->verbose)
                 fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
             continue;
         }
 
-        // 2nd bit indicates with half of the data 
+        // 2nd bit indicates with half of the data
         if (bits.bb[0][0] & 0xC0) {
             if (decoder->verbose)
                 (void)fprintf(stderr, "%s: Set 2\n", __func__);
@@ -320,7 +310,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             _decode_v2_half(&bits, rolling_1, &fixed_1, decoder->verbose);
         }
 
-        // break if we've recived both halfs
+        // break if we've received both halfs
         if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
             break;
         }
@@ -397,13 +387,14 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // rolling_total is a 28 bit unsigned number
     // fixed_totals is 40 bit in a uint64_t
-    snprintf(fixed_str, sizeof(fixed_str), "%llu", fixed_total);
+    snprintf(fixed_str, sizeof(fixed_str), "%llu", (long long unsigned)fixed_total);
     snprintf(rolling_str, sizeof(rolling_str), "%u", rolling_total);
 
     /* clang-format off */
     data_t *data;
     data = data_make(
             "model",       "Model",    DATA_STRING, "Secplus-v2",
+            "id",          "",       DATA_INT, (fixed_total & 0xffffffff),
             "button_id",   "Button-ID",    DATA_INT,    (fixed_total >> 32),
             "remote_id",   "Remote-ID",    DATA_INT,    (fixed_total & 0xffffffff),
             // "fixed",       "",    DATA_INT,    fixed_total,
@@ -417,9 +408,9 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-
         // Common fields
         "model",
+        "id",
         "rolling"
         "fixed",
         "button_id",

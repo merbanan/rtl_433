@@ -2,8 +2,205 @@
 
 ## [Unreleased]
 
-- HTTP server, JSON-RPC
 - GPS meta data
+
+## Release 20.11 (2020-11-13)
+
+### Highlights
+
+- HTTP server, JSON-RPC
+- Added RfRaw analyzer output and format input support
+- Added support for LaCrosse Technology View LTV-R1 Rainfall Gauge
+- Added support for ECODHOME smart socket
+- Added support for LaCrosse Technology View TH2 Thermo/Hygro sensor
+- Added support for Bresser 6-in-1, 7-in-1 weather station
+- Added support for LaCrosse Technology View TH3 Thermo/Hygro Sensor
+- Added support for LaCrosse LTV-WR1 Multi Sensor
+- Added support for Nice Flor-s remote
+- Added support for Schrader TPMS SMD3MA4 (Subaru)
+- Added support for MightyMule Driveway Alarm FM231
+- Added support for Somfy RTS
+- Added support for LaCrosse LTV-WSDTH01
+- Added support for TFA 30.3221.02 Temperature/Humidity sensor
+- Added support for Security plus v2 keyfob
+- Added support for Acurite Atlas and Atlas Lightning Detector
+- Added support for Acurite 590TX
+- Added support for ThermoPro TX2
+- Added support for IDM and NetIDM decoders
+- Added support for Insteon decoder
+- Added support for LaCrosse TX141B
+- Added support for Sharp SPC775
+- Added support for Missil ML0757
+- Added support for Fineoffset WH32
+- Added support for Abarth124 TPMS sensor
+- Added support for Fine Offset WH1080 FSK version
+- Added support for SCM+ decoder
+- Added support for Kerui WD51 Water leak sensor
+- Added support for Cotech 36-7959
+- Added support for Eurochron EFTH-800
+- Added support for Visonic Powercode devices
+- Added support for Klimalogg decoder and needed nrzs demodulator
+
+### Changed
+
+- Added support for LaCrosse Technology View R1 Rainfall Gauge (#1553)
+- Added http server (#871)
+- Added jsmn json lib
+- Added support for ECODHOME smart socket (#1544)
+- Fixed Lacrosse-THx hardcoded strings to support data extractor scripts
+- Added support for LaCrosse Technology View TH2 Thermo/Hygro sensor (#1552)
+- Added stats start time reporting
+- Fixed Analyzer FSK/OOK hint (#1557)
+- Improved unit tests for bitbuffer with extra assertions
+- Fixed UNUSED in term_ctl
+- Removed "http" as "influx" alias
+- Added arguments and docs to Home Assistant MQTT auto discovery script (#1546)
+- Changed LaCrosse LTV-WR1 to wind_avg_km_h key (#1549)
+- Fixed rfraw builder overflow (#1539)
+- Added Dooya Curtain Remote conf (#1545)
+- Added SDR loop api
+- Changed to sig_atomic_t for sighandler
+- Fixed wmbus csv output parameters
+- Fixed flags field for TPMS Jansite (#1538)
+- Added note for TFA Dostmann 30.3159.IT (#1537)
+- Added SDR runtime settings api
+- Changed exit async naming
+- Added SDR device info
+- Added support for Bresser 6-in-1, 7-in-1 weather station (#1225)
+- Added support for LaCrosse Technology View TH3 Thermo/Hygro Sensor (#1536)
+- Added support for LaCrosse LTV-WR1 Multi Sensor (#1533)
+- Added support for Nice Flor-s remote (#1526)
+- Changed remove DSC subtype key (#1522)
+- Changed Acurite subtype key to message_type (#1520)
+- Added support for WH31E RCC packet type (#1528)
+- Fixed wmbus mode S buffer length issue for Lansen meters
+- Added SoapySDR to MinGW-w64 build
+- Added output format option to flex getters (#1532)
+- Added TFA 30.3209 note to Nexus (#1516)
+- Added TFA-Dostmann 30.3161 rain scale (#1531)
+- Fixed Insteon string overflow
+- Fixed missing CSV fields, add a debug check
+- Added named output tag option (#1517)
+- Added support for Schrader TPMS SMD3MA4 (Subaru) (#1511)
+- Removed unneeded update_protocol
+- Changed width calc from r_device to slicers (#1513)
+- Added support for mightymule driveway alarm FM231 (#1407) (#1515)
+- Changed rfraw parse to accept multiple codes
+- Fixed include for memcmp in rfraw (#1507)
+- Added id key to scmplus (#1503)
+- Removed list of supported device protocols from man page (#1345)
+- Added RfRaw analyzer output support
+- Added RfRaw format input support
+- Removed FSK_PULSE_MANCHESTER_ZEROBIT from ook_demods
+- Fixed Inovalley kw9015b temp/rain fields proper
+- Fixed Inovalley kw9015b temp/rain fields (#1501)
+- Added support for Somfy RTS (#1496)
+- Added 7-bit clean strings check to actions
+- Added maintainer_update check
+- Fixed Security+ 2.0 decoder for new gap_limit rows (#1498)
+- Added clang-analyzer action
+- Added build action
+- Added style check action
+- Improved PCM NRZ 0-bit slicing precision
+- Fixed output keys for FineOffset WH51 (#1495)
+- Fixed index bug in TFA 30.3221
+- Fixed simplisafe non-printable character output
+- Added support for LaCrosse LTV-WSDTH01 (#1485)
+- Added gap_limit to PCM demod
+- Fixed invalid dumpers on ook input (#1463)
+- Added support for TFA 30.3221.02 Temperature/Humidity sensor (#1426)
+- Fixed Acurite 6045 temperature 2.0F too low (#1482 #1401)
+- Added support for Security plus v2 keyfob (#1480)
+- Fixed opus_xt300 added sanity check to data values (#1470)
+- Fixed runtime error 'left shift of 229 by 24 places cannot be represented in type int (#1479)
+- Fixed bad conf for Fan-11t (#1477)
+- Added came top432 flex decoder config (#1474)
+- Fixed wmbus raw telegram output, mainly for wmbusmeters use
+- Fixed efergy_e2_classic False Trigger (#1475)
+- FIXed check manchester_decode check decoded bit length in a constent method, removed superfluous comment
+- FIXed check manchester_decode result length
+- Fixed current_cost 8 bytes required
+- Fixed TPMS Abarth124 false positive (#1466)
+- Fixed alectov1 csv fields (#1457)
+- Added Atlas Lightning Detector support (#1418)
+- Added Acurite Atlas support (#1124)
+- Added Nexus-TE82s compatibility note (#1455)
+- Updated idm scmplus Meter type list (#1445)
+- Added Acurite 590TX support (#1411)
+- Added ThermoPro TX2 support (#1450)
+- Improved program exit code in case of error (#1451)
+- Improved Home Assistant MQTT auto discovery (#1390)
+- Fixed Many False Positives (#1444)
+- Fixed Globaltronics QUIGG GT-TMBBQ-05 false positives (#1443)
+- Fixed Oregon Scientific SL109H false positives (#1442)
+- Added IDM and NetIDM decoders (#1421)
+- Changed Fineoffset WH32 to exclude pressure
+- Added Insteon decoder (#1285)
+- Added Friedland EVO door bell conf
+- Added support for LaCrosse TX141B (#1434)
+- Added missing parts for Sharp SPC775 decoder
+- Added Sharp SPC775 support (#1433)
+- Added support for Missil ML0757
+- Fixed use of return code in Abarth Spider decoder
+- Added conditional to data_make (#1432)
+- Added support for Fineoffset WH32 (#1431)
+- Added bit reversed output for HCS200 decoder to match official tools
+- Added reverse32 function
+- Improved x10sec add sensors, tamper, crc (#1413)
+- Improved inFactory e.g. MIC (#1325)
+- Changed Kerui to break out additional fields from state (#1018)
+- Updated rtl_433.example.conf
+- Improved validations checks for smoke_gs558 protocol
+- Added Equation/Siemens ADLM FPRF remote conf
+- Added Abarth124 tpms sensor support
+- Added missing protocol to readme
+- Added attenuation histogram output (#1387)
+- Added Fine Offset WH1080 FSK version support
+- Improved FSK demodulation of distorted signals better
+- Added SCM+ decoder (#1410)
+- Added support for Kerui WD51 Water leak sensor (#1406)
+- Fixed cancel watchdog when reading from file input
+- Fixed ERT Endpoint Type extraction (#1379)
+- Added custom data processor example
+- Improved Honeywell sensor support (#1384)
+- Added delay and low battery codes for DS10A door sensor (#1397)
+- Fixed free results from SoapySDR API
+- Fixed handle empty filenames
+- Added support for Cotech 36-7959 (#1382)
+- Removed deprecated positional flex syntax
+- Changed div 10 to mul 0.1 in all decoders
+- Changed value scaling for double to float in all decoders
+- Changed checks on Rubicson/Nexus/Solight
+- Fixed Bresser 5in1 Wind calculation (#1353)
+- Improved MQTT Home Assistant example (#1357)
+- Added decode_uart util (#1376)
+- Fixed Eurochron EFTH-800 missing mic
+- Added Eurochron EFTH-800 support (#1375)
+- Fixed MQTTT mgr free
+- Fixed Soapy string leaks
+- Added Prometheus/OpenMetrics relay example (#1371)
+- Fixed missing levels with minmax demod (fixes #1363)
+- Fixed socket portability
+- Fixed visonic device battery reporting
+- Improved visonic_powercode
+- Fixed rtl_tcp gain/rate/freq status output
+- Fixed missing WSAStartup in rtl_tcp
+- Added support for Visonic Powercode devices (#1349)
+- Added message length check for ESIC EMT7110.
+- Updated Acurite 6045 to capture all 8 bits of strike counter (#1348)
+- Added configuration file for SMC5326 (#1346)
+- Updated template guideline for verbosity (#1344)
+- Fixed failing style-check test by adding allocation check to write-sigrok
+- Added support for sigrok convert on windows (#1341)
+- Fixed flex map parse
+- Changed -l n to -Y level=n
+- Changed detector level limits to dB
+- Fixed Fineoffset-WHx080 temperature (#1327)
+- Fixed Ecowitt-WH53, Maverick-ET73 timings
+- Fixed Klimalogg device settings, tolerance was set to low
+- Added Klimalogg decoder and needed nrzs demodulator
+- Fixed negative temperatures in wmbus decoder
+- Added pulse-eval example
 
 ## Release 20.02 (2020-02-17)
 
