@@ -210,8 +210,8 @@ mappings = {
         "config": {
             "device_class": "pressure",
             "name": "Pressure",
-            "unit_of_measurement": "hPa",
-            "value_template": "{{ float(value|float) * 10.0 | round(2) }}"
+            "unit_of_measurement": "kPa",
+            "value_template": "{{ value|float }}"
         }
     },
 
