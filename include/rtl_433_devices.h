@@ -194,7 +194,7 @@
     DECL(auriol_aft77b2) \
     DECL(honeywell_cm921) \
     DECL(tpms_hyundai_vdo)
-
+    DECL(thermor_a6n_132tx) \
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
