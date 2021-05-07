@@ -42,7 +42,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *data;
     uint8_t *b;
     int id, humidity, batt_low, button, channel;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
 
     if (bitbuffer->num_rows != 2)
@@ -69,7 +69,7 @@ static int auriol_hg02832_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     button   = (b[2] & 0x40) >> 6;
     channel  = (b[2] & 0x30) >> 4;
 
-    temp_raw = ((b[2] & 0x0f) << 12) | (b[3] << 4); // use sign extend
+    temp_raw = (int16_t)(((b[2] & 0x0f) << 12) | (b[3] << 4)); // uses sign extend
     temp_c = (temp_raw >> 4) * 0.1f;
 
     /* clang-format off */

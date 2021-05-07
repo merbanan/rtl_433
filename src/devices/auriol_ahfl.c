@@ -39,7 +39,7 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int channel;
     int tx_button;
     int battery_ok;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c;
     int humidity;
     int nibble_sum, checksum;
@@ -75,7 +75,7 @@ static int auriol_ahfl_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     battery_ok  = b[1] >> 7;
     channel     = (b[1] & 0x30) >> 4;
     tx_button   = (b[1] & 0x40) >> 6;
-    temp_raw    = ((b[1] & 0x0f) << 12) | (b[2] << 4); // use sign extend into int16_t
+    temp_raw    = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
     temp_c      = (temp_raw >> 4) * 0.1f;
     humidity    = b[3] >> 1;
 

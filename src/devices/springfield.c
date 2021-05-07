@@ -63,7 +63,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         battery  = (b[1] >> 7) & 1;
         button   = (b[1] >> 6) & 1;
         channel  = ((b[1] >> 4) & 0x03) + 1;
-        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // sign extend
+        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
         temp_c   = (temp >> 4) * 0.1f;
         moisture = (b[3] >> 4) * 10; // Moisture level is 0-10
         //uk1      = b[4] >> 4; /* unknown. */

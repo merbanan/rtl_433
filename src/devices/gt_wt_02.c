@@ -84,8 +84,8 @@ static int gt_wt_02_process_row(r_device *decoder, bitbuffer_t *bitbuffer, int r
     int battery_low    = (b[1] >> 7 & 1); // 1 bits
     int button_pressed = (b[1] >> 6 & 1); // 1 bits
     int channel        = (b[1] >> 4 & 3); // 2 bits
-    int temp_raw       = (int16_t)(((b[1] & 0x0f) << 12) | b[2] << 4) >> 4; // uses sign extend
-    float temp_c       = temp_raw * 0.1F;
+    int temp_raw       = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
+    float temp_c       = (temp_raw >> 4) * 0.1F;
 
     /* clang-format off */
     data = data_make(
