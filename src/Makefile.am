@@ -147,6 +147,7 @@ rtl_433_SOURCES      = abuf.c \
                        devices/quhwa.c \
                        devices/radiohead_ask.c \
                        devices/rftech.c \
+                       devices/rojaflex.c \
                        devices/rubicson.c \
                        devices/rubicson_48659.c \
                        devices/s3318p.c \

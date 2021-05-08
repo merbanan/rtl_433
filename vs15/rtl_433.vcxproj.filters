@@ -565,6 +565,9 @@
     <ClCompile Include="..\src\devices\rftech.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\rojaflex.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\rubicson.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
