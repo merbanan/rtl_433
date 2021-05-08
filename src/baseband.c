@@ -73,7 +73,7 @@ void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
     for (i = 0; i < len; i++) {
         int16_t x = iq_buf[2 * i] - 128;
         int16_t y = iq_buf[2 * i + 1] - 128;
-        y_buf[i]  = sqrt(x * x + y * y) * 128.0; // max 181, scaled 23170, fs 16384
+        y_buf[i]  = (uint16_t)(sqrt(x * x + y * y) * 128.0); // max 181, scaled 23170, fs 16384
     }
 }
 
@@ -185,10 +185,10 @@ void baseband_demod_FM(uint8_t const *x_buf, int16_t *y_buf, unsigned long num_s
     // e.g. [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
     // a = 1.00000, 0.50953; b = 0.24524, 0.24524;
     if (state->rate != samp_rate) {
-        if (low_pass > 1e4) {
+        if (low_pass > 1e4f) {
             low_pass = low_pass / samp_rate;
-        } else if (low_pass >= 1.0) {
-            low_pass = 1e6 / low_pass / samp_rate;
+        } else if (low_pass >= 1.0f) {
+            low_pass = 1e6f / low_pass / samp_rate;
         }
         fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
                 __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
@@ -278,10 +278,10 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
     // e.g. [b,a] = butter(1, 0.2) -> 3x tau (95%) ~5 samples, 250k -> 20us, 1024k -> 5us
     // a = 1.00000, 0.50953; b = 0.24524, 0.24524;
     if (state->rate != samp_rate) {
-        if (low_pass > 1e4) {
+        if (low_pass > 1e4f) {
             low_pass = low_pass / samp_rate;
-        } else if (low_pass >= 1.0) {
-            low_pass = 1e6 / low_pass / samp_rate;
+        } else if (low_pass >= 1.0f) {
+            low_pass = 1e6f / low_pass / samp_rate;
         }
         fprintf(stderr, "%s: low pass filter for %u Hz at cutoff %.0f Hz, %.1f us\n",
                 __func__, samp_rate, samp_rate * low_pass, 1e6 / (samp_rate * low_pass));
