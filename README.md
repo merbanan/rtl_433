@@ -223,49 +223,49 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [142]  Fine Offset Electronics/ECOWITT WH51 Soil Moisture Sensor
     [143]  Holman Industries iWeather WS5029 weather station (older PWM)
     [144]  TBH weather sensor
-    [145]  Rojaflex
-    [146]  WS2032 weather station
-    [147]  Auriol AFW2A1 temperature/humidity sensor
-    [148]  TFA Drop Rain Gauge 30.3233.01
-    [149]  DSC Security Contact (WS4945)
-    [150]  ERT Standard Consumption Message (SCM)
-    [151]* Klimalogg
-    [152]  Visonic powercode
-    [153]  Eurochron EFTH-800 temperature and humidity sensor
-    [154]  Cotech 36-7959 wireless weather station with USB
-    [155]  Standard Consumption Message Plus (SCMplus)
-    [156]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
-    [157]  Abarth 124 Spider TPMS
-    [158]  Missil ML0757 weather station
-    [159]  Sharp SPC775 weather station
-    [160]  Insteon
-    [161]  ERT Interval Data Message (IDM)
-    [162]  ERT Interval Data Message (IDM) for Net Meters
-    [163]* ThermoPro-TX2 temperature sensor
-    [164]  Acurite 590TX Temperature with optional Humidity
-    [165]  Security+ 2.0 (Keyfob)
-    [166]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
-    [167]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
-    [168]  Somfy RTS
-    [169]  Schrader TPMS SMD3MA4 (Subaru)
-    [170]* Nice Flor-s remote control for gates
-    [171]  LaCrosse Technology View LTV-WR1 Multi Sensor
-    [172]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
-    [173]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
-    [174]  Bresser Weather Center 7-in-1
-    [175]  EcoDHOME Smart Socket and MCEE Solar monitor
-    [176]  LaCrosse Technology View LTV-R1 Rainfall Gauge
-    [177]  BlueLine Power Monitor
-    [178]  Burnhard BBQ thermometer
-    [179]  Security+ (Keyfob)
-    [180]  Cavius smoke, heat and water detector
-    [181]  Jansite TPMS Model Solar
-    [182]  Amazon Basics Meat Thermometer
-    [183]  TFA Marbella Pool Thermometer
-    [184]  Auriol AHFL temperature/humidity sensor
-    [185]  Auriol AFT 77 B2 temperature sensor
-    [186]  Honeywell CM921 Wireless Programmable Room Thermostat
-    [187]  Hyundai TPMS (VDO)
+    [145]  WS2032 weather station
+    [146]  Auriol AFW2A1 temperature/humidity sensor
+    [147]  TFA Drop Rain Gauge 30.3233.01
+    [148]  DSC Security Contact (WS4945)
+    [149]  ERT Standard Consumption Message (SCM)
+    [150]* Klimalogg
+    [151]  Visonic powercode
+    [152]  Eurochron EFTH-800 temperature and humidity sensor
+    [153]  Cotech 36-7959 wireless weather station with USB
+    [154]  Standard Consumption Message Plus (SCMplus)
+    [155]  Fine Offset Electronics WH1080/WH3080 Weather Station (FSK)
+    [156]  Abarth 124 Spider TPMS
+    [157]  Missil ML0757 weather station
+    [158]  Sharp SPC775 weather station
+    [159]  Insteon
+    [160]  ERT Interval Data Message (IDM)
+    [161]  ERT Interval Data Message (IDM) for Net Meters
+    [162]* ThermoPro-TX2 temperature sensor
+    [163]  Acurite 590TX Temperature with optional Humidity
+    [164]  Security+ 2.0 (Keyfob)
+    [165]  TFA Dostmann 30.3221.02 T/H Outdoor Sensor
+    [166]  LaCrosse Technology View LTV-WSDTH01 Breeze Pro Wind Sensor
+    [167]  Somfy RTS
+    [168]  Schrader TPMS SMD3MA4 (Subaru)
+    [169]* Nice Flor-s remote control for gates
+    [170]  LaCrosse Technology View LTV-WR1 Multi Sensor
+    [171]  LaCrosse Technology View LTV-TH Thermo/Hygro Sensor
+    [172]  Bresser Weather Center 6-in-1, 7-in-1 indoor, new 5-in-1, 3-in-1 wind gauge, Froggit WH6000, Ventus C8488A
+    [173]  Bresser Weather Center 7-in-1
+    [174]  EcoDHOME Smart Socket and MCEE Solar monitor
+    [175]  LaCrosse Technology View LTV-R1 Rainfall Gauge
+    [176]  BlueLine Power Monitor
+    [177]  Burnhard BBQ thermometer
+    [178]  Security+ (Keyfob)
+    [179]  Cavius smoke, heat and water detector
+    [180]  Jansite TPMS Model Solar
+    [181]  Amazon Basics Meat Thermometer
+    [182]  TFA Marbella Pool Thermometer
+    [183]  Auriol AHFL temperature/humidity sensor
+    [184]  Auriol AFT 77 B2 temperature sensor
+    [185]  Honeywell CM921 Wireless Programmable Room Thermostat
+    [186]  Hyundai TPMS (VDO)
+    [187]  Rojaflex
 
 * Disabled by default, use -R n or -G
 
