@@ -152,7 +152,6 @@
     DECL(fineoffset_WH51) \
     DECL(holman_ws5029pwm) \
     DECL(archos_tbh) \
-    DECL(rojaflex) \
     DECL(ws2032) \
     DECL(auriol_afw2a1) \
     DECL(tfa_drop_303233) \
@@ -194,7 +193,8 @@
     DECL(auriol_ahfl) \
     DECL(auriol_aft77b2) \
     DECL(honeywell_cm921) \
-    DECL(tpms_hyundai_vdo)
+    DECL(tpms_hyundai_vdo) \
+    DECL(rojaflex)
 
     /* Add new decoders here. */
 
