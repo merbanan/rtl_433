@@ -409,7 +409,7 @@ static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
 }
 
 // find the fields output for CSV
-char const **determine_csv_fields(r_cfg_t *cfg, char const **well_known, int *num_fields)
+char const **determine_csv_fields(r_cfg_t *cfg, char const *const *well_known, int *num_fields)
 {
     list_t field_list = {0};
     list_ensure_size(&field_list, 100);
@@ -898,10 +898,10 @@ void add_csv_output(r_cfg_t *cfg, char *param)
     list_push(&cfg->output_handler, data_output_csv_create(fopen_output(param)));
 }
 
-void start_outputs(r_cfg_t *cfg, char const **well_known)
+void start_outputs(r_cfg_t *cfg, char const *const *well_known)
 {
     int num_output_fields;
-    const char **output_fields = determine_csv_fields(cfg, well_known, &num_output_fields);
+    char const **output_fields = determine_csv_fields(cfg, well_known, &num_output_fields);
 
     for (size_t i = 0; i < cfg->output_handler.len; ++i) { // list might contain NULLs
         data_output_start(cfg->output_handler.elems[i], output_fields, num_output_fields);

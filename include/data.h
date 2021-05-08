@@ -136,7 +136,7 @@ typedef struct data_output {
     void (*print_string)(struct data_output *output, const char *data, char const *format);
     void (*print_double)(struct data_output *output, double data, char const *format);
     void (*print_int)(struct data_output *output, int data, char const *format);
-    void (*output_start)(struct data_output *output, const char **fields, int num_fields);
+    void (*output_start)(struct data_output *output, char const *const *fields, int num_fields);
     void (*output_free)(struct data_output *output);
     FILE *file;
 } data_output_t;
@@ -162,7 +162,7 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
                   strings not. The list may contain duplicates and they are eliminated.
     @param num_fields number of fields
 */
-void data_output_start(struct data_output *output, const char **fields, int num_fields);
+void data_output_start(struct data_output *output, char const *const *fields, int num_fields);
 
 /** Prints a structured data object. */
 void data_output_print(struct data_output *output, data_t *data);
