@@ -1,8 +1,116 @@
 # Changelog
 
-## [Unreleased]
+## Release 21.05 (2020-05-09)
 
-- GPS meta data
+### Highlights
+
+- Last release to support Autotools (autoconf, automake) builds (#1644)
+- Last release to offer "oldmodel" keys (deprected since 2020)
+- Added Github Release builds for Windows
+- Added GPSd tags option (#1636)
+- Added optional TLS support to MQTT (#1633)
+- Added OpenSSL support for influxs TLS (#1569)
+- Added support for ELK-319DWM, Alula RE101 to Interlogix (#1711)
+- Added conf for Tesla charge port opener (#1704)
+- Added support for  Hyundai-VDO TPMS (#1643)
+- Added support for TX25U dual channel temp sensor
+- Added support for Honeywell CM921/BDR91/Evohome (#1336)
+- Added support for Auriol AFT 77 B2
+- Added support for Auriol AHFL (#1683)
+- Added support for Bresser Professional Rain Gauge (#1676)
+- Added support for TFA Marbella pool thermometer (#1675)
+- Added support for Amazon Basics Meat Thermometer (#1671)
+- Added support for Owl 180i support
+- Added support for Jansite TPMS Model Solar (#1663)
+- Added support for Cavius alarms (#1648)
+- Added support for Security plus v1 (#1483)
+- Added conf for Skylink HA-434TL motion sensor (s.a. #814)
+- Added support for Burnhard BBQ thermometer (#1624)
+- Added support for wmbus water meter Maddalena (#1610)
+- Added conf for ATC Technology LMT-430 (#1600)
+- Added support for Blueline PowerCost Monitor
+- Added conf for FAN-53T (#1588)
+- Added support for Acurite 515 fridge/freezer sensors (#1579)
+- Added support for TelFix-RadioLoop (#1571)
+- Added conf for Salus RT300RF thermostat, Heatmiser PRT-W thermostat (#1573)
+
+### Changed
+
+- Added Release build workflow
+- Added pressure_kPa key for HA (#1712)
+- Added support for ELK-319DWM, Alula RE101 to Interlogix (closes #1711)
+- Fixed and style Honeywell CM921
+- Added option to set force_update for all sensors (#1695)
+- Added Tesla charge port opener decoder conf (#1704)
+- Added battery flags to Bresser 7in1 (closes #1703)
+- Fixed Hyundai-VDO TPMS
+- Added Hyundai-VDO TPMS (#1643)
+- Added X10 Dim, Bright, All Lights ON, and All Off commands (#1687)
+- Added support for TX25U dual channel temp sensor
+- Fixed code warnings
+- Fixed code style
+- Added forgotten id
+- Added Honeywell CM921/BDR91/Evohome decoder (#1336)
+- Added Auriol AFT 77 B2 protocol decoder
+- Fixed Holman-WS5029 rain count (#1686)
+- Fixed explanation of supposed PM10 (estimated) value (#1678)
+- Added support for Auriol AHFL protocol (#1683)
+- Fixed PSI calculation for Ford TPMS
+- Added support for higher pressure range in Ford TPMS
+- Fixed secplus_v1 endless loop (closes #1662)
+- Fixed secplus_v1 overflow
+- Added support for some Ecowitt WH41 sensor signals
+- Added comment regarding PM10 readings in the FineOffset WH0290 decoder
+- Added support for Bresser Professional Rain Gauge (#1676)
+- Added TFA Marbella pool thermometer protocol decoder (#1675)
+- Added Amazon Basics Meat Thermometer decoder (#1671)
+- Fixed exit if http server can't start
+- Fixed missing sdr_stop for WIN32
+- Added Owl 180i support
+- Added website and sensor specifications for Jansite TPMS Model Solar (#1666)
+- Added decoder for jansite solar tpms (#1663)
+- Added Ford TPMS pressure and temperature (closes #1654)
+- Fixed http redirect to index for Chrome
+- Added support for Cavius alarms (#1648)
+- Added mqtt token slash accepts any character
+- Added variable fm low pass filter option
+- Added support for Security plus v1 (#1483)
+- Added GPSd tags option (#1636)
+- Added FineOffset WH0290 extra fields (#1639)
+- Fixed Hideki Gust speed by Udo Kirsten
+- Added option for multiple data tags
+- Added optional TLS support to MQTT (closes #1633)
+- Added OpenSSL support for influxs TLS (closes #1569)
+- Added LaCrosse TX141TH-Bv2 checksum
+- Changed rain field format for WS2032
+- Added m_bus decoded values + HCA (#1630)
+- Changed battery_ok, rain field for WS2032
+- Fixed m_bus Show invalid dates as invalid (#1628)
+- Fixed mqtt retain on hass script (#1602)
+- Added Skylink HA-434TL motion sensor conf (s.a. #814)
+- Added support for Burnhard BBQ thermometer (#1624)
+- Added TFA 30.3208.02 note (closes #1622)
+- Added raw pulse printing mode
+- Added support for parsing timedate in wbus (#1616)
+- Added Battery Level for Fineoffset WH0290 Wireless Air Quality Monitor (#1617)
+- Fixed Blueline tweaks and improvements (#1590)
+- Added support for wmbus water meter Maddalena (#1610)
+- Changed soil moisture to percent display (#1595)
+- Added ATC Technology LMT-430 conf (#1600)
+- Fixed buffer length in honeywell (#1598)
+- Fixed buffer size error (#1596)
+- Fixed FineOffset WH1050 field widths (#1592)
+- Added support for Blueline PowerCost Monitor
+- Added FAN-53T decoder conf (#1588)
+- Added support for Acurite 515 fridge/freezer sensors (#1579)
+- Fixed invalid HASS "weather" device_class (#1548)
+- Fixed rtlsdr_read_async() abort on read stall (closes #1581)
+- Fixed rtlsdr_set_freq_correction non-error code
+- Added support for UV index and light intensity readings in Cotech (#1575)
+- Fixed false positive bug in Nexus (closes #1576)
+- Added support for TelFix-RadioLoop to Somfy (closes #1571)
+- Added Thermostat example conf files with mqtt outputs (#1573)
+- Added lacrosse decoder sanity checks
 
 ## Release 20.11 (2020-11-13)
 
