@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
   build_check_job:
     runs-on: ubuntu-latest
-    name: Build with CMake and Autotools
+    name: Build with CMake
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -19,12 +19,6 @@ jobs:
         cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
         buildDirectory: '${{runner.workspace}}/b/unixmakefiles'
         cmakeAppendedArgs: '-G "Unix Makefiles" -DENABLE_RTLSDR=OFF -DENABLE_SOAPYSDR=OFF'
-    - name: Autotools autoreconf
-      run: autoreconf --install
-    - name: Autotools configure
-      run: ./configure
-    - name: Autotools make
-      run: make
   style_check_job:
     runs-on: ubuntu-latest
     name: Check code style

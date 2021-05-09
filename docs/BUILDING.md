@@ -38,7 +38,7 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential autoconf cmake pkg-config
+    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
@@ -71,18 +71,6 @@ Use CMake with `-DENABLE_SOAPYSDR=ON` (default: `AUTO`) to require SoapySDR (e.g
 E.g. use:
 
     cmake -DENABLE_SOAPYSDR=ON ..
-
-### Autotools (Autoconf, Automake)
-
-Installation using Autotools:
-
-    cd rtl_433/
-    autoreconf --install
-    ./configure
-    make
-    make install
-
-The final 'make install' step should be run as a user with appropriate permissions - if in doubt, 'sudo' it.
 
 ## Windows
 

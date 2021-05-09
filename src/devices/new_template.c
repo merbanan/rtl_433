@@ -279,8 +279,8 @@ static char *output_fields[] = {
  *
  * This device is disabled and hidden, it can not be enabled.
  *
- * To enable your device, add it to the list in include/rtl_433_devices.h
- * and to src/CMakeLists.txt and src/Makefile.am or run ./maintainer_update.py
+ * To enable your device, append it to the list in include/rtl_433_devices.h
+ * and sort it into src/CMakeLists.txt or run ./maintainer_update.py
  *
  */
 r_device new_template = {
