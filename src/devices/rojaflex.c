@@ -227,7 +227,6 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     {
         char tokenString[7] = "";
         char id[10]         = "";
-        char *integrity     = (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) ? "CRC-16/CMS" : "CRC-16/CMS missing";
         char *deviceType    = "unknown";
         sprintf(tokenString, "0x%02x%02x", msg[MESSAGE_TOKEN_OFFSET], msg[MESSAGE_TOKEN_OFFSET + 1]);
         sprintf(id, "0x%02x%02x%02x%01x", msg[ID_OFFSET], msg[ID_OFFSET + 1], msg[ID_OFFSET + 2], (msg[ID_OFFSET + 3] >> 4));
@@ -254,7 +253,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "token",        "Msg Token", DATA_STRING, tokenString,
                     "commandtype",  "Command ",  DATA_STRING, getCommandString(&msg[0]),
                     "commandvalue", "Value",     DATA_INT,    msg[COMMAND_VALUE_OFFSET],
-                    "mic",          "Integrity", DATA_STRING, integrity,
+                    "mic",          "Integrity", DATA_STRING, (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) ? "CRC" : "",
                     NULL);
         /* clang-format on */
 
