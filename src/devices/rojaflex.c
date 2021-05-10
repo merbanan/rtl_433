@@ -233,24 +233,24 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         sprintf(id, "0x%02x%02x%02x%01x", msg[ID_OFFSET], msg[ID_OFFSET + 1], msg[ID_OFFSET + 2], (msg[ID_OFFSET + 3] >> 4));
 
         if ((msg[COMMAND_ID_OFFSET] & 0xF) == 0x5) {
-            deviceType = "RojaFlex Shutter";
+            deviceType = "RojaFlex-Shutter";
         }
         else if ((msg[COMMAND_ID_OFFSET] & 0xF) == 0xa) {
             // Rojaflex Bridge clones a remote signal but does not send an CRC!?!?
             // So we can detect if it a real remote or a bridge on the message length.
             if (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) {
-                deviceType = "RojaFlex Remote";
+                deviceType = "RojaFlex-Remote";
             }
             else {
-                deviceType = "RojaFlex Bridge";
+                deviceType = "RojaFlex-Bridge";
             }
         }
 
         /* clang-format off */
         data = data_make(
                     "model",        "Model",     DATA_STRING, deviceType,
-                    "channel",      "Channel",   DATA_INT,    msg[CHANNEL_OFFSET] & 0xF,
                     "id",           "ID",        DATA_STRING, id,
+                    "channel",      "Channel",   DATA_INT,    msg[CHANNEL_OFFSET] & 0xF,
                     "token",        "Msg Token", DATA_STRING, tokenString,
                     "commandtype",  "Command ",  DATA_STRING, getCommandString(&msg[0]),
                     "commandvalue", "Value",     DATA_INT,    msg[COMMAND_VALUE_OFFSET],
@@ -339,8 +339,8 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "channel",
         "id",
+        "channel",
         "token",
         "commandtype",
         "commandvalue",
