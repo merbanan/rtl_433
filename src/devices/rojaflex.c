@@ -304,7 +304,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 msg_new[8 + ID_OFFSET + 2] = msg[ID_OFFSET + 2];
 
                 // Clone 4bit ID + Channel
-                msg_new[8 + ID_OFFSET + 3] = msg[ID_OFFSET + 3] & 0xF0 + channel;
+                msg_new[8 + ID_OFFSET + 3] = (msg[ID_OFFSET + 3] & 0xF0) + channel;
 
                 // Set command id + command value
                 msg_new[8 + COMMAND_ID_OFFSET]    = command;
@@ -330,7 +330,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             fprintf(stderr, "\n");
             ++channel;
-        } while (channel <= 0xF && GENERATE_COMMANDS_FOR_ALL_CHANNELS);
+        } while ((channel <= 0xF) && GENERATE_COMMANDS_FOR_ALL_CHANNELS);
     }
 
     return 1;
