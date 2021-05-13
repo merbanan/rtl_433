@@ -201,7 +201,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "token",        "Msg Token", DATA_STRING, tokenString,
                     "commandtype",  "Command ",  DATA_STRING, getCommandString(&msg[0]),
                     "commandvalue", "Value",     DATA_INT,    msg[COMMAND_VALUE_OFFSET],
-                    "mic",          "Integrity", DATA_STRING, (dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC) ? "CRC" : "",
+                    "mic",      "Integrity",     DATA_COND, dataframe_bitcount == DATAFRAME_BITCOUNT_INCL_CRC, DATA_FORMAT, "%s", DATA_STRING, "CRC",
                     NULL);
         /* clang-format on */
 
