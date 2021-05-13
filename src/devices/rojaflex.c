@@ -25,12 +25,13 @@ Signal documentation
 Default signal layout
 0xaaaaaaaa d391d391 SS KKKKKK ?CDDDD TTTT CCCC
 
-4 Bytes Preamble
-4 Bytes Sync Word
+4 Bytes Preamble   "0xaaaaaaaa"
+4 Bytes Sync Word  "9391d391"
 1 Byte  Size       "S" is always "0x08"
 3 Bytes ID         "Seems to be the static ID for the Homeinstallation"
 3 Bytes Data       "See docu below"
-2 Bytes Token      "It seems to be a message token which is used for the shutter answer."
+1 Bytes Token I    "It seems to be an internal message token which is used for the shutter answer."
+1 Bytes Token II   "Is the sum of 3 Bytes ID + 3 Bytes Data + 1 Byte token"
 2 Bytes CRC-16/CMS "Seems optional, because this is missing from commands via bridge P2D."
 19 Byte Summe      "Only 17 Bytes without CRC (from bridge)"
 
@@ -41,9 +42,6 @@ Data documentation
 0xF      - Channel: 1-15 single channels (one shutter is registert to one channel), 0 means all
 0xFF     - Command ID    (0x0a = stop, 0x1a = up,0x8a = down, 0xea = Request)
 0xFF     - Command Value (in status from shutter this is the percent value. 0% for open 100% for close)
-
-Message Token documentation
-See generator function, no clue how to calculate it dynamic
 
 To get raw data:
 ./rtl_433 -f 433920000 -X n=rojaflex,m=FSK_PCM,s=100,l=100,r=102400
