@@ -75,56 +75,6 @@ To get raw data:
 #define COMMAND_ID_GO_SAVED_POS 0xda
 #define COMMAND_ID_REQUESTSTATUS 0xea
 
-// Calcualte message token in static way
-// It seems to be a more dynamic formular ... but I did not find it until now.
-static uint16_t calcMessageToken(uint8_t command, uint8_t channel)
-{
-    uint16_t token             = 0;
-    uint8_t magic_static_value = 0;
-
-    // Calculate some magic static value because I do not know the dynamic way.
-    switch (command) {
-    case COMMAND_ID_STOP:
-        magic_static_value = 0x85;
-        break;
-    case COMMAND_ID_UP:
-        magic_static_value = 0xa5;
-        break;
-    case COMMAND_ID_DOWN:
-        magic_static_value = 0x85;
-        break;
-    case COMMAND_ID_SAVE_UNSAVE_POS:
-        magic_static_value = 0xa5;
-        break;
-    case COMMAND_ID_GO_SAVED_POS:
-        magic_static_value = 0x25;
-        break;
-    case COMMAND_ID_REQUESTSTATUS:
-        magic_static_value = 0x5D;
-        break;
-    default:
-        return 0xFFFF;
-    }
-
-    switch (command) {
-    case COMMAND_ID_STOP:
-    case COMMAND_ID_UP:
-    case COMMAND_ID_DOWN:
-    case COMMAND_ID_SAVE_UNSAVE_POS:
-    case COMMAND_ID_GO_SAVED_POS:
-        token = command << 8;
-        break;
-    case COMMAND_ID_REQUESTSTATUS:
-        // I do not know why not also the command
-        token = 0x02 << 8;
-        break;
-    }
-
-    token = token + magic_static_value + channel;
-
-    return token;
-}
-
 // Done
 static char *getCommandString(uint8_t *msg)
 {
@@ -276,6 +226,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t channel = GENERATE_COMMANDS_FOR_CURRENT_CHANNEL ? msg[CHANNEL_OFFSET] & 0xF : 0;
         uint8_t command = 0;
         uint8_t msg_new[19];
+        uint16_t sum = 0;
 
         fprintf(stderr, "\n");
         fprintf(stderr, "%s: Signal cloner\n", __func__);
@@ -311,9 +262,15 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 msg_new[8 + COMMAND_VALUE_OFFSET] = 0x1;
 
                 // Generate message token
-                uint16_t token_calc                   = calcMessageToken(command, channel);
-                msg_new[8 + MESSAGE_TOKEN_OFFSET + 0] = token_calc >> 8;
-                msg_new[8 + MESSAGE_TOKEN_OFFSET + 1] = token_calc & 0xFF;
+                // TODO: This value is not completely known
+                msg_new[8 + MESSAGE_TOKEN_OFFSET + 0] = (command == COMMAND_ID_REQUESTSTATUS) ? 0x02 : command;
+
+                // Calculate sum
+                sum = 0;
+                for( uint8_t j=0; j <= 6; ++j ) {
+                    sum += msg_new[8 + ID_OFFSET + j];
+                }
+                msg_new[8 + MESSAGE_TOKEN_OFFSET + 1] = sum & 0xff;
 
                 // Generate CRC
                 // Thanks to: ./reveng -w 16 -s $msg1 $msg2 $msg3
