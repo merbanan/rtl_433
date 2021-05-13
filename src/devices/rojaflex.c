@@ -226,9 +226,11 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         uint8_t msg_new[19];
         uint16_t sum = 0;
 
-        fprintf(stderr, "\n");
-        fprintf(stderr, "%s: Signal cloner\n", __func__);
-        fprintf(stderr, "%s: \n", __func__);
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "\n");
+            fprintf(stderr, "%s: Signal cloner\n", __func__);
+            fprintf(stderr, "%s: \n", __func__);
+        }
 
         do {
             for (uint8_t i = 0; i < sizeof(remote_commands); ++i) {
@@ -280,10 +282,14 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 /*
                 // Print final command
                 */
-                bitrow_printf(&msg_new[0], sizeof(msg_new) * 8, "%s: CH:%01x Command:0x%02x: ", __func__, channel, command);
+                if (decoder->verbose > 1) {
+                    bitrow_printf(&msg_new[0], sizeof(msg_new) * 8, "%s: CH:%01x Command:0x%02x: ", __func__, channel, command);
+                }
             }
 
-            fprintf(stderr, "\n");
+            if (decoder->verbose > 1) {    
+                fprintf(stderr, "\n");
+            }
             ++channel;
         } while ((channel <= 0xF) && GENERATE_COMMANDS_FOR_ALL_CHANNELS);
     }
