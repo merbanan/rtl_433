@@ -20,6 +20,7 @@ struct dm_state {
     float level_limit;
     float min_level;
     float min_snr;
+    float low_pass;
     int use_mag_est;
     int detect_verbosity;
 

@@ -55,6 +55,10 @@ Getting rtl_433 devices back after Home Assistant restarts will happen
 more quickly if MQTT retain is enabled. Note however that definitions
 for any transitient devices/false positives will retained indefinitely.
 
+If your sensor values change infrequently and you prefer to write the most
+recent value even if not changed set -f to append "force_update = true" to
+all configs. This is useful if you're graphing the sensor data or want to
+alert on missing data.
 
 Suggestions:
 
@@ -196,6 +200,17 @@ mappings = {
             "device_class": "pressure",
             "name": "Pressure",
             "unit_of_measurement": "hPa",
+            "value_template": "{{ value|float }}"
+        }
+    },
+
+    "pressure_kPa": {
+        "device_type": "sensor",
+        "object_suffix": "P",
+        "config": {
+            "device_class": "pressure",
+            "name": "Pressure",
+            "unit_of_measurement": "kPa",
             "value_template": "{{ value|float }}"
         }
     },
@@ -535,10 +550,13 @@ def publish_config(mqttc, topic, model, instance, mapping):
     config["unique_id"] = object_name
     config["device"] = { "identifiers": object_id, "name": object_id, "model": model, "manufacturer": "rtl_433" }
 
+    if args.force_update:
+        config["force_update"] = "true"
+
     if args.debug:
         print(path,":",json.dumps(config))
 
-    mqttc.publish(path, json.dumps(config), args.retain)
+    mqttc.publish(path, json.dumps(config), retain=args.retain)
 
     return True
 
@@ -620,6 +638,8 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--port", type=int, default=1883,
                         help="MQTT port (default: %(default)s)")
     parser.add_argument("-r", "--retain", action="store_true")
+    parser.add_argument("-f", "--force_update", action="store_true",
+                        help="Append 'force_update = true' to all configs.")
     parser.add_argument("-R", "--rtl-topic", type=str,
                         default="rtl_433/+/events",
                         dest="rtl_topic",

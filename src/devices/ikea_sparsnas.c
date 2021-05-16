@@ -33,7 +33,7 @@ The data is sent using CPFSK modulation. It requires PD_MIN_PULSE_SAMPLES in
 pulse_detect.h to be lowered to 5 to be able to demodulate at 250kS/s. The
 preamble is optimally 4 bytes of 0XAA. Then the sync word 0xD201. Here only
 the last 2 bytes of the 0xAA preamble is checked, as the first ones seems
-to be corrupted quite often. There are plenty of integrety checks made on
+to be corrupted quite often. There are plenty of integrity checks made on
 the demodulated package which makes this compromise OK.
 
 Packet structure according to: https://github.com/strigeus/sparsnas_decoder
@@ -54,8 +54,8 @@ Packet structure according to: https://github.com/strigeus/sparsnas_decoder
 Example packet: 0x11a15f070ea2dfefe6d5fdd20547e6340ae7be61
 
 
-The packet's integrety can be checked with the 16b CRC at the end of the packet.
-There are also several other ways to check the integrety of the package.
+The packet's integrity can be checked with the 16b CRC at the end of the packet.
+There are also several other ways to check the integrity of the package.
  - (preamble)
  - CRC
  - The decrypted sensor ID

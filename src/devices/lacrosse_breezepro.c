@@ -66,7 +66,7 @@ Packet length is 264 bits according to inspectrum broken down as follows:
 - trailer:        32 bytes (0xd2d2d200)
 
 The sensor generates a packet every 'n' seconds but only transmits if one or
-more of the following conditions are satified:
+more of the following conditions are satisfied:
 
 - temp changes +/- 0.8 degrees C
 - humidity changes +/- 1%

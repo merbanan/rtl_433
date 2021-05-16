@@ -73,19 +73,20 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     temperature = b[7];
     maybe_battery = b[8];
 
+    /* clang-format off */
     data = data_make(
-        "model",        "",     DATA_STRING, "Citroen",
-        "type",         "",     DATA_STRING, "TPMS",
-        "state",        "",     DATA_STRING, state_str,
-        "id",           "",     DATA_STRING, id_str,
-        "flags",        "",     DATA_INT, flags,
-        "repeat",       "",     DATA_INT, repeat,
-        "pressure_kPa", "Pressure",    DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.364,
-        "temperature_C", "Temperature", DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
-//        "battery_mV",   "Battery", DATA_INT, battery_mV,
-        "maybe_battery", "",     DATA_INT, maybe_battery,
-        "mic",          "",     DATA_STRING, "CHECKSUM",
-        NULL);
+            "model",            "",             DATA_STRING, "Citroen",
+            "type",             "",             DATA_STRING, "TPMS",
+            "id",               "",             DATA_STRING, id_str,
+            "state",            "",             DATA_STRING, state_str,
+            "flags",            "",             DATA_INT,    flags,
+            "repeat",           "",             DATA_INT,    repeat,
+            "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.364,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
+            "maybe_battery",    "",             DATA_INT,    maybe_battery,
+            "mic",              "",             DATA_STRING, "CHECKSUM",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;
@@ -119,13 +120,12 @@ static int tpms_citroen_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "type",
-    "state",
     "id",
+    "state",
     "flags",
     "repeat",
     "pressure_kPa",
     "temperature_C",
-//    "battery_mV",
     "maybe_battery",
     "code",
     "mic",

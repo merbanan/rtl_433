@@ -184,7 +184,18 @@
     DECL(ecodhome) \
     DECL(lacrosse_r1) \
     DECL(blueline) \
-	DECL(tech_433) \
+    DECL(burnhardbbq) \
+    DECL(secplus_v1) \
+    DECL(cavius) \
+    DECL(tpms_jansite_solar) \
+    DECL(abmt) \
+    DECL(tfa_marbella) \
+    DECL(auriol_ahfl) \
+    DECL(auriol_aft77b2) \
+    DECL(honeywell_cm921) \
+    DECL(tpms_hyundai_vdo) \
+    DECL(tech_433) \
+
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;

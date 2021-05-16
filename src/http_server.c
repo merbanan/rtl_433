@@ -108,6 +108,24 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #include "fatal.h"
 #include <stdbool.h>
 
+// embed index.html so browsers allow access as local
+#define INDEX_HTML \
+    "<!DOCTYPE html>" \
+    "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" \
+    "<link rel=\"icon\" href=\"https://triq.org/rxui/favicon.ico\">" \
+    "<title>rxui</title>" \
+    "<link href=\"https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons\" rel=\"stylesheet\">" \
+    "<link href=\"https://triq.org/rxui/css/app.css\" rel=\"preload\" as=\"style\">" \
+    "<link href=\"https://triq.org/rxui/css/chunk-vendors.css\" rel=\"preload\" as=\"style\">" \
+    "<link href=\"https://triq.org/rxui/js/app.js\" rel=\"preload\" as=\"script\">" \
+    "<link href=\"https://triq.org/rxui/js/chunk-vendors.js\" rel=\"preload\" as=\"script\">" \
+    "<link href=\"https://triq.org/rxui/css/chunk-vendors.css\" rel=\"stylesheet\">" \
+    "<link href=\"https://triq.org/rxui/css/app.css\" rel=\"stylesheet\">" \
+    "<div id=\"app\"></div>" \
+    "<noscript><strong>We're sorry but rxui doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript>" \
+    "<script src=\"https://triq.org/rxui/js/chunk-vendors.js\"></script>" \
+    "<script src=\"https://triq.org/rxui/js/app.js\"></script>"
+
 // generic ring list
 
 #define DEFAULT_HISTORY_SIZE 100
@@ -524,6 +542,9 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
     else if (!strcmp(rpc->method, "get_grab_mode")) {
         rpc->response(rpc, 2, NULL, cfg->grab_mode);
     }
+    else if (!strcmp(rpc->method, "get_raw_mode")) {
+        rpc->response(rpc, 2, NULL, cfg->raw_mode);
+    }
     else if (!strcmp(rpc->method, "get_verbosity")) {
         rpc->response(rpc, 2, NULL, cfg->verbosity);
     }
@@ -588,6 +609,10 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
     }
     else if (!strcmp(rpc->method, "convert")) {
         cfg->conversion_mode = rpc->val;
+        rpc->response(rpc, 0, "Ok", 0);
+    }
+    else if (!strcmp(rpc->method, "raw_mode")) {
+        cfg->raw_mode = rpc->val;
         rpc->response(rpc, 0, "Ok", 0);
     }
     else if (!strcmp(rpc->method, "verbosity")) {
@@ -661,7 +686,7 @@ struct nc_context {
 static void handle_options(struct mg_connection *nc, struct http_message *hm)
 {
     UNUSED(hm);
-    mg_printf_http_chunk(nc, "%s",
+    mg_printf(nc,
             "HTTP/1.1 204 No Content\r\n"
             "Content-Length: 0\r\n"
             "Cache-Control: max-age=0, private, must-revalidate\r\n"
@@ -672,17 +697,17 @@ static void handle_options(struct mg_connection *nc, struct http_message *hm)
             "Access-Control-Allow-Headers: Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since,X-CSRF-Token\r\n"
             "Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,OPTIONS\r\n"
             "\r\n");
-    mg_send_http_chunk(nc, "", 0); /* Send empty chunk, the end of response */
 }
 
-static void handle_get(struct mg_connection *nc, struct http_message *hm, unsigned char const *buf, unsigned int len)
+static void handle_get(struct mg_connection *nc, struct http_message *hm, char const *buf, unsigned int len)
 {
     UNUSED(hm);
     //mg_send_head(nc, 200, -1, NULL);
-    mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
-
-    mg_send_http_chunk(nc, (char const *)buf, (size_t)len);
-    mg_send_http_chunk(nc, "", 0); /* Send empty chunk, the end of response */
+    mg_printf(nc,
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Length: %u\r\n"
+            "\r\n", len);
+    mg_send(nc, buf, (size_t)len);
 }
 
 static void handle_redirect(struct mg_connection *nc, struct http_message *hm)
@@ -703,7 +728,7 @@ static void handle_redirect(struct mg_connection *nc, struct http_message *hm)
             "HTTP/1.1 307 Temporary Redirect\r\n",
             "Location: http://triq.org/rxui/#",
             (int)host.len, host.p,
-            "\r\n");
+            "\r\n\r\n");
 }
 
 // reply to ws command
@@ -817,7 +842,7 @@ static void handle_json_events(struct mg_connection *nc, struct http_message *hm
 {
     UNUSED(hm);
     /* Send headers */
-    mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
 
     /* Mark connection */
     struct nc_context *ctx = calloc(1, sizeof(*ctx));
@@ -836,7 +861,7 @@ static void handle_json_stream(struct mg_connection *nc, struct http_message *hm
 {
     UNUSED(hm);
     /* Send headers */
-    mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\n\r\n");
+    mg_printf(nc, "HTTP/1.1 200 OK\r\n\r\n");
 
     /* Mark connection */
     struct nc_context *ctx = calloc(1, sizeof(*ctx));
@@ -867,7 +892,7 @@ static void handle_cmd_rpc(struct mg_connection *nc, struct http_message *hm)
     };
 
     /* Send headers */
-    mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
 
     /* Get URL variables */
     if (mg_vcmp(&hm->method, "GET") == 0) {
@@ -900,7 +925,7 @@ static void handle_json_rpc(struct mg_connection *nc, struct http_message *hm)
     };
 
     /* Send headers */
-    mg_printf(nc, "%s", "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
+    mg_printf(nc, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n");
 
     /* Parse JSON */
     int ret = jsonrpc_parse(&rpc, &hm->body);
@@ -966,7 +991,6 @@ static void send_keep_alive(struct mg_connection *nc)
 
 static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
-    UNUSED(handle_get);
     switch (ev) {
     case MG_EV_TIMER:
         send_keep_alive(nc);
@@ -995,6 +1019,10 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data)
             handle_options(nc, hm);
         }
         else if (mg_vcmp(&hm->uri, "/") == 0) {
+            handle_get(nc, hm, INDEX_HTML, sizeof(INDEX_HTML));
+            handle_redirect(nc, hm);
+        }
+        else if (mg_vcmp(&hm->uri, "/ui") == 0) {
             handle_redirect(nc, hm);
         }
         else if (mg_vcmp(&hm->uri, "/jsonrpc") == 0) {
@@ -1216,6 +1244,9 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
     http->output.output_free  = data_output_http_free;
 
     http->server = http_server_start(mgr, host, port, cfg, &http->output);
+    if (!http->server) {
+        exit(1);
+    }
 
     return &http->output;
 }

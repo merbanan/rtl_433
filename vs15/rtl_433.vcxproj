@@ -54,7 +54,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -76,7 +76,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>RTLSDR;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RTLSDR;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\include\;..\src\;..\..\rtl-sdr\;..\..\libusb\include\libusb-1.0</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -101,6 +101,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
     <ClInclude Include="..\include\data.h" />
+    <ClInclude Include="..\include\data_tag.h" />
     <ClInclude Include="..\include\decoder.h" />
     <ClInclude Include="..\include\decoder_util.h" />
     <ClInclude Include="..\include\fatal.h" />
@@ -139,6 +140,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\compat_time.c" />
     <ClCompile Include="..\src\confparse.c" />
     <ClCompile Include="..\src\data.c" />
+    <ClCompile Include="..\src\data_tag.c" />
     <ClCompile Include="..\src\decoder_util.c" />
 	<ClCompile Include="..\src\devices\tech_433.c" />
     <ClCompile Include="..\src\fileformat.c" />
@@ -162,6 +164,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\term_ctl.c" />
     <ClCompile Include="..\src\util.c" />
     <ClCompile Include="..\src\write_sigrok.c" />
+    <ClCompile Include="..\src\devices\abmt.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
@@ -169,7 +172,9 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
     <ClCompile Include="..\src\devices\archos_tbh.c" />
+    <ClCompile Include="..\src\devices\auriol_aft77b2.c" />
     <ClCompile Include="..\src\devices\auriol_afw2a1.c" />
+    <ClCompile Include="..\src\devices\auriol_ahfl.c" />
     <ClCompile Include="..\src\devices\auriol_hg02832.c" />
     <ClCompile Include="..\src\devices\blueline.c" />
     <ClCompile Include="..\src\devices\blyss.c" />
@@ -179,8 +184,10 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\bresser_6in1.c" />
     <ClCompile Include="..\src\devices\bresser_7in1.c" />
     <ClCompile Include="..\src\devices\bt_rain.c" />
+    <ClCompile Include="..\src\devices\burnhardbbq.c" />
     <ClCompile Include="..\src\devices\calibeur.c" />
     <ClCompile Include="..\src\devices\cardin.c" />
+    <ClCompile Include="..\src\devices\cavius.c" />
     <ClCompile Include="..\src\devices\chuango.c" />
     <ClCompile Include="..\src\devices\companion_wtr001.c" />
     <ClCompile Include="..\src\devices\cotech_36_7959.c" />
@@ -223,6 +230,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\holman_ws5029.c" />
     <ClCompile Include="..\src\devices\hondaremote.c" />
     <ClCompile Include="..\src\devices\honeywell.c" />
+    <ClCompile Include="..\src\devices\honeywell_cm921.c" />
     <ClCompile Include="..\src\devices\honeywell_wdb.c" />
     <ClCompile Include="..\src\devices\ht680.c" />
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
@@ -274,6 +282,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\s3318p.c" />
     <ClCompile Include="..\src\devices\schraeder.c" />
     <ClCompile Include="..\src\devices\scmplus.c" />
+    <ClCompile Include="..\src\devices\secplus_v1.c" />
     <ClCompile Include="..\src\devices\secplus_v2.c" />
     <ClCompile Include="..\src\devices\sharp_spc775.c" />
     <ClCompile Include="..\src\devices\silvercrest.c" />
@@ -286,6 +295,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tfa_30_3196.c" />
     <ClCompile Include="..\src\devices\tfa_30_3221.c" />
     <ClCompile Include="..\src\devices\tfa_drop_30.3233.c" />
+    <ClCompile Include="..\src\devices\tfa_marbella.c" />
     <ClCompile Include="..\src\devices\tfa_pool_thermometer.c" />
     <ClCompile Include="..\src\devices\tfa_twin_plus_30.3049.c" />
     <ClCompile Include="..\src\devices\thermopro_tp11.c" />
@@ -295,7 +305,9 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\tpms_citroen.c" />
     <ClCompile Include="..\src\devices\tpms_elantra2012.c" />
     <ClCompile Include="..\src\devices\tpms_ford.c" />
+    <ClCompile Include="..\src\devices\tpms_hyundai_vdo.c" />
     <ClCompile Include="..\src\devices\tpms_jansite.c" />
+    <ClCompile Include="..\src\devices\tpms_jansite_solar.c" />
     <ClCompile Include="..\src\devices\tpms_pmv107j.c" />
     <ClCompile Include="..\src\devices\tpms_renault.c" />
     <ClCompile Include="..\src\devices\tpms_toyota.c" />

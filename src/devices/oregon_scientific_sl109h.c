@@ -76,6 +76,13 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         temp_raw = (int16_t)((b[1] & 0x0f) << 12) | (b[2] << 4); // uses sign-extend
         temp_c = (temp_raw >> 4) * 0.1f;
 
+        // reduce false positives by checking specified sensor range, this isn't great...
+        if (temp_c < -20 || temp_c > 60) {
+            if (decoder->verbose > 1)
+                fprintf(stderr, "%s: temperature sanity check failed: %.1f C\n", __func__, temp_c);
+            return DECODE_FAIL_SANITY;
+        }
+
         // there may be more specific information here; not currently certain what information is encoded here
         status = (b[3] >> 4);
 
@@ -87,7 +94,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
                 "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
                 "id",               "Id",                                   DATA_INT,    id,
                 "channel",          "Channel",                              DATA_INT,    channel,
-                "temperature_C",    "Celsius",      DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
+                "temperature_C",    "Celsius",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
                 "status",           "Status",                               DATA_INT,    status,
                 "mic",              "Integrity",                            DATA_STRING, "CHECKSUM",

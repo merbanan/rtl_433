@@ -49,7 +49,7 @@ char *time_pos_str(struct r_cfg *cfg, unsigned samples_ago, char *buf);
 
 char const **well_known_output_fields(struct r_cfg *cfg);
 
-char const **determine_csv_fields(struct r_cfg *cfg, char const **well_known, int *num_fields);
+char const **determine_csv_fields(struct r_cfg *cfg, char const *const *well_known, int *num_fields);
 
 int run_ook_demods(struct list *r_devs, struct pulse_data *pulse_data);
 
@@ -83,7 +83,7 @@ void add_http_output(struct r_cfg *cfg, char *param);
 
 void add_null_output(struct r_cfg *cfg, char *param);
 
-void start_outputs(struct r_cfg *cfg, char const **well_known);
+void start_outputs(struct r_cfg *cfg, char const *const *well_known);
 
 void add_sr_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
@@ -92,6 +92,8 @@ void close_dumpers(struct r_cfg *cfg);
 void add_dumper(struct r_cfg *cfg, char const *spec, int overwrite);
 
 void add_infile(struct r_cfg *cfg, char *in_file);
+
+void add_data_tag(struct r_cfg *cfg, char *param);
 
 /* runtime */
 

@@ -36,7 +36,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int row;
     int id, battery, rain, button, channel;
-    int16_t temp_raw;
+    int temp_raw;
     float temp_c, rainrate;
 
     row = bitbuffer_find_repeated_row(bitbuffer, 4, NUM_BITS);
@@ -56,7 +56,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     channel  = ((b[1] & 0x30) >> 4) + 1; // either this or the rain top bits could be wrong
     button = (b[1] & 0x08) >> 3;
 
-    temp_raw = ((b[1] & 0x07) << 13) | (b[2] << 5); // use sign extend
+    temp_raw = (int16_t)(((b[1] & 0x07) << 13) | (b[2] << 5)); // uses sign extend
     temp_c = (temp_raw >> 5) * 0.1f;
 
     rain = ((b[1] & 0x07) << 4) | b[3]; // either b[1] or the channel above bould be wrong
