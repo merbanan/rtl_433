@@ -18,6 +18,7 @@ void bitbuffer_clear(bitbuffer_t *bits)
 {
     bits->num_rows = 0;
     memset(bits->bits_per_row, 0, BITBUF_ROWS * 2);
+    memset(bits->syncs_before_row, 0, BITBUF_ROWS * sizeof(bits->syncs_before_row[0]));
     memset(bits->bb, 0, BITBUF_ROWS * BITBUF_COLS);
 }
 
