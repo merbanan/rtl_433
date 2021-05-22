@@ -1173,7 +1173,7 @@ console_handler(int signum)
         g_cfg.exit_async = 1;
         sdr_stop(g_cfg.dev);
         return TRUE;
-    }    
+    }
     return FALSE;
 }
 
