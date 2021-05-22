@@ -48,6 +48,7 @@
 #include "am_analyze.h"
 #include "confparse.h"
 #include "term_ctl.h"
+#include "compat_alarm.h"
 #include "compat_paths.h"
 #include "fatal.h"
 #include "write_sigrok.h"
