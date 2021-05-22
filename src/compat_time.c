@@ -7,7 +7,6 @@
 
 #ifdef _WIN32
 
-#include <stdio.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -34,57 +33,6 @@ int gettimeofday(struct timeval *tv, void *tz)
     return 0;
 }
 
-/* Emulation of alarm() using CreateTimerQueueTimer().
- * Ref:
- *   https://docs.microsoft.com/en-us/windows/win32/api/threadpoollegacyapiset/nf-threadpoollegacyapiset-createtimerqueetimer
- */
-static HANDLE alarm_hnd = INVALID_HANDLE_VALUE;
-static int    alarm_countdown;
-
-void CALLBACK alarm_handler(PVOID param, BOOLEAN timer_fired)
-{
-    if (alarm_countdown > 0)  {
-       alarm_countdown--;
-       if (alarm_countdown == 0)
-          raise(SIGALRM);
-    }
-    (void) timer_fired;
-    (void) param;
-}
-
-static void alarm_delete(void)
-{
-    if (!alarm_hnd || alarm_hnd == INVALID_HANDLE_VALUE)
-       return;
-    signal(SIGALRM, SIG_IGN);
-    DeleteTimerQueueTimer(NULL, alarm_hnd, NULL);
-    CloseHandle(alarm_hnd);
-    alarm_hnd = INVALID_HANDLE_VALUE;
-}
-
-static void alarm_create(void)
-{
-    if (alarm_hnd && alarm_hnd != INVALID_HANDLE_VALUE)
-       return;
-
-    if (!CreateTimerQueueTimer (&alarm_hnd, NULL, alarm_handler,
-                                NULL,
-                                1000,  /* call alarm_handler() after 1 sec */
-                                1000,  /* an do it periodically every seconds */
-                                WT_EXECUTEDEFAULT | WT_EXECUTEINTIMERTHREAD)) {
-        fprintf(stderr, "CreateTimerQueueTimer() failed %lu\n", GetLastError());
-        alarm_hnd = NULL;
-    }
-    else
-        atexit(alarm_delete);
-}
-
-int win_alarm(unsigned seconds)
-{
-  alarm_countdown = seconds;
-  alarm_create();
-  return (0);
-}
 #endif // _WIN32
 
 int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *y)
