@@ -1711,7 +1711,7 @@ int main(int argc, char **argv) {
         time(&cfg->hop_start_time);
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
-    
+
         r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
