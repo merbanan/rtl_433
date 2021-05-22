@@ -1,5 +1,5 @@
 /** @file
- *  BlueLine Innovations Power Cost Monitor, tested with BLI-28000
+    Blueline PowerCost Monitor protocol.
 
     Copyright (C) 2020 Justin Brzozoski
 
@@ -10,124 +10,126 @@
  */
 
 /**
- * Blueline PowerCost Monitor protocol
- *
- * Much of the groundwork for this implementation was based on reading the source and notes from older
- * implementations, but this implementation was a fresh rewrite by Justin Brzozoski in 2020.  I would
- * not have been able to figure this out without the other implementations to look at, but I wanted an
- * implementation that didn't need to know the Kh factor or monitor ID ahead of time, which required
- * changes.
- *
- * Some references used include:
- *
- * https://github.com/merbanan/rtl_433/pull/38 - an abandoned pull request on rtl_433 by radredgreen
- *
- * https://github.com/CapnBry/Powermon433 - a standalone Arduino-based Blueline monitor
- *
- * http://scruss.com/blog/2013/12/03/blueline-black-decker-power-monitor-rf-packets/ - the blog post
- * where the other authors were trading notes in the comments
- *
- * The IR-reader/sensor will transmit 3 bursts every ~30 seconds.  The low-level encoding is on/off
- * keyed pulse-position modulation (OOK_PPM).  The on pulses are always 0.5ms, while the off pulses
- * are either 0.5ms for logic 1 or 1.0ms for logic 0.  Each burst is 32 bits long.  The pauses
- * between the 3 grouped bursts is roughly 100ms.
- *
- * Data is sent less significant byte first for multi-byte fields.
- *
- * The basic layout of all bursts is as follows:
- *
- * - First is a 1 byte header, which is always the value 0xFE.
- * - Second is a 2 byte payload, which is interpreted differently based on the two lowest bits of the first byte
- * - Finally is a 1 byte CRC, calculated across the 2 payload bytes (not the header)
- *
- * The CRC is a CRC-8-ATM with polynomial 100000111, but it may be required to modify the payload bytes before
- * calculating it depending on message type.
- *
- * There are 4 message types that can be indicated by the 2 lowest bits of the first payload byte:
- * 0 - ID message (payload is not offset)
- * 1 - power message (payload is offset)
- * 2 - temperature/status message (payload is offset)
- * 3 - energy message (payload is offset)
- *
- * For the ID message (0), the CRC can be calculated directly on the payload as sent, and when the payload is
- * interpreted as a 16-bit integer it gives the ID of the transmitter.  This message is sent when the
- * monitor is first powered on and if the button on the monitor is pressed briefly.  If the button on the
- * monitor is held for >10 seconds, the monitor will change it's ID and report the new one.
- *
- * While the transmitter ID's are 16-bit, none of them can have any of the two lowest bits set or they
- * would not be able to transmit their ID as message type 0, and when the offset is calculated (see below) they
- * would also change the message type.
- *
- * For the 3 other message types, the payload must be offset before calculating the CRC or
- * interpreting the data.  The offset is done by treating the whole payload as a single 16-bit integer and
- * then subtracting the ID of the transmitter.  After the offset is done, then the CRC may be calculated
- * and the payload may be interpreted.
- *
- * Note that if the transmitter's ID isn't known, the code can't easily determine if messages other than an
- * ID payload are good or bad, and can't interpret their data correctly.  However, if the "auto" mode is enabled,
- * the system can try to learn the transmitter's ID by various methods. (See USAGE HINTS below)
- *
- * For the power message (1), the offset payload gives the number of milliseconds gap between impulses for the most
- * recent impulses seen by the monitor.  To convert from this 'gap' to kilowatts, you will need your meter's
- * Kh value. The Kh value is written obviously on the front of most meters, and 1.0 and 7.2 are very common.
- *
- * kW = (3600/gap) * Kh
- *
- * Note that the 'gap' value clamps to a maximum of 65533 (0xFFFD), so there is a non-zero floor when calculating the
- * kW value using this report.  For example, with a Kh of 7.2, the lowest kW value you will ever see when monitoring
- * the 'gap' value is (3600/65533)*7.2 = 0.395kW.  If you need power monitoring for impulse rates slower than every
- * 65.533 seconds to do things like confirm that your power consumption is 0kW, you need to monitor the impulse
- * counts and timing between energy messages (see 3 below).
- *
- * For the temperature message (2), the offset payload gives the temperature in an odd scaling in the last byte,
- * and has some flag bits in the first byte.  The only known flag bit is the battery.  rtl_433 handles scaling back to
- * degrees celsius automatically.
- *
- * For the energy message (3), the offset payload contains a continuously running power impulse accumulator. I'm
- * not sure if there is a way to reset the accumulator.  The intended way to use it is to remember the accumulator
- * value at the beginning of a time period, and then subtract that from the value at the end of the time period.  The
- * accumulator will roll over to 0 after 65535.
- *
- * kWh = 0.001 * (accumulated pulses) * Kh
- *
- * Since the Kh value on all meters can vary, we do not handle it in rtl_433 and just report the raw millisecond
- * gap and accumulated impulses as received directly from the monitor.
- *
- * USAGE HINTS:
- *
- * The requirement of knowing the ID before being able to receive a message means that this decoder
- * will generally require a parameter to be useful.  When running in the default mode with no parameters,
- * the only message it is able to decode is the one that announces a monitor's ID.  So, assuming you can get to
- * the monitor to power cycle it or hit the button, this is the recommended method:
- *
- * 1) Start rtl_433
- * 2) Tap the button or power cycle the monitor
- * 3) Look for the rtl_433 output indicating the BlueLine monitor ID and note the ID field
- * 4) Stop rtl_433
- * 5) Restart rtl_433, explicitly passing the ID as a parameter to this decoder
- *
- * For example, if you see the ID 45364 in step 3, you would start the decoder with a command like:
- * rtl_433 -R 176:45364
- *
- * If you are unable to access the monitor to have it send the ID message, you can also use the "auto" parameter:
- * rtl_433 -vv -R 176:auto
- *
- * Verbose mode should be specified first on the command line to see what the "auto" mode is doing.
- *
- * The auto parameter will try to brute-force the ID on any messages that look like they are from a
- * BlueLine monitor.  This method usually succeeds within a few minutes, but is likely to get false positives
- * if there is more than one monitor in range or the messages being received are all identical (i.e. if the
- * meter is continuously reporting 0 watts).  If it succeeds, it will start reporting data with the new ID,
- * which you should then use as a parameter when you re-run rtl_433 in the future.
- *
- * Finally, passing a parameter to this decoder requires specifying it explicitly, which normally disables all
- * other default decoders.  If you want to pass an option to this decoder without disabling all the other defaults,
- * the simplest method is to explicity exclude this one decoder (which implicitly says to leave all other defaults
- * enabled), then add this decoder back with a parameter.  The command line looks like this:
- *
- * rtl_433 -R -176 -R 176:45364
- *
- */
+BlueLine Innovations Power Cost Monitor, tested with BLI-28000.
+
+Much of the groundwork for this implementation was based on reading the source and notes from older
+implementations, but this implementation was a fresh rewrite by Justin Brzozoski in 2020.  I would
+not have been able to figure this out without the other implementations to look at, but I wanted an
+implementation that didn't need to know the Kh factor or monitor ID ahead of time, which required
+changes.
+
+Some references used include:
+
+https://github.com/merbanan/rtl_433/pull/38 - an abandoned pull request on rtl_433 by radredgreen
+
+https://github.com/CapnBry/Powermon433 - a standalone Arduino-based Blueline monitor
+
+http://scruss.com/blog/2013/12/03/blueline-black-decker-power-monitor-rf-packets/ - the blog post
+where the other authors were trading notes in the comments
+
+The IR-reader/sensor will transmit 3 bursts every ~30 seconds.  The low-level encoding is on/off
+keyed pulse-position modulation (OOK_PPM).  The on pulses are always 0.5ms, while the off pulses
+are either 0.5ms for logic 1 or 1.0ms for logic 0.  Each burst is 32 bits long.  The pauses
+between the 3 grouped bursts is roughly 100ms.
+
+Data is sent less significant byte first for multi-byte fields.
+
+The basic layout of all bursts is as follows:
+
+- First is a 1 byte header, which is always the value 0xFE.
+- Second is a 2 byte payload, which is interpreted differently based on the two lowest bits of the first byte
+- Finally is a 1 byte CRC, calculated across the 2 payload bytes (not the header)
+
+The CRC is a CRC-8-ATM with polynomial 100000111, but it may be required to modify the payload bytes before
+calculating it depending on message type.
+
+There are 4 message types that can be indicated by the 2 lowest bits of the first payload byte:
+- 0: ID message (payload is not offset)
+- 1: power message (payload is offset)
+- 2: temperature/status message (payload is offset)
+- 3: energy message (payload is offset)
+
+For the ID message (0), the CRC can be calculated directly on the payload as sent, and when the payload is
+interpreted as a 16-bit integer it gives the ID of the transmitter.  This message is sent when the
+monitor is first powered on and if the button on the monitor is pressed briefly.  If the button on the
+monitor is held for >10 seconds, the monitor will change it's ID and report the new one.
+
+While the transmitter ID's are 16-bit, none of them can have any of the two lowest bits set or they
+would not be able to transmit their ID as message type 0, and when the offset is calculated (see below) they
+would also change the message type.
+
+For the 3 other message types, the payload must be offset before calculating the CRC or
+interpreting the data.  The offset is done by treating the whole payload as a single 16-bit integer and
+then subtracting the ID of the transmitter.  After the offset is done, then the CRC may be calculated
+and the payload may be interpreted.
+
+Note that if the transmitter's ID isn't known, the code can't easily determine if messages other than an
+ID payload are good or bad, and can't interpret their data correctly.  However, if the "auto" mode is enabled,
+the system can try to learn the transmitter's ID by various methods. (See USAGE HINTS below)
+
+For the power message (1), the offset payload gives the number of milliseconds gap between impulses for the most
+recent impulses seen by the monitor.  To convert from this 'gap' to kilowatts, you will need your meter's
+Kh value. The Kh value is written obviously on the front of most meters, and 1.0 and 7.2 are very common.
+
+    kW = (3600/gap) * Kh
+
+Note that the 'gap' value clamps to a maximum of 65533 (0xFFFD), so there is a non-zero floor when calculating the
+kW value using this report.  For example, with a Kh of 7.2, the lowest kW value you will ever see when monitoring
+the 'gap' value is (3600/65533)*7.2 = 0.395kW.  If you need power monitoring for impulse rates slower than every
+65.533 seconds to do things like confirm that your power consumption is 0kW, you need to monitor the impulse
+counts and timing between energy messages (see 3 below).
+
+For the temperature message (2), the offset payload gives the temperature in an odd scaling in the last byte,
+and has some flag bits in the first byte.  The only known flag bit is the battery.  rtl_433 handles scaling back to
+degrees celsius automatically.
+
+For the energy message (3), the offset payload contains a continuously running power impulse accumulator. I'm
+not sure if there is a way to reset the accumulator.  The intended way to use it is to remember the accumulator
+value at the beginning of a time period, and then subtract that from the value at the end of the time period.  The
+accumulator will roll over to 0 after 65535.
+
+    kWh = 0.001 * (accumulated pulses) * Kh
+
+Since the Kh value on all meters can vary, we do not handle it in rtl_433 and just report the raw millisecond
+gap and accumulated impulses as received directly from the monitor.
+
+## Usage hints:
+
+The requirement of knowing the ID before being able to receive a message means that this decoder
+will generally require a parameter to be useful.  When running in the default mode with no parameters,
+the only message it is able to decode is the one that announces a monitor's ID.  So, assuming you can get to
+the monitor to power cycle it or hit the button, this is the recommended method:
+
+- 1) Start rtl_433
+- 2) Tap the button or power cycle the monitor
+- 3) Look for the rtl_433 output indicating the BlueLine monitor ID and note the ID field
+- 4) Stop rtl_433
+- 5) Restart rtl_433, explicitly passing the ID as a parameter to this decoder
+
+For example, if you see the ID 45364 in step 3, you would start the decoder with a command like:
+
+    rtl_433 -R 176:45364
+
+If you are unable to access the monitor to have it send the ID message, you can also use the "auto" parameter:
+
+    rtl_433 -vv -R 176:auto
+
+Verbose mode should be specified first on the command line to see what the "auto" mode is doing.
+
+The auto parameter will try to brute-force the ID on any messages that look like they are from a
+BlueLine monitor.  This method usually succeeds within a few minutes, but is likely to get false positives
+if there is more than one monitor in range or the messages being received are all identical (i.e. if the
+meter is continuously reporting 0 watts).  If it succeeds, it will start reporting data with the new ID,
+which you should then use as a parameter when you re-run rtl_433 in the future.
+
+Finally, passing a parameter to this decoder requires specifying it explicitly, which normally disables all
+other default decoders.  If you want to pass an option to this decoder without disabling all the other defaults,
+the simplest method is to explicity exclude this one decoder (which implicitly says to leave all other defaults
+enabled), then add this decoder back with a parameter.  The command line looks like this:
+
+    rtl_433 -R -176 -R 176:45364
+
+*/
 
 #include <stdlib.h>
 #include "fatal.h"
@@ -247,8 +249,8 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int payloads_decoded = 0;
     int most_applicable_failure = 0;
     uint8_t calc_crc;
-    uint16_t offset_payload_u16;
-    uint8_t offset_payload_u8[BLUELINE_CRC_BYTELEN];
+    uint16_t offset_payload_u16 = 0;
+    uint8_t offset_payload_u8[BLUELINE_CRC_BYTELEN] = {0};
 
     // Blueline uses inverted 0/1
     bitbuffer_invert(bitbuffer);
