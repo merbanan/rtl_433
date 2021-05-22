@@ -1,5 +1,5 @@
 /** @file
-    compat_time addresses compatibility time and alarm() functions.
+    compat_time addresses compatibility time functions.
 
     topic: high-resolution timestamps
     issue: <sys/time.h> is not available on Windows systems
@@ -12,7 +12,6 @@
 // ensure struct timeval is known
 #ifdef _WIN32
 #include <winsock2.h>
-#include <signal.h>
 #else
 #include <sys/time.h>
 #endif
@@ -30,10 +29,6 @@ int timeval_subtract(struct timeval *result, struct timeval *x, struct timeval *
 
 #ifdef _WIN32
 int gettimeofday(struct timeval *tv, void *tz);
-int win_alarm(unsigned seconds);
-
-#define alarm(sec)  win_alarm(sec)
-#define SIGALRM     SIGBREAK  /* No SIGUSRx on Windows. Use this */
 #endif
 
 #endif  /* INCLUDE_COMPAT_TIME_H_ */
