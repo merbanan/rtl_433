@@ -72,4 +72,14 @@ int win_alarm(unsigned seconds)
   alarm_create();
   return (0);
 }
+#else
+
+/*
+ * Just so this compilation unit isn't empty.
+ */
+int win_alarm(unsigned seconds)
+{
+   (void) seconds;
+   return (0);
+}
 #endif /* HAVE_win_alarm */
