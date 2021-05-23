@@ -208,6 +208,7 @@ add_library(r_433 STATIC
     devices/tpms_pmv107j.c
     devices/tpms_porsche.c
     devices/tpms_renault.c
+    devices/tpms_renault_0435r.c
     devices/tpms_toyota.c
     devices/tpms_truck.c
     devices/ts_ft002.c
