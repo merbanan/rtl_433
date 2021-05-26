@@ -97,6 +97,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClInclude Include="..\include\am_analyze.h" />
     <ClInclude Include="..\include\baseband.h" />
     <ClInclude Include="..\include\bitbuffer.h" />
+    <ClInclude Include="..\include\compat_alarm.h" />
     <ClInclude Include="..\include\compat_paths.h" />
     <ClInclude Include="..\include\compat_time.h" />
     <ClInclude Include="..\include\confparse.h" />
@@ -136,6 +137,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\am_analyze.c" />
     <ClCompile Include="..\src\baseband.c" />
     <ClCompile Include="..\src\bitbuffer.c" />
+    <ClCompile Include="..\src\compat_alarm.c" />
     <ClCompile Include="..\src\compat_paths.c" />
     <ClCompile Include="..\src\compat_time.c" />
     <ClCompile Include="..\src\confparse.c" />

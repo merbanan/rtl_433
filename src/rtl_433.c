@@ -48,6 +48,7 @@
 #include "am_analyze.h"
 #include "confparse.h"
 #include "term_ctl.h"
+#include "compat_alarm.h"
 #include "compat_paths.h"
 #include "fatal.h"
 #include "write_sigrok.h"
@@ -342,9 +343,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     if (demod->frame_end_ago)
         demod->frame_end_ago += n_samples;
 
-#ifndef _WIN32
     alarm(3); // require callback to run every 3 second, abort otherwise
-#endif
 
     if (demod->samp_grab) {
         samp_grab_push(demod->samp_grab, iq_buf, len);
@@ -604,9 +603,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->bytes_to_read -= len;
 
     if (cfg->after_successful_events_flag && (d_events > 0)) {
-#ifndef _WIN32
         alarm(0); // cancel the watchdog timer
-#endif
         if (cfg->after_successful_events_flag == 1) {
             cfg->exit_async = 1;
         }
@@ -621,15 +618,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     int hop_index = cfg->hop_times > cfg->frequency_index ? cfg->frequency_index : cfg->hop_times - 1;
     if (cfg->hop_times > 0 && cfg->frequencies > 1
             && difftime(rawtime, cfg->hop_start_time) > cfg->hop_time[hop_index]) {
-#ifndef _WIN32
         alarm(0); // cancel the watchdog timer
-#endif
         cfg->hop_now = 1;
     }
     if (cfg->duration > 0 && rawtime >= cfg->stop_time) {
-#ifndef _WIN32
         alarm(0); // cancel the watchdog timer
-#endif
         cfg->exit_async = 1;
         fprintf(stderr, "Time expired, exiting!\n");
     }
@@ -1162,7 +1155,7 @@ static r_cfg_t g_cfg;
 
 #ifdef _WIN32
 BOOL WINAPI
-sighandler(int signum)
+console_handler(int signum)
 {
     if (CTRL_C_EVENT == signum) {
         fprintf(stderr, "Signal caught, exiting!\n");
@@ -1175,8 +1168,23 @@ sighandler(int signum)
         g_cfg.hop_now = 1;
         return TRUE;
     }
+    else if (signum == SIGALRM) {
+        fprintf(stderr, "Async read stalled, exiting!\n");
+        g_cfg.exit_code = 3;
+        g_cfg.exit_async = 1;
+        sdr_stop(g_cfg.dev);
+        return TRUE;
+    }
     return FALSE;
 }
+
+/* Only called for SIGALRM
+ */
+static void sighandler(int signum)
+{
+  console_handler(signum);
+}
+
 #else
 static void sighandler(int signum)
 {
@@ -1618,9 +1626,7 @@ int main(int argc, char **argv) {
             }
             demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
-#ifndef _WIN32
             alarm(0); // cancel the watchdog timer
-#endif
 
             //Always classify a signal at the end of the file
             if (demod->am_analyze)
@@ -1663,7 +1669,7 @@ int main(int argc, char **argv) {
     sigaction(SIGUSR1, &sigact, NULL);
     sigaction(SIGINFO, &sigact, NULL);
 #else
-    SetConsoleCtrlHandler((PHANDLER_ROUTINE)sighandler, TRUE);
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)console_handler, TRUE);
 #endif
     /* Set the sample rate */
     r = sdr_set_sample_rate(cfg->dev, cfg->samp_rate, 1); // always verbose
@@ -1704,18 +1710,16 @@ int main(int argc, char **argv) {
     r = sdr_set_center_freq(cfg->dev, cfg->center_frequency, 1); // always verbose
 
         time(&cfg->hop_start_time);
-#ifndef _WIN32
         signal(SIGALRM, sighandler);
         alarm(3); // require callback to run every 3 second, abort otherwise
-#endif
+
         r = sdr_start(cfg->dev, sdr_handler, (void *)cfg,
                 DEFAULT_ASYNC_BUF_NUMBER, cfg->out_block_size);
         if (r < 0) {
             fprintf(stderr, "WARNING: async read failed (%i).\n", r);
         }
-#ifndef _WIN32
+
         alarm(0); // cancel the watchdog timer
-#endif
 
     if (cfg->report_stats > 0) {
         event_occurred_handler(cfg, create_report_data(cfg, cfg->report_stats));

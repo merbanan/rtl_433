@@ -29,6 +29,9 @@
     <ClInclude Include="..\include\bitbuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\compat_alarm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\include\compat_paths.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -140,6 +143,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\bitbuffer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\compat_alarm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\compat_paths.c">

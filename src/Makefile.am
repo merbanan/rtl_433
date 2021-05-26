@@ -7,6 +7,7 @@ rtl_433_SOURCES      = abuf.c \
                        am_analyze.c \
                        baseband.c \
                        bitbuffer.c \
+                       compat_alarm.c \
                        compat_paths.c \
                        compat_time.c \
                        confparse.c \
