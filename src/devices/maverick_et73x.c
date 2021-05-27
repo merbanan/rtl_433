@@ -43,7 +43,8 @@ note that the mentioned quaternary conversion is actually manchester code.
 static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
-    bitbuffer_t mc = {0};
+    bitrow_t mc = {0};
+    uint16_t mc_num_bits = 0;
 
     if (bitbuffer->num_rows != 1)
         return DECODE_ABORT_EARLY;
@@ -57,14 +58,14 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // preamble missing
 
     // decode the inner manchester encoding
-    bitbuffer_manchester_decode(bitbuffer, 0, 0, &mc, 104);
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, mc, &mc_num_bits, 104);
 
     // we require 7 bytes 13 nibble rounded up (b[6] highest reference below)
-    if (mc.bits_per_row[0] < 52) {
+    if (mc_num_bits < 52) {
         return DECODE_FAIL_SANITY; // manchester_decode fail
     }
 
-    uint8_t *b = mc.bb[0];
+    uint8_t *b = mc;
     int pre    = (b[0] << 4) | (b[1] & 0xf0) >> 4;
     int flags  = b[1] & 0x0f;
     int temp1  = (b[2] << 2) | (b[3] & 0xc0) >> 6;
@@ -81,7 +82,7 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         status = "init";
 
     uint8_t chk[3];
-    bitbuffer_extract_bytes(&mc, 0, 12, chk, 24);
+    bitrow_extract_bytes(mc, 12, chk, 24);
 
     //digest is used to represent a session. This means, we get a new id if a reset or battery exchange is done.
     int id = lfsr_digest16(chk, 3, 0x8810, 0xdd38) ^ digest;

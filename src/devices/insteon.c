@@ -115,8 +115,10 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 {
     uint8_t results[35]   = {0};
     uint8_t results_len   = 0;
-    bitbuffer_t i_bits    = {0};
-    bitbuffer_t d_bits    = {0};
+    bitrow_t i_bits    = {0};
+    uint16_t i_bits_num_bits = 0;
+    bitrow_t d_bits    = {0};
+    uint16_t d_bits_num_bits = 0;
     unsigned int next_pos = 0;
     uint8_t i             = 0;
     uint8_t pkt_i, pkt_d;
@@ -154,11 +156,11 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
 
     */
 
-    next_pos = bitbuffer_manchester_decode(bits, row, start_pos, &i_bits, 5);
-    pkt_i    = reverse8(i_bits.bb[0][0]);
+    next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, 5);
+    pkt_i    = reverse8(i_bits[0]);
 
-    next_pos               = bitbuffer_manchester_decode(bits, row, next_pos, &d_bits, 8);
-    pkt_d                  = reverse8(d_bits.bb[0][0]);
+    next_pos               = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, 8);
+    pkt_d                  = reverse8(d_bits[0]);
     results[results_len++] = pkt_d;
 
     if (pkt_i != 31) { // should always be 31 (0b11111) in first block of packet
@@ -217,10 +219,10 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     for (int j = 1; j < max_pkt_len; j++) {
         unsigned y;
         start_pos += 28;
-        bitbuffer_clear(&i_bits);
-        bitbuffer_clear(&d_bits);
-        next_pos = bitbuffer_manchester_decode(bits, row, start_pos, &i_bits, 5);
-        next_pos = bitbuffer_manchester_decode(bits, row, next_pos, &d_bits, 8);
+        bitrow_clear(i_bits, &i_bits_num_bits);
+        bitrow_clear(d_bits, &d_bits_num_bits);
+        next_pos = bitbuffer_manchester_decode(bits, row, start_pos, i_bits, &i_bits_num_bits, 5);
+        next_pos = bitbuffer_manchester_decode(bits, row, next_pos, d_bits, &d_bits_num_bits, 8);
 
         y = (next_pos - start_pos);
         if (y != 26) {
@@ -231,8 +233,8 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
         // bitbuffer_extract_bytes(bits, row, start_pos -2, buff, 8);
         // printBits(sizeof(buff), buff);
 
-        pkt_i = reverse8(i_bits.bb[0][0]);
-        pkt_d = reverse8(d_bits.bb[0][0]);
+        pkt_i = reverse8(i_bits[0]);
+        pkt_d = reverse8(d_bits[0]);
 
         results[results_len++] = pkt_d;
 

@@ -1128,10 +1128,11 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     static const uint8_t PREAMBLE_S[]  = {0x54, 0x76, 0x96};  // Mode S Preamble
     static const uint8_t PREAMBLE_T_DN[] = {0xaa, 0xab, 0x32};  // Mode T Downlink Preamble
-    bitbuffer_t packet_bits = {0};
-    m_bus_data_t    data_in     = {0};  // Data from Physical layer decoded to bytes
-    m_bus_data_t    data_out    = {0};  // Data from Data Link layer
-    m_bus_block1_t  block1      = {0};  // Block1 fields from Data Link layer
+    bitrow_t packet_bits          = {0};
+    uint16_t packet_bits_num_bits = 0;
+    m_bus_data_t    data_in       = {0};  // Data from Physical layer decoded to bytes
+    m_bus_data_t    data_out      = {0};  // Data from Data Link layer
+    m_bus_block1_t  block1        = {0};  // Block1 fields from Data Link layer
 
     // Validate package length
     if (bitbuffer->bits_per_row[0] < (32+13*8) || bitbuffer->bits_per_row[0] > (64+256*8)) {
@@ -1153,9 +1154,9 @@ static int m_bus_mode_s_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bit_offset >= bitbuffer->bits_per_row[0]) { // Did not find a big enough package
         return DECODE_ABORT_EARLY;
     }
-    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, &packet_bits, 800);
+    bitbuffer_manchester_decode(bitbuffer, 0, bit_offset, packet_bits, &packet_bits_num_bits, 800);
     data_in.length = (bitbuffer->bits_per_row[0]);
-    bitbuffer_extract_bytes(&packet_bits, 0, 0, data_in.data, data_in.length);
+    bitrow_extract_bytes(packet_bits, 0, data_in.data, data_in.length);
 
     if (!m_bus_decode_format_a(decoder, &data_in, &data_out, &block1))    return 0;
 

@@ -68,7 +68,7 @@ Once the above has been run twice the two are merged
 
 */
 
-static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_p)
+static int secplus_v2_decode_v2_half(r_device *decoder, bitrow_t bits, uint16_t bits_num_bits, uint8_t roll_array[], bitrow_t fixed_p, uint16_t* fixed_p_count)
 {
     uint8_t invert = 0;
     uint8_t order  = 0;
@@ -76,21 +76,21 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
     unsigned int start_pos = 2; //
     uint8_t buffy[10];
 
-    uint8_t part_id = (bits->bb[0][0] >> 6);
+    uint8_t part_id = (bits[0] >> 6);
 
-    decoder_log_bitrow(decoder, 1, __func__, bits->bb[0], bits->bits_per_row[0], "");
+    decoder_log_bitrow(decoder, 1, __func__, bits, bits_num_bits, "");
 
-    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 2);
+    bitrow_extract_bytes(bits, start_pos, buffy, 2);
     start_pos += 2;
 
-    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 8);
+    bitrow_extract_bytes(bits, start_pos, buffy, 8);
     start_pos += 8;
     order = buffy[0] >> 4;
 
     invert = buffy[0] & 0x0f;
     // bitrow_debug(&invert, 8);
 
-    bitbuffer_extract_bytes(bits, 0, start_pos, buffy, 30);
+    bitrow_extract_bytes(bits, start_pos, buffy, 30);
     start_pos += 30;
 
     // copy 30 bits of data into 32bit int then shift >> 2
@@ -196,7 +196,7 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
         return 2;
     }
 
-    bitbuffer_extract_bytes(bits, 0, 4, buffy, 8);
+    bitrow_extract_bytes(bits, 4, buffy, 8);
     x     = buffy[0];
     int k = 0;
     for (int i = 6; i >= 0; i -= 2) {
@@ -225,10 +225,10 @@ static int secplus_v2_decode_v2_half(r_device *decoder, bitbuffer_t *bits, uint8
 
     // fixed_p = p0 + p1
     for (int i = 9; i >= 0; i--) {
-        bitbuffer_add_bit(fixed_p, (p0 >> i) & 0x01);
+        bitrow_add_bit(fixed_p, fixed_p_count, (p0 >> i) & 0x01);
     }
     for (int i = 9; i >= 0; i--) {
-        bitbuffer_add_bit(fixed_p, (p1 >> i) & 0x01);
+        bitrow_add_bit(fixed_p, fixed_p_count, (p1 >> i) & 0x01);
     }
 
     return 0;
@@ -244,15 +244,16 @@ Security+ 2.0 rolling code.
 static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     unsigned search_index = 0;
-    bitbuffer_t bits = {0};
-    // int i            = 0;
+    bitrow_t bits = {0};
+    uint16_t bits_num_bits = 0;
 
-    //bitbuffer_t bits_1    = {0};
-    bitbuffer_t fixed_1   = {0};
+    uint16_t fixed_1_num_bits = 0;
+    bitrow_t fixed_1 = {0};
+
     uint8_t rolling_1[16] = {0};
 
-    //bitbuffer_t bits_2    = {0};
-    bitbuffer_t fixed_2   = {0};
+    uint16_t fixed_2_num_bits = 0;
+    bitrow_t fixed_2 = {0};
     uint8_t rolling_2[16] = {0};
 
     for (uint16_t row = 0; row < bitbuffer->num_rows; ++row) {
@@ -266,39 +267,40 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             break;
         }
 
-        bitbuffer_clear(&bits);
-        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, &bits, 80);
+        bitrow_clear(bits, &bits_num_bits);
+        bits_num_bits = 0;
+        bitbuffer_manchester_decode(bitbuffer, row, search_index + 26, bits, &bits_num_bits, 80);
         search_index += 20;
-        if (bits.bits_per_row[0] < 42) {
+        if (bits_num_bits < 42) {
             continue; // DECODE_ABORT_LENGTH;
         }
 
-        decoder_log_bitrow(decoder, 1, __func__, bits.bb[0], bits.bits_per_row[0], "manchester decoded");
+        decoder_log_bitrow(decoder, 1, __func__, bits, bits_num_bits, "manchester decoded");
 
         // valid = 0X00XXXX
         // 1st 3rs and 4th bits should always be 0
-        if (bits.bb[0][0] & 0xB0) {
+        if (bits[0] & 0xB0) {
             continue; // DECODE_FAIL_SANITY;
         }
 
         // 2nd bit indicates with half of the data
-        if (bits.bb[0][0] & 0xC0) {
+        if (bits[0] & 0xC0) {
             decoder_log(decoder, 1, __func__, "Set 2");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_2, &fixed_2);
+            secplus_v2_decode_v2_half(decoder, bits, bits_num_bits, rolling_2, fixed_2, &fixed_2_num_bits);
         }
         else {
             decoder_log(decoder, 1, __func__, "Set 1");
-            secplus_v2_decode_v2_half(decoder, &bits, rolling_1, &fixed_1);
+            secplus_v2_decode_v2_half(decoder, bits, bits_num_bits, rolling_1, fixed_1, &fixed_1_num_bits);
         }
 
         // break if we've received both halves
-        if (fixed_1.bits_per_row[0] > 1 && fixed_2.bits_per_row[0] > 1) {
+        if (fixed_1_num_bits > 1 && fixed_2_num_bits > 1) {
             break;
         }
     }
 
     // Do we have what we need ??
-    if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
+    if (fixed_1_num_bits == 0 || fixed_2_num_bits == 0) {
         return DECODE_FAIL_SANITY;
     }
 
@@ -343,12 +345,12 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Assemble "fixed" data part
     uint64_t fixed_total = 0;
     uint8_t *bb;
-    bb = fixed_1.bb[0];
+    bb = fixed_1;
     fixed_total ^= ((uint64_t)bb[0]) << 32;
     fixed_total ^= ((uint64_t)bb[1]) << 24;
     fixed_total ^= ((uint64_t)bb[2]) << 16;
 
-    bb = fixed_2.bb[0];
+    bb = fixed_2;
     fixed_total ^= ((uint64_t)bb[0]) << 12;
     fixed_total ^= ((uint64_t)bb[1]) << 4;
     fixed_total ^= (bb[2] >> 4) & 0x0f;

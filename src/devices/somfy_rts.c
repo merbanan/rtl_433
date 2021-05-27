@@ -145,12 +145,12 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitpos + 56 * 2 > bitbuffer->bits_per_row[decode_row])
         return DECODE_ABORT_LENGTH;
 
-    bitbuffer_t decoded = {0};
-    bitbuffer_manchester_decode(bitbuffer, decode_row, bitpos, &decoded, 80);
-    if (decoded.num_rows == 0 || decoded.bits_per_row[0] < 56)
+    bitrow_t decoded = { 0 };
+    uint16_t decoded_num_bits = 0;
+    if (bitbuffer_manchester_decode(bitbuffer, decode_row, bitpos, decoded, &decoded_num_bits, 80) < 56)
         return DECODE_ABORT_LENGTH;
 
-    uint8_t *b = decoded.bb[0];
+    uint8_t *b = decoded;
 
     // descramble
     for (int i = 6; i > 0; i--)

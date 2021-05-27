@@ -236,15 +236,16 @@ static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // Check and decode the Manchester bits
-    bitbuffer_t decoded = {0};
+    bitrow_t decoded = { 0 };
+    uint16_t decoded_num_bits = 0;
     int ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
-            &decoded, NUM_BITS_DATA);
+            decoded, &decoded_num_bits, NUM_BITS_DATA);
     if (ret != NUM_BITS_TOTAL) {
         decoder_log(decoder, 2, __func__, "invalid Manchester data");
         return DECODE_FAIL_MIC;
     }
-    bitbuffer_invert(&decoded);
-    b = decoded.bb[0];
+    bitrow_invert(decoded, decoded_num_bits);
+    b = decoded;
 
     // Compute parity
     int parity = xor_bytes(b, 4) ^ (b[4] & 0xe0);

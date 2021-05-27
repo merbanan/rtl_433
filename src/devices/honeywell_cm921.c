@@ -266,21 +266,21 @@ static uint8_t next(const uint8_t *bb, unsigned *ipos, unsigned num_bytes)
     return r;
 }
 
-static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
+static int parse_msg(bitrow_t bmsg, uint16_t bmsg_num_bits, message_t *msg)
 {
-    if (!bmsg || row >= bmsg->num_rows || bmsg->bits_per_row[row] < 8)
+    if (bmsg_num_bits < 8)
         return DECODE_ABORT_LENGTH;
 
-    unsigned num_bytes = bmsg->bits_per_row[0]/8;
-    unsigned num_bits = bmsg->bits_per_row[0];
+    unsigned num_bytes = bmsg_num_bits/8;
+    unsigned num_bits = bmsg_num_bits;
     unsigned ipos = 0;
-    const uint8_t *bb = bmsg->bb[row];
+    const uint8_t *bb = bmsg;
     memset(msg, 0, sizeof(message_t));
 
     // Checksum: All bytes add up to 0.
     int bsum = add_bytes(bb, num_bytes) & 0xff;
     int checksum_ok = bsum == 0;
-    msg->crc = bitrow_get_byte(bb, bmsg->bits_per_row[row] - 8);
+    msg->crc = bitrow_get_byte(bb, bmsg_num_bits - 8);
 
     if (!checksum_ok)
         return DECODE_FAIL_MIC;
@@ -306,10 +306,10 @@ static int parse_msg(bitbuffer_t *bmsg, int row, message_t *msg)
 
     if (ipos < num_bits - 8)
     {
-      unsigned num_unparsed_bits = (bmsg->bits_per_row[row] - 8) - ipos;
+      unsigned num_unparsed_bits = (bmsg_num_bits - 8) - ipos;
       msg->unparsed_length = (num_unparsed_bits / 8) + (num_unparsed_bits % 8) ? 1 : 0;
       if (msg->unparsed_length != 0)
-          bitbuffer_extract_bytes(bmsg, row, ipos, msg->unparsed, num_unparsed_bits);
+          bitrow_extract_bytes(bmsg, ipos, msg->unparsed, num_unparsed_bits);
     }
 
     return ipos;
@@ -344,32 +344,33 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     int end = start + len;
 
-    bitbuffer_t bytes = {0};
+    bitrow_t bytes = {0};
+    uint16_t bytes_num_bits = 0;
     int pos = start;
     while (pos < end) {
         uint8_t byte = 0;
         if (decode_10to8(bitbuffer->bb[row], pos, end, &byte) != 10)
             break;
         for (unsigned i = 0; i < 8; i++)
-            bitbuffer_add_bit(&bytes, (byte >> i) & 0x1);
+            bitrow_add_bit(bytes, &bytes_num_bits, (byte >> i) & 0x1);
         pos += 10;
     }
 
     // Skip Manchester breaking header
     uint8_t header[3] = { 0x33, 0x55, 0x53 };
-    if (bitrow_get_byte(bytes.bb[row], 0) != header[0] ||
-        bitrow_get_byte(bytes.bb[row], 8) != header[1] ||
-        bitrow_get_byte(bytes.bb[row], 16) != header[2])
+    if (bitrow_get_byte(bytes, 0) != header[0] ||
+        bitrow_get_byte(bytes, 8) != header[1] ||
+        bitrow_get_byte(bytes, 16) != header[2])
         return DECODE_FAIL_SANITY;
 
     // Find Footer 0x35 (0x55*)
-    int fi = bytes.bits_per_row[row] - 8;
+    int fi = bytes_num_bits - 8;
     int seen_aa = 0;
-    while (bitrow_get_byte(bytes.bb[row], fi) == 0x55) {
+    while (bitrow_get_byte(bytes, fi) == 0x55) {
         seen_aa = 1;
         fi -= 8;
     }
-    if (!seen_aa || bitrow_get_byte(bytes.bb[row], fi) != 0x35)
+    if (!seen_aa || bitrow_get_byte(bytes, fi) != 0x35)
         return DECODE_FAIL_SANITY;
 
     unsigned first_byte = 24;
@@ -377,8 +378,9 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     unsigned num_bits   = end_byte - first_byte;
     //unsigned num_bytes = num_bits/8 / 2;
 
-    bitbuffer_t packet = {0};
-    unsigned fpos = bitbuffer_manchester_decode(&bytes, row, first_byte, &packet, num_bits);
+    bitrow_t packet = {0};
+    uint16_t packet_num_bits = 0;
+    unsigned fpos = bitrow_manchester_decode(bytes, bytes_num_bits, first_byte, packet, &packet_num_bits, num_bits);
     unsigned man_errors = num_bits - (fpos - first_byte - 2);
 
 #ifndef _DEBUG
@@ -388,7 +390,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     message_t message;
 
-    int pr = parse_msg(&packet, 0, &message);
+    int pr = parse_msg(packet, packet_num_bits, &message);
 
     if (pr <= 0)
         return pr;
@@ -403,7 +405,7 @@ static int honeywell_cm921_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = honeywell_cm921_interpret_message(decoder, &message, data);
 
 #ifdef _DEBUG
-    data = add_hex_string(data, "Packet", packet.bb[row], packet.bits_per_row[row] / 8);
+    data = add_hex_string(data, "Packet", packet, packet_num_bits / 8);
     data = add_hex_string(data, "Header", &message.header, 1);
     uint8_t cmd[2] = {message.command >> 8, message.command & 0x00FF};
     data = add_hex_string(data, "Command", cmd, 2);

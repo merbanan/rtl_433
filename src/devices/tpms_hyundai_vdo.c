@@ -43,7 +43,8 @@ Packet nibbles:
 static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     int state;
     unsigned id;
@@ -55,13 +56,13 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     int maybe_battery;
     int crc;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 80);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 80);
 
-    if (packet_bits.bits_per_row[0] < 80) {
+    if (packet_bits_num_bits < 80) {
         return DECODE_FAIL_SANITY; // too short to be a whole packet
     }
 
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
 //  if (b[6] == 0 || b[7] == 0) {
 //      return DECODE_ABORT_EARLY; // pressure cannot really be 0, temperature is also probably not -50C

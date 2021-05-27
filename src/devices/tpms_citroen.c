@@ -32,7 +32,8 @@ Packet nibbles:
 static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     int state;
     char state_str[3];
@@ -45,14 +46,14 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     int maybe_battery;
     int crc;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 88);
 
     // decoder_logf(decoder, 3, __func__, "bits %d", packet_bits.bits_per_row[0]);
-    if (packet_bits.bits_per_row[0] < 80) {
+    if (packet_bits_num_bits < 80) {
         return DECODE_FAIL_SANITY; // sanity check failed
     }
 
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     if (b[6] == 0 || b[7] == 0) {
         return DECODE_ABORT_EARLY; // sanity check failed

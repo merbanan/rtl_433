@@ -39,7 +39,8 @@ Data layout (nibbles):
 static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     char id_str[4 * 2 + 1];
     char flags[1 * 2 + 1];
@@ -48,15 +49,15 @@ static int tpms_abarth124_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsi
     int status;
     int checksum;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 72);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 72);
 
     // make sure we decoded the expected number of bits
-    if (packet_bits.bits_per_row[0] < 72) {
+    if (packet_bits_num_bits < 72) {
         // decoder_logf(decoder, 0, __func__, "bitpos=%u start_pos=%u = %u", bitpos, start_pos, (start_pos - bitpos));
         return 0; // DECODE_FAIL_SANITY;
     }
 
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     // check checksum (checksum8 xor)
     checksum = xor_bytes(b, 9);

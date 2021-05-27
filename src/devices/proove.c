@@ -60,18 +60,19 @@ static int proove_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] != 64)
         return DECODE_ABORT_LENGTH;
 
-    bitbuffer_t databits = {0};
+    bitrow_t databits = {0};
+    uint16_t databits_num_bits = 0;
     // note: not manchester encoded but actually ternary
-    bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
+    bitbuffer_manchester_decode(bitbuffer, 0, 0, databits, &databits_num_bits, 80);
 
     /* Reject codes when Manchester decoding fails */
     /* 32 bits or 36 bits with dimmer value */
-    if (databits.bits_per_row[0] < 32)
+    if (databits_num_bits < 32)
         return DECODE_ABORT_LENGTH;
 
-    bitbuffer_invert(&databits);
+    bitrow_invert(databits, databits_num_bits);
 
-    uint8_t *b = databits.bb[0];
+    uint8_t *b = databits;
 
     uint32_t id        = (b[0] << 18) | (b[1] << 10) | (b[2] << 2) | (b[3] >> 6); // ID 26 bits
     uint32_t group_cmd = (b[3] >> 5) & 1;

@@ -52,7 +52,8 @@ Preamble is 111 0001 0101 0101 (0x7155).
 static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     uint32_t id;
     char id_str[9];
@@ -62,12 +63,12 @@ static int tpms_elantra2012_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
     int temperature_c;
     int triggered, battery_low, storage;
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 64);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 64);
     // require 64 data bits
-    if (packet_bits.bits_per_row[0] < 64) {
+    if (packet_bits_num_bits < 64) {
         return DECODE_ABORT_LENGTH;
     }
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     if (crc8(b, 8, 0x07, 0x00)) {
         return DECODE_FAIL_MIC;

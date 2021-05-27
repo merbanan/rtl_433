@@ -40,10 +40,11 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         b[6] &= 0xfe; // change DIM to ON to use Manchester
     }
 
-    bitbuffer_t databits = {0};
+    bitrow_t databits = {0};
+    uint16_t databits_num_bits = 0;
     // note: not manchester encoded but actually ternary
-    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, &databits, 80);
-    bitbuffer_invert(&databits);
+    unsigned pos = bitbuffer_manchester_decode(bitbuffer, 0, 0, databits, &databits_num_bits, 80);
+    bitrow_invert(databits, databits_num_bits);
 
     /* Reject codes when Manchester decoding fails */
     if (pos != 64 && pos != 72)

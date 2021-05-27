@@ -44,7 +44,8 @@ TODO: identify battery bits
 static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
     data_t *data;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
     char id_str[7 + 1];
@@ -53,13 +54,13 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
     int temperature;
     char code_str[9 * 2 + 1];
 
-    bitbuffer_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 88);
-    bitbuffer_invert(&packet_bits);
+    bitbuffer_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 88);
+    bitrow_invert(packet_bits, packet_bits_num_bits);
 
-    if (packet_bits.bits_per_row[0] < 88) {
+    if (packet_bits_num_bits < 88) {
         return DECODE_FAIL_SANITY;
     }
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     /* Check for sync */
     if ((b[0] << 8 | b[1]) != 0xdd33) {
