@@ -455,6 +455,14 @@ int pulse_demod_manchester_zerobit(const pulse_data_t *pulses, r_device *device)
     return events;
 }
 
+static inline int pulse_demod_get_symbol(const pulse_data_t *pulses, unsigned int n)
+{
+    if (n % 2 == 0)
+        return pulses->pulse[n / 2];
+    else
+        return pulses->gap[n / 2];
+}
+
 int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
 {
     float samples_per_us = pulses->sample_rate / 1.0e6;
@@ -477,23 +485,18 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
         return 0;
     }
 
-    int symbol[PD_MAX_PULSES * 2 + 1] = {0};
-    unsigned int n;
-
     bitbuffer_t bits = {0};
     int events = 0;
 
-    for (n = 0; n < pulses->num_pulses; n++) {
-        symbol[n * 2] = pulses->pulse[n];
-        symbol[n * 2 + 1] = pulses->gap[n];
-    }
+    for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
+        int symbol = pulse_demod_get_symbol(pulses, n);
 
-    for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        if (abs(symbol[n] - s_short) < s_tolerance) {
+        if (abs(symbol - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
-            if (abs(symbol[++n] - s_short) > s_tolerance) {
-                if (symbol[n] >= s_reset - s_tolerance) {
+            symbol = pulse_demod_get_symbol(pulses, ++n);
+            if (abs(symbol - s_short) > s_tolerance) {
+                if (symbol >= s_reset - s_tolerance) {
                     // Don't expect another short gap at end of message
                     n--;
                 }
@@ -506,11 +509,11 @@ int pulse_demod_dmc(const pulse_data_t *pulses, r_device *device)
                 }
             }
         }
-        else if (abs(symbol[n] - s_long) < s_tolerance) {
+        else if (abs(symbol - s_long) < s_tolerance) {
             // Long - 0
             bitbuffer_add_bit(&bits, 0);
         }
-        else if (symbol[n] >= s_reset - s_tolerance
+        else if (symbol >= s_reset - s_tolerance
                 && bits.num_rows > 0) { // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
@@ -545,30 +548,23 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
     // precision reciprocal
     float f_short = device->short_width > 0.0 ? 1.0 / (device->short_width * samples_per_us) : 0;
 
-    int symbol[PD_MAX_PULSES * 2];
-    unsigned int n;
     int w;
 
     bitbuffer_t bits = {0};
     int events = 0;
 
-
-    for (n = 0; n < pulses->num_pulses; n++) {
-        symbol[n * 2] = pulses->pulse[n];
-        symbol[n * 2 + 1] = pulses->gap[n];
-    }
-
-    for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        w = symbol[n] * f_short + 0.5;
-        if (symbol[n] > s_long) {
+    for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
+        int symbol = pulse_demod_get_symbol(pulses, n);
+        w = symbol * f_short + 0.5;
+        if (symbol > s_long) {
             bitbuffer_add_row(&bits);
         }
-        else if (abs(symbol[n] - w * s_short) < s_tolerance) {
+        else if (abs(symbol - w * s_short) < s_tolerance) {
             // Add w symbols
             for (; w > 0; --w)
                 bitbuffer_add_bit(&bits, 1 - n % 2);
         }
-        else if (symbol[n] < s_reset
+        else if (symbol < s_reset
                 && bits.num_rows > 0
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
@@ -579,7 +575,7 @@ int pulse_demod_piwm_raw(const pulse_data_t *pulses, r_device *device)
         }
 
         if (((n == pulses->num_pulses * 2 - 1)              // No more pulses? (FSK)
-                    || (symbol[n] > s_reset)) // Long silence (OOK)
+                    || (symbol > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
@@ -611,27 +607,20 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
         return 0;
     }
 
-    int symbol[PD_MAX_PULSES * 2];
-    unsigned int n;
-
     bitbuffer_t bits = {0};
     int events = 0;
 
-    for (n = 0; n < pulses->num_pulses; n++) {
-        symbol[n * 2] = pulses->pulse[n];
-        symbol[n * 2 + 1] = pulses->gap[n];
-    }
-
-    for (n = 0; n < pulses->num_pulses * 2; ++n) {
-        if (abs(symbol[n] - s_short) < s_tolerance) {
+    for (unsigned int n = 0; n < pulses->num_pulses * 2; ++n) {
+        int symbol = pulse_demod_get_symbol(pulses, n);
+        if (abs(symbol - s_short) < s_tolerance) {
             // Short - 1
             bitbuffer_add_bit(&bits, 1);
         }
-        else if (abs(symbol[n] - s_long) < s_tolerance) {
+        else if (abs(symbol - s_long) < s_tolerance) {
             // Long - 0
             bitbuffer_add_bit(&bits, 0);
         }
-        else if (symbol[n] < s_reset
+        else if (symbol < s_reset
                 && bits.num_rows > 0
                 && bits.bits_per_row[bits.num_rows - 1] > 0) {
             bitbuffer_add_row(&bits);
@@ -642,7 +631,7 @@ int pulse_demod_piwm_dc(const pulse_data_t *pulses, r_device *device)
         }
 
         if (((n == pulses->num_pulses * 2 - 1)              // No more pulses? (FSK)
-                    || (symbol[n] > s_reset)) // Long silence (OOK)
+                    || (symbol > s_reset)) // Long silence (OOK)
                 && (bits.num_rows > 0)) {                   // Only if data has been accumulated
             //END message ?
             events += account_event(device, &bits, __func__);
