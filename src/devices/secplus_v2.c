@@ -411,7 +411,7 @@ static char *output_fields[] = {
         // Common fields
         "model",
         "id",
-        "rolling"
+        "rolling",
         "fixed",
         "button_id",
         "remote_id",
