@@ -16,10 +16,7 @@
 
 void bitbuffer_clear(bitbuffer_t *bits)
 {
-    bits->num_rows = 0;
-    memset(bits->bits_per_row, 0, BITBUF_ROWS * 2);
-    memset(bits->syncs_before_row, 0, BITBUF_ROWS * sizeof(bits->syncs_before_row[0]));
-    memset(bits->bb, 0, BITBUF_ROWS * BITBUF_COLS);
+    memset(bits, 0, sizeof(*bits));
 }
 
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
@@ -64,12 +61,14 @@ void bitbuffer_invert(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
             for (unsigned col = 0; col <= last_col; ++col) {
-                bits->bb[row][col] = ~bits->bb[row][col]; // Invert
+                b[col] = ~b[col]; // Invert
             }
-            bits->bb[row][last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
+            b[last_col] ^= 0xFF >> last_bits; // Re-invert unused bits in last byte
         }
     }
 }
@@ -78,16 +77,18 @@ void bitbuffer_nrzs_decode(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
 
             int prev = 0;
             for (unsigned col = 0; col <= last_col; ++col) {
-                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
-                prev               = bits->bb[row][col];
-                bits->bb[row][col] = bits->bb[row][col] ^ ~mask;
+                int mask = (prev << 7) | b[col] >> 1;
+                prev     = b[col];
+                b[col]   = b[col] ^ ~mask;
             }
-            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+            b[last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
         }
     }
 }
@@ -96,16 +97,18 @@ void bitbuffer_nrzm_decode(bitbuffer_t *bits)
 {
     for (unsigned row = 0; row < bits->num_rows; ++row) {
         if (bits->bits_per_row[row] > 0) {
+            uint8_t *b = bits->bb[row];
+
             const unsigned last_col  = (bits->bits_per_row[row] - 1) / 8;
             const unsigned last_bits = ((bits->bits_per_row[row] - 1) % 8) + 1;
 
             int prev = 0;
             for (unsigned col = 0; col <= last_col; ++col) {
-                int mask           = (prev << 7) | bits->bb[row][col] >> 1;
-                prev               = bits->bb[row][col];
-                bits->bb[row][col] = bits->bb[row][col] ^ mask;
+                int mask = (prev << 7) | b[col] >> 1;
+                prev     = b[col];
+                b[col]   = b[col] ^ mask;
             }
-            bits->bb[row][last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
+            b[last_col] &= 0xFF << (8 - last_bits); // Clear unused bits in last byte
         }
     }
 }
