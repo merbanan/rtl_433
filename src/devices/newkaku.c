@@ -50,7 +50,7 @@ static int newkaku_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (pos != 64 && pos != 72)
         return DECODE_ABORT_LENGTH;
 
-    b = databits.bb[0];
+    b = &databits[0];
 
     uint32_t id        = (b[0] << 18) | (b[1] << 10) | (b[2] << 2) | (b[3] >> 6); // ID 26 bits
     uint32_t group_cmd = (b[3] >> 5) & 1;

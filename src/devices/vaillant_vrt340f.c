@@ -59,23 +59,24 @@ static int vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // The protocol uses bit-stuffing => remove 0 bit after five consecutive 1 bits
     // Also, each byte is represented with least significant bit first -> swap them!
-    bitbuffer_t bits = {0};
+    bitrow_t bits = {0};
+    uint16_t bits_num_bits = 0;
     int ones = 0;
     for (uint16_t k = 0; k < bitbuffer->bits_per_row[0]; k++) {
         int bit = bitrow_get_bit(b, k);
         if (bit == 1) {
-            bitbuffer_add_bit(&bits, 1);
+            bitrow_add_bit(bits, &bits_num_bits, 1);
             ones++;
         } else {
             if (ones != 5) { // Ignore a 0 bit after five consecutive 1 bits:
-                bitbuffer_add_bit(&bits, 0);
+                bitrow_add_bit(bits, &bits_num_bits, 0);
             }
             ones = 0;
         }
     }
 
-    b = bits.bb[0];
-    uint16_t bitcount = bits.bits_per_row[0];
+    b = &bits[0];
+    uint16_t bitcount = bits_num_bits;
 
     // Change to least-significant-bit last (protocol uses least-significant-bit first)
     reflect_bytes(b, (bitcount - 1) / 8);
