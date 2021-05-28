@@ -7,6 +7,16 @@
 
 #include "r_device.h"
 
+#ifndef RTL_433_REDUCE_STACK_USE
+#define M_BUS_DEVICES \
+    DECL(m_bus_mode_c_t) \
+    DECL(m_bus_mode_s) \
+    DECL(m_bus_mode_r) \
+    DECL(m_bus_mode_f)
+#else
+#define M_BUS_DEVICES /**/
+#endif
+
 #define DEVICES \
     DECL(silvercrest) \
     DECL(rubicson) \
@@ -111,10 +121,7 @@
     DECL(dish_remote_6_3) \
     DECL(ss_sensor) \
     DECL(sensible_living) \
-    DECL(m_bus_mode_c_t) \
-    DECL(m_bus_mode_s) \
-    DECL(m_bus_mode_r) \
-    DECL(m_bus_mode_f) \
+    M_BUS_DEVICES \
     DECL(wssensor) \
     DECL(wt1024) \
     DECL(tpms_pmv107j) \
