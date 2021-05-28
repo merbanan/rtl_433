@@ -29,18 +29,19 @@ based on work by Werner Johansson.
 
 static int tpms_pmv107j_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned bitpos)
 {
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t b[9];
 
-    unsigned start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 70); // 67 bits expected
+    unsigned start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 70); // 67 bits expected
     if (start_pos - bitpos < 67 * 2) {
         return 0;
     }
-    decoder_log_bitbuffer(decoder, 2, __func__, &packet_bits, "");
+    decoder_log_bitrow(decoder, 2, __func__, packet_bits, packet_bits_num_bits, "");
 
     // realign the buffer, prepending 6 bits of 0.
-    b[0] = packet_bits.bb[0][0] >> 6;
-    bitbuffer_extract_bytes(&packet_bits, 0, 2, b + 1, 64);
+    b[0] = packet_bits[0] >> 6;
+    bitrow_extract_bytes(packet_bits, 2, b + 1, 64);
     decoder_log_bitrow(decoder, 2, __func__, b, 72, "Realigned");
 
     int crc = b[8];

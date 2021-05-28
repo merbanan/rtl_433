@@ -32,7 +32,8 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 {
     data_t *data;
     unsigned int start_pos;
-    bitbuffer_t packet_bits = {0};
+    bitrow_t packet_bits = {0};
+    uint16_t packet_bits_num_bits = 0;
     uint8_t *b;
     unsigned id;
     char id_str[9];
@@ -40,11 +41,11 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
     int crc;
 
     // skip the first 1 bit, i.e. raw "01" to get 72 bits
-    start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, &packet_bits, 80);
+    start_pos = bitbuffer_differential_manchester_decode(bitbuffer, row, bitpos, packet_bits, &packet_bits_num_bits, 80);
     if (start_pos - bitpos < 144) {
         return 0;
     }
-    b = packet_bits.bb[0];
+    b = packet_bits;
 
     crc = b[8];
     if (crc8(b, 8, 0x07, 0x80) != crc) {
