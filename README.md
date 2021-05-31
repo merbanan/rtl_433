@@ -21,6 +21,8 @@ See [BUILDING.md](docs/BUILDING.md)
 
 On Debian (sid) or Ubuntu (19.10+), `apt-get install rtl-433` for other distros check https://repology.org/project/rtl-433/versions
 
+On FreeBSD, `pkg install rtl-433`.
+
 On MacOS, `brew install rtl_433`.
 
 Docker images with rtl_433 are available [on the github page of hertzg](https://github.com/hertzg/rtl_433_docker).
