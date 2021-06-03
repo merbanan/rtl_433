@@ -65,6 +65,11 @@
         fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
     }
 #endif
+#ifdef ESP32
+    #include <tcpip_adapter.h>
+    #define _POSIX_HOST_NAME_MAX 128
+    #define gai_strerror strerror
+#endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
 typedef void (*array_element_release_fn)(void*);
@@ -1194,7 +1199,18 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
+    #ifdef ESP32
+    const char* adapter_hostname = NULL;
+    tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &adapter_hostname);
+    if (adapter_hostname) {
+        memcpy(syslog->hostname, adapter_hostname, _POSIX_HOST_NAME_MAX);
+    }
+    else {
+        syslog->hostname[0] = '\0';
+    }
+    #else
     gethostname(syslog->hostname, _POSIX_HOST_NAME_MAX + 1);
+    #endif
     syslog->hostname[_POSIX_HOST_NAME_MAX] = '\0';
     datagram_client_open(&syslog->client, host, port);
 
