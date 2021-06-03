@@ -181,7 +181,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float temp_c;
     char extra[11];
     char long_identifier[20];
-    char short_identifier[4];
+    char short_identifier[5];
     const wh31e_type_code = 0x30;
     const wh31b_type_code = 0x37;
 
