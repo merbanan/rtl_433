@@ -180,10 +180,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity, rain_raw;
     float temp_c;
     char extra[11];
-    char long_identifier[20];
-    char short_identifier[5];
-    const wh31e_type_code = 0x30;
-    const wh31b_type_code = 0x37;
+    uint8_t const wh31e_type_code = 0x30;
+    uint8_t const wh31b_type_code = 0x37;
 
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // (partial) preamble and sync word
 
@@ -201,27 +199,12 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         msg_type = b[0];
 
         if (b[0] == wh31e_type_code || b[0] == wh31b_type_code) {
-            // WH31E
-            if (b[0] == wh31e_type_code) {
-                strcpy(short_identifier, "WH31E");
-                strcpy(long_identifier, "AmbientWeather-WH31E");
-            }
-            // WH31B
-            else {    
-                strcpy(short_identifier, "WH31B");
-                strcpy(long_identifier, "EcoWitt-WH31B");
-            }
 
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
-            if (c_crc) {
-                if (decoder->verbose)
-                    fprintf(stderr, "%s: %s bad CRC\n", __func__, short_identifier);
-                continue; // DECODE_FAIL_MIC
-            }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
-            if (c_sum) {
+            if (c_crc || c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: %s bad SUM\n", __func__, short_identifier);
+                    fprintf(stderr, "%s: checksum or crc error. (%d) \n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -235,7 +218,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, long_identifier,
+                    "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
+                    "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
                     "id" ,              "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
                     "battery",          "Battery",      DATA_STRING, battery_ok ? "OK" : "LOW",
