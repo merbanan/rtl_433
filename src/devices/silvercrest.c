@@ -31,11 +31,12 @@ static int silvercrest_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         if ((b[3]&0xF) != cmd_lu_tab[cmd])
             return DECODE_ABORT_EARLY;
 
-
+        /* clang-format off */
         data = data_make(
-            "model", "", DATA_STRING, _X("Silvercrest-Remote","Silvercrest Remote Control"),
-            "button", "", DATA_INT, cmd,
-            NULL);
+                "model",    "", DATA_STRING, "Silvercrest-Remote",
+                "button",   "", DATA_INT,    cmd,
+                NULL);
+        /* clang-format on */
 
         decoder_output_data(decoder, data);
 

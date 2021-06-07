@@ -118,7 +118,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
         *data = data_make(
-                "model",            "Device Type",      DATA_STRING, _X("Digitech-XC0324","Digitech XC0324"),
+                "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
                 "id",               "ID",               DATA_STRING, id,
                 "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
                 "flags",            "Constant ?",       DATA_INT,    flags,

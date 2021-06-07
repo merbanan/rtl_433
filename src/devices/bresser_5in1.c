@@ -140,8 +140,8 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Bresser-ProRainGauge",
                 "id",               "",             DATA_INT,    sensor_id,
                 "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
+                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -152,12 +152,12 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Bresser-5in1",
                 "id",               "",             DATA_INT,    sensor_id,
                 "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
-                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
                 "humidity",         "Humidity",     DATA_INT, humidity,
-                _X("wind_max_m_s","wind_gust"),        "Wind Gust",    DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_gust,
-                _X("wind_avg_m_s","wind_speed"),       "Wind Speed",   DATA_FORMAT, "%.1f m/s",DATA_DOUBLE, wind_avg,
-                "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",DATA_DOUBLE, wind_direction_deg,
-                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",DATA_DOUBLE, rain,
+                "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_gust,
+                "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_avg,
+                "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",        DATA_DOUBLE, wind_direction_deg,
+                "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
                 NULL);
         /* clang-format on */
@@ -172,8 +172,6 @@ static char *output_fields[] = {
         "battery",
         "temperature_C",
         "humidity",
-        "wind_gust",  // TODO: delete this
-        "wind_speed", // TODO: delete this
         "wind_max_m_s",
         "wind_avg_m_s",
         "wind_dir_deg",

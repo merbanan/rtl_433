@@ -77,9 +77,9 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (humidity == 0x00) { // Thermo
         /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-T","Nexus Temperature"),
-                "id",            "House Code",  DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
+                "model",         "",            DATA_STRING, "Nexus-T",
+                "id",            "House Code",  DATA_INT,    id,
+                "channel",       "Channel",     DATA_INT,    channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
@@ -88,9 +88,9 @@ static int nexus_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     else { // Thermo/Hygro
         /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Nexus-TH","Nexus Temperature/Humidity"),
-                "id",            "House Code",  DATA_INT, id,
-                "channel",       "Channel",     DATA_INT, channel,
+                "model",         "",            DATA_STRING, "Nexus-TH",
+                "id",            "House Code",  DATA_INT,    id,
+                "channel",       "Channel",     DATA_INT,    channel,
                 "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
                 "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, humidity,

@@ -47,11 +47,13 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         code = get_command_codes(b);
         device_id = b[44]<<8 | b[45];
 
+        /* clang-format off */
         data = data_make(
-                "model",        "",     DATA_STRING, _X("Honda-CarRemote","Honda Remote"),
-                _X("id","device id"),    "",    DATA_INT, device_id,
-                "code",         "",    DATA_STRING, code,
+                "model",        "",     DATA_STRING, "Honda-CarRemote",
+                "id",           "",     DATA_INT, device_id,
+                "code",         "",     DATA_STRING, code,
                 NULL);
+        /* clang-format on */
 
         decoder_output_data(decoder, data);
         return 1;
@@ -61,7 +63,6 @@ static int hondaremote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "device_id", // TODO: delete this
         "id",
         "code",
         NULL,

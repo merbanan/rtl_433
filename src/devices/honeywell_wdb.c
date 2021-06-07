@@ -103,8 +103,8 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Honeywell-ActivLink","Honeywell Wireless Doorbell"),
-            _X("subtype","class"),         "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
+            "model",         "",            DATA_STRING, "Honeywell-ActivLink",
+            "subtype",       "Class",       DATA_FORMAT, "%s",   DATA_STRING, class,
             "id",            "Id",          DATA_FORMAT, "%x",   DATA_INT,    device,
             "battery",       "Battery",     DATA_STRING, battery ? "LOW" : "OK",
             "alert",         "Alert",       DATA_FORMAT, "%s",   DATA_STRING, alert,
@@ -121,7 +121,6 @@ static int honeywell_wdb_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "subtype",
-        "class", // TODO: remove this
         "id",
         "battery",
         "alert",

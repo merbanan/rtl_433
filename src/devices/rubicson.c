@@ -75,7 +75,7 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
+            "model",            "",             DATA_STRING, "Rubicson-Temperature",
             "id",               "House Code",   DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,
             "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",

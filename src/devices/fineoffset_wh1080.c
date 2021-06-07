@@ -262,16 +262,16 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     if (msg_type == 0) {
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
-                _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
-                _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
-                _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
-                _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
+                "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
+                "wind_max_km_h",    "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
@@ -283,8 +283,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
@@ -295,8 +295,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     else {
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
                 "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",
                 "uv_index",         "UV Index",         DATA_INT,       uv_index,
@@ -335,15 +335,10 @@ static char *output_fields[] = {
         "battery",
         "temperature_C",
         "humidity",
-        "direction_deg", // TODO: remove this
         "wind_dir_deg",
-        "speed", // TODO: remove this
-        "gust",  // TODO: remove this
         "wind_avg_km_h",
         "wind_max_km_h",
-        "rain", // TODO: remove this
         "rain_mm",
-        "msg_type", // TODO: remove this
         "signal",
         "radio_clock",
         "sensor_code",

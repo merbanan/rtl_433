@@ -70,7 +70,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Solight-TE44","Solight TE44"),
+            "model",            "",             DATA_STRING, "Solight-TE44",
             "id",               "Id",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
 //            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",

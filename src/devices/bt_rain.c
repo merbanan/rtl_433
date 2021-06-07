@@ -75,7 +75,7 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
             "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
-            _X("rain_rate_mm_h","rainrate"),         "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
+            "rain_rate_mm_h",   "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
             "button",           "Button",       DATA_INT, button,
             NULL);
     /* clang-format on */
@@ -91,7 +91,6 @@ static char *output_fields[] = {
         "battery",
         "transmit", // TODO: delete this
         "temperature_C",
-        "rainrate", // TODO: remove this
         "rain_rate_mm_h",
         "button",
         NULL,

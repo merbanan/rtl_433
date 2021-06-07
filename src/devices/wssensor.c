@@ -84,7 +84,7 @@ static int wssensor_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Hyundai-WS","WS Temperature Sensor"),
+            "model",         "",            DATA_STRING, "Hyundai-WS",
             "id",            "House Code",  DATA_INT, sensor_id,
             "channel",       "Channel",     DATA_INT, channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "OK" : "LOW",

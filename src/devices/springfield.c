@@ -77,8 +77,8 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("Springfield-Soil","Springfield Temperature & Moisture"),
-                _X("id","sid"),              "SID",          DATA_INT,    sid,
+                "model",            "",             DATA_STRING, "Springfield-Soil",
+                "id",               "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
                 "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
                 "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
@@ -98,7 +98,6 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "sid", // TODO: delete this
         "id",
         "channel",
         "battery",

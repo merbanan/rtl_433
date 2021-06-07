@@ -112,7 +112,7 @@ static int cardin_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
 
         data = data_make(
-            "model",      "",                       DATA_STRING, _X("Cardin-S466","Cardin S466"),
+            "model",      "",                       DATA_STRING, "Cardin-S466",
             "dipswitch",  "dipswitch",              DATA_STRING, dip,
             "rbutton",    "right button switches",  DATA_STRING, rbutton[((bb[0][2] & 15) / 3)-1],
             NULL);

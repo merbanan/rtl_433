@@ -173,7 +173,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     temperature_c = (temperature >> 4) * 0.1f;
 
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Emos-TTX201","Emos TTX201"),
+            "model",         "",            DATA_STRING, "Emos-TTX201",
             "id",            "House Code",  DATA_INT,    device_id,
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",

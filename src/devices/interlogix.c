@@ -199,8 +199,8 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",       "Model",         DATA_STRING, _X("Interlogix-Security","Interlogix"),
-            _X("subtype","device_type"),     "Device Type",   DATA_STRING, device_type,
+            "model",       "Model",         DATA_STRING, "Interlogix-Security",
+            "subtype",     "Device Type",   DATA_STRING, device_type,
             "id",          "ID",            DATA_STRING, device_serial,
             "battery",     "Battery",       DATA_STRING, low_battery,
             "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
@@ -220,7 +220,6 @@ static char *output_fields[] = {
         "model",
         "subtype",
         "id",
-        "device_type", // TODO: delete this
         "raw_message",
         "battery",
         "switch1",

@@ -105,7 +105,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING, _X("Honeywell-Security","Honeywell Door/Window Sensor"),
+            "model",        "", DATA_STRING, "Honeywell-Security",
             "id",           "", DATA_FORMAT, "%05x", DATA_INT, device_id,
             "channel",      "", DATA_INT,    channel,
             "event",        "", DATA_FORMAT, "%02x", DATA_INT, event,
