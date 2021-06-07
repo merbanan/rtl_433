@@ -1,5 +1,5 @@
 /** @file
-    Rojaflex shutter and remote devices.
+    RojaFlex shutter and remote devices.
 
     Copyright (c) 2021 Sebastian Hofmann <sebastian.hofmann+rtl433@posteo.de>
 
@@ -12,7 +12,7 @@
 #include "decoder.h"
 
 /**
-Rojaflex shutter and remote devices.
+RojaFlex shutter and remote devices.
 
 - Frequency: 433.92 MHz
 
@@ -42,7 +42,7 @@ Data documentation:
 
 To get raw data:
 
-    ./rtl_433 -f 433920000 -X n=rojaflex,m=FSK_PCM,s=100,l=100,r=102400
+    ./rtl_433 -f 433920000 -X n=RojaFlex,m=FSK_PCM,s=100,l=100,r=102400
 */
 
 // Message Defines
@@ -137,7 +137,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         device_type = DEVICE_TYPE_SHUTTER;
     }
     else if ((msg[COMMAND_ID_OFFSET] & 0xF) == 0xa) {
-        // Rojaflex Bridge clones a remote signal but does not send an CRC!?!?
+        // RojaFlex Bridge clones a remote signal but does not send an CRC!?!?
         // So we can detect if it a real remote or a bridge on the message length.
         if (has_crc) {
             device_type = DEVICE_TYPE_REMOTE;
@@ -265,7 +265,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 // Calculate sum
                 sum = 0;
-                for( uint8_t j=0; j <= 6; ++j ) {
+                for (uint8_t j=0; j <= 6; ++j) {
                     sum += msg_new[8 + ID_OFFSET + j];
                 }
                 msg_new[8 + MESSAGE_TOKEN_OFFSET + 1] = sum & 0xff;
@@ -308,7 +308,7 @@ static char *output_fields[] = {
 };
 
 r_device rojaflex = {
-        .name        = "Rojaflex shutter and remote devices",
+        .name        = "RojaFlex shutter and remote devices",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 100,
         .long_width  = 100,
