@@ -352,7 +352,7 @@ Specify host/port for syslog with e.g. \-F syslog:127.0.0.1:1514
 .RE
 .SS "Meta information option"
 .TP
-[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits|oldmodel\fP ]
+[ \fB\-M\fI time[:<options>]|protocol|level|stats|bits\fP ]
 Add various metadata to every output line.
 .RS
 Use "time" to add current date and time meta data (preset for live inputs).
@@ -398,9 +398,6 @@ Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds)
 .RE
 .RS
 Use "bits" to add bit representation to code outputs (for debug).
-.RE
-.RS
-Note: You can use "oldmodel" to get the old model keys. This will be removed shortly.
 .RE
 .SS "Read file option"
 .TP

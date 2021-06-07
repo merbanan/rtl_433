@@ -496,7 +496,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits|oldmodel]
+  [-M time[:<options>]|protocol|level|stats|bits]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).
