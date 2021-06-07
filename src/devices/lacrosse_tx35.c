@@ -134,7 +134,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
                 sensor_id += 0x40;      // Change ID to distinguish between the main and probe channels
             /* clang-format off */
             data = data_make(
-                    "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? _X("LaCrosse-TX29IT","TX29-IT") : _X("LaCrosse-TX35DTHIT","TX35DTH-IT")),
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
@@ -146,7 +145,6 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
         } else {
             /* clang-format off */
             data = data_make(
-                    "brand", "", DATA_STRING, "LaCrosse",
                     "model", "", DATA_STRING, (device29or35 == 29 ? _X("LaCrosse-TX29IT","TX29-IT") : _X("LaCrosse-TX35DTHIT","TX35DTH-IT")),
                     "id", "", DATA_INT, sensor_id,
                     "battery", "Battery", DATA_STRING, battery_low ? "LOW" : "OK",
@@ -183,7 +181,6 @@ static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "brand",
     "model",
     "id",
     "battery",

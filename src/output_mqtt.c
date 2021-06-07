@@ -378,8 +378,7 @@ static void print_mqtt_data(data_output_t *output, data_t *data, char const *for
     }
 
     while (data) {
-        if (!strcmp(data->key, "brand")
-                || !strcmp(data->key, "type")
+        if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "model")
                 || !strcmp(data->key, "subtype")) {
             // skip, except "id", "channel"

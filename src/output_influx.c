@@ -277,8 +277,7 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
                 || !strcmp(data->key, "time")) {
             // skip
         }
-        else if (!strcmp(data->key, "brand")
-                || !strcmp(data->key, "type")
+        else if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
                 || !strcmp(data->key, "channel")) {
@@ -306,8 +305,7 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
                 || !strcmp(data->key, "time")) {
             // skip
         }
-        else if (!strcmp(data->key, "brand")
-                || !strcmp(data->key, "type")
+        else if (!strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
                 || !strcmp(data->key, "channel")) {
