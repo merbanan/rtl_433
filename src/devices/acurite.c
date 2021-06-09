@@ -1235,111 +1235,84 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int crc, battery_low, id, model_flag, valid = 0;
-    data_t *data;
-    float tempc, ptempc;
-    uint8_t probe, humidity, phumidity, water;
-    uint8_t signal[3][11];  //  Hold three copies of the signal
-    int     nsignal = 0;
-
     bitbuffer_invert(bitbuffer);
 
     if (decoder->verbose > 1) {
         bitbuffer_printf(bitbuffer, "%s: ", __func__);
     }
 
-    //  This sensor repeats signal three times.  Store each copy.
-    for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
-        if (bitbuffer->bits_per_row[brow] != 88)
-          continue; // DECODE_ABORT_LENGTH
-        if (nsignal>=3)
-          continue; // DECODE_ABORT_EARLY
-        memcpy(signal[nsignal], bitbuffer->bb[brow], 11);
-        if (decoder->verbose)
-            bitrow_printf(signal[nsignal], 11 * 8, "%s: ", __func__);
-        nsignal++;
+    // This sensor repeats a signal three times. Combine as fallback.
+    uint8_t *b_rows[3] = {0};
+    int n_rows         = 0;
+    for (int row = 0; row < bitbuffer->num_rows; ++row) {
+        if (n_rows < 3 && bitbuffer->bits_per_row[row] == 88) {
+            b_rows[n_rows] = bitbuffer->bb[row];
+            n_rows++;
+        }
     }
 
-    //  All three signals were found
-    if (nsignal==3) {
-        //  Combine signal copies so that majority bit count wins
-        for (int i=0; i<11; i++) {
-            signal[0][i] =
-                    (signal[0][i] & signal[1][i]) |
-                    (signal[1][i] & signal[2][i]) |
-                    (signal[2][i] & signal[0][i]);
+    // Combine signal if exactly three repeats were found
+    if (n_rows == 3) {
+        uint8_t *b = bitbuffer->bb[bitbuffer->num_rows];
+        for (int i = 0; i < 11; ++i) {
+            // The majority bit count wins
+            b[i] = (b_rows[0][i] & b_rows[1][i]) |
+                    (b_rows[1][i] & b_rows[2][i]) |
+                    (b_rows[2][i] & b_rows[0][i]);
         }
-        // CRC check fails?
-        if ((crc=crc16lsb(&(signal[0][0]), 11/*len*/, 0x00b2/*poly*/, 0x00d0/*seed*/)) != 0) {
+        bitbuffer->bits_per_row[bitbuffer->num_rows] = 88;
+        bitbuffer->num_rows += 1;
+    }
+
+    // Output the first valid row
+    for (int row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] != 88) {
+            continue; // return DECODE_ABORT_LENGTH;
+        }
+        uint8_t *b = bitbuffer->bb[row];
+
+        // Check CRC
+        if (crc16lsb(b, 11, 0x00b2, 0x00d0) != 0) {
             if (decoder->verbose)
-                bitrow_printf(signal[0], 11 * 8, "%s: sensor bad CRC: %02x -", __func__, crc);
-        // CRC is OK
+                bitrow_printf(b, 11 * 8, "%s: sensor bad CRC: ", __func__);
+            continue; // return DECODE_FAIL_MIC;
         }
-        else {
-            //  Decode the combined signal
-            id          = (signal[0][0] << 16) | (signal[0][1] << 8) | signal[0][3];
-            battery_low = (signal[0][2] & 0x40) == 0;
-            model_flag  = (signal[0][2] & 1);
-            tempc       = ((signal[0][4] << 4) | (signal[0][5] >> 4)) * 0.1 - 100;
-            probe       = signal[0][5] & 3;
-            humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
-            //  No probe
-            /* clang-format off */
-            data = data_make(
-                    "model",           "",             DATA_STRING,    model_flag ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
-                    _X("subtype","probe"), "Probe",    DATA_INT,       probe,
-                    "id",              "",             DATA_INT,       id,
-                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                    "humidity",        "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       humidity,
-                    NULL);
-            /* clang-format on */
 
-            //  Water probe (detects water leak)
-            if (probe == 1) {
-                water = (signal[0][7] & 0x0f) == 15;
-                /* clang-format off */
-                data = data_append(data,
-                        "water",           "",             DATA_INT,       water,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            //  Soil probe (detects temperature)
-            else if (probe == 2) {
-                ptempc = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
-                /* clang-format off */
-                data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            //  Spot probe (detects temperature and humidity)
-            else if (probe == 3) {
-                ptempc    = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
-                phumidity = signal[0][9] & 0x7f;
-                /* clang-format off */
-                data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                        _X("humidity_1", "phumidity"),       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       phumidity,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            /* clang-format off */
-            data = data_append(data,
-                    "mic",             "Integrity",    DATA_STRING,    "CRC",
-                    NULL);
-            /* clang-format on */
+        //  Decode common fields
+        int id          = (b[0] << 16) | (b[1] << 8) | b[3];
+        int battery_low = (b[2] & 0x40) == 0;
+        int model_flag  = (b[2] & 1);
+        float tempc     = ((b[4] << 4) | (b[5] >> 4)) * 0.1 - 100;
+        int probe       = b[5] & 3;
+        int humidity    = ((b[6] & 0x1f) << 2) | (b[7] >> 6);
 
-            decoder_output_data(decoder, data);
-            valid = 1;
-        }
-    }
+        //  Water probe (detects water leak)
+        int water = (b[7] & 0x0f) == 15; // valid only if (probe == 1)
+        //  Soil probe (detects temperature)
+        float ptempc = (((b[7] & 0x0f) << 8) | b[8]) * 0.1 - 100; // valid only if (probe == 2 || probe == 3)
+        //  Spot probe (detects temperature and humidity)
+        int phumidity = b[9] & 0x7f; // valid only if (probe == 3)
 
-    if (valid)
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",            "",             DATA_STRING,    model_flag ? "Acurite-00275rm" : "Acurite-00276rm",
+                "subtype",          "Probe",        DATA_INT,       probe,
+                "id",               "",             DATA_INT,       id,
+                "battery",          "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "temperature_C",    "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "humidity",         "Humidity",     DATA_FORMAT,    "%u %%", DATA_INT,      humidity,
+                "water",            "",             DATA_COND, probe == 1, DATA_INT,        water,
+                "temperature_1_C",  "Celsius",      DATA_COND, probe == 2, DATA_FORMAT, "%.1f C",   DATA_DOUBLE, ptempc,
+                "temperature_1_C",  "Celsius",      DATA_COND, probe == 3, DATA_FORMAT, "%.1f C",   DATA_DOUBLE, ptempc,
+                "humidity_1",       "Humidity",     DATA_COND, probe == 3, DATA_FORMAT, "%u %%",    DATA_INT,    phumidity,
+                "mic",              "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+
         return 1;
+    }
     return 0;
 }
 
