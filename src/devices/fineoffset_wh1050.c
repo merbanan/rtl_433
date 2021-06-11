@@ -106,7 +106,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",                 DATA_STRING, "Fineoffset-WH1050",
             "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-            "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
@@ -123,7 +123,7 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
     "temperature_C",
     "humidity",
     "wind_avg_km_h",

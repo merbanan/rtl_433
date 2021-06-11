@@ -84,7 +84,7 @@ static int oregon_scientific_v1_callback(r_device *decoder, bitbuffer_t *bitbuff
                 "model",            "",             DATA_STRING,    "Oregon-v1",
                 "id",               "SID",          DATA_INT,       sid,
                 "channel",          "Channel",      DATA_INT,       channel,
-                "battery",          "Battery",      DATA_STRING,    battery ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,       !battery,
                 "temperature_C",    "Temperature",  DATA_FORMAT,    "%.01f C",              DATA_DOUBLE,    tempC,
                 "mic",              "Integrity",    DATA_STRING,    "CHECKSUM",
                 NULL);
@@ -100,7 +100,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
-    "battery",
+    "battery_ok",
     "temperature_C",
     "mic",
     NULL,

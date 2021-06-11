@@ -308,8 +308,8 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B",
-            "id",               "ID",               DATA_INT, id,
-            "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
+            "id",               "ID",               DATA_INT,    id,
+            "battery_ok",       "Battery",          DATA_INT,    !low_battery,
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
@@ -560,7 +560,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
             "model",            "",             DATA_COND, type == 25, DATA_STRING, "Fineoffset-WH25",
             "id",               "ID",           DATA_INT,    id,
-            "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
+            "battery_ok",       "Battery",      DATA_INT,    !low_battery,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
@@ -733,8 +733,8 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v1",
-            "id",               "ID",           DATA_INT, id,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "id",               "ID",           DATA_INT,    id,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -819,8 +819,8 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT, id,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "id",               "ID",           DATA_INT,    id,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -895,8 +895,8 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT, id,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "id",               "ID",           DATA_INT,    id,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -969,8 +969,8 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Fineoffset-WH0530",
-            "id",               "ID",           DATA_INT, id,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "id",               "ID",           DATA_INT,    id,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -993,7 +993,7 @@ static char *output_fields[] = {
 static char *output_fields_WH25[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
     "temperature_C",
     "humidity",
     "pressure_hPa",
@@ -1027,7 +1027,7 @@ static char *output_fields_WH51[] = {
 static char *output_fields_WH0530[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
     "temperature_C",
     "rain_mm",
     "radio_clock",

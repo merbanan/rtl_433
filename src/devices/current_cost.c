@@ -79,7 +79,7 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "power0_W",     "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
                 "power1_W",     "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
                 "power2_W",     "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
-                //"battery",      "Battery",       DATA_STRING, battery_low ? "LOW" : "OK", //TODO is there some low battery indicator ?
+                //"battery_ok",   "Battery",       DATA_INT,    !battery_low, //TODO is there some low battery indicator ?
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);

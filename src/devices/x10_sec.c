@@ -181,7 +181,7 @@ static int x10_sec_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "code",         "Code",         DATA_STRING, x10_code_str,
             "event",        "Event",        DATA_STRING, event_str,
             "delay",        "Delay",        DATA_COND,   delay,         DATA_INT, delay,
-            "battery_ok",   "Battery OK",   DATA_COND,   battery_low,   DATA_INT, !battery_low,
+            "battery_ok",   "Battery",      DATA_COND,   battery_low,   DATA_INT, !battery_low,
             "tamper",       "Tamper",       DATA_COND,   tamper,        DATA_INT, tamper,
             "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);

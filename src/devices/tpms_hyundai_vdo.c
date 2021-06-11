@@ -93,7 +93,7 @@ static int tpms_hyundai_vdo_decode(r_device *decoder, bitbuffer_t *bitbuffer, un
             "pressure_kPa",     "pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.375,
             "temperature_C",    "temp",         DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "maybe_battery",    "",             DATA_INT,    maybe_battery,
-            "mic",              "",             DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 

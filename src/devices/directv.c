@@ -363,7 +363,7 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "button_id",     "",            DATA_FORMAT, "0x%02X", DATA_INT, dtv_button_id,
             "button_name",   "",            DATA_FORMAT, "[%s]", DATA_STRING, get_dtv_button_label(dtv_button_id),
             "event",         "",            DATA_STRING, row_sync_len > ROW_SYNC_SHORT_LEN ? "INITIAL" : "REPEAT",
-            "mic",           "",            DATA_STRING, "CHECKSUM",
+            "mic",           "Integrity",   DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

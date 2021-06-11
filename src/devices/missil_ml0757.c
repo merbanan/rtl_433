@@ -108,8 +108,8 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
+                "id",               "ID",           DATA_INT,    id,
+                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
                 "rain_mm",          "Total rain",   DATA_FORMAT, "%.02f mm", DATA_DOUBLE, rainfall,
                 "wind_avg_km_h",    "Wind speed",   DATA_FORMAT, "%.02f km/h", DATA_DOUBLE, wind_kph,
                 NULL);
@@ -119,8 +119,8 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         /* clang-format off */
         data = data_make(
                 "model",            "",             DATA_STRING, "Missil-ML0757",
-                "id",               "ID",           DATA_INT, id,
-                "battery_ok",       "Battery OK",   DATA_INT, !flag_bat,
+                "id",               "ID",           DATA_INT,    id,
+                "battery_ok",       "Battery",      DATA_INT,    !flag_bat,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 NULL);
         /* clang-format on */

@@ -176,7 +176,7 @@ static int tfa_drop_303233_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",      "",           DATA_STRING, "TFA-Drop",
             "id",         "",           DATA_FORMAT, "%5x", DATA_INT,  sensor_id,
-            "battery_ok", "Battery OK", DATA_INT,    !battery_low,
+            "battery_ok", "Battery",    DATA_INT,    !battery_low,
             "rain_mm",    "Rain in MM", DATA_DOUBLE, rain_mm,
             "mic",        "Integrity",  DATA_STRING, "CHECKSUM",
             NULL);

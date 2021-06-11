@@ -89,27 +89,28 @@ static int klimalogg_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = msg[6]&0x7F;
     battery_low = (msg[7]&0x80) >> 7;
     sequence_nr = (msg[8]&0xF0) >> 4;
+
     /* clang-format off */
     data = data_make(
-            "model",           "",                 DATA_STRING, "Klimalogg Pro",
-            "id",              "Id",               DATA_FORMAT,    "%04x", DATA_INT, id,
-            "battery",          "Battery",         DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C", "Temperature",        DATA_STRING, temperature_str,
-            "humidity",        "Humidity",         DATA_INT, humidity,
-            "sequence_nr","Sequence Number",       DATA_INT, sequence_nr,
-            "mic",             "Integrity",        DATA_STRING, "CRC",
+            "model",            "",                 DATA_STRING, "Klimalogg Pro",
+            "id",               "Id",               DATA_FORMAT, "%04x", DATA_INT, id,
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",      DATA_STRING, temperature_str,
+            "humidity",         "Humidity",         DATA_INT,    humidity,
+            "sequence_nr",      "Sequence Number",  DATA_INT,    sequence_nr,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
     decoder_output_data(decoder, data);
-    return 0;
+    return 1;
 }
 
 static char *output_fields[] = {
         "model",
         "id",
         "temperature_C",
-        "battery",
+        "battery_ok",
         "humidity",
         "sequence_nr",
         "mic",

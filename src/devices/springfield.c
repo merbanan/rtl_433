@@ -80,7 +80,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Springfield-Soil",
                 "id",               "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
-                "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery,
                 "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
@@ -100,7 +100,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
         "moisture",

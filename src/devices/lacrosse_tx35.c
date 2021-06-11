@@ -136,7 +136,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
             data = data_make(
                     "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                    "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                     "newbattery",       "NewBattery",   DATA_INT,    newbatt,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -147,7 +147,7 @@ static int lacrosse_it(r_device *decoder, bitbuffer_t *bitbuffer, int device29or
             data = data_make(
                     "model",            "",             DATA_STRING, (device29or35 == 29 ? "LaCrosse-TX29IT" : "LaCrosse-TX35DTHIT"),
                     "id",               "",             DATA_INT,    sensor_id,
-                    "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                    "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                     "newbattery",       "NewBattery",   DATA_INT,    newbatt,
                     "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                     "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
@@ -183,7 +183,7 @@ static int lacrossetx35_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
-    "battery",
+    "battery_ok",
     "newbattery",
     "temperature_C",
     "humidity",

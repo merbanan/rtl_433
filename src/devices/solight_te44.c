@@ -73,7 +73,7 @@ static int solight_te44_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Solight-TE44",
             "id",               "Id",           DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel + 1,
-//            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+//            "battery_ok",       "Battery",      DATA_INT,    !!battery,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -87,7 +87,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        //"battery",
+        //"battery_ok",
         "temperature_C",
         "mic",
         NULL,

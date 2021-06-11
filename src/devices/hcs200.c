@@ -74,17 +74,17 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "", DATA_STRING,    "Microchip-HCS200",
-            "id",           "", DATA_STRING,    serial_str,
-            "id_rev",           "", DATA_STRING,    serial_rev_str,
-            "encrypted",    "", DATA_STRING,    encrypted_str,
-            "encrypted_rev",    "", DATA_STRING,    encrypted_rev_str,
-            "button1",      "", DATA_STRING,    ((b[8] & 0x04) == 0x04) ? "ON" : "OFF",
-            "button2",      "", DATA_STRING,    ((b[8] & 0x02) == 0x02) ? "ON" : "OFF",
-            "button3",      "", DATA_STRING,    ((b[8] & 0x09) == 0x09) ? "ON" : "OFF",
-            "button4",      "", DATA_STRING,    ((b[8] & 0x06) == 0x06) ? "ON" : "OFF",
-            "misc",         "", DATA_STRING,    (b[8] == 0x0F) ? "ALL_PRESSED" : "",
-            "battery_ok",   "", DATA_INT,       (((b[9] >> 4) & 0x08) == 0x08) ? 0 : 1,
+            "model",            "",         DATA_STRING,    "Microchip-HCS200",
+            "id",               "",         DATA_STRING,    serial_str,
+            "id_rev",           "",         DATA_STRING,    serial_rev_str,
+            "encrypted",        "",         DATA_STRING,    encrypted_str,
+            "encrypted_rev",    "",         DATA_STRING,    encrypted_rev_str,
+            "button1",          "",         DATA_STRING,    ((b[8] & 0x04) == 0x04) ? "ON" : "OFF",
+            "button2",          "",         DATA_STRING,    ((b[8] & 0x02) == 0x02) ? "ON" : "OFF",
+            "button3",          "",         DATA_STRING,    ((b[8] & 0x09) == 0x09) ? "ON" : "OFF",
+            "button4",          "",         DATA_STRING,    ((b[8] & 0x06) == 0x06) ? "ON" : "OFF",
+            "misc",             "",         DATA_STRING,    (b[8] == 0x0F) ? "ALL_PRESSED" : "",
+            "battery_ok",       "Battery",  DATA_INT,       (((b[9] >> 4) & 0x08) == 0x08) ? 0 : 1,
             NULL);
     /* clang-format on */
 
