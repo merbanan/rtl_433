@@ -180,8 +180,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity, rain_raw;
     float temp_c;
     char extra[11];
-    uint8_t const wh31e_type_code = 0x30;
-    uint8_t const wh31b_type_code = 0x37;
+    uint8_t const wh31e_type_code = 0x30; // 48
+    uint8_t const wh31b_type_code = 0x37; // 55
 
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // (partial) preamble and sync word
 
@@ -202,13 +202,13 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E/WH31B (%s) bad CRC\n", __func__, msg_type);
+                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad CRC\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E/WH31B (%s) bad SUM\n", __func__, msg_type);
+                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad SUM\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
             
