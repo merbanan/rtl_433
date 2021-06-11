@@ -199,15 +199,19 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         msg_type = b[0];
 
         if (b[0] == wh31e_type_code || b[0] == wh31b_type_code) {
-
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
-            uint8_t c_sum = add_bytes(b, 6) - b[6];
-            if (c_crc || c_sum) {
+            if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: checksum or crc error. (%d) \n", __func__, msg_type);
+                    fprintf(stderr, "%s: WH31E/WH31B (%s) bad CRC\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
-
+            uint8_t c_sum = add_bytes(b, 6) - b[6];
+            if (c_sum) {
+                if (decoder->verbose)
+                    fprintf(stderr, "%s: WH31E/WH31B (%s) bad SUM\n", __func__, msg_type);
+                continue; // DECODE_FAIL_MIC
+            }
+            
             id         = b[1];
             battery_ok = (b[2] >> 7);
             channel    = ((b[2] & 0x70) >> 4) + 1;
