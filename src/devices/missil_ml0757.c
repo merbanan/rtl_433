@@ -133,7 +133,7 @@ static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "battery_ok"
+        "battery_ok",
         "temperature_C",
         "wind_avg_km_h",
         "rain_mm",
