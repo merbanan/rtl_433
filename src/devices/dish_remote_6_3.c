@@ -126,7 +126,7 @@ static int dish_remote_6_3_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     button_string = button_map[button];
 
     data = data_make(
-            "model", "", DATA_STRING, _X("Dish-RC63","Dish remote 6.3"),
+            "model", "", DATA_STRING, "Dish-RC63",
             "button", "", DATA_STRING, button_string,
             NULL);
 

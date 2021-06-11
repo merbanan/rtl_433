@@ -78,24 +78,24 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
-        model = _X("Fineoffset-WH2","Fine Offset Electronics, WH2 Temperature/Humidity sensor");
+        model = "Fineoffset-WH2";
 
     } else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model = _X("Fineoffset-WH2A","Fine Offset WH2A sensor");
+        model = "Fineoffset-WH2A";
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-        model = _X("Fineoffset-WH5","Fine Offset WH5 sensor");
+        model = "Fineoffset-WH5";
         if (decoder->decode_ctx) // don't care for the actual value
             model = "Rosenborg-66796";
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
-        model = _X("Fineoffset-TelldusProove","Telldus/Proove thermometer");
+        model = "Fineoffset-TelldusProove";
 
     } else
         return DECODE_ABORT_LENGTH;
@@ -307,15 +307,15 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
+            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B",
             "id",               "ID",               DATA_INT, id,
             "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
-            _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
-            _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
-            _X("rain_mm","rainfall_mm"),           "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
+            "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
+            "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
+            "rain_mm",          "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
             "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
             "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
@@ -439,9 +439,9 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
+            "model",            "",             DATA_STRING, "Fineoffset-WH0290",
             "id",               "ID",           DATA_INT,    id,
-            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
+            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "family",           "FAMILY",       DATA_INT,    family,
@@ -558,7 +558,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
             "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
-            "model",            "",             DATA_COND, type == 25, DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
+            "model",            "",             DATA_COND, type == 25, DATA_STRING, "Fineoffset-WH25",
             "id",               "ID",           DATA_INT,    id,
             "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
@@ -968,11 +968,11 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Fineoffset-WH0530","Fine Offset Electronics, WH0530 Temperature/Rain sensor"),
+            "model",            "",             DATA_STRING, "Fineoffset-WH0530",
             "id",               "ID",           DATA_INT, id,
             "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            _X("rain_mm","rain"),             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -999,11 +999,8 @@ static char *output_fields_WH25[] = {
     "pressure_hPa",
     // WH24
     "wind_dir_deg",
-    "wind_speed_ms", // TODO: delete this
-    "gust_speed_ms", // TODO: delete this
     "wind_avg_m_s",
     "wind_max_m_s",
-    "rainfall_mm", //TODO: remove this
     "rain_mm",
     "uv",
     "uvi",
@@ -1032,7 +1029,6 @@ static char *output_fields_WH0530[] = {
     "id",
     "battery",
     "temperature_C",
-    "rain", //TODO: remove this
     "rain_mm",
     "radio_clock",
     "mic",

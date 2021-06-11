@@ -110,13 +110,13 @@ static int emontx_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",        "",             DATA_STRING, _X("emonTx-Energy","emonTx"),
+                "model",        "",             DATA_STRING, "emonTx-Energy",
                 "node",         "",             DATA_FORMAT, "%02x", DATA_INT, pkt.p.node & 0x1f,
                 "ct1",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[0],
                 "ct2",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[1],
                 "ct3",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[2],
                 "ct4",          "",             DATA_FORMAT, "%d", DATA_INT, (int16_t)words[3],
-                _X("batt_Vrms","Vrms/batt"), "", DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
+                "batt_Vrms",    "",             DATA_FORMAT, "%.2f", DATA_DOUBLE, vrms,
                 "pulse",        "",             DATA_FORMAT, "%u", DATA_INT, words[11] | ((uint32_t)words[12] << 16),
                 // Slightly horrid... a value of 300.0°C means 'no reading'. So omit them completely.
                 "temp1_C",      "",             DATA_COND, words[5] != 3000, DATA_FORMAT, "%.1f", DATA_DOUBLE, words[5] * 0.1f,
@@ -141,7 +141,6 @@ static char *output_fields[] = {
         "ct2",
         "ct3",
         "ct4",
-        "Vrms/batt", // TODO: delete this
         "batt_Vrms",
         "temp1_C",
         "temp2_C",

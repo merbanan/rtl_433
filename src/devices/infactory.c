@@ -90,7 +90,7 @@ static int infactory_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("inFactory-TH","inFactory sensor"),
+            "model",            "",             DATA_STRING, "inFactory-TH",
             "id",               "ID",           DATA_INT, id,
             "channel",          "Channel",      DATA_INT, channel,
             "battery_ok",       "Battery OK",   DATA_INT, !battery_low,

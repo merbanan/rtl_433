@@ -83,13 +83,13 @@ static int oil_watchman_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model", "", DATA_STRING, _X("Oil-SonicSmart","Oil Watchman"),
-                "id", "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
-                "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
-                "maybetemp", "", DATA_INT, maybetemp,
-                "temperature_C", "", DATA_DOUBLE, temperature,
-                "binding_countdown", "", DATA_INT, binding_countdown,
-                _X("depth_cm","depth"), "", DATA_INT, depth,
+                "model",                "", DATA_STRING, "Oil-SonicSmart",
+                "id",                   "", DATA_FORMAT, "%06x", DATA_INT, unit_id,
+                "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
+                "maybetemp",            "", DATA_INT,    maybetemp,
+                "temperature_C",        "", DATA_DOUBLE, temperature,
+                "binding_countdown",    "", DATA_INT,    binding_countdown,
+                "depth_cm",             "", DATA_INT,    depth,
                 NULL);
         /* clang-format on */
 
@@ -106,7 +106,6 @@ static char *output_fields[] = {
         "maybetemp",
         "temperature_C",
         "binding_countdown",
-        "depth", // TODO: remove this
         "depth_cm",
         NULL,
 };

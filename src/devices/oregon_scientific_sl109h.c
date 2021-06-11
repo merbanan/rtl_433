@@ -91,7 +91,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
 
         /* clang-format off */
         data = data_make(
-                "model",            "Model",                                DATA_STRING, _X("Oregon-SL109H","Oregon Scientific SL109H"),
+                "model",            "Model",                                DATA_STRING, "Oregon-SL109H",
                 "id",               "Id",                                   DATA_INT,    id,
                 "channel",          "Channel",                              DATA_INT,    channel,
                 "temperature_C",    "Celsius",      DATA_FORMAT, "%.1f C",  DATA_DOUBLE, temp_c,

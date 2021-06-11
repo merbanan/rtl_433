@@ -57,7 +57,7 @@ static int kw9015b_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Inovalley-kw9015b","Inovalley kw9015b"),
+            "model",            "",             DATA_STRING, "Inovalley-kw9015b",
             "id",               "",             DATA_INT,    device,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "rain",             "Rain Count",   DATA_INT,    rain, // TODO: remove this

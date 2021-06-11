@@ -93,7 +93,7 @@ static int efergy_e2_classic_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",    "",                 DATA_STRING, _X("Efergy-e2CT","Efergy e2 CT"),
+            "model",    "",                 DATA_STRING, "Efergy-e2CT",
             "id",       "Transmitter ID",   DATA_INT,    address,
             "battery",  "Battery",          DATA_STRING, battery ? "OK" : "LOW",
             "current",  "Current",          DATA_FORMAT, "%.2f A", DATA_DOUBLE, current_adc,

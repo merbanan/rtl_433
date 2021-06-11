@@ -137,7 +137,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Philips-Temperature","Philips outdoor temperature sensor"),
+            "model",         "",            DATA_STRING, "Philips-Temperature",
             "channel",       "Channel",     DATA_INT,    channel,
             "battery",       "Battery",     DATA_STRING, battery_status ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
