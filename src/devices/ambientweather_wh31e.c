@@ -198,7 +198,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
         msg_type = b[0];
 
-        if (b[0] == wh31e_type_code || b[0] == wh31b_type_code) {
+        if (msg_type == wh31e_type_code || msg_type == wh31b_type_code) {
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
@@ -211,7 +211,7 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     fprintf(stderr, "%s: WH31E/WH31B (%d) bad SUM\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
-            
+
             id         = b[1];
             battery_ok = (b[2] >> 7);
             channel    = ((b[2] & 0x70) >> 4) + 1;
