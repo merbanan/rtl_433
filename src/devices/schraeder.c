@@ -163,14 +163,22 @@ Refer to https://github.com/JoeSc/Subaru-TPMS-Spoofing
 Data layout:
 
     ^^^^_^_^_^_^_^_^_^_^_^_^_^_^_^_^^^^_FFFFFFIIIIIIIIIIIII
-    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPPPPP
+    IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIPPPPPPPPPPPPPPPPXXXX
 
-- PREAMBLE: 36-bits 0xF5555555E
-- F: FLAGS, 3 Manchester encoded bits
+- PREAMBLE: 36-bits 0xF5555555E (or ...5557 with the 0b10 as the first MC bit)
+- F: FLAGS, 3 Manchester encoded bits (4 bits with the fixed 1-bit from preamble)
 - I: ID, 24 Manchester encoded bits
-- P: PRESSURE, 10 Manchester encoded bits (PSI * 20)
+- P: PRESSURE, 8 Manchester encoded bits (PSI * 5)
+- X: PRESSURE, 2 Manchester encoded bits checksum (2-bit addition)
 
-NOTE: there is NO CRC and NO temperature data transmitted
+Flags:
+
+- 0 = learning mode (when using a 125kHz coil to wake up the TPMS and have the car learn; sends 9 packets)
+- 3 = sudden pressure change (increase/decrease) sends 7 or 8 packets
+- 5 = wake up mode, sends 8 packets
+- 7 = driving mode, sends 8 packets
+
+NOTE: there is NO temperature data transmitted
 
 We use OOK_PULSE_PCM_RZ with .short_pulse = .long_pulse to get the bitstream
 above. Then we use bitbuffer_manchester_decode() which will alert us to any
@@ -182,69 +190,90 @@ The Manchester bits are encoded as 01 => 0 and 10 => 1, which is
 the reverse of bitbuffer_manchester_decode(), so we invert the result.
 */
 #define NUM_BITS_PREAMBLE (36)
-#define NUM_BITS_FLAGS (3)
-#define NUM_BITS_ID (24)
-#define NUM_BITS_PRESSURE (10)
-#define NUM_BITS_DATA (NUM_BITS_FLAGS + NUM_BITS_ID + NUM_BITS_PRESSURE)
-#define NUM_BITS_TOTAL (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA)
+#define NUM_BITS_DATA (38)
+#define NUM_BITS_TOTAL_MIN (NUM_BITS_PREAMBLE / 2 + 2 * NUM_BITS_DATA)
+#define NUM_BITS_TOTAL_MAX (NUM_BITS_PREAMBLE + 2 * NUM_BITS_DATA + 8)
 
 static int schrader_SMD3MA4_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    bitbuffer_t decoded = { 0 };
-    char id_str[9];
-    unsigned flags, serial_id, pressure;
-    int ret;
-    uint8_t *b;
+    // full preamble is 0xF5555555E
+    uint8_t const preamble_pattern[2] = {0x55, 0x5e}; // 16 bits
 
-    /* Reject wrong length, with margin of error for extra bits at the end */
-    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL
-            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL + 8) {
+    // Reject wrong length, with margin of error for short preamble or extra bits at the end
+    if (bitbuffer->bits_per_row[0] < NUM_BITS_TOTAL_MIN
+            || bitbuffer->bits_per_row[0] >= NUM_BITS_TOTAL_MAX) {
         return DECODE_ABORT_LENGTH;
     }
 
-    /* Check preamble */
-    b = bitbuffer->bb[0];
-    if (b[0] != 0xf5 || b[1] != 0x55 || b[2] != 0x55 || b[3] != 0x55
-            || (b[4] >> 4) != 0xe) {
-        return DECODE_FAIL_SANITY;
+    // Find a preamble with enough bits after it that it could be a complete packet
+    unsigned bitpos = bitbuffer_search(bitbuffer, 0, 0, preamble_pattern, 16);
+    bitpos += 14; // skip preamble but keep last two bits
+    if (bitpos + NUM_BITS_DATA * 2 >= bitbuffer->bits_per_row[0]) {
+        return DECODE_ABORT_EARLY;
     }
 
-    /* Check and decode the Manchester bits */
-    ret = bitbuffer_manchester_decode(bitbuffer, 0, NUM_BITS_PREAMBLE,
-                                      &decoded, NUM_BITS_DATA);
-    if (ret != NUM_BITS_TOTAL) {
+    // Check and decode the Manchester bits
+    bitbuffer_t decoded = {0};
+
+    unsigned ret = bitbuffer_manchester_decode(bitbuffer, 0, bitpos,
+            &decoded, NUM_BITS_DATA);
+    if (ret != bitpos + NUM_BITS_DATA * 2) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: invalid Manchester data\n", __func__);
         }
         return DECODE_FAIL_MIC;
     }
     bitbuffer_invert(&decoded);
+    uint8_t *b = decoded.bb[0];
 
-    /* Get the decoded data fields */
-    /* FFFSSSSS SSSSSSSS SSSSSSSS SSSPPPPP PPPPPxxx */
-    b         = decoded.bb[0];
-    flags     = b[0] >> 5;
-    serial_id = ((b[0] & 0x1f) << 19) | (b[1] << 11) | (b[2] << 3) | (b[3] >> 5);
-    pressure  = ((b[3] & 0x1f) <<  5) | (b[4] >> 3);
-
-    /* reject all-zero data */
-    if (!flags && !serial_id && !pressure) {
+    // Reject all-zero data
+    if (!b[0] && !b[1] && !b[2] && !b[3]) {
         if (decoder->verbose > 1) {
             fprintf(stderr, "%s: DECODE_FAIL_SANITY data all 0x00\n", __func__);
         }
         return DECODE_FAIL_SANITY;
     }
 
+    // Checksum, note that this adds the preamble 1-bit as 0x10 also
+    int sum = 0;
+    for (int i = 0; i < 5; ++i) {
+        sum += ((b[i] & 0x03) >> 0)
+                + ((b[i] & 0x0c) >> 2)
+                + ((b[i] & 0x30) >> 4)
+                + ((b[i] & 0xc0) >> 6);
+    }
+    if ((sum & 0x3) != 1) {
+        if (decoder->verbose > 1) {
+            fprintf(stderr, "%s: Checksum failed\n", __func__);
+        }
+        return DECODE_FAIL_MIC;
+    }
+
+    // Get the decoded data fields
+    // 1FFFSSSS SSSSSSSS SSSSSSSS SSSSPPPP PPPP XX
+    int flags     = ((b[0] & 0x70) >> 4);
+    int serial_id = ((b[0] & 0x0f) << 20) | (b[1] << 12) | (b[2] << 4) | (b[3] >> 4);
+    int pressure  = ((b[3] & 0x0f) <<  4) | (b[4] >> 4);
+
+    // normal driving is flags == 0x7
+    int flag_learn  = flags == 0x0;
+    int flag_alarm  = flags == 0x3;
+    int flag_wakeup = flags == 0x5;
+
+    char id_str[9];
     sprintf(id_str, "%06X", serial_id);
 
     /* clang-format off */
-    data = data_make(
+    data_t *data = data_make(
             "model",            "",             DATA_STRING, "Schrader-SMD3MA4",
             "type",             "",             DATA_STRING, "TPMS",
-            "flags",            "",             DATA_INT,    flags,
             "id",               "ID",           DATA_STRING, id_str,
-            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.2f PSI", DATA_DOUBLE, pressure * 0.05f,
+            "flags",            "Flags",        DATA_INT,    flags,
+            "alarm",            "Alarm",        DATA_COND,   flag_alarm, DATA_INT, 1,
+            "wakeup",           "Wakeup",       DATA_COND,   flag_wakeup, DATA_INT, 1,
+            "learn",            "Learn",        DATA_COND,   flag_learn, DATA_INT, 1,
+            "pressure_PSI",     "Pressure",     DATA_FORMAT, "%.1f PSI", DATA_DOUBLE, pressure * 0.2f,
+            "mic",              "Integrity",    DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -280,6 +309,7 @@ static char *output_fields_SMD3MA4[] = {
         "id",
         "flags",
         "pressure_PSI",
+        "mic",
         NULL,
 };
 
