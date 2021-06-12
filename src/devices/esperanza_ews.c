@@ -13,6 +13,11 @@
 Largely the same as kedsum, s3318p.
 @sa kedsum.c s3318p.c
 
+List of known supported devices:
+- JYWDJ-009
+      * Known voltage operating range 1.7V - 3.8V
+      * Low-batt flag is raised when supply voltage goes below 2.75V
+
 Frame structure:
 
     Byte:      0        1        2        3        4
@@ -26,6 +31,12 @@ Frame structure:
 - H: Humidity (Little-endian)
 - F: Flags (unknown low-batt unknown unknown)
 - X: CRC-4 poly 0x3 init 0x0 xor last 4 bits
+
+Flags (bbbb)
+3: Unknown
+2: low-batt Flag is raised when supply voltage drops below threshold.
+1: Unknown
+0: Unknown
 
 Sample Data:
 
@@ -89,7 +100,7 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Esperanza-EWS",
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
-            "battery",          "",             DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",      DATA_INT, !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",
