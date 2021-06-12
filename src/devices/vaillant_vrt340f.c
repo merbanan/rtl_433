@@ -171,7 +171,7 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "heating",      "Heating Mode",         DATA_STRING, (heating_mode==0)?"OFF":((heating_mode==1)?"ON (2-point)":"ON (analogue)"),
                 "heating_temp", "Heating Water Temp.",  DATA_FORMAT, "%d", DATA_INT, (int16_t)target_temperature,
                 "water",        "Pre-heated Water",     DATA_STRING, water_preheated ? "ON" : "off",
-                "battery",      "Battery",              DATA_STRING, isBatteryLow ? "Low" : "OK",
+                "battery_ok",      "Battery",              DATA_INT,    !isBatteryLow,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -204,23 +204,23 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "id",
-    "heating",
-    "heating_temp",
-    "water",
-    "battery",
-    NULL
+        "model",
+        "id",
+        "heating",
+        "heating_temp",
+        "water",
+        "battery_ok",
+        NULL,
 };
 
 r_device vaillant_vrt340f = {
-    .name           = "Vaillant calorMatic VRT340f Central Heating Control",
-    .modulation     = OOK_PULSE_DMC,
-    .short_width    = 836,  // half-bit width 836 us
-    .long_width     = 1648, // bit width 1648 us
-    .reset_limit    = 4000,
-    .tolerance      = 120, // us
-    .decode_fn      = &vaillant_vrt340_callback,
-    .disabled       = 0,
-    .fields         = output_fields
+        .name        = "Vaillant calorMatic VRT340f Central Heating Control",
+        .modulation  = OOK_PULSE_DMC,
+        .short_width = 836,  // half-bit width 836 us
+        .long_width  = 1648, // bit width 1648 us
+        .reset_limit = 4000,
+        .tolerance   = 120, // us
+        .decode_fn   = &vaillant_vrt340_callback,
+        .disabled    = 0,
+        .fields      = output_fields,
 };

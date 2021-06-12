@@ -204,7 +204,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Acurite-609TXC",
                 "id",               "",             DATA_INT,    id,
-                "battery",          "",             DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                 "status",           "",             DATA_INT,    status,
@@ -405,7 +405,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "model",            "",                 DATA_STRING, "Acurite-6045M",
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
-            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
             "humidity",         "humidity",         DATA_FORMAT, "%u %%", DATA_INT,    humidity,
             "strike_count",     "strike_count",     DATA_INT,    strike_count,
@@ -547,8 +547,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "id",                   NULL,           DATA_INT,    sensor_id,
             "channel",              NULL,           DATA_STRING, &channel_str,
             "sequence_num",         NULL,           DATA_INT,    sequence_num,
-            "battery_ok",           NULL,           DATA_INT,    !battery_low,
-            "message_type",              NULL,           DATA_INT,    message_type,
+            "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+            "message_type",         NULL,           DATA_INT,    message_type,
             "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
             NULL);
     /* clang-format on */
@@ -739,7 +739,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",                "",             DATA_STRING, "Acurite-Tower",
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
-                    "battery_ok",           "",             DATA_INT,    !battery_low,
+                    "battery_ok",           "Battery",      DATA_INT,    !battery_low,
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
@@ -788,7 +788,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",                "",             DATA_STRING, "Acurite-515",
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
-                    "battery_ok",           "",             DATA_INT,    !battery_low,
+                    "battery_ok",           "Battery",      DATA_INT,    !battery_low,
                     "temperature_F",        "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, tempf,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
@@ -848,7 +848,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",           NULL, DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                        "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                         "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
                         "rain_in",      "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
@@ -875,7 +875,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",           NULL, DATA_INT,  sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                        "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                         "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
@@ -904,7 +904,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
+                        "battery_ok",       "Battery",      DATA_INT,    !!battery_low, // NOTE: is this really flipped?
                         "wind_avg_mi_h",   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
@@ -1078,7 +1078,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING, "Acurite-986",
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
-                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -1103,7 +1103,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int row;
     int16_t temp_raw; // temperature as read from the data packet
     float temp_c;     // temperature in C
-    int battery;      // the battery status: 1 is good, 0 is low
+    int battery_ok;   // the battery status: 1 is good, 0 is low
     int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
@@ -1134,7 +1134,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
     sensor_id = b[0];
-    battery   = (b[1] & 0x80) >> 7;
+    battery_ok = (b[1] & 0x80) >> 7;
     temp_raw  = (int16_t)((b[1] << 12) | (b[2] << 4));
     temp_raw  = temp_raw >> 4;
     temp_c    = temp_raw * 0.1f;
@@ -1143,7 +1143,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_STRING, "Acurite-606TX",
             "id",               "",             DATA_INT, sensor_id,
-            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -1159,7 +1159,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int row;
     int sensor_id; // the sensor ID - basically a random number that gets reset whenever the battery is removed
-    int battery;   // the battery status: 1 is good, 0 is low
+    int battery_ok; // the battery status: 1 is good, 0 is low
     int channel;
     int humidity;
     int temp_raw; // temperature as read from the data packet
@@ -1203,7 +1203,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
     sensor_id = b[0] & 0xFE; //first 6 bits and it changes each time it resets or change the battery
-    battery   = (b[0] & 0x01); //1=ok, 0=low battery
+    battery_ok = (b[0] & 0x01); //1=ok, 0=low battery
     //next 2 bits are checksum
     //next two bits are identify ID (maybe channel ?)
     channel = (b[1] >> 4) & 0x03;
@@ -1221,7 +1221,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "channel",          "Channel",      DATA_INT,    channel,
             "humidity",         "Humidity",     DATA_COND,   humidity != -1,    DATA_INT,    humidity,
             "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -1298,7 +1298,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",            "",             DATA_STRING,    model_flag ? "Acurite-00275rm" : "Acurite-00276rm",
                 "subtype",          "Probe",        DATA_INT,       probe,
                 "id",               "",             DATA_INT,       id,
-                "battery",          "",             DATA_STRING,    battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,       !battery_low,
                 "temperature_C",    "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_FORMAT,    "%u %%", DATA_INT,      humidity,
                 "water",            "",             DATA_COND, probe == 1, DATA_INT,        water,
@@ -1338,7 +1338,7 @@ r_device acurite_rain_896 = {
 static char *acurite_th_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "status",
@@ -1368,7 +1368,7 @@ static char *acurite_txr_output_fields[] = {
         "channel",
         "sequence_num",
         "battery_ok",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "temperature_F",
         "humidity",
@@ -1416,7 +1416,7 @@ static char *acurite_986_output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_F",
         "status",
         NULL,
@@ -1443,7 +1443,7 @@ r_device acurite_986 = {
 static char *acurite_606_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,
@@ -1452,7 +1452,7 @@ static char *acurite_606_output_fields[] = {
 static char *acurite_590_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "channel",
         "temperature_C",
         "humidity",
@@ -1481,7 +1481,7 @@ static char *acurite_00275rm_output_fields[] = {
         "model",
         "subtype",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "water",

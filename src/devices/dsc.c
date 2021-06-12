@@ -217,7 +217,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 "closed",       "",             DATA_INT,    s_closed, // @todo make bool
                 "event",        "",             DATA_INT,    s_event, // @todo make bool
                 "tamper",       "",             DATA_INT,    s_tamper, // @todo make bool
-                "battery_ok",   "",             DATA_INT,    !s_battery_low,
+                "battery_ok",   "Battery",      DATA_INT,    !s_battery_low,
                 "xactivity",    "",             DATA_INT,    s_xactivity, // @todo make bool
 
                 // Note: the following may change or be removed

@@ -431,6 +431,7 @@ static char *output_fields[] = {
         "pump_run_time",
         "actuator_run_time",
         "min_flow_temp",
+        "mic",
         NULL,
 };
 

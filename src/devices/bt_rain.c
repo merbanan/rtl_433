@@ -70,9 +70,9 @@ static int bt_rain_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",                 DATA_STRING, "Biltema-Rain",
-            "id",               "ID",               DATA_INT, id,
-            "channel",          "Channel",          DATA_INT, channel,
-            "battery",          "Battery",          DATA_STRING, battery ? "LOW" : "OK",
+            "id",               "ID",               DATA_INT,    id,
+            "channel",          "Channel",          DATA_INT,    channel,
+            "battery_ok",       "Battery",          DATA_INT,    !battery,
             "transmit",         "Transmit",         DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "rain_rate_mm_h",   "Rain per hour",    DATA_FORMAT, "%.02f mm/h", DATA_DOUBLE, rainrate,
@@ -88,7 +88,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
         "rain_rate_mm_h",

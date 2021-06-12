@@ -83,7 +83,7 @@ static int kerui_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             "opened",       "",                 DATA_COND, cmd == 0x7, DATA_INT, 0,
             "tamper",       "",                 DATA_COND, cmd == 0xb, DATA_INT, 1,
             "water",        "",                 DATA_COND, cmd == 0x5, DATA_INT, 1,
-            "battery_ok",   "",                 DATA_COND, cmd == 0xf, DATA_INT, 0,
+            "battery_ok",   "Battery",          DATA_COND, cmd == 0xf, DATA_INT, 0,
             "state",        "State",            DATA_STRING, cmd_str,
             NULL);
     /* clang-format on */

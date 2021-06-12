@@ -110,7 +110,7 @@ static int cavius_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",        "",             DATA_STRING, "Cavius-Security",
             "id",           "Device ID",    DATA_INT,    sender_id,
-            "battery_ok",   "Battery OK",   DATA_INT,    !batt_low,
+            "battery_ok",   "Battery",      DATA_INT,    !batt_low,
             "net_id",       "Net ID",       DATA_INT,    net_id,
             "message",      "Message",      DATA_INT,    message,
             "text",         "Description",  DATA_STRING, text,

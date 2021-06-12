@@ -304,9 +304,9 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             const uint16_t received_sensor_id = ((current_row[2] << 8) | current_row[1]);
             /* clang-format off */
             data = data_make(
-                    "model", "", DATA_STRING, BLUELINE_MODEL,
-                    "id",    "", DATA_INT, received_sensor_id,
-                    "mic",   "", DATA_STRING, "CRC",
+                    "model",        "",             DATA_STRING, BLUELINE_MODEL,
+                    "id",           "",             DATA_INT,    received_sensor_id,
+                    "mic",          "Integrity",    DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
             decoder_output_data(decoder, data);
@@ -322,10 +322,10 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             const uint16_t ms_per_pulse = offset_payload_u16;
             /* clang-format off */
             data = data_make(
-                    "model", "", DATA_STRING, BLUELINE_MODEL,
-                    "id",    "", DATA_INT, context->current_sensor_id,
-                    "gap",   "", DATA_INT,    ms_per_pulse,
-                    "mic",   "", DATA_STRING, "CRC",
+                    "model",        "",             DATA_STRING, BLUELINE_MODEL,
+                    "id",           "",             DATA_INT,    context->current_sensor_id,
+                    "gap",          "",             DATA_INT,    ms_per_pulse,
+                    "mic",          "Integrity",    DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
             decoder_output_data(decoder, data);
@@ -362,12 +362,12 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             const float temperature_C = (0.436 * temperature) - 30.36;
             /* clang-format off */
             data = data_make(
-                    "model",         "", DATA_STRING, BLUELINE_MODEL,
-                    "id",            "", DATA_INT, context->current_sensor_id,
-                    "flags",         "", DATA_FORMAT, "%02x", DATA_INT, flags,
-                    "battery_ok",    "", DATA_INT,    !battery,
-                    "temperature_C", "", DATA_DOUBLE, temperature_C,
-                    "mic",           "", DATA_STRING, "CRC",
+                    "model",            "",             DATA_STRING, BLUELINE_MODEL,
+                    "id",               "",             DATA_INT,    context->current_sensor_id,
+                    "flags",            "",             DATA_FORMAT, "%02x", DATA_INT, flags,
+                    "battery_ok",       "Battery",      DATA_INT,    !battery,
+                    "temperature_C",    "",             DATA_DOUBLE, temperature_C,
+                    "mic",              "Integrity",    DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
             decoder_output_data(decoder, data);
@@ -377,10 +377,10 @@ static int blueline_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             const uint16_t pulses = offset_payload_u16;
             /* clang-format off */
             data = data_make(
-                    "model",    "", DATA_STRING, BLUELINE_MODEL,
-                    "id",       "", DATA_INT, context->current_sensor_id,
-                    "impulses", "", DATA_INT,    pulses,
-                    "mic",      "", DATA_STRING, "CRC",
+                    "model",            "",             DATA_STRING, BLUELINE_MODEL,
+                    "id",               "",             DATA_INT, context->current_sensor_id,
+                    "impulses",         "",             DATA_INT,    pulses,
+                    "mic",              "Integrity",    DATA_STRING, "CRC",
                     NULL);
             /* clang-format on */
             decoder_output_data(decoder, data);

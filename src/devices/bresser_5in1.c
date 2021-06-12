@@ -129,7 +129,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int rain_raw = (msg[23] & 0x0f) + ((msg[23] & 0xf0) >> 4) * 10 + (msg[24] & 0x0f) * 100;
     float rain = rain_raw * 0.1f;
 
-    int battery_ok = ((msg[25] & 0x80) == 0);
+    int battery_low = (msg[25] & 0x80);
 
     /* check if the message is from a Bresser Professional Rain Gauge */
     if ((msg[15] & 0xF) == 0x9) {
@@ -139,7 +139,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-ProRainGauge",
                 "id",               "",             DATA_INT,    sensor_id,
-                "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
                 "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm",     DATA_DOUBLE, rain,
                 "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
@@ -151,9 +151,9 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         data = data_make(
                 "model",            "",             DATA_STRING, "Bresser-5in1",
                 "id",               "",             DATA_INT,    sensor_id,
-                "battery",          "Battery",      DATA_STRING, battery_ok ? "OK": "LOW",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C",      DATA_DOUBLE, temperature,
-                "humidity",         "Humidity",     DATA_INT, humidity,
+                "humidity",         "Humidity",     DATA_INT,    humidity,
                 "wind_max_m_s",     "Wind Gust",    DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_gust,
                 "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s",    DATA_DOUBLE, wind_avg,
                 "wind_dir_deg",     "Direction",    DATA_FORMAT, "%.1f",        DATA_DOUBLE, wind_direction_deg,
@@ -169,7 +169,7 @@ static int bresser_5in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "wind_max_m_s",

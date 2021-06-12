@@ -372,10 +372,6 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
 static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
 {
-    for (char const **p = fields; *p; ++p) {
-        if (!strcmp(*p, "battery")) *p = "battery_ok";
-    }
-
     if (cfg->conversion_mode == CONVERT_SI) {
         for (char const **p = fields; *p; ++p) {
             if (!strcmp(*p, "temperature_F")) *p = "temperature_C";
@@ -551,21 +547,6 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         }
     }
 #endif
-
-    // replace textual battery key with numerical battery key
-    for (data_t *d = data; d; d = d->next) {
-        if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
-            free(d->key);
-            d->key = strdup("battery_ok");
-            if (!d->key)
-                FATAL_STRDUP("data_acquired_handler()");
-            int ok = d->value.v_ptr && !strcmp(d->value.v_ptr, "OK");
-            free(d->value.v_ptr);
-            d->type = DATA_INT;
-            d->value.v_int = ok;
-            break;
-        }
-    }
 
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {
