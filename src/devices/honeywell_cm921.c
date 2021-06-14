@@ -53,9 +53,9 @@ typedef struct {
 static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
     if (buf && buf_sz > 0)  {
-        char tstr[(buf_sz * 2) + 1]; // note: VLA should not be used
+        char tstr[256] = {0};
         char *p = tstr;
-        for (unsigned i = 0; i < buf_sz; i++, p+=2)
+        for (unsigned i = 0; (i < buf_sz) && (i < 127); i++, p+=2)
             sprintf(p, "%02x", buf[i]);
         *p = '\0';
         data = data_append(data, name, "", DATA_STRING, tstr, NULL);
