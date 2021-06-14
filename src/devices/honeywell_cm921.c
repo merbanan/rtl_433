@@ -14,9 +14,7 @@ Honeywell CM921 Thermostat (subset of Evohome).
 868Mhz FSK, PCM, Start/Stop bits, reversed, Manchester.
 */
 
-#include <malloc.h>
 #include "decoder.h"
-#include "fatal.h"
 
 // #define _DEBUG
 
@@ -55,18 +53,12 @@ typedef struct {
 static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
     if (buf && buf_sz > 0)  {
-        char *tstr = malloc((buf_sz * 2) + 1);
-        if (tstr) {
-            char *p = tstr;
-            for (unsigned i = 0; i < buf_sz; i++, p+=2)
-                sprintf(p, "%02x", buf[i]);
-            *p = '\0';
-            data = data_append(data, name, "", DATA_STRING, tstr, NULL);
-            free(tstr);
-        }
-        else {
-            WARN_MALLOC("add_hex_string");
-        }
+        char tstr[256] = {0}; 
+        char *p = tstr;
+        for (unsigned i = 0; (i < buf_sz) && (i < 127); i++, p+=2)
+            sprintf(p, "%02x", buf[i]);
+        *p = '\0';
+        data = data_append(data, name, "", DATA_STRING, tstr, NULL);
     }
     return data;
 }
