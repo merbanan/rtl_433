@@ -266,6 +266,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [185]  Honeywell CM921 Wireless Programmable Room Thermostat
     [186]  Hyundai TPMS (VDO)
     [187]  RojaFlex shutter and remote devices
+    [188]  Marlec Solar iBoost+ sensors
 
 * Disabled by default, use -R n or -G
 

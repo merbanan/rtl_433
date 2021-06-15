@@ -195,6 +195,7 @@
     DECL(honeywell_cm921) \
     DECL(tpms_hyundai_vdo) \
     DECL(rojaflex) \
+    DECL(marlec_solar) \
 
     /* Add new decoders here. */
 
