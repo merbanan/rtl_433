@@ -5,6 +5,7 @@
     based on protocol analysis by James Cuff and Michele Clamp,
     EcoWitt WH40 analysis by Helmut Bachmann,
     Ecowitt WS68 analysis by Tolip Wen.
+    EcoWitt WH31B analysis by Michael Turk.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -179,6 +180,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int humidity, rain_raw;
     float temp_c;
     char extra[11];
+    uint8_t const wh31e_type_code = 0x30; // 48
+    uint8_t const wh31b_type_code = 0x37; // 55
 
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // (partial) preamble and sync word
 
@@ -189,24 +192,23 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (start_pos == bitbuffer->bits_per_row[row])
             continue; // DECODE_ABORT_EARLY
         if (decoder->verbose)
-            fprintf(stderr, "%s: WH31E/WH40 detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
+            fprintf(stderr, "%s: WH31E/WH31B/WH40 detected, buffer is %d bits length\n", __func__, bitbuffer->bits_per_row[row]);
 
         // remove preamble, keep whole payload
         bitbuffer_extract_bytes(bitbuffer, row, start_pos + 24, b, 18 * 8);
         msg_type = b[0];
 
-        if (msg_type == 0x30) {
-            // WH31E
+        if (msg_type == wh31e_type_code || msg_type == wh31b_type_code) {
             uint8_t c_crc = crc8(b, 6, 0x31, 0x00);
             if (c_crc) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E bad CRC\n", __func__);
+                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad CRC\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
             uint8_t c_sum = add_bytes(b, 6) - b[6];
             if (c_sum) {
                 if (decoder->verbose)
-                    fprintf(stderr, "%s: WH31E bad SUM\n", __func__);
+                    fprintf(stderr, "%s: WH31E/WH31B (%d) bad SUM\n", __func__, msg_type);
                 continue; // DECODE_FAIL_MIC
             }
 
@@ -220,7 +222,8 @@ static int ambientweather_whx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",            "",             DATA_STRING, "AmbientWeather-WH31E",
+                    "model",            "",             DATA_COND, msg_type == 0x30, DATA_STRING, "AmbientWeather-WH31E",
+                    "model",            "",             DATA_COND, msg_type == 0x37, DATA_STRING, "AmbientWeather-WH31B",
                     "id" ,              "",             DATA_INT,    id,
                     "channel",          "Channel",      DATA_INT,    channel,
                     "battery_ok",       "Battery",      DATA_INT,    battery_ok,
