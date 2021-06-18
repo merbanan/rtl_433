@@ -117,14 +117,15 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else {
         chk = crc8(b, 8, 0x31, 0x00);
         if (b[10] != 0 || chk != 0) { // make sure this really is a LTV-R1 and not just a CRC collision
-            if (decoder->verbose || 1) {
+            if (decoder->verbose) {
                 fprintf(stderr, "%s: CRC failed!\n", __func__);
             }
+            else // FIXME: WIP, this exception is for debugging only
             return DECODE_FAIL_MIC;
         }
     }
 
-    if (decoder->verbose || 1) {
+    if (decoder->verbose) {
         bitrow_printf(b, bitbuffer->bits_per_row[0] - offset, "%s: ", __func__);
     }
 
@@ -147,7 +148,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "flags",            "unknown",          DATA_INT,    flags,
             "rain1",            "raw_rain1",        DATA_INT,    raw_rain1,
             "rain2",            "raw_rain2",        DATA_COND, rev == 3, DATA_INT,    raw_rain2,
-            "mic",              "Integrity",        DATA_STRING, "CRC",
+            "mic",              "Integrity",        DATA_COND, !chk, DATA_STRING, "CRC", // FIXME: COND for debugging only
             NULL);
     /* clang-format on */
 
