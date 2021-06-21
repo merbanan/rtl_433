@@ -823,7 +823,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //  1101 xxxx  = channel A 2nd copy
             //  1110 xxxx  = channel A 3rd copy
             sequence_num = (bb[0] & 0x30) >> 4;
-            battery_low = (bb[2] & 0x40) >> 6;
+            battery_low = (bb[2] & 0x40) == 0;
 
             // Only for 5N1, range: 0 to 159 kph
             // raw number is cup rotations per 4 seconds
