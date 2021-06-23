@@ -1013,6 +1013,7 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose
     /* Open SoapySDR otherwise, if available */
     return sdr_open_soapy(out_dev, sample_size, dev_query, verbose);
 #endif
+    fprintf(stderr, "No input driver for SoapySDR compiled in.\n");
 
     return -1;
 }
