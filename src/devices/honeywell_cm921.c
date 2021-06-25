@@ -53,11 +53,8 @@ typedef struct {
 static data_t *add_hex_string(data_t *data, const char *name, const uint8_t *buf, size_t buf_sz)
 {
     if (buf && buf_sz > 0)  {
-        char tstr[256] = {0};
-        char *p = tstr;
-        for (unsigned i = 0; (i < buf_sz) && (i < 127); i++, p+=2)
-            sprintf(p, "%02x", buf[i]);
-        *p = '\0';
+        char tstr[256];
+        bitrow_snprint(buf, buf_sz * 8, tstr, sizeof (tstr));
         data = data_append(data, name, "", DATA_STRING, tstr, NULL);
     }
     return data;

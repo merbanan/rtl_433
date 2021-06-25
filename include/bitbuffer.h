@@ -70,6 +70,7 @@ void bitrow_print(uint8_t const *bitrow, unsigned bit_len);
 void bitrow_debug(uint8_t const *bitrow, unsigned bit_len);
 
 /// Print the content of a bit row (byte buffer) to a string buffer.
+/// The output is always null-terminated, unless size is 0.
 int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size);
 
 /// Parse a string into a bitbuffer.
