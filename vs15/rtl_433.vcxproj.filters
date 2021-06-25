@@ -613,7 +613,10 @@
     <ClCompile Include="..\src\devices\solight_te44.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\somfy.c">
+    <ClCompile Include="..\src\devices\somfy_iohc.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\somfy_rts.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\springfield.c">

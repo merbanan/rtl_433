@@ -267,6 +267,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [186]  Hyundai TPMS (VDO)
     [187]  RojaFlex shutter and remote devices
     [188]  Marlec Solar iBoost+ sensors
+    [189]  Somfy io-homecontrol
 
 * Disabled by default, use -R n or -G
 
