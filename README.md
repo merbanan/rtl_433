@@ -268,6 +268,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [187]  RojaFlex shutter and remote devices
     [188]  Marlec Solar iBoost+ sensors
     [189]  Somfy io-homecontrol
+    [190]  Ambient Weather (Fine Offset) WH31L Lightning-Strike sensor
 
 * Disabled by default, use -R n or -G
 
