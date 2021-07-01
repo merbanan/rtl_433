@@ -70,8 +70,6 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble[] = {0xaa, 0x2d, 0xd4}; // (partial) preamble and sync word
 
-    bitbuffer_printf(bitbuffer, "%s: ", __func__);
-
     int row = 0;
     // Search for preamble and sync-word
     unsigned start_pos = bitbuffer_search(bitbuffer, row, 0, preamble, 24);
