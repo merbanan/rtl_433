@@ -21,10 +21,10 @@ Microchip HCS200 KeeLoq Code Hopping Encoder based remotes.
 
 Datasheet: DS40138C http://ww1.microchip.com/downloads/en/DeviceDoc/40138c.pdf
 
-The preamble of 12 short pulses is followed by a long 4400 us gap.
+The warmup of 12 short pulses is followed by a long 4400 us gap.
 There are two packets with a 17500 us gap.
 
-rtl_433 -R 0 -X 'n=name,m=OOK_PWM,s=370,l=772,r=14000,g=4000,t=152,y=0,preamble={12}0xfff'
+rtl_433 -R 0 -X 'n=hcs200,m=OOK_PWM,s=370,l=772,r=9000,g=1500,t=152'
 */
 
 #include "decoder.h"
@@ -33,7 +33,6 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     uint8_t *b = bitbuffer->bb[0];
-    int i;
     uint32_t encrypted, serial, encrypted_rev, serial_rev;
     char encrypted_str[9];
     char encrypted_rev_str[9];
@@ -47,7 +46,7 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Reject codes with an incorrect preamble (expected 0xfff)
     if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
         if (decoder->verbose > 1)
-            fprintf(stderr, "HCS200: Preamble not found\n");
+            fprintf(stderr, "%s: Preamble not found\n", __func__);
         return DECODE_ABORT_EARLY;
     }
 

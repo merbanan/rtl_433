@@ -71,10 +71,6 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: matched ", __func__);
-    }
-
     // reject false positives
     if ((bytes[8] == 0) && (bytes[9] == 0) && (bytes[10] == 0) && (bytes[11] == 0)) {
         return DECODE_FAIL_SANITY;

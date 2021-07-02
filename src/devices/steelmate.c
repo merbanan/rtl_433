@@ -36,10 +36,6 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    //if (decoder->verbose) {
-    //  bitbuffer_printf(bitbuffer, "Steelmate TPMS decoder: ");
-    //}
-
     bitrow_t *bb = bitbuffer->bb;
 
     //Loop through each row of data

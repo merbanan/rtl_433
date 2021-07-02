@@ -210,6 +210,14 @@ void r_free_cfg(r_cfg_t *cfg)
 
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 {
+    // use arg of 'v', 'vv', 'vvv' as device verbosity
+    int dev_verbose = 0;
+    if (arg && arg[0] == 'v' && (!arg[1] || (arg[1] == 'v' && (!arg[2] || arg[2] == 'v')))) {
+        dev_verbose = strlen(arg);
+        arg = NULL;
+    }
+
+    // use any other arg as device parameter
     r_device *p;
     if (r_dev->create_fn) {
         p = r_dev->create_fn(arg);
@@ -224,7 +232,7 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    p->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
+    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 0 ? cfg->verbosity - 1 : 0);
     p->verbose_bits = cfg->verbose_bits;
 
     p->output_fn  = data_acquired_handler;

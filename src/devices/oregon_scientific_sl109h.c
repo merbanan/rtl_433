@@ -64,7 +64,7 @@ static int oregon_scientific_sl109h_callback(r_device *decoder, bitbuffer_t *bit
         sum = add_nibbles(b, 5) & 0xf;
         if (sum != chk) {
             if (decoder->verbose > 1)
-                bitbuffer_printf(bitbuffer, "Checksum error in Oregon Scientific SL109H message.  Expected: %01x  Calculated: %01x\n", chk, sum);
+                bitbuffer_printf(bitbuffer, "%s: Checksum error. Expected: %01x Calculated: %01x\n", __func__, chk, sum);
             continue; // DECODE_FAIL_MIC
         }
 

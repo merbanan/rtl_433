@@ -113,10 +113,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
             fprintf(stderr, "%s: row %d bit count %d\n", __func__,
