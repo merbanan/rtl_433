@@ -103,6 +103,15 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose);
 */
 int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose);
 
+/** Set tuner gain or gain elements, optionally report status.
+
+    @param dev the device handle
+    @param agc, 1 enabled, 0 disabled
+    @param verbose the verbosity level for reports to stderr
+    @return 0 on success
+*/
+int sdr_set_agc_mode(sdr_dev_t *dev, int agc, int verbose);
+
 /** Set device sample rate, optionally report status.
 
     @param dev the device handle
