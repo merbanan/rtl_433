@@ -1186,7 +1186,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
-        r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 0);
+		r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 0);
 #endif
 
     if (verbose) {
@@ -1246,11 +1246,21 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
     }
 
 #ifdef RTLSDR
-    /* Enable manual gain */
+    /* Enable manual gain mode */
     r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 1);
     if (verbose)
         if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable manual gain.\n");
+            fprintf(stderr, "WARNING: Failed to enable manual gain mode.\n");
+		else
+			fprintf(stderr, "Manual gain mode enabled\n");
+
+	/* Enable the internal digital AGC of the RTL2832 */
+	r = rtlsdr_set_agc_mode(dev->rtlsdr_dev, 1);
+	if (verbose)
+        if (r < 0)
+            fprintf(stderr, "WARNING: Failed to enable the internal digital AGC.\n");
+		else
+			fprintf(stderr, "Internal digital AGC enabled\n");
 
     /* Set the tuner gain */
     gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
