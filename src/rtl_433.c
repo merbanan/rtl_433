@@ -669,6 +669,7 @@ static struct conf_keywords const conf_keywords[] = {
         {"device", 'd'},
         {"settings", 't'},
         {"gain", 'g'},
+        {"agc",'B'},
         {"frequency", 'f'},
         {"hop_interval", 'H'},
         {"ppm_error", 'p'},
@@ -812,7 +813,10 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         if (!cfg->gain_str)
             FATAL_STRDUP("parse_conf_option()");
         break;
-    case 'G':
+	case 'B':
+		cfg->agc = 1;
+		break;
+	case 'G':
         if (atobv(arg, 1) == 4) {
             fprintf(stderr, "\n\tUse -G for testing only. Enable protocols with -R if you really need them.\n\n");
             cfg->no_default_devices = 1;
@@ -1674,6 +1678,9 @@ int main(int argc, char **argv) {
 
     /* Enable automatic gain if gain_str empty (or 0 for RTL-SDR), set manual gain otherwise */
     r = sdr_set_tuner_gain(cfg->dev, cfg->gain_str, 1); // always verbose
+
+	/* Enable/Disable the internal digital AGC of the RTL2832 */
+	r = sdr_set_agc_mode(cfg->dev, cfg->agc, 1); // always verbose
 
     if (cfg->ppm_error)
         r = sdr_set_freq_correction(cfg->dev, cfg->ppm_error, 1); // always verbose
