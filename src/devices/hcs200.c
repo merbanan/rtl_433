@@ -1,5 +1,5 @@
 /** @file
-    Microchip HCS200 KeeLoq Code Hopping Encoder based remotes.
+    Microchip HCS200/HCS300 KeeLoq Code Hopping Encoder based remotes.
 
     Copyright (C) 2019, 667bdrm
 
@@ -9,17 +9,21 @@
     (at your option) any later version.
 */
 /**
-Microchip HCS200 KeeLoq Code Hopping Encoder based remotes.
+Microchip HCS200/HCS300 KeeLoq Code Hopping Encoder based remotes.
 
-66 bits transmitted, LSB first
+66 bits transmitted, LSB first.
 
 |  0-31 | Encrypted Portion
 | 32-59 | Serial Number
-| 60-63 | Button Status
+| 60-63 | Button Status (S3, S0, S1, S2)
 |  64   | Battery Low
 |  65   | Fixed 1
 
-Datasheet: DS40138C http://ww1.microchip.com/downloads/en/DeviceDoc/40138c.pdf
+Note that the button bits are (MSB/first sent to LSB) S3, S0, S1, S2.
+Hardware buttons might map to combinations of these bits.
+
+- Datasheet HCS200: http://ww1.microchip.com/downloads/en/devicedoc/40138c.pdf
+- Datasheet HCS300: http://ww1.microchip.com/downloads/en/devicedoc/21137g.pdf
 
 The warmup of 12 short pulses is followed by a long 4400 us gap.
 There are two packets with a 17500 us gap.
@@ -31,18 +35,11 @@ rtl_433 -R 0 -X 'n=hcs200,m=OOK_PWM,s=370,l=772,r=9000,g=1500,t=152'
 
 static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    data_t *data;
-    uint8_t *b = bitbuffer->bb[0];
-    uint32_t encrypted, serial, encrypted_rev, serial_rev;
-    char encrypted_str[9];
-    char encrypted_rev_str[9];
-    char serial_str[9];
-    char serial_rev_str[9];
-
     // Reject codes of wrong length
     if (bitbuffer->bits_per_row[0] != 12 || bitbuffer->bits_per_row[1] != 66)
         return DECODE_ABORT_LENGTH;
 
+    uint8_t *b = bitbuffer->bb[0];
     // Reject codes with an incorrect preamble (expected 0xfff)
     if (b[0] != 0xff || (b[1] & 0xf0) != 0xf0) {
         if (decoder->verbose > 1)
@@ -62,29 +59,29 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_SANITY;
     }
 
-    encrypted     = ((unsigned)b[0] << 24) | (b[1] << 16) | (b[2] << 8) | (b[3]);
-    serial        = (b[4] << 20) | (b[5] << 12) | (b[6] << 4) | (b[7] >> 4);
-    encrypted_rev = reverse32(encrypted);
-    serial_rev    = reverse32(serial);
+    // The transmission is LSB first, big endian.
+    uint32_t encrypted = ((unsigned)reverse8(b[3]) << 24) | (reverse8(b[2]) << 16) | (reverse8(b[1]) << 8) | (reverse8(b[0]));
+    int serial         = (reverse8(b[7] & 0xf0) << 20) | (reverse8(b[6]) << 16) | (reverse8(b[5]) << 8) | (reverse8(b[4]));
+    int btn            = (b[7] & 0x0f);
+    int btn_num        = (btn & 0x08) | ((btn & 0x01) << 2) | (btn & 0x02) | ((btn & 0x04) >> 2); // S3, S0, S1, S2
+    int learn          = (b[7] & 0x0f) == 0x0f;
+    int battery_low    = (b[8] & 0x80) == 0x80;
+    int repeat         = (b[8] & 0x40) == 0x40;
 
+    char encrypted_str[9];
     sprintf(encrypted_str, "%08X", encrypted);
-    sprintf(serial_str, "%08X", serial);
-    sprintf(encrypted_rev_str, "%08X", encrypted_rev);
-    sprintf(serial_rev_str, "%08X", serial_rev);
+    char serial_str[9];
+    sprintf(serial_str, "%07X", serial);
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",         DATA_STRING,    "Microchip-HCS200",
-            "id",               "",         DATA_STRING,    serial_str,
-            "id_rev",           "",         DATA_STRING,    serial_rev_str,
-            "encrypted",        "",         DATA_STRING,    encrypted_str,
-            "encrypted_rev",    "",         DATA_STRING,    encrypted_rev_str,
-            "button1",          "",         DATA_STRING,    ((b[7] & 0x04) == 0x04) ? "ON" : "OFF",
-            "button2",          "",         DATA_STRING,    ((b[7] & 0x02) == 0x02) ? "ON" : "OFF",
-            "button3",          "",         DATA_STRING,    ((b[7] & 0x09) == 0x09) ? "ON" : "OFF",
-            "button4",          "",         DATA_STRING,    ((b[7] & 0x06) == 0x06) ? "ON" : "OFF",
-            "misc",             "",         DATA_STRING,    (b[7] == 0x0F) ? "ALL_PRESSED" : "",
-            "battery_ok",       "Battery",  DATA_INT,       (((b[8] >> 4) & 0x08) == 0x08) ? 0 : 1,
+    data_t *data = data_make(
+            "model",            "",             DATA_STRING,    "Microchip-HCS200",
+            "id",               "",             DATA_STRING,    serial_str,
+            "battery_ok",       "Battery",      DATA_INT,       !battery_low,
+            "button",           "Button",       DATA_INT,       btn_num,
+            "learn",            "Learn mode",   DATA_INT,       learn,
+            "repeat",           "Repeat",       DATA_INT,       repeat,
+            "encrypted",        "",             DATA_STRING,    encrypted_str,
             NULL);
     /* clang-format on */
 
@@ -95,20 +92,16 @@ static int hcs200_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "id_rev",
-        "encrypted",
-        "encrypted_rev",
-        "button1",
-        "button2",
-        "button3",
-        "button4",
-        "misc",
         "battery_ok",
+        "button",
+        "learn",
+        "repeat",
+        "encrypted",
         NULL,
 };
 
 r_device hcs200 = {
-        .name        = "Microchip HCS200 KeeLoq Hopping Encoder based remotes",
+        .name        = "Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes",
         .modulation  = OOK_PULSE_PWM,
         .short_width = 370,
         .long_width  = 772,

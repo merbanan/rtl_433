@@ -209,7 +209,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [128]  DirecTV RC66RX Remote Control
     [129]* Eurochron temperature and humidity sensor
     [130]  IKEA Sparsnas Energy Meter Monitor
-    [131]  Microchip HCS200 KeeLoq Hopping Encoder based remotes
+    [131]  Microchip HCS200/HCS300 KeeLoq Hopping Encoder based remotes
     [132]  TFA Dostmann 30.3196 T/H outdoor sensor
     [133]  Rubicson 48659 Thermometer
     [134]  Holman Industries iWeather WS5029 weather station (newer PCM)
