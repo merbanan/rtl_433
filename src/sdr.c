@@ -1186,7 +1186,7 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
 
 #ifdef RTLSDR
     if (dev->rtlsdr_dev)
-		r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 0);
+	r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 0);
 #endif
 
     if (verbose) {
