@@ -1198,6 +1198,36 @@ int sdr_set_auto_gain(sdr_dev_t *dev, int verbose)
     return r;
 }
 
+int sdr_set_agc_mode(sdr_dev_t *dev, int agc, int verbose)
+{
+	if (!dev)
+		return -1;
+	
+	if (!agc)
+		return 0;
+	
+	int r = -1;
+		
+	if (dev->rtl_tcp)
+		r = rtltcp_command(dev, RTLTCP_SET_AGC_MODE, agc);
+		
+#ifdef RTLSDR
+	if (dev->rtlsdr_dev)
+		r = rtlsdr_set_agc_mode(dev->rtlsdr_dev, agc);
+#endif
+
+	
+    if (verbose) {
+        if (r < 0)
+			fprintf(stderr, "WARNING: Failed to enable the internal digital AGC.\n");
+		else
+			fprintf(stderr, "Internal digital AGC enabled\n");
+    }
+
+	return r;
+
+}
+
 int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 {
     if (!dev)
@@ -1248,19 +1278,12 @@ int sdr_set_tuner_gain(sdr_dev_t *dev, char const *gain_str, int verbose)
 #ifdef RTLSDR
     /* Enable manual gain mode */
     r = rtlsdr_set_tuner_gain_mode(dev->rtlsdr_dev, 1);
-    if (verbose)
+	if (verbose) {
         if (r < 0)
             fprintf(stderr, "WARNING: Failed to enable manual gain mode.\n");
 		else
 			fprintf(stderr, "Manual gain mode enabled\n");
-
-	/* Enable the internal digital AGC of the RTL2832 */
-	r = rtlsdr_set_agc_mode(dev->rtlsdr_dev, 1);
-	if (verbose)
-        if (r < 0)
-            fprintf(stderr, "WARNING: Failed to enable the internal digital AGC.\n");
-		else
-			fprintf(stderr, "Internal digital AGC enabled\n");
+	}
 
     /* Set the tuner gain */
     gain = rtlsdr_find_tuner_gain(dev, gain, verbose);
