@@ -21,7 +21,7 @@ See also Frank 'SevenW' page ( https://www.sevenwatt.com/main/wh1080-protocol-v2
 For the WH1080 part I mostly have re-elaborated and merged their works. Credits (and kudos) should go to them all
 (and to many others too).
 
-Reports 1 row, 88 pulses.
+Two packets are sent 31 ms apart. Reports 1 row, 88 pulses.
 
 Data layout:
 
@@ -147,7 +147,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
         br = bbuf;
         br[0] = 0xFF; // Emulate OOK payload
         preamble = EPB;
-    } else if (bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
+    }
+    else if (bitbuffer->bits_per_row[0] >= 88 && bitbuffer->bits_per_row[0] < 100) { // FineOffset WH1080/3080 Weather data msg
         preamble = EPB;
         sens_msg = 10;
         br = bitbuffer->bb[0];
@@ -164,7 +165,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
         preamble = EPB;
         sens_msg = 7;
         br = bitbuffer->bb[0];
-
     }
     else if (bitbuffer->bits_per_row[0] == 63) { // FineOffset WH3080 UV/Light data msg (different version (newest?))
         preamble = SPB;
@@ -179,7 +179,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     if (decoder->verbose) {
-        bitrow_printf(bbuf, sens_msg * 8, "Fine Offset WH1080 data ");
+        bitrow_printf(br, sens_msg * 8, "Fine Offset WH1080 data ");
     }
 
     if (br[0] != 0xff) {
@@ -216,7 +216,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     if (type == TYPE_OOK) {
         temp_raw      = ((br[2] & 0x03) << 8) | br[3]; // only 10 bits, discard top bits
         temperature  = (temp_raw - 400) * 0.1f;
-    } else {
+    }
+    else {
         temp_raw      = ((br[2] & 0x0F) << 8) | br[3];
         if (temp_raw & 0x800) {
             temp_raw &= 0x7FF; // remove sign bit
