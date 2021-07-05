@@ -31,13 +31,30 @@ Data layout:
     YY SI II II FF KK CC XX AA ?? ?
 
 - Y: 8 bit fixed Type Code of 0x57
-- S: 4 bit state indicator: maybe 0: start-up, 4: strike, 8: past-strikes
+- S: 4 bit state indicator: 0: start-up, 1: interference, 4: noise, 8: strike
 - I: 20 bit device ID
-- F: 20 bit flags: (battery low seems to be the 2-bit on the first byte)
+- F: 10 bit flags: (battery low seems to be the 1+2-bit on the first byte)
 - K: 6 bit estimated distance to front of storm, 1 to 25 miles / 1 to 40 km, 63 is invalid/no strike
 - C: 8 bit lightning strike count
 - X: 8 bit CRC-8, poly 0x31, init 0x00
 - A: 8 bit SUM-8
+
+State field:
+
+- 8: lightning strike detected
+- 4: EMP noise
+- 1: detection of interference
+- 0: battery change / reboot
+
+Flags:
+
+    0000 0BB1 ??
+
+With battery (B) readings of
+
+- 2 at 3.2V
+- 1 at 2.6V
+- 0 at 2.3V
 
 Example packets:
 
@@ -104,18 +121,30 @@ static int fineoffset_wh31l_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int state      = (b[1] >> 4);
     int id         = ((b[1] & 0xf) << 16) | (b[2] << 8) | (b[3]);
-    int flags      = (b[4] << 4) | (b[5] >> 4);
-    int battery_ok = (b[4] & 0x02) == 0;
+    int flags      = (state << 12) | (b[4] << 4) | (b[5] >> 4);
+    int battery_ok = (b[4] & 0x06) >> 1; // 0 to 2
     int s_dist     = (b[5] & 0x3f);
     int s_count    = (b[6]);
+
+    char *state_str;
+    if (state == 0)
+        state_str = "reset";
+    else if (state == 1)
+        state_str = "interference";
+    else if (state == 4)
+        state_str = "noise";
+    else if (state == 8)
+        state_str = "strike";
+    else
+        state_str = "unknown";
 
     /* clang-format off */
     data_t *data = data_make(
             "model",            "",                 DATA_STRING, "FineOffset-WH31L",
             "id" ,              "",                 DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    battery_ok,
-            "state",            "State",            DATA_FORMAT, "%01x", DATA_INT,    state,
-            "flags",            "Flags",            DATA_FORMAT, "%03x", DATA_INT,    flags,
+            "battery_ok",       "Battery",          DATA_DOUBLE, battery_ok * 0.5f,
+            "state",            "State",            DATA_STRING, state_str,
+            "flags",            "Flags",            DATA_FORMAT, "%04x", DATA_INT,    flags,
             "storm_dist_km",    "Storm Dist",       DATA_COND, s_dist != 63, DATA_FORMAT, "%d km", DATA_INT,    s_dist,
             "strike_count",     "Strike Count",     DATA_INT,    s_count,
             "mic",              "Integrity",        DATA_STRING, "CRC",
