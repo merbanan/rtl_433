@@ -373,7 +373,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         demod->noise_level = demod->min_level_auto - 3.0f;
     }
     int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
-    int process_frame = !noise_only || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
+    // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
+    int process_frame = !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
     if (noise_only) {
         demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // average over 8 frames
         if (demod->noise_level < demod->min_level - 3.0f
