@@ -134,7 +134,7 @@ static void usage(int exit_code)
             "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
+            "  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
@@ -253,7 +253,7 @@ static void help_meta(void)
 {
     term_help_printf(
             "\t\t= Meta information option =\n"
-            "  [-M time[:<options>]|protocol|level|stats|bits] Add various metadata to every output line.\n"
+            "  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
             "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
@@ -266,6 +266,7 @@ static void help_meta(void)
             "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
+            "\tUse \"noise[:secs]\" to report estimated noise level at intervals (default: 10 seconds).\n"
             "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
             "\t  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all\n"
             "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");
@@ -325,6 +326,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->exit_async = 1;
     }
 
+    // save last frame time to see if a new second started
+    time_t last_frame_sec = demod->now.tv_sec;
     get_time_now(&demod->now);
 
     n_samples = len / 2 / demod->sample_size;
@@ -380,9 +383,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
         }
     }
-    // TODO: this prints for all frames within this second...
-    if (cfg->report_noise && demod->now.tv_sec % cfg->report_noise == 0)
+    // Report noise every report_noise seconds, but only for the first frame that second
+    if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
         fprintf(stderr, "Current level %.1f dB, estimated noise %.1f dB\n", avg_db, demod->noise_level);
+    }
 
     if (process_frame)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
@@ -985,7 +989,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
         else if (!strcasecmp(arg, "noise"))
-            cfg->report_noise = atoiv(arg_param(arg), 10);
+            cfg->report_noise = atoiv(arg_param(arg), 10); // atoi_time_default()
         else if (!strcasecmp(arg, "bits"))
             cfg->verbose_bits = 1;
         else if (!strcasecmp(arg, "description"))
@@ -998,7 +1002,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             // there also should be options to set wether to flush on report
             char *p = arg_param(arg);
             cfg->report_stats = atoiv(p, 1);
-            cfg->stats_interval = atoiv(arg_param(p), 600);
+            cfg->stats_interval = atoiv(arg_param(p), 600); // atoi_time_default()
             time(&cfg->stats_time);
             cfg->stats_time += cfg->stats_interval;
         }

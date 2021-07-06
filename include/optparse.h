@@ -106,7 +106,7 @@ uint32_t atouint32_metric(char const *str, char const *error_hint);
 ///
 /// @param str character string to parse
 /// @param error_hint prepended to error output
-/// @return parsed number value
+/// @return parsed number value in seconds
 int atoi_time(char const *str, char const *error_hint);
 
 /// Similar to strsep.
