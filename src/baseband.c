@@ -29,8 +29,8 @@ static void calc_squares()
 }
 
 static int noise4 = 0;
-static int noise10 = 0;
-static int noise20 = 0;
+static int noise16 = 0;
+static int noise64 = 0;
 static int noise_cnt = 0;
 
 // This will give a noisy envelope of OOK/ASK signals.
@@ -44,21 +44,22 @@ float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         sum += y_buf[i];
     }
 
+    // TODO: debugging only
     int avg = len > 0 ? sum / len : 0;
     if (noise4 == 0) {
         noise4  = avg;
-        noise10 = avg;
-        noise20 = avg;
+        noise16 = avg;
+        noise64 = avg;
     }
     if (avg / noise4 <= 1) { // 3 dB margin
         noise4  = (noise4 * 3 + avg) / 4;
-        noise10 = (noise10 * 9 + avg) / 10;
-        noise20 = (noise20 * 19 + avg) / 20;
+        noise16 = (noise16 * 15 + avg) / 16;
+        noise64 = (noise64 * 63 + avg) / 64;
     }
-    if (++noise_cnt % 10 == 0)
-        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
-                sum, len, avg, AMP_TO_DB(avg), AMP_TO_DB((float)sum / len),
-                AMP_TO_DB(noise4), AMP_TO_DB(noise10), AMP_TO_DB(noise20), AMP_TO_DB(noise4 * 2));
+    if (++noise_cnt % 120 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise4 %.1f dB  Noise16 %.1f dB  Noise64 %.1f dB  level %.1f dB\n",
+                sum, len, avg, AMP_TO_DB(avg),
+                AMP_TO_DB(noise4), AMP_TO_DB(noise16), AMP_TO_DB(noise64), AMP_TO_DB(noise4 * 2));
 
     return len > 0 ? AMP_TO_DB((float)sum / len) : 0;
 }
@@ -92,21 +93,22 @@ float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         sum += y_buf[i];
     }
 
+    // TODO: debugging only
     int avg = len > 0 ? sum / len : 0;
     if (noise4 == 0) {
         noise4  = avg;
-        noise10 = avg;
-        noise20 = avg;
+        noise16 = avg;
+        noise64 = avg;
     }
     if (avg / noise4 <= 1) { // 3 dB margin
         noise4  = (noise4 * 3 + avg) / 4;
-        noise10 = (noise10 * 9 + avg) / 10;
-        noise20 = (noise20 * 19 + avg) / 20;
+        noise16 = (noise16 * 15 + avg) / 16;
+        noise64 = (noise64 * 63 + avg) / 64;
     }
-    if (++noise_cnt % 10 == 0)
-        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
-                sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
-                MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
+    if (++noise_cnt % 120 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise4 %.1f dB  Noise16 %.1f dB  Noise64 %.1f dB  level %.1f dB\n",
+                sum, len, avg, MAG_TO_DB(avg),
+                MAG_TO_DB(noise4), MAG_TO_DB(noise16), MAG_TO_DB(noise64), MAG_TO_DB(noise4 * 2));
 
     return len > 0 ? MAG_TO_DB((float)sum / len) : 0;
 }
@@ -137,21 +139,22 @@ float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         sum += y_buf[i];
     }
 
+    // TODO: debugging only
     int avg = len > 0 ? sum / len : 0;
     if (noise4 == 0) {
         noise4  = avg;
-        noise10 = avg;
-        noise20 = avg;
+        noise16 = avg;
+        noise64 = avg;
     }
     if (avg / noise4 <= 1) { // 3 dB margin
         noise4  = (noise4 * 3 + avg) / 4;
-        noise10 = (noise10 * 9 + avg) / 10;
-        noise20 = (noise20 * 19 + avg) / 20;
+        noise16 = (noise16 * 15 + avg) / 16;
+        noise64 = (noise64 * 63 + avg) / 64;
     }
-    if (++noise_cnt % 10 == 0)
-        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
-                sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
-                MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
+    if (++noise_cnt % 120 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise4 %.1f dB  Noise16 %.1f dB  Noise64 %.1f dB  level %.1f dB\n",
+                sum, len, avg, MAG_TO_DB(avg),
+                MAG_TO_DB(noise4), MAG_TO_DB(noise16), MAG_TO_DB(noise64), MAG_TO_DB(noise4 * 2));
 
     return len > 0 ? MAG_TO_DB((float)sum / len) : 0;
 }

@@ -364,10 +364,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
     //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, noise, demod->min_level);
     if (demod->noise_level == 0.0f || demod->noise_level + 3.0f > noise) {
-        demod->noise_level = (demod->noise_level * 3 + noise) / 4;
-        if (fabsf(demod->min_level - demod->noise_level - 3.0f) > 1.0f) {
+        demod->noise_level = (demod->noise_level * 3 + noise) / 4; // average over 4 frames
+        if (demod->noise_level < -15.0f && fabsf(demod->min_level - demod->noise_level - 3.0f) > 1.0f) {
             demod->min_level = demod->noise_level + 3.0f;
-            fprintf(stderr, "adjusting minimum detection level to %.1f dB\n", demod->min_level);
+            fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
         }
     }
