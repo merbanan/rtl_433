@@ -362,20 +362,28 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
         avg_db = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
     }
-    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, avg_db, demod->min_level);
-    if (demod->noise_level == 0.0f) {
-        demod->noise_level = demod->min_level - 3.0f;
+    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, avg_db, demod->min_level_auto);
+    if (demod->min_level_auto == 0.0f) {
+        demod->min_level_auto = demod->min_level;
     }
-    int noise_only = avg_db < demod->noise_level + 3.0f;
+    if (demod->noise_level == 0.0f) {
+        demod->noise_level = demod->min_level_auto - 3.0f;
+    }
+    int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
     int process_frame = !noise_only || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
     if (noise_only) {
-        demod->noise_level = (demod->noise_level * 3 + avg_db) / 4; // average over 4 frames
-        if (demod->noise_level < -15.0f && fabsf(demod->min_level - demod->noise_level - 3.0f) > 1.0f) {
-            demod->min_level = demod->noise_level + 3.0f;
-            fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level);
-            pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
+        demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // average over 8 frames
+        if (demod->noise_level < demod->min_level - 3.0f
+                && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
+            demod->min_level_auto = demod->noise_level + 3.0f;
+            fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level_auto);
+            pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
         }
     }
+    // TODO: this prints for all frames within this second...
+    if (cfg->report_noise && demod->now.tv_sec % cfg->report_noise == 0)
+        fprintf(stderr, "Current level %.1f dB, estimated noise %.1f dB\n", avg_db, demod->noise_level);
+
     if (process_frame)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
@@ -976,6 +984,8 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_protocol = 0;
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
+        else if (!strcasecmp(arg, "noise"))
+            cfg->report_noise = atoiv(arg_param(arg), 10);
         else if (!strcasecmp(arg, "bits"))
             cfg->verbose_bits = 1;
         else if (!strcasecmp(arg, "description"))

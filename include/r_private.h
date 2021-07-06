@@ -19,6 +19,7 @@
 struct dm_state {
     float level_limit;
     float noise_level;
+    float min_level_auto;
     float min_level;
     float min_snr;
     float low_pass;
