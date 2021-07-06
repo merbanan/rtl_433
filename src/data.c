@@ -249,7 +249,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             break;
         case DATA_ARRAY:
             value_release = (value_release_fn)data_array_free; // appease CSA checker
-            value.v_ptr = va_arg(ap, data_t *);
+            value.v_ptr = va_arg(ap, data_array_t *);
             break;
         default:
             fprintf(stderr, "vdata_make() bad data type (%d)\n", type);
@@ -345,7 +345,7 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
         return first;
 
     data_t *prev = result;
-    while (prev && prev->next)
+    while (prev->next)
         prev = prev->next;
     prev->next = first;
 
