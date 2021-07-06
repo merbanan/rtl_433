@@ -349,28 +349,34 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     // AM demodulation
-    float noise;
+    float avg_db;
     if (demod->sample_size == 1) { // CU8
         if (demod->use_mag_est) {
             //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
-            noise = magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+            avg_db = magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
         }
         else { // amp est
-            noise = envelope_detect(iq_buf, demod->buf.temp, n_samples);
+            avg_db = envelope_detect(iq_buf, demod->buf.temp, n_samples);
         }
     } else { // CS16
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
-        noise = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+        avg_db = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
     }
-    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, noise, demod->min_level);
-    if (demod->noise_level == 0.0f || demod->noise_level + 3.0f > noise) {
-        demod->noise_level = (demod->noise_level * 3 + noise) / 4; // average over 4 frames
+    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, avg_db, demod->min_level);
+    if (demod->noise_level == 0.0f) {
+        demod->noise_level = demod->min_level - 3.0f;
+    }
+    int noise_only = avg_db < demod->noise_level + 3.0f;
+    int process_frame = !noise_only || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
+    if (noise_only) {
+        demod->noise_level = (demod->noise_level * 3 + avg_db) / 4; // average over 4 frames
         if (demod->noise_level < -15.0f && fabsf(demod->min_level - demod->noise_level - 3.0f) > 1.0f) {
             demod->min_level = demod->noise_level + 3.0f;
             fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
         }
     }
+    if (process_frame)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
     // FM demodulation
@@ -383,7 +389,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             fpdm = FSK_PULSE_DETECT_OLD;
     }
 
-    if (demod->enable_FM_demod) {
+    if (demod->enable_FM_demod && process_frame) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
         if (demod->sample_size == 1) { // CU8
             baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
@@ -411,7 +417,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 break;
             }
         }
-        while (package_type) {
+        while (package_type && process_frame) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
             if (package_type) {
