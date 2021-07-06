@@ -23,13 +23,13 @@
     @param[out] y_buf output buffer
     @param len number of samples to process
 */
-void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 // for evaluation
 void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len);
-void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
+float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len);
 
 #define AMP_TO_DB(x) (10.0f * ((x) > 0 ? log10f(x) : 0) - 42.1442f)  // 10*log10f(16384.0f)

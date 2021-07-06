@@ -35,7 +35,7 @@ static int noise_cnt = 0;
 
 // This will give a noisy envelope of OOK/ASK signals.
 // Subtract the bias (-128) and get an envelope estimation.
-void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     uint32_t sum = 0;
@@ -59,6 +59,8 @@ void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
                 sum, len, avg, AMP_TO_DB(avg), AMP_TO_DB((float)sum / len),
                 AMP_TO_DB(noise4), AMP_TO_DB(noise10), AMP_TO_DB(noise20), AMP_TO_DB(noise4 * 2));
+
+    return len > 0 ? AMP_TO_DB((float)sum / len) : 0;
 }
 
 /// This will give a noisy envelope of OOK/ASK signals.
@@ -76,7 +78,7 @@ void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 
 /// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
 /// Note that magnitude emphasizes quiet signals / deemphasizes loud signals.
-void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     uint32_t sum = 0;
@@ -105,6 +107,8 @@ void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
                 sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
                 MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
+
+    return len > 0 ? MAG_TO_DB((float)sum / len) : 0;
 }
 
 /// True Magnitude for CU8 (sqrt can SIMD but float is slow).
@@ -119,7 +123,7 @@ void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 }
 
 /// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max).
-void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
     uint32_t sum = 0;
@@ -148,6 +152,8 @@ void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
                 sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
                 MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
+
+    return len > 0 ? MAG_TO_DB((float)sum / len) : 0;
 }
 
 /// True Magnitude for CS16 (sqrt can SIMD but float is slow).

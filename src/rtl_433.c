@@ -349,17 +349,27 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     // AM demodulation
+    float noise;
     if (demod->sample_size == 1) { // CU8
         if (demod->use_mag_est) {
             //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
-            magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+            noise = magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
         }
         else { // amp est
-            envelope_detect(iq_buf, demod->buf.temp, n_samples);
+            noise = envelope_detect(iq_buf, demod->buf.temp, n_samples);
         }
     } else { // CS16
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
-        magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+        noise = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+    }
+    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, noise, demod->min_level);
+    if (demod->noise_level == 0.0f || demod->noise_level + 3.0f > noise) {
+        demod->noise_level = (demod->noise_level * 3 + noise) / 4;
+        if (fabsf(demod->min_level - demod->noise_level - 3.0f) > 1.0f) {
+            demod->min_level = demod->noise_level + 3.0f;
+            fprintf(stderr, "adjusting minimum detection level to %.1f dB\n", demod->min_level);
+            pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level, demod->min_snr, demod->detect_verbosity);
+        }
     }
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
