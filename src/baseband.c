@@ -28,14 +28,37 @@ static void calc_squares()
         scaled_squares[i] = (127 - i) * (127 - i);
 }
 
+static int noise4 = 0;
+static int noise10 = 0;
+static int noise20 = 0;
+static int noise_cnt = 0;
+
 // This will give a noisy envelope of OOK/ASK signals.
 // Subtract the bias (-128) and get an envelope estimation.
 void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         y_buf[i] = scaled_squares[iq_buf[2 * i ]] + scaled_squares[iq_buf[2 * i + 1]];
+        sum += y_buf[i];
     }
+
+    int avg = len > 0 ? sum / len : 0;
+    if (noise4 == 0) {
+        noise4  = avg;
+        noise10 = avg;
+        noise20 = avg;
+    }
+    if (avg / noise4 <= 1) { // 3 dB margin
+        noise4  = (noise4 * 3 + avg) / 4;
+        noise10 = (noise10 * 9 + avg) / 10;
+        noise20 = (noise20 * 19 + avg) / 20;
+    }
+    if (++noise_cnt % 10 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
+                sum, len, avg, AMP_TO_DB(avg), AMP_TO_DB((float)sum / len),
+                AMP_TO_DB(noise4), AMP_TO_DB(noise10), AMP_TO_DB(noise20), AMP_TO_DB(noise4 * 2));
 }
 
 /// This will give a noisy envelope of OOK/ASK signals.
@@ -56,6 +79,7 @@ void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         uint16_t x = abs(iq_buf[2 * i] - 128);
         uint16_t y = abs(iq_buf[2 * i + 1] - 128);
@@ -63,7 +87,24 @@ void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         uint16_t mx = x > y ? x : y;
         uint16_t mag_est = 122 * mx + 51 * mi;
         y_buf[i] = mag_est; // max 22144, fs 16384
+        sum += y_buf[i];
     }
+
+    int avg = len > 0 ? sum / len : 0;
+    if (noise4 == 0) {
+        noise4  = avg;
+        noise10 = avg;
+        noise20 = avg;
+    }
+    if (avg / noise4 <= 1) { // 3 dB margin
+        noise4  = (noise4 * 3 + avg) / 4;
+        noise10 = (noise10 * 9 + avg) / 10;
+        noise20 = (noise20 * 19 + avg) / 20;
+    }
+    if (++noise_cnt % 10 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
+                sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
+                MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
 }
 
 /// True Magnitude for CU8 (sqrt can SIMD but float is slow).
@@ -81,6 +122,7 @@ void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         uint32_t x = abs(iq_buf[2 * i]);
         uint32_t y = abs(iq_buf[2 * i + 1]);
@@ -88,7 +130,24 @@ void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         uint32_t mx = x > y ? x : y;
         uint32_t mag_est = 122 * mx + 51 * mi;
         y_buf[i] = mag_est >> 8; // max 5668864, scaled 22144, fs 16384
+        sum += y_buf[i];
     }
+
+    int avg = len > 0 ? sum / len : 0;
+    if (noise4 == 0) {
+        noise4  = avg;
+        noise10 = avg;
+        noise20 = avg;
+    }
+    if (avg / noise4 <= 1) { // 3 dB margin
+        noise4  = (noise4 * 3 + avg) / 4;
+        noise10 = (noise10 * 9 + avg) / 10;
+        noise20 = (noise20 * 19 + avg) / 20;
+    }
+    if (++noise_cnt % 10 == 0)
+        fprintf(stderr, "envelope_detect: %u over %u avg: %d  Noise1 %.1f dB  Noise1f %.1f dB  Noise4 %.1f dB  Noise10 %.1f dB  Noise20 %.1f dB  level %.1f dB\n",
+                sum, len, avg, MAG_TO_DB(avg), MAG_TO_DB((float)sum / len),
+                MAG_TO_DB(noise4), MAG_TO_DB(noise10), MAG_TO_DB(noise20), MAG_TO_DB(noise4 * 2));
 }
 
 /// True Magnitude for CS16 (sqrt can SIMD but float is slow).
