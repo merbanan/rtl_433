@@ -112,6 +112,7 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #define INDEX_HTML \
     "<!DOCTYPE html>" \
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" \
+    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" \
     "<link rel=\"icon\" href=\"https://triq.org/rxui/favicon.ico\">" \
     "<title>rxui</title>" \
     "<link href=\"https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons\" rel=\"stylesheet\">" \
