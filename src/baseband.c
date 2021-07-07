@@ -38,7 +38,7 @@ float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         y_buf[i] = scaled_squares[iq_buf[2 * i ]] + scaled_squares[iq_buf[2 * i + 1]];
         sum += y_buf[i];
     }
-    return len > 0 ? AMP_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? AMP_TO_DB((float)sum / len) : AMP_TO_DB(1);
 }
 
 /// This will give a noisy envelope of OOK/ASK signals.
@@ -54,7 +54,7 @@ float envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len
         y_buf[i]  = x * x + y * y; // max 32768, fs 16384
         sum += y_buf[i];
     }
-    return len > 0 ? AMP_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? AMP_TO_DB((float)sum / len) : AMP_TO_DB(1);
 }
 
 /// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
@@ -72,7 +72,7 @@ float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         y_buf[i] = mag_est; // max 22144, fs 16384
         sum += y_buf[i];
     }
-    return len > 0 ? MAG_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// True Magnitude for CU8 (sqrt can SIMD but float is slow).
@@ -86,7 +86,7 @@ float magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         y_buf[i]  = (uint16_t)(sqrt(x * x + y * y) * 128.0); // max 181, scaled 23170, fs 16384
         sum += y_buf[i];
     }
-    return len > 0 ? MAG_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max).
@@ -103,7 +103,7 @@ float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         y_buf[i] = mag_est >> 8; // max 5668864, scaled 22144, fs 16384
         sum += y_buf[i];
     }
-    return len > 0 ? MAG_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// True Magnitude for CS16 (sqrt can SIMD but float is slow).
@@ -117,7 +117,7 @@ float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         y_buf[i]  = (int)sqrt(x * x + y * y) >> 1; // max 46341, scaled 23170, fs 16384
         sum += y_buf[i];
     }
-    return len > 0 ? MAG_TO_DB((float)sum / len) : 0.0f;
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 
