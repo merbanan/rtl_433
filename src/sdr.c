@@ -159,14 +159,19 @@ struct rtl_tcp_info {
 };
 #pragma pack(pop)
 
-static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
     char *host = "localhost";
     char *port = "1234";
+    char hostport[280]; // 253 chars DNS name plus extra chars
 
     char *param = arg_param(dev_query);
-    hostport_param(param, &host, &port);
+    hostport[0] = '\0';
+    if (param)
+        strncpy(hostport, param, sizeof(hostport) - 1);
+    hostport[sizeof(hostport) - 1] = '\0';
+    hostport_param(hostport, &host, &port);
 
     fprintf(stderr, "rtl_tcp input from %s port %s\n", host, port);
 
@@ -357,7 +362,7 @@ static int rtltcp_command(sdr_dev_t *dev, char cmd, int param)
 
 #ifdef RTLSDR
 
-static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
 {
     uint32_t device_count = rtlsdr_get_device_count();
     if (!device_count) {
@@ -817,7 +822,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
     free(native_stream_format);
 }
 
-static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
 {
     if (verbose)
         SoapySDR_setLogLevel(SOAPY_SDR_DEBUG);
@@ -984,7 +989,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
 /* Public API */
 
-int sdr_open(sdr_dev_t **out_dev, int *sample_size, char *dev_query, int verbose)
+int sdr_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
 {
     if (dev_query && !strncmp(dev_query, "rtl_tcp", 7))
         return rtltcp_open(out_dev, sample_size, dev_query, verbose);
