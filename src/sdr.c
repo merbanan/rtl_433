@@ -92,6 +92,7 @@ struct sdr_dev {
     size_t buffer_size;
 
     int sample_size;
+    int sample_signed;
 
     int apply_rate;
     int apply_freq;
@@ -159,7 +160,7 @@ struct rtl_tcp_info {
 };
 #pragma pack(pop)
 
-static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
+static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     UNUSED(verbose);
     char *host = "localhost";
@@ -251,7 +252,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_qu
 
     dev->rtl_tcp = sock;
     dev->sample_size = sizeof(uint8_t); // CU8
-    *sample_size = sizeof(uint8_t); // CU8
+    dev->sample_signed = 0;
 
     *out_dev = dev;
     return 0;
@@ -362,7 +363,7 @@ static int rtltcp_command(sdr_dev_t *dev, char cmd, int param)
 
 #ifdef RTLSDR
 
-static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
+static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     uint32_t device_count = rtlsdr_get_device_count();
     if (!device_count) {
@@ -424,7 +425,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, int *sample_size, char const *dev_q
                 fprintf(stderr, "Using device %u: %s\n",
                         i, rtlsdr_get_device_name(i));
             dev->sample_size = sizeof(uint8_t); // CU8
-            *sample_size = sizeof(uint8_t); // CU8
+            dev->sample_signed = 0;
 
             size_t info_len = 41 + strlen(vendor) + strlen(product) + strlen(serial);
             dev->dev_info = malloc(info_len);
@@ -822,7 +823,7 @@ static void soapysdr_show_device_info(SoapySDRDevice *dev)
     free(native_stream_format);
 }
 
-static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
+static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     if (verbose)
         SoapySDR_setLogLevel(SOAPY_SDR_DEBUG);
@@ -851,27 +852,30 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, int *sample_size, char const *dev
     if (!strcmp(SOAPY_SDR_CU8, native_format)) {
         // actually not supported by SoapySDR
         selected_format = SOAPY_SDR_CU8;
-        *sample_size = sizeof(uint8_t); // CU8
+        dev->sample_size = sizeof(uint8_t); // CU8
+        dev->sample_signed = 0;
     }
 //    else if (!strcmp(SOAPY_SDR_CS8, native_format)) {
 //        // TODO: CS8 needs conversion to CU8
 //        // e.g. RTL-SDR (8 bit), scale is 128.0
 //        selected_format = SOAPY_SDR_CS8;
-//        *sample_size = sizeof(int8_t); // CS8
+//        dev->sample_size = sizeof(int8_t); // CS8
+//        dev->sample_signed = 1;
 //    }
     else if (!strcmp(SOAPY_SDR_CS16, native_format)) {
         // e.g. LimeSDR-mini (12 bit), native scale is 2048.0
         // e.g. SDRplay RSP1A (14 bit), native scale is 32767.0
         selected_format = SOAPY_SDR_CS16;
-        *sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t); // CS16
+        dev->sample_signed = 1;
     }
     else {
         // force CS16
         selected_format = SOAPY_SDR_CS16;
-        *sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t); // CS16
+        dev->sample_signed = 1;
         dev->fullScale = 32768.0; // assume max for SOAPY_SDR_CS16
     }
-    dev->sample_size = *sample_size;
     free(native_format);
 
     SoapySDRKwargs args = SoapySDRDevice_getHardwareInfo(dev->soapy_dev);
@@ -989,10 +993,10 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
 
 /* Public API */
 
-int sdr_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int verbose)
+int sdr_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
 {
     if (dev_query && !strncmp(dev_query, "rtl_tcp", 7))
-        return rtltcp_open(out_dev, sample_size, dev_query, verbose);
+        return rtltcp_open(out_dev, dev_query, verbose);
 
 #if !defined(RTLSDR) && !defined(SOAPYSDR)
     if (verbose)
@@ -1003,7 +1007,7 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int v
     /* Open RTLSDR by default or if index or serial given, if available */
     if (!dev_query || *dev_query == ':' || (*dev_query >= '0' && *dev_query <= '9')) {
 #ifdef RTLSDR
-        return sdr_open_rtl(out_dev, sample_size, dev_query, verbose);
+        return sdr_open_rtl(out_dev, dev_query, verbose);
 #else
         fprintf(stderr, "No input driver for RTL-SDR compiled in.\n");
         return -1;
@@ -1016,7 +1020,7 @@ int sdr_open(sdr_dev_t **out_dev, int *sample_size, char const *dev_query, int v
     UNUSED(soapysdr_offset_tuning);
 
     /* Open SoapySDR otherwise, if available */
-    return sdr_open_soapy(out_dev, sample_size, dev_query, verbose);
+    return sdr_open_soapy(out_dev, dev_query, verbose);
 #endif
     fprintf(stderr, "No input driver for SoapySDR compiled in.\n");
 
@@ -1055,6 +1059,22 @@ char const *sdr_get_dev_info(sdr_dev_t *dev)
         return NULL;
 
     return dev->dev_info;
+}
+
+int sdr_get_sample_size(sdr_dev_t *dev)
+{
+    if (!dev)
+        return 0;
+
+    return dev->sample_size;
+}
+
+int sdr_get_sample_signed(sdr_dev_t *dev)
+{
+    if (!dev)
+        return 0;
+
+    return dev->sample_signed;
 }
 
 int sdr_set_center_freq(sdr_dev_t *dev, uint32_t freq, int verbose)

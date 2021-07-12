@@ -1645,11 +1645,13 @@ int main(int argc, char **argv) {
     }
 
     // Normal case, no test data, no in files
-    r = sdr_open(&cfg->dev, &demod->sample_size, cfg->dev_query, cfg->verbosity);
+    r = sdr_open(&cfg->dev, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
         exit(2);
     }
     cfg->dev_info = sdr_get_dev_info(cfg->dev);
+    demod->sample_size = sdr_get_sample_size(cfg->dev);
+    //demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
 #ifndef _WIN32
     sigact.sa_handler = sighandler;
