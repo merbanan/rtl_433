@@ -120,7 +120,6 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose) {
                 fprintf(stderr, "%s: CRC failed!\n", __func__);
             }
-            else // FIXME: WIP, this exception is for debugging only
             return DECODE_FAIL_MIC;
         }
     }
@@ -135,20 +134,20 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
     int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
 
-    // base and/or scale adjustments
-    // how do we determine rain_mm from raw_rain1 or raw_rain2?
-    //float rain_mm =  0.0;
+    // Seems rain is 0.25mm per tip, not sure what rain2 is
+    float rain_mm = raw_rain1 * 0.25;
+    float rain2_mm = raw_rain2 * 0.25;
 
     /* clang-format off */
     data_t *data = data_make(
-            "model",            "",                 DATA_COND, rev == 1, DATA_STRING, "LaCrosse-R1",
-            "model",            "",                 DATA_COND, rev == 3, DATA_STRING, "LaCrosse-R3",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
+            "model",            "",                 DATA_COND,   rev == 1,  DATA_STRING, "LaCrosse-R1",
+            "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
+            "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT, id,
             "seq",              "Sequence",         DATA_INT,    seq,
             "flags",            "unknown",          DATA_INT,    flags,
-            "rain1",            "raw_rain1",        DATA_INT,    raw_rain1,
-            "rain2",            "raw_rain2",        DATA_COND, rev == 3, DATA_INT,    raw_rain2,
-            "mic",              "Integrity",        DATA_COND, !chk, DATA_STRING, "CRC", // FIXME: COND for debugging only
+            "rain_mm",          "Total Rain",       DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
+            "rain2_mm",         "Total Rain2",      DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
+            "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -161,8 +160,8 @@ static char *output_fields[] = {
         "id",
         "seq",
         "flags",
-        "rain1",
-        "rain2",
+        "rain_mm",
+        "rain2_mm",
         "mic",
         NULL,
 };
