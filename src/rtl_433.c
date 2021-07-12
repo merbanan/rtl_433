@@ -31,7 +31,6 @@
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
-#include "rtl_433_devices.h"
 #include "r_api.h"
 #include "sdr.h"
 #include "baseband.h"
@@ -364,7 +363,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
     // FM demodulation
-    /* Select the correct fsk pulse detector */
+    // Select the correct fsk pulse detector
     unsigned fpdm = cfg->fsk_pulse_detect_mode;
     if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
         if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT)
@@ -1264,7 +1263,6 @@ int main(int argc, char **argv) {
 #endif
     FILE *in_file;
     int r = 0;
-    unsigned i;
     struct dm_state *demod;
     r_cfg_t *cfg = &g_cfg;
 
@@ -1276,23 +1274,6 @@ int main(int argc, char **argv) {
     setbuf(stderr, NULL);
 
     demod = cfg->demod;
-
-    demod->pulse_detect = pulse_detect_create();
-
-    /* initialize tables */
-    baseband_init();
-
-    r_device r_devices[] = {
-#define DECL(name) name,
-            DEVICES
-#undef DECL
-            };
-
-    cfg->num_r_devices = sizeof(r_devices) / sizeof(*r_devices);
-    for (i = 0; i < cfg->num_r_devices; i++) {
-        r_devices[i].protocol_num = i + 1;
-    }
-    cfg->devices = r_devices;
 
     // if there is no explicit conf file option look for default conf files
     if (!hasopt('c', argc, argv, OPTSTRING)) {

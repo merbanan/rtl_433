@@ -20,6 +20,7 @@
 #include "r_util.h"
 #include "rtl_433.h"
 #include "r_private.h"
+#include "rtl_433_devices.h"
 #include "r_device.h"
 #include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
@@ -144,6 +145,23 @@ void r_init_cfg(r_cfg_t *cfg)
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
 
+    // collect devices list, this should be a module
+    r_device r_devices[] = {
+#define DECL(name) name,
+            DEVICES
+#undef DECL
+    };
+
+    cfg->num_r_devices = sizeof(r_devices) / sizeof(*r_devices);
+    for (unsigned i = 0; i < cfg->num_r_devices; i++) {
+        r_devices[i].protocol_num = i + 1;
+    }
+    cfg->devices = malloc(sizeof(r_devices));
+    if (!cfg->devices)
+        FATAL_CALLOC("r_init_cfg()");
+
+    memcpy(cfg->devices, r_devices, sizeof(r_devices));
+
     cfg->demod = calloc(1, sizeof(*cfg->demod));
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
@@ -151,6 +169,11 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
+
+    // note: this should be optional
+    cfg->demod->pulse_detect = pulse_detect_create();
+    // initialize tables
+    baseband_init();
 
     time(&cfg->frames_since);
 
@@ -193,6 +216,8 @@ void r_free_cfg(r_cfg_t *cfg)
     pulse_detect_free(cfg->demod->pulse_detect);
 
     free(cfg->demod);
+
+    free(cfg->devices);
 
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
