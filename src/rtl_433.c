@@ -326,8 +326,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     get_time_now(&demod->now);
 
-    n_samples = len / 2 / demod->sample_size;
-    if (n_samples * 2 * demod->sample_size != len) {
+    n_samples = len / demod->sample_size;
+    if (n_samples * demod->sample_size != len) {
         fprintf(stderr, "Sample buffer length not aligned to sample size!\n");
     }
     if (!n_samples) {
@@ -348,7 +348,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     // AM demodulation
-    if (demod->sample_size == 1) { // CU8
+    if (demod->sample_size == 2) { // CU8
         if (demod->use_mag_est) {
             //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
             magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
@@ -374,7 +374,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     if (demod->enable_FM_demod) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
-        if (demod->sample_size == 1) { // CU8
+        if (demod->sample_size == 2) { // CU8
             baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         } else { // CS16
             baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
@@ -383,9 +383,13 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     // Handle special input formats
     if (demod->load_info.format == S16_AM) { // The IQ buffer is really AM demodulated data
+        if (len > sizeof(demod->am_buf))
+            FATAL("Buffer too small");
         memcpy(demod->am_buf, iq_buf, len);
     } else if (demod->load_info.format == S16_FM) { // The IQ buffer is really FM demodulated data
         // we would need AM for the envelope too
+        if (len > sizeof(demod->buf.fm))
+            FATAL("Buffer too small");
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
@@ -503,10 +507,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 || dumper->format == PULSE_OOK)
             continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
-        unsigned long out_len = n_samples * 2 * demod->sample_size;
+        unsigned long out_len = n_samples * demod->sample_size;
 
         if (dumper->format == CU8_IQ) {
-            if (demod->sample_size == 2) {
+            if (demod->sample_size == 4) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((uint8_t *)demod->buf.temp)[n] = (((int16_t *)iq_buf)[n] / 256) + 128; // scale Q0.15 to Q0.7
                 out_buf = (uint8_t *)demod->buf.temp;
@@ -514,7 +518,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
         }
         else if (dumper->format == CS16_IQ) {
-            if (demod->sample_size == 1) {
+            if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] * 256) - 32768; // scale Q0.7 to Q0.15
                 out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
@@ -522,11 +526,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
         }
         else if (dumper->format == CS8_IQ) {
-            if (demod->sample_size == 1) {
+            if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int8_t *)demod->buf.temp)[n] = (iq_buf[n] - 128);
             }
-            else if (demod->sample_size == 2) {
+            else if (demod->sample_size == 4) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int8_t *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] >> 8;
             }
@@ -534,11 +538,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * 2 * sizeof(int8_t);
         }
         else if (dumper->format == CF32_IQ) {
-            if (demod->sample_size == 1) {
+            if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((float *)demod->buf.temp)[n] = (iq_buf[n] - 128) / 128.0f;
             }
-            else if (demod->sample_size == 2) {
+            else if (demod->sample_size == 4) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((float *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] / 32768.0f;
             }
@@ -566,7 +570,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_I) {
-            if (demod->sample_size == 1)
+            if (demod->sample_size == 2)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
@@ -576,7 +580,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_Q) {
-            if (demod->sample_size == 1)
+            if (demod->sample_size == 2)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
@@ -1510,10 +1514,10 @@ int main(int argc, char **argv) {
             if (demod->load_info.format == CU8_IQ
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
-                demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
+                demod->sample_size = sizeof(uint8_t) * 2; // CU8, AM, FM
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
-                demod->sample_size = sizeof(int16_t); // CF32, CS16
+                demod->sample_size = sizeof(int16_t) * 2; // CF32, CS16
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
@@ -1583,13 +1587,13 @@ int main(int argc, char **argv) {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
-                demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / 2 / demod->sample_size;
+                demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, cfg);
             } while (n_read != 0 && !cfg->exit_async);
 
             // Call a last time with cleared samples to ensure EOP detection
-            if (demod->sample_size == 1) { // CU8
+            if (demod->sample_size == 2) { // CU8
                 memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
                 // or is 127.5 a better 0 in cu8 data?
                 //for (unsigned long n = 0; n < DEFAULT_BUF_LENGTH/2; n++)
@@ -1598,7 +1602,7 @@ int main(int argc, char **argv) {
             else { // CF32, CS16
                     memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             }
-            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / 2 / demod->sample_size;
+            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
             alarm(0); // cancel the watchdog timer
 

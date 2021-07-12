@@ -251,7 +251,7 @@ static int rtltcp_open(sdr_dev_t **out_dev, char const *dev_query, int verbose)
     }
 
     dev->rtl_tcp = sock;
-    dev->sample_size = sizeof(uint8_t); // CU8
+    dev->sample_size = sizeof(uint8_t) * 2; // CU8
     dev->sample_signed = 0;
 
     *out_dev = dev;
@@ -424,7 +424,7 @@ static int sdr_open_rtl(sdr_dev_t **out_dev, char const *dev_query, int verbose)
             if (verbose)
                 fprintf(stderr, "Using device %u: %s\n",
                         i, rtlsdr_get_device_name(i));
-            dev->sample_size = sizeof(uint8_t); // CU8
+            dev->sample_size = sizeof(uint8_t) * 2; // CU8
             dev->sample_signed = 0;
 
             size_t info_len = 41 + strlen(vendor) + strlen(product) + strlen(serial);
@@ -859,20 +859,20 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
 //        // TODO: CS8 needs conversion to CU8
 //        // e.g. RTL-SDR (8 bit), scale is 128.0
 //        selected_format = SOAPY_SDR_CS8;
-//        dev->sample_size = sizeof(int8_t); // CS8
+//        dev->sample_size = sizeof(int8_t) * 2; // CS8
 //        dev->sample_signed = 1;
 //    }
     else if (!strcmp(SOAPY_SDR_CS16, native_format)) {
         // e.g. LimeSDR-mini (12 bit), native scale is 2048.0
         // e.g. SDRplay RSP1A (14 bit), native scale is 32767.0
         selected_format = SOAPY_SDR_CS16;
-        dev->sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t) * 2; // CS16
         dev->sample_signed = 1;
     }
     else {
         // force CS16
         selected_format = SOAPY_SDR_CS16;
-        dev->sample_size = sizeof(int16_t); // CS16
+        dev->sample_size = sizeof(int16_t) * 2; // CS16
         dev->sample_signed = 1;
         dev->fullScale = 32768.0; // assume max for SOAPY_SDR_CS16
     }
@@ -927,7 +927,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
     }
     int16_t *buffer = dev->buffer;
 
-    size_t buf_elems = buf_len / 2 / dev->sample_size;
+    size_t buf_elems = buf_len / dev->sample_size;
 
     dev->running = 1;
     do {
@@ -976,7 +976,7 @@ static int soapysdr_read_loop(sdr_dev_t *dev, sdr_event_cb_t cb, void *ctx, uint
         sdr_event_t ev = {
                 .ev  = SDR_EV_DATA,
                 .buf = buffer,
-                .len = n_read * 2 * dev->sample_size,
+                .len = n_read * dev->sample_size,
         };
         dev->polling = 1;
         if (n_read > 0) // prevent a crash in callback

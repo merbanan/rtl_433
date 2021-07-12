@@ -63,7 +63,7 @@ char const *sdr_get_dev_info(sdr_dev_t *dev);
 /** Get sample size.
 
     @param dev the device handle
-    @return Sample size in bytes
+    @return Sample size of I/Q elements in bytes (CU8: 2, CS16: 4, ...)
 */
 int sdr_get_sample_size(sdr_dev_t *dev);
 
