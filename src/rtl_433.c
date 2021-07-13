@@ -84,6 +84,9 @@
 #endif
 #endif
 
+#include "log.h"
+#define LOG_MODULE "main"
+
 // STDERR_FILENO is not defined in at least MSVC
 #ifndef STDERR_FILENO
 #define STDERR_FILENO 2
@@ -1370,6 +1373,7 @@ int main(int argc, char **argv) {
     r_cfg_t *cfg = &g_cfg;
 
     print_version(); // always print the version info
+    sdr_redirect_logging();
 
     r_init_cfg(cfg);
 

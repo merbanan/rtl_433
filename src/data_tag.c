@@ -22,6 +22,9 @@
 #include "fileformat.h"
 #include "fatal.h"
 
+#include "log.h"
+#define LOG_MODULE "tag"
+
 typedef struct gpsd_client {
     struct mg_connect_opts connect_opts;
     struct mg_connection *conn;

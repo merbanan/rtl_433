@@ -108,6 +108,9 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #include "fatal.h"
 #include <stdbool.h>
 
+#include "log.h"
+#define LOG_MODULE "http"
+
 // embed index.html so browsers allow access as local
 #define INDEX_HTML \
     "<!DOCTYPE html>" \
@@ -1221,6 +1224,25 @@ static void R_API_CALLCONV print_http_data(data_output_t *output, data_t *data, 
     }
 }
 
+static void data_output_http_logger(log_level_t level, char const *mod, char const *file, int line, char const *func, char const *msg, void *userdata)
+{
+    data_output_http_t *http = (data_output_http_t *)userdata;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "level",    "", DATA_INT,    level,
+            "mod",      "", DATA_STRING, mod,
+            "file",     "", DATA_STRING, file,
+            "line",     "", DATA_INT,    line,
+            "func",     "", DATA_STRING, func,
+            "msg",      "", DATA_STRING, msg,
+            NULL);
+    /* clang-format on */
+
+    print_http_data(&http->output, data, NULL);
+    data_free(data);
+}
+
 static void R_API_CALLCONV data_output_http_free(data_output_t *output)
 {
     data_output_http_t *http = (data_output_http_t *)output;
@@ -1229,6 +1251,8 @@ static void R_API_CALLCONV data_output_http_free(data_output_t *output)
         return;
 
     http_server_stop(http->server);
+
+    r_logger_set_aux_handler(NULL, NULL);
 
     free(http);
 }
@@ -1248,6 +1272,8 @@ struct data_output *data_output_http_create(struct mg_mgr *mgr, char const *host
     if (!http->server) {
         exit(1);
     }
+
+    r_logger_set_aux_handler(data_output_http_logger, http);
 
     return &http->output;
 }

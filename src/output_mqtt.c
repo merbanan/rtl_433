@@ -22,6 +22,9 @@
 
 #include "mongoose.h"
 
+#include "log.h"
+#define LOG_MODULE "mqtt"
+
 /* MQTT client abstraction */
 
 typedef struct mqtt_client {

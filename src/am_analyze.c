@@ -19,6 +19,9 @@
 
 #include "am_analyze.h"
 
+#include "log.h"
+#define LOG_MODULE "am_analyze"
+
 #define FRAME_END_MIN 50000 /* minimum sample count to detect frame end */
 #define FRAME_PAD 10000 /* number of samples to pad both frame start and end */
 

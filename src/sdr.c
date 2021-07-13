@@ -72,6 +72,9 @@ int __attribute__((weak)) rtlsdr_set_bias_tee(rtlsdr_dev_t *dev, int on);
     #define closesocket(x)  close(x)
 #endif
 
+#include "log.h"
+#define LOG_MODULE "sdr"
+
 #define GAIN_STR_MAX_SIZE 64
 
 struct sdr_dev {
@@ -1644,4 +1647,18 @@ int sdr_stop(sdr_dev_t *dev)
 #endif
 
     return -1;
+}
+
+#ifdef SOAPYSDR
+static void soapysdr_log_handler(const SoapySDRLogLevel level, const char *message)
+{
+    r_logger_logf((log_level_t)level, "SoapySDR", NULL, 0, NULL, "%s", message);
+}
+#endif
+
+void sdr_redirect_logging()
+{
+#ifdef SOAPYSDR
+    SoapySDR_registerLogHandler(soapysdr_log_handler);
+#endif
 }

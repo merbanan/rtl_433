@@ -19,6 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "log.h"
+#define LOG_MODULE "detect_ook"
+
 // OOK adaptive level estimator constants
 #define OOK_MAX_HIGH_LEVEL  DB_TO_AMP(0)   // Maximum estimate for high level (-0 dB)
 #define OOK_MAX_LOW_LEVEL   DB_TO_AMP(-15) // Maximum estimate for low level

@@ -20,6 +20,9 @@
 #include <math.h>
 #include <limits.h>
 
+#include "log.h"
+#define LOG_MODULE "slicer"
+
 static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_name)
 {
     // run decoder

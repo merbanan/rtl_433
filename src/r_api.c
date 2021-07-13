@@ -40,6 +40,8 @@
 #include "compat_time.h"
 #include "fatal.h"
 #include "http_server.h"
+#include "log.h"
+#define LOG_MODULE "r_api"
 
 #ifdef _WIN32
 #include <io.h>

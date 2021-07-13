@@ -34,6 +34,9 @@
 #include <unistd.h>
 #endif
 
+#include "log.h"
+#define LOG_MODULE "confparse"
+
 static off_t fsize(const char *path)
 {
     struct stat st;

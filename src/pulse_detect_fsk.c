@@ -18,6 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "log.h"
+#define LOG_MODULE "detect_fsk"
+
 // FSK adaptive frequency estimator constants
 #define FSK_DEFAULT_FM_DELTA 6000       // Default estimate for frequency delta
 #define FSK_EST_SLOW        64          // Constant for slowness of FSK estimators

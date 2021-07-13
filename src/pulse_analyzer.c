@@ -17,6 +17,9 @@
 #include <string.h>
 #include <limits.h>
 
+#include "log.h"
+#define LOG_MODULE "analyzer"
+
 #define MAX_HIST_BINS 16
 
 /// Histogram data for single bin

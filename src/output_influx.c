@@ -25,6 +25,9 @@
 
 #include "mongoose.h"
 
+#include "log.h"
+#define LOG_MODULE "influx"
+
 /* InfluxDB client abstraction / printer */
 
 typedef struct {

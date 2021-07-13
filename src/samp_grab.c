@@ -27,6 +27,9 @@
 #include "samp_grab.h"
 #include "fatal.h"
 
+#include "log.h"
+#define LOG_MODULE "grabber"
+
 samp_grab_t *samp_grab_create(unsigned size)
 {
     samp_grab_t *g;
