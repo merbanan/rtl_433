@@ -344,7 +344,7 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
         // xlp = pi; // Cheat and use only imaginary part (works OK, but is amplitude sensitive)
         // Low pass filter
         // y0f      = (alp[1] * y1f + blp[0] * x0f + blp[1] * x1f) >> F_SCALE32;
-        y0f      = (alp[1] * y1f + blp[0] * (x0f + x1f)) >> F_SCALE32; // note: blp[0]==blp[1]
+        y0f      = (alp[1] * y1f + blp[0] * ((int64_t)x0f + x1f)) >> F_SCALE32; // note: blp[0]==blp[1]
         *y_buf++ = y0f >> 16; // not really losing info here, maybe optimize earlier
     }
 
