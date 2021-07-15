@@ -17,7 +17,11 @@
 #include "compat_time.h"
 
 struct dm_state {
+    float auto_level;
+    float squelch_offset;
     float level_limit;
+    float noise_level;
+    float min_level_auto;
     float min_level;
     float min_snr;
     float low_pass;

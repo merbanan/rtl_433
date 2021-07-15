@@ -77,6 +77,7 @@ typedef struct r_cfg {
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int report_noise;
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
