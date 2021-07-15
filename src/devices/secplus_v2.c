@@ -223,11 +223,9 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     }
 
     if (verbose) {
-        fprintf(stderr, "%s : roll_array : (%d) ", __func__, part_id);
-        for (int i = 0; i < 9; i++) {
-            fprintf(stderr, "%d ", roll_array[i]);
-        }
-        fprintf(stderr, "\n");
+        fprintf(stderr, "%s : roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", __func__, part_id,
+                roll_array[0], roll_array[1], roll_array[2], roll_array[3],
+                roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
     }
 
     // SANITY check trinary valuse, 00/01/10 are valid,  11 is not

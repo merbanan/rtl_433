@@ -237,9 +237,13 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 {
     // use arg of 'v', 'vv', 'vvv' as device verbosity
     int dev_verbose = 0;
-    if (arg && arg[0] == 'v' && (!arg[1] || (arg[1] == 'v' && (!arg[2] || arg[2] == 'v')))) {
-        dev_verbose = strlen(arg);
-        arg = NULL;
+    if (arg && *arg == 'v') {
+        for (; *arg == 'v'; ++arg) {
+            dev_verbose++;
+        }
+        if (*arg) {
+            arg++; // skip separator
+        }
     }
 
     // use any other arg as device parameter

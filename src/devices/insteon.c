@@ -346,11 +346,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "type %s\n", pkt_type_str);
-        for (int j = 0; j < min_pkt_len; j++) {
-            fprintf(stderr, "%d:%02X ", j, results[j]);
-        }
-        fprintf(stderr, "\n");
+        bitrow_printf(results, min_pkt_len * 8, "type %s : ", pkt_type_str);
     }
 
     // Format data

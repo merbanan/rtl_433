@@ -42,6 +42,7 @@
 #include "data.h"
 #include "r_util.h"
 #include "optparse.h"
+#include "abuf.h"
 #include "fileformat.h"
 #include "samp_grab.h"
 #include "am_analyze.h"
@@ -1341,28 +1342,32 @@ int main(int argc, char **argv) {
         }
     }
 
-    fprintf(stderr, "Registered %zu out of %d device decoding protocols",
-            demod->r_devs.len, cfg->num_r_devices);
-
-    if (!cfg->verbosity) {
-        // print registered decoder ranges
-        fprintf(stderr, " [");
-        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-            r_device *r_dev = *iter;
-            unsigned num = r_dev->protocol_num;
-            if (num == 0)
-                continue;
-            while (iter[1]
-                    && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
-                r_dev = *++iter;
-            if (num == r_dev->protocol_num)
-                fprintf(stderr, " %u", num);
-            else
-                fprintf(stderr, " %u-%u", num, r_dev->protocol_num);
+    {
+        char decoders_str[1024];
+        decoders_str[0] = '\0';
+        if (!cfg->verbosity) {
+            abuf_t p = {0};
+            abuf_init(&p, decoders_str, sizeof(decoders_str));
+            // print registered decoder ranges
+            abuf_printf(&p, " [");
+            for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+                r_device *r_dev = *iter;
+                unsigned num = r_dev->protocol_num;
+                if (num == 0)
+                    continue;
+                while (iter[1]
+                        && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
+                    r_dev = *++iter;
+                if (num == r_dev->protocol_num)
+                    abuf_printf(&p, " %u", num);
+                else
+                    abuf_printf(&p, " %u-%u", num, r_dev->protocol_num);
+            }
+            abuf_printf(&p, " ]");
         }
-        fprintf(stderr, " ]");
+        fprintf(stderr, "Registered %zu out of %d device decoding protocols%s\n",
+                demod->r_devs.len, cfg->num_r_devices, decoders_str);
     }
-    fprintf(stderr, "\n");
 
     char const **well_known = well_known_output_fields(cfg);
     start_outputs(cfg, well_known);
