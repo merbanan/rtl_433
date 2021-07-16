@@ -500,6 +500,18 @@ static void print_json_string(data_output_t *output, const char *str, char const
 
     fprintf(output->file, "\"");
     while (*str) {
+        if (*str == '\r') {
+            fprintf(output->file, "\\r");
+            continue;
+        }
+        if (*str == '\n') {
+            fprintf(output->file, "\\n");
+            continue;
+        }
+        if (*str == '\t') {
+            fprintf(output->file, "\\t");
+            continue;
+        }
         if (*str == '"' || *str == '\\')
             fputc('\\', output->file);
         fputc(*str, output->file);
@@ -991,6 +1003,27 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
     *buf++ = '"';
     size--;
     for (; *str && size >= 3; ++str) {
+        if (*str == '\r') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'r';
+            size--;
+            continue;
+        }
+        if (*str == '\n') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'n';
+            size--;
+            continue;
+        }
+        if (*str == '\t') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 't';
+            size--;
+            continue;
+        }
         if (*str == '"' || *str == '\\') {
             *buf++ = '\\';
             size--;

@@ -211,6 +211,27 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
     *buf++ = '"';
     size--;
     for (; *str && size >= 3; ++str) {
+        if (*str == '\r') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'r';
+            size--;
+            continue;
+        }
+        if (*str == '\n') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'n';
+            size--;
+            continue;
+        }
+        if (*str == '\t') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 't';
+            size--;
+            continue;
+        }
         if (*str == '"' || *str == '\\') {
             *buf++ = '\\';
             size--;

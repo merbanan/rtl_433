@@ -571,7 +571,7 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[51200]; // we expect the protocol string to be around 40k bytes.
+        char buf[65536]; // we expect the protocol string to be around 60k bytes.
         data_t *data = protocols_data(cfg);
         data_print_jsons(data, buf, sizeof(buf));
         rpc->response(rpc, 1, buf, 0);
