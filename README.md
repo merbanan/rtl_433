@@ -56,9 +56,13 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
        Specify a negative number to disable a device decoding protocol (can be used multiple times)
   [-G] Enable blacklisted device decoding protocols, for testing only.
   [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)
-  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)
-  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)
   [-Y auto | classic | minmax] FSK pulse detector mode.
+  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).
+  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).
+  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).
+  [-Y autolevel] Set minlevel automatically based on average estimated noise.
+  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.
+  [-Y ampest | magest] Choose amplitude or magnitude level estimator.
 		= Analyze/Debug options =
   [-a] Analyze mode. Print a textual description of the signal.
   [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.
@@ -74,9 +78,10 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
   [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.
        Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.
        Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514
-  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.
+  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.
   [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.
   [-C native | si | customary] Convert units in decoded output.
+  [-n <value>] Specify number of samples to take (each sample is an I/Q pair)
   [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s
   [-E hop | quit] Hop/Quit after outputting successful event(s)
   [-h] Output this usage help and exit
@@ -372,7 +377,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 
 
 		= Meta information option =
-  [-M time[:<options>]|protocol|level|stats|bits] Add various metadata to every output line.
+  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.
 	Use "time" to add current date and time meta data (preset for live inputs).
 	Use "time:rel" to add sample position meta data (preset for read-file and stdin).
 	Use "time:unix" to show the seconds since unix epoch as time meta data.
@@ -385,6 +390,7 @@ E.g. -X "n=doorbell,m=OOK_PWM,s=400,l=800,r=7000,g=1000,match={24}0xa9878c,repea
 		"usec" and "utc" can be combined with other options, eg. "time:unix:utc:usec".
 	Use "protocol" / "noprotocol" to output the decoder protocol number meta data.
 	Use "level" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.
+	Use "noise[:secs]" to report estimated noise level at intervals (default: 10 seconds).
 	Use "stats[:[<level>][:<interval>]]" to report statistics (default: 600 seconds).
 	  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all
 	Use "bits" to add bit representation to code outputs (for debug).
