@@ -116,6 +116,7 @@ static int honeywell_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "tamper",       "",         DATA_INT,    tamper,
             "battery_ok",   "Battery",  DATA_INT,    !battery_low,
             "heartbeat",    "",         DATA_INT,    heartbeat,
+            "mic",          "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
@@ -135,6 +136,7 @@ static char *output_fields[] = {
         "tamper",
         "battery_ok",
         "heartbeat",
+        "mic",
         NULL,
 };
 
