@@ -17,6 +17,7 @@
 // Sensors ID
 #define ID_THGR122N 0x1d20
 #define ID_THGR968  0x1d30
+#define ID_BTHR918  0x5d50
 #define ID_BHTR968  0x5d60
 #define ID_RGR968   0x2d10
 #define ID_THR228N  0xec40
@@ -323,6 +324,26 @@ static int oregon_scientific_v2_1_decode(r_device *decoder, bitbuffer_t *bitbuff
                 "temperature_C",    "Celsius",        DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_c,
                 "humidity",     "Humidity",             DATA_FORMAT, "%u %%",     DATA_INT,        get_os_humidity(msg),
                 "pressure_hPa",    "Pressure",        DATA_FORMAT, "%.0f hPa",     DATA_DOUBLE, pressure,
+                NULL);
+        /* clang-format on */
+        decoder_output_data(decoder, data);
+        return 1;
+    }
+    else if (sensor_id == ID_BTHR918) {
+        // Similar to the BHTR968, but smaller message and slightly different pressure offset
+        if (validate_os_v2_message(decoder, msg, 84, msg_bits, 19) != 0)
+            return 0;
+        float temp_c = get_os_temperature(msg);
+        float pressure = ((msg[7] & 0x0f) | (msg[8] & 0xf0)) + 795;
+        /* clang-format off */
+        data = data_make(
+                "model",            "",                 DATA_STRING,    "Oregon-BTHR918",
+                "id",               "House Code",       DATA_INT,       get_os_rollingcode(msg),
+                "channel",          "Channel",          DATA_INT,       get_os_channel(msg, sensor_id),
+                "battery_ok",       "Battery",          DATA_INT,       !get_os_battery(msg),
+                "temperature_C",    "Celsius",          DATA_FORMAT,    "%.02f C", DATA_DOUBLE, temp_c,
+                "humidity",         "Humidity",         DATA_FORMAT,    "%u %%", DATA_INT, get_os_humidity(msg),
+                "pressure_hPa",     "Pressure",         DATA_FORMAT,    "%.0f hPa", DATA_DOUBLE, pressure,
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
