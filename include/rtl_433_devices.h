@@ -198,7 +198,8 @@
     DECL(marlec_solar) \
     DECL(somfy_iohc) \
     DECL(fineoffset_wh31l) \
-
+    DECL(jasco) \
+    
     /* Add new decoders here. */
 
 #define DECL(name) extern r_device name;
