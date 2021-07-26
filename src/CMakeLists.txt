@@ -113,6 +113,7 @@ add_library(r_433 STATIC
     devices/insteon.c
     devices/interlogix.c
     devices/intertechno.c
+    devices/jasco.c
     devices/kedsum.c
     devices/kerui.c
     devices/klimalogg.c
