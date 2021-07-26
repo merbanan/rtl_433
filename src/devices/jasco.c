@@ -30,7 +30,7 @@ Battery status does not seem to be part of the status (or at least swapping the 
 
 static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    if (bitbuffer->bits_per_row[0] <= JASCO_MSG_BIT_LEN-1 && bitbuffer->bits_per_row[0] >= JASCO_MSG_BIT_LEN+1){
+    if (bitbuffer->bits_per_row[0] <= JASCO_MSG_BIT_LEN-1 && bitbuffer->bits_per_row[0] >= JASCO_MSG_BIT_LEN+1) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[0] > 0) {
             fprintf(stderr, "%s: invalid bit count %d\n", __func__,
                      bitbuffer->bits_per_row[0]);
