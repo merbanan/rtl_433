@@ -9,6 +9,8 @@
 /**
 Jasco/GE Choice Alert Wireless Device Decoder.
 
+- Frequency: 318.01 MHz
+
 v0.1 based on the contact and water sensors Model 45131 / FCC ID QOB45131-3
 
 bit stream is 25-27 bits
