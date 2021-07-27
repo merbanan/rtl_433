@@ -71,8 +71,7 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Jasco/GE Choice Alert Security Devices",
-            "sensor_id",        "Id",           DATA_INT,    sensor_id,
-//            "battery_ok",       "Battery",      DATA_INT,    battery,
+            "id",               "Id",           DATA_INT,    sensor_id,
             "status",           "Closed",       DATA_INT,    s_closed,
             "CRC",              "CRC",          DATA_INT,    crc ,
             NULL);
@@ -84,8 +83,7 @@ static int jasco_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "sensor_id",
-//        "battery_ok",
+        "id",
         "status",
         "CRC",
         NULL,
