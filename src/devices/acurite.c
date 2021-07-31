@@ -1233,6 +1233,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    int result = 0;
     bitbuffer_invert(bitbuffer);
 
     // This sensor repeats a signal three times. Combine as fallback.
@@ -1261,6 +1262,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Output the first valid row
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         if (bitbuffer->bits_per_row[row] != 88) {
+            result = DECODE_ABORT_LENGTH;
             continue; // return DECODE_ABORT_LENGTH;
         }
         uint8_t *b = bitbuffer->bb[row];
@@ -1269,6 +1271,7 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (crc16lsb(b, 11, 0x00b2, 0x00d0) != 0) {
             if (decoder->verbose)
                 bitrow_printf(b, 11 * 8, "%s: sensor bad CRC: ", __func__);
+            result = DECODE_FAIL_MIC;
             continue; // return DECODE_FAIL_MIC;
         }
 
@@ -1307,7 +1310,8 @@ static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         return 1;
     }
-    return 0;
+    // Only returns the latest result, but better than nothing.
+    return result;
 }
 
 static char *acurite_rain_gauge_output_fields[] = {
