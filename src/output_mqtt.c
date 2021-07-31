@@ -101,7 +101,7 @@ static void mqtt_client_event(struct mg_connection *nc, int ev, void *ev_data)
     }
 }
 
-static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain)
+static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts, char const *host, char const *port, char const *user, char const *pass, char const *client_id, int retain, int qos)
 {
     mqtt_client_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx)
@@ -109,7 +109,7 @@ static mqtt_client_t *mqtt_client_init(struct mg_mgr *mgr, tls_opts_t *tls_opts,
 
     ctx->mqtt_opts.user_name = user;
     ctx->mqtt_opts.password  = pass;
-    ctx->publish_flags  = MG_MQTT_QOS(0) | (retain ? MG_MQTT_RETAIN : 0);
+    ctx->publish_flags  = MG_MQTT_QOS(qos) | (retain ? MG_MQTT_RETAIN : 0);
     // TODO: these should be user configurable options
     //ctx->opts.keepalive = 60;
     //ctx->timeout = 10000L;
@@ -499,6 +499,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     char *user = NULL;
     char *pass = NULL;
     int retain = 0;
+    int qos = 0;
 
     // parse host and port
     tls_opts_t tls_opts = {0};
@@ -524,6 +525,8 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
             pass = val;
         else if (!strcasecmp(key, "r") || !strcasecmp(key, "retain"))
             retain = atobv(val, 1);
+        else if (!strcasecmp(key, "q") || !strcasecmp(key, "qos"))
+            qos = atoiv(val, 1);
         // Simple key-topic mapping
         else if (!strcasecmp(key, "d") || !strcasecmp(key, "devices"))
             mqtt->devices = mqtt_topic_default(val, base_topic, path_devices);
@@ -577,7 +580,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     mqtt->output.print_int    = print_mqtt_int;
     mqtt->output.output_free  = data_output_mqtt_free;
 
-    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain);
+    mqtt->mqc = mqtt_client_init(mgr, &tls_opts, host, port, user, pass, client_id, retain, qos);
 
     return &mqtt->output;
 }
