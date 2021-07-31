@@ -130,9 +130,12 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
     data_t *data;
 
+    int result = 0;
+
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         // break out the message nybbles into separate bytes
         if (lacrossetx_detect(decoder, bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0) {
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -152,6 +155,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                         "LaCrosse TX Sensor %02x, type: %d: message value mismatch int(%3.1f) != %d?\n",
                         sensor_id, msg_type, msg_value, msg_value_int);
             }
+            result = DECODE_FAIL_SANITY;
             continue; // DECODE_FAIL_SANITY
         }
 
@@ -190,7 +194,10 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    return events;
+    if (events)
+      return events;
+
+    return result;
 }
 
 static char *output_fields[] = {
