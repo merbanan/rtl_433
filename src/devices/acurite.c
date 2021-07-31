@@ -176,6 +176,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     float tempc;
     uint8_t humidity, id, status;
     data_t *data;
+    int result = 0;
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         if (bitbuffer->bits_per_row[brow] != 40) {
