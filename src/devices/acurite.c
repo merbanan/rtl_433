@@ -179,6 +179,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         if (bitbuffer->bits_per_row[brow] != 40) {
+           result = DECODE_ABORT_LENGTH;
            continue; // DECODE_ABORT_LENGTH
         }
 
@@ -187,6 +188,7 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         cksum = (bb[0] + bb[1] + bb[2] + bb[3]);
 
         if (cksum == 0 || ((cksum & 0xff) != bb[4])) {
+            result = DECODE_FAIL_MIC;
             continue; // DECODE_FAIL_MIC
         }
 
@@ -219,7 +221,8 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (valid)
         return 1;
 
-    return 0;
+    // Only returns the latest result, but better than nothing.
+    return result;
 }
 
 /**
@@ -1005,6 +1008,8 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int battery_low;
     data_t *data;
 
+    int result = 0;
+
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
 
         if (decoder->verbose > 1)
@@ -1014,6 +1019,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             bitbuffer->bits_per_row[brow] > 43 ) {
             if (decoder->verbose > 1 && bitbuffer->bits_per_row[brow] > 16)
                 fprintf(stderr,"%s: skipping wrong len\n", __func__);
+            result = DECODE_ABORT_LENGTH;
             continue; // DECODE_ABORT_LENGTH
         }
         bb = bitbuffer->bb[brow];
@@ -1022,6 +1028,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         // may eliminate these with a better PPM (precise?) demod.
         if ((bb[0] == 0xff && bb[1] == 0xff && bb[2] == 0xff) ||
                 (bb[0] == 0x00 && bb[1] == 0x00 && bb[2] == 0x00)) {
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -1089,7 +1096,7 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (valid_cnt)
         return 1;
 
-    return 0;
+    return result;
 }
 
 static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)

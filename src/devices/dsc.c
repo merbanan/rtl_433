@@ -113,6 +113,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
+    int result = 0;
+
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
             fprintf(stderr, "%s: row %d bit count %d\n", __func__,
@@ -132,6 +134,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 fprintf(stderr, "%s: row %d invalid bit count %d\n", __func__,
                         row, bitbuffer->bits_per_row[row]);
             }
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -145,6 +148,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose > 1) {
                 bitrow_printf(b, 40, "%s: Invalid start/sync bits ", __func__);
             }
+            result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }
 
@@ -156,6 +160,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         // prevent false positive of: ff ff ff ff 00
         if (bytes[0] == 0xff && bytes[1] == 0xff && bytes[2] == 0xff && bytes[3] == 0xff) {
+            result = DECODE_FAIL_SANITY;
             continue; // DECODE_FAIL_SANITY
         }
 
@@ -172,6 +177,7 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
             if (decoder->verbose)
                 fprintf(stderr, "%s: Contact bad CRC: %06X, Status: %02X, CRC: %02X\n", __func__,
                         esn, status, crc);
+            result = DECODE_FAIL_MIC;
             continue; // DECODE_FAIL_MIC
         }
 
@@ -235,7 +241,8 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return 1;
     }
 
-    return 0;
+    // Only returns the latest result, but better than nothing.
+    return result;
 }
 
 static char *output_fields[] = {
