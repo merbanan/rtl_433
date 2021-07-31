@@ -53,7 +53,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Row [0] is sync pulse
     // Validate length
     if (bitbuffer->bits_per_row[1] != 32) { // Don't waste time on a wrong length package
-        if (decoder->verbose)
+        if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
             fprintf(stderr, "X10-RF: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }

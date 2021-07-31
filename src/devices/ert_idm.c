@@ -121,18 +121,10 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // char  PacketCRC_str[8];
 
     if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-        fprintf(stderr, "\n\n%s: rows=%hu, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+        fprintf(stderr, "%s: rows=%hu, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
     }
 
     if (bitbuffer->bits_per_row[0] < IDM_PACKET_BITLEN) {
-
-        // to be removed later
-        if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH, row len=%hu < %d\n", __func__,
-                    bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %hu < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-            bitbuffer_print(bitbuffer);
-        }
         return (DECODE_ABORT_LENGTH);
     }
 
@@ -143,23 +135,10 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
-
-        // to be removed later
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_EARLY s > l\n", __func__);
-            bitbuffer_print(bitbuffer);
-        }
         return DECODE_ABORT_EARLY;
     }
 
     if ((bitbuffer->bits_per_row[0] - sync_index) < IDM_PACKET_BITLEN) {
-
-        // to be removed later
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %u < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
-            //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
-            bitbuffer_print(bitbuffer);
-        }
         return DECODE_ABORT_LENGTH;
     }
 
@@ -261,7 +240,7 @@ static int ert_idm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int j = 0; j < 47; j++) {
             fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
         }
-        fprintf(stderr, "\n\n");
+        fprintf(stderr, "\n");
     }
 
     TransmitTimeOffset = (b[84] << 8 | b[85]);
@@ -402,18 +381,10 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // char  PacketCRC_str[8];
 
     if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-        fprintf(stderr, "\n\n%s: rows=%d, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
+        fprintf(stderr, "%s: rows=%d, row0 len=%hu\n", __func__, bitbuffer->num_rows, bitbuffer->bits_per_row[0]);
     }
 
     if (bitbuffer->bits_per_row[0] < IDM_PACKET_BITLEN) {
-
-        // to be removed later
-        if (decoder->verbose && bitbuffer->bits_per_row[0] > 600) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH, row len=%hu < %d\n", __func__,
-                    bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 1 %d < %d\n", __func__, bitbuffer->bits_per_row[0], IDM_PACKET_BITLEN);
-        }
-        // bitbuffer_print(bitbuffer);
         return (DECODE_ABORT_LENGTH);
     }
 
@@ -424,21 +395,10 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     if (sync_index >= bitbuffer->bits_per_row[0]) {
-
-        // to be removed later
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_EARLY s > l\n", __func__);
-            bitbuffer_print(bitbuffer);
-        }
         return DECODE_ABORT_EARLY;
     }
 
     if ((bitbuffer->bits_per_row[0] - sync_index) < IDM_PACKET_BITLEN) {
-        if (decoder->verbose) {
-            fprintf(stderr, "%s: DECODE_ABORT_LENGTH 2 %u < %d\n", __func__, (bitbuffer->bits_per_row[0] - sync_index), IDM_PACKET_BITLEN);
-            //  bitrow_printf(b, bitbuffer->bits_per_row[0], "%s bitrow_printf", __func__);
-            bitbuffer_print(bitbuffer);
-        }
         return DECODE_ABORT_LENGTH;
     }
 
@@ -554,7 +514,7 @@ static int ert_netidm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         for (int j = 0; j < 27; j++) {
             fprintf(stderr, "%d ", DifferentialConsumptionIntervals[j]);
         }
-        fprintf(stderr, "\n\n");
+        fprintf(stderr, "\n");
         // bitrow_debug(&b[36], 48*8);
     }
 
