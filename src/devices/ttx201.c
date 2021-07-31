@@ -121,7 +121,7 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
                         row, bits, MSG_PACKET_BITS);
             }
         }
-        return 0;
+        return DECODE_ABORT_LENGTH;
     }
 
     bitbuffer_extract_bytes(bitbuffer, row, bitpos + MSG_PAD_BITS, b, MSG_PACKET_BITS + MSG_PAD_BITS);
@@ -157,13 +157,13 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
         if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%u wrong postmark 0x%02x (expected 0x%02x).\n",
                     row, postmark, MSG_PACKET_POSTMARK);
-        return 0;
+        return DECODE_FAIL_SANITY;
     }
 
     if (checksum != checksum_calculated) {
         if (decoder->verbose > 1)
             fprintf(stderr, "Packet #%u checksum error.\n", row);
-        return 0;
+        return DECODE_FAIL_MIC;
     }
 
     device_id = b[1];
