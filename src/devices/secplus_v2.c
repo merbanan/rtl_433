@@ -79,8 +79,6 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
 
     uint8_t part_id = (bits->bb[0][0] >> 6);
 
-    // fprintf(stderr, "%s: part %d\n", __func__, part_id);
-
     if (verbose) {
         fprintf(stderr, "%s: bits_per_row = %d\n", __func__, bits->bits_per_row[0]);
 
@@ -118,8 +116,6 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
         p0 ^= (x & 0x00000001) << i;
         x >>= 1;
     }
-
-    // fprintf(stderr, "f1 (%d) %d %d %d\n", part_id, p0, p1, p2);
 
     // selectively invert buffers
     switch (invert) {
@@ -223,11 +219,9 @@ int _decode_v2_half(bitbuffer_t *bits, uint8_t roll_array[], bitbuffer_t *fixed_
     }
 
     if (verbose) {
-        fprintf(stderr, "%s : roll_array : (%d) ", __func__, part_id);
-        for (int i = 0; i < 9; i++) {
-            fprintf(stderr, "%d ", roll_array[i]);
-        }
-        fprintf(stderr, "\n");
+        fprintf(stderr, "%s : roll_array : (%d) %d %d %d %d %d %d %d %d %d\n", __func__, part_id,
+                roll_array[0], roll_array[1], roll_array[2], roll_array[3],
+                roll_array[4], roll_array[5], roll_array[6], roll_array[7], roll_array[8]);
     }
 
     // SANITY check trinary valuse, 00/01/10 are valid,  11 is not
@@ -293,9 +287,7 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // valid = 0X00XXXX
         // 1st 3rs and 4th bits should always be 0
         if (bits.bb[0][0] & 0xB0) {
-            if (decoder->verbose)
-                fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
-            continue;
+            continue; // DECODE_FAIL_SANITY;
         }
 
         // 2nd bit indicates with half of the data
@@ -317,11 +309,8 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     }
 
-    // Do was have what we need ??
+    // Do we have what we need ??
     if (fixed_1.bits_per_row[0] == 0 || fixed_2.bits_per_row[0] == 0) {
-        //  No?  Awww F'ck it then
-        if (decoder->verbose)
-            fprintf(stderr, "%s: DECODE_FAIL_SANITY\n", __func__);
         return DECODE_FAIL_SANITY;
     }
 
@@ -352,7 +341,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (int i = 0; i < 18; i++) {
         rolling_temp = (rolling_temp * 3) + rolling_digits[i];
-        // fprintf(stderr, ">> %12d\t%d\n", rolling_temp, rolling_digits[i]);
     }
 
     // Max value = 2^28 (268435456)
@@ -377,8 +365,6 @@ static int secplus_v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     fixed_total ^= ((uint64_t)bb[0]) << 12;
     fixed_total ^= ((uint64_t)bb[1]) << 4;
     fixed_total ^= (bb[2] >> 4) & 0x0f;
-
-    // fprintf(stderr, "fixed_total = %lu\n", fixed_total);
 
     // int button    = fixed_total >> 32;
     // int remote_id = fixed_total & 0xffffffff;
@@ -411,7 +397,7 @@ static char *output_fields[] = {
         // Common fields
         "model",
         "id",
-        "rolling"
+        "rolling",
         "fixed",
         "button_id",
         "remote_id",

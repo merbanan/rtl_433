@@ -75,10 +75,6 @@ static int gt_tmbbq05_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t b[4],p[4];
     data_t *data;
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: Possible Quigg BBQ: ", __func__);
-    }
-
     // 33 bit, repeated multiple times (technically it is repeated 8 times, look for 5 identical versions)
     int r = bitbuffer_find_repeated_row(bitbuffer, 5, 33);
 

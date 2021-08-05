@@ -73,13 +73,13 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             watt2 = (b[6] & 0x7F) << 8 | b[7];
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, is_envir ? "CurrentCost-EnviR" : _X("CurrentCost-TX","CurrentCost TX"), //TODO: it may have different CC Model ? any ref ?
-                //"rc",            "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
-                _X("id","dev_id"),       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
-                _X("power0_W","power0"),       "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
-                _X("power1_W","power1"),       "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
-                _X("power2_W","power2"),       "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
-                //"battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK", //TODO is there some low battery indicator ?
+                "model",        "",              DATA_STRING, is_envir ? "CurrentCost-EnviR" : "CurrentCost-TX", //TODO: it may have different CC Model ? any ref ?
+                //"rc",           "Rolling Code",  DATA_INT, rc, //TODO: add rolling code b[1] ? test needed
+                "id",           "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+                "power0_W",     "Power 0",       DATA_FORMAT, "%d W", DATA_INT, watt0,
+                "power1_W",     "Power 1",       DATA_FORMAT, "%d W", DATA_INT, watt1,
+                "power2_W",     "Power 2",       DATA_FORMAT, "%d W", DATA_INT, watt2,
+                //"battery_ok",   "Battery",       DATA_INT,    !battery_low, //TODO is there some low battery indicator ?
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -93,11 +93,11 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
        uint32_t c_impulse = (unsigned)b[4] << 24 | b[5] <<16 | b[6] <<8 | b[7];
        /* clang-format off */
        data = data_make(
-               "model",        "",              DATA_STRING, is_envir ? "CurrentCost-EnviRCounter" :_X("CurrentCost-Counter","CurrentCost Counter"), //TODO: it may have different CC Model ? any ref ?
-               _X("subtype","sensor_type"),  "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
-               _X("id","dev_id"),       "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
-               //"counter",      "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
-               "power0",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               "model",         "",              DATA_STRING, is_envir ? "CurrentCost-EnviRCounter" : "CurrentCost-Counter", //TODO: it may have different CC Model ? any ref ?
+               "subtype",       "Sensor Id",     DATA_FORMAT, "%d", DATA_INT, sensor_type, //Could "friendly name" this?
+               "id",            "Device Id",     DATA_FORMAT, "%d", DATA_INT, device_id,
+               //"counter",       "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
+               "power0",        "Counter",       DATA_FORMAT, "%d", DATA_INT, c_impulse,
                NULL);
        /* clang-format on */
        decoder_output_data(decoder, data);
@@ -109,13 +109,8 @@ static int current_cost_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "dev_id", // TODO: delete this
         "id",
-        "sensor_type", // TODO: delete this
         "subtype",
-        "power0", // TODO: delete this
-        "power1", // TODO: delete this
-        "power2", // TODO: delete this
         "power0_W",
         "power1_W",
         "power2_W",

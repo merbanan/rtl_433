@@ -9,6 +9,7 @@ add_library(r_433 STATIC
     am_analyze.c
     baseband.c
     bitbuffer.c
+    compat_alarm.c
     compat_paths.c
     compat_time.c
     confparse.c
@@ -43,6 +44,7 @@ add_library(r_433 STATIC
     devices/ambientweather_tx8300.c
     devices/ambientweather_wh31e.c
     devices/archos_tbh.c
+    devices/auriol_aft77b2.c
     devices/auriol_afw2a1.c
     devices/auriol_ahfl.c
     devices/auriol_hg02832.c
@@ -84,6 +86,7 @@ add_library(r_433 STATIC
     devices/fineoffset.c
     devices/fineoffset_wh1050.c
     devices/fineoffset_wh1080.c
+    devices/fineoffset_wh31l.c
     devices/flex.c
     devices/fordremote.c
     devices/fs20.c
@@ -101,6 +104,7 @@ add_library(r_433 STATIC
     devices/holman_ws5029.c
     devices/hondaremote.c
     devices/honeywell.c
+    devices/honeywell_cm921.c
     devices/honeywell_wdb.c
     devices/ht680.c
     devices/ibis_beacon.c
@@ -124,6 +128,7 @@ add_library(r_433 STATIC
     devices/lacrossews.c
     devices/lightwave_rf.c
     devices/m_bus.c
+    devices/marlec_solar.c
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
@@ -147,6 +152,7 @@ add_library(r_433 STATIC
     devices/quhwa.c
     devices/radiohead_ask.c
     devices/rftech.c
+    devices/rojaflex.c
     devices/rubicson.c
     devices/rubicson_48659.c
     devices/s3318p.c
@@ -159,7 +165,8 @@ add_library(r_433 STATIC
     devices/simplisafe.c
     devices/smoke_gs558.c
     devices/solight_te44.c
-    devices/somfy.c
+    devices/somfy_iohc.c
+    devices/somfy_rts.c
     devices/springfield.c
     devices/steelmate.c
     devices/tfa_30_3196.c
@@ -175,6 +182,7 @@ add_library(r_433 STATIC
     devices/tpms_citroen.c
     devices/tpms_elantra2012.c
     devices/tpms_ford.c
+    devices/tpms_hyundai_vdo.c
     devices/tpms_jansite.c
     devices/tpms_jansite_solar.c
     devices/tpms_pmv107j.c

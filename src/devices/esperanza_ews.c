@@ -13,6 +13,11 @@
 Largely the same as kedsum, s3318p.
 @sa kedsum.c s3318p.c
 
+List of known supported devices:
+- JYWDJ-009
+      * Known voltage operating range 1.7V - 3.8V
+      * Low-batt flag is raised when supply voltage goes below 2.75V
+
 Frame structure:
 
     Byte:      0        1        2        3        4
@@ -24,8 +29,14 @@ Frame structure:
 - C: Channel (1-3)
 - T: Temperature (Little-endian)
 - H: Humidity (Little-endian)
-- F: Flags
+- F: Flags (unknown low-batt unknown unknown)
 - X: CRC-4 poly 0x3 init 0x0 xor last 4 bits
+
+Flags (bbbb)
+3: Unknown
+2: low-batt Flag is raised when supply voltage drops below threshold.
+1: Unknown
+0: Unknown
 
 Sample Data:
 
@@ -79,14 +90,17 @@ static int esperanza_ews_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int device_id = b[0];
     int channel   = ((b[1] & 0x30) >> 4) + 1;
+    // Battery status is the 7th bit 0x40. 0 = normal, 1 = low
+    unsigned char const battery_low = (b[4] & 0x40) == 0x40;
     int temp_raw  = ((b[2] & 0x0f) << 8) | (b[2] & 0xf0) | (b[1] & 0x0f);
     float temp_f  = (temp_raw - 900) * 0.1f;
     int humidity  = ((b[3] & 0x0f) << 4) | ((b[3] & 0xf0) >> 4);
 
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Esperanza-EWS","Esperanza EWS"),
+            "model",            "",             DATA_STRING, "Esperanza-EWS",
             "id",               "ID",           DATA_INT, device_id,
             "channel",          "Channel",      DATA_INT, channel,
+            "battery_ok",       "Battery",      DATA_INT, !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",              "Integrity",    DATA_STRING, "CRC",

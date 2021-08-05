@@ -113,10 +113,6 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int s_closed, s_event, s_tamper, s_battery_low;
     int s_xactivity, s_xtamper1, s_xtamper2, s_exception;
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
     for (int row = 0; row < bitbuffer->num_rows; row++) {
         if (decoder->verbose > 1 && bitbuffer->bits_per_row[row] > 0 ) {
             fprintf(stderr, "%s: row %d bit count %d\n", __func__,
@@ -212,12 +208,12 @@ static int dsc_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",        "",             DATA_STRING, _X("DSC-Security","DSC Contact"),
+                "model",        "",             DATA_STRING, "DSC-Security",
                 "id",           "",             DATA_INT,    esn,
                 "closed",       "",             DATA_INT,    s_closed, // @todo make bool
                 "event",        "",             DATA_INT,    s_event, // @todo make bool
                 "tamper",       "",             DATA_INT,    s_tamper, // @todo make bool
-                _X("battery_ok","battery_low"), "", DATA_INT, _X(!s_battery_low,s_battery_low),
+                "battery_ok",   "Battery",      DATA_INT,    !s_battery_low,
                 "xactivity",    "",             DATA_INT,    s_xactivity, // @todo make bool
 
                 // Note: the following may change or be removed

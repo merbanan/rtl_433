@@ -144,9 +144,9 @@ static int acurite_rain_896_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",                "",             DATA_STRING, _X("Acurite-Rain","Acurite Rain Gauge"),
+            "model",                "",             DATA_STRING, "Acurite-Rain",
             "id",                   "",             DATA_INT,    id,
-            _X("rain_mm","rain"),   "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain,
+            "rain_mm",              "Total Rain",   DATA_FORMAT, "%.1f mm", DATA_DOUBLE, total_rain,
             NULL);
     /* clang-format on */
 
@@ -202,9 +202,9 @@ static int acurite_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("Acurite-609TXC","Acurite 609TXC Sensor"),
+                "model",            "",             DATA_STRING, "Acurite-609TXC",
                 "id",               "",             DATA_INT,    id,
-                "battery",          "",             DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                 "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                 "status",           "",             DATA_INT,    status,
@@ -402,10 +402,10 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, _X("Acurite-6045M","Acurite Lightning 6045M"),
+            "model",            "",                 DATA_STRING, "Acurite-6045M",
             "id",               NULL,               DATA_INT,    sensor_id,
             "channel",          NULL,               DATA_STRING, channel_str,
-            "battery",          "battery",          DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_F",    "temperature",      DATA_FORMAT, "%.1f F",     DATA_DOUBLE,     tempf,
             "humidity",         "humidity",         DATA_FORMAT, "%u %%", DATA_INT,    humidity,
             "strike_count",     "strike_count",     DATA_INT,    strike_count,
@@ -547,8 +547,8 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
             "id",                   NULL,           DATA_INT,    sensor_id,
             "channel",              NULL,           DATA_STRING, &channel_str,
             "sequence_num",         NULL,           DATA_INT,    sequence_num,
-            "battery_ok",           NULL,           DATA_INT,    !battery_low,
-            "message_type",              NULL,           DATA_INT,    message_type,
+            "battery_ok",           "Battery",      DATA_INT,    !battery_low,
+            "message_type",         NULL,           DATA_INT,    message_type,
             "wind_avg_mi_h",        "Wind Speed",   DATA_FORMAT, "%.1f mi/h", DATA_DOUBLE, wind_speed_mph,
             NULL);
     /* clang-format on */
@@ -663,10 +663,6 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
     for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
         browlen = (bitbuffer->bits_per_row[brow] + 7)/8;
         bb = bitbuffer->bb[brow];
@@ -736,10 +732,10 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
             /* clang-format off */
             data = data_make(
-                    "model",                "",             DATA_STRING, _X("Acurite-Tower","Acurite tower sensor"),
+                    "model",                "",             DATA_STRING, "Acurite-Tower",
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
-                    _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
+                    "battery_ok",           "Battery",      DATA_INT,    !battery_low,
                     "temperature_C",        "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, tempc,
                     "humidity",             "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,    humidity,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
@@ -788,7 +784,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                     "model",                "",             DATA_STRING, "Acurite-515",
                     "id",                   "",             DATA_INT,    sensor_id,
                     "channel",              NULL,           DATA_STRING, &channel_str,
-                    _X("battery_ok","battery_low"), "",     DATA_INT,    _X(!battery_low,battery_low),
+                    "battery_ok",           "Battery",      DATA_INT,    !battery_low,
                     "temperature_F",        "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, tempf,
                     "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                     NULL);
@@ -823,7 +819,7 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             //  1101 xxxx  = channel A 2nd copy
             //  1110 xxxx  = channel A 3rd copy
             sequence_num = (bb[0] & 0x30) >> 4;
-            battery_low = (bb[2] & 0x40) >> 6;
+            battery_low = (bb[2] & 0x40) == 0;
 
             // Only for 5N1, range: 0 to 159 kph
             // raw number is cup rotations per 4 seconds
@@ -843,15 +839,15 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 /* clang-format off */
                 data = data_make(
-                        "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
+                        "model",        "",   DATA_STRING,    "Acurite-5n1",
                         "message_type", NULL,   DATA_INT,       message_type,
-                        _X("id", "sensor_id"),    NULL, DATA_INT,       sensor_id,
+                        "id",           NULL, DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
+                        "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                        "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "wind_dir_deg", NULL,   DATA_FORMAT,    "%.1f", DATA_DOUBLE,    wind_dir,
-                        _X("rain_in","rain_inch"), "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
+                        "rain_in",      "Rainfall Accumulation",   DATA_FORMAT, "%.2f in", DATA_DOUBLE, raincounter * 0.01f,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
                         NULL);
                 /* clang-format on */
@@ -870,13 +866,13 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 /* clang-format off */
                 data = data_make(
-                        "model",        "",   DATA_STRING,    _X("Acurite-5n1","Acurite 5n1 sensor"),
+                        "model",        "",   DATA_STRING,    "Acurite-5n1",
                         "message_type", NULL,   DATA_INT,       message_type,
-                        _X("id", "sensor_id"),    NULL, DATA_INT,  sensor_id,
+                        "id",           NULL, DATA_INT,  sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_km_h","wind_speed_kph"),   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
+                        "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                        "wind_avg_km_h",   "wind_speed",   DATA_FORMAT,    "%.1f km/h", DATA_DOUBLE,     wind_speed_kph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
@@ -899,13 +895,13 @@ static int acurite_txr_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
                 /* clang-format off */
                 data = data_make(
-                        "model",        "",   DATA_STRING,    _X("Acurite-3n1","Acurite 3n1 sensor"),
+                        "model",        "",   DATA_STRING,    "Acurite-3n1",
                         "message_type", NULL,   DATA_INT,       message_type,
-                        _X("id", "sensor_id"),    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
+                        "id",    NULL,   DATA_FORMAT,    "0x%02X",   DATA_INT,       sensor_id,
                         "channel",      NULL,   DATA_STRING,    &channel_str,
                         "sequence_num",  NULL,   DATA_INT,      sequence_num,
-                        "battery",      NULL,   DATA_STRING,    battery_low ? "OK" : "LOW",
-                        _X("wind_avg_mi_h","wind_speed_mph"),   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
+                        "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+                        "wind_avg_mi_h",   "wind_speed",   DATA_FORMAT,    "%.1f mi/h", DATA_DOUBLE,     wind_speed_mph,
                         "temperature_F",     "temperature",    DATA_FORMAT,    "%.1f F", DATA_DOUBLE,    tempf,
                         "humidity",     NULL,    DATA_FORMAT,    "%u %%",   DATA_INT,   humidity,
                         "mic",                  "Integrity",    DATA_STRING, "CHECKSUM",
@@ -1075,10 +1071,10 @@ static int acurite_986_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("Acurite-986","Acurite 986 Sensor"),
+                "model",            "",             DATA_STRING, "Acurite-986",
                 "id",               NULL,           DATA_INT,    sensor_id,
                 "channel",          NULL,           DATA_STRING, channel_str,
-                "battery",          "battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery_low,
                 "temperature_F",    "temperature",  DATA_FORMAT, "%f F", DATA_DOUBLE,    (float)tempf,
                 "status",           "status",       DATA_INT,    status,
                 "mic",              "Integrity",    DATA_STRING, "CRC",
@@ -1103,7 +1099,7 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int row;
     int16_t temp_raw; // temperature as read from the data packet
     float temp_c;     // temperature in C
-    int battery;      // the battery status: 1 is good, 0 is low
+    int battery_ok;   // the battery status: 1 is good, 0 is low
     int sensor_id;    // the sensor ID - basically a random number that gets reset whenever the battery is removed
 
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 32); // expected are 6 rows
@@ -1122,9 +1118,6 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
         return DECODE_FAIL_SANITY;
 
-    if (decoder->verbose > 1)
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-
     // calculate the checksum and only continue if we have a matching checksum
     uint8_t chk = lfsr_digest8(b, 3, 0x98, 0xf1);
     if (chk != b[3])
@@ -1134,16 +1127,16 @@ static int acurite_606_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
     sensor_id = b[0];
-    battery   = (b[1] & 0x80) >> 7;
+    battery_ok = (b[1] & 0x80) >> 7;
     temp_raw  = (int16_t)((b[1] << 12) | (b[2] << 4));
     temp_raw  = temp_raw >> 4;
     temp_c    = temp_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Acurite-606TX","Acurite 606TX Sensor"),
+            "model",            "",             DATA_STRING, "Acurite-606TX",
             "id",               "",             DATA_INT, sensor_id,
-            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
@@ -1159,7 +1152,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t *b;
     int row;
     int sensor_id; // the sensor ID - basically a random number that gets reset whenever the battery is removed
-    int battery;   // the battery status: 1 is good, 0 is low
+    int battery_ok; // the battery status: 1 is good, 0 is low
     int channel;
     int humidity;
     int temp_raw; // temperature as read from the data packet
@@ -1168,9 +1161,6 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     row = bitbuffer_find_repeated_row(bitbuffer, 3, 25); // expected are min 3 rows
     if (row < 0)
         return DECODE_ABORT_EARLY;
-
-    if (decoder->verbose > 1)
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
 
     if (bitbuffer->bits_per_row[row] > 25)
         return DECODE_ABORT_LENGTH;
@@ -1203,7 +1193,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // Upper 4 bits are stored in nibble 1, lower 8 bits are stored in nibble 2
     // upper 4 bits of nibble 1 are reserved for other usages (e.g. battery status)
     sensor_id = b[0] & 0xFE; //first 6 bits and it changes each time it resets or change the battery
-    battery   = (b[0] & 0x01); //1=ok, 0=low battery
+    battery_ok = (b[0] & 0x01); //1=ok, 0=low battery
     //next 2 bits are checksum
     //next two bits are identify ID (maybe channel ?)
     channel = (b[1] >> 4) & 0x03;
@@ -1221,7 +1211,7 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
      data = data_make(
             "model",            "",             DATA_STRING, "Acurite-590TX",
             "id",               "",             DATA_INT,    sensor_id,
-            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
+            "battery_ok",       "Battery",      DATA_INT,    battery_ok,
             "channel",          "Channel",      DATA_INT,    channel,
             "humidity",         "Humidity",     DATA_COND,   humidity != -1,    DATA_INT,    humidity,
             "temperature_C",    "Temperature",  DATA_COND,   humidity == -1,    DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
@@ -1235,118 +1225,86 @@ static int acurite_590tx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static int acurite_00275rm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int crc, battery_low, id, model_flag, valid = 0;
-    data_t *data;
-    float tempc, ptempc;
-    uint8_t probe, humidity, phumidity, water;
-    uint8_t signal[3][11];  //  Hold three copies of the signal
-    int     nsignal = 0;
-
     bitbuffer_invert(bitbuffer);
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
-    //  This sensor repeats signal three times.  Store each copy.
-    for (uint16_t brow = 0; brow < bitbuffer->num_rows; ++brow) {
-        if (bitbuffer->bits_per_row[brow] != 88)
-          continue; // DECODE_ABORT_LENGTH
-        if (nsignal>=3)
-          continue; // DECODE_ABORT_EARLY
-        memcpy(signal[nsignal], bitbuffer->bb[brow], 11);
-        if (decoder->verbose)
-            bitrow_printf(signal[nsignal], 11 * 8, "%s: ", __func__);
-        nsignal++;
-    }
-
-    //  All three signals were found
-    if (nsignal==3) {
-        //  Combine signal copies so that majority bit count wins
-        for (int i=0; i<11; i++) {
-            signal[0][i] =
-                    (signal[0][i] & signal[1][i]) |
-                    (signal[1][i] & signal[2][i]) |
-                    (signal[2][i] & signal[0][i]);
+    // This sensor repeats a signal three times. Combine as fallback.
+    uint8_t *b_rows[3] = {0};
+    int n_rows         = 0;
+    for (int row = 0; row < bitbuffer->num_rows; ++row) {
+        if (n_rows < 3 && bitbuffer->bits_per_row[row] == 88) {
+            b_rows[n_rows] = bitbuffer->bb[row];
+            n_rows++;
         }
-        // CRC check fails?
-        if ((crc=crc16lsb(&(signal[0][0]), 11/*len*/, 0x00b2/*poly*/, 0x00d0/*seed*/)) != 0) {
+    }
+
+    // Combine signal if exactly three repeats were found
+    if (n_rows == 3) {
+        uint8_t *b = bitbuffer->bb[bitbuffer->num_rows];
+        for (int i = 0; i < 11; ++i) {
+            // The majority bit count wins
+            b[i] = (b_rows[0][i] & b_rows[1][i]) |
+                    (b_rows[1][i] & b_rows[2][i]) |
+                    (b_rows[2][i] & b_rows[0][i]);
+        }
+        bitbuffer->bits_per_row[bitbuffer->num_rows] = 88;
+        bitbuffer->num_rows += 1;
+    }
+
+    // Output the first valid row
+    for (int row = 0; row < bitbuffer->num_rows; ++row) {
+        if (bitbuffer->bits_per_row[row] != 88) {
+            continue; // return DECODE_ABORT_LENGTH;
+        }
+        uint8_t *b = bitbuffer->bb[row];
+
+        // Check CRC
+        if (crc16lsb(b, 11, 0x00b2, 0x00d0) != 0) {
             if (decoder->verbose)
-                bitrow_printf(signal[0], 11 * 8, "%s: sensor bad CRC: %02x -", __func__, crc);
-        // CRC is OK
+                bitrow_printf(b, 11 * 8, "%s: sensor bad CRC: ", __func__);
+            continue; // return DECODE_FAIL_MIC;
         }
-        else {
-            //  Decode the combined signal
-            id          = (signal[0][0] << 16) | (signal[0][1] << 8) | signal[0][3];
-            battery_low = (signal[0][2] & 0x40) == 0;
-            model_flag  = (signal[0][2] & 1);
-            tempc       = ((signal[0][4] << 4) | (signal[0][5] >> 4)) * 0.1 - 100;
-            probe       = signal[0][5] & 3;
-            humidity    = ((signal[0][6] & 0x1f) << 2) | (signal[0][7] >> 6);
-            //  No probe
-            /* clang-format off */
-            data = data_make(
-                    "model",           "",             DATA_STRING,    model_flag ? _X("Acurite-00275rm","00275rm") : _X("Acurite-00276rm","00276rm"),
-                    _X("subtype","probe"), "Probe",    DATA_INT,       probe,
-                    "id",              "",             DATA_INT,       id,
-                    "battery",         "",             DATA_STRING,    battery_low ? "LOW" : "OK",
-                    "temperature_C",   "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
-                    "humidity",        "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       humidity,
-                    NULL);
-            /* clang-format on */
 
-            //  Water probe (detects water leak)
-            if (probe == 1) {
-                water = (signal[0][7] & 0x0f) == 15;
-                /* clang-format off */
-                data = data_append(data,
-                        "water",           "",             DATA_INT,       water,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            //  Soil probe (detects temperature)
-            else if (probe == 2) {
-                ptempc = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
-                /* clang-format off */
-                data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            //  Spot probe (detects temperature and humidity)
-            else if (probe == 3) {
-                ptempc    = (((signal[0][7] & 0x0f) << 8) | signal[0][8]) * 0.1 - 100;
-                phumidity = signal[0][9] & 0x7f;
-                /* clang-format off */
-                data = data_append(data,
-                        _X("temperature_1_C", "ptemperature_C"),  "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, ptempc,
-                        _X("humidity_1", "phumidity"),       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT,       phumidity,
-                        "mic",             "Integrity",    DATA_STRING,    "CRC",
-                        NULL);
-                /* clang-format on */
-            }
-            /* clang-format off */
-            data = data_append(data,
-                    "mic",             "Integrity",    DATA_STRING,    "CRC",
-                    NULL);
-            /* clang-format on */
+        //  Decode common fields
+        int id          = (b[0] << 16) | (b[1] << 8) | b[3];
+        int battery_low = (b[2] & 0x40) == 0;
+        int model_flag  = (b[2] & 1);
+        float tempc     = ((b[4] << 4) | (b[5] >> 4)) * 0.1 - 100;
+        int probe       = b[5] & 3;
+        int humidity    = ((b[6] & 0x1f) << 2) | (b[7] >> 6);
 
-            decoder_output_data(decoder, data);
-            valid = 1;
-        }
-    }
+        //  Water probe (detects water leak)
+        int water = (b[7] & 0x0f) == 15; // valid only if (probe == 1)
+        //  Soil probe (detects temperature)
+        float ptempc = (((b[7] & 0x0f) << 8) | b[8]) * 0.1 - 100; // valid only if (probe == 2 || probe == 3)
+        //  Spot probe (detects temperature and humidity)
+        int phumidity = b[9] & 0x7f; // valid only if (probe == 3)
 
-    if (valid)
+        /* clang-format off */
+        data_t *data = data_make(
+                "model",            "",             DATA_STRING,    model_flag ? "Acurite-00275rm" : "Acurite-00276rm",
+                "subtype",          "Probe",        DATA_INT,       probe,
+                "id",               "",             DATA_INT,       id,
+                "battery_ok",       "Battery",      DATA_INT,       !battery_low,
+                "temperature_C",    "Celsius",      DATA_FORMAT,    "%.1f C",  DATA_DOUBLE, tempc,
+                "humidity",         "Humidity",     DATA_FORMAT,    "%u %%", DATA_INT,      humidity,
+                "water",            "",             DATA_COND, probe == 1, DATA_INT,        water,
+                "temperature_1_C",  "Celsius",      DATA_COND, probe == 2, DATA_FORMAT, "%.1f C",   DATA_DOUBLE, ptempc,
+                "temperature_1_C",  "Celsius",      DATA_COND, probe == 3, DATA_FORMAT, "%.1f C",   DATA_DOUBLE, ptempc,
+                "humidity_1",       "Humidity",     DATA_COND, probe == 3, DATA_FORMAT, "%u %%",    DATA_INT,    phumidity,
+                "mic",              "Integrity",    DATA_STRING,    "CRC",
+                NULL);
+        /* clang-format on */
+
+        decoder_output_data(decoder, data);
+
         return 1;
+    }
     return 0;
 }
 
 static char *acurite_rain_gauge_output_fields[] = {
         "model",
         "id",
-        "rain", // TODO: remove this
         "rain_mm",
         NULL,
 };
@@ -1366,7 +1324,7 @@ r_device acurite_rain_896 = {
 static char *acurite_th_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "status",
@@ -1391,24 +1349,18 @@ r_device acurite_th = {
  */
 static char *acurite_txr_output_fields[] = {
         "model",
-        "subtype",      // TODO: remove this
         "message_type", // TODO: remove this
         "id",
-        "sensor_id", // TODO: remove this
         "channel",
         "sequence_num",
-        "battery_low", // TODO: remove this
         "battery_ok",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "temperature_F",
         "humidity",
-        "wind_speed_mph", // TODO: remove this
-        "wind_speed_kph", // TODO: remove this
         "wind_avg_mi_h",
         "wind_avg_km_h",
         "wind_dir_deg",
-        "rain_inch", // TODO: remove this
         "rain_in",
         "rain_mm",
         "storm_dist",
@@ -1450,7 +1402,7 @@ static char *acurite_986_output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_F",
         "status",
         NULL,
@@ -1477,7 +1429,7 @@ r_device acurite_986 = {
 static char *acurite_606_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,
@@ -1486,7 +1438,7 @@ static char *acurite_606_output_fields[] = {
 static char *acurite_590_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "channel",
         "temperature_C",
         "humidity",
@@ -1514,16 +1466,13 @@ r_device acurite_606 = {
 static char *acurite_00275rm_output_fields[] = {
         "model",
         "subtype",
-        "probe", // TODO: remove this
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "water",
         "temperature_1_C",
         "humidity_1",
-        "ptemperature_C",
-        "phumidity",
         "mic",
         NULL,
 };

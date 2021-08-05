@@ -58,12 +58,14 @@ static int generic_remote_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     *p = '\0';
 
+    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, _X("Generic-Remote","Generic Remote"),
+            "model",        "",             DATA_STRING, "Generic-Remote",
             "id",           "House Code",   DATA_INT, id_16b,
             "cmd",          "Command",      DATA_INT, cmd_8b,
             "tristate",     "Tri-State",    DATA_STRING, tristate,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
 

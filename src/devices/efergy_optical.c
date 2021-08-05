@@ -71,10 +71,6 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: matched ", __func__);
-    }
-
     // reject false positives
     if ((bytes[8] == 0) && (bytes[9] == 0) && (bytes[10] == 0) && (bytes[11] == 0)) {
         return DECODE_FAIL_SANITY;
@@ -116,12 +112,12 @@ static int efergy_optical_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",    "Model",        DATA_STRING, _X("Efergy-Optical","Efergy Optical"),
-                "id",       "",             DATA_INT,   id,
-                "pulses", "Pulse-rate",     DATA_INT, imp_kwh[i],
-                "pulsecount", "Pulse-count", DATA_INT, pulsecount,
-                _X("energy_kWh","energy"),   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_DOUBLE, energy,
-                "mic",       "Integrity",   DATA_STRING, "CRC",
+                "model",        "Model",        DATA_STRING, "Efergy-Optical",
+                "id",           "",             DATA_INT,   id,
+                "pulses",       "Pulse-rate",   DATA_INT, imp_kwh[i],
+                "pulsecount",   "Pulse-count",  DATA_INT, pulsecount,
+                "energy_kWh",   "Energy",       DATA_FORMAT, "%.03f kWh", DATA_DOUBLE, energy,
+                "mic",          "Integrity",    DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
         decoder_output_data(decoder, data);
@@ -134,7 +130,6 @@ static char *output_fields[] = {
         "id",
         "pulses",
         "pulsecount",
-        "energy", // TODO: remove this
         "energy_kWh",
         "mic",
         NULL,

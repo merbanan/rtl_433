@@ -18,15 +18,15 @@ Decoder for devices from the TBH project (https://www.projet-tbh.fr)
 There exist several device types (power, meteo, gaz,...)
 
 Payload format:
-- Synchro           {32} 0xaaaaaaaa
-- Preamble          {32} 0xd391d391
+- Preamble          {32} 0xaaaaaaaa
+- Syncword          {32} 0xd391d391
 - Length            {8}
 - Payload           {n}
 - Checksum          {16} CRC16 poly=0x8005 init=0xffff
 
 To get raw data:
 
-    ./rtl_433 -f 433901000 -X n=tbh,m=FSK_PCM,s=212,l=212,r=3000
+    ./rtl_433 -f 433901000 -X 'n=tbh,m=FSK_PCM,s=212,l=212,r=3000,preamble=aad391d391'
 
 The application data is obfuscated by doing data[n] xor data[n-1] xor info[n%16].
 
@@ -92,7 +92,7 @@ static int archos_tbh_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_LENGTH;
     }
 
-    uint8_t frame[63] = {0}; //TODO check max size, I have no idea, arbitrary limit of 60 bytes + 2 bytes crc
+    uint8_t frame[63] = {0}; // TODO check max size, I have no idea, arbitrary limit of 60 bytes + 2 bytes crc
     frame[0] = len;
     // Get frame (len don't include the length byte and the crc16 bytes)
     bitbuffer_extract_bytes(bitbuffer, row,

@@ -103,7 +103,7 @@ static int calibeur_rf104_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     humidity = bits;
 
     data = data_make(
-                    "model",         "",            DATA_STRING, _X("Calibeur-RF104","Calibeur RF-104"),
+                    "model",         "",            DATA_STRING, "Calibeur-RF104",
                     "id",            "ID",          DATA_INT, ID,
                     "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
                     "humidity",      "Humidity",    DATA_FORMAT, "%2.0f %%", DATA_DOUBLE, humidity,

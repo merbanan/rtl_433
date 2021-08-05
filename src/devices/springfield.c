@@ -63,7 +63,7 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         battery  = (b[1] >> 7) & 1;
         button   = (b[1] >> 6) & 1;
         channel  = ((b[1] >> 4) & 0x03) + 1;
-        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // sign extend
+        temp     = (int16_t)(((b[1] & 0x0f) << 12) | (b[2] << 4)); // uses sign extend
         temp_c   = (temp >> 4) * 0.1f;
         moisture = (b[3] >> 4) * 10; // Moisture level is 0-10
         //uk1      = b[4] >> 4; /* unknown. */
@@ -77,10 +77,10 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",             DATA_STRING, _X("Springfield-Soil","Springfield Temperature & Moisture"),
-                _X("id","sid"),              "SID",          DATA_INT,    sid,
+                "model",            "",             DATA_STRING, "Springfield-Soil",
+                "id",               "SID",          DATA_INT,    sid,
                 "channel",          "Channel",      DATA_INT,    channel,
-                "battery",          "Battery",      DATA_STRING, battery ? "LOW" : "OK",
+                "battery_ok",       "Battery",      DATA_INT,    !battery,
                 "transmit",         "Transmit",     DATA_STRING, button ? "MANUAL" : "AUTO", // TODO: delete this
                 "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
                 "moisture",         "Moisture",     DATA_FORMAT, "%d %%", DATA_INT, moisture,
@@ -98,10 +98,9 @@ static int springfield_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "sid", // TODO: delete this
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "transmit", // TODO: delete this
         "temperature_C",
         "moisture",

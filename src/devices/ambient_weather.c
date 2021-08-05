@@ -49,17 +49,19 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     temperature = (temp_f - 400) * 0.1f;
     humidity = b[4];
 
+    /* clang-format off */
     data = data_make(
-            "model",          "",             DATA_STRING, _X("Ambientweather-F007TH","Ambient Weather F007TH Thermo-Hygrometer"),
-            _X("id","device"),         "House Code",   DATA_INT,    deviceID,
+            "model",          "",             DATA_STRING, "Ambientweather-F007TH",
+            "id",             "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
-            "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "OK",
+            "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
             "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -104,10 +106,9 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "device", // TODO: delete this
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_F",
         "humidity",
         "mic",

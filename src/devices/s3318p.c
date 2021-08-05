@@ -99,13 +99,13 @@ static int s3318p_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("Conrad-S3318P","S3318P Temperature & Humidity Sensor"),
-            "id",               "ID",           DATA_INT, id,
-            "channel",          "Channel",      DATA_INT, channel,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "model",            "",             DATA_STRING, "Conrad-S3318P",
+            "id",               "ID",           DATA_INT,    id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_F",    "Temperature",  DATA_FORMAT, "%.02f F", DATA_DOUBLE, temp_f,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",           "Button",       DATA_INT, button,
+            "button",           "Button",       DATA_INT,    button,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -118,7 +118,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
-    "battery",
+    "battery_ok",
     "button",
     "temperature_F",
     "humidity",

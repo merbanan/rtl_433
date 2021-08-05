@@ -279,7 +279,7 @@ static char *unit_names[][3] = {
 
 // exponent                    -3     -2    -1    0  1   2    3     4
 // index                        0      1     2    3  4   5    6     7
-static float pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
+static double pow10_table[8] = { 0.001, 0.01, 0.1, 1, 10, 100, 1000, 10000 };
 
 
 static data_t *append_str(data_t *data, enum UnitType unit_type, uint8_t value_type, uint8_t sn, const char* extra, const char* value)
@@ -495,10 +495,10 @@ static int m_bus_decode_val(const uint8_t *b, uint8_t dif_coding, int64_t *out_v
  * @param vif_linear    Value Information Field
  * @param vif_uam       Value Information Field - unit type + multiplier
  * @param dif_sn        Data Information Field - storage number
- * @param dif_ff        Data Information Field - function field (00b	Instantaneous value
- *                                                               01b	Maximum value
- *                                                               10b	Minimum value
- *                                                               11b	Value during error state)
+ * @param dif_ff        Data Information Field - function field (00b    Instantaneous value
+ *                                                               01b    Maximum value
+ *                                                               10b    Minimum value
+ *                                                               11b    Value during error state)
  * @param dif_su        Data Information Field -
  * @return int
  */
@@ -517,13 +517,13 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
     switch (vif_linear) {
         case 0:
             if ((vif_uam&0xF8) == 0) {
-                // E000 0nnn Energy	10nnn-3 Wh	0.001Wh to 10000Wh
+                // E000 0nnn Energy 10nnn-3 Wh  0.001Wh to 10000Wh
                 data = append_val(data, kEnergy_Wh, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x08) {
-                // E000 1nnn	Energy	10nnn J	0.001kJ to 10000kJ
+                // E000 1nnn    Energy  10nnn J 0.001kJ to 10000kJ
                 data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x10) {
-                // E001 0nnn	Volume	10nnn-6 m3	0.001l to 10000l
+                // E001 0nnn    Volume  10nnn-6 m3  0.001l to 10000l
 
                 if (dif_sn == 0) {
                     data = append_val(data, kVolume, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
@@ -534,10 +534,10 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 }
 
             } else if ((vif_uam&0xF8) == 0x18) {
-                // E001 1nnn	Mass	10nnn-3 kg	0.001kg to 10000kg
+                // E001 1nnn    Mass    10nnn-3 kg  0.001kg to 10000kg
                 data = append_val(data, kEnergy_J, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x20) {
-                /* E010 00nn	On Time	nn = 00 seconds
+                /* E010 00nn    On Time nn = 00 seconds
                                         nn = 01 minutes
                                         nn = 10 hours
                                         nn = 11 days */
@@ -549,7 +549,7 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     default: break;
                 }
             } else if ((vif_uam&0xFC) == 0x24) {
-                // E010 01nn	Operating Time	coded like OnTime
+                // E010 01nn    Operating Time  coded like OnTime
                 switch (vif_uam&3) {
                     case 0: data = append_val(data, kOperTimeSec, dif_ff, dif_sn, "", val, 0); break;
                     case 1: data = append_val(data, kOperTimeMin, dif_ff, dif_sn, "", val, 0); break;
@@ -558,41 +558,41 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                     default: break;
                 }
             } else if ((vif_uam&0xF8) == 0x28) {
-                // E010 1nnn	Power	10nnn-3 W	0.001W to 10000W
+                // E010 1nnn    Power  10nnn-3 W    0.001W to 10000W
                 data = append_val(data, kPower_W, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x30) {
-                // E011 0nnn	Power	10nnn J/h	0.001kJ/h to 10000kJ/h
+                // E011 0nnn    Power   10nnn J/h   0.001kJ/h to 10000kJ/h
                 data = append_val(data, kPower_Jh, dif_ff, dif_sn, "", val, vif_uam&0x7);
             } else if ((vif_uam&0xF8) == 0x38) {
-                // E011 1nnn	Volume Flow	10nnn-6 m3/h	0.001l/h to 10000l/h
+                // E011 1nnn    Volume Flow 10nnn-6 m3/h   0.001l/h to 10000l/h
                 data = append_val(data, kVolumeFlow_h, dif_ff, dif_sn, "", val, -6 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x40) {
-                // E100 0nnn	Volume Flow ext.	10nnn-7 m3/min	0.0001l/min to 1000l/min
+                // E100 0nnn    Volume Flow ext.    10nnn-7 m3/min  0.0001l/min to 1000l/min
                 data = append_val(data, kVolumeFlow_min, dif_ff, dif_sn, "", val, -7 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x48) {
-                // E100 1nnn	Volume Flow ext.	10nnn-9 m³/s	0.001ml/s to 10000ml/s
+                // E100 1nnn    Volume Flow ext.   10nnn-9 m³/s    0.001ml/s to 10000ml/s
                 // in litres so exp -3
                 data = append_val(data, kVolumeFlow_s, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xF8) == 0x50) {
-                // E101 0nnn	Mass flow	10nnn-3 kg/h	0.001kg/h to 10000kg/h
+                // E101 0nnn    Mass flow   10nnn-3 kg/h    0.001kg/h to 10000kg/h
                 data = append_val(data, kMassFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x7));
             } else if ((vif_uam&0xFC) == 0x58) {
-                // E101 10nn	Flow Temperature 10nn-3 °C	0.001°C to 1°C
+                // E101 10nn    Flow Temperature 10nn-3 °C 0.001°C to 1°C
                 data = append_val(data, kTemperatureFlow, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x5C) {
-                // E101 11nn	Return Temperature 10nn-3 °C	0.001°C to 1°C
+                // E101 11nn    Return Temperature 10nn-3 °C    0.001°C to 1°C
                 data = append_val(data, kTemperatureReturn, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x60) {
-                // E110 00nn	Temperature Difference	10nn-3 K	1mK to 1000mK
+                // E110 00nn    Temperature Difference  10nn-3 K    1mK to 1000mK
                 data = append_val(data, kTemperatureDiff, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x64) {
-                // E110 01nn	External temperature	10 nn-3 ° C	0.001 ° C to 1 ° C
+                // E110 01nn    External temperature    10 nn-3 ° C 0.001 ° C to 1 ° C
                 data = append_val(data, kTemperatureExtern, dif_ff, dif_sn, history_hours[dif_sn&0x3], val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFC) == 0x68) {
-                // E110 10nn	Pressure	10nn-3 bar	1mbar to 1000mbar
+                // E110 10nn    Pressure    10nn-3 bar 1mbar to 1000mbar
                 data = append_val(data, kPressure, dif_ff, dif_sn, "", val, -3 + (vif_uam&0x3));
             } else if ((vif_uam&0xFE) == 0x6C) {
-                // E110 110n	Time Point	n = 0 date, n = 1 time & date
+                // E110 110n    Time Point  n = 0 date, n = 1 time & date
                 char buff_time[256] = {0};
 
                 if (vif_uam&1) {
@@ -606,18 +606,18 @@ static int m_bus_decode_records(data_t *data, const uint8_t *b, uint8_t dif_codi
                 }
 
             } else if (vif_uam == 0x6E) {
-                // E110 1110	Units for H.C.A.	 	dimensionless
+                // E110 1110    Units for H.C.A.        dimensionless
                 data = append_val(data, kHca, dif_ff, dif_sn, "", val, 0);
             } else if ((vif_uam&0xFC) == 0x70) {
-                // E111 00nn	Averaging Duration	coded like OnTime
+                // E111 00nn    Averaging Duration coded like OnTime
             } else if ((vif_uam&0xFC) == 0x74) {
-                // E111 01nn	Actuality Duration	coded like OnTime
+                // E111 01nn    Actuality Duration coded like OnTime
             } else if (vif_uam == 0x78) {
-                // E111 1000	Fabrication No
+                // E111 1000    Fabrication No
             } else if (vif_uam == 0x79) {
-                // E111 1001	Enhanced Identification••
+                // E111 1001    Enhanced Identification••
             } else if (vif_uam == 0x7A) {
-                // E111 1010	Bus Address	 	data type C (x=8)
+                // E111 1010    Bus Address     data type C (x=8)
             } else {
                 // reserved
                 data = data_append(data,
@@ -892,7 +892,7 @@ static void m_bus_output_data(r_device *decoder, const m_bus_data_t *out, const 
         NULL);
     } else {
         data = data_make(
-        "model",    "",             DATA_STRING,    _X("Wireless-MBus","Wireless M-Bus"),
+        "model",    "",             DATA_STRING,    "Wireless-MBus",
         "mode",     "Mode",         DATA_STRING,    mode,
         "M",        "Manufacturer", DATA_STRING,    block1->M_str,
         "id",       "ID",           DATA_INT,       block1->A_ID,

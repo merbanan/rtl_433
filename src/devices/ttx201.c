@@ -172,16 +172,18 @@ ttx201_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigned row, unsigned 
     temperature   = (int16_t)(((b[3] & 0x0f) << 12) | (b[4] << 4)); // uses sign extend
     temperature_c = (temperature >> 4) * 0.1f;
 
+    /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Emos-TTX201","Emos TTX201"),
-            "id",            "House Code",  DATA_INT,    device_id,
-            "channel",       "Channel",     DATA_INT,    channel,
-            "battery",       "Battery",     DATA_STRING, battery_low ? "LOW" : "OK",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
-            "mic",           "MIC",         DATA_STRING, "CHECKSUM",
+            "model",            "",             DATA_STRING, "Emos-TTX201",
+            "id",               "House Code",   DATA_INT,    device_id,
+            "channel",          "Channel",      DATA_INT,    channel,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature_c,
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 
@@ -213,7 +215,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "mic",
         NULL,

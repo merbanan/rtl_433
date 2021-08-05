@@ -65,6 +65,11 @@
         fprintf(stderr, "Winsock error %d.\n", WSAGetLastError());
     }
 #endif
+#ifdef ESP32
+    #include <tcpip_adapter.h>
+    #define _POSIX_HOST_NAME_MAX 128
+    #define gai_strerror strerror
+#endif
 
 typedef void* (*array_elementwise_import_fn)(void*);
 typedef void (*array_element_release_fn)(void*);
@@ -244,7 +249,7 @@ static data_t *vdata_make(data_t *first, const char *key, const char *pretty_key
             break;
         case DATA_ARRAY:
             value_release = (value_release_fn)data_array_free; // appease CSA checker
-            value.v_ptr = va_arg(ap, data_t *);
+            value.v_ptr = va_arg(ap, data_array_t *);
             break;
         default:
             fprintf(stderr, "vdata_make() bad data type (%d)\n", type);
@@ -340,7 +345,7 @@ data_t *data_prepend(data_t *first, const char *key, const char *pretty_key, ...
         return first;
 
     data_t *prev = result;
-    while (prev && prev->next)
+    while (prev->next)
         prev = prev->next;
     prev->next = first;
 
@@ -397,7 +402,7 @@ void data_output_print(data_output_t *output, data_t *data)
     }
 }
 
-void data_output_start(struct data_output *output, const char **fields, int num_fields)
+void data_output_start(struct data_output *output, char const *const *fields, int num_fields)
 {
     if (!output || !output->output_start)
         return;
@@ -495,6 +500,18 @@ static void print_json_string(data_output_t *output, const char *str, char const
 
     fprintf(output->file, "\"");
     while (*str) {
+        if (*str == '\r') {
+            fprintf(output->file, "\\r");
+            continue;
+        }
+        if (*str == '\n') {
+            fprintf(output->file, "\\n");
+            continue;
+        }
+        if (*str == '\t') {
+            fprintf(output->file, "\\t");
+            continue;
+        }
         if (*str == '"' || *str == '\\')
             fputc('\\', output->file);
         fputc(*str, output->file);
@@ -805,7 +822,7 @@ static int compare_strings(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-static void data_output_csv_start(struct data_output *output, const char **fields, int num_fields)
+static void data_output_csv_start(struct data_output *output, char const *const *fields, int num_fields)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
@@ -824,9 +841,9 @@ static void data_output_csv_start(struct data_output *output, const char **field
         WARN_CALLOC("data_output_csv_start()");
         goto alloc_error;
     }
-    memcpy(allowed, fields, sizeof(const char *) * num_fields);
+    memcpy((void *)allowed, fields, sizeof(const char *) * num_fields);
 
-    qsort(allowed, num_fields, sizeof(char *), compare_strings);
+    qsort((void *)allowed, num_fields, sizeof(char *), compare_strings);
 
     // overwrite duplicates
     i = 0;
@@ -867,7 +884,7 @@ static void data_output_csv_start(struct data_output *output, const char **field
         }
     }
     csv->fields[csv_fields] = NULL;
-    free(allowed);
+    free((void *)allowed);
     free(use_count);
 
     // Output the CSV header
@@ -879,9 +896,9 @@ static void data_output_csv_start(struct data_output *output, const char **field
 
 alloc_error:
     free(use_count);
-    free(allowed);
+    free((void *)allowed);
     if (csv)
-        free(csv->fields);
+        free((void *)csv->fields);
     free(csv);
 }
 
@@ -901,7 +918,7 @@ static void data_output_csv_free(data_output_t *output)
 {
     data_output_csv_t *csv = (data_output_csv_t *)output;
 
-    free(csv->fields);
+    free((void *)csv->fields);
     free(csv);
 }
 
@@ -986,6 +1003,27 @@ static void format_jsons_string(data_output_t *output, const char *str, char con
     *buf++ = '"';
     size--;
     for (; *str && size >= 3; ++str) {
+        if (*str == '\r') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'r';
+            size--;
+            continue;
+        }
+        if (*str == '\n') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 'n';
+            size--;
+            continue;
+        }
+        if (*str == '\t') {
+            *buf++ = '\\';
+            size--;
+            *buf++ = 't';
+            size--;
+            continue;
+        }
         if (*str == '"' || *str == '\\') {
             *buf++ = '\\';
             size--;
@@ -1194,7 +1232,18 @@ struct data_output *data_output_syslog_create(const char *host, const char *port
     syslog->output.output_free  = data_output_syslog_free;
     // Severity 5 "Notice", Facility 20 "local use 4"
     syslog->pri = 20 * 8 + 5;
+    #ifdef ESP32
+    const char* adapter_hostname = NULL;
+    tcpip_adapter_get_hostname(TCPIP_ADAPTER_IF_STA, &adapter_hostname);
+    if (adapter_hostname) {
+        memcpy(syslog->hostname, adapter_hostname, _POSIX_HOST_NAME_MAX);
+    }
+    else {
+        syslog->hostname[0] = '\0';
+    }
+    #else
     gethostname(syslog->hostname, _POSIX_HOST_NAME_MAX + 1);
+    #endif
     syslog->hostname[_POSIX_HOST_NAME_MAX] = '\0';
     datagram_client_open(&syslog->client, host, port);
 

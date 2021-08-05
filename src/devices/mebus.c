@@ -43,19 +43,20 @@ static int mebus433_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         // Always 0b1111?
         unknown2 = (bb[1][3] & 0xf0) >> 4;
 
+        /* clang-format off */
         data = data_make(
-                "model",         "",            DATA_STRING, _X("Mebus-433","Mebus/433"),
-                "id",            "Address",     DATA_INT, address,
-                "channel",       "Channel",     DATA_INT, channel,
-                "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
-                "unknown1",      "Unknown 1",   DATA_INT, unknown1,
-                "unknown2",      "Unknown 2",   DATA_INT, unknown2,
-                "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
-                "humidity",      "Humidity",    DATA_FORMAT, "%u %%", DATA_INT, hum,
+                "model",            "",             DATA_STRING, "Mebus-433",
+                "id",               "Address",      DATA_INT,    address,
+                "channel",          "Channel",      DATA_INT,    channel,
+                "battery_ok",       "Battery",      DATA_INT,    !!battery,
+                "unknown1",         "Unknown 1",    DATA_INT,    unknown1,
+                "unknown2",         "Unknown 2",    DATA_INT,    unknown2,
+                "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp * 0.1f,
+                "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, hum,
                 NULL);
+        /* clang-format on */
+
         decoder_output_data(decoder, data);
-
-
         return 1;
     }
     return DECODE_ABORT_EARLY;
@@ -65,7 +66,7 @@ static char *output_fields[] = {
     "model",
     "id",
     "channel",
-    "battery",
+    "battery_ok",
     "unknown1",
     "unknown2",
     "temperature_C",

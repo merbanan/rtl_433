@@ -87,16 +87,18 @@ static int oil_standard_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
         // A depth reading of zero indicates no reading.
         depth = ((b[2] & 0x02) << 7) | b[3];
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, _X("Oil-SonicStd","Oil Ultrasonic STANDARD"),
-            "id", "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
-            "flags", "", DATA_FORMAT, "%02x", DATA_INT, flags,
-            "alarm", "", DATA_INT, alarm,
-            "binding_countdown", "", DATA_INT, binding_countdown,
-            "depth_cm", "", DATA_INT, depth,
+            "model",                "", DATA_STRING, "Oil-SonicStd",
+            "id",                   "", DATA_FORMAT, "%04x", DATA_INT, unit_id,
+            "flags",                "", DATA_FORMAT, "%02x", DATA_INT, flags,
+            "alarm",                "", DATA_INT,    alarm,
+            "binding_countdown",    "", DATA_INT,    binding_countdown,
+            "depth_cm",             "", DATA_INT,    depth,
             NULL);
-    decoder_output_data(decoder, data);
+    /* clang-format on */
 
+    decoder_output_data(decoder, data);
     return 1;
 }
 

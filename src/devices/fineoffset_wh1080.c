@@ -21,7 +21,7 @@ See also Frank 'SevenW' page ( https://www.sevenwatt.com/main/wh1080-protocol-v2
 For the WH1080 part I mostly have re-elaborated and merged their works. Credits (and kudos) should go to them all
 (and to many others too).
 
-Reports 1 row, 88 pulses.
+Two packets are sent 31 ms apart. Reports 1 row, 88 pulses.
 
 Data layout:
 
@@ -140,14 +140,15 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
         int bit_offset = bitbuffer_search(bitbuffer, 0, 0, fsk_preamble, sizeof(fsk_preamble) * 8) + sizeof(fsk_preamble) * 8;
         if (bit_offset + sizeof(bbuf) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
             if (decoder->verbose)
-                bitbuffer_printf(bitbuffer, "fineoffset_wh1080: short package. Header index: %u\n", bit_offset);
+                bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
             return DECODE_ABORT_LENGTH;
         }
         bitbuffer_extract_bytes(bitbuffer, 0, bit_offset-8, bbuf, sizeof(bbuf) * 8);
         br = bbuf;
         br[0] = 0xFF; // Emulate OOK payload
         preamble = EPB;
-    } else if (bitbuffer->bits_per_row[0] == 88) { // FineOffset WH1080/3080 Weather data msg
+    }
+    else if (bitbuffer->bits_per_row[0] >= 88 && bitbuffer->bits_per_row[0] < 100) { // FineOffset WH1080/3080 Weather data msg
         preamble = EPB;
         sens_msg = 10;
         br = bitbuffer->bb[0];
@@ -164,7 +165,6 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
         preamble = EPB;
         sens_msg = 7;
         br = bitbuffer->bb[0];
-
     }
     else if (bitbuffer->bits_per_row[0] == 63) { // FineOffset WH3080 UV/Light data msg (different version (newest?))
         preamble = SPB;
@@ -179,7 +179,7 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     }
 
     if (decoder->verbose) {
-        bitrow_printf(bbuf, sens_msg * 8, "Fine Offset WH1080 data ");
+        bitrow_printf(br, sens_msg * 8, "Fine Offset WH1080 data ");
     }
 
     if (br[0] != 0xff) {
@@ -216,7 +216,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     if (type == TYPE_OOK) {
         temp_raw      = ((br[2] & 0x03) << 8) | br[3]; // only 10 bits, discard top bits
         temperature  = (temp_raw - 400) * 0.1f;
-    } else {
+    }
+    else {
         temp_raw      = ((br[2] & 0x0F) << 8) | br[3];
         if (temp_raw & 0x800) {
             temp_raw &= 0x7FF; // remove sign bit
@@ -262,16 +263,16 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     if (msg_type == 0) {
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
-                "battery",          "Battery",          DATA_STRING,    battery_low ? "LOW" : "OK",
+                "battery_ok",       "Battery",          DATA_INT,       !battery_low,
                 "temperature_C",    "Temperature",      DATA_FORMAT,    "%.01f C",  DATA_DOUBLE,    temperature,
                 "humidity",         "Humidity",         DATA_FORMAT,    "%u %%",    DATA_INT,       humidity,
-                _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
-                _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
-                _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
-                _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
+                "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
+                "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    speed,
+                "wind_max_km_h",    "Wind gust",        DATA_FORMAT,    "%.02f",    DATA_DOUBLE,    gust,
+                "rain_mm",          "Total rainfall",   DATA_FORMAT,    "%3.1f",    DATA_DOUBLE,    rain,
                 "mic",              "Integrity",        DATA_STRING,    "CRC",
                 NULL);
         /* clang-format on */
@@ -283,8 +284,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH1080/WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "id",               "Station ID",       DATA_INT,       device_id,
                 "signal",           "Signal Type",      DATA_STRING,    signal_type_str,
                 "radio_clock",      "Radio Clock",      DATA_STRING,    clock_str,
@@ -295,8 +296,8 @@ static int fineoffset_wh1080_callback(r_device *decoder, bitbuffer_t *bitbuffer,
     else {
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING,    _X("Fineoffset-WHx080","Fine Offset Electronics WH3080 Weather Station"),
-                _X("subtype","msg_type"), "Msg type",         DATA_INT,       msg_type,
+                "model",            "",                 DATA_STRING,    "Fineoffset-WHx080",
+                "subtype",          "Msg type",         DATA_INT,       msg_type,
                 "uv_sensor_id",     "UV Sensor ID",     DATA_INT,       uv_sensor_id,
                 "uv_status",        "Sensor Status",    DATA_STRING,    uv_status_ok ? "OK" : "ERROR",
                 "uv_index",         "UV Index",         DATA_INT,       uv_index,
@@ -332,18 +333,13 @@ static char *output_fields[] = {
         "model",
         "subtype",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "direction_deg", // TODO: remove this
         "wind_dir_deg",
-        "speed", // TODO: remove this
-        "gust",  // TODO: remove this
         "wind_avg_km_h",
         "wind_max_km_h",
-        "rain", // TODO: remove this
         "rain_mm",
-        "msg_type", // TODO: remove this
         "signal",
         "radio_clock",
         "sensor_code",

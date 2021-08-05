@@ -61,7 +61,7 @@ static int thermopro_tp11_sensor_callback(r_device *decoder, bitbuffer_t *bitbuf
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Thermopro-TP11","Thermopro TP11 Thermometer"),
+            "model",         "",            DATA_STRING, "Thermopro-TP11",
             "id",            "Id",          DATA_INT,    device,
             "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp_c,
             "mic",           "Integrity",   DATA_STRING, "CRC",

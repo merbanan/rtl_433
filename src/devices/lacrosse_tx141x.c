@@ -256,21 +256,21 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (device == LACROSSE_TX141B) {
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141B","LaCrosse TX141B sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141B",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
         /* clang-format on */
     } else if (device == LACROSSE_TX141) {
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141Bv2","LaCrosse TX141-Bv2 sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141Bv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
         /* clang-format on */
@@ -281,7 +281,7 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 "model",         "",              DATA_STRING, "LaCrosse-TX141Bv3",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
                 NULL);
@@ -294,10 +294,10 @@ static int lacrosse_tx141x_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
         /* clang-format off */
         data = data_make(
-                "model",         "",              DATA_STRING, _X("LaCrosse-TX141THBv2","LaCrosse TX141TH-Bv2 sensor"),
+                "model",         "",              DATA_STRING, "LaCrosse-TX141THBv2",
                 "id",            "Sensor ID",     DATA_FORMAT, "%02x", DATA_INT, id,
                 "channel",       "Channel",       DATA_FORMAT, "%02x", DATA_INT, channel,
-                "battery",       "Battery",       DATA_STRING, battery_low ? "LOW" : "OK",
+                "battery_ok",    "Battery",       DATA_INT,    !battery_low,
                 "temperature_C", "Temperature",   DATA_FORMAT, "%.2f C", DATA_DOUBLE, temp_c,
                 "humidity",      "Humidity",      DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "test",          "Test?",         DATA_STRING, test ? "Yes" : "No",
@@ -314,7 +314,6 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
         "battery_ok",
         "temperature_C",
         "humidity",

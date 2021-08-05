@@ -65,7 +65,7 @@ static int somfy_rts_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "Down (4)",
             "My + Down (5)",
             "Up + Down (6)",
-            "? (7)",
+            "My + Up + Down (7)",
             "Prog (8)",
             "Sun + Flag (9)",
             "Flag (10)",

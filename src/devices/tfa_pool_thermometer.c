@@ -66,7 +66,7 @@ static int tfa_pool_thermometer_decode(r_device *decoder, bitbuffer_t *bitbuffer
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING,    _X("TFA-Pool","TFA pool temperature sensor"),
+            "model",            "",                 DATA_STRING,    "TFA-Pool",
             "id",               "Id",               DATA_INT,       device,
             "channel",          "Channel",          DATA_INT,       channel,
             "battery_ok",       "Battery",          DATA_INT,       battery,

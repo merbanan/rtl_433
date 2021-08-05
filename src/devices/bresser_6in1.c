@@ -186,7 +186,7 @@ static int bresser_6in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "model",            "",             DATA_STRING, "Bresser-6in1",
             "id",               "",             DATA_FORMAT, "%08x", DATA_INT,    id,
             "channel",          "",             DATA_INT,    chan,
-            "battery_ok",       "Battery OK",   DATA_INT,    batt,
+            "battery_ok",       "Battery",      DATA_INT,    batt,
             "temperature_C",    "Temperature",  DATA_COND, temp_ok, DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",     DATA_COND, temp_ok && moisture < 0, DATA_INT,    humidity,
             "sensor_type",      "Sensor type",  DATA_INT,    s_type,

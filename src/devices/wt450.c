@@ -71,14 +71,14 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (bitbuffer->bits_per_row[0] != 36) {
         if (decoder->verbose)
-            fprintf(stderr, "wt450_callback: wrong size of bit per row %d\n",
+            fprintf(stderr, "%s: wrong size of bit per row %d\n", __func__,
                     bitbuffer->bits_per_row[0]);
         return DECODE_ABORT_LENGTH;
     }
 
     if (b[0]>>4 != 0xC) {
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "wt450_callback: wrong preamble\n");
+            bitbuffer_printf(bitbuffer, "%s: wrong preamble\n", __func__);
         return DECODE_ABORT_EARLY;
     }
 
@@ -89,7 +89,7 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (parity) {
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "wt450_callback: wrong parity (%x)\n", parity);
+            bitbuffer_printf(bitbuffer, "%s: wrong parity (%x)\n", __func__, parity);
         return DECODE_FAIL_MIC;
     }
 
@@ -104,10 +104,10 @@ static int wt450_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, _X("WT450-TH","WT450 sensor"),
+            "model",            "",             DATA_STRING, "WT450-TH",
             "id",               "House Code",   DATA_INT,    house_code,
             "channel",          "Channel",      DATA_INT,    channel,
-            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "seq",              "Sequence",     DATA_INT,    seq,
@@ -122,7 +122,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "seq",

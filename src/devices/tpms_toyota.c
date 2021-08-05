@@ -65,15 +65,17 @@ static int tpms_toyota_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsigne
 
     sprintf(id_str, "%08x", id);
 
+    /* clang-format off */
     data = data_make(
-        "model",            "",     DATA_STRING,    "Toyota",
-        "type",             "",     DATA_STRING,    "TPMS",
-        "id",               "",     DATA_STRING,    id_str,
-        "status",           "",     DATA_INT,       status,
-        "pressure_PSI",     "",     DATA_DOUBLE,    pressure1*0.25-7.0,
-        "temperature_C",    "",     DATA_DOUBLE,    temp-40.0,
-        "mic",              "",     DATA_STRING,    "CRC",
-        NULL);
+            "model",            "",             DATA_STRING,    "Toyota",
+            "type",             "",             DATA_STRING,    "TPMS",
+            "id",               "",             DATA_STRING,    id_str,
+            "status",           "",             DATA_INT,       status,
+            "pressure_PSI",     "",             DATA_DOUBLE,    pressure1*0.25-7.0,
+            "temperature_C",    "",             DATA_DOUBLE,    temp-40.0,
+            "mic",              "Integrity",    DATA_STRING,    "CRC",
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;

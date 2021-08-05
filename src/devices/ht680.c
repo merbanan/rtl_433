@@ -63,8 +63,8 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",    "",                 DATA_STRING, _X("HT680-Remote","HT680 Remote control"),
-                _X("id","address"),  "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
+                "model",    "",                 DATA_STRING, "HT680-Remote",
+                "id",       "Address",          DATA_FORMAT, "0x%06X", DATA_INT, address,
                 "button1",  "Button 1",         DATA_STRING, button1 == 3 ? "PRESSED" : "",
                 "button2",  "Button 2",         DATA_STRING, button2 == 3 ? "PRESSED" : "",
                 "button3",  "Button 3",         DATA_STRING, button3 == 3 ? "PRESSED" : "",
@@ -82,7 +82,6 @@ static int ht680_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
-        "address", // TODO: remove this
         "button1",
         "button2",
         "button3",

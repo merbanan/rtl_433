@@ -377,7 +377,7 @@ int term_help_puts(void *ctx, char const *buf)
             state = 1;
             next_color = 5;
         }
-        else if ((state == 1 || state == 2) && *p == ']' && (p[1] == ' ' || p[1] == '\n' || p[1] == '\0')) {
+        else if ((state == 1 || state == 2) && *p == ']' && ((p[1] == ' ' && p[2] != '|') || p[1] == '\n' || p[1] == '\0')) {
             state = 0;
             set_color = 0;
         }

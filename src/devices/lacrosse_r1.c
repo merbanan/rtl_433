@@ -39,32 +39,48 @@ Protocol Specification:
 
 Data bits are NRZ encoded with logical 1 and 0 bits 104us in length.
 
-LTV-R1
-    PRE:32h SYN:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:16d RAIN:16d CHK:8h END:32h
+LTV-R1:
 
-    CHK is CRC-8 poly 0x31 init 0x00 over 8 bytes following SYN
+    PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h CRC:8h CHK?:8h TRAILER:96h
+
+    CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYNC
+
+    {164} 380322  0e  00aa14  6a  93  00...
+    {164} 380322  00  00aa1a  60  81  00...
+    {162} 380322  06  00aa26  d1  04  00...
+
+LTV-R3:
+does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11.
+
+    PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h CRC:8h TRAILER:56h
+
+    {145} 70f6a2 00 015402 015401  ae  00...
+    {142} 70f6a0 88 015400 015400  24  00...
+    {143} 70f6a2 46 00a800 015401  e2  00...
+    {144} 70f6a2 48 00aa02 00aa00  3d  00...
+    {144} 70f6a2 02 005408 015406  0a  00...
+    {141} 70f6a2 04 01540e 01540b  90  00...
+    {142} 70f6a2 0a 00aa04 015410  48  00...
+    {143} 70f6a2 04 00aa0a 01541b  12  00...
+    {142} 70f6a2 0c 00aa0a 01541a  ac  00...
+    {144} 70f6a2 04 00aa0d 00aa0d  89  00...
+    {143} 70f6a2 0c 00aa0d 00aa0d  56  00...
 
 */
-
 #include "decoder.h"
 
 static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     uint8_t const preamble_pattern[] = { 0xd2, 0xaa, 0x2d, 0xd4 };
 
-    data_t *data;
-    uint8_t b[11];
-    uint32_t id;
-    int flags, seq, offset, chk;
-    int raw_rain1, raw_rain2, msg_len;
-    //float rain_mm;
+    uint8_t b[20];
 
     if (bitbuffer->num_rows > 1) {
         fprintf(stderr, "%s: Too many rows: %d\n", __func__, bitbuffer->num_rows);
         return DECODE_FAIL_SANITY;
     }
-    msg_len = bitbuffer->bits_per_row[0];
-    if (msg_len < 256) {
+    int msg_len = bitbuffer->bits_per_row[0];
+    if (msg_len < 200) { // allows shorter preamble for LTV-R3
         if (decoder->verbose) {
             fprintf(stderr, "%s: Packet too short: %d bits\n", __func__, msg_len);
         }
@@ -80,7 +96,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    offset = bitbuffer_search(bitbuffer, 0, 0,
+    int offset = bitbuffer_search(bitbuffer, 0, 0,
             preamble_pattern, sizeof(preamble_pattern) * 8);
 
     if (offset >= msg_len) {
@@ -91,38 +107,46 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     offset += sizeof(preamble_pattern) * 8;
-    bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 8 * 8);
+    bitbuffer_extract_bytes(bitbuffer, 0, offset, b, 20 * 8);
 
-    chk = crc8(b, 8, 0x31, 0x00);
-    if (chk) {
-        if (decoder->verbose) {
-           fprintf(stderr, "%s: CRC failed!\n", __func__);
+    int rev = 1;
+    int chk = crc8(b, 11, 0x31, 0x00);
+    if (chk == 0) {
+        rev = 3; // LTV-R3
+    }
+    else {
+        chk = crc8(b, 8, 0x31, 0x00);
+        if (b[10] != 0 || chk != 0) { // make sure this really is a LTV-R1 and not just a CRC collision
+            if (decoder->verbose) {
+                fprintf(stderr, "%s: CRC failed!\n", __func__);
+            }
+            return DECODE_FAIL_MIC;
         }
-        return DECODE_FAIL_MIC;
     }
 
     if (decoder->verbose) {
-        bitbuffer_debug(bitbuffer);
+        bitrow_printf(b, bitbuffer->bits_per_row[0] - offset, "%s: ", __func__);
     }
 
-    id        = (b[0] << 16) | (b[1] << 8) | b[2];
-    flags     = (b[3] & 0xf1); // masks off seq bits
-    seq       = (b[3] & 0x0e) >> 1;
-    raw_rain1 = b[4] << 8 | b[5];
-    raw_rain2 = b[6] << 8 | b[7];
+    int id        = (b[0] << 16) | (b[1] << 8) | b[2];
+    int flags     = (b[3] & 0xf1); // masks off seq bits
+    int seq       = (b[3] & 0x0e) >> 1;
+    int raw_rain1 = (b[4] << 16) | (b[5] << 8) | (b[6]);
+    int raw_rain2 = (b[7] << 16) | (b[8] << 8) | (b[9]); // only LTV-R3
 
-    // base and/or scale adjustments
-    // how do we determine rain_mm from raw_rain1 and raw_rain2???
-    //rain_mm   =  0.0;
+    // Seems rain is 0.25mm per tip, not sure what rain2 is
+    float rain_mm = raw_rain1 * 0.25;
+    float rain2_mm = raw_rain2 * 0.25;
 
     /* clang-format off */
-    data = data_make(
-            "model",            "",                 DATA_STRING, "LaCrosse-R1",
-            "id",               "Sensor ID",        DATA_FORMAT, "%06x", DATA_INT, id,
-            "seq",              "Sequence",         DATA_INT,     seq,
-            "flags",            "unknown",          DATA_INT,     flags,
-            "rain1",            "raw_rain1",        DATA_FORMAT, "%04x", DATA_INT, raw_rain1,
-            "rain2",            "raw_rain2",        DATA_FORMAT, "%04x", DATA_INT, raw_rain2,
+    data_t *data = data_make(
+            "model",            "",                 DATA_COND,   rev == 1,  DATA_STRING, "LaCrosse-R1",
+            "model",            "",                 DATA_COND,   rev == 3,  DATA_STRING, "LaCrosse-R3",
+            "id",               "Sensor ID",        DATA_FORMAT, "%06x",    DATA_INT, id,
+            "seq",              "Sequence",         DATA_INT,    seq,
+            "flags",            "unknown",          DATA_INT,    flags,
+            "rain_mm",          "Total Rain",       DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
+            "rain2_mm",         "Total Rain2",      DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -136,8 +160,8 @@ static char *output_fields[] = {
         "id",
         "seq",
         "flags",
-        "rain1",
-        "rain2",
+        "rain_mm",
+        "rain2_mm",
         "mic",
         NULL,
 };
