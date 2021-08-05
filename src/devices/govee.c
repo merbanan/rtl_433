@@ -99,7 +99,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     else if (event == 0x39b) {
         event_str = "Batt 5 Bars";
     }
-    else if (event >= 0x3b4 && event <= 0x3c4) {
+    else if (event >= 0x3a0 && event <= 0x3c4) {
         /*
          * There is a range of 4 bars here, it is unclear what each means...
          * Perhaps some sort of percentage in the 4 bar range?
