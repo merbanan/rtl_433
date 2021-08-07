@@ -198,6 +198,7 @@
     DECL(marlec_solar) \
     DECL(somfy_iohc) \
     DECL(fineoffset_wh31l) \
+    DECL(markisol) \
 
     /* Add new decoders here. */
 
