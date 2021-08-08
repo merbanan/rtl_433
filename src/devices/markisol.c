@@ -1,5 +1,5 @@
 /** @file
-    Markisol (a.k.a E-Motion, BOFU, BF-30x, BF-415) curtains remote.
+    Markisol (a.k.a E-Motion, BOFU, Rollerhouse, BF-30x, BF-415) curtains remote.
 
     Copyright (C) 2021 Dan Stahlke <dan@stahlke.org>
 
@@ -53,7 +53,8 @@ static int markisol_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         if (bitbuffer->bits_per_row[i] == 41 || bitbuffer->bits_per_row[i] == 42) {
             uint8_t *b = bitbuffer->bb[i];
             for (int j = 0; j < 5; ++j) {
-                buf[j] = ~reverse8(((b[j] << 8) + b[j+1]) >> 7);
+                buf[j] = (b[j] << 1) + (b[j+1] >> 7); // shift stream to discard spurious first bit
+                buf[j] = ~reverse8(buf[j]);
                 cksum += buf[j];
             }
             got_proper_row_length = 1;
@@ -103,6 +104,7 @@ static int markisol_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "control",        "Control",        DATA_STRING, control_strs[control],
             "channel",        "Channel",        DATA_INT,    channel,
             "zone",           "Zone",           DATA_INT,    zone,
+            "mic",            "Integrity",      DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
@@ -116,13 +118,14 @@ static char *output_fields[] = {
         "control",
         "channel",
         "zone",
+        "mic",
         NULL,
 };
 
 // rtl_433 -f 433900000 -X 'n=name,m=OOK_PWM,s=368,l=704,r=10000,g=10000,t=0,y=5628'
 
 r_device markisol = {
-        .name           = "Markisol", // E-Motion, BOFU, BF-30x, BF-415, etc.
+        .name           = "Markisol, E-Motion, BOFU, Rollerhouse, BF-30x, BF-415 curtain remote",
         .modulation     = OOK_PULSE_PWM,
         .short_width    = 368,
         .long_width     = 704,
