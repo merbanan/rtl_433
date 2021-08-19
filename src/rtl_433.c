@@ -53,6 +53,7 @@
 #include "fatal.h"
 #include "write_sigrok.h"
 #include "mongoose.h"
+#include "output_mqtt.h"
 
 #ifdef _WIN32
 #include <io.h>
@@ -1561,15 +1562,26 @@ int main(int argc, char **argv) {
         for (void **iter = cfg->in_files.elems; iter && *iter; ++iter) {
             cfg->in_filename = *iter;
 
-            parse_file_info(cfg->in_filename, &demod->load_info);
-            if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
-                in_file = stdin;
-                cfg->in_filename = "<stdin>";
+            if (strncmp(cfg->in_filename, "mqtt/rfraw:", 11) == 0) {
+                const char *errmsg;
+
+                if ((errmsg = input_mqtt_rfraw_config(cfg->in_filename + 11)) != NULL) {
+                    fprintf(stderr, "%s\n", errmsg);
+                    exit(1);
+                }
+                demod->load_info.format = PULSE_OOK;
+                in_file = NULL;
             } else {
-                in_file = fopen(demod->load_info.path, "rb");
-                if (!in_file) {
-                    fprintf(stderr, "Opening file: %s failed!\n", cfg->in_filename);
-                    break;
+                parse_file_info(cfg->in_filename, &demod->load_info);
+                if (strcmp(demod->load_info.path, "-") == 0) { /* read samples from stdin */
+                    in_file = stdin;
+                    cfg->in_filename = "<stdin>";
+                } else {
+                    in_file = fopen(demod->load_info.path, "rb");
+                    if (!in_file) {
+                        fprintf(stderr, "Opening file: %s failed!\n", cfg->in_filename);
+                        break;
+                    }
                 }
             }
             fprintf(stderr, "Test mode active. Reading samples from file: %s\n", cfg->in_filename);  // Essential information (not quiet)
@@ -1594,7 +1606,12 @@ int main(int argc, char **argv) {
             // special case for pulse data file-inputs
             if (demod->load_info.format == PULSE_OOK) {
                 while (!cfg->exit_async) {
-                    pulse_data_load(in_file, &demod->pulse_data, cfg->samp_rate);
+                    if (in_file)
+                        pulse_data_load(in_file, &demod->pulse_data, cfg->samp_rate);
+                    else {
+                        if (!input_mqtt_rfraw_read(&demod->pulse_data))
+                            break;
+                    }
                     if (!demod->pulse_data.num_pulses)
                         break;
 
