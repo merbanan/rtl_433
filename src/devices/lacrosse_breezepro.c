@@ -48,7 +48,7 @@ Protocol Specification:
 
 Data bits are NRZ encoded with logical 1 and 0 bits 106.842us in length.
 
-    SYN:32h ID:24h ?:4b SEQ:3d ?:1b TEMP:12d HUM:12d WSPD:12d WDIR:12d CHK:8h END:32h
+    SYNC:32h ID:24h ?:4b SEQ:3d ?:1b TEMP:12d HUM:12d WSPD:12d WDIR:12d CHK:8h END:32h
 
 Packet length is 264 bits according to inspectrum broken down as follows:
 

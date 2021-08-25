@@ -52,7 +52,7 @@ LTV-R1:
 LTV-R3:
 does not have the CRC at byte 8 but a second 24 bit value and the check at byte 11.
 
-    PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h CRC:8h TRAILER:56h
+    PRE:32h SYNC:32h ID:24h ?:4b SEQ:3d ?:1b RAIN:24h RAIN:24h CRC:8h TRAILER:56h
 
     {145} 70f6a2 00 015402 015401  ae  00...
     {142} 70f6a0 88 015400 015400  24  00...
@@ -111,7 +111,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     int rev = 1;
     int chk = crc8(b, 11, 0x31, 0x00);
-    if (chk == 0) {
+    if (chk == 0 && b[10] != 0) {
         rev = 3; // LTV-R3
     }
     else {
@@ -146,7 +146,7 @@ static int lacrosse_r1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "seq",              "Sequence",         DATA_INT,    seq,
             "flags",            "unknown",          DATA_INT,    flags,
             "rain_mm",          "Total Rain",       DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain_mm,
-            "rain2_mm",         "Total Rain2",      DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
+            "rain2_mm",         "Total Rain2",      DATA_COND,   rev == 3,  DATA_FORMAT, "%.2f mm", DATA_DOUBLE, rain2_mm,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
