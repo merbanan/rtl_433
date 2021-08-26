@@ -1000,7 +1000,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_protocol = 0;
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
-        else if (!strcasecmp(arg, "noise"))
+        else if (!strncasecmp(arg, "noise", 5))
             cfg->report_noise = atoiv(arg_param(arg), 10); // atoi_time_default()
         else if (!strcasecmp(arg, "bits"))
             cfg->verbose_bits = 1;
