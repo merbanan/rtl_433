@@ -142,7 +142,7 @@ static void render_getters(data_t *data, uint8_t *bits, struct flex_params *para
 
 static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    int i, j;
+    int i;
     int match_count = 0;
     data_t *data;
     data_t *row_data[BITBUF_ROWS];
@@ -179,9 +179,7 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (params->reflect) {
         // TODO: refactor to utils
         for (i = 0; i < bitbuffer->num_rows; ++i) {
-            for (j = 0; j < (bitbuffer->bits_per_row[i] + 7) / 8; ++j) {
-                bitbuffer->bb[i][j] = reverse8(bitbuffer->bb[i][j]);
-            }
+            reflect_bytes(bitbuffer->bb[i], (bitbuffer->bits_per_row[i] + 7) / 8);
         }
     }
 

@@ -77,6 +77,7 @@ typedef struct r_cfg {
     int verbose_bits;
     conversion_mode_t conversion_mode;
     int report_meta;
+    int report_noise;
     int report_protocol;
     time_mode_t report_time;
     int report_time_hires;
@@ -95,7 +96,6 @@ typedef struct r_cfg {
     struct dm_state *demod;
     char const *sr_filename;
     int sr_execopen;
-    int old_model_keys;
     /* stats*/
     time_t frames_since; ///< stats start time
     unsigned frames_count; ///< stats counter for interval

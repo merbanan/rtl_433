@@ -112,6 +112,7 @@ or `(echo "GET /stream HTTP/1.0\n"; sleep 600) | socat - tcp:127.0.0.1:8433`
 #define INDEX_HTML \
     "<!DOCTYPE html>" \
     "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" \
+    "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">" \
     "<link rel=\"icon\" href=\"https://triq.org/rxui/favicon.ico\">" \
     "<title>rxui</title>" \
     "<link href=\"https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons\" rel=\"stylesheet\">" \
@@ -570,7 +571,7 @@ void rpc_exec(rpc_t *rpc, r_cfg_t *cfg)
         data_free(data);
     }
     else if (!strcmp(rpc->method, "get_protocols")) {
-        char buf[51200]; // we expect the protocol string to be around 40k bytes.
+        char buf[65536]; // we expect the protocol string to be around 60k bytes.
         data_t *data = protocols_data(cfg);
         data_print_jsons(data, buf, sizeof(buf));
         rpc->response(rpc, 1, buf, 0);

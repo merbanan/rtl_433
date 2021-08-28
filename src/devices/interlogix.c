@@ -107,7 +107,7 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     char *device_type;
     char device_serial[7];
     char raw_message[7];
-    char *low_battery;
+    int low_battery;
     char *f1_latch_state;
     char *f2_latch_state;
     char *f3_latch_state;
@@ -182,14 +182,14 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     // keyfob logic. see protocol description addendum for protocol exceptions
     if ((reverse8(message[2]) >> 4) == 0xf) {
-        low_battery    = "OK";
+        low_battery    = 0;
         f1_latch_state = ((message[3] & 0xe) == 0x4) ? "CLOSED" : "OPEN";
         f2_latch_state = ((message[3] & 0xe) == 0x8) ? "CLOSED" : "OPEN";
         f3_latch_state = ((message[3] & 0xe) == 0xc) ? "CLOSED" : "OPEN";
         f4_latch_state = ((message[3] & 0xe) == 0x2) ? "CLOSED" : "OPEN";
         f5_latch_state = ((message[3] & 0xe) == 0xa) ? "CLOSED" : "OPEN";
     } else {
-        low_battery    = (message[3] & 0x10) ? "LOW" : "OK";
+        low_battery    = (message[3] & 0x10) ? 1 : 0;
         f1_latch_state = (message[3] & 0x04) ? "OPEN" : "CLOSED";
         f2_latch_state = (message[3] & 0x01) ? "OPEN" : "CLOSED";
         f3_latch_state = (message[4] & 0x40) ? "OPEN" : "CLOSED";
@@ -199,10 +199,10 @@ static int interlogix_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",       "Model",         DATA_STRING, _X("Interlogix-Security","Interlogix"),
-            _X("subtype","device_type"),     "Device Type",   DATA_STRING, device_type,
+            "model",       "Model",         DATA_STRING, "Interlogix-Security",
+            "subtype",     "Device Type",   DATA_STRING, device_type,
             "id",          "ID",            DATA_STRING, device_serial,
-            "battery",     "Battery",       DATA_STRING, low_battery,
+            "battery_ok",  "Battery",       DATA_INT,    !low_battery,
             "switch1",     "Switch1 State", DATA_STRING, f1_latch_state,
             "switch2",     "Switch2 State", DATA_STRING, f2_latch_state,
             "switch3",     "Switch3 State", DATA_STRING, f3_latch_state,
@@ -220,9 +220,8 @@ static char *output_fields[] = {
         "model",
         "subtype",
         "id",
-        "device_type", // TODO: delete this
         "raw_message",
-        "battery",
+        "battery_ok",
         "switch1",
         "switch2",
         "switch3",

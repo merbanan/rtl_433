@@ -43,10 +43,6 @@ static int burnhardbbq_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     bitbuffer_invert(bitbuffer);
 
-    if (decoder->verbose > 1) {
-        bitbuffer_printf(bitbuffer, "%s: ", __func__);
-    }
-
     // All three rows contain the same information. Return on first decoded row.
     int ret = 0;
     for (int i = 0; i < bitbuffer->num_rows; ++i) {

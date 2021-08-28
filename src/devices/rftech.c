@@ -59,23 +59,24 @@ static int rftech_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     battery = (bb[r][2] & 0x80) == 0x80;
     button = (bb[r][2] & 0x60) != 0;
 
+    /* clang-format off */
     data = data_make(
-            "model", "", DATA_STRING, "RF-tech",
-            "id", "Id", DATA_INT, sensor_id,
-            "battery", "Battery", DATA_STRING, battery ? "OK" : "LOW",
-            "temperature_C", "Temperature", DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
-            "button", "Button", DATA_INT, button,
+            "model",            "",             DATA_STRING, "RF-tech",
+            "id",               "Id",           DATA_INT,    sensor_id,
+            "battery_ok",       "Battery",      DATA_INT,    battery,
+            "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, value,
+            "button",           "Button",       DATA_INT,    button,
             NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
 static char *csv_output_fields[] = {
         "model",
         "id",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "button",
         NULL,

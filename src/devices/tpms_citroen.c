@@ -84,7 +84,7 @@ static int tpms_citroen_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.364,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "maybe_battery",    "",             DATA_INT,    maybe_battery,
-            "mic",              "",             DATA_STRING, "CHECKSUM",
+            "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 

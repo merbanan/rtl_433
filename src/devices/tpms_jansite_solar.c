@@ -89,7 +89,7 @@ static int tpms_jansite_solar_decode(r_device *decoder, bitbuffer_t *bitbuffer, 
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (float)pressure * 1.6,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (float)temperature - 55.0,
             "code",             "",             DATA_STRING, code_str,
-            "mic",              "",             DATA_STRING, "CRC",
+            "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 

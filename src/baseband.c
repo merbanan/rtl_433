@@ -23,6 +23,8 @@ static uint16_t scaled_squares[256];
 /// precalculate lookup table for envelope detection.
 static void calc_squares()
 {
+    if (scaled_squares[0])
+        return; // already initialized
     int i;
     for (i = 0; i < 256; i++)
         scaled_squares[i] = (127 - i) * (127 - i);
@@ -30,32 +32,39 @@ static void calc_squares()
 
 // This will give a noisy envelope of OOK/ASK signals.
 // Subtract the bias (-128) and get an envelope estimation.
-void envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float envelope_detect(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         y_buf[i] = scaled_squares[iq_buf[2 * i ]] + scaled_squares[iq_buf[2 * i + 1]];
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? AMP_TO_DB((float)sum / len) : AMP_TO_DB(1);
 }
 
 /// This will give a noisy envelope of OOK/ASK signals.
 /// Subtracts the bias (-128) and calculates the norm (scaled by 16384).
 /// Using a LUT is slower for O1 and above.
-void envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float envelope_detect_nolut(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         int16_t x = 127 - iq_buf[2 * i];
         int16_t y = 127 - iq_buf[2 * i + 1];
         y_buf[i]  = x * x + y * y; // max 32768, fs 16384
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? AMP_TO_DB((float)sum / len) : AMP_TO_DB(1);
 }
 
 /// 122/128, 51/128 Magnitude Estimator for CU8 (SIMD has min/max).
 /// Note that magnitude emphasizes quiet signals / deemphasizes loud signals.
-void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         uint16_t x = abs(iq_buf[2 * i] - 128);
         uint16_t y = abs(iq_buf[2 * i + 1] - 128);
@@ -63,24 +72,30 @@ void magnitude_est_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         uint16_t mx = x > y ? x : y;
         uint16_t mag_est = 122 * mx + 51 * mi;
         y_buf[i] = mag_est; // max 22144, fs 16384
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// True Magnitude for CU8 (sqrt can SIMD but float is slow).
-void magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_true_cu8(uint8_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         int16_t x = iq_buf[2 * i] - 128;
         int16_t y = iq_buf[2 * i + 1] - 128;
         y_buf[i]  = (uint16_t)(sqrt(x * x + y * y) * 128.0); // max 181, scaled 23170, fs 16384
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// 122/128, 51/128 Magnitude Estimator for CS16 (SIMD has min/max).
-void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         uint32_t x = abs(iq_buf[2 * i]);
         uint32_t y = abs(iq_buf[2 * i + 1]);
@@ -88,18 +103,23 @@ void magnitude_est_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
         uint32_t mx = x > y ? x : y;
         uint32_t mag_est = 122 * mx + 51 * mi;
         y_buf[i] = mag_est >> 8; // max 5668864, scaled 22144, fs 16384
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 /// True Magnitude for CS16 (sqrt can SIMD but float is slow).
-void magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
+float magnitude_true_cs16(int16_t const *iq_buf, uint16_t *y_buf, uint32_t len)
 {
     unsigned long i;
+    uint32_t sum = 0;
     for (i = 0; i < len; i++) {
         int32_t x = iq_buf[2 * i];
         int32_t y = iq_buf[2 * i + 1];
         y_buf[i]  = (int)sqrt(x * x + y * y) >> 1; // max 46341, scaled 23170, fs 16384
+        sum += y_buf[i];
     }
+    return len > 0 && sum >= len ? MAG_TO_DB((float)sum / len) : MAG_TO_DB(1);
 }
 
 
@@ -324,7 +344,7 @@ void baseband_demod_FM_cs16(int16_t const *x_buf, int16_t *y_buf, unsigned long 
         // xlp = pi; // Cheat and use only imaginary part (works OK, but is amplitude sensitive)
         // Low pass filter
         // y0f      = (alp[1] * y1f + blp[0] * x0f + blp[1] * x1f) >> F_SCALE32;
-        y0f      = (alp[1] * y1f + blp[0] * (x0f + x1f)) >> F_SCALE32; // note: blp[0]==blp[1]
+        y0f      = (alp[1] * y1f + blp[0] * ((int64_t)x0f + x1f)) >> F_SCALE32; // note: blp[0]==blp[1]
         *y_buf++ = y0f >> 16; // not really losing info here, maybe optimize earlier
     }
 

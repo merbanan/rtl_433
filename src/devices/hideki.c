@@ -134,10 +134,10 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         humidity = ((packet[6] & 0xF0) >> 4) * 10 + (packet[6] & 0x0F);
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, _X("Hideki-TS04","HIDEKI TS04 sensor"),
-                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
-                "channel",          "Channel",          DATA_INT, channel,
-                "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
+                "model",            "",                 DATA_STRING, "Hideki-TS04",
+                "id",               "Rolling Code",     DATA_INT,    rc,
+                "channel",          "Channel",          DATA_INT,    channel,
+                "battery_ok",       "Battery",          DATA_INT,    battery_ok,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp/10.f,
                 "humidity",         "Humidity",         DATA_FORMAT, "%u %%", DATA_INT, humidity,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
@@ -156,15 +156,15 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, _X("Hideki-Wind","HIDEKI Wind sensor"),
-                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
-                "channel",          "Channel",          DATA_INT, channel,
-                "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
+                "model",            "",                 DATA_STRING, "Hideki-Wind",
+                "id",               "Rolling Code",     DATA_INT,    rc,
+                "channel",          "Channel",          DATA_INT,    channel,
+                "battery_ok",       "Battery",          DATA_INT,    battery_ok,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
-                _X("wind_avg_mi_h","wind_speed_mph"),   "Wind Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, wind_speed * 0.1f,
-                _X("wind_max_mi_h","gust_speed_mph"),   "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
-                "wind_approach",    "Wind Approach",    DATA_INT, wind_approach,
-                _X("wind_dir_deg","wind_direction"),   "Wind Direction",   DATA_FORMAT, "%.01f", DATA_DOUBLE, wind_direction * 0.1f,
+                "wind_avg_mi_h",    "Wind Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, wind_speed * 0.1f,
+                "wind_max_mi_h",    "Gust Speed",       DATA_FORMAT, "%.02f mi/h", DATA_DOUBLE, gust_speed * 0.1f,
+                "wind_approach",    "Wind Approach",    DATA_INT,    wind_approach,
+                "wind_dir_deg",     "Wind Direction",   DATA_FORMAT, "%.01f", DATA_DOUBLE, wind_direction * 0.1f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
         /* clang-format on */
@@ -174,10 +174,10 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (sensortype == HIDEKI_TEMP) {
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, _X("Hideki-Temperature","HIDEKI Temperature sensor"),
-                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
-                "channel",          "Channel",          DATA_INT, channel,
-                "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
+                "model",            "",                 DATA_STRING, "Hideki-Temperature",
+                "id",               "Rolling Code",     DATA_INT,    rc,
+                "channel",          "Channel",          DATA_INT,    channel,
+                "battery_ok",       "Battery",          DATA_INT,    battery_ok,
                 "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temp * 0.1f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
@@ -191,10 +191,10 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
         /* clang-format off */
         data = data_make(
-                "model",            "",                 DATA_STRING, _X("Hideki-Rain","HIDEKI Rain sensor"),
-                _X("id","rc"),               "Rolling Code",     DATA_INT, rc,
-                "channel",          "Channel",          DATA_INT, channel,
-                "battery",          "Battery",          DATA_STRING, battery_ok ? "OK": "LOW",
+                "model",            "",                 DATA_STRING, "Hideki-Rain",
+                "id",               "Rolling Code",     DATA_INT,    rc,
+                "channel",          "Channel",          DATA_INT,    channel,
+                "battery_ok",       "Battery",          DATA_INT,    battery_ok,
                 "rain_mm",          "Rain",             DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_units * 0.7f,
                 "mic",              "Integrity",        DATA_STRING, "CRC",
                 NULL);
@@ -208,18 +208,14 @@ static int hideki_ts04_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
-        "rc", // TODO: delete this
         "id",
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
-        "wind_speed_mph", // TODO: remove this
-        "gust_speed_mph", // TODO: remove this
         "wind_avg_mi_h",
         "wind_max_mi_h",
         "wind_approach",
-        "wind_direction", // TODO: remove this
         "wind_dir_deg",
         "rain_mm",
         "mic",

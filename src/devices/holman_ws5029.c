@@ -108,7 +108,7 @@ static int holman_ws5029pcm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, direction_deg,
+            "wind_dir_deg",     "Wind Direction",   DATA_INT, direction_deg,
             NULL);
     /* clang-format on */
 
@@ -124,8 +124,7 @@ static char *output_fields[] = {
         "battery_ok",
         "rain_mm",
         "wind_avg_km_h",
-        "direction_deg", // TODO: remove this
-        "wind_dir_deg", // TODO: remove this
+        "wind_dir_deg",
         "mic",
         NULL,
 };
@@ -195,12 +194,12 @@ static int holman_ws5029pwm_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",                 DATA_STRING, "Holman-WS5029",
             "id",               "",                 DATA_INT,    id,
-            "battery_ok",       "",                 DATA_INT,    !battery_low,
+            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C",  DATA_DOUBLE, temp_c,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",    DATA_INT,    humidity,
             "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rain_mm,
             "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%u km/h",  DATA_INT,    speed_kmh,
-            _X("wind_dir_deg","direction_deg"),     "Wind Direction",    DATA_INT, (int)(wind_dir * 22.5),
+            "wind_dir_deg",     "Wind Direction",   DATA_INT,    (int)(wind_dir * 22.5),
             "mic",              "Integrity",        DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */

@@ -215,6 +215,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\fineoffset.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1050.c" />
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c" />
+    <ClCompile Include="..\src\devices\fineoffset_wh31l.c" />
     <ClCompile Include="..\src\devices\flex.c" />
     <ClCompile Include="..\src\devices\fordremote.c" />
     <ClCompile Include="..\src\devices\fs20.c" />
@@ -256,6 +257,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
+    <ClCompile Include="..\src\devices\marlec_solar.c" />
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
@@ -279,6 +281,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\quhwa.c" />
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
+    <ClCompile Include="..\src\devices\rojaflex.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />
     <ClCompile Include="..\src\devices\rubicson_48659.c" />
     <ClCompile Include="..\src\devices\s3318p.c" />
@@ -291,7 +294,8 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\simplisafe.c" />
     <ClCompile Include="..\src\devices\smoke_gs558.c" />
     <ClCompile Include="..\src\devices\solight_te44.c" />
-    <ClCompile Include="..\src\devices\somfy.c" />
+    <ClCompile Include="..\src\devices\somfy_iohc.c" />
+    <ClCompile Include="..\src\devices\somfy_rts.c" />
     <ClCompile Include="..\src\devices\springfield.c" />
     <ClCompile Include="..\src\devices\steelmate.c" />
     <ClCompile Include="..\src\devices\tfa_30_3196.c" />

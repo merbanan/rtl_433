@@ -46,12 +46,12 @@ Data bits are NRZ encoded.  Logical 1 and 0 bits are 104us in
 length for the LTV-TH3 and 107us for the LTV-TH2.
 
 LTV-TH3
-    SYN:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
+    SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
 
     CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYN
 
 LTV-TH2
-    SYN:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
+    SYNC:32h ID:24h ?:4b SEQ:3b ?:1b TEMP:12d HUM:12d CHK:8h END:
 
 Sequence# 2 & 6
     CHK is CRC-8 poly 0x31 init 0x00 over 7 bytes following SYN
@@ -113,7 +113,7 @@ static int lacrosse_th_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     // this is not a LTV-TH3 or LTV-TH2 sensor
     chk3 = crc8(b, 8, 0x31, 0x00);
     chk2 = crc8(b, 8, 0x31, 0xac);
-    if (!(chk3 || chk2)) {
+    if (chk3 != 0 && chk2 != 0) {
         if (decoder->verbose) {
            fprintf(stderr, "%s: CRC failed!\n", __func__);
         }

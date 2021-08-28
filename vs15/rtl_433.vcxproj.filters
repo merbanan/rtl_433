@@ -382,6 +382,9 @@
     <ClCompile Include="..\src\devices\fineoffset_wh1080.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\fineoffset_wh31l.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\flex.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -505,6 +508,9 @@
     <ClCompile Include="..\src\devices\m_bus.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\marlec_solar.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\maverick_et73.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -574,6 +580,9 @@
     <ClCompile Include="..\src\devices\rftech.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\rojaflex.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\rubicson.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
@@ -610,7 +619,10 @@
     <ClCompile Include="..\src\devices\solight_te44.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\devices\somfy.c">
+    <ClCompile Include="..\src\devices\somfy_iohc.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\devices\somfy_rts.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
     <ClCompile Include="..\src\devices\springfield.c">

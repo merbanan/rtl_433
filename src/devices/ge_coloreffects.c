@@ -113,11 +113,13 @@ static int ge_coloreffects_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     }
 
     // Format data
+    /* clang-format off */
     data = data_make(
-        "model",         "",     DATA_STRING, _X("GE-ColorEffects","GE Color Effects Remote"),
-        "id",            "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
-        "command",       "",     DATA_STRING, cmd,
-        NULL);
+            "model",        "",     DATA_STRING, "GE-ColorEffects",
+            "id",           "",     DATA_FORMAT, "0x%x", DATA_INT, device_id,
+            "command",      "",     DATA_STRING, cmd,
+            NULL);
+    /* clang-format on */
 
     decoder_output_data(decoder, data);
     return 1;

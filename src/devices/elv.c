@@ -68,7 +68,7 @@ static int em1000_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_FAIL_MIC;
     }
 
-//for (i = 0; i < bytes; i++) fprintf(stderr, "%02X ", dec[i]); fprintf(stderr, "\n");
+//    bitrow_print(dec, bytes * 8);
 
     // based on 15_CUL_EM.pm
     //char *subtype = dec[0] >= 1 && dec[0] <= 3 ? types[dec[0] - 1] : "?";

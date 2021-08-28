@@ -346,11 +346,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
     //fprintf(stderr, "%s: pkt_type: %02X \n", __func__, pkt_type);
 
     if (decoder->verbose > 1) {
-        fprintf(stderr, "type %s\n", pkt_type_str);
-        for (int j = 0; j < min_pkt_len; j++) {
-            fprintf(stderr, "%d:%02X ", j, results[j]);
-        }
-        fprintf(stderr, "\n");
+        bitrow_printf(results, min_pkt_len * 8, "type %s : ", pkt_type_str);
     }
 
     // Format data
@@ -376,7 +372,7 @@ static int parse_insteon_pkt(r_device *decoder, bitbuffer_t *bits, unsigned int 
             "hopsmax",   "Hops_Max",        DATA_INT,    hopsmax,
             "hopsleft",  "Hops_Left",       DATA_INT,    hopsleft,
             "formatted", "Packet",          DATA_STRING, pkt_formatted,
-            "mic",       "Integrity",       DATA_STRING, "CRC", // CRC, CHECKSUM, or PARITY
+            "mic",       "Integrity",       DATA_STRING, "CRC",
             "payload",   "Payload",         DATA_STRING, payload,
             "cmd_dat",   "CMD_Data",        DATA_ARRAY,  data_array(cmd_array_len, DATA_INT, cmd_array),
         //  "payload",   "Payload",         DATA_ARRAY,  data_array(min_pkt_len, DATA_INT, data_payload),
@@ -495,7 +491,7 @@ static char *output_fields[] = {
         "hops_max",     // almost always 3
         "hops_left",    // remaining hops
         "formatted",   // entire packet as a formatted string with hex
-        "mic", // remove if not applicable
+        "mic",
         "payload",      // packet as a hex string
         "cmd_dat",      // array of int containing command + data
         "msg_str",

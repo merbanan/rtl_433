@@ -44,7 +44,7 @@ static int account_event(r_device *device, bitbuffer_t *bits, char const *demod_
     }
 
     // Debug printout
-    if (!device->decode_fn || (device->verbose && ret > 0)) {
+    if (!device->decode_fn || (device->verbose && ret > 0) || device->verbose > 1) {
         fprintf(stderr, "%s(): %s\n", demod_name, device->name);
         bitbuffer_print(bits);
     }

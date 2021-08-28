@@ -318,6 +318,18 @@ void bitrow_debug(uint8_t const *bitrow, unsigned bit_len)
     print_bitrow(bitrow, bit_len, 0, 1);
 }
 
+int bitrow_snprint(uint8_t const *bitrow, unsigned bit_len, char *str, unsigned size)
+{
+    if (bit_len == 0 && size > 0) {
+        str[0] = '\0';
+    }
+    int len = 0;
+    for (unsigned i = 0; size > (unsigned)len && i < (bit_len + 7) / 8; ++i) {
+        len += snprintf(str + len, size - len, "%02x", bitrow[i]);
+    }
+    return len;
+}
+
 void bitbuffer_parse(bitbuffer_t *bits, const char *code)
 {
     const char *c;

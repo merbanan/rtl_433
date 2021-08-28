@@ -78,14 +78,14 @@ static int prologue_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, _X("Prologue-TH","Prologue sensor"),
-            _X("subtype","id"),       "",            DATA_INT, type,
-            _X("id","rid"),            "",            DATA_INT, id,
-            "channel",       "Channel",     DATA_INT, channel,
-            "battery",       "Battery",     DATA_STRING, battery ? "OK" : "LOW",
+            "model",         "",            DATA_STRING, "Prologue-TH",
+            "subtype",       "",            DATA_INT,    type,
+            "id",            "",            DATA_INT,    id,
+            "channel",       "Channel",     DATA_INT,    channel,
+            "battery_ok",    "Battery",     DATA_INT,    !!battery,
             "temperature_C", "Temperature", DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp_raw * 0.1,
-            "humidity",      "Humidity",    DATA_COND, humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
-            "button",        "Button",      DATA_INT, button,
+            "humidity",      "Humidity",    DATA_COND,   humidity != 0xcc, DATA_FORMAT, "%u %%", DATA_INT, humidity,
+            "button",        "Button",      DATA_INT,    button,
             NULL);
     /* clang-format on */
 
@@ -97,9 +97,8 @@ static char *output_fields[] = {
         "model",
         "subtype",
         "id",
-        "rid", // TODO: delete this
         "channel",
-        "battery",
+        "battery_ok",
         "temperature_C",
         "humidity",
         "button",

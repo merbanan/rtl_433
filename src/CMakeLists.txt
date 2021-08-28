@@ -86,6 +86,7 @@ add_library(r_433 STATIC
     devices/fineoffset.c
     devices/fineoffset_wh1050.c
     devices/fineoffset_wh1080.c
+    devices/fineoffset_wh31l.c
     devices/flex.c
     devices/fordremote.c
     devices/fs20.c
@@ -127,6 +128,7 @@ add_library(r_433 STATIC
     devices/lacrossews.c
     devices/lightwave_rf.c
     devices/m_bus.c
+    devices/marlec_solar.c
     devices/maverick_et73.c
     devices/maverick_et73x.c
     devices/mebus.c
@@ -150,6 +152,7 @@ add_library(r_433 STATIC
     devices/quhwa.c
     devices/radiohead_ask.c
     devices/rftech.c
+    devices/rojaflex.c
     devices/rubicson.c
     devices/rubicson_48659.c
     devices/s3318p.c
@@ -162,7 +165,8 @@ add_library(r_433 STATIC
     devices/simplisafe.c
     devices/smoke_gs558.c
     devices/solight_te44.c
-    devices/somfy.c
+    devices/somfy_iohc.c
+    devices/somfy_rts.c
     devices/springfield.c
     devices/steelmate.c
     devices/tfa_30_3196.c

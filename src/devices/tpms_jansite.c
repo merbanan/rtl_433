@@ -68,7 +68,7 @@ static int tpms_jansite_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
             "pressure_kPa",     "Pressure",     DATA_FORMAT, "%.0f kPa", DATA_DOUBLE, (double)pressure * 1.7,
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.0f C", DATA_DOUBLE, (double)temperature - 50.0,
             "code",             "",             DATA_STRING, code_str,
-            //"mic",              "",             DATA_STRING, "CHECKSUM",
+            //"mic",              "Integrity",    DATA_STRING, "CHECKSUM",
             NULL);
     /* clang-format on */
 
