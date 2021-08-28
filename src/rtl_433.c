@@ -382,7 +382,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
     int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
     if (noise_only) {
-        demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // average over 8 frames
+        demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // fast fall over 8 frames
         // If auto_level and noise level well below min_level and significant change in noise level
         if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
                 && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
@@ -390,6 +390,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level_auto);
             pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
         }
+    } else {
+        demod->noise_level = (demod->noise_level * 31 + avg_db) / 32; // slow rise over 32 frames
     }
     // Report noise every report_noise seconds, but only for the first frame that second
     if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
