@@ -58,7 +58,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     uint8_t a, b, c;
     uint8_t packet[PHILIPS_PACKETLEN];
     uint8_t c_crc;
-    uint8_t channel, battery_low;
+    uint8_t channel, battery_status;
     int temp_raw;
     float temperature;
     data_t *data;
@@ -133,13 +133,13 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     temperature = (temp_raw - 500) * 0.1f;
 
     /* Battery status */
-    battery_low = packet[PHILIPS_PACKETLEN - 1] & 0x40;
+    battery_status = packet[PHILIPS_PACKETLEN - 1] & 0x40;
 
     /* clang-format off */
     data = data_make(
-            "model",         "",            DATA_STRING, "Philips-Temperature",
+            "model",         "",            DATA_STRING, _X("Philips-Temperature","Philips outdoor temperature sensor"),
             "channel",       "Channel",     DATA_INT,    channel,
-            "battery_ok",    "Battery",     DATA_INT,    !battery_low,
+            "battery",       "Battery",     DATA_STRING, battery_status ? "LOW" : "OK",
             "temperature_C", "Temperature", DATA_FORMAT, "%.1f C", DATA_DOUBLE, temperature,
             NULL);
     /* clang-format on */
@@ -151,7 +151,7 @@ static int philips_aj3650_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "channel",
-        "battery_ok",
+        "battery",
         "temperature_C",
         NULL,
 };

@@ -31,6 +31,7 @@
 #include "rtl_433.h"
 #include "r_private.h"
 #include "r_device.h"
+#include "rtl_433_devices.h"
 #include "r_api.h"
 #include "sdr.h"
 #include "baseband.h"
@@ -42,7 +43,6 @@
 #include "data.h"
 #include "r_util.h"
 #include "optparse.h"
-#include "abuf.h"
 #include "fileformat.h"
 #include "samp_grab.h"
 #include "am_analyze.h"
@@ -116,13 +116,9 @@ static void usage(int exit_code)
             "       Specify a negative number to disable a device decoding protocol (can be used multiple times)\n"
             "  [-G] Enable blacklisted device decoding protocols, for testing only.\n"
             "  [-X <spec> | help] Add a general purpose decoder (prepend -R 0 to disable all decoders)\n"
+            "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto)\n"
+            "  [-n <value>] Specify number of samples to take (each sample is 2 bytes: 1 each of I & Q)\n"
             "  [-Y auto | classic | minmax] FSK pulse detector mode.\n"
-            "  [-Y level=<dB level>] Manual detection level used to determine pulses (-1.0 to -30.0) (0=auto).\n"
-            "  [-Y minlevel=<dB level>] Manual minimum detection level used to determine pulses (-1.0 to -99.0).\n"
-            "  [-Y minsnr=<dB level>] Minimum SNR to determine pulses (1.0 to 99.0).\n"
-            "  [-Y autolevel] Set minlevel automatically based on average estimated noise.\n"
-            "  [-Y squelch] Skip frames below estimated noise level to reduce cpu load.\n"
-            "  [-Y ampest | magest] Choose amplitude or magnitude level estimator.\n"
             "\t\t= Analyze/Debug options =\n"
             "  [-a] Analyze mode. Print a textual description of the signal.\n"
             "  [-A] Pulse Analyzer. Enable pulse analysis and decode attempt.\n"
@@ -138,10 +134,9 @@ static void usage(int exit_code)
             "  [-F kv | json | csv | mqtt | influx | syslog | null | help] Produce decoded output in given format.\n"
             "       Append output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "       Specify host/port for syslog with e.g. -F syslog:127.0.0.1:1514\n"
-            "  [-M time[:<options>] | protocol | level | noise[:secs] | stats | bits | help] Add various meta data to each output.\n"
+            "  [-M time[:<options>] | protocol | level | stats | bits | help] Add various meta data to each output.\n"
             "  [-K FILE | PATH | <tag> | <key>=<tag>] Add an expanded token or fixed tag to every output line.\n"
             "  [-C native | si | customary] Convert units in decoded output.\n"
-            "  [-n <value>] Specify number of samples to take (each sample is an I/Q pair)\n"
             "  [-T <seconds>] Specify number of seconds to run, also 12:34 or 1h23m45s\n"
             "  [-E hop | quit] Hop/Quit after outputting successful event(s)\n"
             "  [-h] Output this usage help and exit\n"
@@ -216,7 +211,7 @@ static void help_output(void)
             "\tAppend output to file with :<filename> (e.g. -F csv:log.csv), defaults to stdout.\n"
             "\tSpecify MQTT server with e.g. -F mqtt://localhost:1883\n"
             "\tAdd MQTT options with e.g. -F \"mqtt://host:1883,opt=arg\"\n"
-            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], qos=N, <format>[=topic]\n"
+            "\tMQTT options are: user=foo, pass=bar, retain[=0|1], <format>[=topic]\n"
             "\tSupported MQTT formats: (default is all)\n"
             "\t  events: posts JSON event data\n"
             "\t  states: posts JSON state data\n"
@@ -258,7 +253,7 @@ static void help_meta(void)
 {
     term_help_printf(
             "\t\t= Meta information option =\n"
-            "  [-M time[:<options>]|protocol|level|noise[:<secs>]|stats|bits] Add various metadata to every output line.\n"
+            "  [-M time[:<options>]|protocol|level|stats|bits|oldmodel] Add various metadata to every output line.\n"
             "\tUse \"time\" to add current date and time meta data (preset for live inputs).\n"
             "\tUse \"time:rel\" to add sample position meta data (preset for read-file and stdin).\n"
             "\tUse \"time:unix\" to show the seconds since unix epoch as time meta data.\n"
@@ -271,10 +266,10 @@ static void help_meta(void)
             "\t\t\"usec\" and \"utc\" can be combined with other options, eg. \"time:unix:utc:usec\".\n"
             "\tUse \"protocol\" / \"noprotocol\" to output the decoder protocol number meta data.\n"
             "\tUse \"level\" to add Modulation, Frequency, RSSI, SNR, and Noise meta data.\n"
-            "\tUse \"noise[:secs]\" to report estimated noise level at intervals (default: 10 seconds).\n"
             "\tUse \"stats[:[<level>][:<interval>]]\" to report statistics (default: 600 seconds).\n"
             "\t  level 0: no report, 1: report successful devices, 2: report active devices, 3: report all\n"
-            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n");
+            "\tUse \"bits\" to add bit representation to code outputs (for debug).\n"
+            "\tNote: You can use \"oldmodel\" to get the old model keys. This will be removed shortly.\n");
     exit(0);
 }
 
@@ -331,12 +326,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
         cfg->exit_async = 1;
     }
 
-    // save last frame time to see if a new second started
-    time_t last_frame_sec = demod->now.tv_sec;
     get_time_now(&demod->now);
 
-    n_samples = len / demod->sample_size;
-    if (n_samples * demod->sample_size != len) {
+    n_samples = len / 2 / demod->sample_size;
+    if (n_samples * 2 * demod->sample_size != len) {
         fprintf(stderr, "Sample buffer length not aligned to sample size!\n");
     }
     if (!n_samples) {
@@ -357,50 +350,22 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
 
     // AM demodulation
-    float avg_db;
-    if (demod->sample_size == 2) { // CU8
+    if (demod->sample_size == 1) { // CU8
         if (demod->use_mag_est) {
             //magnitude_true_cu8(iq_buf, demod->buf.temp, n_samples);
-            avg_db = magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
+            magnitude_est_cu8(iq_buf, demod->buf.temp, n_samples);
         }
         else { // amp est
-            avg_db = envelope_detect(iq_buf, demod->buf.temp, n_samples);
+            envelope_detect(iq_buf, demod->buf.temp, n_samples);
         }
     } else { // CS16
         //magnitude_true_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
-        avg_db = magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
+        magnitude_est_cs16((int16_t *)iq_buf, demod->buf.temp, n_samples);
     }
-
-    //fprintf(stderr, "noise level: %.1f dB current: %.1f dB min level: %.1f dB\n", demod->noise_level, avg_db, demod->min_level_auto);
-    if (demod->min_level_auto == 0.0f) {
-        demod->min_level_auto = demod->min_level;
-    }
-    if (demod->noise_level == 0.0f) {
-        demod->noise_level = demod->min_level_auto - 3.0f;
-    }
-    int noise_only = avg_db < demod->noise_level + 3.0f; // or demod->min_level_auto?
-    // always process frames if loader, dumper, or analyzers are in use, otherwise skip silent frames
-    int process_frame = demod->squelch_offset <= 0 || !noise_only || demod->load_info.format || demod->analyze_pulses || demod->dumper.len || demod->samp_grab;
-    if (noise_only) {
-        demod->noise_level = (demod->noise_level * 7 + avg_db) / 8; // average over 8 frames
-        // If auto_level and noise level well below min_level and significant change in noise level
-        if (demod->auto_level > 0 && demod->noise_level < demod->min_level - 3.0f
-                && fabsf(demod->min_level_auto - demod->noise_level - 3.0f) > 1.0f) {
-            demod->min_level_auto = demod->noise_level + 3.0f;
-            fprintf(stderr, "Estimated noise level is %.1f dB, adjusting minimum detection level to %.1f dB\n", demod->noise_level, demod->min_level_auto);
-            pulse_detect_set_levels(demod->pulse_detect, demod->use_mag_est, demod->level_limit, demod->min_level_auto, demod->min_snr, demod->detect_verbosity);
-        }
-    }
-    // Report noise every report_noise seconds, but only for the first frame that second
-    if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
-        fprintf(stderr, "Current level %.1f dB, estimated noise %.1f dB\n", avg_db, demod->noise_level);
-    }
-
-    if (process_frame)
     baseband_low_pass_filter(demod->buf.temp, demod->am_buf, n_samples, &demod->lowpass_filter_state);
 
     // FM demodulation
-    // Select the correct fsk pulse detector
+    /* Select the correct fsk pulse detector */
     unsigned fpdm = cfg->fsk_pulse_detect_mode;
     if (cfg->fsk_pulse_detect_mode == FSK_PULSE_DETECT_AUTO) {
         if (cfg->frequency[cfg->frequency_index] > FSK_PULSE_DETECTOR_LIMIT)
@@ -409,9 +374,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             fpdm = FSK_PULSE_DETECT_OLD;
     }
 
-    if (demod->enable_FM_demod && process_frame) {
+    if (demod->enable_FM_demod) {
         float low_pass = demod->low_pass != 0.0f ? demod->low_pass : fpdm ? 0.2f : 0.1f;
-        if (demod->sample_size == 2) { // CU8
+        if (demod->sample_size == 1) { // CU8
             baseband_demod_FM(iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
         } else { // CS16
             baseband_demod_FM_cs16((int16_t *)iq_buf, demod->buf.fm, n_samples, cfg->samp_rate, low_pass, &demod->demod_FM_state);
@@ -420,13 +385,9 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
 
     // Handle special input formats
     if (demod->load_info.format == S16_AM) { // The IQ buffer is really AM demodulated data
-        if (len > sizeof(demod->am_buf))
-            FATAL("Buffer too small");
         memcpy(demod->am_buf, iq_buf, len);
     } else if (demod->load_info.format == S16_FM) { // The IQ buffer is really FM demodulated data
         // we would need AM for the envelope too
-        if (len > sizeof(demod->buf.fm))
-            FATAL("Buffer too small");
         memcpy(demod->buf.fm, iq_buf, len);
     }
 
@@ -441,7 +402,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 break;
             }
         }
-        while (package_type && process_frame) {
+        while (package_type) {
             int p_events = 0; // Sensor events successfully detected per package
             package_type = pulse_detect_package(demod->pulse_detect, demod->am_buf, demod->buf.fm, n_samples, cfg->samp_rate, cfg->input_pos, &demod->pulse_data, &demod->fsk_pulse_data, fpdm);
             if (package_type) {
@@ -544,10 +505,10 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
                 || dumper->format == PULSE_OOK)
             continue;
         uint8_t *out_buf = iq_buf;  // Default is to dump IQ samples
-        unsigned long out_len = n_samples * demod->sample_size;
+        unsigned long out_len = n_samples * 2 * demod->sample_size;
 
         if (dumper->format == CU8_IQ) {
-            if (demod->sample_size == 4) {
+            if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((uint8_t *)demod->buf.temp)[n] = (((int16_t *)iq_buf)[n] / 256) + 128; // scale Q0.15 to Q0.7
                 out_buf = (uint8_t *)demod->buf.temp;
@@ -555,7 +516,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
         }
         else if (dumper->format == CS16_IQ) {
-            if (demod->sample_size == 2) {
+            if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int16_t *)demod->buf.temp)[n] = (iq_buf[n] * 256) - 32768; // scale Q0.7 to Q0.15
                 out_buf = (uint8_t *)demod->buf.temp; // this buffer is too small if out_block_size is large
@@ -563,11 +524,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             }
         }
         else if (dumper->format == CS8_IQ) {
-            if (demod->sample_size == 2) {
+            if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int8_t *)demod->buf.temp)[n] = (iq_buf[n] - 128);
             }
-            else if (demod->sample_size == 4) {
+            else if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((int8_t *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] >> 8;
             }
@@ -575,11 +536,11 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * 2 * sizeof(int8_t);
         }
         else if (dumper->format == CF32_IQ) {
-            if (demod->sample_size == 2) {
+            if (demod->sample_size == 1) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((float *)demod->buf.temp)[n] = (iq_buf[n] - 128) / 128.0f;
             }
-            else if (demod->sample_size == 4) {
+            else if (demod->sample_size == 2) {
                 for (unsigned long n = 0; n < n_samples * 2; ++n)
                     ((float *)demod->buf.temp)[n] = ((int16_t *)iq_buf)[n] / 32768.0f;
             }
@@ -607,7 +568,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_I) {
-            if (demod->sample_size == 2)
+            if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
@@ -617,7 +578,7 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
             out_len = n_samples * sizeof(float);
         }
         else if (dumper->format == F32_Q) {
-            if (demod->sample_size == 2)
+            if (demod->sample_size == 1)
                 for (unsigned long n = 0; n < n_samples; ++n)
                     demod->f32_buf[n] = (iq_buf[n * 2 + 1] - 128) * (1.0f / 0x80); // scale from Q0.7
             else
@@ -1000,21 +961,19 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             cfg->report_protocol = 0;
         else if (!strcasecmp(arg, "level"))
             cfg->report_meta = 1;
-        else if (!strncasecmp(arg, "noise", 5))
-            cfg->report_noise = atoiv(arg_param(arg), 10); // atoi_time_default()
         else if (!strcasecmp(arg, "bits"))
             cfg->verbose_bits = 1;
         else if (!strcasecmp(arg, "description"))
             cfg->report_description = 1;
         else if (!strcasecmp(arg, "newmodel"))
-            fprintf(stderr, "newmodel option (-M) is deprecated.\n");
+            cfg->old_model_keys = 0;
         else if (!strcasecmp(arg, "oldmodel"))
-            fprintf(stderr, "oldmodel option (-M) is deprecated.\n");
+            cfg->old_model_keys = 1;
         else if (!strncasecmp(arg, "stats", 5)) {
             // there also should be options to set wether to flush on report
             char *p = arg_param(arg);
             cfg->report_stats = atoiv(p, 1);
-            cfg->stats_interval = atoiv(arg_param(p), 600); // atoi_time_default()
+            cfg->stats_interval = atoiv(arg_param(p), 600);
             time(&cfg->stats_time);
             cfg->stats_time += cfg->stats_interval;
         }
@@ -1143,11 +1102,7 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
             usage(1);
         char *p = arg;
         while (p && *p) {
-            if (!strncasecmp(p, "autolevel", 9))
-                cfg->demod->auto_level = atoiv(arg_param(arg), 1); // arg_float_default(p + 9, "-Y autolevel: ");
-            else if (!strncasecmp(p, "squelch", 7))
-                cfg->demod->squelch_offset = atoiv(arg_param(arg), 1); // arg_float_default(p + 7, "-Y squelch: ");
-            else if (!strncmp(p, "auto", 4))
+            if (!strncmp(p, "auto", 4))
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
             else if (!strncmp(p, "classic", 7))
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_OLD;
@@ -1310,6 +1265,7 @@ int main(int argc, char **argv) {
 #endif
     FILE *in_file;
     int r = 0;
+    unsigned i;
     struct dm_state *demod;
     r_cfg_t *cfg = &g_cfg;
 
@@ -1322,12 +1278,35 @@ int main(int argc, char **argv) {
 
     demod = cfg->demod;
 
+    demod->pulse_detect = pulse_detect_create();
+
+    /* initialize tables */
+    baseband_init();
+
+    r_device r_devices[] = {
+#define DECL(name) name,
+            DEVICES
+#undef DECL
+            };
+
+    cfg->num_r_devices = sizeof(r_devices) / sizeof(*r_devices);
+    for (i = 0; i < cfg->num_r_devices; i++) {
+        r_devices[i].protocol_num = i + 1;
+    }
+    cfg->devices = r_devices;
+
     // if there is no explicit conf file option look for default conf files
     if (!hasopt('c', argc, argv, OPTSTRING)) {
         parse_conf_try_default_files(cfg);
     }
 
     parse_conf_args(cfg, argc, argv);
+
+    // warn if still using old model keys
+    if (cfg->old_model_keys) {
+        fprintf(stderr,
+                "\n\tWarning: Using deprecated old model keys (\"-M oldmodel\"). This will be removed shortly.\n\n");
+    }
 
     // add all remaining positional arguments as input files
     while (argc > optind) {
@@ -1384,32 +1363,28 @@ int main(int argc, char **argv) {
         }
     }
 
-    {
-        char decoders_str[1024];
-        decoders_str[0] = '\0';
-        if (!cfg->verbosity) {
-            abuf_t p = {0};
-            abuf_init(&p, decoders_str, sizeof(decoders_str));
-            // print registered decoder ranges
-            abuf_printf(&p, " [");
-            for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
-                r_device *r_dev = *iter;
-                unsigned num = r_dev->protocol_num;
-                if (num == 0)
-                    continue;
-                while (iter[1]
-                        && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
-                    r_dev = *++iter;
-                if (num == r_dev->protocol_num)
-                    abuf_printf(&p, " %u", num);
-                else
-                    abuf_printf(&p, " %u-%u", num, r_dev->protocol_num);
-            }
-            abuf_printf(&p, " ]");
+    fprintf(stderr, "Registered %zu out of %d device decoding protocols",
+            demod->r_devs.len, cfg->num_r_devices);
+
+    if (!cfg->verbosity) {
+        // print registered decoder ranges
+        fprintf(stderr, " [");
+        for (void **iter = demod->r_devs.elems; iter && *iter; ++iter) {
+            r_device *r_dev = *iter;
+            unsigned num = r_dev->protocol_num;
+            if (num == 0)
+                continue;
+            while (iter[1]
+                    && r_dev->protocol_num + 1 == ((r_device *)iter[1])->protocol_num)
+                r_dev = *++iter;
+            if (num == r_dev->protocol_num)
+                fprintf(stderr, " %u", num);
+            else
+                fprintf(stderr, " %u-%u", num, r_dev->protocol_num);
         }
-        fprintf(stderr, "Registered %zu out of %d device decoding protocols%s\n",
-                demod->r_devs.len, cfg->num_r_devices, decoders_str);
+        fprintf(stderr, " ]");
     }
+    fprintf(stderr, "\n");
 
     char const **well_known = well_known_output_fields(cfg);
     start_outputs(cfg, well_known);
@@ -1561,10 +1536,10 @@ int main(int argc, char **argv) {
             if (demod->load_info.format == CU8_IQ
                     || demod->load_info.format == S16_AM
                     || demod->load_info.format == S16_FM) {
-                demod->sample_size = sizeof(uint8_t) * 2; // CU8, AM, FM
+                demod->sample_size = sizeof(uint8_t); // CU8, AM, FM
             } else if (demod->load_info.format == CS16_IQ
                     || demod->load_info.format == CF32_IQ) {
-                demod->sample_size = sizeof(int16_t) * 2; // CF32, CS16
+                demod->sample_size = sizeof(int16_t); // CF32, CS16
             } else if (demod->load_info.format == PULSE_OOK) {
                 // ignore
             } else {
@@ -1634,13 +1609,13 @@ int main(int argc, char **argv) {
                     n_read = fread(test_mode_buf, 1, DEFAULT_BUF_LENGTH, in_file);
                 }
                 if (n_read == 0) break;  // sdr_callback() will Segmentation Fault with len=0
-                demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / demod->sample_size;
+                demod->sample_file_pos = ((float)n_blocks * DEFAULT_BUF_LENGTH + n_read) / cfg->samp_rate / 2 / demod->sample_size;
                 n_blocks++; // this assumes n_read == DEFAULT_BUF_LENGTH
                 sdr_callback(test_mode_buf, n_read, cfg);
             } while (n_read != 0 && !cfg->exit_async);
 
             // Call a last time with cleared samples to ensure EOP detection
-            if (demod->sample_size == 2) { // CU8
+            if (demod->sample_size == 1) { // CU8
                 memset(test_mode_buf, 128, DEFAULT_BUF_LENGTH); // 128 is 0 in unsigned data
                 // or is 127.5 a better 0 in cu8 data?
                 //for (unsigned long n = 0; n < DEFAULT_BUF_LENGTH/2; n++)
@@ -1649,7 +1624,7 @@ int main(int argc, char **argv) {
             else { // CF32, CS16
                     memset(test_mode_buf, 0, DEFAULT_BUF_LENGTH);
             }
-            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / demod->sample_size;
+            demod->sample_file_pos = ((float)n_blocks + 1) * DEFAULT_BUF_LENGTH / cfg->samp_rate / 2 / demod->sample_size;
             sdr_callback(test_mode_buf, DEFAULT_BUF_LENGTH, cfg);
             alarm(0); // cancel the watchdog timer
 
@@ -1677,13 +1652,11 @@ int main(int argc, char **argv) {
     }
 
     // Normal case, no test data, no in files
-    r = sdr_open(&cfg->dev, cfg->dev_query, cfg->verbosity);
+    r = sdr_open(&cfg->dev, &demod->sample_size, cfg->dev_query, cfg->verbosity);
     if (r < 0) {
         exit(2);
     }
     cfg->dev_info = sdr_get_dev_info(cfg->dev);
-    demod->sample_size = sdr_get_sample_size(cfg->dev);
-    //demod->sample_signed = sdr_get_sample_signed(cfg->dev);
 
 #ifndef _WIN32
     sigact.sa_handler = sighandler;

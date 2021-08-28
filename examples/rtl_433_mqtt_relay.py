@@ -56,8 +56,11 @@ def publish_sensor_to_mqtt(mqttc, data, line):
     elif "id" in data:
         path += "/" + str(data["id"])
 
-    if "battery_ok" in data:
-        mqttc.publish(path + "/battery", data["battery_ok"])
+    if "battery" in data:
+        if data["battery"] == "OK":
+            pass
+        else:
+            mqttc.publish(path + "/battery", str(data["battery"]))
 
     if "humidity" in data:
         mqttc.publish(path + "/humidity", data["humidity"])

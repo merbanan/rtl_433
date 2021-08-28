@@ -67,7 +67,10 @@ running this decoder with debug level :
 //#define XC0324_DEVICE_BITLEN      148
 #define XC0324_MESSAGE_BITLEN     48
 #define XC0324_MESSAGE_BYTELEN    (XC0324_MESSAGE_BITLEN + 7)/ 8
+#define XC0324_DEVICE_STARTBYTE   0x5F
 //#define XC0324_DEVICE_MINREPEATS  3
+
+static const uint8_t preamble_pattern[1] = {XC0324_DEVICE_STARTBYTE};
 
 static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
         unsigned row, uint16_t bitpos, const int latest_event, data_t **data)
@@ -115,7 +118,7 @@ static int decode_xc0324_message(r_device *decoder, bitbuffer_t *bitbuffer,
     // from (simulated) deciphering stage output (decoder->verbose > 0)
     if (!decoder->verbose) { // production output
         *data = data_make(
-                "model",            "Device Type",      DATA_STRING, "Digitech-XC0324",
+                "model",            "Device Type",      DATA_STRING, _X("Digitech-XC0324","Digitech XC0324"),
                 "id",               "ID",               DATA_STRING, id,
                 "temperature_C",    "Temperature C",    DATA_FORMAT, "%.1f", DATA_DOUBLE, temperature,
                 "flags",            "Constant ?",       DATA_INT,    flags,
@@ -156,8 +159,6 @@ Digitech XC-0324 device.
 */
 static int xc0324_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    uint8_t const preamble_pattern[] = {0x5F};
-
     int r; // a row index
     uint16_t bitpos;
     int ret      = 0;

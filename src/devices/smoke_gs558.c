@@ -103,15 +103,13 @@ static int smoke_gs558_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     sprintf(code_str, "%02x%02x%02x", b[2], b[1], b[0]);
 
-    /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, "Smoke-GS558",
-            "id"   ,        "",             DATA_INT, id,
-            "unit",         "",             DATA_INT, unit,
-            "learn",        "",             DATA_INT, learn > 1,
-            "code",         "Raw Code",     DATA_STRING, code_str,
-            NULL);
-    /* clang-format on */
+        "model",         "",            DATA_STRING, _X("Smoke-GS558","Smoke detector GS 558"),
+        "id"   ,         "",            DATA_INT, id,
+        "unit",          "",            DATA_INT, unit,
+        "learn",         "",            DATA_INT, learn > 1,
+        "code",          "Raw Code",    DATA_STRING, code_str,
+        NULL);
     decoder_output_data(decoder, data);
 
     return 1;

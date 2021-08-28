@@ -90,17 +90,15 @@ static int maverick_et73x_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "%s: pre %03x, flags %0x, t1 %d, t2 %d, digest %04x, chk_data %02x%02x%02x, digest xor'ed: %04x\n",
                 __func__, pre, flags, temp1, temp2, digest, chk[0], chk[1], chk[2], id);
 
-    /* clang-format off */
     data = data_make(
             "model",            "",                     DATA_STRING, "Maverick-ET73x",
-            "id",               "Session_ID",           DATA_INT,    id,
+            "id",               "Session_ID",           DATA_INT, id,
             "status",           "Status",               DATA_STRING, status,
-            "temperature_1_C",  "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
-            "temperature_2_C",  "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
+            _X("temperature_1_C","temperature1_C"),  "TemperatureSensor1",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp1_c,
+            _X("temperature_2_C","temperature2_C"),  "TemperatureSensor2",   DATA_FORMAT, "%.02f C", DATA_DOUBLE, temp2_c,
             NULL);
-    /* clang-format on */
-
     decoder_output_data(decoder, data);
+
     return 1;
 }
 
@@ -108,6 +106,8 @@ static char *output_fields[] = {
         "model",
         "id",
         "status",
+        "temperature1_C", // TODO: remove this
+        "temperature2_C", // TODO: remove this
         "temperature_1_C",
         "temperature_2_C",
         "mic",

@@ -76,7 +76,7 @@ static int chuango_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     data = data_make(
-            "model",    "",             DATA_STRING, "Chuango-Security",
+            "model",    "",             DATA_STRING, _X("Chuango-Security","Chuango Security Technology"),
             "id",       "ID",           DATA_INT,    id,
             "cmd",      "CMD",          DATA_STRING, cmd_str,
             "cmd_id",   "CMD_ID",       DATA_INT,    cmd,

@@ -36,6 +36,10 @@ Bytes 2 to 9 are inverted Manchester with swapped MSB/LSB:
 
 static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
+    //if (decoder->verbose) {
+    //  bitbuffer_printf(bitbuffer, "Steelmate TPMS decoder: ");
+    //}
+
     bitrow_t *bb = bitbuffer->bb;
 
     //Loop through each row of data
@@ -83,19 +87,17 @@ static int steelmate_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         pressurePSI = (float)p1 / 2;
         battery_mV = tmpbattery_mV * 2;
 
-        /* clang-format off */
         data = data_make(
-                "type",             "",             DATA_STRING, "TPMS",
-                "model",            "",             DATA_STRING, "Steelmate",
-                "id",               "",             DATA_STRING, sensorIDhex,
-                "pressure_PSI",     "",             DATA_DOUBLE, pressurePSI,
-                "temperature_F",    "",             DATA_DOUBLE, (float)tempFahrenheit,
-                "battery_mV",       "",             DATA_INT,    battery_mV,
-                "mic",              "Integrity",    DATA_STRING, "CHECKSUM",
-                NULL);
-        /* clang-format on */
-
+            "type", "", DATA_STRING, "TPMS",
+            "model", "", DATA_STRING, "Steelmate",
+            "id", "", DATA_STRING, sensorIDhex,
+            "pressure_PSI", "", DATA_DOUBLE, pressurePSI,
+            "temperature_F", "", DATA_DOUBLE, (float)tempFahrenheit,
+            "battery_mV", "", DATA_INT, battery_mV,
+            "mic", "Integrity", DATA_STRING, "CHECKSUM",
+            NULL);
         decoder_output_data(decoder, data);
+
         return 1;
     }
 

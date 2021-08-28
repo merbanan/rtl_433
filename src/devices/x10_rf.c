@@ -53,7 +53,7 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Row [0] is sync pulse
     // Validate length
     if (bitbuffer->bits_per_row[1] != 32) { // Don't waste time on a wrong length package
-        if (decoder->verbose && bitbuffer->bits_per_row[1] != 0)
+        if (decoder->verbose)
             fprintf(stderr, "X10-RF: DECODE_ABORT_LENGTH, Received message length=%i\n", bitbuffer->bits_per_row[1]);
         return DECODE_ABORT_LENGTH;
     }
@@ -140,12 +140,12 @@ static int x10_rf_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",        "",             DATA_STRING, "X10-RF",
-            "id",           "",             DATA_INT,    bDeviceCode,
-            "channel",      "",             DATA_STRING, housecode,
-            "state",        "State",        DATA_STRING, event_str,
-            "data",         "Data",         DATA_FORMAT, "%08x", DATA_INT, code,
-            "mic",          "Integrity",    DATA_STRING, "PARITY",
+            "model",                   "", DATA_STRING, "X10-RF",
+            _X("id", "deviceid"),      "", DATA_INT,    bDeviceCode,
+            _X("channel", "houseid"),  "", DATA_STRING, housecode,
+            "state",              "State", DATA_STRING, event_str,
+            "data",                "Data", DATA_FORMAT, "%08x", DATA_INT, code,
+            "mic",           "Integrity",  DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -158,6 +158,8 @@ static char *output_fields[] = {
         "model",
         "channel",
         "id",
+        "houseid",  // TODO: remove ??
+        "deviceid", // TODO: remove ??
         "state",
         "data",
         "mic",

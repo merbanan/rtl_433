@@ -49,12 +49,10 @@ static int generic_motion_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         code = (b[0] << 12) | (b[1] << 4) | (b[2] >> 4);
         sprintf(code_str, "%05x", code);
 
-        /* clang-format off */
         data = data_make(
-                "model",    "",  DATA_STRING, "Generic-Motion",
+                "model",    "",  DATA_STRING, _X("Generic-Motion","Generic motion sensor"),
                 "code",     "",  DATA_STRING, code_str,
                 NULL);
-        /* clang-format on */
 
         decoder_output_data(decoder, data);
         return 1;

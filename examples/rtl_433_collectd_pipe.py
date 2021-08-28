@@ -48,7 +48,10 @@ def rtl_433_probe():
             attributes = {}
             temperatures = {}
 
-            attributes["battery"] = data["battery_ok"]
+            if data["battery"] == "OK":
+                attributes["battery"] = 1.0
+            else:
+                attributes["battery"] = 0.0
 
             attributes["humidity"] = data["humidity"]
 

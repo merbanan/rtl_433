@@ -84,8 +84,11 @@ def rtl_433_probe():
                 label += ".ID" + str(data["id"])
             path = GRAPHITE_PREFIX + label
 
-            if "battery_ok" in data:
-                graphite.push(path + '.battery', data["battery_ok"], now)
+            if "battery" in data:
+                if data["battery"] == "OK":
+                    graphite.push(path + '.battery', 1, now)
+                else:
+                    graphite.push(path + '.battery', 0, now)
 
             if "humidity" in data:
                 graphite.push(path + '.humidity', data["humidity"], now)

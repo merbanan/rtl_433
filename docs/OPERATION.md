@@ -439,7 +439,7 @@ Use `-F mqtt` to add an output in MQTT format.
 Specify MQTT server with e.g. `-F mqtt://localhost:1883`.
 
 Add MQTT options with e.g. `-F "mqtt://host:1883,opt=arg"`.
-Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `qos=N`, `<format>[=<topic>]`.
+Supported MQTT options are: `user=foo`, `pass=bar`, `retain[=0|1]`, `<format>[=<topic>]`.
 
 Supported MQTT formats: (default is all formats)
 - `events`: posts JSON event data
@@ -496,7 +496,7 @@ Without any `-F` option the default is KV output. Use `-F null` to remove that d
 ### Meta information
 
 ```
-  [-M time[:<options>]|protocol|level|stats|bits]
+  [-M time[:<options>]|protocol|level|stats|bits|oldmodel]
     Add various metadata to every output line.
 ```
 - Use `time` to add current date and time meta data (preset for live inputs).

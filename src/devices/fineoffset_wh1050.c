@@ -104,14 +104,14 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, "Fineoffset-WH1050",
+            "model",            "",                 DATA_STRING, _X("Fineoffset-WH1050","Fine Offset WH1050 weather station"),
             "id",               "StationID",        DATA_FORMAT, "%04X",    DATA_INT,    device_id,
-            "battery_ok",       "Battery",          DATA_INT,    !battery_low,
+            "battery",          "Battery",          DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",      DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_FORMAT, "%u %%",   DATA_INT,    humidity,
-            "wind_avg_km_h",    "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
-            "wind_max_km_h",    "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
-            "rain_mm",          "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
+            _X("wind_avg_km_h","speed"),   "Wind avg speed",   DATA_FORMAT, "%.02f",   DATA_DOUBLE, speed,
+            _X("wind_max_km_h","gust"),   "Wind gust",        DATA_FORMAT, "%.02f",   DATA_DOUBLE, gust,
+            _X("rain_mm","rain"),             "Total rainfall",   DATA_FORMAT, "%.01f",   DATA_DOUBLE, rain,
             "mic",              "Integrity",        DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -123,11 +123,14 @@ static int fineoffset_wh1050_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
     "model",
     "id",
-    "battery_ok",
+    "battery",
     "temperature_C",
     "humidity",
+    "speed", // TODO: remove this
+    "gust", // TODO: remove this
     "wind_avg_km_h",
     "wind_max_km_h",
+    "rain", // TODO: delete this
     "rain_mm",
     "mic",
     NULL,

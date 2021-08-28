@@ -20,7 +20,6 @@
 #include "r_util.h"
 #include "rtl_433.h"
 #include "r_private.h"
-#include "rtl_433_devices.h"
 #include "r_device.h"
 #include "pulse_demod.h"
 #include "pulse_detect_fsk.h"
@@ -145,23 +144,6 @@ void r_init_cfg(r_cfg_t *cfg)
     list_ensure_size(&cfg->in_files, 100);
     list_ensure_size(&cfg->output_handler, 16);
 
-    // collect devices list, this should be a module
-    r_device r_devices[] = {
-#define DECL(name) name,
-            DEVICES
-#undef DECL
-    };
-
-    cfg->num_r_devices = sizeof(r_devices) / sizeof(*r_devices);
-    for (unsigned i = 0; i < cfg->num_r_devices; i++) {
-        r_devices[i].protocol_num = i + 1;
-    }
-    cfg->devices = malloc(sizeof(r_devices));
-    if (!cfg->devices)
-        FATAL_CALLOC("r_init_cfg()");
-
-    memcpy(cfg->devices, r_devices, sizeof(r_devices));
-
     cfg->demod = calloc(1, sizeof(*cfg->demod));
     if (!cfg->demod)
         FATAL_CALLOC("r_init_cfg()");
@@ -169,11 +151,6 @@ void r_init_cfg(r_cfg_t *cfg)
     cfg->demod->level_limit = 0.0;
     cfg->demod->min_level = -12.1442;
     cfg->demod->min_snr = 9.0;
-
-    // note: this should be optional
-    cfg->demod->pulse_detect = pulse_detect_create();
-    // initialize tables
-    baseband_init();
 
     time(&cfg->frames_since);
 
@@ -217,8 +194,6 @@ void r_free_cfg(r_cfg_t *cfg)
 
     free(cfg->demod);
 
-    free(cfg->devices);
-
     list_free_elems(&cfg->output_handler, (list_elem_free_fn)data_output_free);
 
     list_free_elems(&cfg->data_tags, (list_elem_free_fn)data_tag_free);
@@ -235,18 +210,6 @@ void r_free_cfg(r_cfg_t *cfg)
 
 void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
 {
-    // use arg of 'v', 'vv', 'vvv' as device verbosity
-    int dev_verbose = 0;
-    if (arg && *arg == 'v') {
-        for (; *arg == 'v'; ++arg) {
-            dev_verbose++;
-        }
-        if (*arg) {
-            arg++; // skip separator
-        }
-    }
-
-    // use any other arg as device parameter
     r_device *p;
     if (r_dev->create_fn) {
         p = r_dev->create_fn(arg);
@@ -261,8 +224,10 @@ void register_protocol(r_cfg_t *cfg, r_device *r_dev, char *arg)
         *p = *r_dev; // copy
     }
 
-    p->verbose      = dev_verbose ? dev_verbose : (cfg->verbosity > 0 ? cfg->verbosity - 1 : 0);
+    p->verbose      = cfg->verbosity > 0 ? cfg->verbosity - 1 : 0;
     p->verbose_bits = cfg->verbose_bits;
+
+    p->old_model_keys = cfg->old_model_keys; // TODO: temporary allow to change to new style model keys
 
     p->output_fn  = data_acquired_handler;
     p->output_ctx = cfg;
@@ -314,9 +279,9 @@ void calc_rssi_snr(r_cfg_t *cfg, pulse_data_t *pulse_data)
     pulse_data->freq1_hz = (foffs1 + cfg->center_frequency);
     pulse_data->freq2_hz = (foffs2 + cfg->center_frequency);
     pulse_data->centerfreq_hz = cfg->center_frequency;
-    pulse_data->depth_bits    = cfg->demod->sample_size * 4;
+    pulse_data->depth_bits    = cfg->demod->sample_size * 8;
     // NOTE: for (CU8) amplitude is 10x (because it's squares)
-    if (cfg->demod->sample_size == 2 && !cfg->demod->use_mag_est) { // amplitude (CU8)
+    if (cfg->demod->sample_size == 1 && !cfg->demod->use_mag_est) { // amplitude (CU8)
         pulse_data->range_db = 42.1442f; // 10*log10f(16384.0f) == 20*log10f(128.0f)
         pulse_data->rssi_db  = 10.0f * log10f(ook_high_estimate) - 42.1442f; // 10*log10f(16384.0f)
         pulse_data->noise_db = 10.0f * log10f(ook_low_estimate) - 42.1442f; // 10*log10f(16384.0f)
@@ -409,6 +374,12 @@ char const **well_known_output_fields(r_cfg_t *cfg)
 /** Convert CSV keys according to selected conversion mode. Replacement is static but in-place. */
 static char const **convert_csv_fields(r_cfg_t *cfg, char const **fields)
 {
+    if (!cfg->old_model_keys) {
+        for (char const **p = fields; *p; ++p) {
+            if (!strcmp(*p, "battery")) *p = "battery_ok";
+        }
+    }
+
     if (cfg->conversion_mode == CONVERT_SI) {
         for (char const **p = fields; *p; ++p) {
             if (!strcmp(*p, "temperature_F")) *p = "temperature_C";
@@ -584,6 +555,23 @@ void data_acquired_handler(r_device *r_dev, data_t *data)
         }
     }
 #endif
+
+    // replace textual battery key with numerical battery key
+    if (!cfg->old_model_keys) {
+        for (data_t *d = data; d; d = d->next) {
+            if ((d->type == DATA_STRING) && !strcmp(d->key, "battery")) {
+                free(d->key);
+                d->key = strdup("battery_ok");
+                if (!d->key)
+                    FATAL_STRDUP("data_acquired_handler()");
+                int ok = d->value.v_ptr && !strcmp(d->value.v_ptr, "OK");
+                free(d->value.v_ptr);
+                d->type = DATA_INT;
+                d->value.v_int = ok;
+                break;
+            }
+        }
+    }
 
     if (cfg->conversion_mode == CONVERT_SI) {
         for (data_t *d = data; d; d = d->next) {

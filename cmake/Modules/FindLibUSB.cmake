@@ -42,8 +42,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibUSB  DEFAULT_MSG
                                   LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR)
 
-mark_as_advanced(LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR LIBUSB_VERSION)
+mark_as_advanced(LIBUSB_LIBRARY LIBUSB_INCLUDE_DIR)
 
 set(LIBUSB_LIBRARIES ${LIBUSB_LIBRARY} )
 set(LIBUSB_INCLUDE_DIRS ${LIBUSB_INCLUDE_DIR} )
-set(LIBUSB_VERSION ${LIBUSB_PKG_VERSION} )

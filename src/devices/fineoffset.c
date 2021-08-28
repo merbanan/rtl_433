@@ -78,24 +78,24 @@ static int fineoffset_WH2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (bitbuffer->bits_per_row[0] == 48 &&
             bb[0][0] == 0xFF) { // WH2
         bitbuffer_extract_bytes(bitbuffer, 0, 8, b, 40);
-        model = "Fineoffset-WH2";
+        model = _X("Fineoffset-WH2","Fine Offset Electronics, WH2 Temperature/Humidity sensor");
 
     } else if (bitbuffer->bits_per_row[0] == 55 &&
             bb[0][0] == 0xFE) { // WH2A
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 48);
-        model = "Fineoffset-WH2A";
+        model = _X("Fineoffset-WH2A","Fine Offset WH2A sensor");
 
     } else if (bitbuffer->bits_per_row[0] == 47 &&
             bb[0][0] == 0xFE) { // WH5
         bitbuffer_extract_bytes(bitbuffer, 0, 7, b, 40);
-        model = "Fineoffset-WH5";
+        model = _X("Fineoffset-WH5","Fine Offset WH5 sensor");
         if (decoder->decode_ctx) // don't care for the actual value
             model = "Rosenborg-66796";
 
     } else if (bitbuffer->bits_per_row[0] == 49 &&
             bb[0][0] == 0xFF && (bb[0][1]&0x80) == 0x80) { // Telldus
         bitbuffer_extract_bytes(bitbuffer, 0, 9, b, 40);
-        model = "Fineoffset-TelldusProove";
+        model = _X("Fineoffset-TelldusProove","Telldus/Proove thermometer");
 
     } else
         return DECODE_ABORT_LENGTH;
@@ -307,15 +307,15 @@ static int fineoffset_WH24_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? "Fineoffset-WH24" : "Fineoffset-WH65B",
-            "id",               "ID",               DATA_INT,    id,
-            "battery_ok",       "Battery",          DATA_INT,    !low_battery,
+            "model",            "",                 DATA_STRING, type == MODEL_WH24 ? _X("Fineoffset-WH24","Fine Offset WH24") : _X("Fineoffset-WH65B","Fine Offset WH65B"),
+            "id",               "ID",               DATA_INT, id,
+            "battery",          "Battery",          DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",      DATA_COND, temp_raw != 0x7ff, DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",         DATA_COND, humidity != 0xff, DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "wind_dir_deg",     "Wind direction",   DATA_COND, wind_dir != 0x1ff, DATA_INT, wind_dir,
-            "wind_avg_m_s",     "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
-            "wind_max_m_s",     "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
-            "rain_mm",          "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
+            _X("wind_avg_m_s","wind_speed_ms"),    "Wind speed",       DATA_COND, wind_speed_raw != 0x1ff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wind_speed_ms,
+            _X("wind_max_m_s","gust_speed_ms"),    "Gust speed",       DATA_COND, gust_speed_raw != 0xff, DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, gust_speed_ms,
+            _X("rain_mm","rainfall_mm"),           "Rainfall",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rainfall_mm,
             "uv",               "UV",               DATA_COND, uv_raw != 0xffff, DATA_INT, uv_raw,
             "uvi",              "UVI",              DATA_COND, uv_raw != 0xffff, DATA_INT, uv_index,
             "light_lux",        "Light",            DATA_COND, light_raw != 0xffffff, DATA_FORMAT, "%.1f lux", DATA_DOUBLE, light_lux,
@@ -410,7 +410,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Row length: %u. Header index: %u\n", __func__, bitbuffer->bits_per_row[0], bit_offset);
+            bitbuffer_printf(bitbuffer, "Fineoffset_WH0290: short package. Row length: %u. Header index: %u\n", bitbuffer->bits_per_row[0], bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -423,7 +423,7 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     if (crc != b[6] || checksum != b[7]) {
         if (decoder->verbose) {
-            fprintf(stderr, "%s: Checksum error: %02x %02x\n", __func__, crc, checksum);
+            fprintf(stderr, "Fineoffset_WH0280: Checksum error: %02x %02x\n", crc, checksum);
         }
         return DECODE_FAIL_MIC;
     }
@@ -439,9 +439,9 @@ static int fineoffset_WH0290_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0290",
+            "model",            "",             DATA_STRING, _X("Fineoffset-WH0290","Fine Offset Electronics, WH0290"),
             "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
+            "battery_ok",          "Battery Level",  DATA_FORMAT, "%.1f", DATA_DOUBLE, battery_ok,
             "pm2_5_ug_m3",      "2.5um Fine Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm25/10,
             "estimated_pm10_0_ug_m3",     "Estimate of 10um Coarse Particulate Matter",  DATA_FORMAT, "%i ug/m3", DATA_INT, pm100/10,
             "family",           "FAMILY",       DATA_INT,    family,
@@ -507,7 +507,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 100, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+            bitbuffer_printf(bitbuffer, "Fineoffset_WH25: short package. Header index: %u\n", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -520,7 +520,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
     else if (msg_type != 0xe0) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Msg type unknown: %2x\n", __func__, b[0]);
+            fprintf(stderr, "Fineoffset_WH25: Msg type unknown: %2x\n", b[0]);
         if (b[0] == 0x41) {
             return fineoffset_WH0290_callback(decoder, bitbuffer); // abort and try WH0290
         }
@@ -531,7 +531,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     int sum = (add_bytes(b, 6) & 0xff) - b[6];
     if (sum) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH25: Checksum error: ");
         return DECODE_FAIL_MIC;
     }
 
@@ -540,7 +540,7 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitsum = ((bitsum & 0x0f) << 4) | (bitsum >> 4); // Swap nibbles
     if (type == 25 && bitsum != b[7]) { // only check for WH25
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH25: Bitsum error: ");
         return DECODE_FAIL_MIC;
     }
 
@@ -558,9 +558,9 @@ static int fineoffset_WH25_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data = data_make(
             "model",            "",             DATA_COND, type == 31, DATA_STRING, "Fineoffset-WH32",
             "model",            "",             DATA_COND, type == 32, DATA_STRING, "Fineoffset-WH32B",
-            "model",            "",             DATA_COND, type == 25, DATA_STRING, "Fineoffset-WH25",
+            "model",            "",             DATA_COND, type == 25, DATA_STRING, _X("Fineoffset-WH25","Fine Offset Electronics, WH25"),
             "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !low_battery,
+            "battery",          "Battery",      DATA_STRING, low_battery ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
             "humidity",         "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "pressure_hPa",     "Pressure",     DATA_COND,   pressure_raw != 0xffff, DATA_FORMAT, "%.01f hPa", DATA_DOUBLE, pressure,
@@ -624,7 +624,7 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bit_offset = bitbuffer_search(bitbuffer, 0, 0, preamble, sizeof(preamble) * 8) + sizeof(preamble) * 8;
     if (bit_offset + sizeof(b) * 8 > bitbuffer->bits_per_row[0]) {  // Did not find a big enough package
         if (decoder->verbose)
-            bitbuffer_printf(bitbuffer, "%s: short package. Header index: %u\n", __func__, bit_offset);
+            bitbuffer_printf(bitbuffer, "Fineoffset_WH51: short package. Header index: %u\n", bit_offset);
         return DECODE_ABORT_LENGTH;
     }
     bitbuffer_extract_bytes(bitbuffer, 0, bit_offset, b, sizeof(b) * 8);
@@ -632,21 +632,21 @@ static int fineoffset_WH51_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     // Verify family code
     if (b[0] != 0x51) {
         if (decoder->verbose)
-            fprintf(stderr, "%s: Msg family unknown: %2x\n", __func__, b[0]);
+            fprintf(stderr, "Fineoffset_WH51: Msg family unknown: %2x\n", b[0]);
         return DECODE_ABORT_EARLY;
     }
 
     // Verify checksum
     if ((add_bytes(b, 13) & 0xff) != b[13]) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Checksum error: ", __func__);
+            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH51: Checksum error: ");
         return DECODE_FAIL_MIC;
     }
 
     // Verify crc
     if (crc8(b, 12, 0x31, 0) != b[12]) {
         if (decoder->verbose)
-            bitrow_printf(b, sizeof (b) * 8, "%s: Bitsum error: ", __func__);
+            bitrow_printf(b, sizeof (b) * 8, "Fineoffset_WH51: Bitsum error: ");
         return DECODE_FAIL_MIC;
     }
 
@@ -733,10 +733,10 @@ static int alecto_ws1200v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v1",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "id",               "ID",           DATA_INT, id,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -819,8 +819,8 @@ static int alecto_ws1200v2_dcf_callback(r_device *decoder, bitbuffer_t *bitbuffe
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "id",               "ID",           DATA_INT, id,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "radio_clock",      "Radio Clock",  DATA_STRING, clock_str,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -895,10 +895,10 @@ static int alecto_ws1200v2_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     /* clang-format off */
     data = data_make(
             "model",            "",             DATA_STRING, "Alecto-WS1200v2",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "id",               "ID",           DATA_INT, id,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            "rain",             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -968,11 +968,11 @@ static int fineoffset_WH0530_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Fineoffset-WH0530",
-            "id",               "ID",           DATA_INT,    id,
-            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
+            "model",            "",             DATA_STRING, _X("Fineoffset-WH0530","Fine Offset Electronics, WH0530 Temperature/Rain sensor"),
+            "id",               "ID",           DATA_INT, id,
+            "battery",          "Battery",      DATA_STRING, battery_low ? "LOW" : "OK",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.01f C", DATA_DOUBLE, temperature,
-            "rain_mm",          "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
+            _X("rain_mm","rain"),             "Rain",         DATA_FORMAT, "%.01f mm", DATA_DOUBLE, rainfall,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -993,14 +993,17 @@ static char *output_fields[] = {
 static char *output_fields_WH25[] = {
     "model",
     "id",
-    "battery_ok",
+    "battery",
     "temperature_C",
     "humidity",
     "pressure_hPa",
     // WH24
     "wind_dir_deg",
+    "wind_speed_ms", // TODO: delete this
+    "gust_speed_ms", // TODO: delete this
     "wind_avg_m_s",
     "wind_max_m_s",
+    "rainfall_mm", //TODO: remove this
     "rain_mm",
     "uv",
     "uvi",
@@ -1027,8 +1030,9 @@ static char *output_fields_WH51[] = {
 static char *output_fields_WH0530[] = {
     "model",
     "id",
-    "battery_ok",
+    "battery",
     "temperature_C",
+    "rain", //TODO: remove this
     "rain_mm",
     "radio_clock",
     "mic",

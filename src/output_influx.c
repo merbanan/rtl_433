@@ -211,27 +211,6 @@ static void print_influx_string_escaped(data_output_t *output, char const *str, 
     *buf++ = '"';
     size--;
     for (; *str && size >= 3; ++str) {
-        if (*str == '\r') {
-            *buf++ = '\\';
-            size--;
-            *buf++ = 'r';
-            size--;
-            continue;
-        }
-        if (*str == '\n') {
-            *buf++ = '\\';
-            size--;
-            *buf++ = 'n';
-            size--;
-            continue;
-        }
-        if (*str == '\t') {
-            *buf++ = '\\';
-            size--;
-            *buf++ = 't';
-            size--;
-            continue;
-        }
         if (*str == '"' || *str == '\\') {
             *buf++ = '\\';
             size--;
@@ -298,7 +277,8 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
                 || !strcmp(data->key, "time")) {
             // skip
         }
-        else if (!strcmp(data->key, "type")
+        else if (!strcmp(data->key, "brand")
+                || !strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
                 || !strcmp(data->key, "channel")) {
@@ -326,7 +306,8 @@ static void print_influx_data(data_output_t *output, data_t *data, char const *f
                 || !strcmp(data->key, "time")) {
             // skip
         }
-        else if (!strcmp(data->key, "type")
+        else if (!strcmp(data->key, "brand")
+                || !strcmp(data->key, "type")
                 || !strcmp(data->key, "subtype")
                 || !strcmp(data->key, "id")
                 || !strcmp(data->key, "channel")) {

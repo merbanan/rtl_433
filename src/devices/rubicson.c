@@ -75,10 +75,10 @@ static int rubicson_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     /* clang-format off */
     data = data_make(
-            "model",            "",             DATA_STRING, "Rubicson-Temperature",
+            "model",            "",             DATA_STRING, _X("Rubicson-Temperature","Rubicson Temperature Sensor"),
             "id",               "House Code",   DATA_INT,    id,
             "channel",          "Channel",      DATA_INT,    channel,
-            "battery_ok",       "Battery",      DATA_INT,    !!battery,
+            "battery",          "Battery",      DATA_STRING, battery ? "OK" : "LOW",
             "temperature_C",    "Temperature",  DATA_FORMAT, "%.1f C", DATA_DOUBLE, temp_c,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -92,7 +92,7 @@ static char *output_fields[] = {
         "model",
         "id",
         "channel",
-        "battery_ok",
+        "battery",
         "temperature_C",
         "mic",
         NULL,

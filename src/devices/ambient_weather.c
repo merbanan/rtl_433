@@ -49,19 +49,17 @@ static int ambient_weather_decode(r_device *decoder, bitbuffer_t *bitbuffer, uns
     temperature = (temp_f - 400) * 0.1f;
     humidity = b[4];
 
-    /* clang-format off */
     data = data_make(
-            "model",          "",             DATA_STRING, "Ambientweather-F007TH",
-            "id",             "House Code",   DATA_INT,    deviceID,
+            "model",          "",             DATA_STRING, _X("Ambientweather-F007TH","Ambient Weather F007TH Thermo-Hygrometer"),
+            _X("id","device"),         "House Code",   DATA_INT,    deviceID,
             "channel",        "Channel",      DATA_INT,    channel,
-            "battery_ok",     "Battery",      DATA_INT,    !isBatteryLow,
+            "battery",        "Battery",      DATA_STRING, isBatteryLow ? "Low" : "OK",
             "temperature_F",  "Temperature",  DATA_FORMAT, "%.1f F", DATA_DOUBLE, temperature,
             "humidity",       "Humidity",     DATA_FORMAT, "%u %%", DATA_INT, humidity,
             "mic",            "Integrity",    DATA_STRING, "CRC",
             NULL);
-    /* clang-format on */
-
     decoder_output_data(decoder, data);
+
     return 1;
 }
 
@@ -101,16 +99,15 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
-    // TODO: returns 0 when no data is found in the messages.
-    // What would be a better return value? Maybe DECODE_ABORT_SANITY?
     return ret;
 }
 
 static char *output_fields[] = {
         "model",
+        "device", // TODO: delete this
         "id",
         "channel",
-        "battery_ok",
+        "battery",
         "temperature_F",
         "humidity",
         "mic",
