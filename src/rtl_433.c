@@ -395,7 +395,8 @@ static void sdr_callback(unsigned char *iq_buf, uint32_t len, void *ctx)
     }
     // Report noise every report_noise seconds, but only for the first frame that second
     if (cfg->report_noise && last_frame_sec != demod->now.tv_sec && demod->now.tv_sec % cfg->report_noise == 0) {
-        fprintf(stderr, "Current level %.1f dB, estimated noise %.1f dB\n", avg_db, demod->noise_level);
+        fprintf(stderr, "Current %s level %.1f dB, estimated noise %.1f dB\n",
+                noise_only ? "noise" : "signal", avg_db, demod->noise_level);
     }
 
     if (process_frame)
