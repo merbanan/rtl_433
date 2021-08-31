@@ -125,7 +125,6 @@ static int lacrossetx_detect(r_device *decoder, uint8_t *pRow, uint8_t *msg_nybb
 // Temperature and Humidity are sent in different messages bursts.
 static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb = bitbuffer->bb;
     int events = 0;
     uint8_t msg_nybbles[LACROSSE_NYBBLE_CNT];
     data_t *data;
@@ -134,7 +133,7 @@ static int lacrossetx_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     for (int row = 0; row < bitbuffer->num_rows; ++row) {
         // break out the message nybbles into separate bytes
-        if (lacrossetx_detect(decoder, bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0) {
+        if (lacrossetx_detect(decoder, bitbuffer->bb[row], msg_nybbles, bitbuffer->bits_per_row[row]) <= 0) {
             result = DECODE_ABORT_EARLY;
             continue; // DECODE_ABORT_EARLY
         }

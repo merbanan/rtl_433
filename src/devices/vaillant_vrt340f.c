@@ -107,14 +107,14 @@ get_battery_status(uint8_t * msg)
 static int
 vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    bitrow_t *bb = bitbuffer->bb;
+    uint8_t *b = bitbuffer->bb[0];
 
     data_t *data;
 
     // TODO: Use repeat signal for error checking / correction!
 
     // each row needs to have at least 128 bits (plus a few more due to bit stuffing)
-    if (bitbuffer->bits_per_row[0]<128)
+    if (bitbuffer->bits_per_row[0] < 128)
         return DECODE_ABORT_LENGTH;
 
     // The protocol uses bit-stuffing => remove 0 bit after five consecutive 1 bits
@@ -122,8 +122,8 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t bits = {0};
     int ones = 0;
     for (uint16_t k = 0; k < bitbuffer->bits_per_row[0]; k++) {
-        int b = bitrow_get_bit(bb[0], k);
-        if (b==1) {
+        int bit = bitrow_get_bit(b, k);
+        if (bit == 1) {
             bitbuffer_add_bit(&bits, 1);
             ones++;
         } else {
@@ -134,35 +134,29 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    b = bits.bb[0];
     uint16_t bitcount = bits.bits_per_row[0];
 
-    // Change to least-significant-bit last (protocol uses least-significant-bit first) for hex representation:
-    for (uint16_t k = 0; k <= (uint16_t)(bitcount-1)/8; k++) {
-        bits.bb[0][k] = reverse8(bits.bb[0][k]);
-    }
-    bb = bits.bb;
-
-    /* DEBUG: print out the received packet */
-    //fprintf (stderr, "Vaillant ");
-    //bitrow_print(bb[0], bitcount);
+    // Change to least-significant-bit last (protocol uses least-significant-bit first)
+    reflect_bytes(b, (bitcount - 1) / 8);
 
     // A correct message has 128 bits plus potentially two extra bits for clock sync at the end
     if (!(128 <= bitcount && bitcount <= 131) && !(168 <= bitcount && bitcount <= 171))
         return DECODE_ABORT_LENGTH;
 
     // "Normal package":
-    if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7e) && (128 <= bitcount && bitcount <= 131)) {
+    if ((b[0] == 0x00) && (b[1] == 0x00) && (b[2] == 0x7e) && (128 <= bitcount && bitcount <= 131)) {
 
-        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,11, /*Checksum from-to:*/12,13)) {
+        if (!validate_checksum(decoder, b, /* Data from-to: */3, 11, /*Checksum from-to:*/12, 13)) {
             return DECODE_FAIL_MIC;
         }
 
         // Device ID starts at bit 4:
-        uint16_t deviceID = get_device_id(bb[0], 3);
-        uint8_t heating_mode = get_heating_mode(bb[0]); // 0=OFF, 1=ON (2-point heating), 2=ON (analogue heating)
-        uint8_t target_temperature = get_target_temperature(bb[0]);
-        uint8_t water_preheated = get_water_preheated(bb[0]); // 1=Pre-heat, 0=no pre-heated water
-        uint8_t isBatteryLow = get_battery_status(bb[0]);
+        uint16_t deviceID = get_device_id(b, 3);
+        uint8_t heating_mode = get_heating_mode(b); // 0=OFF, 1=ON (2-point heating), 2=ON (analogue heating)
+        uint8_t target_temperature = get_target_temperature(b);
+        uint8_t water_preheated = get_water_preheated(b); // 1=Pre-heat, 0=no pre-heated water
+        uint8_t isBatteryLow = get_battery_status(b);
 
         /* clang-format off */
         data = data_make(
@@ -180,14 +174,14 @@ vaillant_vrt340_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     }
 
     // "RF detection package":
-    if ((bb[0][0] == 0x00) && (bb[0][1] == 0x00) && (bb[0][2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
+    if ((b[0] == 0x00) && (b[1] == 0x00) && (b[2] == 0x7E) && (168 <= bitcount && bitcount <= 171)) {
 
-        if (!validate_checksum(decoder, bb[0], /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
+        if (!validate_checksum(decoder, b, /* Data from-to: */3,16, /*Checksum from-to:*/17,18)) {
             return DECODE_FAIL_MIC;
         }
 
         // Device ID starts at bit 12:
-        uint16_t deviceID = get_device_id(bb[0], 11);
+        uint16_t deviceID = get_device_id(b, 11);
 
         /* clang-format off */
         data = data_make(
