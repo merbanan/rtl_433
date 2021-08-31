@@ -357,7 +357,7 @@ int pulse_demod_pwm(const pulse_data_t *pulses, r_device *device)
         }
         else {
             // Pulse outside specified timing
-            return 0;
+            bitbuffer_add_row(&bits);
         }
 
         // End of Message?
