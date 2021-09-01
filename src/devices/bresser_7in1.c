@@ -27,7 +27,7 @@ Data layout:
 
     {271}631d05c09e9a18abaabaaaaaaaaa8adacbacff9cafcaaaaaaa000000000000000000
 
-    DIGEST:8h8h ID?8h8h WDIR:8h4h 4h 8h WGUST:8h.4h WAVG:8h.4h RAIN:8h8h4h.4h RAIN?:8h TEMP:8h.4hC FLAGS?:4h HUM:8h% LIGHT:8h4h,4hKL ?:8h8h4h TRAILER:8h8h8h4h
+    DIGEST:8h8h ID?8h8h WDIR:8h4h 4h 8h WGUST:8h.4h WAVG:8h.4h RAIN:8h8h4h.4h RAIN?:8h TEMP:8h.4hC FLAGS?:4h HUM:8h% LIGHT:8h4h,8h4hKL UV:8h.4h TRAILER:8h8h8h4h
 
 Unit of light is kLux (not W/m²).
 
@@ -101,9 +101,11 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (temp_raw > 600)
         temp_c = (temp_raw - 1000) * 0.1f;
     int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
-    int lght_raw = (msg[17] >> 4) * 1000 + (msg[17] & 0x0f) * 100 + (msg[18] >> 4) * 10 + (msg[18] & 0x0f);
+    int lght_raw = (msg[17] >> 4) * 10000 + (msg[17] & 0x0f) * 1000 + (msg[18] >> 4) * 100 + (msg[18] & 0x0f) * 10 + (msg[19] >> 4) ;
+    int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
-    float light_klx = lght_raw * 0.1f;
+    float light_klx = lght_raw * 0.01f;
+    float uv_index = uv_raw * 0.1f;
 
     /* clang-format off */
     data = data_make(
@@ -115,7 +117,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "wind_avg_m_s",     "Wind Speed",   DATA_FORMAT, "%.1f m/s", DATA_DOUBLE, wavg_raw * 0.1f,
             "wind_dir_deg",     "Direction",    DATA_INT,    wdir,
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
-            "light_klx",        "Light",        DATA_FORMAT, "%.1f klx", DATA_DOUBLE, light_klx,
+            "light_klx",        "Light",        DATA_FORMAT, "%.2f klx", DATA_DOUBLE, light_klx,
+            "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
             "flags",            "Battery?",     DATA_INT,    flags,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
@@ -135,6 +138,7 @@ static char *output_fields[] = {
         "wind_dir_deg",
         "rain_mm",
         "light_klx",
+        "uv",
         "flags",
         "mic",
         NULL,
