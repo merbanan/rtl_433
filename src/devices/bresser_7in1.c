@@ -111,8 +111,8 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (temp_raw > 600)
         temp_c = (temp_raw - 1000) * 0.1f;
     int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
-    int lght_raw = (msg[17] >> 4) * 100000 + (msg[17] & 0x0f) * 10000 + (msg[18] >> 4) * 1000 
-	    + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
+    int lght_raw = (msg[17] >> 4) * 100000 + (msg[17] & 0x0f) * 10000 + (msg[18] >> 4) * 1000
+            + (msg[18] & 0x0f) * 100 + (msg[19] >> 4) * 10 + (msg[19] & 0x0f);
     int uv_raw =   (msg[20] >> 4) * 100 + (msg[20] & 0x0f) * 10 + (msg[21] >> 4);
 
     float light_klx = lght_raw * 0.001f;
