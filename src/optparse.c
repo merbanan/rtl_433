@@ -323,6 +323,41 @@ char *asepcb(char **stringp, char delim, char stop)
     return p;
 }
 
+int kwargs_match(char const *s, char const *key, char const **val)
+{
+    size_t len = strlen(key);
+    // check prefix match
+    if (strncmp(s, key, len)) {
+        return 0; // no match
+    }
+    s += len;
+    // skip whitespace after match
+    while (*s == ' ' || *s == '\t')
+        ++s;
+    if (*s == '\0' || * s == ',') {
+        if (val)
+            *val = NULL;
+        return 1; // match with no arg
+    }
+    if (*s == '=') {
+        if (val)
+            *val = s + 1;
+        return 1; // match with arg
+    }
+    return 0; // no exact match
+}
+
+char const *kwargs_skip(char const *s)
+{
+    // skip to the next comma if possible
+    while (s && *s && *s != ',')
+        ++s;
+    // skip comma and whitespace if possible
+    while (s && *s && (*s == ',' || *s == ' ' || *s == '\t'))
+        ++s;
+    return s;
+}
+
 char *getkwargs(char **s, char **key, char **val)
 {
     char *v = asepc(s, ',');

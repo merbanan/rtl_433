@@ -1144,37 +1144,38 @@ static void parse_conf_option(r_cfg_t *cfg, int opt, char *arg)
     case 'Y':
         if (!arg)
             usage(1);
-        char *p = arg;
+        char const *p = arg;
         while (p && *p) {
-            if (!strncasecmp(p, "autolevel", 9))
-                cfg->demod->auto_level = atoiv(arg_param(arg), 1); // arg_float_default(p + 9, "-Y autolevel: ");
-            else if (!strncasecmp(p, "squelch", 7))
-                cfg->demod->squelch_offset = atoiv(arg_param(arg), 1); // arg_float_default(p + 7, "-Y squelch: ");
-            else if (!strncmp(p, "auto", 4))
+            char const *val = NULL;
+            if (kwargs_match(p, "autolevel", &val))
+                cfg->demod->auto_level = atoiv(val, 1); // arg_float_default(p + 9, "-Y autolevel: ");
+            else if (kwargs_match(p, "squelch", &val))
+                cfg->demod->squelch_offset = atoiv(val, 1); // arg_float_default(p + 7, "-Y squelch: ");
+            else if (kwargs_match(p, "auto", &val))
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_AUTO;
-            else if (!strncmp(p, "classic", 7))
+            else if (kwargs_match(p, "classic", &val))
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_OLD;
-            else if (!strncmp(p, "minmax", 6))
+            else if (kwargs_match(p, "minmax", &val))
                 cfg->fsk_pulse_detect_mode = FSK_PULSE_DETECT_NEW;
-            else if (!strncmp(p, "ampest", 6))
+            else if (kwargs_match(p, "ampest", &val))
                 cfg->demod->use_mag_est = 0;
-            else if (!strncmp(p, "verbose", 7))
+            else if (kwargs_match(p, "verbose", &val))
                 cfg->demod->detect_verbosity++;
-            else if (!strncmp(p, "magest", 6))
+            else if (kwargs_match(p, "magest", &val))
                 cfg->demod->use_mag_est = 1;
-            else if (!strncasecmp(p, "level", 5))
-                cfg->demod->level_limit = arg_float(p + 5, "-Y level: ");
-            else if (!strncasecmp(p, "minlevel", 8))
-                cfg->demod->min_level = arg_float(p + 8, "-Y minlevel: ");
-            else if (!strncasecmp(p, "minsnr", 6))
-                cfg->demod->min_snr = arg_float(p + 6, "-Y minsnr: ");
-            else if (!strncasecmp(p, "filter", 6))
-                cfg->demod->low_pass = arg_float(p + 6, "-Y filter: ");
+            else if (kwargs_match(p, "level", &val))
+                cfg->demod->level_limit = arg_float(val, "-Y level: ");
+            else if (kwargs_match(p, "minlevel", &val))
+                cfg->demod->min_level = arg_float(val, "-Y minlevel: ");
+            else if (kwargs_match(p, "minsnr", &val))
+                cfg->demod->min_snr = arg_float(val, "-Y minsnr: ");
+            else if (kwargs_match(p, "filter", &val))
+                cfg->demod->low_pass = arg_float(val, "-Y filter: ");
             else {
                 fprintf(stderr, "Unknown pulse detector setting: %s\n", p);
                 usage(1);
             }
-            p = arg_param(p);
+            p = kwargs_skip(p);
         }
         break;
     case 'E':
