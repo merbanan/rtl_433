@@ -108,6 +108,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     int temp_raw = (msg[14] >> 4) * 100 + (msg[14] & 0x0f) * 10 + (msg[15] >> 4);
     float temp_c = temp_raw * 0.1f;
     int flags    = (msg[15] & 0x0f);
+    int battery_low = (flags & 0x06) == 0x06;
     if (temp_raw > 600)
         temp_c = (temp_raw - 1000) * 0.1f;
     int humidity = (msg[16] >> 4) * 10 + (msg[16] & 0x0f);
@@ -130,7 +131,7 @@ static int bresser_7in1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
             "rain_mm",          "Rain",         DATA_FORMAT, "%.1f mm", DATA_DOUBLE, rain_mm,
             "light_klx",        "Light",        DATA_FORMAT, "%.3f klx", DATA_DOUBLE, light_klx,
             "uv",               "UV Index",     DATA_FORMAT, "%.1f", DATA_DOUBLE, uv_index,
-            "flags",            "Battery?",     DATA_INT,    flags,
+            "battery_ok",       "Battery",      DATA_INT,    !battery_low,
             "mic",              "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
@@ -150,7 +151,7 @@ static char *output_fields[] = {
         "rain_mm",
         "light_klx",
         "uv",
-        "flags",
+        "battery_ok",
         "mic",
         NULL,
 };
