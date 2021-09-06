@@ -256,6 +256,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\lacrossews.c" />
     <ClCompile Include="..\src\devices\lightwave_rf.c" />
     <ClCompile Include="..\src\devices\m_bus.c" />
+    <ClCompile Include="..\src\devices\markisol.c" />
     <ClCompile Include="..\src\devices\marlec_solar.c" />
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
