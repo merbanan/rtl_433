@@ -208,7 +208,7 @@ void r_free_cfg(r_cfg_t *cfg)
     }
     list_free_elems(&cfg->demod->dumper, free);
 
-    list_free_elems(&cfg->demod->r_devs, free);
+    list_free_elems(&cfg->demod->r_devs, (list_elem_free_fn)free_protocol);
 
     if (cfg->demod->am_analyze)
         am_analyze_free(cfg->demod->am_analyze);
