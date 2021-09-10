@@ -124,7 +124,7 @@ static int rojaflex_decode(r_device *decoder, bitbuffer_t *bitbuffer)
                 fprintf(stderr, "%s: CRC invalid message:%04x != calc:%04x\n", __func__, crc_message, crc_calc);
 
             return DECODE_FAIL_MIC;
-        };
+        }
     }
 
     // Data output
