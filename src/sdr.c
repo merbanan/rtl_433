@@ -890,6 +890,7 @@ static int sdr_open_soapy(sdr_dev_t **out_dev, char const *dev_query, int verbos
         p += sprintf(p, "%s\"%s\":\"%s\"", i ? "," : "{", args.keys[i], args.vals[i]);
     }
     sprintf(p, "}");
+    SoapySDRKwargs_clear(&args);
 
     SoapySDRKwargs stream_args = {0};
     int r;
