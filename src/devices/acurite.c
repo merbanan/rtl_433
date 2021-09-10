@@ -393,7 +393,7 @@ static int acurite_6045_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsign
     for (int i=0; i < MIN(browlen, 15); i++) {
         sprintf(rawp,"%02x",bb[i]);
         rawp += 2;
-    };
+    }
     *rawp = '\0';
 
     // Flag whether this message might need further analysis
@@ -527,7 +527,7 @@ static int acurite_atlas_decode(r_device *decoder, bitbuffer_t *bitbuffer, unsig
     for (int i=0; i < MIN(browlen, 15); i++) {
         sprintf(rawp,"%02x",bb[i]);
         rawp += 2;
-    };
+    }
     *rawp = '\0';
 
 
