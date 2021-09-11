@@ -31,6 +31,9 @@
 #include <SoapySDR/Device.h>
 #include <SoapySDR/Formats.h>
 #include <SoapySDR/Logger.h>
+#if (SOAPY_SDR_API_VERSION < 0x00080000)
+#define SoapySDR_free(ptr) free(ptr)
+#endif
 #endif
 
 #ifndef _MSC_VER
