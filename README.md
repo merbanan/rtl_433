@@ -274,6 +274,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [188]  Marlec Solar iBoost+ sensors
     [189]  Somfy io-homecontrol
     [190]  Ambient Weather (Fine Offset) WH31L Lightning-Strike sensor
+    [191]  Markisol
 
 * Disabled by default, use -R n or -G
 

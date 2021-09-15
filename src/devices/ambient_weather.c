@@ -101,6 +101,8 @@ static int ambient_weather_callback(r_device *decoder, bitbuffer_t *bitbuffer)
         }
     }
 
+    // TODO: returns 0 when no data is found in the messages.
+    // What would be a better return value? Maybe DECODE_ABORT_SANITY?
     return ret;
 }
 

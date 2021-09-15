@@ -128,6 +128,7 @@ add_library(r_433 STATIC
     devices/lacrossews.c
     devices/lightwave_rf.c
     devices/m_bus.c
+    devices/markisol.c
     devices/marlec_solar.c
     devices/maverick_et73.c
     devices/maverick_et73x.c

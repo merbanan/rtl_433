@@ -506,7 +506,7 @@ struct data_output *data_output_mqtt_create(struct mg_mgr *mgr, char *param, cha
     if (strncmp(param, "mqtts", 5) == 0) {
         tls_opts.tls_ca_cert = "*"; // TLS is enabled but no cert verification is performed.
     }
-    param      = arg_param(param);
+    param      = arg_param(param); // strip scheme
     char *host = "localhost";
     char *port = tls_opts.tls_ca_cert ? "8883" : "1883";
     char *opts = hostport_param(param, &host, &port);

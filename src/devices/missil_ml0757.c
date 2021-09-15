@@ -51,8 +51,8 @@ All packets begin with an empty row in addition to the 9 rows of repeated data.
 
 #include "decoder.h"
 
-#define MISSIL_ML0757_FLAG_RWP  0x04; // Rain+Wind packet flag
-#define MISSIL_ML0757_FLAG_BAT  0x80; // Battery low flag
+#define MISSIL_ML0757_FLAG_RWP  0x04 // Rain+Wind packet flag
+#define MISSIL_ML0757_FLAG_BAT  0x80 // Battery low flag
 
 static int missil_ml0757_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
