@@ -199,6 +199,7 @@
     DECL(somfy_iohc) \
     DECL(fineoffset_wh31l) \
     DECL(markisol) \
+    DECL(govee) \
 
     /* Add new decoders here. */
 

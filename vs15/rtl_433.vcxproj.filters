@@ -409,6 +409,9 @@
     <ClCompile Include="..\src\devices\generic_temperature_sensor.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\govee.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\gt_tmbbq05.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
