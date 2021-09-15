@@ -22,16 +22,26 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
       is opened.
       Unfortunately, it does NOT send a message when the contact is closed.
 
+- A data packet is 6 bytes, 48 bits.
+- Bits are likely inverted (short=0, long=1)
+- First 2 bytes are the ID.
+- The upper nibble of byte 3 is unknown.
+  This upper nibble of the Water Leak Sensor is always 0.
+  This upper nibble of the Contact Sensor changes on different
+  Contact sensors, so perhaps it is a continuation of the ID?
+- The lower nibble of byte 3 is the ACTION/EVENT.
+- Byte 4 is the ACTION/EVENT data; battery percentage gauge for event 0xC.
+- Byte 5 is unknown.
+- Last byte is a parity checksum.
 
-Payload is 6 bytes.
-First 2 bytes is the ID.
-The upper nibble of the next byte is unknown.
-NOTE: This upper nibble of the Water Leak Sensor is always 0.
-      This upper nibble of the Contact Sensor changes on different
-      Contact sensors, so perhaps it is a continuation of the ID?
+Battery levels:
 
-The lower nibble plus next byte is the ACTION/EVENT.
-Last 2 bytes are unknown. They might be a CRC? Maybe a Checksum?
+- 100 : 5 Bars
+- 095 : 4 Bars
+- 059 : 4 Bars
+- 026 : 3 Bars
+- 024 : 2 Bars
+- 001 : 1 Bars
 
 */
 
@@ -48,7 +58,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY; // truncated transmission
     }
 
-    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 24);
+    int r = bitbuffer_find_repeated_row(bitbuffer, 3, 6 * 8);
     if (r < 0) {
         return DECODE_ABORT_EARLY;
     }
@@ -59,52 +69,61 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint8_t *b = bitbuffer->bb[r];
 
-    int id = (b[0] << 8 | b[1]);
+    // dump raw input code
+    char code_str[13];
+    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
+
+    bitbuffer_invert(bitbuffer);
+
+    int id = (b[0] << 8) | b[1];
     if (id == 0xffff) {
         return DECODE_ABORT_EARLY;
     }
 
-    int event = (b[2] << 8 | b[3]);
+    int event_type = b[2] & 0x0f;
+
+    int event = (b[2] << 8) | b[3];
     if (event == 0xffff) {
         return DECODE_ABORT_EARLY;
     }
+
+    // check nibble-parity of all data bytes
+    uint8_t parity = xor_bytes(b, 5);
+    parity = (parity >> 4) | (parity & 0x0f); // fold nibbles
+    // add in the magic constant bits
+    if (b[5] & 1)
+        parity = (parity << 1) | 0xA1; // shift parity to correct field
+    else
+        parity = (parity << 2) | 0x42; // shift parity to correct field
+
+    if (parity != b[5]) {
+        return DECODE_FAIL_MIC;
+    }
+
+    // Only valid for event nibble 0xc
+    // voltage fit value from 8 different sensor units, observed 2 to 3.1 volts
+    int battery         = event_type == 0xc ? b[3] : 0; // percentage gauge
+    float battery_level = battery * 0.01f;
+    int battery_mv      = 1800 + 12 * battery;
 
     // Strip off the upper nibble
     event &= 0x0FFF;
 
     char *event_str;
     // Figure out what event was triggered
-    if (event == 0x505) {
+    if (event == 0xafa) {
         event_str = "Button Press";
     }
-    else if (event == 0x404) {
+    else if (event == 0xbfb) {
         event_str = "Water Leak";
     }
-    else if (event == 0x39b) {
-        event_str = "Batt 5 Bars";
+    else if (event_type == 0xc) {
+        event_str = "Battery Report";
     }
-    else if (event >= 0x3a0 && event <= 0x3c4) {
-        // There is a range of 4 bars here, it is unclear what each means...
-        // Perhaps some sort of percentage in the 4 bar range?
-        event_str = "Batt 4 Bars";
-    }
-    else if (event == 0x3e5) {
-        event_str = "Batt 3 Bars";
-    }
-    else if (event == 0x3e7) {
-        event_str = "Batt 2 Bars";
-    }
-    else if (event == 0x3fe) {
-        // NOTE: I used some really low/possibly going bad
-        // rechargable AAA's, and got this code.
-        // The sensor continuously beeped, but it did send this code out.
-        // I am guessing it indicates 1 Bar.
-        event_str = "Batt 1 Bar";
-    }
-    else if (event == 0x202) {
+    else if (event == 0xdfd) {
         event_str = "Heartbeat";
     }
-    else if (event == 0x180) {
+    else if (event == 0xe7f) {
         // Only sent by the Contact sensor
         model = GOVEE_CONTACT;
         event_str = "Open";
@@ -113,16 +132,16 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
        event_str = "Unknown";
     }
 
-    char code_str[13];
-    sprintf(code_str, "%02x%02x%02x%02x%02x%02x", b[0], b[1], b[2], b[3], b[4], b[5]);
-
     /* clang-format off */
     data_t *data = data_make(
-            "model",        "",             DATA_COND,   model == GOVEE_WATER,      DATA_STRING, "Govee-Water"
-            "model",        "",             DATA_COND,   model == GOVEE_CONTACT,    DATA_STRING, "Govee-Contact"
-            "id"   ,        "",             DATA_INT,    id,
-            "event",        "",             DATA_STRING, event_str,
-            "code",         "Raw Code",     DATA_STRING, code_str,
+            "model",        "",                 DATA_COND,   model == GOVEE_WATER,   DATA_STRING, "Govee-Water",
+            "model",        "",                 DATA_COND,   model == GOVEE_CONTACT, DATA_STRING, "Govee-Contact",
+            "id"   ,        "",                 DATA_INT,    id,
+            "battery_ok",   "Battery level",    DATA_COND,   battery, DATA_DOUBLE, battery_level,
+            "battery_mV",   "Battery",          DATA_COND,   battery, DATA_FORMAT, "%d mV", DATA_INT, battery_mv,
+            "event",        "",                 DATA_STRING, event_str,
+            "code",         "Raw Code",         DATA_STRING, code_str,
+            "mic",          "Integrity",        DATA_STRING, "PARITY",
             NULL);
     /* clang-format on */
 
@@ -134,8 +153,11 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 static char *output_fields[] = {
         "model",
         "id",
+        "battery_ok",
+        "battery_mV",
         "event",
         "code",
+        "mic",
         NULL,
 };
 
