@@ -32,7 +32,7 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
 - The lower nibble of byte 3 is the ACTION/EVENT.
 - Byte 4 is the ACTION/EVENT data; battery percentage gauge for event 0xC.
 - Byte 5 is unknown.
-- Last byte is a parity checksum.
+- Last byte is a CRC8 parity checksum using the first 2 bytes (the ID).
 
 Battery levels:
 
@@ -87,16 +87,7 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    // check nibble-parity of all data bytes
-    uint8_t parity = xor_bytes(b, 5);
-    parity = (parity >> 4) | (parity & 0x0f); // fold nibbles
-    // add in the magic constant bits
-    if (b[5] & 1)
-        parity = (parity << 1) | 0xA1; // shift parity to correct field
-    else
-        parity = (parity << 2) | 0x42; // shift parity to correct field
-
-    if (parity != b[5]) {
+    if (crc8(&b[0], 2, 0x10, 0x80) ^ b[2] != 0) {
         return DECODE_FAIL_MIC;
     }
 
