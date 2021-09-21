@@ -1,5 +1,5 @@
 /** @file
-    Govee Water Leak Dectector H5054, Door Contact Sensor B5023.
+    Govee Water Leak Detector H5054, Door Contact Sensor B5023.
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -7,7 +7,7 @@
     (at your option) any later version.
 */
 /**
-Govee Water Leak Dectector H5054, Door Contact Sensor B5023.
+Govee Water Leak Detector H5054, Door Contact Sensor B5023.
 
 See https://www.govee.com/
 
@@ -32,7 +32,8 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
 - The lower nibble of byte 3 is the ACTION/EVENT.
 - Byte 4 is the ACTION/EVENT data; battery percentage gauge for event 0xC.
 - Byte 5 is unknown.
-- Last byte is a parity checksum.
+- Last byte contains the parity bits in index 2-6 (101PPPP1).
+  The parity checksum using CRC8 against the first 2 bytes (the ID)
 
 Battery levels:
 
@@ -42,6 +43,47 @@ Battery levels:
 - 026 : 3 Bars
 - 024 : 2 Bars
 - 001 : 1 Bars
+
+Raw data used to select checksum algorithm (after inverting to match used data):
+
+    Binary Data: 01101111 00111010 11111010 11111010 11111000 10101111
+    Parity value from last byte: 0111
+
+    Binary Data: 01101110 00011001 11111010 11111010 11111000 10101111
+    Parity value from last byte: 0111
+
+    Binary Data: 01011100 01100110 11111010 11111010 11111000 10111101
+    Parity value from last byte: 1110
+
+    Binary Data: 01101101 00011110 11111010 11111010 11111000 10100111
+    Parity value from last byte: 0011
+
+    Binary Data: 01100111 11111001 11111010 11111010 11111000 10100001
+    Parity value from last byte: 0000
+
+    Binary Data: 01101110 00101101 11111010 11111010 11111000 10100001
+    Parity value from last byte: 0000
+
+    Binary Data: 01011100 00000111 11111010 11111010 11111000 10110011
+    Parity value from last byte: 1001
+
+    Binary Data: 01101110 01000010 11111010 11111010 11111000 10110011
+    Parity value from last byte: 1001
+
+    Binary Data: 01101110 00111010 11111010 11111010 11111000 10101101
+    Parity value from last byte: 0110
+
+RevSum input for parity (first 2 bytes, and the parity extracted from the last byte):
+
+    0x6f, 0x3a, 0x07
+    0x6e, 0x19, 0x07
+    0x5c, 0x66, 0x0e
+    0x6d, 0x1e, 0x03
+    0x67, 0xf9, 0x00
+    0x6e, 0x2d, 0x00
+    0x5c, 0x07, 0x09
+    0x6E, 0x42, 0x09
+    0x6e, 0x3a, 0x06
 
 */
 
@@ -87,16 +129,23 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         return DECODE_ABORT_EARLY;
     }
 
-    // check nibble-parity of all data bytes
-    uint8_t parity = xor_bytes(b, 5);
-    parity = (parity >> 4) | (parity & 0x0f); // fold nibbles
-    // add in the magic constant bits
-    if (b[5] & 1)
-        parity = (parity << 1) | 0xA1; // shift parity to correct field
-    else
-        parity = (parity << 2) | 0x42; // shift parity to correct field
+    if (decoder->verbose) {
+        fprintf(stderr, "Original Bytes: %02x%02x%02x%02x%02x%02x\n", b[0], b[1], b[2], b[3], b[4], b[5]);
+    }
 
-    if (parity != b[5]) {
+    uint8_t parity = (b[5] >> 1 & 0x0F); // Shift 101PPPP1 -> 0101PPPP, then and with 0x0F so we're left with 000PPPP
+
+    if (decoder->verbose) {
+        fprintf(stderr, "Parity: %02x\n", parity);
+    }
+
+    // Since our data is already inverted, we just need to fold it and run the crc8 against to validate.
+    // Parity arguments were discovered using revdgst's RevSum and the data packets included at the top of this file.
+    // 	 https://github.com/triq-org/revdgst
+    if (crc8le(&b[0], 2, 0x10, 0xe0) != parity) {
+        if (decoder->verbose) {
+            fprintf(stderr, "Parity did NOT match.");
+        }
         return DECODE_FAIL_MIC;
     }
 
