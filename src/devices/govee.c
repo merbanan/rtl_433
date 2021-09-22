@@ -33,7 +33,7 @@ NOTE: The Govee Door Contact sensors only send a message when the contact
 - Byte 4 is the ACTION/EVENT data; battery percentage gauge for event 0xC.
 - Byte 5 is unknown.
 - Last byte contains the parity bits in index 2-6 (101PPPP1).
-  The parity checksum using CRC8 against the first 2 bytes (the ID)
+  The parity checksum using CRC8 against the first 5 bytes
 
 Battery levels:
 
@@ -73,17 +73,49 @@ Raw data used to select checksum algorithm (after inverting to match used data):
     Binary Data: 01101110 00111010 11111010 11111010 11111000 10101101
     Parity value from last byte: 0110
 
-RevSum input for parity (first 2 bytes, and the parity extracted from the last byte):
+    Binary Data: 00100011 00000011 11111100 01001101 11111100 10110111
+    Parity value from last byte: 1011
 
-    0x6f, 0x3a, 0x07
-    0x6e, 0x19, 0x07
-    0x5c, 0x66, 0x0e
-    0x6d, 0x1e, 0x03
-    0x67, 0xf9, 0x00
-    0x6e, 0x2d, 0x00
-    0x5c, 0x07, 0x09
-    0x6E, 0x42, 0x09
-    0x6e, 0x3a, 0x06
+    Binary Data: 00100011 00000011 11111100 01000111 11111100 10100011
+    Parity value from last byte: 0001
+
+    Binary Data: 00100011 00000011 11111010 11111010 11111000 10101011
+    Parity value from last byte: 0101
+
+    Binary Data: 00011001 01010111 11111100 01001110 11111100 10100001
+    Parity value from last byte: 0000
+
+    Binary Data: 00110001 00010010 11111100 01000110 11111100 10100111
+    Parity value from last byte: 0011
+
+    Binary Data: 00110001 00010010 11111101 11111101 11111100 10100101
+    Parity value from last byte: 0010
+
+    Binary Data: 00110001 00010010 11111010 11111010 11111000 10101101
+    Parity value from last byte: 0110
+
+    Binary Data: 01010110 00010100 11111010 11111010 11111000 10100011
+    Parity value from last byte: 0001
+
+RevSum input for parity (first 5 bytes, and the parity extracted from the last byte):
+
+    0x6f, 0x3a, 0xfa, 0xfa, 0xf8, 0x07
+    0x6e, 0x19, 0xfa, 0xfa, 0xf8, 0x07
+    0x5c, 0x66, 0xfa, 0xfa, 0xf8, 0x0e
+    0x6d, 0x1e, 0xfa, 0xfa, 0xf8, 0x03
+    0x67, 0xf9, 0xfa, 0xfa, 0xf8, 0x00
+    0x6e, 0x2d, 0xfa, 0xfa, 0xf8, 0x00
+    0x5c, 0x07, 0xfa, 0xfa, 0xf8, 0x09
+    0x6e, 0x42, 0xfa, 0xfa, 0xf8, 0x09
+    0x6e, 0x3a, 0xfa, 0xfa, 0xf8, 0x06
+    0x23, 0x03, 0xfc, 0x4d, 0xfc, 0x0b
+    0x23, 0x03, 0xfc, 0x47, 0xfc, 0x01
+    0x23, 0x03, 0xfa, 0xfa, 0xf8, 0x05
+    0x19, 0x57, 0xfc, 0x4e, 0xfc, 0x00
+    0x31, 0x12, 0xfc, 0x46, 0xfc, 0x03
+    0x31, 0x12, 0xfd, 0xfd, 0xfc, 0x02
+    0x31, 0x12, 0xfa, 0xfa, 0xf8, 0x06
+    0x56, 0x14, 0xfa, 0xfa, 0xf8, 0x01
 
 */
 
@@ -139,10 +171,12 @@ static int govee_decode(r_device *decoder, bitbuffer_t *bitbuffer)
         fprintf(stderr, "Parity: %02x\n", parity);
     }
 
-    // Since our data is already inverted, we just need to fold it and run the crc8 against to validate.
+    int chk = xor_bytes(b, 5);
+    chk     = (chk >> 4) ^ (chk & 0xf);
+
     // Parity arguments were discovered using revdgst's RevSum and the data packets included at the top of this file.
     // 	 https://github.com/triq-org/revdgst
-    if (crc8le(&b[0], 2, 0x10, 0xe0) != parity) {
+    if (chk != parity) {
         if (decoder->verbose) {
             fprintf(stderr, "Parity did NOT match.");
         }
