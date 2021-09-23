@@ -276,6 +276,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [190]  Ambient Weather (Fine Offset) WH31L Lightning-Strike sensor
     [191]  Markisol, E-Motion, BOFU, Rollerhouse, BF-30x, BF-415 curtain remote
     [192]  Govee Water Leak Dectector H5054, Door Contact Sensor B5023
+    [193]  Clipsal CMR113 Cent-a-meter power meter
 
 * Disabled by default, use -R n or -G
 

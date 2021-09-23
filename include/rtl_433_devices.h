@@ -200,6 +200,7 @@
     DECL(fineoffset_wh31l) \
     DECL(markisol) \
     DECL(govee) \
+    DECL(cmr113) \
 
     /* Add new decoders here. */
 
