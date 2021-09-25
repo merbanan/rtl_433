@@ -114,6 +114,7 @@ static char *output_fields[] = {
         "power0_W",
         "power1_W",
         "power2_W",
+        "power0",
         NULL,
 };
 
