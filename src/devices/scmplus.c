@@ -175,6 +175,7 @@ static int scmplus_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+        "id",
         "ProtocolID",
         "EndpointType",
         "EndpointID",

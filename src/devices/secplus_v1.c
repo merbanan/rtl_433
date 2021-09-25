@@ -392,20 +392,15 @@ static int secplus_v1_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-
-        // Common fields
         "model",
-
+        "id",
         "id0",
         "id1",
         "switch_id",
-
         "pad_id",
         "pin",
-
         "remote_id",
         "button_id",
-
         "fixed",
         "rolling",
         NULL,
