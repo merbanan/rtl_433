@@ -61,6 +61,7 @@ add_library(r_433 STATIC
     devices/cardin.c
     devices/cavius.c
     devices/chuango.c
+    devices/cmr113.c
     devices/companion_wtr001.c
     devices/cotech_36_7959.c
     devices/current_cost.c

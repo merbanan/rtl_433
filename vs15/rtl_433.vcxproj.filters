@@ -307,6 +307,9 @@
     <ClCompile Include="..\src\devices\chuango.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\cmr113.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\companion_wtr001.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
