@@ -186,7 +186,7 @@ const char *get_dtv_button_label(uint8_t button_id)
 
 /// Set a single bit in a bitrow at bit_idx position.  Assume success, no bounds checking, so be careful!
 /// Maybe this can graduate to bitbuffer.c someday?
-void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
+void bitrow_set_bit(uint8_t *bitrow, unsigned bit_idx, unsigned bit_val)
 {
     if (bit_val == 0) {
         bitrow[bit_idx >> 3] &= ~(1 << (7 - (bit_idx & 7)));
@@ -222,8 +222,8 @@ void bitrow_set_bit(bitrow_t bitrow, unsigned bit_idx, unsigned bit_val)
 /// sync_pos.  If desired, call again with bit_len = sync_pos to find this data.
 ///
 /// Maybe this can graduate to bitbuffer.c someday?
-unsigned bitrow_dpwm_decode(bitrow_t const bitrow, unsigned bit_len, unsigned start,
-        bitrow_t bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
+unsigned bitrow_dpwm_decode(uint8_t const *bitrow, unsigned bit_len, unsigned start,
+        uint8_t *bitrow_buf, unsigned *sync_pos, unsigned *sync_len)
 {
     unsigned bitrow_pos;
     int bitrow_buf_pos          = -1;

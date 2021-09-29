@@ -58,7 +58,7 @@ static uint8_t m_bus_decode_3of6(uint8_t byte)
 
 // Decode input 6 bit nibbles to output 4 bit nibbles (packed in bytes). "3of6" coding used for Mode T
 // Bad data must be handled with second layer CRC
-static int m_bus_decode_3of6_buffer(const bitrow_t bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
+static int m_bus_decode_3of6_buffer(uint8_t const *bits, unsigned bit_offset, uint8_t* output, unsigned num_bytes)
 {
     for (unsigned n=0; n<num_bytes; ++n) {
         uint8_t nibble_h = m_bus_decode_3of6(bitrow_get_byte(bits, n*12+bit_offset) >> 2);
