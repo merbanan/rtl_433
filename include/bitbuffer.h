@@ -15,8 +15,8 @@
 #include <stdint.h>
 
 // NOTE: Wireless mbus protocol needs at least ((256+16*2+3)*12)/8 => 437 bytes
-#define BITBUF_COLS 450 // Number of bytes in a column
-#define BITBUF_ROWS 25
+#define BITBUF_COLS 128 // Number of bytes in a column
+#define BITBUF_ROWS 50
 #define BITBUF_MAX_PRINT_BITS 50 // Maximum number of bits to print (in addition to hex values)
 
 typedef uint8_t bitrow_t[BITBUF_COLS];
@@ -24,10 +24,11 @@ typedef bitrow_t bitarray_t[BITBUF_ROWS];
 
 /// Bit buffer.
 typedef struct bitbuffer {
-    uint16_t num_rows;                      // Number of active rows
-    uint16_t bits_per_row[BITBUF_ROWS];     // Number of active bits per row
-    uint16_t syncs_before_row[BITBUF_ROWS]; // Number of sync pulses before row
-    bitarray_t bb;                          // The actual bits buffer
+    uint16_t num_rows;                      ///< Number of active rows
+    uint16_t free_row;                      ///< Index of next free row
+    uint16_t bits_per_row[BITBUF_ROWS];     ///< Number of active bits per row
+    uint16_t syncs_before_row[BITBUF_ROWS]; ///< Number of sync pulses before row
+    bitarray_t bb;                          ///< The actual bits buffer
 } bitbuffer_t;
 
 /// Clear the content of the bitbuffer.

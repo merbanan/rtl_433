@@ -22,24 +22,63 @@ void bitbuffer_clear(bitbuffer_t *bits)
 void bitbuffer_add_bit(bitbuffer_t *bits, int bit)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+
+    if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX) {
+        // fprintf(stderr, "%s: Could not add more bits\n", __func__);
+        return;
+    }
+    if (bits->bits_per_row[bits->num_rows - 1] == UINT16_MAX - 1) {
+        fprintf(stderr, "%s: Warning: row length limit (%d bits) reached\n", __func__, UINT16_MAX);
+    }
+
     uint16_t col_index = bits->bits_per_row[bits->num_rows - 1] / 8;
     uint16_t bit_index = bits->bits_per_row[bits->num_rows - 1] % 8;
-    if ((col_index < BITBUF_COLS) && (bits->num_rows <= BITBUF_ROWS)) {
-        bits->bb[bits->num_rows - 1][col_index] |= (bit << (7 - bit_index));
-        bits->bits_per_row[bits->num_rows - 1]++;
+    if (bits->bits_per_row[bits->num_rows - 1] > 0
+            && bits->bits_per_row[bits->num_rows - 1] % (BITBUF_COLS * 8) == 0) {
+        // spill into next row
+        // fprintf(stderr, "%s: row spill [%d] to %d (%d)\n", __func__, bits->num_rows - 1, col_index, bits->free_row);
+        if (bits->free_row == BITBUF_ROWS - 1) {
+            fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+        }
+        if (bits->free_row < BITBUF_ROWS) {
+            bits->free_row++;
+        }
+        else {
+            // fprintf(stderr, "%s: Could not add more rows\n", __func__);
+            return;
+        }
     }
-    else {
-        // fprintf(stderr, "ERROR: bitbuffer:: Could not add more columns\n");    // Some decoders may add many columns...
+    uint8_t *b = bits->bb[bits->num_rows - 1];
+    b[col_index] |= (bit << (7 - bit_index));
+    bits->bits_per_row[bits->num_rows - 1]++;
+
+/*
+    // preamble compression
+    if (bits->bits_per_row[bits->num_rows - 1] == 60 * 8) {
+        uint8_t *b = bits->bb[bits->num_rows - 1];
+        for (int i = 21; i < 60; ++i) {
+            if (b[20] != b[i]) {
+                return;
+            }
+        }
+        // fprintf(stderr, "%s: preamble compression\n", __func__);
+        memset(&b[30], 0, 30);
+        bits->bits_per_row[bits->num_rows - 1] = 30 * 8;
     }
+*/
 }
 
 void bitbuffer_add_row(bitbuffer_t *bits)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
-    if (bits->num_rows < BITBUF_ROWS) {
-        bits->num_rows++;
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
+    if (bits->free_row == BITBUF_ROWS - 1) {
+        fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+    }
+    if (bits->free_row < BITBUF_ROWS) {
+        bits->free_row++;
+        bits->num_rows = bits->free_row;
     }
     else {
         bits->bits_per_row[bits->num_rows - 1] = 0; // Clear last row to handle overflow somewhat gracefully
@@ -50,7 +89,7 @@ void bitbuffer_add_row(bitbuffer_t *bits)
 void bitbuffer_add_sync(bitbuffer_t *bits)
 {
     if (bits->num_rows == 0)
-        bits->num_rows++; // Add first row automatically
+        bits->free_row = bits->num_rows = 1; // Add first row automatically
     if (bits->bits_per_row[bits->num_rows - 1]) {
         bitbuffer_add_row(bits);
     }
