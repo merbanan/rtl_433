@@ -276,9 +276,9 @@ static int directv_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     data_t *data;
     int r;                   // a row index
-    bitrow_t bitrow;         // space for a possibly modified bitbuffer row
+    uint8_t bitrow[13];      // space for a possibly modified bitbuffer row, up to 99 bits
     uint8_t bit_len;         // row length is variable, so need to keep track of this
-    bitrow_t dtv_buf= {0};   // A location for our decoded bitrow data
+    uint8_t dtv_buf[13] = {0}; // decoded bitrow data, 40 bits (5 bytes)
     unsigned dtv_bit_len;
     unsigned row_sync_pos;
     unsigned row_sync_len;
