@@ -89,9 +89,9 @@ struct flex_params {
     unsigned unique;
     unsigned count_only;
     unsigned match_len;
-    bitrow_t match_bits;
+    uint8_t match_bits[128];
     unsigned preamble_len;
-    bitrow_t preamble_bits;
+    uint8_t preamble_bits[128];
     struct flex_get getter[GETTER_SLOTS];
     unsigned decode_uart;
 };
@@ -148,7 +148,6 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     data_t *row_data[BITBUF_ROWS];
     char *row_codes[BITBUF_ROWS];
     char row_bytes[BITBUF_COLS * 2 + 1];
-    bitrow_t tmp;
 
     struct flex_params *params = decoder->decode_ctx;
 
@@ -211,8 +210,9 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
                 pos += params->preamble_len;
                 // TODO: refactor to bitbuffer_shift_row()
                 unsigned len = bitbuffer->bits_per_row[i] - pos;
-                bitbuffer_extract_bytes(bitbuffer, i, pos, tmp, len);
-                memcpy(bitbuffer->bb[i], tmp, (len + 7) / 8);
+                bitbuffer_t tmp = {0};
+                bitbuffer_extract_bytes(bitbuffer, i, pos, tmp.bb[0], len);
+                memcpy(bitbuffer->bb[i], tmp.bb[0], (len + 7) / 8);
                 bitbuffer->bits_per_row[i] = len;
             }
         }
@@ -222,8 +222,11 @@ static int flex_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     if (params->decode_uart) {
         for (i = 0; i < bitbuffer->num_rows; i++) {
-            int len = extract_bytes_uart(bitbuffer->bb[i], 0, bitbuffer->bits_per_row[i], tmp);
-            memcpy(bitbuffer->bb[i], tmp, len);
+            // TODO: refactor to bitbuffer_decode_uart_row()
+            unsigned len = bitbuffer->bits_per_row[i];
+            bitbuffer_t tmp = {0};
+            len = extract_bytes_uart(bitbuffer->bb[i], 0, len, tmp.bb[0]);
+            memcpy(bitbuffer->bb[i], tmp.bb[0], len);
             bitbuffer->bits_per_row[i] = len * 8;
         }
     }
@@ -408,16 +411,22 @@ static unsigned parse_modulation(char const *str)
     return 0;
 }
 
-static unsigned parse_bits(const char *code, bitrow_t bitrow)
+// used for match, preamble, getter, limited to 1024 bits (128 byte).
+static unsigned parse_bits(const char *code, uint8_t *bitrow)
 {
     bitbuffer_t bits = {0};
     bitbuffer_parse(&bits, code);
     if (bits.num_rows != 1) {
-        fprintf(stderr, "Bad flex spec, \"match\" needs exactly one bit row (%d found)!\n", bits.num_rows);
+        fprintf(stderr, "Bad flex spec, \"match\", \"preamble\", and getter mask need exactly one bit row (%d found)!\n", bits.num_rows);
         usage();
     }
-    memcpy(bitrow, bits.bb[0], sizeof(bitrow_t));
-    return bits.bits_per_row[0];
+    unsigned len = bits.bits_per_row[0];
+    if (len > 1024) {
+        fprintf(stderr, "Bad flex spec, \"match\", \"preamble\", and getter mask mayb have up to 1024 bits (%d found)!\n", len);
+        usage();
+    }
+    memcpy(bitrow, bits.bb[0], (len + 7) / 8);
+    return len;
 }
 
 const char *parse_map(const char *arg, struct flex_get *getter)
@@ -464,7 +473,7 @@ const char *parse_map(const char *arg, struct flex_get *getter)
 
 static void parse_getter(const char *arg, struct flex_get *getter)
 {
-    bitrow_t bitrow;
+    uint8_t bitrow[128];
     while (arg && *arg) {
         if (*arg == '[') {
             arg = parse_map(arg, getter);
