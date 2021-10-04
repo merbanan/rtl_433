@@ -201,6 +201,7 @@
     DECL(markisol) \
     DECL(govee) \
     DECL(cmr113) \
+    DECL(megacode) \
 
     /* Add new decoders here. */
 

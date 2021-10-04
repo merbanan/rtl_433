@@ -263,6 +263,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\maverick_et73.c" />
     <ClCompile Include="..\src\devices\maverick_et73x.c" />
     <ClCompile Include="..\src\devices\mebus.c" />
+    <ClCompile Include="..\src\devices\megacode.c" />
     <ClCompile Include="..\src\devices\missil_ml0757.c" />
     <ClCompile Include="..\src\devices\new_template.c" />
     <ClCompile Include="..\src\devices\newkaku.c" />
