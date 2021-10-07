@@ -278,6 +278,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [192]  Govee Water Leak Dectector H5054, Door Contact Sensor B5023
     [193]  Clipsal CMR113 Cent-a-meter power meter
     [194]  Inkbird ITH-20R temperature humidity sensor
+    [195]  RainPoint soil temperature and moisture sensor
 
 * Disabled by default, use -R n or -G
 

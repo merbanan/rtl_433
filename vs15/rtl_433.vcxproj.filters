@@ -586,6 +586,9 @@
     <ClCompile Include="..\src\devices\radiohead_ask.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\rainpoint.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\rftech.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

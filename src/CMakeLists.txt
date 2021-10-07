@@ -154,6 +154,7 @@ add_library(r_433 STATIC
     devices/proove.c
     devices/quhwa.c
     devices/radiohead_ask.c
+    devices/rainpoint.c
     devices/rftech.c
     devices/rojaflex.c
     devices/rubicson.c

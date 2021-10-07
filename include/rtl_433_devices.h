@@ -202,6 +202,7 @@
     DECL(govee) \
     DECL(cmr113) \
     DECL(inkbird_ith20r) \
+    DECL(rainpoint) \
 
     /* Add new decoders here. */
 
