@@ -79,6 +79,9 @@ typedef struct pulse_detect pulse_detect_t;
 /// Clear the content of a pulse_data_t structure.
 void pulse_data_clear(pulse_data_t *data);
 
+/// Shift out part of the data to make room for more.
+void pulse_data_shift(pulse_data_t *data);
+
 /// Print the content of a pulse_data_t structure (for debug).
 void pulse_data_print(pulse_data_t const *data);
 
