@@ -22,6 +22,10 @@
 #include "fatal.h"
 #ifdef RTLSDR
 #include <rtl-sdr.h>
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+// not available in rtlsdr 0.5.3, allow weak link for Linux
+int __attribute__((weak)) rtlsdr_set_bias_tee(rtlsdr_dev_t *dev, int on);
+#endif
 #ifdef LIBUSB1
 #include <libusb.h> /* libusb_error_name(), libusb_strerror() */
 #endif
@@ -1482,6 +1486,13 @@ int sdr_apply_settings(sdr_dev_t *dev, char const *sdr_settings, int verbose)
                 r = rtlsdr_set_agc_mode(dev->rtlsdr_dev, digital_agc);
             }
             else if (kwargs_match(sdr_settings, "biastee", &val)) {
+#if defined(__linux__) && (defined(__GNUC__) || defined(__clang__))
+                // check weak link for Linux with older rtlsdr
+                if (!rtlsdr_set_bias_tee) {
+                    fprintf(stderr, "This librtlsdr version does not support biastee setting\n");
+                    return -1;
+                }
+#endif
                 int biastee = atobv(val, 1);
                 r = rtlsdr_set_bias_tee(dev->rtlsdr_dev, biastee);
             }
