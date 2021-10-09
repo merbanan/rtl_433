@@ -280,6 +280,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [194]  Inkbird ITH-20R temperature humidity sensor
     [195]  RainPoint soil temperature and moisture sensor
     [196]  Atech-WS308 temperature sensor
+    [197]  Acurite Grill/Meat Thermometer 01185M
 
 * Disabled by default, use -R n or -G
 

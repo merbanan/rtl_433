@@ -238,6 +238,9 @@
     <ClCompile Include="..\src\devices\acurite.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\acurite_01185m.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\akhan_100F14.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>

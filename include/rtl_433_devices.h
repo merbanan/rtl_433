@@ -204,6 +204,7 @@
     DECL(inkbird_ith20r) \
     DECL(rainpoint) \
     DECL(atech_ws308) \
+    DECL(acurite_01185m) \
 
     /* Add new decoders here. */
 

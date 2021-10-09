@@ -167,6 +167,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\write_sigrok.c" />
     <ClCompile Include="..\src\devices\abmt.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
+    <ClCompile Include="..\src\devices\acurite_01185m.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
     <ClCompile Include="..\src\devices\ambient_weather.c" />
