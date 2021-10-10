@@ -58,7 +58,7 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 
     unsigned pos = start + 11;
     unsigned len = bitbuffer->bits_per_row[0] - start;
-    unsigned end = pos + len;
+    unsigned end = start + len;
 
     bitbuffer_t bytes = {0};
     uint8_t more = 0x01;
