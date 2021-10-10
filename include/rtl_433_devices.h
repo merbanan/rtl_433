@@ -205,6 +205,7 @@
     DECL(rainpoint) \
     DECL(atech_ws308) \
     DECL(acurite_01185m) \
+    DECL(enocean_erp1) \
 
     /* Add new decoders here. */
 
