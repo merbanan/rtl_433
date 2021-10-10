@@ -47,14 +47,7 @@ static int decode_8of12(uint8_t const *b, int pos, int end, bitbuffer_t *out)
 static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     if (bitbuffer->num_rows != 1)
-      return DECODE_ABORT_EARLY;
-
-    /* clang-format off */
-    data_t *data = data_make(
-            "model",    "",             DATA_STRING, "EnOcean ERP1",
-            "mic",      "Integrity",    DATA_STRING, "CRC",
-            NULL);
-    /* clang-format on */
+        return DECODE_ABORT_EARLY;
 
     bitbuffer_invert(bitbuffer);
 
@@ -70,16 +63,23 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     bitbuffer_t bytes = {0};
     uint8_t more = 0x01;
     do {
-      more = decode_8of12(bitbuffer->bb[0], pos, end, &bytes);
-      pos += 12;
+        more = decode_8of12(bitbuffer->bb[0], pos, end, &bytes);
+        pos += 12;
     } while (pos < end && more == 0x01);
 
     if (bytes.bits_per_row[0] < 16)
         return DECODE_ABORT_LENGTH;
 
-    uint8_t chk = crc8(bytes.bb[0], (bytes.bits_per_row[0] - 1)/ 8, 0x07, 0x00);
+    uint8_t chk = crc8(bytes.bb[0], (bytes.bits_per_row[0] - 1) / 8, 0x07, 0x00);
     if (chk != bitrow_get_byte(bytes.bb[0], bytes.bits_per_row[0] - 8))
         return DECODE_FAIL_MIC;
+
+    /* clang-format off */
+    data_t *data = data_make(
+            "model",    "",             DATA_STRING, "EnOcean ERP1",
+            "mic",      "Integrity",    DATA_STRING, "CRC",
+            NULL);
+    /* clang-format on */
 
     uint8_t* buf = bytes.bb[0];
     size_t buf_sz = bytes.bits_per_row[0] / 8;
@@ -95,20 +95,20 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
 }
 
 static char *output_fields[] = {
-    "model",
-    "telegram",
-    "mic",
-    NULL,
+        "model",
+        "telegram",
+        "mic",
+        NULL,
 };
 
 r_device enocean_erp1 = {
-    .name        = "EnOcean ERP1",
-    .modulation  = OOK_PULSE_PCM_RZ,
-    .short_width = 8,
-    .long_width  = 8,
-    .sync_width  = 0,
-    .tolerance   = 1,
-    .reset_limit = 800,
-    .decode_fn   = &enocean_erp1_decode,
-    .fields      = output_fields,
+        .name        = "EnOcean ERP1",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 8,
+        .long_width  = 8,
+        .sync_width  = 0,
+        .tolerance   = 1,
+        .reset_limit = 800,
+        .decode_fn   = &enocean_erp1_decode,
+        .fields      = output_fields,
 };
