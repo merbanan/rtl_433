@@ -364,6 +364,9 @@
     <ClCompile Include="..\src\devices\emontx.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\devices\enocean_erp1.c">
+      <Filter>Source Files\devices</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\devices\ert_idm.c">
       <Filter>Source Files\devices</Filter>
     </ClCompile>
