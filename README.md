@@ -281,7 +281,7 @@ See [CONTRIBUTING.md](./docs/CONTRIBUTING.md).
     [195]  RainPoint soil temperature and moisture sensor
     [196]  Atech-WS308 temperature sensor
     [197]  Acurite Grill/Meat Thermometer 01185M
-    [198]  EnOcean ERP1
+    [198]* EnOcean ERP1
 
 * Disabled by default, use -R n or -G
 

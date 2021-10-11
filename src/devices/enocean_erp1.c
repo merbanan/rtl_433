@@ -1,5 +1,5 @@
 /** @file
-    EnOcean ERP1
+    EnOcean ERP1.
 
     Copyright (C) 2021 Christoph M. Wintersteiger <christoph@winterstiger.at>
 
@@ -8,14 +8,15 @@
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
 */
-/**
-EnOcean Radio Protocol 1
-
-868.3Mhz ASK, 125kbps, inverted, 8/12 coding
-Spec: https://www.enocean.com/erp1/
-*/
 
 #include "decoder.h"
+
+/** @fn int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
+EnOcean Radio Protocol 1.
+
+- 868.3Mhz ASK, 125kbps, inverted, 8/12 coding
+- Spec: https://www.enocean.com/erp1/
+*/
 
 static int decode_8of12(uint8_t const *b, int pos, int end, bitbuffer_t *out)
 {
@@ -74,23 +75,18 @@ static int enocean_erp1_decode(r_device *decoder, bitbuffer_t *bitbuffer)
     if (chk != bitrow_get_byte(bytes.bb[0], bytes.bits_per_row[0] - 8))
         return DECODE_FAIL_MIC;
 
+    char tstr[256];
+    bitrow_snprint(bytes.bb[0], bytes.bits_per_row[0], tstr, sizeof(tstr));
+
     /* clang-format off */
     data_t *data = data_make(
-            "model",    "",             DATA_STRING, "EnOcean ERP1",
+            "model",    "",             DATA_STRING, "EnOcean-ERP1",
+            "telegram", "",             DATA_STRING, tstr,
             "mic",      "Integrity",    DATA_STRING, "CRC",
             NULL);
     /* clang-format on */
 
-    uint8_t* buf = bytes.bb[0];
-    size_t buf_sz = bytes.bits_per_row[0] / 8;
-    if (buf && buf_sz > 0)  {
-        char tstr[256];
-        bitrow_snprint(buf, buf_sz * 8, tstr, sizeof (tstr));
-        data = data_append(data, "telegram", "", DATA_STRING, tstr, NULL);
-    }
-
     decoder_output_data(decoder, data);
-
     return 1;
 }
 
@@ -110,5 +106,6 @@ r_device enocean_erp1 = {
         .tolerance   = 1,
         .reset_limit = 800,
         .decode_fn   = &enocean_erp1_decode,
+        .disabled    = 1, // default disabled because a high sample rate is needed
         .fields      = output_fields,
 };
