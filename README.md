@@ -477,8 +477,13 @@ If you see this error:
 
 then
 
-    sudo rmmod dvb_usb_rtl28xxu rtl2832
+    sudo rmmod rtl2832_sdr dvb_usb_rtl28xxu rtl2832
 
+or add
+
+    blacklist dvb_usb_rtl28xxu
+
+to /etc/modprobe.d/blacklist.conf
 
 ## Releases
 
