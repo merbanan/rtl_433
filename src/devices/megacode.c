@@ -42,7 +42,6 @@ $ rtl_433 -g 100 -f 318M -X "n=Megacode,m=OOK_PCM,s=1000,l=1000,g=8000,r=10000"
 
 static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
-    // TODO
     int row = bitbuffer_find_repeated_row(bitbuffer, 1, 144);
     if (row < 0) return DECODE_ABORT_LENGTH;
     int l = bitbuffer->bits_per_row[row];
