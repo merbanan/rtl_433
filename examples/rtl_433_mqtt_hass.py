@@ -126,7 +126,8 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
     "temperature_1_C": {
@@ -136,7 +137,8 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 1",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
     "temperature_2_C": {
@@ -146,7 +148,8 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature 2",
             "unit_of_measurement": "°C",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
     "temperature_F": {
@@ -156,7 +159,8 @@ mappings = {
             "device_class": "temperature",
             "name": "Temperature",
             "unit_of_measurement": "°F",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -167,7 +171,8 @@ mappings = {
             "device_class": "battery",
             "name": "Battery",
             "unit_of_measurement": "%",
-            "value_template": "{{ float(value|int) * 99 + 1 }}"
+            "value_template": "{{ float(value|int) * 99 + 1 }}",
+            "state_class": "measurement"
         }
     },
 
@@ -178,7 +183,8 @@ mappings = {
             "device_class": "humidity",
             "name": "Humidity",
             "unit_of_measurement": "%",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -189,7 +195,8 @@ mappings = {
             "device_class": "moisture",
             "name": "Moisture",
             "unit_of_measurement": "%",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -200,7 +207,8 @@ mappings = {
             "device_class": "pressure",
             "name": "Pressure",
             "unit_of_measurement": "hPa",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -211,7 +219,8 @@ mappings = {
             "device_class": "pressure",
             "name": "Pressure",
             "unit_of_measurement": "kPa",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -221,7 +230,8 @@ mappings = {
         "config": {
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -232,7 +242,8 @@ mappings = {
             "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -243,7 +254,8 @@ mappings = {
             "device_class": "weather",
             "name": "Wind Speed",
             "unit_of_measurement": "mi/h",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -253,7 +265,8 @@ mappings = {
         "config": {
             "name": "Wind Average",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
+            "value_template": "{{ float(value|float) * 3.6 | round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -263,7 +276,8 @@ mappings = {
         "config": {
             "name": "Wind Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 }}"
+            "value_template": "{{ float(value|float) * 3.6 }}",
+            "state_class": "measurement"
         }
     },
 
@@ -273,7 +287,8 @@ mappings = {
         "config": {
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -283,7 +298,8 @@ mappings = {
         "config": {
             "name": "Wind max",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 | round(2) }}"
+            "value_template": "{{ float(value|float) * 3.6 | round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -293,7 +309,8 @@ mappings = {
         "config": {
             "name": "Gust Speed",
             "unit_of_measurement": "km/h",
-            "value_template": "{{ float(value|float) * 3.6 }}"
+            "value_template": "{{ float(value|float) * 3.6 }}",
+            "state_class": "measurement"
         }
     },
 
@@ -303,7 +320,8 @@ mappings = {
         "config": {
             "name": "Wind Direction",
             "unit_of_measurement": "°",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -313,7 +331,8 @@ mappings = {
         "config": {
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "total_increasing"
         }
     },
 
@@ -323,7 +342,8 @@ mappings = {
         "config": {
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -333,7 +353,8 @@ mappings = {
         "config": {
             "name": "Rain Total",
             "unit_of_measurement": "mm",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
+            "value_template": "{{ float(value|float) * 25.4 | round(2) }}",
+            "state_class": "total_increasing"
         }
     },
 
@@ -343,7 +364,8 @@ mappings = {
         "config": {
             "name": "Rain Rate",
             "unit_of_measurement": "mm/h",
-            "value_template": "{{ float(value|float) * 25.4 | round(2) }}"
+            "value_template": "{{ float(value|float) * 25.4 | round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -375,7 +397,8 @@ mappings = {
         "config": {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
-            "value_template": "{{ value|float|round(2) }}"
+            "value_template": "{{ value|float|round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -385,7 +408,8 @@ mappings = {
         "config": {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
-            "value_template": "{{ value|float|round(2) }}"
+            "value_template": "{{ value|float|round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -395,7 +419,8 @@ mappings = {
         "config": {
             "device_class": "signal_strength",
             "unit_of_measurement": "dB",
-            "value_template": "{{ value|float|round(2) }}"
+            "value_template": "{{ value|float|round(2) }}",
+            "state_class": "measurement"
         }
     },
 
@@ -405,7 +430,8 @@ mappings = {
         "config": {
             "name": "Depth",
             "unit_of_measurement": "cm",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -416,7 +442,8 @@ mappings = {
             "device_class": "power",
             "name": "Power",
             "unit_of_measurement": "W",
-            "value_template": "{{ value|float }}"
+            "value_template": "{{ value|float }}",
+            "state_class": "measurement"
         }
     },
 
@@ -427,7 +454,8 @@ mappings = {
             "device_class": "weather",
             "name": "Outside Luminancee",
             "unit_of_measurement": "lux",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
 
@@ -438,7 +466,8 @@ mappings = {
             "device_class": "weather",
             "name": "UV Index",
             "unit_of_measurement": "UV Index",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
 
@@ -448,7 +477,8 @@ mappings = {
         "config": {
             "name": "Lightning Distance",
             "unit_of_measurement": "mi",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
 
@@ -458,7 +488,8 @@ mappings = {
         "config": {
             "name": "Lightning Distance",
             "unit_of_measurement": "mi",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "measurement"
         }
     },
 
@@ -467,7 +498,8 @@ mappings = {
         "object_suffix": "strcnt",
         "config": {
             "name": "Lightning Strike Count",
-            "value_template": "{{ value|int }}"
+            "value_template": "{{ value|int }}",
+            "state_class": "total_increasing"
         }
     },
 }
