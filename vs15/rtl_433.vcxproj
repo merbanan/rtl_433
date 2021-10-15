@@ -167,12 +167,14 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\write_sigrok.c" />
     <ClCompile Include="..\src\devices\abmt.c" />
     <ClCompile Include="..\src\devices\acurite.c" />
+    <ClCompile Include="..\src\devices\acurite_01185m.c" />
     <ClCompile Include="..\src\devices\akhan_100F14.c" />
     <ClCompile Include="..\src\devices\alecto.c" />
     <ClCompile Include="..\src\devices\ambient_weather.c" />
     <ClCompile Include="..\src\devices\ambientweather_tx8300.c" />
     <ClCompile Include="..\src\devices\ambientweather_wh31e.c" />
     <ClCompile Include="..\src\devices\archos_tbh.c" />
+    <ClCompile Include="..\src\devices\atech_ws308.c" />
     <ClCompile Include="..\src\devices\auriol_aft77b2.c" />
     <ClCompile Include="..\src\devices\auriol_afw2a1.c" />
     <ClCompile Include="..\src\devices\auriol_ahfl.c" />
@@ -207,6 +209,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\elro_db286a.c" />
     <ClCompile Include="..\src\devices\elv.c" />
     <ClCompile Include="..\src\devices\emontx.c" />
+    <ClCompile Include="..\src\devices\enocean_erp1.c" />
     <ClCompile Include="..\src\devices\ert_idm.c" />
     <ClCompile Include="..\src\devices\ert_scm.c" />
     <ClCompile Include="..\src\devices\esa.c" />
@@ -240,6 +243,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\ibis_beacon.c" />
     <ClCompile Include="..\src\devices\ikea_sparsnas.c" />
     <ClCompile Include="..\src\devices\infactory.c" />
+    <ClCompile Include="..\src\devices\inkbird_ith20r.c" />
     <ClCompile Include="..\src\devices\inovalley-kw9015b.c" />
     <ClCompile Include="..\src\devices\insteon.c" />
     <ClCompile Include="..\src\devices\interlogix.c" />
@@ -283,6 +287,7 @@ COPY ..\..\libusb\MS64\dll\libusb*.dll $(TargetDir)</Command>
     <ClCompile Include="..\src\devices\proove.c" />
     <ClCompile Include="..\src\devices\quhwa.c" />
     <ClCompile Include="..\src\devices\radiohead_ask.c" />
+    <ClCompile Include="..\src\devices\rainpoint.c" />
     <ClCompile Include="..\src\devices\rftech.c" />
     <ClCompile Include="..\src\devices\rojaflex.c" />
     <ClCompile Include="..\src\devices\rubicson.c" />

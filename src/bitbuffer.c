@@ -74,7 +74,7 @@ void bitbuffer_add_row(bitbuffer_t *bits)
     if (bits->num_rows == 0)
         bits->free_row = bits->num_rows = 1; // Add first row automatically
     if (bits->free_row == BITBUF_ROWS - 1) {
-        fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
+        // fprintf(stderr, "%s: Warning: row count limit (%d rows) reached\n", __func__, BITBUF_ROWS);
     }
     if (bits->free_row < BITBUF_ROWS) {
         bits->free_row++;
