@@ -37,64 +37,64 @@ $ rtl_433 -g 100 -f 318M -X "n=Megacode,m=OOK_PCM,s=1000,l=1000,g=8000,r=10000"
 
 */
 
-
 #include "decoder.h"
 
 static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 {
     int row = bitbuffer_find_repeated_row(bitbuffer, 1, 144);
-    if (row < 0) return DECODE_ABORT_LENGTH;
+    if (row < 0)
+        return DECODE_ABORT_LENGTH;
     int l = bitbuffer->bits_per_row[row];
-    if (l < 136 || l > 148 ) return DECODE_ABORT_LENGTH;
+    if (l < 136 || l > 148)
+        return DECODE_ABORT_LENGTH;
 
     uint32_t raw = 0;
-    int ones = 0;
-    uint8_t *b = bitbuffer->bb[row];
+    int ones     = 0;
+    uint8_t *b   = bitbuffer->bb[row];
 
-    for (int i=0; i<l; i++) {
-      if ((b[i/8]<<(i%8)) & 128) {
-        if ((i + 4) % 6 > 2) raw |= 8388608>> ((i + 4) / 6);
-        ones++;
-      }
+    for (int i = 0; i < l; i++) {
+        if ((b[i / 8] << (i % 8)) & 128) {
+            if ((i + 4) % 6 > 2)
+                raw |= 8388608 >> ((i + 4) / 6);
+            ones++;
+        }
     }
 
-    if (ones != 24) return DECODE_FAIL_SANITY;
+    if (ones != 24)
+        return DECODE_FAIL_SANITY;
 
     int facility = (raw >> 19) & 15;
-    int id = (raw >> 3) & 65535;
-    int button = raw & 7;
+    int id       = (raw >> 3) & 65535;
+    int button   = raw & 7;
 
     data_t *data = data_make(
-      "model",    "",               DATA_STRING, "Linear-Megacode Remote",
-      "raw",      "Raw",            DATA_FORMAT, "%06X", DATA_INT, raw,
-      "facility", "Facility Code",  DATA_INT, facility,
-      "id",       "Transmitter ID", DATA_INT, id,
-      "button",   "Button",         DATA_INT, button,
-      NULL);
+            "model", "", DATA_STRING, "Linear-Megacode Remote",
+            "raw", "Raw", DATA_FORMAT, "%06X", DATA_INT, raw,
+            "facility", "Facility Code", DATA_INT, facility,
+            "id", "Transmitter ID", DATA_INT, id,
+            "button", "Button", DATA_INT, button,
+            NULL);
 
     decoder_output_data(decoder, data);
 
     return 1;
-
 }
 
 static char *output_fields[] = {
-    "model",
-    "raw",
-    "facility",
-    "id",
-    "button",
-    NULL
-};
+        "model",
+        "raw",
+        "facility",
+        "id",
+        "button",
+        NULL};
 
 r_device megacode = {
-    .name           = "Megacode Transmitter",
-    .modulation     = OOK_PULSE_PCM_RZ,
-    .short_width    = 1000,
-    .long_width     = 1000,
-    .gap_limit      = 8000,
-    .reset_limit    = 20000,
-    .decode_fn      = &megacode_callback,
-    .disabled       = 0,
-    .fields         = output_fields
-};
+        .name        = "Megacode Transmitter",
+        .modulation  = OOK_PULSE_PCM_RZ,
+        .short_width = 1000,
+        .long_width  = 1000,
+        .gap_limit   = 8000,
+        .reset_limit = 20000,
+        .decode_fn   = &megacode_callback,
+        .disabled    = 0,
+        .fields      = output_fields};
