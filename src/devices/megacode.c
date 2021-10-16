@@ -48,33 +48,34 @@ static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
     if (l < 136 || l > 148)
         return DECODE_ABORT_LENGTH;
 
-    uint32_t raw = 0;
-    int ones     = 0;
+    uint32_t raw      = 0;
+    int frame_counter = 0;
     uint8_t *b   = bitbuffer->bb[row];
 
     for (int i = 0; i < l; i++) {
-        if ((b[i / 8] << (i % 8)) & 128) {
+        if ((b[i / 8] << (i % 8)) & 0x80) {
             if ((i + 4) % 6 > 2)
-                raw |= 8388608 >> ((i + 4) / 6);
-            ones++;
+                raw |= 0x800000 >> ((i + 4) / 6);
+            frame_counter++;
         }
     }
 
-    if (ones != 24)
+    if (frame_counter != 24)
         return DECODE_FAIL_SANITY;
 
-    int facility = (raw >> 19) & 15;
-    int id       = (raw >> 3) & 65535;
-    int button   = raw & 7;
+    int facility = (raw >> 19) & 0xf;
+    int id       = (raw >> 3) & 0xffff;
+    int button   = raw & 0x7;
 
+    /* clang-format off */
     data_t *data = data_make(
-            "model", "", DATA_STRING, "Linear-Megacode Remote",
-            "raw", "Raw", DATA_FORMAT, "%06X", DATA_INT, raw,
-            "facility", "Facility Code", DATA_INT, facility,
-            "id", "Transmitter ID", DATA_INT, id,
-            "button", "Button", DATA_INT, button,
+            "model",    "",               DATA_STRING, "Megacode-Remote",
+            "id",       "Transmitter ID", DATA_INT,    id,
+            "raw",      "Raw",            DATA_FORMAT, "%06X", DATA_INT, raw,
+            "facility", "Facility Code",  DATA_INT,    facility,
+            "button",   "Button",         DATA_INT,    button,
             NULL);
-
+    /* clang-format on */
     decoder_output_data(decoder, data);
 
     return 1;
@@ -82,14 +83,14 @@ static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
 static char *output_fields[] = {
         "model",
+        "id",
         "raw",
         "facility",
-        "id",
         "button",
         NULL};
 
 r_device megacode = {
-        .name        = "Megacode Transmitter",
+        .name        = "Linear Megacode Garage/Gate Remotes",
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 1000,
         .long_width  = 1000,
