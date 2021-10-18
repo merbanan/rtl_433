@@ -38,11 +38,17 @@ Depending on your system, you may need to install the following libraries.
 
 Debian:
 
-    sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+* If you require TLS connections, install `libssl-dev`.
+
+````
+sudo apt-get install libtool libusb-1.0-0-dev librtlsdr-dev rtl-sdr build-essential cmake pkg-config
+````
+
 
 Centos/Fedora/RHEL with EPEL repo using cmake:
 
   * If `dnf` doesn't exist, use `yum`.
+  * If you require TLS connections, install `openssl-devel`.
 
 ````
 sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
@@ -50,7 +56,11 @@ sudo dnf install libtool libusbx-devel rtl-sdr-devel rtl-sdr cmake
 
 Mac OS X with MacPorts:
 
-    sudo port install rtl-sdr cmake
+* If you require TLS connections, install `openssl` from either MacPorts or Homebrew.
+
+````
+sudo port install rtl-sdr cmake
+````
 
 Mac OS X with Homebrew:
 
