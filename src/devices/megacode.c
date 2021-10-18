@@ -50,7 +50,7 @@ static int megacode_callback(r_device *decoder, bitbuffer_t *bitbuffer)
 
     uint32_t raw      = 0;
     int frame_counter = 0;
-    uint8_t *b   = bitbuffer->bb[row];
+    uint8_t *b        = bitbuffer->bb[row];
 
     for (int i = 0; i < l; i++) {
         if ((b[i / 8] << (i % 8)) & 0x80) {
@@ -94,7 +94,7 @@ r_device megacode = {
         .modulation  = OOK_PULSE_PCM_RZ,
         .short_width = 1000,
         .long_width  = 1000,
-        .gap_limit   = 8000,
+        .gap_limit   = 9000,
         .reset_limit = 20000,
         .decode_fn   = &megacode_callback,
         .disabled    = 0,
