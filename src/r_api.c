@@ -1043,7 +1043,7 @@ void add_dumper(r_cfg_t *cfg, char const *spec, int overwrite)
         FATAL_CALLOC("add_dumper()");
     list_push(&cfg->demod->dumper, dumper);
 
-    parse_file_info(spec, dumper);
+    file_info_parse_filename(dumper, spec);
     if (strcmp(dumper->path, "-") == 0) { /* Write samples to stdout */
         dumper->file = stdout;
 #ifdef _WIN32
