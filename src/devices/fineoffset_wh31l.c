@@ -14,6 +14,8 @@
 Ambient Weather (Fine Offset) WH31L protocol.
 915 MHz FSK PCM Lightning-Strike sensor, based on AS3935 Franklin lightning sensor (FCC ID WA5WH57E).
 
+Also: FineOffset WH57 lighting sensor.
+
 Note that Ambient Weather is likely rebranded Fine Offset products.
 
 56 us bit length with a preamble of 40 bit flips (0xaaaaaaaaaa) and a 0x2dd4 sync-word.
@@ -168,7 +170,7 @@ static char *output_fields[] = {
 };
 
 r_device fineoffset_wh31l = {
-        .name        = "Ambient Weather (Fine Offset) WH31L Lightning-Strike sensor",
+        .name        = "Ambient Weather WH31L (FineOffset WH57) Lightning-Strike sensor",
         .modulation  = FSK_PULSE_PCM,
         .short_width = 56,
         .long_width  = 56,
