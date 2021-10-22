@@ -206,6 +206,7 @@
     DECL(atech_ws308) \
     DECL(acurite_01185m) \
     DECL(enocean_erp1) \
+    DECL(telldus_ft0385r) \
 
     /* Add new decoders here. */
 
