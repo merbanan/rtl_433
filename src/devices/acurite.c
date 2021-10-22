@@ -1417,6 +1417,7 @@ static char *acurite_986_output_fields[] = {
         "battery_ok",
         "temperature_F",
         "status",
+        "mic",
         NULL,
 };
 
