@@ -179,6 +179,7 @@ add_library(r_433 STATIC
     devices/switchdoclabs_F016TH.c
     devices/switchdoclabs_FT020T.c
     devices/switchdoclabs_SM23.c
+    devices/switchdoclabs_solarmax.c
     devices/tfa_30_3196.c
     devices/tfa_30_3221.c
     devices/tfa_drop_30.3233.c
